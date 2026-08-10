@@ -58,13 +58,20 @@ generic role names mapped alongside for checker/planner cross-reference.
 |--------------|-------|---------------|-------|
 | `space-1` | 4px | xs | Icon-to-label gaps, checkbox tick inset |
 | `space-2` | 8px | sm | Compact element spacing (checkbox-to-label gap, IconButton padding) |
-| `space-3` | 12px | — | TextField internal vertical padding, Dropdown item padding |
-| `space-4` | 16px | md | Default element spacing — form field vertical gap, Button horizontal padding |
+| `space-4` | 16px | md | Default element spacing — form field vertical gap, Button horizontal padding, TextField internal vertical padding, Dropdown item padding |
 | `space-6` | 24px | lg | Section padding — auth card internal padding, form section gaps |
 | `space-8` | 32px | xl | Layout gaps — auth card top/bottom margin from viewport edge |
 | `space-12` | 48px | 2xl | Major section breaks — space between the auth card and the theme-toggle footer |
 
 Exceptions:
+- **12px (`space-3`, TextField internal vertical padding / Dropdown item padding)** is a
+  deliberate, justified exception to the standard 4/8/16/24/32/48/64 set. Page 1's Text Field and
+  Dropdown component frames show internal vertical padding that measures to 12px, not 8px or
+  16px — collapsing it onto either would visibly under- or over-pad those two primitives against
+  their Figma reference. Rather than adding `space-3` to the main scale (which would give the
+  phase a 4-value-plus-outlier spacing set), it is called out here as a component-specific
+  exception, same treatment as the 64px case below. Use Tailwind's `px-3`/`py-3` literal (12px)
+  directly on TextField/Dropdown internals; do not generalize `space-3` elsewhere.
 - **3xl (64px, page-level spacing)** has no direct token — D-04's declared range stops at
   `space-12` (48px). Compose `space-12` + `space-4` (48+16=64px) where a 64px gap is needed, or
   extend the scale to `space-16` (64px) during Plan 1's token-authoring task if a dedicated token
@@ -87,18 +94,24 @@ Base table (generic role mapping, for checker compatibility):
 | Heading | 18px | 700 (Bold) | 23px (≈1.28) |
 | Display | 24px | 700 (Bold) | 30px (1.25) |
 
-Full composite set (all 6 named text styles, matching CONTEXT.md D-05's "one composite semantic
-token per text style" decision — `font-heading-xl`, `font-heading-l`, `font-heading-m`,
-`font-heading-s`, `font-body-l`, `font-body-m`):
+Phase 1 declared set (5 of the 6 named text styles from CONTEXT.md D-05's "one composite
+semantic token per text style" convention — `font-heading-xl`, `font-heading-l`, `font-heading-s`,
+`font-body-l`, `font-body-m` — capped at 4 distinct sizes: 24px, 18px, 13px, 12px):
 
 | DTCG token name | Family | Weight | Size | Line height | Extra |
 |------------------|--------|--------|------|-------------|-------|
 | `font-heading-xl` | Plus Jakarta Sans | Bold (700) | 24px | 30px | — |
 | `font-heading-l` | Plus Jakarta Sans | Bold (700) | 18px | 23px | — |
-| `font-heading-m` | Plus Jakarta Sans | Bold (700) | 15px | 19px | — |
 | `font-heading-s` | Plus Jakarta Sans | Bold (700) | 12px | 15px | letter-spacing 2.4px, uppercase (used for column-style labels) |
 | `font-body-l` | Plus Jakarta Sans | Medium (500) | 13px | 23px | Primary body copy, form helper text |
 | `font-body-m` | Plus Jakarta Sans | Bold (700) | 12px | 15px | Compact counts/meta text |
+
+`font-heading-m` (Bold, 15px, 19px line-height) exists in page 1's full text-layer transcription
+as a 6th named style in the source system, but no Phase 1 surface (auth forms, theme toggle)
+requires a 15px heading — including it here would push this phase's declared scale to 5 distinct
+sizes, over the 4-size maximum. It is intentionally omitted from Phase 1's contract; a later
+phase that needs a 15px heading should re-introduce it there, evaluated against that phase's own
+4-size budget rather than inherited unused from this one.
 
 [SOURCED: PDF page 1 text layer, `pdftotext -layout` — "Plus Jakarta Sans Bold 24px 30px Line" /
 "...Medium 13px 23px Line" etc., transcribed verbatim per style label.]
@@ -146,6 +159,13 @@ account? Sign In").** Never used for body text, borders, or non-interactive deco
 Light/dark values are consumed via the same semantic token names per D-09 (`:root` / `.dark`
 scope, or `light-dark()`) — components never branch on theme in code.
 
+**Visual hierarchy / focal point:** The auth card, centered on the dominant-surface background,
+is the sole focal point of both the sign-up and sign-in screens — everything else (background,
+theme-toggle footer) is deliberately quiet. Within the card, the accent-colored primary CTA
+(Create Account / Sign In) is the first and strongest color/contrast draw the eye lands on after
+the heading; no other element on the screen competes with it for accent color per the "Accent
+reserved for" rule above.
+
 ---
 
 ## Copywriting Contract
@@ -168,10 +188,11 @@ request/response shapes, not placeholders.
 | Field-format error (email) | "Enter a valid email address." — client-side Zod only; the OpenAPI contract declares no server-side format constraint on `SignupRequestDTO.email`/`SigninRequestDTO.email` (no `format`/`pattern` in the schema), so this is a researcher default, not contract-derived. |
 | Field-length error (password) | "Password must be at least 8 characters." — **researcher default.** The contract's `SignupRequestDTO.password` has no declared `minLength` (unlike, e.g., `SaveTaskRequestDTO.title`'s explicit `minLength: 3`/`maxLength: 32`) — the backend enforces nothing itself. 8 characters is a conventional client-side floor pending an explicit product decision; flag for confirmation before Plan 2. |
 | Sign-in failure (invalid credentials) | "Invalid email or password." — **assumption**, not contract-derived. `POST /signin`'s OpenAPI response only declares a bare `200`; no documented error-response schema exists (RESEARCH.md Open Question 3). Route Handler is expected to translate a non-2xx upstream response into this copy; exact upstream status/body is unknown until the contract gap is resolved. |
-| Sign-up failure (generic/duplicate email) | "Something went wrong. Please try again." — **assumption/fallback.** `POST /signup`'s only documented response is a bare `200` returning `{ type: string }` with no schema for the email-already-registered case; no specific "email already in use" copy can be authored until that shape is confirmed. |
+| Sign-up failure (generic/duplicate email) | "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment." — **assumption/fallback, not contract-exact.** `POST /signup`'s only documented response is a bare `200` returning `{ type: string }` with no schema for the email-already-registered case, so this copy cannot commit to a specific "email already in use" message. It still gives the user two concrete next steps (sign in instead / retry) rather than a dead-end "something went wrong," covering both the duplicate-email and unknown-failure triggers until the contract gap (see UI Considerations row below) is resolved. |
 | Destructive confirmation | **None in Phase 1 scope.** No delete/destructive action exists in AUTH-01/02/03 or THEME-01. The app's own established destructive-confirmation pattern (`"Are you sure you want to delete the `{name}`...This action cannot be reversed."` + Delete/Cancel buttons, [SOURCED: PDF pages 2+, board/task delete-confirmation frames]) is reserved for Phase 2+ (board/column/task deletion) and should be reused verbatim there — not consumed by this phase. |
 | Sign-out | "Sign Out" — not itself destructive (no data loss), no confirmation modal needed. |
 | Theme toggle | No text label required — icon-only Switch (sun/moon glyphs via `lucide-react`, see Design System note on icon library). If an accessible label is needed for the Switch's `aria-label`, use "Toggle dark mode". |
+| Password visibility toggle | No text label required — icon-only IconButton (eye/eye-off glyphs via `lucide-react`) inside the Password TextField. Same accessible-label pattern as the theme-toggle Switch: use a state-reflecting `aria-label` that toggles between **"Show password"** (when the field is currently masked) and **"Hide password"** (when the field is currently revealed). |
 
 ---
 
