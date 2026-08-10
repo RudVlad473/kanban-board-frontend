@@ -163,10 +163,7 @@ const eslintConfig = defineConfig([
             },
             {
               from: { element: { type: "layout" } },
-              allow: [
-                { to: { element: { type: "ui" } } },
-                { to: { element: { type: "lib" } } },
-              ],
+              allow: [{ to: { element: { type: "ui" } } }, { to: { element: { type: "lib" } } }],
             },
           ],
         },

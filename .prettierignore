@@ -1,0 +1,24 @@
+.next/
+node_modules/
+pnpm-lock.yaml
+src/styles/tokens.css
+src/lib/api/generated-types.ts
+storybook-static/
+coverage/
+test-results/
+**/*-snapshots/
+
+# GSD planning/governance docs — pre-existing, orchestrator-owned (STATE.md/ROADMAP.md) or
+# predate this plan's scope; not part of the frontend application scaffold this plan formats.
+.planning/
+docs/
+CONTEXT.md
+CONVENTIONS.md
+DEFAULTS.md
+DEFERRED.md
+HIGH-LEVEL-ARCHITECTURE.md
+PRD.md
+PROPOSITIONS.md
+SPIKES.md
+TRIAGE.md
+ingest.yaml
