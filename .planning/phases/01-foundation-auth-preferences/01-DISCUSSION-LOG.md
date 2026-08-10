@@ -5,7 +5,7 @@
 
 **Date:** 2026-08-10
 **Phase:** 1-Foundation, Auth & Preferences
-**Areas discussed:** Token pipeline structure, Primitives set & order, Testing depth per component, Foundation-first sequencing
+**Areas discussed:** Token pipeline structure, Primitives set & order, Testing depth per component, Foundation-first sequencing, CI/CD (post-discussion addition)
 
 ---
 
@@ -75,6 +75,18 @@
 **Post-discussion correction (2026-08-10):** The user asked "are we going to initialize nextjs project first?" — surfacing that the original "Plan 2+ = scaffold, ..." phrasing was wrong. The Next.js project scaffold (package.json, App Router + TypeScript, pnpm, ESLint/Prettier/boundaries config, base folder structure) is an unavoidable prerequisite of Plan 1 itself — none of the token/harness/primitives work can exist without it. `01-CONTEXT.md`'s D-27 was corrected to open Plan 1 with the scaffold step.
 
 **Post-discussion correction #2 (2026-08-10):** The user asked to verify the scaffold with a basic "hello world" check, mirroring D-24's harness smoke-test discipline. `01-CONTEXT.md`'s D-27 was extended: the scaffold step now ends with a verification checkpoint (`next build`/`next dev` succeeds, a default route actually renders) before tokens/harness/primitives work begins.
+
+---
+
+## CI/CD (post-discussion addition)
+
+| Ask | Captured decision |
+|---|---|
+| Set up basic CI/CD — tests/lint/prettier/build, the common frontend checks | GitHub Actions workflow (`.github/workflows/ci.yml`) is a Plan 1 deliverable — lint, `prettier --check`, `next build`, and tests as required status checks (D-26b) |
+| Verify it actually works via a real GitHub push, not just a valid YAML file | Confirmed `origin` remote already exists (`github.com/RudVlad473/kanban-board-frontend`) — CI must be verified by an actual push showing the Actions run trigger and report status (D-26c) |
+| When does CI setup happen relative to the rest of Plan 1? | Build/lint/format checks as soon as scaffold exists; test job's scope grows as harness + primitives land; first push-and-verify happens right after the scaffold checkpoint, not held to the end (D-26d) |
+
+**Notes:** This extends the same "verify it actually works" discipline already applied to the scaffold checkpoint and the harness smoke test to the CI pipeline itself. `docs/adr/tech/0007` and `DEFAULTS.md` C-012 already locked ESLint+Prettier-as-required-check and GitHub Actions respectively — this makes both concrete as a Plan 1 deliverable instead of an assumption. ROADMAP.md's Phase 1 criterion 5 was strengthened to name these checks and the real-push verification explicitly.
 
 ---
 

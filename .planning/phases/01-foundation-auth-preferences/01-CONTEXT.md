@@ -108,6 +108,28 @@ later.
   Browser Mode and Next.js App Router client components. Added as part of the harness-setup
   task (D-24).
 
+### CI/CD
+
+- **D-26b:** A GitHub Actions workflow (`.github/workflows/ci.yml`) is a Plan 1 foundation
+  deliverable, not something assumed to appear later — it runs the frontend-standard checks on
+  every push/PR: lint (`eslint`), format check (`prettier --check`), build (`next build`), and
+  tests (Vitest unit/component once the harness exists; expand to axe-core/Playwright-visual
+  once those are wired in D-21/D-22). This makes concrete the CI tooling already locked in
+  DEFAULTS.md (C-012: "GitHub Actions, running the full test pyramid... on every push") and the
+  required-status-check enforcement already specified in `docs/adr/tech/0007` (ESLint + Prettier
+  zero-errors-before-merge).
+- **D-26c:** CI is not considered working on the strength of a locally-valid YAML file alone —
+  it must be verified end-to-end by pushing to the real GitHub remote (`origin` →
+  `github.com/RudVlad473/kanban-board-frontend`, already configured) and confirming the Actions
+  run actually triggers and reports status in the GitHub UI. Same "verify it actually works, not
+  just that files exist" discipline already applied to the scaffold checkpoint (D-27) and the
+  test-harness smoke test (D-24).
+- **D-26d:** CI setup happens once there's something real for each job to check — build/lint/
+  format checks can run as soon as the scaffold (D-27) exists; the test job's scope grows as the
+  harness (D-24) and each primitive's tests land. The first real push-and-verify (D-26c) should
+  happen after the scaffold checkpoint, not held until every primitive is built — catches a
+  broken pipeline early rather than after the whole foundation stack is already committed.
+
 ### Sequencing
 
 - **D-27:** The entire foundation stack — **project scaffold, tokens, harness setup, and all 7
@@ -129,7 +151,9 @@ later.
   it's an unavoidable prerequisite of Plan 1, not a peer of the auth/theme feature work.*
 - **D-28:** ROADMAP.md's Phase 1 Success Criteria was updated (criterion 6, applied during this
   discussion) to name the token-driven primitives library as an explicit, verifiable
-  deliverable rather than leaving it implied by "technical foundation."
+  deliverable rather than leaving it implied by "technical foundation." Criterion 5 was further
+  strengthened to name the CI checks explicitly and require the real-push verification from
+  D-26c.
 
 ### Claude's Discretion
 None — every gray area discussed had a concrete decision made; no "you decide" selections in
@@ -146,6 +170,8 @@ this round.
 - `CONVENTIONS.md` — feature-folder placement rules; existing (now expanded) `components/ui/`
   primitive folder pattern; `styles/` as the Style Dictionary output target.
 - `docs/adr/tech/0009-project-organization.md` — the underlying ADR for the folder structure.
+- `DEFAULTS.md` — C-012 locks GitHub Actions as the CI tool running the full test pyramid on
+  every push; this discussion's D-26b/D-26c/D-26d make that concrete for Plan 1.
 
 ### Tech decisions this phase's foundation work depends on
 - `docs/adr/tech/0007-linter-formatter-toolchain.md` — ESLint/Prettier + Tailwind plugins,

@@ -48,7 +48,10 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
   4. A signed-in user can toggle light/dark theme, and the choice persists across
      sign-out/sign-in and browser refresh.
   5. The app is live on Vercel (Preview + Production) with a working sign-in page, running
-     against the MSW-mocked API, with lint/test CI green.
+     against the MSW-mocked API. A GitHub Actions CI workflow runs lint, Prettier format
+     check, build, and tests as required status checks on every push/PR, verified by an
+     actual push to the GitHub remote showing the pipeline run green (not just a
+     locally-valid workflow file).
   6. A token-driven primitives library (Button, IconButton, TextField, Checkbox, Switch,
      Dropdown, Modal) exists — built from DTCG JSON via Style Dictionary into Tailwind v4
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
