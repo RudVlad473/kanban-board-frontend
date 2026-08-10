@@ -67,10 +67,12 @@
 
 | Question | Selected answer |
 |---|---|
-| Should the whole foundation stack be Plan 1, gating everything else? | **Strictly sequential** — Plan 1 = tokens + harness + all 7 primitives; Plan 2+ = scaffold/auth/theme, consuming the already-built primitives — vs. allowing scaffold/tooling to run in parallel |
+| Should the whole foundation stack be Plan 1, gating everything else? | **Strictly sequential** — Plan 1 = tokens + harness + all 7 primitives; Plan 2+ = auth/theme feature work, consuming the already-built primitives — vs. allowing scaffold/tooling to run in parallel |
 | Should ROADMAP.md's Phase 1 success criteria name this explicitly? | **Yes** — added as criterion 6 to Phase 1 in ROADMAP.md during this discussion |
 
 **Notes:** This area directly reflects the user's stated top priority: "design token pipeline... and building out a primitives library... also setting up a robust testing framework that will allow us to add test coverage right after the component is created."
+
+**Post-discussion correction (2026-08-10):** The user asked "are we going to initialize nextjs project first?" — surfacing that the original "Plan 2+ = scaffold, ..." phrasing was wrong. The Next.js project scaffold (package.json, App Router + TypeScript, pnpm, ESLint/Prettier/boundaries config, base folder structure) is an unavoidable prerequisite of Plan 1 itself — none of the token/harness/primitives work can exist without it. `01-CONTEXT.md`'s D-27 was corrected to open Plan 1 with the scaffold step.
 
 ---
 

@@ -110,11 +110,20 @@ later.
 
 ### Sequencing
 
-- **D-27:** The entire foundation stack — tokens, harness setup, and all 7 primitives with
-  their tests — is **Plan 1 of Phase 1**, strictly sequential and gating everything else. Plan
-  2+ (scaffold, typed API client, MSW mock, BFF auth proxy, sign-up/sign-in, route guard,
-  theme toggle) consumes the already-built primitives (e.g. the theme toggle uses the
-  already-built Switch) rather than building any primitive reactively mid-feature-work.
+- **D-27:** The entire foundation stack — **project scaffold, tokens, harness setup, and all 7
+  primitives with their tests** — is **Plan 1 of Phase 1**, strictly sequential and gating
+  everything else. Plan 1 opens with the Next.js project scaffold itself (`create-next-app`
+  with App Router + TypeScript, pnpm, ESLint/Prettier + `eslint-plugin-tailwindcss`/
+  `prettier-plugin-tailwindcss`, `eslint-plugin-boundaries` configured per CONVENTIONS.md's
+  placement rules, and the base folder structure — `app/`, `src/features/`, `src/components/`,
+  `src/hooks/`, `src/lib/`, `src/styles/`, `tokens/`) — none of the token/harness/primitives
+  work can exist without a `package.json` and installed dependencies. Only after the scaffold
+  exists do tokens → harness setup → primitives proceed. Plan 2+ (typed API client, MSW mock,
+  BFF auth proxy, sign-up/sign-in, route guard, theme toggle, Vercel deploy) consumes the
+  already-built primitives (e.g. the theme toggle uses the already-built Switch) rather than
+  building any primitive reactively mid-feature-work. — *Correction (2026-08-10, post-context):
+  the original discussion's phrasing implied "scaffold" belonged to Plan 2+; that was wrong —
+  it's an unavoidable prerequisite of Plan 1, not a peer of the auth/theme feature work.*
 - **D-28:** ROADMAP.md's Phase 1 Success Criteria was updated (criterion 6, applied during this
   discussion) to name the token-driven primitives library as an explicit, verifiable
   deliverable rather than leaving it implied by "technical foundation."
