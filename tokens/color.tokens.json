@@ -1,0 +1,38 @@
+{
+  "color": {
+    "purple": {
+      "500": {
+        "$type": "color",
+        "$value": "#635FC7",
+        "$description": "Primary CTA background, active Dropdown item indicator, focus ring, Switch on-track, links"
+      },
+      "300": { "$type": "color", "$value": "#A8A4FF", "$description": "Primary CTA hover/active state only" }
+    },
+    "red": {
+      "500": {
+        "$type": "color",
+        "$value": "#EA5555",
+        "$description": "Destructive button, TextField error border/text"
+      },
+      "300": { "$type": "color", "$value": "#FF9898", "$description": "Destructive button hover state only" }
+    },
+    "grey": {
+      "900": { "$type": "color", "$value": "#000112", "$description": "Deepest-contrast dark-mode element" },
+      "800": { "$type": "color", "$value": "#20212C", "$description": "App background (dark theme)" },
+      "700": { "$type": "color", "$value": "#2B2C37", "$description": "Card/sidebar/Dropdown surface (dark theme)" },
+      "600": { "$type": "color", "$value": "#3E3F4E", "$description": "Borders/dividers (dark theme)" },
+      "500": {
+        "$type": "color",
+        "$value": "#828FA3",
+        "$description": "Placeholder/disabled/secondary text (both themes)"
+      },
+      "200": { "$type": "color", "$value": "#E4EBFA", "$description": "Borders/dividers (light theme)" },
+      "100": { "$type": "color", "$value": "#F4F7FD", "$description": "App background (light theme)" }
+    },
+    "white": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Card/sidebar/Dropdown surface (light theme), on-primary text"
+    }
+  }
+}

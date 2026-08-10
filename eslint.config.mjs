@@ -22,18 +22,19 @@ const eslintConfig = defineConfig([
         // already covered by tsconfig.json's own `**/*.ts` include and listing them here too
         // conflicts ("found in the project service" vs "allowDefaultProject").
         projectService: {
-          allowDefaultProject: ["*.config.mjs", "*.config.js"],
+          allowDefaultProject: ["*.config.mjs", "*.config.js", "scripts/*.mjs"],
         },
         tsconfigRootDir: import.meta.dirname,
       },
     },
   },
-  // *.config.mjs/*.config.js files only get a synthetic "default project" (no real tsconfig),
-  // so Node ESM globals like `import.meta.dirname` come back untyped/"error"-typed there and
-  // trip strictTypeChecked's unsafe-assignment/misused-spread rules on this very file. Type-aware
-  // linting adds no real value for tooling config anyway — turn it off for just these files.
+  // *.config.mjs/*.config.js files (and scripts/*.mjs, standalone Node build scripts outside
+  // the app's TS project) only get a synthetic "default project" (no real tsconfig), so Node
+  // ESM globals like `import.meta.dirname` come back untyped/"error"-typed there and trip
+  // strictTypeChecked's unsafe-assignment/misused-spread rules on this very file. Type-aware
+  // linting adds no real value for tooling scripts anyway — turn it off for just these files.
   {
-    files: ["*.config.mjs", "*.config.js"],
+    files: ["*.config.mjs", "*.config.js", "scripts/*.mjs"],
     ...tseslint.configs.disableTypeChecked,
   },
 

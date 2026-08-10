@@ -1,0 +1,19 @@
+{
+  "shadow": {
+    "sm": {
+      "$type": "shadow",
+      "$value": "0px 4px 6px 0px rgba(43, 44, 55, 0.1)",
+      "$description": "Dropdown (Active) menu panel — visually measured from the soft corner shadow on PDF page 1's 'Dropdown (Active)' frame. The PDF export has no inspectable vector shadow properties (offset/blur/spread), so this is a visual approximation of a small, soft elevation shadow using color.grey.700 at low opacity; confirm against the source Figma file at the plan 01-09 visual checkpoint."
+    },
+    "md": {
+      "$type": "shadow",
+      "$value": "0px 6px 10px 0px rgba(43, 44, 55, 0.12)",
+      "$description": "Not directly present anywhere in the PDF's page-1 Design System frames — proportionally scaled up from shadow.sm to give the design system's declared three-tier scale (D-06) a mid elevation step; confirm against Figma at the plan 01-09 visual checkpoint."
+    },
+    "lg": {
+      "$type": "shadow",
+      "$value": "0px 8px 16px 0px rgba(43, 44, 55, 0.15)",
+      "$description": "Not directly present anywhere in the PDF's page-1 Design System frames — proportionally scaled up from shadow.sm for the highest elevation step (D-06, e.g. Modal); confirm against Figma at the plan 01-09 visual checkpoint."
+    }
+  }
+}

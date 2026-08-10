@@ -10,7 +10,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "tokens:build": "style-dictionary build --config style-dictionary.config.mjs",
+    "tokens:build": "node scripts/build-tokens.mjs",
     "prebuild": "pnpm tokens:build",
     "predev": "pnpm tokens:build",
     "test": "vitest run"

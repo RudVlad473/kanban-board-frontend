@@ -91,20 +91,56 @@ StyleDictionary.registerFormat({
   },
 });
 
-const config = {
-  source: ["tokens/**/*.tokens.json"],
-  platforms: {
-    css: {
-      transformGroup: "css-raw",
-      buildPath: "src/styles/",
-      files: [
-        {
-          destination: "tokens.css",
-          format: "css/tailwind-theme",
-        },
-      ],
-    },
-  },
-};
+// The five categories that don't vary by color mode — included in every build.
+const modeInvariantSources = [
+  "tokens/spacing.tokens.json",
+  "tokens/typography.tokens.json",
+  "tokens/radius.tokens.json",
+  "tokens/shadow.tokens.json",
+  "tokens/breakpoint.tokens.json",
+];
 
-export default config;
+/**
+ * Style Dictionary v5 has no per-platform `source` override (`_exportPlatform` clones the
+ * INSTANCE-level `this.tokens`, built once from the top-level `source`) and no built-in
+ * "append to an existing output file" option. Loading `color.light.tokens.json` and
+ * `color.dark.tokens.json` into the same dictionary would collide on every identical semantic
+ * path (`color.bg.app` etc.) and silently drop one mode's values. So light and dark are built
+ * as two separate configs/instances with disjoint sources (see scripts/build-tokens.mjs, which
+ * builds both and concatenates the CSS text itself — @theme block first, .dark block second).
+ */
+export function createConfig(mode) {
+  if (mode === "dark") {
+    return {
+      source: ["tokens/color.tokens.json", "tokens/color.dark.tokens.json"],
+      platforms: {
+        "css-dark": {
+          transformGroup: "css-raw",
+          files: [
+            {
+              destination: "tokens.dark.part.css",
+              format: "css/tailwind-dark-scope",
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  return {
+    source: ["tokens/color.tokens.json", "tokens/color.light.tokens.json", ...modeInvariantSources],
+    platforms: {
+      css: {
+        transformGroup: "css-raw",
+        files: [
+          {
+            destination: "tokens.theme.part.css",
+            format: "css/tailwind-theme",
+          },
+        ],
+      },
+    },
+  };
+}
+
+export default createConfig("light");
