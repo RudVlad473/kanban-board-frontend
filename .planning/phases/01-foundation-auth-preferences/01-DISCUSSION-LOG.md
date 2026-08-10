@@ -5,7 +5,7 @@
 
 **Date:** 2026-08-10
 **Phase:** 1-Foundation, Auth & Preferences
-**Areas discussed:** Token pipeline structure, Primitives set & order, Testing depth per component, Foundation-first sequencing, CI/CD (post-discussion addition)
+**Areas discussed:** Token pipeline structure, Primitives set & order, Testing depth per component, Foundation-first sequencing, CI/CD, Pre-commit hooks, Code style conventions (all post-discussion additions)
 
 ---
 
@@ -87,6 +87,44 @@
 | When does CI setup happen relative to the rest of Plan 1? | Build/lint/format checks as soon as scaffold exists; test job's scope grows as harness + primitives land; first push-and-verify happens right after the scaffold checkpoint, not held to the end (D-26d) |
 
 **Notes:** This extends the same "verify it actually works" discipline already applied to the scaffold checkpoint and the harness smoke test to the CI pipeline itself. `docs/adr/tech/0007` and `DEFAULTS.md` C-012 already locked ESLint+Prettier-as-required-check and GitHub Actions respectively — this makes both concrete as a Plan 1 deliverable instead of an assumption. ROADMAP.md's Phase 1 criterion 5 was strengthened to name these checks and the real-push verification explicitly.
+
+---
+
+## Pre-commit hooks
+
+| Question | Selected answer |
+|---|---|
+| Which pre-commit hook manager? | **Husky + lint-staged** — vs. simple-git-hooks + lint-staged |
+| What should actually run on every commit? | **Staged-files-only for everything, skip the TS check pre-commit** — full `tsc --noEmit` deferred to CI's build step |
+| Block or warn on failure? | **Block the commit on failure** |
+| Relationship to CI (D-26b)? | **Pre-commit is a fast local subset; CI stays the authoritative full gate** |
+
+**Notes:** Deliberately skips a full-project type check at commit time for speed — type errors surface at push time via CI instead, a conscious trade-off, not an oversight.
+
+---
+
+## Code style conventions
+
+| Question | Selected answer |
+|---|---|
+| type vs interface? | **type everywhere by default** — interface only for declaration merging |
+| Named vs default exports? | **Named everywhere**, except where Next.js's App Router forces default (page/layout/route files) |
+| Function declaration vs const arrow for components? | **const arrow functions**, uniformly |
+| React.FC vs plain prop typing? | **Plain prop typing**, no React.FC |
+| Prettier specifics (free-text)? | **Semicolons on, double quotes, trailing commas, print width 120** (widened from Prettier's default 80) |
+| ESLint strictness? | **typescript-eslint strict + type-checked**, `exhaustive-deps` as error |
+| Unused vars handling? | **Error, with `_`-prefix escape hatch** for intentionally-unused params |
+| Import ordering? | **Enforced via eslint-plugin-import/import-x**, auto-fixed on commit |
+| Path aliases vs relative imports? | **TS path aliases** (`@/features/...` etc.) |
+| File naming (free-text follow-up)? | **kebab-case for everything, including component files** — confirmed no Next.js-specific risk after the user asked directly |
+| Barrel files? | **No barrel files** — import directly from source files |
+| Boolean/event-handler prop naming? | **is/has prefix for booleans, on prefix for handlers** — matches Base UI |
+| Variant/size/state styling approach? | **class-variance-authority (cva)** |
+| className override escape hatch? | **Yes, every primitive accepts className**, merged via tailwind-merge |
+
+**Notes:** The file-naming question came with a genuine follow-up question from the user ("can we use kebab-case for everything even components? is it going to cause problems with nextjs down the line?") — answered directly (no Next.js-specific risk; the only cross-platform risk is filesystem case-sensitivity, which applies equally to any casing convention) before re-presenting it as a real choice.
+
+**Side discussion:** The user also asked whether `iluvatar` (the project's earlier idea-classification skill, a separate global skill in a different repo) should be updated to include a point about linting/formatting/folder-structure universality. Answered inline: linting/formatting is already covered by iluvatar's existing invariant #10 ("Verification — at what layers, what does each layer not cover"); iluvatar deliberately never selects a specific tool (that's `hairsplitter`'s job, per iluvatar's own "no technology names" guardrail). Folder structure is a worse fit for iluvatar specifically since it isn't domain-agnostic the way its other invariants are (a Next.js feature-folder layout means nothing to a CLI tool), and correctly ended up as a `hairsplitter` decision (ADR tech/0009) in this project's own history. No changes made to iluvatar — this was informational, not a CONTEXT.md decision, and touching a separate pinned/audited global skill was left as the user's explicit call.
 
 ---
 

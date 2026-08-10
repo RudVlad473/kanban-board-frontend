@@ -130,6 +130,74 @@ later.
   happen after the scaffold checkpoint, not held until every primitive is built — catches a
   broken pipeline early rather than after the whole foundation stack is already committed.
 
+### Pre-commit hooks
+
+- **D-26e:** Husky + lint-staged for pre-commit enforcement — the standard, most-documented
+  combo for JS/TS + pnpm projects.
+- **D-26f:** lint-staged runs Prettier `--write` + ESLint `--fix` on staged files only (fast);
+  a full-project `tsc --noEmit` is explicitly **skipped** at commit time (per the user's
+  choice) — type errors are caught by CI's build step (D-26b) after push, not before commit.
+  This is a deliberate speed/coverage trade-off, not an oversight.
+- **D-26g:** A failing pre-commit check (lint/format) blocks the commit outright — no
+  warn-only mode.
+- **D-26h:** Pre-commit hooks are a fast local subset (staged-file lint/format only, per
+  D-26f); CI (D-26b) remains the authoritative full-project gate. Hooks are a convenience, not
+  a substitute for CI — nothing should ever rely on `--no-verify` bypassing hooks as the only
+  enforcement, since CI still catches everything hooks skip.
+
+### Code style conventions
+
+- **D-26i:** `type` over `interface` by default for all TypeScript type definitions (props,
+  unions, object shapes); `interface` only for the rare declaration-merging/third-party-type-
+  extension case.
+- **D-26j:** Named exports everywhere, except where Next.js's App Router itself requires a
+  default export (`page.tsx`, `layout.tsx`, `route.ts`, and similar special files) — that's
+  the one framework-forced exception, not a stylistic choice.
+- **D-26k:** `const` arrow functions for all components (`const Button = (props: ButtonProps) =>
+  {...}`), applied uniformly — not function declarations.
+- **D-26l:** No `React.FC<Props>` — type props directly on the function signature. Avoids the
+  legacy implicit-`children` footgun and adds no type-safety benefit over direct prop typing.
+- **D-26m:** Prettier config: semicolons on, double quotes, trailing commas (all), **print
+  width 120** (Prettier's default is 80 — explicitly widened per the user's choice).
+- **D-26n:** ESLint: `typescript-eslint` **strict + type-checked** tier (not just
+  "recommended"), plus `eslint-plugin-react-hooks`'s `exhaustive-deps` as an **error** (not
+  warn) — this is what makes ADR tech/0007's "0 errors" bar meaningful rather than trivially
+  met.
+- **D-26o:** `@typescript-eslint/no-unused-vars` as error, with an underscore-prefix (`_event`,
+  `_index`) escape hatch for intentionally-unused function parameters (e.g. positional callback
+  args you don't need all of).
+- **D-26p:** Import order/grouping (external → internal alias → relative) enforced via
+  `eslint-plugin-import`/`import-x`, auto-fixed by lint-staged on every commit — zero manual
+  effort since it's auto-fixed, no import-order bikeshedding or diff noise.
+- **D-26q:** TypeScript path aliases (`@/features/...`, `@/components/...`, `@/lib/...`, one
+  alias per CONVENTIONS.md top-level folder) instead of relative imports — also makes
+  CONVENTIONS.md's no-cross-feature-import rule easier to spot visually.
+- **D-26r:** No barrel files (`index.ts` re-exports) — import directly from the source file
+  (`@/components/ui/button/button`, not `@/components/ui/button`). Avoids barrel-file circular-
+  import and Next.js bundle-size footguns.
+- **D-26s:** Boolean props use `is`/`has` prefixes (`isDisabled`, `hasError`); event-handler
+  props use `on` prefix (`onClick`, `onValueChange`) — matches Base UI's own prop naming, so
+  wrapper primitives stay consistent with the library underneath them.
+- **D-26t:** File naming: **kebab-case for everything, including component files**
+  (`button.tsx` exports `Button`, `task-card.tsx` exports `TaskCard`) — one casing rule, no
+  per-file-type exceptions. Confirmed no Next.js-specific risk: Next.js's naming rules apply
+  only to its own special files (`page.tsx`, `layout.tsx`, `route.ts`, etc.) and to
+  route-segment folder names in `app/` (which are naturally kebab-case anyway, since they map
+  to URLs) — Next.js does not inspect the casing of your own component/hook/util files.
+  Consistent with CONVENTIONS.md's existing kebab-case feature-folder names (e.g.
+  `features/activity-log/`). The only real cross-platform risk (Windows/Mac dev machines are
+  case-insensitive, Vercel's Linux build servers are case-sensitive) is a general concern for
+  any casing choice, not specific to kebab-case, and is mitigated by lint-staged/ESLint
+  catching import-case mismatches before they reach CI.
+- **D-26u:** `class-variance-authority` (cva) for managing primitive variant/size/state
+  styling (the `sm`/`md`/`lg` sizes from D-18, `primary`/`secondary` variants, error states
+  from D-17) — purpose-built for exactly this multi-axis-variant surface, pairs cleanly with
+  Tailwind.
+- **D-26v:** Every primitive accepts and forwards a `className` prop, merged safely via
+  `tailwind-merge` (so consumer classes correctly override conflicting base classes rather than
+  just concatenating) — the escape hatch for one-off layout adjustments without needing a new
+  named variant for every case.
+
 ### Sequencing
 
 - **D-27:** The entire foundation stack — **project scaffold, tokens, harness setup, and all 7
