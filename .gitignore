@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Local-only reference assets (not committed — large binaries / external specs)
+.planning/local-assets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

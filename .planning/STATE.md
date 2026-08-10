@@ -5,8 +5,8 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Foundation, Auth & Preferences
 status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-08-10T10:24:46.589Z"
+stopped_at: Phase 1 UI-SPEC approved
+last_updated: "2026-08-10T11:29:45.764Z"
 last_activity: 2026-08-09
 last_activity_desc: gsd-roadmapper wrote PROJECT.md, REQUIREMENTS.md, ROADMAP.md;
 progress:
@@ -92,6 +92,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-10T10:24:46.574Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-foundation-auth-preferences/01-CONTEXT.md
+Last session: 2026-08-10T11:29:45.747Z
+Stopped at: Phase 1 UI-SPEC approved
+Resume file: .planning/phases/01-foundation-auth-preferences/01-UI-SPEC.md
