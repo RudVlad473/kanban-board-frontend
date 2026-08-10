@@ -74,6 +74,8 @@
 
 **Post-discussion correction (2026-08-10):** The user asked "are we going to initialize nextjs project first?" — surfacing that the original "Plan 2+ = scaffold, ..." phrasing was wrong. The Next.js project scaffold (package.json, App Router + TypeScript, pnpm, ESLint/Prettier/boundaries config, base folder structure) is an unavoidable prerequisite of Plan 1 itself — none of the token/harness/primitives work can exist without it. `01-CONTEXT.md`'s D-27 was corrected to open Plan 1 with the scaffold step.
 
+**Post-discussion correction #2 (2026-08-10):** The user asked to verify the scaffold with a basic "hello world" check, mirroring D-24's harness smoke-test discipline. `01-CONTEXT.md`'s D-27 was extended: the scaffold step now ends with a verification checkpoint (`next build`/`next dev` succeeds, a default route actually renders) before tokens/harness/primitives work begins.
+
 ---
 
 ## Claude's Discretion

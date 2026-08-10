@@ -117,8 +117,11 @@ later.
   `prettier-plugin-tailwindcss`, `eslint-plugin-boundaries` configured per CONVENTIONS.md's
   placement rules, and the base folder structure — `app/`, `src/features/`, `src/components/`,
   `src/hooks/`, `src/lib/`, `src/styles/`, `tokens/`) — none of the token/harness/primitives
-  work can exist without a `package.json` and installed dependencies. Only after the scaffold
-  exists do tokens → harness setup → primitives proceed. Plan 2+ (typed API client, MSW mock,
+  work can exist without a `package.json` and installed dependencies. The scaffold step ends
+  with a verification checkpoint, not just "files exist": `next build` (or `next dev`)
+  succeeds and a default/placeholder route actually renders in the browser — confirming the
+  scaffold works before any token or primitive code is layered on top of it. Only after that
+  checkpoint passes do tokens → harness setup → primitives proceed. Plan 2+ (typed API client, MSW mock,
   BFF auth proxy, sign-up/sign-in, route guard, theme toggle, Vercel deploy) consumes the
   already-built primitives (e.g. the theme toggle uses the already-built Switch) rather than
   building any primitive reactively mid-feature-work. — *Correction (2026-08-10, post-context):
