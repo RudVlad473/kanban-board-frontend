@@ -1,4 +1,9 @@
 allowBuilds:
+  # esbuild's install script only downloads its own platform-matched binary from esbuild's own
+  # npm registry scope (standard, widely-audited behavior) — required for Storybook's Vite-based
+  # builder (@storybook/builder-vite / @storybook/csf-plugin, used by @storybook/nextjs-vite) to
+  # actually run.
+  esbuild: true
   sharp: false
   unrs-resolver: false
 minimumReleaseAgeExclude:

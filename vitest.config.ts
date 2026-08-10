@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
@@ -38,6 +39,20 @@ export default defineConfig({
           name: "browser",
           include: ["src/**/*.test.tsx"],
           setupFiles: ["./vitest.setup.ts"],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [{ browser: "chromium" }],
+          },
+        },
+      },
+      {
+        resolve: { alias },
+        plugins: [storybookTest({ configDir: path.join(rootDir, ".storybook") })],
+        test: {
+          name: "storybook",
+          setupFiles: ["./.storybook/vitest.setup.ts"],
           browser: {
             enabled: true,
             headless: true,

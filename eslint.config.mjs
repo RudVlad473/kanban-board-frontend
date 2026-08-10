@@ -131,6 +131,10 @@ const eslintConfig = defineConfig([
       "next.config.ts",
       "*.config.{ts,mjs,js}",
       "**/*.stories.tsx",
+      // Storybook's own framework-forced default-export files (main config + preview config),
+      // same category as next.config.ts above.
+      ".storybook/main.ts",
+      ".storybook/preview.ts",
     ],
     rules: {
       "import-x/no-default-export": "off",

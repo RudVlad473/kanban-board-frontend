@@ -31,6 +31,7 @@ playwright-report/
 # Vitest Browser Mode's own failure screenshots, co-located next to the failing test file — not
 # the committed Playwright visual-regression baselines under visual/__screenshots__ (Task 3).
 src/**/__screenshots__/
+storybook-static/
 
 # Editor directories and files
 .vscode/*
