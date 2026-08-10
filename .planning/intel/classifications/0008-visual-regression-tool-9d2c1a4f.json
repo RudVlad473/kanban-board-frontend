@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/tech/0008-visual-regression-tool.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "0008 — Visual regression tool",
+  "summary": "Chose Playwright-native screenshot testing over Lost Pixel, Argos, and Chromatic for Storybook visual regression, avoiding third-party services.",
+  "scope": ["visual regression testing", "Storybook", "Playwright", "Lost Pixel", "Argos", "Chromatic"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 1,
+  "notes": "No explicit 'Status: Accepted' field present; 'Decision Outcome' section names a chosen option (Playwright-native) but frontmatter/status marker is absent, so locked left false per rule requiring explicit Accepted status."
+}

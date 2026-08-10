@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/domain/0003-client-orchestrated-multi-child-creation.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Multi-child creation is client-orchestrated; partial failures are kept, not rolled back",
+  "summary": "Decides multi-child creation (Boards/Tasks) is client-orchestrated sequential calls; partial failures are kept, not rolled back.",
+  "scope": ["Boards", "Columns", "Tasks", "Subtasks", "multi-child creation", "rollback"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 2,
+  "notes": "No explicit Status field present in document; manifest declares type ADR and precedence 2, so locked left false since Accepted status could not be confirmed from content."
+}

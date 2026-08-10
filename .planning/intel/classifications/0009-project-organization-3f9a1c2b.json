@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/tech/0009-project-organization.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "0009 — Project / component organization methodology",
+  "summary": "Chose a feature-folder hybrid structure enforced by eslint-plugin-boundaries over FSD, Atomic Design, and Next.js colocation-only.",
+  "scope": ["project structure", "feature-folder hybrid", "eslint-plugin-boundaries", "Next.js App Router", "component organization"],
+  "cross_refs": ["TRIAGE.md", "HIGH-LEVEL-ARCHITECTURE.md", "PROPOSITIONS.md"],
+  "locked": true,
+  "precedence": 1,
+  "notes": ""
+}

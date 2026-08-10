@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/tech/0002-client-data-fetching-strategy.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "0002 — Client data-fetching & mutation strategy",
+  "summary": "Chose TanStack Query for client-side data fetching and optimistic mutation/rollback against a separate REST service.",
+  "scope": ["TanStack Query", "optimistic updates", "mutation rollback", "SWR", "RTK Query", "Server Actions", "REST service"],
+  "cross_refs": ["CONTEXT.md", "ADR domain/0002", "DEFAULTS.md"],
+  "locked": true,
+  "precedence": 1,
+  "notes": ""
+}

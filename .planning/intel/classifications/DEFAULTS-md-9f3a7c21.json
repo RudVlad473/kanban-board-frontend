@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/DEFAULTS.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "DEFAULTS.md",
+  "summary": "List of default technical choices for the kanban board frontend covering theming, forms, state, errors, CI, and package management.",
+  "scope": ["theme sync", "form handling", "validation", "client UI state", "error/observability reporting", "CI pipeline", "package manager"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 4,
+  "notes": ""
+}

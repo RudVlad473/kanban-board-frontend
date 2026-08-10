@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/tech/0004-openapi-mock-server.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "0004 — OpenAPI-contract mock/stub server",
+  "summary": "Chose MSW with hand-written resolvers for a stateful OpenAPI-contract mock server to test optimistic locking.",
+  "scope": ["mock server", "OpenAPI contract", "MSW", "Vitest Browser Mode", "Playwright E2E", "optimistic locking"],
+  "cross_refs": [],
+  "locked": true,
+  "precedence": 1,
+  "notes": "MANIFEST_TYPE=ADR provided, treated as authoritative. No explicit 'Status:' field, but 'Decision Outcome' with 'Chosen' and user confirmation ('accept') indicates Accepted status; locked=true accordingly."
+}

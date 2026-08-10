@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/CONTEXT.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Kanban Board",
+  "summary": "Defines the domain language for a Kanban board tool: Board, Column, Task, Subtask, Version, Activity Log, User, Theme.",
+  "scope": ["Board", "Column", "Task", "Subtask", "Version", "Activity Log", "User", "Theme"],
+  "cross_refs": ["docs/adr/domain/0001-single-owner-boards.md"],
+  "locked": false,
+  "precedence": 5,
+  "notes": ""
+}

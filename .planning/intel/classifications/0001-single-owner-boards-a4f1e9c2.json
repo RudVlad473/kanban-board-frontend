@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/domain/0001-single-owner-boards.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Boards are single-owner; no collaboration model exists yet",
+  "summary": "Confirms boards belong to exactly one user; multi-user collaboration is a distinct, unbuilt future concept.",
+  "scope": ["Board", "User", "ownership", "Collaborator", "membership", "permissions"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 2,
+  "notes": "No explicit Status field (Accepted/Proposed) present in document, so not marked locked despite ADR type."
+}

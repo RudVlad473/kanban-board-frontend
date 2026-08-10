@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/tech/0001-auth-session-storage.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "0001 — Auth session storage & handling",
+  "summary": "Chose httpOnly cookie via a Next.js Route Handler BFF proxy for auth session storage over in-memory or localStorage tokens.",
+  "scope": ["auth session storage", "httpOnly cookie", "Next.js Route Handler", "BFF proxy", "route-guard"],
+  "cross_refs": ["HIGH-LEVEL-ARCHITECTURE.md"],
+  "locked": true,
+  "precedence": 1,
+  "notes": ""
+}

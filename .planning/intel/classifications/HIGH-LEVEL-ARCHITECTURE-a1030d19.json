@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/HIGH-LEVEL-ARCHITECTURE.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "High-Level Architecture",
+  "summary": "Machine-parseable architecture spec classifying the app as spa/ssr-app/api-client and defining its write/read/build-time flow spine against a REST OpenAPI contract.",
+  "scope": ["board", "column", "task", "subtask", "kanban-board-openapi.json", "optimistic locking", "drag-and-drop", "authentication", "activity log", "mock backend"],
+  "cross_refs": ["kanban-board-openapi.json"],
+  "locked": false,
+  "precedence": 2,
+  "notes": ""
+}

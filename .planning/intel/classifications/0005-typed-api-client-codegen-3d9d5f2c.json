@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/tech/0005-typed-api-client-codegen.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "0005 — Typed API client / codegen from the OpenAPI spec",
+  "summary": "Chose openapi-typescript + openapi-fetch to generate a typed API client from the OpenAPI 3.1 contract.",
+  "scope": ["OpenAPI spec", "typed API client", "codegen", "openapi-typescript", "openapi-fetch", "TanStack Query", "CI drift-check"],
+  "cross_refs": ["ADR 0002"],
+  "locked": true,
+  "precedence": 1,
+  "notes": ""
+}

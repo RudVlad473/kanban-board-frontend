@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/domain/0002-hard-cascade-delete.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Deletion is a hard cascade with no soft-delete or undo",
+  "summary": "Deleting a Board, Column, Task, or Subtask cascades hard and immediately with no soft-delete, trash, or undo capability.",
+  "scope": ["deletion", "cascade delete", "Board", "Column", "Task", "Subtask", "soft-delete", "undo"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": 2,
+  "notes": "MANIFEST_TYPE=ADR applied; no frontmatter status field present, so not marked Accepted/locked despite manifest classification as ADR."
+}

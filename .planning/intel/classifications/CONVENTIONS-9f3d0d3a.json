@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/CONVENTIONS.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "CONVENTIONS",
+  "summary": "Imperative coding conventions and enforcement rules derived from confirmed ADR decisions in docs/adr/tech/.",
+  "scope": ["project organization", "auth", "data fetching", "mutations", "drag-and-drop", "mock server", "feature folders"],
+  "cross_refs": ["docs/adr/tech/0009", "docs/adr/tech/0001", "docs/adr/tech/0002", "docs/adr/tech/0003", "docs/adr/tech/0004", "docs/adr/tech/0005"],
+  "locked": false,
+  "precedence": 3,
+  "notes": ""
+}

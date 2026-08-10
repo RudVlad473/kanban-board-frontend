@@ -1,0 +1,22 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/PRD.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "PRD: Kanban Board Frontend",
+  "summary": "Verb-first, REQ-ID'd functional requirements (v1 and v2) for a solo-user kanban board frontend covering auth, boards, columns, tasks, subtasks, theme, and sync.",
+  "scope": ["authentication", "boards", "columns", "tasks", "subtasks", "theme", "sync", "activity log", "collaboration"],
+  "cross_refs": [
+    "HIGH-LEVEL-ARCHITECTURE.md",
+    "kanban-board-openapi.json",
+    "CONTEXT.md",
+    "docs/adr/domain/",
+    "docs/adr/domain/0002-hard-cascade-delete.md",
+    "docs/adr/tech/0002-client-data-fetching-strategy.md",
+    "TRIAGE.md",
+    "docs/adr/domain/0001-single-owner-boards.md"
+  ],
+  "locked": false,
+  "precedence": 4,
+  "notes": ""
+}

@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/Dev/Repos/kanban-board-frontend/docs/adr/tech/0006-production-hosting.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "0006 — Production hosting / deployment target",
+  "summary": "Chose Vercel as the production hosting/deployment platform over Netlify, Cloudflare Workers, and self-hosted Docker.",
+  "scope": ["production hosting", "deployment", "Vercel", "Next.js middleware", "auth route-guarding"],
+  "cross_refs": ["ADR 0001"],
+  "locked": true,
+  "precedence": 1,
+  "notes": ""
+}
