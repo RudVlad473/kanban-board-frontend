@@ -13,7 +13,8 @@
     "tokens:build": "node scripts/build-tokens.mjs",
     "prebuild": "pnpm tokens:build",
     "predev": "pnpm tokens:build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:browser": "vitest run --project browser"
   },
   "dependencies": {
     "next": "16.3.0",
@@ -22,9 +23,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.2",
     "@types/node": "20.19.43",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "@vitest/browser": "4.1.10",
+    "@vitest/browser-playwright": "4.1.10",
     "eslint": "10.8.1",
     "eslint-config-next": "16.3.0",
     "eslint-import-resolver-typescript": "4.4.5",
@@ -39,7 +44,8 @@
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
     "typescript-eslint": "8.66.0",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "vitest-browser-react": "2.2.0"
   },
   "packageManager": "pnpm@11.20.0"
 }
