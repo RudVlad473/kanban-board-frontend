@@ -639,9 +639,16 @@ token}` syntax confirmed directly against Style Dictionary's own docs page]
 | A4 | Vitest 4's Browser Mode Playwright provider requires exactly `@vitest/browser` + `@vitest/browser-playwright` as two separate packages (not a config-string provider on a single package) | Standard Stack, Test Harness table | If the actual current API is different (e.g., provider selection changed again in a patch release), the harness-setup task's install list and config would fail at `vitest run --browser` |
 | A5 | Husky v9+'s `pnpm exec husky init` + hand-edited `.husky/` files (no shebang) is still the current recommended setup as of Husky 9.1.7 | Standard Stack, Test Harness table | If a further Husky change occurred, the pre-commit hook setup task (D-24/D-26e) could produce a non-functional hook silently (commits would succeed without running lint-staged) |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Where is `kanban-board-openapi.json`?**
+> All four questions below were open at research time. Status as of plan-phase (2026-08-10):
+> #1 and #2 are resolved (files located and supplied — see notes on each). #3 and #4 are not
+> independently resolved by research, but are now closed via explicit plan-time decisions
+> (`checkpoint:decision` tasks) rather than remaining open — see each note.
+
+1. **Where is `kanban-board-openapi.json`?** — **RESOLVED.** Supplied by the user and placed at
+   `.planning/local-assets/kanban-board-openapi.json` (git-ignored, not committed). Consumed
+   directly by 01-UI-SPEC.md and by plan 01-10 (typed client generation).
    - What we know: HIGH-LEVEL-ARCHITECTURE.md and multiple ADRs (tech/0001, tech/0004, tech/0005)
      were written by reading this file directly during an earlier ingestion session — it clearly
      existed somewhere at that time, and its `/signup`/`/signin`/`PUT /users/me/theme` shapes are
@@ -654,7 +661,10 @@ token}` syntax confirmed directly against Style Dictionary's own docs page]
      generate from. Until then, Plan 2's Route Handler request/response shapes are a best-guess
      based on HIGH-LEVEL-ARCHITECTURE.md's prose description only.
 
-2. **Where is `kanban-task-management-web-app.pdf`?**
+2. **Where is `kanban-task-management-web-app.pdf`?** — **RESOLVED.** Supplied by the user and
+   placed at `.planning/local-assets/kanban-task-management-web-app.pdf` (git-ignored, not
+   committed). Mined into 01-UI-SPEC.md's Design System (page 1 is the only relevant page —
+   pages 2–73 are out-of-phase kanban-board screens).
    - What we know: D-03 requires every DTCG token value to be hand-transcribed from this file;
      HIGH-LEVEL-ARCHITECTURE.md confirms it was read via `pdftotext -layout` during an earlier
      session (110MB file, exceeded direct-PDF-read limits then too).
@@ -666,7 +676,13 @@ token}` syntax confirmed directly against Style Dictionary's own docs page]
      placeholder token values first, then have real values substituted once the PDF is located).
 
 3. **What is the exact shape of `POST /signup`'s bare-string response and `POST /signin`'s
-   undocumented 200 body?**
+   undocumented 200 body?** — **CLOSED via plan-time decision, not independently resolved.**
+   Open Question 1's file was located, and confirmed the ambiguity is real (not a missing-file
+   artifact): `POST /signin` documents a bare `200` with no body, `components.securitySchemes`
+   is null, and `GET|PUT /users/me/theme` require a caller-supplied `userId` query parameter with
+   no stated auth scheme. Plan 01-10 Task 1 is a `checkpoint:decision` that resolves this for
+   implementation purposes; threat `T-01-06` (IDOR) requires the id be derived only from
+   `verifySession()`, never trusted from the client.
    - What we know: HIGH-LEVEL-ARCHITECTURE.md's own Open Questions section flags this as
      unresolved; ADR tech/0001 deliberately chose httpOnly-cookie-via-BFF specifically because it
      "absorbs the backend's ambiguous response shape behind one boundary instead of leaking it
@@ -678,7 +694,9 @@ token}` syntax confirmed directly against Style Dictionary's own docs page]
      Plan 2 should not be planned at the Route-Handler-implementation level of detail — Plan 1's
      scope (per D-27) does not touch this, so it does not block Plan 1.
 
-4. **Which session library — `jose` or `iron-session`?**
+4. **Which session library — `jose` or `iron-session`?** — **CLOSED via plan-time decision.**
+   Plan 01-11 Task 1 is a `checkpoint:decision` covering this choice explicitly, rather than
+   leaving it as an open research question.
    - What we know: Both are Next.js's own documented recommendations; CONTEXT.md does not lock
      one (auth ADR tech/0001 only says "e.g. `jose`/`iron-session`" as an illustrative example,
      not a decision).

@@ -85,11 +85,17 @@ created: 2026-08-10
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < TBD (set after Wave 0 harness install)
-- [ ] `nyquist_compliant: true` set in frontmatter
+> Structural sign-off (plan-time) vs. runtime sign-off (post-execution, `/gsd-validate-phase`,
+> per the frontmatter's documented `status: draft → validated` lifecycle): the first four items
+> below are checkable now that plan-phase filled in real Task/Plan/Wave IDs; the last two require
+> an actual Wave 0 harness install to produce a measured value, so `nyquist_compliant` correctly
+> stays `false` until then — this is not an oversight.
 
-**Approval:** pending
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [ ] Feedback latency < TBD (set after Wave 0 harness install — plans 01-04/01-05)
+- [ ] `nyquist_compliant: true` set in frontmatter (deferred to `/gsd-validate-phase`, per the lifecycle note in the frontmatter above)
+
+**Approval:** structurally complete 2026-08-10 (plan-time); runtime validation pending execution
