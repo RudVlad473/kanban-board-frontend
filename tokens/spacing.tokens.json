@@ -1,0 +1,20 @@
+{
+  "space": {
+    "1": { "$type": "dimension", "$value": "4px" },
+    "2": { "$type": "dimension", "$value": "8px" },
+    "3": {
+      "$type": "dimension",
+      "$value": "12px",
+      "$description": "TextField/Dropdown internal vertical padding — a real step of the numeric scale, not a literal exception (plan 01-04 Decisions)"
+    },
+    "4": { "$type": "dimension", "$value": "16px" },
+    "6": { "$type": "dimension", "$value": "24px" },
+    "8": { "$type": "dimension", "$value": "32px" },
+    "12": { "$type": "dimension", "$value": "48px" },
+    "16": {
+      "$type": "dimension",
+      "$value": "64px",
+      "$description": "3xl page-level spacing — scale extended per plan 01-04 Decisions (UI-SPEC left this open)"
+    }
+  }
+}

@@ -10,7 +10,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "test": "echo \"no test runner installed yet — plan 01-04 adds vitest\" && exit 0"
+    "tokens:build": "node scripts/build-tokens.mjs",
+    "prebuild": "pnpm tokens:build",
+    "predev": "pnpm tokens:build",
+    "test": "vitest run"
   },
   "dependencies": {
     "next": "16.3.0",
@@ -32,9 +35,11 @@
     "lint-staged": "17.3.0",
     "prettier": "3.9.6",
     "prettier-plugin-tailwindcss": "0.8.1",
+    "style-dictionary": "5.5.1",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.66.0"
+    "typescript-eslint": "8.66.0",
+    "vitest": "4.1.10"
   },
   "packageManager": "pnpm@11.20.0"
 }
