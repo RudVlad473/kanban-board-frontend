@@ -1,0 +1,15 @@
+- path: docs/adr/tech/*.md
+  type: adr
+  precedence: 100
+- path: docs/adr/domain/*.md
+  type: adr
+  precedence: 90
+- path: CONVENTIONS.md
+  type: doc
+  precedence: 30
+- path: DEFAULTS.md
+  type: doc
+  precedence: 20
+- path: CONTEXT.md
+  type: doc
+  precedence: 10      # glossary, NOT a decision source

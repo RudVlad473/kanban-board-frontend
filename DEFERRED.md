@@ -1,0 +1,2 @@
+- C-006 Activity-log pagination UI pattern — the screen has no corresponding mock at all (HIGH-LEVEL-ARCHITECTURE.md Open Questions item 1). Trigger: a UI design pass covers the activity-log screen.
+- C-016 Contract-drift detection tooling — no real backend exists yet to drift against. Trigger: the real backend is deployed and an undetected OpenAPI contract change causes a frontend break.
