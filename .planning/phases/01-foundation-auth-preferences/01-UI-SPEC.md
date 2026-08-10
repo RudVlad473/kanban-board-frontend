@@ -204,7 +204,7 @@ request/response shapes, not placeholders.
 > Empty-state and error-state COPY live in `## Copywriting Contract` above — this section covers
 > state coverage and REFERENCES those rows rather than restating the copy (de-dup).
 
-Applicable state considerations resolved: 3 covered, 4 backstop, 3 unresolved
+Applicable state considerations resolved: 4 covered, 4 backstop, 3 unresolved
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
