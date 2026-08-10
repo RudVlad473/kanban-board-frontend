@@ -1,0 +1,24 @@
+@theme {
+  --spacing: 4px;
+  --font-heading-xl: Plus Jakarta Sans;
+  --text-heading-xl: 24px;
+  --font-weight-heading-xl: 700;
+  --leading-heading-xl: 30px;
+  --font-heading-l: Plus Jakarta Sans;
+  --text-heading-l: 18px;
+  --font-weight-heading-l: 700;
+  --leading-heading-l: 23px;
+  --font-heading-s: Plus Jakarta Sans;
+  --text-heading-s: 12px;
+  --font-weight-heading-s: 700;
+  --leading-heading-s: 15px;
+  --tracking-heading-s: 2.4px;
+  --font-body-l: Plus Jakarta Sans;
+  --text-body-l: 13px;
+  --font-weight-body-l: 500;
+  --leading-body-l: 23px;
+  --font-body-m: Plus Jakarta Sans;
+  --text-body-m: 12px;
+  --font-weight-body-m: 700;
+  --leading-body-m: 15px;
+}
