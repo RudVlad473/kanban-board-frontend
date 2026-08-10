@@ -49,6 +49,11 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      sign-out/sign-in and browser refresh.
   5. The app is live on Vercel (Preview + Production) with a working sign-in page, running
      against the MSW-mocked API, with lint/test CI green.
+  6. A token-driven primitives library (Button, IconButton, TextField, Checkbox, Switch,
+     Dropdown, Modal) exists — built from DTCG JSON via Style Dictionary into Tailwind v4
+     tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
+     passing axe-core checks, and a Playwright visual-regression baseline — and is built
+     before any auth/theme feature work consumes it.
 **Plans**: TBD
 **UI hint**: yes
 
