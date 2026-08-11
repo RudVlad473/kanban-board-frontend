@@ -202,6 +202,19 @@ const eslintConfig = defineConfig([
         },
     },
 
+    // 7b. Storybook stories are dev-only demonstration fixtures, never imported by production
+    // code (Storybook's own build entry point globs *.stories.tsx directly) — a story composing a
+    // sibling primitive for a realistic preview (e.g. Modal's footer stories composing Button) is
+    // not the same "ui" primitives silently coupling to each other at runtime that policy 7 exists
+    // to prevent. Scoped to *.stories.tsx only; modal.tsx itself (and every other primitive's own
+    // implementation file) still cannot import a sibling primitive.
+    {
+        files: ["src/components/ui/**/*.stories.tsx"],
+        rules: {
+            "boundaries/dependencies": "off",
+        },
+    },
+
     // 8. Tailwind class-order/validity linting (ADR tech/0007). cssConfigPath must point at this
     // project's actual Tailwind v4 entry stylesheet (src/styles/globals.css per CONVENTIONS.md) —
     // the plugin's own default ("src/style.css") doesn't exist in this repo and crashes otherwise.

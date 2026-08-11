@@ -59,10 +59,29 @@ const storyIds = [
     "components-ui-dropdown--disabled-item",
     "components-ui-dropdown--disabled",
     "components-ui-dropdown--long-item-list",
+    // Modal (plan 01-09, Task 1) — five stories, the seventh and final primitive (D-13/D-28).
+    "components-ui-modal--open",
+    "components-ui-modal--with-description",
+    "components-ui-modal--with-footer-actions",
+    "components-ui-modal--long-content",
+    "components-ui-modal--closed",
 ];
 
 async function gotoStory(page: Page, url: string) {
     await page.goto(url);
+    // Modal is the one primitive whose actual visible surface does not live inside
+    // #storybook-root at all: Base UI's Dialog.Portal (D-15) renders the Backdrop/Popup into
+    // document.body by design, so an open Modal story's #storybook-root child is just its
+    // (visually empty) Trigger button — screenshotting that would produce a meaningless baseline.
+    // Prefer the portalled `[role="dialog"]` element when present; every other primitive (none of
+    // which render role="dialog") falls through to the pre-existing #storybook-root behavior
+    // unchanged.
+    const dialog = page.locator('[role="dialog"]');
+    if ((await dialog.count()) > 0) {
+        const dialogRoot = dialog.first();
+        await dialogRoot.waitFor({ state: "visible" });
+        return dialogRoot;
+    }
     // #storybook-root itself is a full-width block (its own bounding box stretches to the
     // viewport regardless of content), so the screenshot target is its first real child — the
     // story's own single root element (every story here renders one root: a bare primitive, or
