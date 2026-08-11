@@ -123,6 +123,10 @@ src/
 - **For now, that scope is further narrowed to `components/ui/` primitives only** — feature-level components (auth forms, theme toggle, and future boards/columns/tasks UI) get Storybook stories and axe/behavioral coverage as normal but no `visual/*.visual.spec.ts` entry or baseline generation, pending a separate deliberate decision to extend coverage. Enforcement: code review; `visual/primitives.visual.spec.ts` is the only visual-regression spec file expected to exist until that decision is made.
 - `.github/workflows/visual-baselines.yml`'s `workflow_dispatch` has no branch restriction and `--update-snapshots` overwrites baselines unconditionally with no review step — treat any dispatch as capable of committing a bug as the new "correct" baseline until guardrails exist (tracked as a todo). Enforcement: none yet — procedural discipline only; do not dispatch against a branch whose visual output hasn't already been reviewed.
 
+## Enum-like constants (docs/adr/tech/0012)
+
+- Declare enum-like sets of string values as a `const` object literal with `as const`, keys mirroring their own string values (e.g. `export const DEVICE_TYPE = { MOBILE: "MOBILE", DESKTOP: "DESKTOP" } as const;`), never TypeScript's `enum` keyword. Derive the corresponding type from the object (`(typeof X)[keyof typeof X]`) rather than declaring it separately. Enforcement: code review. Does not apply retroactively to existing component prop string-literal unions (e.g. Button's `variant`/`size`) — only to standalone enum-like constants meant to be iterated or referenced by a shared runtime value.
+
 ## Prerequisites
 
 - 0009 (project organization) before implementation of every other decision begins — 0001-0008 each produce files (a Route Handler, hooks, components, mock handlers) that need a defined home; the placement rule has to exist first or the first real file written has nowhere correct to go.
