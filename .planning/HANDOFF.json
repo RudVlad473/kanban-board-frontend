@@ -1,0 +1,102 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-08-11T21:18:56.302Z",
+  "phase": "01",
+  "phase_name": "foundation-auth-preferences",
+  "phase_dir": ".planning/phases/01-foundation-auth-preferences",
+  "plan": 9,
+  "task": 2,
+  "total_tasks": 2,
+  "status": "paused",
+  "completed_tasks": [
+    {
+      "id": 1,
+      "name": "Modal compound component",
+      "status": "done",
+      "commit": "d57121b (in worktree branch worktree-agent-ab844e7ebfe879b9c)"
+    },
+    {
+      "id": "1b",
+      "name": "8 rounds of checkpoint-review remediation (bugs, mobile-first retrofit, test/lint conventions) — all in the same worktree, not yet merged",
+      "status": "done",
+      "commit": "97287a8 (HEAD of worktree-agent-ab844e7ebfe879b9c)"
+    }
+  ],
+  "remaining_tasks": [
+    {
+      "id": 2,
+      "name": "Design-system library sign-off (checkpoint:human-verify, gate=blocking)",
+      "status": "blocked_on_human"
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Task 2 is a blocking human-verify checkpoint: a real person must run `pnpm storybook` from the worktree and visually compare against the Figma PDF export. This cannot be automated or approved by an agent.",
+      "type": "human_action",
+      "workaround": "none — this is the actual gate"
+    },
+    {
+      "description": "One open design decision from mid-session discussion (story-args reuse in tests: light `args` import vs Storybook's `composeStories`) was never answered by the user — orchestrator recommended the light-args-import approach and is waiting on confirmation before queuing it as a 9th remediation round.",
+      "type": "human_action",
+      "workaround": "none — waiting on user's call"
+    }
+  ],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {
+      "action": "cd into C:/Dev/Repos/kanban-board-frontend/.claude/worktrees/agent-ab844e7ebfe879b9c, run `pnpm storybook`, open http://localhost:6006, and visually compare against .planning/local-assets/kanban-task-management-web-app.pdf (page 1) per the 6 checks in 01-09-PLAN.md's Task 2 (color/theme, radius/shadow, button label size, error states, keyboard-only, accessibility panel)",
+      "context": "This is the only thing blocking merge to master and the start of wave 10 (mock backend). Everything else in the phase is queued behind it.",
+      "blocking": true
+    },
+    {
+      "action": "Answer: for reusing Storybook story args inside behavioral tests, light `args`-object import (recommended by orchestrator) or Storybook's `composeStories`?",
+      "context": "Raised mid-session, not yet answered. Not blocking the checkpoint review itself, but blocks queuing round 9 if the user wants it done before merge.",
+      "blocking": false
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "SEED-001: defer animation-library spike (Framer Motion/Motion for React) to Phase 2+ polish pass",
+      "rationale": "User raised it as a later-stage idea, not tied to Phase 1",
+      "phase": "01"
+    },
+    {
+      "decision": "ADR tech/0010: mobile-first CSS + dual mobile/desktop Storybook story coverage, retrofit onto all 7 already-shipped primitives before continuing past wave 9",
+      "rationale": "Direct user decision during 01-09 checkpoint review; user chose the largest-scope option (retrofit all 7 now) when asked",
+      "phase": "01"
+    },
+    {
+      "decision": "ADR tech/0011: visual-regression baseline generation scoped to components/ui/ primitives only, for now — feature components (auth forms, theme toggle) get stories/axe/behavioral coverage but no *.visual.spec.ts entry or CI baselines until a separate decision extends scope",
+      "rationale": "Cost/performance concern raised by user; plans 01-12 and 01-14 were amended to drop their visual/auth.visual.spec.ts and visual/theme.visual.spec.ts deliverables accordingly",
+      "phase": "01"
+    },
+    {
+      "decision": "ADR tech/0012: enum-like constants declared as `const X = { KEY: \"KEY\" } as const` with a derived `(typeof X)[keyof typeof X]` type — never TS's native `enum`",
+      "rationale": "Direct user-specified pattern, now the standing convention for all future enum-like values",
+      "phase": "01"
+    },
+    {
+      "decision": "ADR tech/0013: new src/types/ placement-rule destination for domain-agnostic runtime-free type declarations; first trait ClassNameProp, composed via intersection, retrofitted across all 13-14 inline `{ className?: string }` occurrences",
+      "rationale": "User wanted the className prop type deduplicated and made composable/reusable",
+      "phase": "01"
+    },
+    {
+      "decision": "ADR tech/0014: every primitive's *entire* *.test.tsx suite runs at both viewports via describeForEachDevice (not just hand-picked assertions) — retroactive to all 7 primitives and standing convention for all future components; new src/test-utils/ placement-rule destination",
+      "rationale": "User explicitly wants this as blanket coverage/regression net, confirmed the ~2x test-runtime cost is accepted",
+      "phase": "01"
+    },
+    {
+      "decision": "ADR tech/0015: every function is `export const foo = () => {}`, never a `function` declaration/expression (except Next.js-forced default-export files, which use a two-line const-then-export-default pattern) — enforced via eslint-plugin-prefer-arrow-functions + func-style",
+      "rationale": "Direct user style preference, now standing convention, autofix-enforced",
+      "phase": "01"
+    },
+    {
+      "decision": "Captured a todo (not yet implemented): guard visual-baselines.yml against corrupting screenshot baselines — no branch restriction, unconditional overwrite, no review step, and master has zero branch protection",
+      "rationale": "Surfaced while explaining the visual-regression pipeline's drift-detection mechanics to the user; real risk, not hypothetical (the unmerged worktree currently has fixed-and-unfixed visual state that would poison baselines if dispatched against)",
+      "phase": "01"
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Resume by presenting the 01-09 Task 2 checkpoint to the user again (content is in .planning/phases/01-foundation-auth-preferences/01-09-PLAN.md's Task 2 block) and wait for a real 'approved' or a list of corrections. Do NOT try to SendMessage the old background agent id (ab844e7ebfe879b9c / a57ab9fa9ac2e65cb) — it was scoped to the prior session and will not resolve in a new one. Instead: inspect the worktree directly (git -C .claude/worktrees/agent-ab844e7ebfe879b9c log/status) to confirm state, and if further remediation is needed, spawn a FRESH Agent(subagent_type='gsd-executor') pointed at that same existing worktree path (do not create a new worktree) with full context re-established from this handoff plus the worktree's own git log.",
+  "context_notes": "This session ran 8 rounds of checkpoint-review remediation on plan 01-09 (Modal), all inside one isolated git worktree at .claude/worktrees/agent-ab844e7ebfe879b9c (branch worktree-agent-ab844e7ebfe879b9c), forked from master at 7b41f4d. Every round was verified clean (vitest browser + storybook/axe, lint, tsc, format) before stopping again at the same Task 2 human-verify checkpoint — nothing has been auto-approved. In parallel, 6 new ADRs (0010-0015) plus a seed and a todo were written directly to master and pushed (master is now at ae05ca4, 8 commits ahead of where this phase started). The worktree itself has NOT been pushed anywhere and has NOT been merged — it exists only locally. Plans 01-12 and 01-14 (not yet executed, several waves out) were amended in-place on master to match ADR 0011's narrowed visual-regression scope. The actual bottleneck the whole session has been building toward is unchanged: a human needs to physically look at Storybook and compare against the Figma PDF before any of this can merge and wave 10 can start."
+}
