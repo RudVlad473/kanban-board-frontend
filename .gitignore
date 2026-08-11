@@ -24,6 +24,15 @@ dist-ssr
 # Local-only reference assets (not committed — large binaries / external specs)
 .planning/local-assets/
 
+# Test/build artifacts (harness — plan 01-05)
+test-results/
+playwright-report/
+.vitest-attachments/
+# Vitest Browser Mode's own failure screenshots, co-located next to the failing test file — not
+# the committed Playwright visual-regression baselines under visual/__screenshots__ (Task 3).
+src/**/__screenshots__/
+storybook-static/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

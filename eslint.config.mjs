@@ -70,6 +70,15 @@ const eslintConfig = defineConfig([
     },
   },
 
+  // 4b. `type` over `interface` by default (D-26i) — stylisticTypeChecked's own default prefers
+  // `interface`, the opposite of this project's convention; override explicitly rather than
+  // rewriting every object-shape type alias as an interface.
+  {
+    rules: {
+      "@typescript-eslint/consistent-type-definitions": ["error", "type"],
+    },
+  },
+
   // 5. Import order/grouping (D-26p), with the TS path-alias resolver so internal aliases
   // resolve correctly instead of reporting as unresolved. eslint-plugin-import@2.32.0's
   // import/order fixer calls `sourceCode.getTokenOrCommentBefore`, a legacy SourceCode method
@@ -122,6 +131,10 @@ const eslintConfig = defineConfig([
       "next.config.ts",
       "*.config.{ts,mjs,js}",
       "**/*.stories.tsx",
+      // Storybook's own framework-forced default-export files (main config + preview config),
+      // same category as next.config.ts above.
+      ".storybook/main.ts",
+      ".storybook/preview.ts",
     ],
     rules: {
       "import-x/no-default-export": "off",

@@ -7,6 +7,7 @@ storybook-static/
 coverage/
 test-results/
 **/*-snapshots/
+visual/__screenshots__/
 
 # GSD planning/governance docs — pre-existing, orchestrator-owned (STATE.md/ROADMAP.md) or
 # predate this plan's scope; not part of the frontend application scaffold this plan formats.
