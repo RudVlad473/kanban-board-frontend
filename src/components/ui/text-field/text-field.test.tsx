@@ -98,6 +98,43 @@ describe("TextField", () => {
         ).toBe(true);
     });
 
+    it("shows a trailing-edge fade only once the value overflows the field, including on live typing", async () => {
+        // Arrange — a Safari-address-bar-style affordance signalling more content exists
+        // off-screen. It must stay absent for short/fitting content (no visual noise over normal
+        // fields) and appear once the value actually overflows, including as the user types past
+        // the field's width (a native input's own `.value` change is invisible to the hook's
+        // internal MutationObserver, so the fix wires an explicit `onInput` recheck).
+        const getFade = (container: HTMLElement) => container.querySelector('[aria-hidden="true"].bg-linear-to-r');
+
+        const short = await render(
+            <div style={{ width: "320px" }}>
+                <TextField label="Short value" defaultValue="hi" />
+            </div>,
+        );
+        await expect.poll(() => getFade(short.container)).toBeNull();
+
+        const long = await render(
+            <div style={{ width: "320px" }}>
+                <TextField label="Long value" defaultValue={"x".repeat(300)} />
+            </div>,
+        );
+        await expect.poll(() => getFade(long.container)).not.toBeNull();
+
+        const typing = await render(
+            <div style={{ width: "320px" }}>
+                <TextField label="Typed value" />
+            </div>,
+        );
+        const input = typing.getByRole("textbox", { name: "Typed value" });
+        expect(getFade(typing.container)).toBeNull();
+
+        // Act
+        await userEvent.type(input.element(), "x".repeat(200));
+
+        // Assert
+        await expect.poll(() => getFade(typing.container)).not.toBeNull();
+    });
+
     it("holds its rendered width against a 300-character value instead of expanding or wrapping the layout", async () => {
         // Arrange — distinct labels keep each render's locator query unambiguous, since
         // locators resolve against the full page rather than a single render's own container.

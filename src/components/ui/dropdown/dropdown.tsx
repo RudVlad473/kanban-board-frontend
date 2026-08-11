@@ -4,6 +4,7 @@ import { cva } from "class-variance-authority";
 import { Check, ChevronDown } from "lucide-react";
 import { createContext, useContext, useId, type ReactNode } from "react";
 
+import { useOverflowFade } from "@/hooks/use-overflow-fade";
 import { cn } from "@/lib/cn";
 
 // D-19: Dropdown's public shape mirrors Base UI's own Select composition — Root/Trigger/Content/
@@ -66,17 +67,36 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
     // must be wired in explicitly via `aria-labelledby`, or the trigger has no accessible name
     // at all despite rendering visible text.
     const valueId = useId();
+    // A trailing-edge fade signals that more of the selected label exists off-screen once it
+    // overflows — the same Safari-address-bar affordance TextField's input gets. `Select.Value`
+    // forwards its ref to the underlying `<span>`, so the hook observes it directly; a re-render
+    // that swaps the rendered label text (a real DOM text-node change) is exactly what the hook's
+    // internal `MutationObserver` catches, no extra wiring needed on selection change.
+    const { ref: overflowRef, isOverflowing } = useOverflowFade<HTMLSpanElement>();
     return (
         <Select.Trigger
             aria-labelledby={valueId}
             className={cn(triggerVariants({ state: hasError ? "error" : "default" }), className)}
             {...props}
         >
-            <Select.Value
-                id={valueId}
-                placeholder={placeholder}
-                className="truncate text-left text-text-primary data-[placeholder]:text-text-muted"
-            />
+            {/* `min-w-0` lets this flex item actually shrink below its content's min-content size
+                (a flex item's default `min-width: auto` would otherwise block it) — required for
+                both the existing `truncate` backstop and the overflow fade below to have a bounded
+                box to measure against, rather than pushing the trigger wider than its own anchor. */}
+            <span className="relative min-w-0 flex-1 overflow-hidden">
+                <Select.Value
+                    ref={overflowRef}
+                    id={valueId}
+                    placeholder={placeholder}
+                    className="block truncate text-left text-text-primary data-[placeholder]:text-text-muted"
+                />
+                {isOverflowing ? (
+                    <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-linear-to-r from-transparent to-bg-surface"
+                    />
+                ) : null}
+            </span>
             <Select.Icon className="text-text-muted">
                 <ChevronDown aria-hidden="true" className="size-4" />
             </Select.Icon>

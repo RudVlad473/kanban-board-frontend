@@ -146,6 +146,42 @@ describe("Dropdown", () => {
         expect(borderColor).toBe("rgb(201, 63, 60)");
     });
 
+    it("shows a trailing-edge fade on the trigger only once the selected label overflows it", async () => {
+        // Arrange — same Safari-address-bar affordance as TextField's, over the trigger's
+        // rendered selected-value label. `Select.Value` falls back to the raw `value` string as
+        // its own label until a matching `Dropdown.Item` registers a different one, which is a
+        // convenient way to force a genuinely long rendered label without depending on that
+        // registration timing.
+        const getFade = (container: HTMLElement) => container.querySelector('[aria-hidden="true"].bg-linear-to-r');
+        const longValue = "A very long board name that will definitely overflow the trigger width";
+
+        const short = await render(
+            <div style={{ width: "200px" }}>
+                <Dropdown.Root defaultValue="todo">
+                    <Dropdown.Trigger placeholder="Select a status" />
+                    <Dropdown.Content>
+                        <Dropdown.Item value="todo">Todo</Dropdown.Item>
+                    </Dropdown.Content>
+                </Dropdown.Root>
+            </div>,
+        );
+        await expect.poll(() => getFade(short.container)).toBeNull();
+
+        const long = await render(
+            <div style={{ width: "150px" }}>
+                <Dropdown.Root defaultValue={longValue}>
+                    <Dropdown.Trigger placeholder="Select a board" />
+                    <Dropdown.Content>
+                        <Dropdown.Item value={longValue}>{longValue}</Dropdown.Item>
+                    </Dropdown.Content>
+                </Dropdown.Root>
+            </div>,
+        );
+
+        // Assert
+        await expect.poll(() => getFade(long.container)).not.toBeNull();
+    });
+
     it("makes an isDisabled item unselectable and skipped by arrow navigation", async () => {
         // Arrange
         const onValueChange = vi.fn();

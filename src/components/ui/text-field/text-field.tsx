@@ -1,7 +1,9 @@
 import { Field } from "@base-ui/react/field";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
+import { useEffect } from "react";
 
+import { useOverflowFade } from "@/hooks/use-overflow-fade";
 import { cn } from "@/lib/cn";
 
 // Composite typography classes follow button.tsx's established pattern (plan 01-06): the
@@ -58,8 +60,22 @@ export const TextField = ({
     trailing,
     className,
     type = "text",
+    onInput,
     ...props
 }: Props) => {
+    // A trailing-edge fade signals that more of the value exists off-screen once it overflows the
+    // input's own box — the Safari-address-bar affordance for the horizontal-scroll backstop the
+    // input already gets natively. `recheck` covers keystrokes (a native input's own `.value`
+    // changing isn't a DOM mutation the hook's internal MutationObserver can see, and the input's
+    // box doesn't resize as the value grows) and the effect below covers controlled `value`
+    // updates that never fire a native input event at all.
+    const { ref: overflowRef, isOverflowing, recheck } = useOverflowFade<HTMLInputElement>();
+
+    useEffect(() => {
+        recheck();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the controlled value only; `recheck` is a stable identity from the hook.
+    }, [props.value]);
+
     return (
         // Field.Root/Field.Label/Field.Control/Field.Description/Field.Error wire up label
         // association, `aria-invalid` and `aria-describedby` from the library rather than
@@ -71,6 +87,7 @@ export const TextField = ({
             </Field.Label>
             <div className="relative">
                 <Field.Control
+                    ref={overflowRef}
                     type={type}
                     className={cn(
                         textFieldVariants({
@@ -80,8 +97,21 @@ export const TextField = ({
                         }),
                         className,
                     )}
+                    onInput={(event) => {
+                        onInput?.(event);
+                        recheck();
+                    }}
                     {...props}
                 />
+                {isOverflowing ? (
+                    <span
+                        aria-hidden="true"
+                        className={cn(
+                            "pointer-events-none absolute inset-y-0 w-8 rounded-r-md bg-linear-to-r from-transparent to-bg-surface",
+                            trailing ? "right-11" : "right-0",
+                        )}
+                    />
+                ) : null}
                 {trailing ? <span className="absolute inset-y-0 right-3 flex items-center">{trailing}</span> : null}
             </div>
             {description ? (

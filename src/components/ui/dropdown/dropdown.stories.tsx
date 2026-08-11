@@ -67,6 +67,27 @@ export const Disabled: Story = {
     },
 };
 
+// Mirrors TextField's LongValue story: a selected label long enough to overflow the trigger's
+// own width shows the trailing-edge overflow fade (the trigger is narrowed via a wrapping style
+// to force the overflow, the same technique TextField's LongValue story uses).
+export const LongSelectedValue: Story = {
+    args: {
+        defaultValue: "A very long board name that will definitely overflow the trigger width",
+    },
+    render: (args) => (
+        <div style={{ width: "220px" }}>
+            <Dropdown.Root {...args}>
+                <Dropdown.Trigger placeholder="Select a board" />
+                <Dropdown.Content>
+                    <Dropdown.Item value="A very long board name that will definitely overflow the trigger width">
+                        A very long board name that will definitely overflow the trigger width
+                    </Dropdown.Item>
+                </Dropdown.Content>
+            </Dropdown.Root>
+        </div>
+    ),
+};
+
 export const LongItemList: Story = {
     args: {
         defaultOpen: true,
