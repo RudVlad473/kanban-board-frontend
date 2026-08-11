@@ -43,6 +43,14 @@ const storyIds = [
     "components-ui-checkbox--disabled",
     "components-ui-checkbox--sizes",
     "components-ui-checkbox--checked-with-strikethrough",
+    // Switch (plan 01-08, Task 1) — seven stories.
+    "components-ui-switch--off",
+    "components-ui-switch--on",
+    "components-ui-switch--hover",
+    "components-ui-switch--focus",
+    "components-ui-switch--disabled",
+    "components-ui-switch--sizes",
+    "components-ui-switch--with-icons",
 ];
 
 async function gotoStory(page: Page, url: string) {
