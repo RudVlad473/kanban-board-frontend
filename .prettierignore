@@ -11,15 +11,9 @@ visual/__screenshots__/
 
 # GSD planning/governance docs — pre-existing, orchestrator-owned (STATE.md/ROADMAP.md) or
 # predate this plan's scope; not part of the frontend application scaffold this plan formats.
+# One-time pipeline artifacts (CONTEXT.md, DEFAULTS.md, DEFERRED.md, HIGH-LEVEL-ARCHITECTURE.md,
+# PRD.md, PROPOSITIONS.md, SPIKES.md, TRIAGE.md, ingest.yaml) live under docs/planning-history/,
+# already covered by the docs/ entry below.
 .planning/
 docs/
-CONTEXT.md
 CONVENTIONS.md
-DEFAULTS.md
-DEFERRED.md
-HIGH-LEVEL-ARCHITECTURE.md
-PRD.md
-PROPOSITIONS.md
-SPIKES.md
-TRIAGE.md
-ingest.yaml
