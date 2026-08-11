@@ -227,6 +227,11 @@ None - no external service configuration required.
 - **Blocker for `/gsd-ship` (or any `windows_enforce`-gated step):** two open `.planning/WINDOWS.md` entries — CI's visual job needs the `visual-baselines.yml` workflow dispatched once real code exists on `master` (id 1), and the token pipeline's font-weight naming collision should be fixed at the root in a future plan (id 2). Neither blocks this plan's own correctness; both are pre-existing/cross-plan concerns now made visible.
 - Plan 01-07 (TextField) should reuse `cn.ts` as-is and can lean on the now-fixed typography class-group registration without rediscovering the same tailwind-merge bug.
 
+## Self-Check: PASSED
+
+All claimed files verified present on disk; all three commit hashes (`1284a2b`, `923c572`,
+`06aff60`) verified present in `git log --oneline --all`.
+
 ---
 *Phase: 01-foundation-auth-preferences*
 *Completed: 2026-08-11*
