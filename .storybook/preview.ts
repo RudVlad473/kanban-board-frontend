@@ -5,6 +5,15 @@ import "../src/styles/globals.css";
 import * as a11yAddonAnnotations from "@storybook/addon-a11y/preview";
 import { definePreview } from "@storybook/nextjs-vite";
 
+// ADR tech/0010: two named viewports matching this project's own breakpoint tokens
+// (src/styles/tokens.css `--breakpoint-sm`/`--breakpoint-lg`, DTCG `breakpoint.mobile`/
+// `breakpoint.desktop`) rather than Storybook's built-in device presets (iPhone X, iPad, ...),
+// which don't line up with the tokens mobile-first CSS is actually written against. The
+// `viewport` parameter/global is Storybook core in this version (10.5.7) — no separate addon
+// package needed, only this configuration.
+const MOBILE_VIEWPORT = "mobile";
+const DESKTOP_VIEWPORT = "desktop";
+
 export default definePreview({
     addons: [a11yAddonAnnotations],
     parameters: {
@@ -18,6 +27,20 @@ export default definePreview({
                     // page landmarks (<main>/<nav>/etc.) to violate, so "region" is a guaranteed
                     // false-positive here, not a real accessibility gap.
                     region: { enabled: false },
+                },
+            },
+        },
+        viewport: {
+            options: {
+                [MOBILE_VIEWPORT]: {
+                    name: "Mobile (375px, breakpoint.mobile)",
+                    styles: { width: "375px", height: "667px" },
+                    type: "mobile",
+                },
+                [DESKTOP_VIEWPORT]: {
+                    name: "Desktop (1440px, breakpoint.desktop)",
+                    styles: { width: "1440px", height: "900px" },
+                    type: "desktop",
                 },
             },
         },
@@ -38,6 +61,10 @@ export default definePreview({
     },
     initialGlobals: {
         theme: "light",
+        // Desktop by default, matching every existing story's implicit pre-ADR-0010 rendering —
+        // a story opts into `MOBILE_VIEWPORT` explicitly via its own `globals.viewport` override
+        // (see e.g. button.stories.tsx's `Mobile` story) rather than every story needing one.
+        viewport: DESKTOP_VIEWPORT,
     },
     decorators: [
         (Story, context) => {
