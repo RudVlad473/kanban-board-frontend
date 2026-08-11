@@ -8,9 +8,11 @@ import { defineConfig } from "vitest/config";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
-// Derive the `@/...` Vite/Vitest resolve aliases from tsconfig.json's own `compilerOptions.paths`
-// instead of restating the five aliases by hand — an alias added later to tsconfig.json is picked
-// up here automatically, so the two files can never drift apart.
+/*
+ * Derive the `@/...` Vite/Vitest resolve aliases from tsconfig.json's own `compilerOptions.paths`
+ * instead of restating the five aliases by hand — an alias added later to tsconfig.json is picked
+ * up here automatically, so the two files can never drift apart.
+ */
 type TsconfigShape = {
     compilerOptions: { paths: Record<string, string[]> };
 };
@@ -51,12 +53,14 @@ export default defineConfig({
             {
                 resolve: { alias },
                 test: {
-                    // jsdom, not real-browser: for pure logic/hook tests with no CSS layout or
-                    // paint dependency (e.g. React Testing Library + user-event). Component tests
-                    // that assert computed styles (variant/size CSS, axe-core) belong in the
-                    // "browser" project above instead — jsdom fakes computed styles from declared
-                    // rules rather than actually resolving Tailwind's custom-property-driven
-                    // values, so it can't stand in for real rendering there.
+                    /*
+                     * jsdom, not real-browser: for pure logic/hook tests with no CSS layout or
+                     * paint dependency (e.g. React Testing Library + user-event). Component tests
+                     * that assert computed styles (variant/size CSS, axe-core) belong in the
+                     * "browser" project above instead — jsdom fakes computed styles from declared
+                     * rules rather than actually resolving Tailwind's custom-property-driven
+                     * values, so it can't stand in for real rendering there.
+                     */
                     name: "unit",
                     environment: "jsdom",
                     include: ["src/**/*.unit.test.{ts,tsx}"],

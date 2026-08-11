@@ -1,8 +1,10 @@
-// Minimal static file server for the Playwright visual-regression webServer entry (Task 3, plan
-// 01-05). Serves only the built storybook-static directory over plain HTTP — no framework, no
-// new dependency, just node:http/node:fs — since the visual spec must read exclusively from the
-// pre-built static Storybook, never a running application (CONVENTIONS.md's visual-regression
-// scope).
+/*
+ * Minimal static file server for the Playwright visual-regression webServer entry (Task 3, plan
+ * 01-05). Serves only the built storybook-static directory over plain HTTP — no framework, no
+ * new dependency, just node:http/node:fs — since the visual spec must read exclusively from the
+ * pre-built static Storybook, never a running application (CONVENTIONS.md's visual-regression
+ * scope).
+ */
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";

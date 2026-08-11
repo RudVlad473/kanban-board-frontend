@@ -61,8 +61,10 @@ describe("Checkbox", () => {
         // Act
         await checkbox.click();
 
-        // Assert — the callback fires with the intended next value, but the rendered state stays
-        // unchecked because the parent never fed `isChecked` back in (a real controlled component).
+        /*
+         * Assert — the callback fires with the intended next value, but the rendered state stays
+         * unchecked because the parent never fed `isChecked` back in (a real controlled component).
+         */
         expect(onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
         await expect.element(checkbox).toHaveAttribute("aria-checked", "false");
     });
@@ -81,12 +83,14 @@ describe("Checkbox", () => {
     });
 
     it("does not shift the control's position when toggled from unchecked to checked", async () => {
-        // Arrange — the wrapping Field.Root is `inline-flex`, so it participates in its parent's
-        // inline formatting context and is baseline-aligned by default. An empty flex item (the
-        // checkbox root before its tick-mark indicator mounts) and a non-empty one (after) can
-        // resolve to different baselines, shifting the whole control vertically purely from the
-        // indicator mounting — the root's own box size never changes, only its position. `align-top`
-        // on Field.Root removes the baseline dependency entirely; this test guards the regression.
+        /*
+         * Arrange — the wrapping Field.Root is `inline-flex`, so it participates in its parent's
+         * inline formatting context and is baseline-aligned by default. An empty flex item (the
+         * checkbox root before its tick-mark indicator mounts) and a non-empty one (after) can
+         * resolve to different baselines, shifting the whole control vertically purely from the
+         * indicator mounting — the root's own box size never changes, only its position. `align-top`
+         * on Field.Root removes the baseline dependency entirely; this test guards the regression.
+         */
         const screen = await render(<Checkbox label="Remember me" />);
         const wrapper = screen.container.firstChild as HTMLElement;
         const checkbox = screen.getByRole("checkbox", { name: "Remember me" });
@@ -107,8 +111,10 @@ describe("Checkbox", () => {
         const screen = await render(<Checkbox label="Remember me" isDisabled onCheckedChange={onCheckedChange} />);
         const checkbox = screen.getByRole("checkbox", { name: "Remember me" });
 
-        // Act — a real pointer click (not a programmatic `.focus()` call) is the behaviour the
-        // primitive owns: clicking a disabled control must not move focus into it or toggle it.
+        /*
+         * Act — a real pointer click (not a programmatic `.focus()` call) is the behaviour the
+         * primitive owns: clicking a disabled control must not move focus into it or toggle it.
+         */
         (checkbox.element() as HTMLElement).click();
 
         // Assert

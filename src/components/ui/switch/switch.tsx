@@ -4,14 +4,16 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
-// D-18: track sized 32x20 / 40x24 / 48x28 (sm/md/lg), a `p-0.5` (2px) inset around a
-// correspondingly sized thumb (16/20/24px — track height minus the inset on both sides). The
-// 44x44px minimum interactive area (UI-SPEC Spacing Scale) floors the actual `Switch.Root`
-// element itself — exactly as IconButton makes its real hit box 44x44 regardless of the visual
-// glyph size (icon-button.tsx) — while the visually smaller colored track is a plain nested
-// `span`, styled off the root's own `data-checked`/`data-unchecked` attribute via Tailwind's
-// `group` utility (the track itself carries no Base UI state of its own, so it cannot be styled
-// with the `data-[checked]` selector directly).
+/*
+ * D-18: track sized 32x20 / 40x24 / 48x28 (sm/md/lg), a `p-0.5` (2px) inset around a
+ * correspondingly sized thumb (16/20/24px — track height minus the inset on both sides). The
+ * 44x44px minimum interactive area (UI-SPEC Spacing Scale) floors the actual `Switch.Root`
+ * element itself — exactly as IconButton makes its real hit box 44x44 regardless of the visual
+ * glyph size (icon-button.tsx) — while the visually smaller colored track is a plain nested
+ * `span`, styled off the root's own `data-checked`/`data-unchecked` attribute via Tailwind's
+ * `group` utility (the track itself carries no Base UI state of its own, so it cannot be styled
+ * with the `data-[checked]` selector directly).
+ */
 const rootVariants = cva(
     "group relative inline-flex shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
     {
@@ -28,8 +30,10 @@ const rootVariants = cva(
     },
 );
 
-// UI-SPEC reserves the accent for the Switch's "on" track specifically — `bg-bg-primary` must
-// never appear on the unchecked state (the reserved-accent rule this plan's must_haves enforce).
+/*
+ * UI-SPEC reserves the accent for the Switch's "on" track specifically — `bg-bg-primary` must
+ * never appear on the unchecked state (the reserved-accent rule this plan's must_haves enforce).
+ */
 const trackVariants = cva(
     "pointer-events-none inline-flex items-center rounded-full border border-transparent p-0.5 transition-colors group-data-[checked]:bg-bg-primary group-data-[unchecked]:bg-text-muted group-data-[unchecked]:opacity-40",
     {
@@ -77,9 +81,11 @@ type Props = Omit<ComponentProps<typeof BaseSwitch.Root>, "className" | "disable
 
 export const Switch = ({ label, isChecked, isDisabled = false, iconOn, iconOff, size, className, ...props }: Props) => {
     return (
-        // `Switch.Root`/`Switch.Thumb` supply role="switch", keyboard toggling and aria-checked
-        // state reporting from the library (D-15). `label` renders only into `aria-label` — the
-        // theme toggle this primitive unblocks has no visible text by design.
+        /*
+         * `Switch.Root`/`Switch.Thumb` supply role="switch", keyboard toggling and aria-checked
+         * state reporting from the library (D-15). `label` renders only into `aria-label` — the
+         * theme toggle this primitive unblocks has no visible text by design.
+         */
         <BaseSwitch.Root
             checked={isChecked}
             disabled={isDisabled}

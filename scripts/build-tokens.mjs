@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// Drives the two-pass Style Dictionary build (light + mode-invariant categories, then dark
-// color aliases) and concatenates the results into a single src/styles/tokens.css — @theme
-// block first, .dark block second (D-09). See style-dictionary.config.mjs's createConfig()
-// doc comment for why this can't be one config with two platforms writing the same file.
+/*
+ * Drives the two-pass Style Dictionary build (light + mode-invariant categories, then dark
+ * color aliases) and concatenates the results into a single src/styles/tokens.css — @theme
+ * block first, .dark block second (D-09). See style-dictionary.config.mjs's createConfig()
+ * doc comment for why this can't be one config with two platforms writing the same file.
+ */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

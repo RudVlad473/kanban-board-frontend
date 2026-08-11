@@ -6,10 +6,12 @@ import { useEffect } from "react";
 import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
 import { cn } from "@/lib/cn";
 
-// Composite typography classes follow button.tsx's established pattern (plan 01-06): the
-// generated `font-{name}` utility carries family, `text-{name}` carries size, and weight is read
-// directly via Tailwind's arbitrary-property syntax because the token pipeline's `--font-weight-*`
-// namespace collides with `--font-*` (WINDOWS.md id 2 — a pre-existing, out-of-scope pipeline bug).
+/*
+ * Composite typography classes follow button.tsx's established pattern (plan 01-06): the
+ * generated `font-{name}` utility carries family, `text-{name}` carries size, and weight is read
+ * directly via Tailwind's arbitrary-property syntax because the token pipeline's `--font-weight-*`
+ * namespace collides with `--font-*` (WINDOWS.md id 2 — a pre-existing, out-of-scope pipeline bug).
+ */
 const textFieldVariants = cva(
     "w-full rounded-md border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
     {
@@ -63,13 +65,15 @@ export const TextField = ({
     onInput,
     ...props
 }: Props) => {
-    // A trailing-edge "…" indicator signals that more of the value exists off-screen once it
-    // overflows the input's own box — the horizontal-scroll backstop the input already gets
-    // natively stays exactly as-is; this only adds a visible cue that there's more to scroll to.
-    // `recheck` covers keystrokes (a native input's own `.value` changing isn't a DOM mutation the
-    // hook's internal MutationObserver can see, and the input's box doesn't resize as the value
-    // grows) and the effect below covers controlled `value` updates that never fire a native input
-    // event at all.
+    /*
+     * A trailing-edge "…" indicator signals that more of the value exists off-screen once it
+     * overflows the input's own box — the horizontal-scroll backstop the input already gets
+     * natively stays exactly as-is; this only adds a visible cue that there's more to scroll to.
+     * `recheck` covers keystrokes (a native input's own `.value` changing isn't a DOM mutation the
+     * hook's internal MutationObserver can see, and the input's box doesn't resize as the value
+     * grows) and the effect below covers controlled `value` updates that never fire a native input
+     * event at all.
+     */
     const { ref: overflowRef, isOverflowing, recheck } = useOverflowIndicator<HTMLInputElement>();
 
     useEffect(() => {
@@ -78,10 +82,12 @@ export const TextField = ({
     }, [props.value]);
 
     return (
-        // Field.Root/Field.Label/Field.Control/Field.Description/Field.Error wire up label
-        // association, `aria-invalid` and `aria-describedby` from the library rather than
-        // hand-rolled bookkeeping (D-15). `disabled` on Field.Root propagates to Field.Control
-        // automatically, so `isDisabled` only needs to be set once, here.
+        /*
+         * Field.Root/Field.Label/Field.Control/Field.Description/Field.Error wire up label
+         * association, `aria-invalid` and `aria-describedby` from the library rather than
+         * hand-rolled bookkeeping (D-15). `disabled` on Field.Root propagates to Field.Control
+         * automatically, so `isDisabled` only needs to be set once, here.
+         */
         <Field.Root invalid={hasError} disabled={isDisabled} className="flex w-full flex-col gap-1">
             <Field.Label className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
                 {label}
@@ -105,9 +111,11 @@ export const TextField = ({
                     {...props}
                 />
                 {isOverflowing ? (
-                    // An opaque `bg-bg-surface` patch under the glyph — not a gradient — so the
-                    // "…" itself reads clearly rather than fading in like the trailing text does;
-                    // `text-text-muted` keeps it legible without hardcoding a color per theme.
+                    /*
+                     * An opaque `bg-bg-surface` patch under the glyph — not a gradient — so the
+                     * "…" itself reads clearly rather than fading in like the trailing text does;
+                     * `text-text-muted` keeps it legible without hardcoding a color per theme.
+                     */
                     <span
                         aria-hidden="true"
                         data-overflow-indicator=""

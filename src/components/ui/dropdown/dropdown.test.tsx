@@ -19,8 +19,10 @@ const renderDropdown = (props: RootProps = {}) =>
         </Dropdown.Root>,
     );
 
-// Narrows `document.activeElement` (nullable) to `Element` without a non-null assertion — throws
-// with a clear message instead of a silent `null` reaching `getComputedStyle`.
+/*
+ * Narrows `document.activeElement` (nullable) to `Element` without a non-null assertion — throws
+ * with a clear message instead of a silent `null` reaching `getComputedStyle`.
+ */
 const getActiveElement = () => {
     const active = document.activeElement;
     if (!active) {
@@ -68,11 +70,13 @@ describe("Dropdown", () => {
         const screen = await renderDropdown({ onValueChange });
         const trigger = screen.getByRole("combobox", { name: "Select a status" });
 
-        // Act — open, then move down twice and back up once. Whatever item Down first lands on
-        // (self-verified below, not assumed), Up must return to it — proving both keys move the
-        // active item rather than just one of them being a no-op. The raw DOM node is captured
-        // up front since the trigger's accessible name changes to the selected item's label once
-        // a selection commits, which would break a later name-scoped re-query for the same node.
+        /*
+         * Act — open, then move down twice and back up once. Whatever item Down first lands on
+         * (self-verified below, not assumed), Up must return to it — proving both keys move the
+         * active item rather than just one of them being a no-op. The raw DOM node is captured
+         * up front since the trigger's accessible name changes to the selected item's label once
+         * a selection commits, which would break a later name-scoped re-query for the same node.
+         */
         const triggerElement = trigger.element();
         triggerElement.focus();
         await userEvent.keyboard("{Enter}");
@@ -157,11 +161,13 @@ describe("Dropdown", () => {
     });
 
     it("shows a trailing-edge overflow indicator on the trigger only once the selected label overflows it", async () => {
-        // Arrange — same "…" cue as TextField's (previously a gradient fade — replaced per human
-        // feedback that it wasn't obvious enough), over the trigger's rendered selected-value
-        // label. `Select.Value` falls back to the raw `value` string as its own label until a
-        // matching `Dropdown.Item` registers a different one, which is a convenient way to force a
-        // genuinely long rendered label without depending on that registration timing.
+        /*
+         * Arrange — same "…" cue as TextField's (previously a gradient fade — replaced per human
+         * feedback that it wasn't obvious enough), over the trigger's rendered selected-value
+         * label. `Select.Value` falls back to the raw `value` string as its own label until a
+         * matching `Dropdown.Item` registers a different one, which is a convenient way to force a
+         * genuinely long rendered label without depending on that registration timing.
+         */
         const getIndicator = (container: HTMLElement) => container.querySelector("[data-overflow-indicator]");
         const longValue = "A very long board name that will definitely overflow the trigger width";
 
@@ -194,10 +200,12 @@ describe("Dropdown", () => {
     });
 
     it("rounds the first item's top corners and the last item's bottom corners when highlighted, keeping middle items square", async () => {
-        // Arrange — the popup's own `rounded-md` corner is large enough (measured plan 01-04
-        // token) that a square-cornered highlight on the item touching that corner visibly pokes
-        // past the popup's own rounded silhouette. Only the item actually adjacent to a rounded
-        // corner should round to match; a middle item has no rounded popup edge to clash with.
+        /*
+         * Arrange — the popup's own `rounded-md` corner is large enough (measured plan 01-04
+         * token) that a square-cornered highlight on the item touching that corner visibly pokes
+         * past the popup's own rounded silhouette. Only the item actually adjacent to a rounded
+         * corner should round to match; a middle item has no rounded popup edge to clash with.
+         */
         const screen = await render(
             <Dropdown.Root>
                 <Dropdown.Trigger placeholder="Select a status" />
@@ -219,8 +227,10 @@ describe("Dropdown", () => {
         await userEvent.keyboard("{ArrowDown}");
         const lastRadius = getComputedStyle(getActiveElement()).borderRadius;
 
-        // Assert — top-left/top-right rounded on first, bottom-left/bottom-right rounded on last,
-        // and all four corners equal (square, un-rounded relative to the popup's curve) on middle.
+        /*
+         * Assert — top-left/top-right rounded on first, bottom-left/bottom-right rounded on last,
+         * and all four corners equal (square, un-rounded relative to the popup's curve) on middle.
+         */
         expect(firstRadius).toBe("24px 24px 4px 4px");
         expect(lastRadius).toBe("4px 4px 24px 24px");
         const middleCorners = middleRadius.split(" ");
@@ -228,15 +238,17 @@ describe("Dropdown", () => {
     });
 
     it("clips the rounded/shadowed silhouette to its own bounds and scrolls the listbox itself, not the silhouette wrapper, once the item list overflows", async () => {
-        // Arrange — `rounded-md`/`shadow-md`/`overflow-hidden` live on a plain outer wrapper div;
-        // `role="listbox"` (Select.Popup) is the scrollable element itself. ARIA requires a
-        // listbox's children to be `option`s directly, so — unlike Modal, whose Dialog.Popup has
-        // no ARIA role of its own — the scroll wrapper can't sit *between* the listbox and its
-        // options; it has to wrap the listbox from the outside instead. Putting the scroll
-        // directly on the rounded/shadowed element (the original layout) let the scrollable
-        // region's edge — and an in-flow scrollbar, which Firefox reserves layout width for even
-        // though Chrome's overlay scrollbar mostly hides the same bug — render against/outside the
-        // rounded corner once the list actually needed to scroll.
+        /*
+         * Arrange — `rounded-md`/`shadow-md`/`overflow-hidden` live on a plain outer wrapper div;
+         * `role="listbox"` (Select.Popup) is the scrollable element itself. ARIA requires a
+         * listbox's children to be `option`s directly, so — unlike Modal, whose Dialog.Popup has
+         * no ARIA role of its own — the scroll wrapper can't sit *between* the listbox and its
+         * options; it has to wrap the listbox from the outside instead. Putting the scroll
+         * directly on the rounded/shadowed element (the original layout) let the scrollable
+         * region's edge — and an in-flow scrollbar, which Firefox reserves layout width for even
+         * though Chrome's overlay scrollbar mostly hides the same bug — render against/outside the
+         * rounded corner once the list actually needed to scroll.
+         */
         const screen = await render(
             <Dropdown.Root defaultOpen>
                 <Dropdown.Trigger placeholder="Select a board" />
@@ -262,9 +274,11 @@ describe("Dropdown", () => {
         const wrapperStyle = getComputedStyle(silhouetteWrapper);
         const listboxStyle = getComputedStyle(listbox);
 
-        // Assert — the outer wrapper carries the silhouette and clips to it; its own rendered
-        // height never exceeds the listbox's own `max-h-72` (288px) + 2px border, i.e. it never
-        // needs to scroll itself.
+        /*
+         * Assert — the outer wrapper carries the silhouette and clips to it; its own rendered
+         * height never exceeds the listbox's own `max-h-72` (288px) + 2px border, i.e. it never
+         * needs to scroll itself.
+         */
         expect(wrapperStyle.overflow).toBe("hidden");
         expect(wrapperStyle.borderRadius).not.toBe("0px");
         expect(wrapperStyle.boxShadow).not.toBe("none");
@@ -291,8 +305,10 @@ describe("Dropdown", () => {
         );
         const trigger = screen.getByRole("combobox", { name: "Select a status" });
 
-        // Act — open, then move down twice; navigation must skip the disabled "Doing" item and
-        // land directly on "Done".
+        /*
+         * Act — open, then move down twice; navigation must skip the disabled "Doing" item and
+         * land directly on "Done".
+         */
         trigger.element().focus();
         await userEvent.keyboard("{Enter}");
         await userEvent.keyboard("{ArrowDown}");
@@ -302,10 +318,12 @@ describe("Dropdown", () => {
         expect(document.activeElement?.textContent).toBe("Done");
         await expect.element(screen.getByRole("option", { name: "Doing" })).toHaveAttribute("aria-disabled", "true");
 
-        // Act — a pointer click on the disabled item must not select it. `force: true` bypasses
-        // Playwright's own actionability guard (which itself refuses to click an
-        // `aria-disabled="true"` element) so the assertion exercises the primitive's own
-        // Base UI-driven guard, not Playwright's.
+        /*
+         * Act — a pointer click on the disabled item must not select it. `force: true` bypasses
+         * Playwright's own actionability guard (which itself refuses to click an
+         * `aria-disabled="true"` element) so the assertion exercises the primitive's own
+         * Base UI-driven guard, not Playwright's.
+         */
         await screen.getByRole("option", { name: "Doing" }).click({ force: true });
 
         // Assert

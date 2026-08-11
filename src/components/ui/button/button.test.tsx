@@ -66,9 +66,11 @@ describe("Button", () => {
         // Assert (rendered state)
         await expect.element(button).toBeDisabled();
 
-        // Act + Assert (click) — a native DOM click() on a disabled button never dispatches the
-        // click event, proving activation is genuinely suppressed by the browser, not merely
-        // unasserted.
+        /*
+         * Act + Assert (click) — a native DOM click() on a disabled button never dispatches the
+         * click event, proving activation is genuinely suppressed by the browser, not merely
+         * unasserted.
+         */
         (button.element() as HTMLButtonElement).click();
         expect(onClick).not.toHaveBeenCalled();
 
@@ -86,17 +88,21 @@ describe("Button", () => {
         // Act
         const backgroundColor = getComputedStyle(button.element()).backgroundColor;
 
-        // Assert — #C93F3C (the danger background) must win over the primary-variant default
-        // (#635FC7).
+        /*
+         * Assert — #C93F3C (the danger background) must win over the primary-variant default
+         * (#635FC7).
+         */
         expect(backgroundColor).toBe("rgb(201, 63, 60)");
     });
 
     it("keeps the on-primary (white) label color when a filled variant is disabled, instead of the low-contrast muted-text token", async () => {
-        // Arrange — `text-muted` is tuned for muted text on a *light surface*. Swapping to it on
-        // disable for a *filled* button (primary/destructive) combined with the shared
-        // `disabled:opacity-50` collapsed the label to near-invisible: a dark-grey label over an
-        // already-faded purple/red fill. The label must stay on the same on-primary token disabled
-        // as enabled — opacity alone communicates the disabled state.
+        /*
+         * Arrange — `text-muted` is tuned for muted text on a *light surface*. Swapping to it on
+         * disable for a *filled* button (primary/destructive) combined with the shared
+         * `disabled:opacity-50` collapsed the label to near-invisible: a dark-grey label over an
+         * already-faded purple/red fill. The label must stay on the same on-primary token disabled
+         * as enabled — opacity alone communicates the disabled state.
+         */
         const primary = await render(
             <Button variant="primary" isDisabled>
                 Primary
@@ -114,8 +120,10 @@ describe("Button", () => {
             destructive.getByRole("button", { name: "Destructive" }).element(),
         ).color;
 
-        // Assert — rgb(255, 255, 255) is `text-on-primary`; text-muted (#66707F) would read
-        // rgb(102, 112, 127).
+        /*
+         * Assert — rgb(255, 255, 255) is `text-on-primary`; text-muted (#66707F) would read
+         * rgb(102, 112, 127).
+         */
         expect(primaryColor).toBe("rgb(255, 255, 255)");
         expect(destructiveColor).toBe("rgb(255, 255, 255)");
     });

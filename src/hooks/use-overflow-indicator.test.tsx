@@ -3,9 +3,11 @@ import { render } from "vitest-browser-react";
 
 import { useOverflowIndicator } from "./use-overflow-indicator";
 
-// The status readout renders as a sibling of the observed element, not inside it — a `<span>`
-// inside the observed subtree would itself be a DOM mutation the internal `MutationObserver`
-// reacts to, muddying what this test is actually proving.
+/*
+ * The status readout renders as a sibling of the observed element, not inside it — a `<span>`
+ * inside the observed subtree would itself be a DOM mutation the internal `MutationObserver`
+ * reacts to, muddying what this test is actually proving.
+ */
 function OverflowProbe({ text, width }: { text: string; width: number }) {
     const { ref, isOverflowing } = useOverflowIndicator<HTMLDivElement>();
     return (

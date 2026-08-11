@@ -58,9 +58,11 @@ describe("Switch", () => {
         // Act
         await toggle.click();
 
-        // Assert — the callback fires with the intended next value, but the rendered state stays
-        // unchecked because the parent never fed `isChecked` back in — this is the property plan
-        // 01-14 relies on to revert the toggle when persistence fails.
+        /*
+         * Assert — the callback fires with the intended next value, but the rendered state stays
+         * unchecked because the parent never fed `isChecked` back in — this is the property plan
+         * 01-14 relies on to revert the toggle when persistence fails.
+         */
         expect(onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
         await expect.element(toggle).toHaveAttribute("aria-checked", "false");
     });

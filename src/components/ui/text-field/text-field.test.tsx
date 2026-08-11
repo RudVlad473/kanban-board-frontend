@@ -68,9 +68,11 @@ describe("TextField", () => {
         // Assert (rendered state)
         await expect.element(input).toBeDisabled();
 
-        // Act + Assert (typing is suppressed) — a disabled input never becomes the active
-        // element, so the browser itself refuses focus; this proves activation is genuinely
-        // suppressed, not merely unasserted.
+        /*
+         * Act + Assert (typing is suppressed) — a disabled input never becomes the active
+         * element, so the browser itself refuses focus; this proves activation is genuinely
+         * suppressed, not merely unasserted.
+         */
         (input.element() as HTMLInputElement).focus();
         expect(input.element()).not.toBe(document.activeElement);
         await userEvent.keyboard("a");
@@ -88,8 +90,10 @@ describe("TextField", () => {
         // Assert
         expect(input).not.toBeNull();
         await expect.element(trailing).toBeVisible();
-        // The trailing slot's positioned ancestor is the same relative wrapper the input renders
-        // into, not a sibling elsewhere in the tree — proving it renders "inside" the field.
+        /*
+         * The trailing slot's positioned ancestor is the same relative wrapper the input renders
+         * into, not a sibling elsewhere in the tree — proving it renders "inside" the field.
+         */
         expect(
             trailing
                 .element()
@@ -99,12 +103,14 @@ describe("TextField", () => {
     });
 
     it("shows a trailing-edge overflow indicator only once the value overflows the field, including on live typing", async () => {
-        // Arrange — a small "…" cue signalling more content exists off-screen (previously a
-        // gradient fade — replaced per human feedback that it wasn't obvious enough). It must
-        // stay absent for short/fitting content (no visual noise over normal fields) and appear
-        // once the value actually overflows, including as the user types past the field's width
-        // (a native input's own `.value` change is invisible to the hook's internal
-        // MutationObserver, so the fix wires an explicit `onInput` recheck).
+        /*
+         * Arrange — a small "…" cue signalling more content exists off-screen (previously a
+         * gradient fade — replaced per human feedback that it wasn't obvious enough). It must
+         * stay absent for short/fitting content (no visual noise over normal fields) and appear
+         * once the value actually overflows, including as the user types past the field's width
+         * (a native input's own `.value` change is invisible to the hook's internal
+         * MutationObserver, so the fix wires an explicit `onInput` recheck).
+         */
         const getIndicator = (container: HTMLElement) => container.querySelector("[data-overflow-indicator]");
 
         const short = await render(
@@ -138,8 +144,10 @@ describe("TextField", () => {
     });
 
     it("holds its rendered width against a 300-character value instead of expanding or wrapping the layout", async () => {
-        // Arrange — distinct labels keep each render's locator query unambiguous, since
-        // locators resolve against the full page rather than a single render's own container.
+        /*
+         * Arrange — distinct labels keep each render's locator query unambiguous, since
+         * locators resolve against the full page rather than a single render's own container.
+         */
         const empty = await render(
             <div style={{ width: "320px" }}>
                 <TextField label="Name (empty)" />

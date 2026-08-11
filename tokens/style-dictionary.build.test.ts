@@ -36,8 +36,10 @@ async function buildFullCss(baseDir: string = repoRoot) {
     return `${theme}\n${dark}`;
 }
 
-/** Copies the real tokens/ tree into an isolated temp dir so a test-local mutation never
- * touches the tracked source files. Caller is responsible for removing the returned dir. */
+/**
+ * Copies the real tokens/ tree into an isolated temp dir so a test-local mutation never
+ * touches the tracked source files. Caller is responsible for removing the returned dir.
+ */
 async function copyTempTokens() {
     const tmpRoot = await mkdtemp(path.join(tmpdir(), "sd-pipeline-"));
     await cp(path.join(repoRoot, "tokens"), path.join(tmpRoot, "tokens"), { recursive: true });

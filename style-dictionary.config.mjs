@@ -17,9 +17,11 @@ StyleDictionary.registerTransformGroup({
     transforms: ["name/kebab"],
 });
 
-/** Breakpoint tokens are authored as `breakpoint.mobile/tablet/desktop` (D-07) but Tailwind v4's
+/**
+ * Breakpoint tokens are authored as `breakpoint.mobile/tablet/desktop` (D-07) but Tailwind v4's
  * responsive-variant namespace expects `--breakpoint-sm/md/lg` — this is a deliberate rename,
- * not a pass-through. */
+ * not a pass-through.
+ */
 const BREAKPOINT_ALIASES = { mobile: "sm", tablet: "md", desktop: "lg" };
 
 /**
@@ -45,8 +47,10 @@ function fontFamilyVariableSlug(fontFamily) {
  */
 function typographyDeclarations(token) {
     const value = token.$value ?? token.value;
-    // token.path is e.g. ["font", "heading-xl"] — drop the leading category segment so the
-    // per-property suffix is "heading-xl", not "font-heading-xl" (which would double the prefix).
+    /*
+     * token.path is e.g. ["font", "heading-xl"] — drop the leading category segment so the
+     * per-property suffix is "heading-xl", not "font-heading-xl" (which would double the prefix).
+     */
     const suffix = token.path.slice(1).join("-");
     const fontVar = `--font-${fontFamilyVariableSlug(value.fontFamily)}`;
     const lines = [
@@ -90,9 +94,11 @@ StyleDictionary.registerFormat({
     name: "css/tailwind-theme",
     format: ({ dictionary }) => {
         const lines = tokenDeclarations(dictionary);
-        // Tailwind v4 base spacing unit (D-04's extension): generates the whole numeric utility
-        // ladder (p-1 ... p-16) mechanically from this one value, so 12px (space-3) needs no
-        // special case.
+        /*
+         * Tailwind v4 base spacing unit (D-04's extension): generates the whole numeric utility
+         * ladder (p-1 ... p-16) mechanically from this one value, so 12px (space-3) needs no
+         * special case.
+         */
         lines.unshift("  --spacing: 4px;");
         return `@theme {\n${lines.join("\n")}\n}\n`;
     },

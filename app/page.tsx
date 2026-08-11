@@ -1,8 +1,10 @@
 "use client";
 
-// Temporary developer affordance proving the token pipeline's two mode scopes resolve under
-// the same semantic token names (D-09). Plan 01-14 replaces this with the real Switch-driven,
-// account-persisted theme toggle and removes the theme-probe button.
+/*
+ * Temporary developer affordance proving the token pipeline's two mode scopes resolve under
+ * the same semantic token names (D-09). Plan 01-14 replaces this with the real Switch-driven,
+ * account-persisted theme toggle and removes the theme-probe button.
+ */
 const toggleTheme = () => {
     document.documentElement.classList.toggle("dark");
 };

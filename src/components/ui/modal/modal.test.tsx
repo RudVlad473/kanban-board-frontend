@@ -26,9 +26,11 @@ const renderModal = (props: RootProps = {}) =>
         </div>,
     );
 
-// The floating backdrop `<div>` (no ARIA role of its own) rendered by `Modal.Content` — the
-// dialog's own popup gets `role="dialog"`, so filtering it out unambiguously isolates the backdrop
-// regardless of DOM order.
+/*
+ * The floating backdrop `<div>` (no ARIA role of its own) rendered by `Modal.Content` — the
+ * dialog's own popup gets `role="dialog"`, so filtering it out unambiguously isolates the backdrop
+ * regardless of DOM order.
+ */
 const getBackdropElement = () => {
     const backdrop = Array.from(document.querySelectorAll<HTMLElement>("[data-open]")).find(
         (el) => el.getAttribute("role") !== "dialog",
@@ -84,8 +86,10 @@ describe("Modal", () => {
         confirm.element().focus();
         await userEvent.tab();
 
-        // Assert — focus wrapped to the first focusable element inside the dialog, not the page's
-        // own "Outside link" button sitting behind it.
+        /*
+         * Assert — focus wrapped to the first focusable element inside the dialog, not the page's
+         * own "Outside link" button sitting behind it.
+         */
         expect(document.activeElement).toBe(input.element());
     });
 
@@ -111,8 +115,10 @@ describe("Modal", () => {
         const onOpenChange = vi.fn();
         const screen = await renderModal({ defaultOpen: true, onOpenChange });
 
-        // Act — click a corner of the full-viewport backdrop that the centered dialog panel does
-        // not cover.
+        /*
+         * Act — click a corner of the full-viewport backdrop that the centered dialog panel does
+         * not cover.
+         */
         const backdrop = page.elementLocator(getBackdropElement());
         await backdrop.click({ position: { x: 4, y: 4 } });
 
@@ -122,12 +128,14 @@ describe("Modal", () => {
     });
 
     it("clips the rounded/shadowed panel to its own bounds and scrolls an inner content region, not the panel itself, once content overflows", async () => {
-        // Arrange — `rounded-lg`/`shadow-lg`/`overflow-hidden` live on the dialog popup itself;
-        // the scrollable region is a separate inner wrapper. Putting `overflow-y-auto` directly on
-        // the rounded/shadowed element let the native scrollbar and the scrolled content's edge
-        // render outside the rounded corners once the body actually scrolled, breaking the panel's
-        // silhouette. This guards that regression by asserting the popup itself never grows past
-        // its cap (so it never needs to scroll) while its inner child does.
+        /*
+         * Arrange — `rounded-lg`/`shadow-lg`/`overflow-hidden` live on the dialog popup itself;
+         * the scrollable region is a separate inner wrapper. Putting `overflow-y-auto` directly on
+         * the rounded/shadowed element let the native scrollbar and the scrolled content's edge
+         * render outside the rounded corners once the body actually scrolled, breaking the panel's
+         * silhouette. This guards that regression by asserting the popup itself never grows past
+         * its cap (so it never needs to scroll) while its inner child does.
+         */
         const longContent = Array.from({ length: 40 }, (_, index) => {
             const position = String(index);
             return <p key={position}>{`Activity entry ${position} — long content to force scrolling.`}</p>;
@@ -158,12 +166,14 @@ describe("Modal", () => {
     });
 
     it("applies mobile-first internal padding — tighter on mobile, roomier at tablet/desktop", async () => {
-        // Arrange — ADR tech/0010: the panel's own width already scales down correctly at a
-        // narrow viewport (w-[min(90vw,28rem)]), but the padding did not — this asserts the
-        // mobile-first p-4 md:p-6 utility pair is actually present on the scroll wrapper.
-        // Vitest Browser Mode doesn't expose a per-test viewport resize, so this checks the
-        // source-level responsive utility classes rather than a live breakpoint switch — the two
-        // rendered widths themselves are covered by the Storybook Mobile/Desktop story pair.
+        /*
+         * Arrange — ADR tech/0010: the panel's own width already scales down correctly at a
+         * narrow viewport (w-[min(90vw,28rem)]), but the padding did not — this asserts the
+         * mobile-first p-4 md:p-6 utility pair is actually present on the scroll wrapper.
+         * Vitest Browser Mode doesn't expose a per-test viewport resize, so this checks the
+         * source-level responsive utility classes rather than a live breakpoint switch — the two
+         * rendered widths themselves are covered by the Storybook Mobile/Desktop story pair.
+         */
         const screen = await render(
             <Modal.Root defaultOpen>
                 <Modal.Content>

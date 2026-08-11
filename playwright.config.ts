@@ -2,9 +2,11 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 6007;
 
-// ADR tech/0008: visual regression is Playwright-native `toHaveScreenshot`, scoped to Storybook
-// design-system stories only — the webServer below serves the pre-built `storybook-static`
-// output, never a running application.
+/*
+ * ADR tech/0008: visual regression is Playwright-native `toHaveScreenshot`, scoped to Storybook
+ * design-system stories only — the webServer below serves the pre-built `storybook-static`
+ * output, never a running application.
+ */
 export default defineConfig({
     testDir: "./visual",
     testMatch: "**/*.visual.spec.ts",
@@ -14,10 +16,12 @@ export default defineConfig({
         },
     },
     snapshotPathTemplate: "visual/__screenshots__/{testFilePath}/{arg}{ext}",
-    // D-22 / ADR tech/0008: baselines are only ever asserted-against (and written) in the CI
-    // environment. Off-CI, specs still navigate and render — they just don't assert or write
-    // screenshots — so a developer can smoke-run this suite locally without corrupting baselines
-    // with a Windows-rendered PNG.
+    /*
+     * D-22 / ADR tech/0008: baselines are only ever asserted-against (and written) in the CI
+     * environment. Off-CI, specs still navigate and render — they just don't assert or write
+     * screenshots — so a developer can smoke-run this suite locally without corrupting baselines
+     * with a Windows-rendered PNG.
+     */
     ignoreSnapshots: !process.env.CI,
     webServer: {
         command: `node scripts/serve-static.mjs storybook-static ${String(PORT)}`,
@@ -30,12 +34,14 @@ export default defineConfig({
             use: {
                 ...devices["Desktop Chrome"],
                 baseURL: `http://localhost:${String(PORT)}`,
-                // Desktop Chrome's default 1280x720 viewport is far larger than any current
-                // primitive needs — a block/flex story wrapper without an explicit width
-                // stretches to fill it (standard CSS, not a Storybook quirk), so most baselines
-                // were mostly whitespace. 640x480 leaves headroom for a multi-button "Sizes"
-                // story and future, larger primitives (Modal, Dropdown) without the previous
-                // 1280px-wide waste on today's single-control stories.
+                /*
+                 * Desktop Chrome's default 1280x720 viewport is far larger than any current
+                 * primitive needs — a block/flex story wrapper without an explicit width
+                 * stretches to fill it (standard CSS, not a Storybook quirk), so most baselines
+                 * were mostly whitespace. 640x480 leaves headroom for a multi-button "Sizes"
+                 * story and future, larger primitives (Modal, Dropdown) without the previous
+                 * 1280px-wide waste on today's single-control stories.
+                 */
                 viewport: { width: 640, height: 480 },
             },
         },

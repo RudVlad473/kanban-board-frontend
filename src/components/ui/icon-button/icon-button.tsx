@@ -4,11 +4,13 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
-// Base UI has no dedicated icon-button component (RESEARCH.md Standard Stack), so this wraps
-// Base UI's Button exactly as button.tsx does (D-14: IconButton is a Button variant).
-// `h-11 w-11`/`h-12 w-12` keep the interactive hit area at or above the 44x44px accessibility
-// floor at every size (UI-SPEC Spacing Scale) even though the sm/md glyph is visually smaller —
-// the descendant `[&_svg]` selector sizes only the glyph, never the hit area.
+/*
+ * Base UI has no dedicated icon-button component (RESEARCH.md Standard Stack), so this wraps
+ * Base UI's Button exactly as button.tsx does (D-14: IconButton is a Button variant).
+ * `h-11 w-11`/`h-12 w-12` keep the interactive hit area at or above the 44x44px accessibility
+ * floor at every size (UI-SPEC Spacing Scale) even though the sm/md glyph is visually smaller —
+ * the descendant `[&_svg]` selector sizes only the glyph, never the hit area.
+ */
 const iconButtonVariants = cva(
     "inline-flex shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:shrink-0",
     {
