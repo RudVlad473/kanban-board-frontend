@@ -39,12 +39,12 @@ const buttonVariants = cva(
     },
 );
 
-type ButtonProps = Omit<ComponentProps<typeof BaseButton>, "disabled" | "className"> &
+type Props = Omit<ComponentProps<typeof BaseButton>, "disabled" | "className"> &
     VariantProps<typeof buttonVariants> & {
         isDisabled?: boolean;
         className?: string;
     };
 
-export const Button = ({ variant, size, isDisabled = false, className, ...props }: ButtonProps) => {
+export const Button = ({ variant, size, isDisabled = false, className, ...props }: Props) => {
     return <BaseButton disabled={isDisabled} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
 };

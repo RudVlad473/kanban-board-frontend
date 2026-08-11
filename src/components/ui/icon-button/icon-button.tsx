@@ -32,7 +32,7 @@ const iconButtonVariants = cva(
     },
 );
 
-type IconButtonProps = Omit<ComponentProps<typeof BaseButton>, "disabled" | "className" | "children"> &
+type Props = Omit<ComponentProps<typeof BaseButton>, "disabled" | "className" | "children"> &
     VariantProps<typeof iconButtonVariants> & {
         /** Required — an icon-only control must always expose an accessible name. */
         label: string;
@@ -41,15 +41,7 @@ type IconButtonProps = Omit<ComponentProps<typeof BaseButton>, "disabled" | "cla
         className?: string;
     };
 
-export const IconButton = ({
-    variant,
-    size,
-    isDisabled = false,
-    label,
-    icon,
-    className,
-    ...props
-}: IconButtonProps) => {
+export const IconButton = ({ variant, size, isDisabled = false, label, icon, className, ...props }: Props) => {
     return (
         <BaseButton
             disabled={isDisabled}

@@ -46,7 +46,10 @@ async function copyTempTokens() {
 
 describe("style dictionary token pipeline (D-12)", () => {
     it("expands the composite font-heading-xl typography token into four individually-addressable custom properties", async () => {
+        // Act
         const css = await buildModeCss("light", "css");
+
+        // Assert
         expect(css).toContain("@theme");
         expect(css).toContain(
             "--font-heading-xl: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;",
@@ -57,12 +60,18 @@ describe("style dictionary token pipeline (D-12)", () => {
     });
 
     it("carries font-heading-s's letter-spacing as a distinct --tracking-* custom property", async () => {
+        // Act
         const css = await buildModeCss("light", "css");
+
+        // Assert
         expect(css).toContain("--tracking-heading-s: 2.4px;");
     });
 
     it("has every one of the six DTCG categories contribute at least one custom property to the generated stylesheet", async () => {
+        // Act
         const css = await buildFullCss();
+
+        // Assert
         expect(css).toMatch(/--color-bg-app:\s*#/); // color
         expect(css).toMatch(/--space-4:\s*16px/); // spacing
         expect(css).toMatch(/--font-heading-xl:\s*var\(--font-plus-jakarta-sans\)/); // typography
@@ -72,14 +81,18 @@ describe("style dictionary token pipeline (D-12)", () => {
     });
 
     it("resolves color-bg-app to the light hex in the @theme block and the dark hex in the .dark block, under the same custom-property name", async () => {
+        // Act
         const css = await buildFullCss();
         const themeBlock = css.slice(css.indexOf("@theme"), css.indexOf(".dark"));
         const darkBlock = css.slice(css.indexOf(".dark"));
+
+        // Assert
         expect(themeBlock).toContain("--color-bg-app: #F4F7FD;");
         expect(darkBlock).toContain("--color-bg-app: #20212C;");
     });
 
     it("rebuilds with a changed token value rather than silently serving a stale artefact", async () => {
+        // Arrange
         const tmpRoot = await copyTempTokens();
         try {
             const spacingPath = path.join(tmpRoot, "tokens/spacing.tokens.json");
@@ -89,7 +102,10 @@ describe("style dictionary token pipeline (D-12)", () => {
             spacingTokens.space["1"].$value = "5px";
             await writeFile(spacingPath, JSON.stringify(spacingTokens, null, 2));
 
+            // Act
             const css = await buildModeCss("light", "css", tmpRoot);
+
+            // Assert
             expect(css).toContain("--space-1: 5px;");
             expect(css).not.toContain("--space-1: 4px;");
         } finally {
@@ -98,6 +114,7 @@ describe("style dictionary token pipeline (D-12)", () => {
     });
 
     it("fails the build rather than emitting an unresolved reference string when a semantic token's alias target doesn't exist", async () => {
+        // Arrange
         const tmpRoot = await copyTempTokens();
         try {
             const lightPath = path.join(tmpRoot, "tokens/color.light.tokens.json");
@@ -107,6 +124,7 @@ describe("style dictionary token pipeline (D-12)", () => {
             lightTokens.color.bg.app.$value = "{color.nonexistent.999}";
             await writeFile(lightPath, JSON.stringify(lightTokens, null, 2));
 
+            // Act + Assert
             await expect(buildModeCss("light", "css", tmpRoot)).rejects.toBeTruthy();
         } finally {
             await rm(tmpRoot, { recursive: true, force: true });
