@@ -97,12 +97,15 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-11T15:15:00.000Z
-Stopped at: Wave 7 (01-07, TextField/Checkbox primitives) merged and gated via /gsd-execute-phase
-  1. Not a checkpoint plan. Full gate (build, typecheck, lint, format, 63/63 tests) passed after
-  two known Windows workarounds (stale .next/types, stale Vite cache — both pre-documented, both
-  harmless). A real WCAG AA contrast bug was fixed in color-text-muted. Visual baselines for the
-  17 new TextField/Checkbox stories are outstanding — need the "Visual baselines" CI workflow run
-  post-push (WINDOWS.md id 4), same as wave 6. Next: Wave 8 (01-08, Switch/Dropdown primitives) —
-  also autonomous, not a checkpoint plan.
+Last session: 2026-08-11T14:35:00.000Z
+Stopped at: Wave 7 (01-07, TextField/Checkbox primitives) fully closed out, CI green on
+  origin/master. Beyond the wave itself: found and fixed a real dark-mode bug (label text
+  invisible — body/Storybook canvas never painted a themed background, so white text-primary
+  tokens sat on the default white canvas), which in turn exposed a second real contrast issue
+  (color-text-muted only passed AA against bg-surface, not the slightly darker bg-app) — both
+  fixed and baselines regenerated (30 dark-mode PNGs, 0 light-mode changes). Also added
+  React Testing Library as a fourth Vitest project ("unit", jsdom) for future logic/hook tests,
+  alongside — not replacing — the existing real-browser component-test suite; proven with a
+  throwaway RtlHarnessProbe smoke test (D-26z). Next: Wave 8 (01-08, Switch/Dropdown primitives)
+  — autonomous, not a checkpoint plan.
 Resume file: none — no outstanding checkpoint or handoff artifact.
