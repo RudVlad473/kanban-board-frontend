@@ -17,13 +17,21 @@ import { cn } from "@/lib/cn";
 // as a deviation in this plan's SUMMARY.md and the phase's deferred-items.md for a future fix in
 // the token pipeline itself (rename to Tailwind's paired `--text-<name>--font-weight` sub-property
 // convention, which does not collide).
+// Disabled state is opacity-only at the base level (no text-color override): `primary` and
+// `destructive` keep their `text-on-primary` (white) label at reduced opacity, which stays
+// legible against their own faded fill. Overriding to `text-muted` there (a token designed for
+// muted text on a *light* surface) collapsed contrast to near-zero once opacity-50 was also
+// applied on top — a dark-grey label on a already-faded purple/red fill reads as invisible.
+// `secondary`'s fill is `bg-surface` (light), so muting its text to `text-muted` on disable still
+// reads correctly and is kept as a per-variant override instead of a shared base class.
 const buttonVariants = cva(
-    "inline-flex items-center justify-center gap-2 rounded-lg font-body-m text-body-m [font-weight:var(--font-weight-body-m)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
+    "inline-flex items-center justify-center gap-2 rounded-lg font-body-m text-body-m [font-weight:var(--font-weight-body-m)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
     {
         variants: {
             variant: {
                 primary: "bg-bg-primary text-text-on-primary hover:bg-bg-primary-hover",
-                secondary: "border border-border-default bg-bg-surface text-text-primary hover:bg-bg-app",
+                secondary:
+                    "border border-border-default bg-bg-surface text-text-primary hover:bg-bg-app disabled:text-text-muted",
                 destructive: "bg-bg-danger text-text-on-primary hover:bg-bg-danger-hover",
             },
             size: {
