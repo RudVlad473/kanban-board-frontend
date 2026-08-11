@@ -25,14 +25,27 @@ const storyIds = [
     "components-ui-icon-button--disabled",
 ];
 
+// Playwright's `toHaveScreenshot` waits for the page to settle (network idle, no in-flight
+// animations) but NOT for `document.fonts.ready` — self-hosted @font-face uses `font-display:
+// swap` (src/styles/fonts.css), which paints the fallback font immediately and swaps to the
+// real one once the woff2 finishes downloading. On a fast local machine that swap usually
+// completes before Playwright captures the screenshot, masking the race; a slower/differently
+// scheduled CI runner reliably wins the race the other way, silently baselining every story
+// against the wrong typeface. Waiting on the Font Loading API's own readiness promise removes
+// the race entirely, regardless of environment speed.
+async function gotoStoryAndWaitForFonts(page: import("@playwright/test").Page, url: string) {
+    await page.goto(url);
+    await page.evaluate(() => document.fonts.ready);
+}
+
 for (const storyId of storyIds) {
     test(`${storyId} — light`, async ({ page }) => {
-        await page.goto(`/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
+        await gotoStoryAndWaitForFonts(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
         await expect(page).toHaveScreenshot(`${storyId}-light.png`);
     });
 
     test(`${storyId} — dark`, async ({ page }) => {
-        await page.goto(`/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
+        await gotoStoryAndWaitForFonts(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
         await expect(page).toHaveScreenshot(`${storyId}-dark.png`);
     });
 }
