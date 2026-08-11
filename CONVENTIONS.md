@@ -114,6 +114,8 @@ src/
 ## Linting & formatting (docs/adr/tech/0007)
 
 - ESLint (with `eslint-plugin-tailwindcss`) and Prettier (with `prettier-plugin-tailwindcss`) must both report zero errors before merge. Enforcement: required CI status check running both on every PR.
+- Two or more consecutive `//` line comments are written as a single `/** ... */` block instead — a single standalone `//` comment is unaffected. Enforcement: `@stylistic/eslint-plugin`'s `multiline-comment-style` rule, set to `"starred-block"`.
+- Every function is a `const` bound to an arrow function expression, never a `function` declaration or function expression (docs/adr/tech/0015) — except Next.js framework-forced default-export files (`page.tsx`, `layout.tsx`, `route.ts`, etc.), which declare the arrow-const normally and `export default` it on its own line, since `export default const foo = () => {}` isn't valid syntax. Class methods and object-literal method shorthand are unaffected. Enforcement: `eslint-plugin-prefer-arrow-functions` (autofix) plus core `func-style: ["error", "expression"]` as a backstop.
 
 ## Responsive strategy (docs/adr/tech/0010, docs/adr/tech/0014)
 
