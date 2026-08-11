@@ -97,3 +97,17 @@ export const LongValue: Story = {
         </div>
     ),
 };
+
+// ADR tech/0010: mobile-viewport coverage. TextField is `w-full` — already fluid, filling
+// whatever width its container gives it, with no fixed desktop-only pixel width to override — so
+// no CSS changes were warranted; confirmed rather than assumed by adding MobileIdle (the bare
+// field filling the mobile canvas) and MobileLongValue (the overflow backstop is the layout most
+// likely to behave differently at a genuinely narrow width, not just a narrow story wrapper).
+export const MobileIdle: Story = {
+    globals: { viewport: "mobile" },
+};
+
+export const MobileLongValue: Story = {
+    render: LongValue.render,
+    globals: { viewport: "mobile" },
+};
