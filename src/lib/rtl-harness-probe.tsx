@@ -10,10 +10,8 @@ type Props = {
     onClick: () => void;
 };
 
-export function RtlHarnessProbe({ isDisabled, onClick }: Props) {
-    return (
-        <button type="button" disabled={isDisabled} onClick={onClick}>
-            Probe
-        </button>
-    );
-}
+export const RtlHarnessProbe = ({ isDisabled, onClick }: Props) => (
+    <button type="button" disabled={isDisabled} onClick={onClick}>
+        Probe
+    </button>
+);

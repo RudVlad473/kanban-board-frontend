@@ -4,6 +4,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import boundaries from "eslint-plugin-boundaries";
 import importX from "eslint-plugin-import-x";
+import preferArrowFunctions from "eslint-plugin-prefer-arrow-functions";
 import tailwindcss from "eslint-plugin-tailwindcss";
 import tseslint from "typescript-eslint";
 
@@ -257,6 +258,37 @@ const eslintConfig = defineConfig([
         },
         rules: {
             "@stylistic/multiline-comment-style": ["error", "starred-block"],
+        },
+    },
+
+    /*
+     * 8c. Every function is a `const` bound to an arrow function expression, never a `function`
+     * declaration or function expression (ADR tech/0015) — except Next.js framework-forced
+     * default-export files, which declare the arrow-const normally and `export default` it on
+     * its own line. `allowObjectProperties: true` leaves class methods and object-literal method
+     * shorthand alone, per the ADR's own carve-out; every other option is the plugin's default
+     * (converts both declarations and expressions). `func-style` is a backstop against bare
+     * function declarations specifically, in case a future rule/plugin change ever narrows what
+     * `prefer-arrow-functions` itself catches.
+     */
+    {
+        plugins: {
+            "prefer-arrow-functions": preferArrowFunctions,
+        },
+        rules: {
+            "prefer-arrow-functions/prefer-arrow-functions": [
+                "error",
+                {
+                    allowedNames: [],
+                    allowNamedFunctions: false,
+                    allowObjectProperties: true,
+                    classPropertiesAllowed: false,
+                    disallowPrototype: false,
+                    returnStyle: "unchanged",
+                    singleReturnOnly: false,
+                },
+            ],
+            "func-style": ["error", "expression"],
         },
     },
 

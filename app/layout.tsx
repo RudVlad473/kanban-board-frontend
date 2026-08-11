@@ -6,10 +6,12 @@ export const metadata: Metadata = {
     description: "A kanban board for organizing work into columns and tasks.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+const RootLayout = ({ children }: LayoutProps<"/">) => {
     return (
         <html lang="en" className="h-full antialiased">
             <body className="flex min-h-full flex-col bg-bg-app text-text-primary">{children}</body>
         </html>
     );
-}
+};
+
+export default RootLayout;

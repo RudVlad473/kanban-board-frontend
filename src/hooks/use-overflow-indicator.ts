@@ -19,7 +19,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * handler (and/or a `value`-keyed effect, for controlled updates that never fire a native input
  * event at all).
  */
-export function useOverflowIndicator<T extends HTMLElement>() {
+export const useOverflowIndicator = <T extends HTMLElement>() => {
     const ref = useRef<T | null>(null);
     const [isOverflowing, setIsOverflowing] = useState(false);
 
@@ -52,4 +52,4 @@ export function useOverflowIndicator<T extends HTMLElement>() {
     }, [recheck]);
 
     return { ref, isOverflowing, recheck };
-}
+};

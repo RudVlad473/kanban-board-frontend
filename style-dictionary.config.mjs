@@ -34,9 +34,7 @@ const BREAKPOINT_ALIASES = { mobile: "sm", tablet: "md", desktop: "lg" };
  * `app/layout.tsx`), so deriving the same slug here keeps the two files coupled by convention
  * without a shared constant.
  */
-function fontFamilyVariableSlug(fontFamily) {
-    return fontFamily.toLowerCase().replace(/\s+/g, "-");
-}
+const fontFamilyVariableSlug = (fontFamily) => fontFamily.toLowerCase().replace(/\s+/g, "-");
 
 /**
  * Expands one composite `typography` token into Tailwind v4's separately-addressable custom
@@ -45,7 +43,7 @@ function fontFamilyVariableSlug(fontFamily) {
  * `--font-weight-<name>` (weight), `--leading-<name>` (line height), and `--tracking-<name>`
  * (letter-spacing, only when present).
  */
-function typographyDeclarations(token) {
+const typographyDeclarations = (token) => {
     const value = token.$value ?? token.value;
     /*
      * token.path is e.g. ["font", "heading-xl"] — drop the leading category segment so the
@@ -63,16 +61,16 @@ function typographyDeclarations(token) {
         lines.push(`  --tracking-${suffix}: ${value.letterSpacing};`);
     }
     return lines;
-}
+};
 
-function breakpointDeclaration(token) {
+const breakpointDeclaration = (token) => {
     const suffix = token.path.slice(1).join("-");
     const alias = BREAKPOINT_ALIASES[suffix] ?? suffix;
     const value = token.$value ?? token.value;
     return `  --breakpoint-${alias}: ${value};`;
-}
+};
 
-function tokenDeclarations(dictionary) {
+const tokenDeclarations = (dictionary) => {
     const lines = [];
     for (const token of dictionary.allTokens) {
         const type = token.$type ?? token.type;
@@ -88,7 +86,7 @@ function tokenDeclarations(dictionary) {
         lines.push(`  --${token.name}: ${value};`);
     }
     return lines;
-}
+};
 
 StyleDictionary.registerFormat({
     name: "css/tailwind-theme",
@@ -130,7 +128,7 @@ const modeInvariantSources = [
  * as two separate configs/instances with disjoint sources (see scripts/build-tokens.mjs, which
  * builds both and concatenates the CSS text itself — @theme block first, .dark block second).
  */
-export function createConfig(mode) {
+export const createConfig = (mode) => {
     if (mode === "dark") {
         return {
             source: ["tokens/color.tokens.json", "tokens/color.dark.tokens.json"],
@@ -162,6 +160,6 @@ export function createConfig(mode) {
             },
         },
     };
-}
+};
 
 export default createConfig("light");

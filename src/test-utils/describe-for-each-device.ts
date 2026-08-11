@@ -17,7 +17,7 @@ import { DEVICE_TYPE, VIEWPORT_SIZES, type DeviceType } from "@/lib/viewport-bre
  *     });
  * });
  */
-export function describeForEachDevice(name: string, body: (device: DeviceType) => void) {
+export const describeForEachDevice = (name: string, body: (device: DeviceType) => void) => {
     describe.each(Object.values(DEVICE_TYPE))(`${name} (%s)`, (device) => {
         beforeEach(async () => {
             const { width, height } = VIEWPORT_SIZES[device];
@@ -26,4 +26,4 @@ export function describeForEachDevice(name: string, body: (device: DeviceType) =
 
         body(device);
     });
-}
+};

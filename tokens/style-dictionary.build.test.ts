@@ -17,7 +17,7 @@ import { createConfig } from "../style-dictionary.config.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-async function buildModeCss(mode: "light" | "dark", platform: string, baseDir: string = repoRoot) {
+const buildModeCss = async (mode: "light" | "dark", platform: string, baseDir: string = repoRoot) => {
     const config = createConfig(mode) as unknown as Config;
     const absoluteConfig: Config = {
         ...config,
@@ -26,25 +26,25 @@ async function buildModeCss(mode: "light" | "dark", platform: string, baseDir: s
     const sd = new StyleDictionary(absoluteConfig);
     const [{ output }] = await sd.formatPlatform(platform);
     return output as string;
-}
+};
 
-async function buildFullCss(baseDir: string = repoRoot) {
+const buildFullCss = async (baseDir: string = repoRoot) => {
     const [theme, dark] = await Promise.all([
         buildModeCss("light", "css", baseDir),
         buildModeCss("dark", "css-dark", baseDir),
     ]);
     return `${theme}\n${dark}`;
-}
+};
 
 /**
  * Copies the real tokens/ tree into an isolated temp dir so a test-local mutation never
  * touches the tracked source files. Caller is responsible for removing the returned dir.
  */
-async function copyTempTokens() {
+const copyTempTokens = async () => {
     const tmpRoot = await mkdtemp(path.join(tmpdir(), "sd-pipeline-"));
     await cp(path.join(repoRoot, "tokens"), path.join(tmpRoot, "tokens"), { recursive: true });
     return tmpRoot;
-}
+};
 
 describe("style dictionary token pipeline (D-12)", () => {
     it("expands the composite font-heading-xl typography token into four individually-addressable custom properties", async () => {

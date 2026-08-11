@@ -8,7 +8,7 @@ import { useOverflowIndicator } from "./use-overflow-indicator";
  * inside the observed subtree would itself be a DOM mutation the internal `MutationObserver`
  * reacts to, muddying what this test is actually proving.
  */
-function OverflowProbe({ text, width }: { text: string; width: number }) {
+const OverflowProbe = ({ text, width }: { text: string; width: number }) => {
     const { ref, isOverflowing } = useOverflowIndicator<HTMLDivElement>();
     return (
         <div>
@@ -18,7 +18,7 @@ function OverflowProbe({ text, width }: { text: string; width: number }) {
             <span data-testid="status">{isOverflowing ? "overflowing" : "fits"}</span>
         </div>
     );
-}
+};
 
 describe("useOverflowIndicator", () => {
     it("reports no overflow when content fits inside the element's box", async () => {
@@ -52,9 +52,9 @@ describe("useOverflowIndicator", () => {
 
     it("re-evaluates when the observed element's text content changes via a re-render", async () => {
         // Arrange
-        function Rerenderable({ long }: { long: boolean }) {
-            return <OverflowProbe text={long ? "x".repeat(300) : "short"} width={100} />;
-        }
+        const Rerenderable = ({ long }: { long: boolean }) => (
+            <OverflowProbe text={long ? "x".repeat(300) : "short"} width={100} />
+        );
         const screen = await render(<Rerenderable long={false} />);
         await expect.element(screen.getByTestId("status")).toHaveTextContent("fits");
 

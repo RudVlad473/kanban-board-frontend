@@ -83,7 +83,7 @@ const storyIds = [
  */
 const deviceTypes = Object.values(DEVICE_TYPE);
 
-async function gotoStory(page: Page, url: string) {
+const gotoStory = async (page: Page, url: string) => {
     await page.goto(url);
     /*
      * Modal is the one primitive whose actual visible surface does not live inside
@@ -109,7 +109,7 @@ async function gotoStory(page: Page, url: string) {
     const root = page.locator("#storybook-root > *").first();
     await root.waitFor({ state: "visible" });
     return root;
-}
+};
 
 /*
  * Screenshotting the story's root element (not the page, not even #storybook-root) crops to its
