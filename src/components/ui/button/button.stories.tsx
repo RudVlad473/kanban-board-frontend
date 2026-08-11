@@ -80,21 +80,3 @@ export const Disabled: Story = {
         isDisabled: true,
     },
 };
-
-// ADR tech/0010: mobile-viewport coverage. Button has no `md:`/`lg:` responsive classes at all —
-// it's a fixed-size control (h-8/h-10/h-12) that doesn't change shape across breakpoints, so
-// there's no mobile-specific styling to add here. These two stories exist to *confirm* that
-// (representative primary state + the multi-button `Sizes` row, the layout most likely to reveal
-// a narrow-viewport wrapping/overflow issue if one existed), not because the primitive itself
-// needed mobile-first changes.
-export const MobilePrimary: Story = {
-    args: {
-        variant: "primary",
-    },
-    globals: { viewport: "mobile" },
-};
-
-export const MobileSizes: Story = {
-    render: Sizes.render,
-    globals: { viewport: "mobile" },
-};

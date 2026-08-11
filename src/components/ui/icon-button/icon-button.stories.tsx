@@ -75,20 +75,3 @@ export const Disabled: Story = {
         isDisabled: true,
     },
 };
-
-// ADR tech/0010: mobile-viewport coverage. IconButton has no `md:`/`lg:` responsive classes — a
-// fixed-size control (44/44/48px hit areas, UI-SPEC's accessibility floor) that doesn't change
-// shape across breakpoints, so no CSS changes were warranted; confirmed rather than assumed by
-// adding MobileDefault and MobileSizes (the multi-button row most likely to reveal a
-// narrow-viewport wrapping/overflow issue if one existed).
-export const MobileDefault: Story = {
-    args: {
-        variant: "primary",
-    },
-    globals: { viewport: "mobile" },
-};
-
-export const MobileSizes: Story = {
-    render: Sizes.render,
-    globals: { viewport: "mobile" },
-};

@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
+import { DEVICE_TYPE, VIEWPORT_SIZES } from "../src/lib/viewport-breakpoints";
+
 // Visual-regression baselines for every design-system primitive's stories (D-22, ADR tech/0008)
 // — once in light scope and once in dark scope. Every primitive plan appends its own stories to
 // this same spec as they ship (continuous capture, not an end-of-phase batch).
@@ -67,38 +69,15 @@ const storyIds = [
     "components-ui-modal--closed",
 ];
 
-// ADR tech/0010 mobile-first retrofit: two representative mobile-viewport (375px,
-// breakpoint.mobile) stories per primitive (three for Modal, the primitive that actually gained
-// mobile-specific CSS) — not every existing story duplicated, per the ADR's "at least its
-// primary/most-representative states" bar rather than full duplication. Captured at a real 375px
-// Playwright page viewport (see `viewportForStory` below) so any `md:`/`lg:` responsive classes
-// genuinely evaluate against that width, rather than relying on Storybook's own viewport
-// addon/global — which only resizes a nested manager iframe that doesn't exist when a test
-// navigates directly to `/iframe.html` the way this spec (and the a11y project) already does.
-const mobileStoryIds = [
-    "components-ui-button--mobile-primary",
-    "components-ui-button--mobile-sizes",
-    "components-ui-icon-button--mobile-default",
-    "components-ui-icon-button--mobile-sizes",
-    "components-ui-text-field--mobile-idle",
-    "components-ui-text-field--mobile-long-value",
-    "components-ui-checkbox--mobile-unchecked",
-    "components-ui-checkbox--mobile-sizes",
-    "components-ui-switch--mobile-off",
-    "components-ui-switch--mobile-sizes",
-    "components-ui-dropdown--mobile-open",
-    "components-ui-dropdown--mobile-long-item-list",
-    "components-ui-modal--mobile-open",
-    "components-ui-modal--mobile-with-footer-actions",
-    "components-ui-modal--mobile-long-content",
-];
-
-// Matches .storybook/preview.ts's MOBILE_VIEWPORT styles (375x667).
-const MOBILE_VIEWPORT_SIZE = { width: 375, height: 667 };
-
-function viewportForStory(storyId: string) {
-    return storyId.includes("--mobile-") ? MOBILE_VIEWPORT_SIZE : null;
-}
+// ADR tech/0010: every story above is captured at both viewports — Playwright itself resizes the
+// page before navigating (`page.setViewportSize`, driven by the same shared
+// `src/lib/viewport-breakpoints.ts` sizes `.storybook/preview.ts`'s toolbar control and the
+// Vitest dual-viewport test util both read) — rather than a separate `Mobile*` story export per
+// primitive. Storybook's own `viewport` global/toolbar only resizes a nested manager iframe that
+// doesn't exist when a test navigates directly to `/iframe.html` the way this spec does, so it
+// can't drive the real viewport here; the page's own size is what actually needs to change for
+// `md:`/`lg:` Tailwind classes to evaluate correctly.
+const deviceTypes = Object.values(DEVICE_TYPE);
 
 async function gotoStory(page: Page, url: string) {
     await page.goto(url);
@@ -129,22 +108,23 @@ async function gotoStory(page: Page, url: string) {
 // that, so a full-page capture was mostly wasted whitespace in every baseline and every
 // comparison. This also scales correctly for future, larger primitives (Modal, Dropdown) without
 // needing a hand-picked viewport size per story.
-for (const storyId of [...storyIds, ...mobileStoryIds]) {
-    const mobileViewport = viewportForStory(storyId);
+for (const storyId of storyIds) {
+    for (const deviceType of deviceTypes) {
+        const viewportSize = VIEWPORT_SIZES[deviceType];
+        // Baseline filenames read `{storyId}-{desktop|mobile}-{light|dark}.png` — device before
+        // theme, matching the order the two axes are chosen in (viewport first, then color scheme).
+        const deviceLabel = deviceType.toLowerCase();
 
-    test(`${storyId} — light`, async ({ page }) => {
-        if (mobileViewport) {
-            await page.setViewportSize(mobileViewport);
-        }
-        const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
-        await expect(root).toHaveScreenshot(`${storyId}-light.png`);
-    });
+        test(`${storyId} — ${deviceLabel} — light`, async ({ page }) => {
+            await page.setViewportSize(viewportSize);
+            const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
+            await expect(root).toHaveScreenshot(`${storyId}-${deviceLabel}-light.png`);
+        });
 
-    test(`${storyId} — dark`, async ({ page }) => {
-        if (mobileViewport) {
-            await page.setViewportSize(mobileViewport);
-        }
-        const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
-        await expect(root).toHaveScreenshot(`${storyId}-dark.png`);
-    });
+        test(`${storyId} — ${deviceLabel} — dark`, async ({ page }) => {
+            await page.setViewportSize(viewportSize);
+            const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
+            await expect(root).toHaveScreenshot(`${storyId}-${deviceLabel}-dark.png`);
+        });
+    }
 }

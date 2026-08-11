@@ -5,14 +5,16 @@ import "../src/styles/globals.css";
 import * as a11yAddonAnnotations from "@storybook/addon-a11y/preview";
 import { definePreview } from "@storybook/nextjs-vite";
 
+import { DEVICE_TYPE, VIEWPORT_SIZES } from "@/lib/viewport-breakpoints";
+
 // ADR tech/0010: two named viewports matching this project's own breakpoint tokens
 // (src/styles/tokens.css `--breakpoint-sm`/`--breakpoint-lg`, DTCG `breakpoint.mobile`/
 // `breakpoint.desktop`) rather than Storybook's built-in device presets (iPhone X, iPad, ...),
 // which don't line up with the tokens mobile-first CSS is actually written against. The
 // `viewport` parameter/global is Storybook core in this version (10.5.7) — no separate addon
-// package needed, only this configuration.
-const MOBILE_VIEWPORT = "mobile";
-const DESKTOP_VIEWPORT = "desktop";
+// package needed, only this configuration. Sizes come from the shared
+// `src/lib/viewport-breakpoints.ts` module (also read by the Playwright visual spec and the
+// Vitest dual-viewport test util) so all three stay numerically identical by construction.
 
 export default definePreview({
     addons: [a11yAddonAnnotations],
@@ -32,14 +34,20 @@ export default definePreview({
         },
         viewport: {
             options: {
-                [MOBILE_VIEWPORT]: {
-                    name: "Mobile (375px, breakpoint.mobile)",
-                    styles: { width: "375px", height: "667px" },
+                [DEVICE_TYPE.MOBILE]: {
+                    name: `Mobile (${String(VIEWPORT_SIZES[DEVICE_TYPE.MOBILE].width)}px, breakpoint.mobile)`,
+                    styles: {
+                        width: `${String(VIEWPORT_SIZES[DEVICE_TYPE.MOBILE].width)}px`,
+                        height: `${String(VIEWPORT_SIZES[DEVICE_TYPE.MOBILE].height)}px`,
+                    },
                     type: "mobile",
                 },
-                [DESKTOP_VIEWPORT]: {
-                    name: "Desktop (1440px, breakpoint.desktop)",
-                    styles: { width: "1440px", height: "900px" },
+                [DEVICE_TYPE.DESKTOP]: {
+                    name: `Desktop (${String(VIEWPORT_SIZES[DEVICE_TYPE.DESKTOP].width)}px, breakpoint.desktop)`,
+                    styles: {
+                        width: `${String(VIEWPORT_SIZES[DEVICE_TYPE.DESKTOP].width)}px`,
+                        height: `${String(VIEWPORT_SIZES[DEVICE_TYPE.DESKTOP].height)}px`,
+                    },
                     type: "desktop",
                 },
             },
@@ -61,10 +69,11 @@ export default definePreview({
     },
     initialGlobals: {
         theme: "light",
-        // Desktop by default, matching every existing story's implicit pre-ADR-0010 rendering —
-        // a story opts into `MOBILE_VIEWPORT` explicitly via its own `globals.viewport` override
-        // (see e.g. button.stories.tsx's `Mobile` story) rather than every story needing one.
-        viewport: DESKTOP_VIEWPORT,
+        // Desktop by default, matching every existing story's implicit pre-ADR-0010 rendering. A
+        // human viewing any story flips the toolbar's viewport dropdown between Mobile/Desktop to
+        // see both instantly — there is no separate `Mobile*` story export per component; the
+        // toolbar control isn't tied to story identity, so one story covers both viewports.
+        viewport: DEVICE_TYPE.DESKTOP,
     },
     decorators: [
         (Story, context) => {

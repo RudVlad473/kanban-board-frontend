@@ -78,17 +78,3 @@ export const CheckedWithStrikethrough: Story = {
         hasStrikethroughWhenChecked: true,
     },
 };
-
-// ADR tech/0010: mobile-viewport coverage. Checkbox has no `md:`/`lg:` responsive classes — a
-// fixed-size control (16/20/24px boxes, D-18) whose label text simply wraps like any inline text
-// if a consumer's own layout is narrow — so no CSS changes were warranted; confirmed rather than
-// assumed by adding MobileUnchecked and MobileSizes (the multi-checkbox row most likely to reveal
-// a narrow-viewport wrapping/overflow issue if one existed).
-export const MobileUnchecked: Story = {
-    globals: { viewport: "mobile" },
-};
-
-export const MobileSizes: Story = {
-    render: Sizes.render,
-    globals: { viewport: "mobile" },
-};
