@@ -51,6 +51,14 @@ const storyIds = [
     "components-ui-switch--disabled",
     "components-ui-switch--sizes",
     "components-ui-switch--with-icons",
+    // Dropdown (plan 01-08, Task 2) — seven stories.
+    "components-ui-dropdown--closed",
+    "components-ui-dropdown--open",
+    "components-ui-dropdown--with-selection",
+    "components-ui-dropdown--error",
+    "components-ui-dropdown--disabled-item",
+    "components-ui-dropdown--disabled",
+    "components-ui-dropdown--long-item-list",
 ];
 
 async function gotoStory(page: Page, url: string) {
