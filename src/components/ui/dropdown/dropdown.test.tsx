@@ -226,6 +226,46 @@ describe("Dropdown", () => {
         expect(new Set(middleCorners).size).toBe(1);
     });
 
+    it("clips the rounded/shadowed popup to its own bounds and scrolls an inner content region, not the popup itself, once the item list overflows", async () => {
+        // Arrange — `rounded-md`/`shadow-md`/`overflow-hidden` live on the popup itself; the
+        // scrollable region is a separate inner wrapper. Putting `overflow-y-auto` directly on the
+        // rounded/shadowed element let the scrollable region's edge — and an in-flow scrollbar,
+        // which Firefox reserves layout width for even though Chrome's overlay scrollbar mostly
+        // hides the same bug — render against/outside the rounded corner once the list actually
+        // needed to scroll (same fix pattern as Modal's panel).
+        const screen = await render(
+            <Dropdown.Root defaultOpen>
+                <Dropdown.Trigger placeholder="Select a board" />
+                <Dropdown.Content>
+                    {Array.from({ length: 20 }, (_, index) => {
+                        const position = String(index);
+                        return (
+                            <Dropdown.Item key={position} value={`board-${position}`}>
+                                {`Board ${position}`}
+                            </Dropdown.Item>
+                        );
+                    })}
+                </Dropdown.Content>
+            </Dropdown.Root>,
+        );
+        const popup = screen.getByRole("listbox").element() as HTMLElement;
+        const innerScrollRegion = popup.firstElementChild as HTMLElement;
+
+        // Act
+        const popupStyle = getComputedStyle(popup);
+        const innerStyle = getComputedStyle(innerScrollRegion);
+
+        // Assert — the popup carries the silhouette and clips to it; its own rendered height never
+        // exceeds its `max-h-72` (288px) + 1px border on each side, i.e. it never itself scrolls.
+        expect(popupStyle.overflow).toBe("hidden");
+        expect(popupStyle.borderRadius).not.toBe("0px");
+        expect(popupStyle.boxShadow).not.toBe("none");
+        expect(popup.getBoundingClientRect().height).toBeLessThanOrEqual(290);
+        // The inner wrapper is the one that actually scrolls the overflowing item list.
+        expect(innerStyle.overflowY).toBe("auto");
+        expect(innerScrollRegion.scrollHeight).toBeGreaterThan(innerScrollRegion.clientHeight);
+    });
+
     it("makes an isDisabled item unselectable and skipped by arrow navigation", async () => {
         // Arrange
         const onValueChange = vi.fn();

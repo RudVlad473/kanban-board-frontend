@@ -112,18 +112,26 @@ type DropdownContentProps = Omit<SelectPopupProps, "className"> & {
 // surface-elevation treatment as every other elevated surface in this design system.
 // `w-[var(--anchor-width)]` reads the CSS variable Base UI's Positioner sets from the trigger's
 // own measured width, so the popup always matches the trigger it belongs to.
+//
+// `rounded-md`/`shadow-md` and `overflow-y-auto` are deliberately on two different elements — the
+// same fix as Modal's panel (modal.tsx). Putting the scroll directly on the rounded/shadowed
+// element let the scrollable region's edge and an in-flow scrollbar (Firefox reserves layout
+// width for it; Chrome's overlay scrollbar merely hides the same underlying bug) render against
+// or outside the rounded corner once the item list actually needed to scroll. The outer
+// `Select.Popup` now only owns the silhouette and clips to it with `overflow-hidden`; an inner
+// `div` owns the scroll region and the `p-1` item-list padding.
 const Content = ({ className, children, ...props }: DropdownContentProps) => {
     return (
         <Select.Portal>
             <Select.Positioner className="z-50 outline-none" sideOffset={4}>
                 <Select.Popup
                     className={cn(
-                        "max-h-72 w-[var(--anchor-width)] overflow-y-auto rounded-md border border-border-default bg-bg-surface p-1 shadow-md outline-none",
+                        "max-h-72 w-[var(--anchor-width)] overflow-hidden rounded-md border border-border-default bg-bg-surface shadow-md outline-none",
                         className,
                     )}
                     {...props}
                 >
-                    {children}
+                    <div className="max-h-72 overflow-y-auto p-1">{children}</div>
                 </Select.Popup>
             </Select.Positioner>
         </Select.Portal>
