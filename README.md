@@ -27,7 +27,7 @@ pnpm storybook     # http://localhost:6006 — design-system component catalogue
 
 ## Testing
 
-This project runs five distinct kinds of check, each catching a different class of problem.
+This project runs six distinct kinds of check, each catching a different class of problem.
 None of them are optional gates dressed up as suggestions — `pnpm lint`, `pnpm format:check`,
 `pnpm build`, and `pnpm test` all have to pass with zero errors before a change merges, enforced
 by the `quality` job in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) as a required
@@ -69,7 +69,27 @@ underneath it is real.
   or DOM structure — a test that only passes because of an implementation detail isn't testing
   the thing a user or screen reader actually experiences.
 
-### 3. Accessibility tests — Storybook + axe-core
+### 3. Logic/hook tests — React Testing Library (jsdom)
+
+```bash
+pnpm test:unit
+```
+
+For pure logic and behavior that doesn't depend on real CSS layout or paint (hooks, form
+validation, non-visual state), the `unit` Vitest project uses
+[React Testing Library](https://testing-library.com/react) against **jsdom**, not a real browser —
+faster, but jsdom fakes computed styles from declared rules rather than actually resolving
+Tailwind's custom-property-driven values, so it can't stand in for §2 above wherever a test asserts
+`getComputedStyle()`. Files live under `*.unit.test.{ts,tsx}` (not `*.test.tsx`, which routes to
+§2's real-browser project instead) and register jest-dom matchers, RTL's own `render`/`screen`, and
+`@testing-library/user-event` via `vitest.setup.unit.ts`.
+
+`src/lib/rtl-harness-probe.tsx` is a throwaway smoke component (same role `harness-probe.tsx`
+played for §2 in plan 01-05) proving the `unit` project actually renders, cleans up between tests,
+and handles click/keyboard/disabled-state — delete it once a real hook/logic test exists to prove
+the harness instead.
+
+### 4. Accessibility tests — Storybook + axe-core
 
 ```bash
 pnpm test:a11y
@@ -87,9 +107,9 @@ state was even built.
 
 Stories themselves are **visual-only** — no `play` functions, no interaction assertions. Behavior
 (clicks, keyboard, disabled state) belongs in the `.test.tsx` file (§2); a story's only job is to
-render a state so axe and Playwright (§4) have something to check.
+render a state so axe and Playwright (§5) have something to check.
 
-### 4. Visual regression — Playwright screenshots of Storybook
+### 5. Visual regression — Playwright screenshots of Storybook
 
 ```bash
 pnpm test:visual    # smoke run locally — see the CI-only note below
@@ -143,7 +163,7 @@ Run this whenever a change alters a primitive's rendered output (new variant, ne
 value change) — the regular `ci.yml` `visual` job only _compares against_ the committed
 baselines; it never regenerates them.
 
-### 5. Everything together
+### 6. Everything together
 
 ```bash
 pnpm test:all       # pnpm test && pnpm exec playwright test
@@ -154,9 +174,9 @@ pnpm test:all       # pnpm test && pnpm exec playwright test
 Two workflows, both required:
 
 - **`ci.yml`** — on every push/PR: `quality` (lint, format check, build, `pnpm test` — which
-  covers §1, §2, and §3 above, since they're all Vitest projects) then `visual` (Playwright
-  against the committed baselines, §4).
-- **`visual-baselines.yml`** — manual dispatch only (§4's regeneration step above).
+  covers §1-§4 above, since they're all Vitest projects) then `visual` (Playwright against the
+  committed baselines, §5).
+- **`visual-baselines.yml`** — manual dispatch only (§5's regeneration step above).
 
 ## Design tokens
 

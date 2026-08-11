@@ -213,6 +213,13 @@ later.
   see `visual/primitives.visual.spec.ts`'s `storyIds` loop. A preference, not a mandate: don't
   force a loop where the cases aren't actually uniform, and group tests with `describe()` where
   natural rather than leaving them flat just because a loop generated them.
+- **D-26z** *(2026-08-11, post-context correction)*: A fourth Vitest project, `unit` (jsdom, via
+  React Testing Library + `@testing-library/user-event`), covers pure logic/hook tests that don't
+  depend on real CSS layout or paint — distinct from D-26's `browser` project (real Chromium via
+  `vitest-browser-react`), which stays the only place components with `getComputedStyle()` or
+  axe-core-relevant assertions are tested, since jsdom cannot resolve Tailwind's
+  custom-property-driven values the way a real browser does. Files use the `*.unit.test.{ts,tsx}`
+  suffix to route to the jsdom project instead of `browser`'s `*.test.tsx` glob.
 
 ### Sequencing
 

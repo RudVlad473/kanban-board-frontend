@@ -38,6 +38,7 @@ export default defineConfig({
                 test: {
                     name: "browser",
                     include: ["src/**/*.test.tsx"],
+                    exclude: ["src/**/*.unit.test.tsx"],
                     setupFiles: ["./vitest.setup.ts"],
                     browser: {
                         enabled: true,
@@ -45,6 +46,21 @@ export default defineConfig({
                         provider: playwright(),
                         instances: [{ browser: "chromium" }],
                     },
+                },
+            },
+            {
+                resolve: { alias },
+                test: {
+                    // jsdom, not real-browser: for pure logic/hook tests with no CSS layout or
+                    // paint dependency (e.g. React Testing Library + user-event). Component tests
+                    // that assert computed styles (variant/size CSS, axe-core) belong in the
+                    // "browser" project above instead — jsdom fakes computed styles from declared
+                    // rules rather than actually resolving Tailwind's custom-property-driven
+                    // values, so it can't stand in for real rendering there.
+                    name: "unit",
+                    environment: "jsdom",
+                    include: ["src/**/*.unit.test.{ts,tsx}"],
+                    setupFiles: ["./vitest.setup.unit.ts"],
                 },
             },
             {
