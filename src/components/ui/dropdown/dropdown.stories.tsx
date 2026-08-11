@@ -2,9 +2,11 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { Dropdown } from "./dropdown";
 
-// Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
-// (keyboard nav, selection, focus return, error state, disabled item) live exclusively in
-// dropdown.test.tsx. Per D-25, the open state is driven by `defaultOpen`, not a play function.
+/*
+ * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * (keyboard nav, selection, focus return, error state, disabled item) live exclusively in
+ * dropdown.test.tsx. Per D-25, the open state is driven by `defaultOpen`, not a play function.
+ */
 const meta: Meta<typeof Dropdown.Root> = {
     component: Dropdown.Root,
     render: (args) => (
@@ -67,9 +69,11 @@ export const Disabled: Story = {
     },
 };
 
-// Mirrors TextField's LongValue story: a selected label long enough to overflow the trigger's
-// own width shows the trailing-edge overflow indicator (the trigger is narrowed via a wrapping
-// style to force the overflow, the same technique TextField's LongValue story uses).
+/*
+ * Mirrors TextField's LongValue story: a selected label long enough to overflow the trigger's
+ * own width shows the trailing-edge overflow indicator (the trigger is narrowed via a wrapping
+ * style to force the overflow, the same technique TextField's LongValue story uses).
+ */
 export const LongSelectedValue: Story = {
     args: {
         defaultValue: "A very long board name that will definitely overflow the trigger width",

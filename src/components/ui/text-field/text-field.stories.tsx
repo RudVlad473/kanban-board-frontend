@@ -3,8 +3,10 @@ import { Eye } from "lucide-react";
 
 import { TextField } from "./text-field";
 
-// Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
-// (typing, error announcement, disabled, overflow) live exclusively in text-field.test.tsx.
+/*
+ * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * (typing, error announcement, disabled, overflow) live exclusively in text-field.test.tsx.
+ */
 const meta: Meta<typeof TextField> = {
     component: TextField,
     args: {
@@ -18,8 +20,10 @@ type Story = StoryObj<typeof TextField>;
 
 export const Idle: Story = {};
 
-// Focus is staged via class application on a wrapping decorator, never a real `.focus()` call or
-// a play function (D-25 keeps stories visual-only).
+/*
+ * Focus is staged via class application on a wrapping decorator, never a real `.focus()` call or
+ * a play function (D-25 keeps stories visual-only).
+ */
 export const Focused: Story = {
     decorators: [
         (Story) => (
@@ -36,8 +40,10 @@ export const Filled: Story = {
     },
 };
 
-// The required-field error copy is UI-SPEC's own Copywriting Contract string, verbatim — this
-// story doubles as a copy reference, not sample text.
+/*
+ * The required-field error copy is UI-SPEC's own Copywriting Contract string, verbatim — this
+ * story doubles as a copy reference, not sample text.
+ */
 export const Error: Story = {
     args: {
         label: "Password",
@@ -59,12 +65,14 @@ export const WithDescription: Story = {
     },
 };
 
-// The password-visibility toggle (plan 01-12's first real consumer, an IconButton) occupies the
-// `trailing` slot. Stories can't import a sibling `ui` element (eslint-plugin-boundaries reserves
-// ui-to-ui composition for the `feature`/`layout` layers, ADR tech/0009), so this story stages
-// the same visual position with a bare glyph rather than the real IconButton primitive — the
-// `trailing` prop itself is a plain `ReactNode`, so this is a story-only substitution, not a
-// primitive-level restriction.
+/*
+ * The password-visibility toggle (plan 01-12's first real consumer, an IconButton) occupies the
+ * `trailing` slot. Stories can't import a sibling `ui` element (eslint-plugin-boundaries reserves
+ * ui-to-ui composition for the `feature`/`layout` layers, ADR tech/0009), so this story stages
+ * the same visual position with a bare glyph rather than the real IconButton primitive — the
+ * `trailing` prop itself is a plain `ReactNode`, so this is a story-only substitution, not a
+ * primitive-level restriction.
+ */
 export const Password: Story = {
     args: {
         label: "Password",
@@ -88,8 +96,10 @@ export const Sizes: Story = {
     ),
 };
 
-// UI-SPEC's overflow backstop: a 300-character value must scroll inside the field rather than
-// expanding or wrapping the surrounding layout — this story carries that state's visual baseline.
+/*
+ * UI-SPEC's overflow backstop: a 300-character value must scroll inside the field rather than
+ * expanding or wrapping the surrounding layout — this story carries that state's visual baseline.
+ */
 export const LongValue: Story = {
     render: (args) => (
         <div style={{ width: "320px" }}>

@@ -3,8 +3,10 @@ import { Moon, Sun } from "lucide-react";
 
 import { Switch } from "./switch";
 
-// Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
-// (keyboard/click/controlled/hit-area) live exclusively in switch.test.tsx.
+/*
+ * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * (keyboard/click/controlled/hit-area) live exclusively in switch.test.tsx.
+ */
 const meta: Meta<typeof Switch> = {
     component: Switch,
     args: {
@@ -24,9 +26,11 @@ export const On: Story = {
     },
 };
 
-// Hover is staged via class application on a wrapping decorator, never a real pointer
-// interaction (D-25 keeps stories visual-only) — the track is a plain nested `span`, not the
-// `role=switch` element itself, so the selector reaches one level in.
+/*
+ * Hover is staged via class application on a wrapping decorator, never a real pointer
+ * interaction (D-25 keeps stories visual-only) — the track is a plain nested `span`, not the
+ * `role=switch` element itself, so the selector reaches one level in.
+ */
 export const Hover: Story = {
     args: {
         defaultChecked: true,
@@ -66,8 +70,10 @@ export const Sizes: Story = {
     ),
 };
 
-// The theme toggle in plan 01-14 is this slot pair's first real consumer — sun/moon glyphs from
-// the icon library selected in plan 01-06, passed in rather than hardcoded as a theme concept.
+/*
+ * The theme toggle in plan 01-14 is this slot pair's first real consumer — sun/moon glyphs from
+ * the icon library selected in plan 01-06, passed in rather than hardcoded as a theme concept.
+ */
 export const WithIcons: Story = {
     args: {
         defaultChecked: true,

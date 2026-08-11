@@ -2,8 +2,10 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { Button } from "./button";
 
-// Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
-// (click/keyboard/disabled/merge) live exclusively in button.test.tsx.
+/*
+ * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * (click/keyboard/disabled/merge) live exclusively in button.test.tsx.
+ */
 const meta: Meta<typeof Button> = {
     component: Button,
     args: {
@@ -51,8 +53,10 @@ export const Sizes: Story = {
     ),
 };
 
-// Hover is staged via class application on a wrapping decorator, never a real pointer
-// interaction (D-25 keeps stories visual-only).
+/*
+ * Hover is staged via class application on a wrapping decorator, never a real pointer
+ * interaction (D-25 keeps stories visual-only).
+ */
 export const Hover: Story = {
     decorators: [
         (Story) => (
@@ -63,8 +67,10 @@ export const Hover: Story = {
     ],
 };
 
-// Focus is staged the same way — a visible outline applied via class application, not a real
-// `.focus()` call or a play function.
+/*
+ * Focus is staged the same way — a visible outline applied via class application, not a real
+ * `.focus()` call or a play function.
+ */
 export const Focus: Story = {
     decorators: [
         (Story) => (

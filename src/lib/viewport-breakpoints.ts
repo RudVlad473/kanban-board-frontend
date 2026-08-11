@@ -22,9 +22,11 @@ export type ViewportSize = {
     height: number;
 };
 
-// 375x667 (breakpoint.mobile) / 1440x900 (breakpoint.desktop) — width matches the DTCG
-// `breakpoint.*` tokens exactly (src/styles/tokens.css `--breakpoint-sm`/`--breakpoint-lg`);
-// height is a representative device/viewport height, not itself a design token.
+/*
+ * 375x667 (breakpoint.mobile) / 1440x900 (breakpoint.desktop) — width matches the DTCG
+ * `breakpoint.*` tokens exactly (src/styles/tokens.css `--breakpoint-sm`/`--breakpoint-lg`);
+ * height is a representative device/viewport height, not itself a design token.
+ */
 export const VIEWPORT_SIZES: Record<DeviceType, ViewportSize> = {
     [DEVICE_TYPE.MOBILE]: { width: 375, height: 667 },
     [DEVICE_TYPE.DESKTOP]: { width: 1440, height: 900 },

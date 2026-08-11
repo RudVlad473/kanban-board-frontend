@@ -3,9 +3,11 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Modal } from "./modal";
 import { Button } from "../button/button";
 
-// Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions (focus
-// trap, Escape, focus restoration, backdrop dismissal) live exclusively in modal.test.tsx. Per
-// D-25, the open state comes from `defaultOpen`, never a play function.
+/*
+ * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions (focus
+ * trap, Escape, focus restoration, backdrop dismissal) live exclusively in modal.test.tsx. Per
+ * D-25, the open state comes from `defaultOpen`, never a play function.
+ */
 const meta: Meta<typeof Modal.Root> = {
     component: Modal.Root,
     args: {

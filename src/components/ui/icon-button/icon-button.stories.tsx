@@ -3,8 +3,10 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { IconButton } from "./icon-button";
 
-// Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
-// (click/keyboard/disabled/merge/hit-area) live exclusively in icon-button.test.tsx.
+/*
+ * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * (click/keyboard/disabled/merge/hit-area) live exclusively in icon-button.test.tsx.
+ */
 const meta: Meta<typeof IconButton> = {
     component: IconButton,
     args: {
@@ -24,9 +26,11 @@ export const Default: Story = {
     },
 };
 
-// The password-visibility toggle (plan 01-12's first real consumer) uses the `ghost` variant
-// with the eye/eye-off pair and the state-reflecting accessible-label pattern from UI-SPEC's
-// Copywriting Contract ("Show password" / "Hide password").
+/*
+ * The password-visibility toggle (plan 01-12's first real consumer) uses the `ghost` variant
+ * with the eye/eye-off pair and the state-reflecting accessible-label pattern from UI-SPEC's
+ * Copywriting Contract ("Show password" / "Hide password").
+ */
 export const Ghost: Story = {
     render: () => (
         <div className="flex items-center gap-4">
@@ -46,8 +50,10 @@ export const Sizes: Story = {
     ),
 };
 
-// Hover is staged via class application on a wrapping decorator, never a real pointer
-// interaction (D-25 keeps stories visual-only).
+/*
+ * Hover is staged via class application on a wrapping decorator, never a real pointer
+ * interaction (D-25 keeps stories visual-only).
+ */
 export const Hover: Story = {
     decorators: [
         (Story) => (
@@ -58,8 +64,10 @@ export const Hover: Story = {
     ],
 };
 
-// Focus is staged the same way — a visible outline applied via class application, not a real
-// `.focus()` call or a play function.
+/*
+ * Focus is staged the same way — a visible outline applied via class application, not a real
+ * `.focus()` call or a play function.
+ */
 export const Focus: Story = {
     decorators: [
         (Story) => (
