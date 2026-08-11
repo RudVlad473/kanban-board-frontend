@@ -79,6 +79,23 @@ const eslintConfig = defineConfig([
         },
     },
 
+    // 4c. Ban inline `import("module").Type` type queries — no typescript-eslint rule targets
+    // this node type directly (consistent-type-imports only covers top-level ImportDeclaration),
+    // so a plain AST selector on TSImportType is the lightest way to enforce a top-level
+    // `import type { Type } from "module"` instead.
+    {
+        rules: {
+            "no-restricted-syntax": [
+                "error",
+                {
+                    selector: "TSImportType",
+                    message:
+                        'Use a top-level `import type { X } from "module"` instead of an inline `import("module").X` type query.',
+                },
+            ],
+        },
+    },
+
     // 5. Import order/grouping (D-26p), with the TS path-alias resolver so internal aliases
     // resolve correctly instead of reporting as unresolved. eslint-plugin-import@2.32.0's
     // import/order fixer calls `sourceCode.getTokenOrCommentBefore`, a legacy SourceCode method
