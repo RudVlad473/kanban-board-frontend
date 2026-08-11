@@ -1,17 +1,28 @@
 import { expect, test } from "@playwright/test";
 
-// Visual-regression baselines for the harness-probe smoke component's four stories (D-22,
-// ADR tech/0008) — once in light scope and once in dark scope, so both mode scopes carry a
-// baseline from the very first component onward. Every later primitive plan appends its own
-// stories to this same spec as they ship (continuous capture, not an end-of-phase batch).
+// Visual-regression baselines for every design-system primitive's stories (D-22, ADR tech/0008)
+// — once in light scope and once in dark scope. Every primitive plan appends its own stories to
+// this same spec as they ship (continuous capture, not an end-of-phase batch).
 //
-// This file, and the harness-probe stories it screenshots, are deleted by plan 01-06 once
-// Button — the first real primitive — carries its own visual baseline.
+// The temporary harness smoke-test component that originally seeded this file (D-24) was
+// retired by plan 01-06 once Button and IconButton — the first two real primitives — carried
+// their own baselines.
 const storyIds = [
-    "components-ui-harness-probe--default",
-    "components-ui-harness-probe--hovered",
-    "components-ui-harness-probe--focused",
-    "components-ui-harness-probe--disabled",
+    // Button (plan 01-06, Task 2) — seven stories.
+    "components-ui-button--primary",
+    "components-ui-button--secondary",
+    "components-ui-button--destructive",
+    "components-ui-button--sizes",
+    "components-ui-button--hover",
+    "components-ui-button--focus",
+    "components-ui-button--disabled",
+    // IconButton (plan 01-06, Task 3) — six stories.
+    "components-ui-icon-button--default",
+    "components-ui-icon-button--ghost",
+    "components-ui-icon-button--sizes",
+    "components-ui-icon-button--hover",
+    "components-ui-icon-button--focus",
+    "components-ui-icon-button--disabled",
 ];
 
 for (const storyId of storyIds) {
