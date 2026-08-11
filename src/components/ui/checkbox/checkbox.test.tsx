@@ -80,6 +80,27 @@ describe("Checkbox", () => {
         await expect.element(checkbox).toHaveAttribute("aria-invalid", "true");
     });
 
+    it("does not shift the control's position when toggled from unchecked to checked", async () => {
+        // Arrange — the wrapping Field.Root is `inline-flex`, so it participates in its parent's
+        // inline formatting context and is baseline-aligned by default. An empty flex item (the
+        // checkbox root before its tick-mark indicator mounts) and a non-empty one (after) can
+        // resolve to different baselines, shifting the whole control vertically purely from the
+        // indicator mounting — the root's own box size never changes, only its position. `align-top`
+        // on Field.Root removes the baseline dependency entirely; this test guards the regression.
+        const screen = await render(<Checkbox label="Remember me" />);
+        const wrapper = screen.container.firstChild as HTMLElement;
+        const checkbox = screen.getByRole("checkbox", { name: "Remember me" });
+
+        // Act
+        const beforeTop = wrapper.getBoundingClientRect().top;
+        await checkbox.click();
+        const afterTop = wrapper.getBoundingClientRect().top;
+
+        // Assert
+        await expect.element(checkbox).toHaveAttribute("aria-checked", "true");
+        expect(afterTop).toBe(beforeTop);
+    });
+
     it("renders disabled, is not focusable by pointer activation, and does not toggle when isDisabled", async () => {
         // Arrange
         const onCheckedChange = vi.fn();

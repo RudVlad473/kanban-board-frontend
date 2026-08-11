@@ -64,7 +64,7 @@ export const Checkbox = ({
         // Field.Root/Checkbox.Root/Field.Label wire up label association and invalid marking
         // from the library rather than hand-rolled bookkeeping (D-15). `disabled` on Field.Root
         // propagates to Checkbox.Root automatically, so `isDisabled` only needs to be set once.
-        <Field.Root invalid={hasError} disabled={isDisabled} className="inline-flex items-center gap-2">
+        <Field.Root invalid={hasError} disabled={isDisabled} className="inline-flex items-center gap-2 align-top">
             <BaseCheckbox.Root
                 checked={isChecked}
                 className={cn(checkboxVariants({ size, state: hasError ? "error" : "default" }), className)}
