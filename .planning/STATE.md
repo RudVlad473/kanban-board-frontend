@@ -6,14 +6,14 @@ current_phase: 01
 current_phase_name: foundation-auth-preferences
 status: executing
 stopped_at: Phase 1 UI-SPEC approved
-last_updated: "2026-08-11T09:54:22.911Z"
+last_updated: "2026-08-11T12:26:14.722Z"
 last_activity: 2026-08-11
 last_activity_desc: "merged wave 5 worktree, applied tabWidth:4 Prettier change"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 15
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -30,15 +30,17 @@ against a backend that doesn't exist yet.
 ## Current Position
 
 Phase: 01 (foundation-auth-preferences) — EXECUTING
-Plan: 7 of 15 (waves 1-6 merged; wave 7 not yet started)
-Status: Wave 6 merged; post-session hardening applied (self-hosted fonts, Props naming, AAA test
-  markers, cropped visual baselines, root cleanup, README). Ready for Wave 7.
-Last activity: 2026-08-11 — merged wave 6 worktree, fixed WCAG contrast bug in color tokens,
-  resolved icon-library checkpoint (lucide-react), self-hosted Plus Jakarta Sans font, applied a
-  batch of user-requested code-quality conventions (Props naming, AAA test markers, cropped
-  visual-regression screenshots, root-level file cleanup, README, no-restricted-syntax lint rule)
+Plan: 8 of 15 (waves 1-7 merged; wave 8 not yet started)
+Status: Wave 7 (TextField/Checkbox primitives) merged and gated. Not a checkpoint plan — ran
+  autonomously. A real WCAG AA contrast bug (color-text-muted, 3.27:1) was caught and fixed at
+  the token root (new grey.550, 4.61:1, light-mode only). Post-merge gate needed two known,
+  pre-documented Windows workarounds (stale .next/types after fresh checkout; stale Vite
+  pre-bundle cache) — both harmless, both already logged. Visual-regression baselines for the 17
+  new stories still need to be generated via the "Visual baselines" CI workflow (WINDOWS.md id 4).
+Last activity: 2026-08-11 — merged wave 7 worktree, fixed WCAG contrast bug in color-text-muted,
+  gitignored .gsd/ and .claude/worktrees/ (pre-existing gap, tripped Prettier post-merge)
 
-Progress: [████░░░░░░] 40%
+Progress: [████░░░░░░] 47%
 
 ## Performance Metrics
 
@@ -95,13 +97,12 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-11T12:03:22.403Z
-Stopped at: Wave 6 (01-06, Button/IconButton) merged and gated. A long, real font-rendering
-  investigation followed (self-hosted @font-face was a genuine, needed fix; a later CI-race
-  premise turned out to be a misjudgment — see WINDOWS.md and feedback_ui_change_signoff memory).
-  A batch of user-requested code-quality conventions applied afterward: Props naming (D-26w), AAA
-  test markers (D-26x), parametrized-test-loop convention (D-26y), cropped visual-regression
-  screenshots, root-level file cleanup (docs/planning-history/), README, no-restricted-syntax
-  lint rule for inline type imports, removed unused @testing-library/react. Next: Wave 7
-  (01-07, TextField/Checkbox primitives) — not a checkpoint plan, would run autonomously.
+Last session: 2026-08-11T15:15:00.000Z
+Stopped at: Wave 7 (01-07, TextField/Checkbox primitives) merged and gated via /gsd-execute-phase
+  1. Not a checkpoint plan. Full gate (build, typecheck, lint, format, 63/63 tests) passed after
+  two known Windows workarounds (stale .next/types, stale Vite cache — both pre-documented, both
+  harmless). A real WCAG AA contrast bug was fixed in color-text-muted. Visual baselines for the
+  17 new TextField/Checkbox stories are outstanding — need the "Visual baselines" CI workflow run
+  post-push (WINDOWS.md id 4), same as wave 6. Next: Wave 8 (01-08, Switch/Dropdown primitives) —
+  also autonomous, not a checkpoint plan.
 Resume file: none — no outstanding checkpoint or handoff artifact.

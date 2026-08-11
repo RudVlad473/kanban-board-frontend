@@ -68,7 +68,7 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 6/15 plans executed
+**Plans**: 7/15 plans executed
 
 Plans:
 
@@ -78,7 +78,7 @@ Plans:
 - [x] 01-04-PLAN.md — DTCG token pipeline through Style Dictionary into Tailwind v4 @theme
 - [x] 01-05-PLAN.md — Vitest Browser Mode, Storybook with axe-core, Playwright visual regression
 - [x] 01-06-PLAN.md — Button and IconButton primitives
-- [ ] 01-07-PLAN.md — TextField and Checkbox primitives with built-in error state
+- [x] 01-07-PLAN.md — TextField and Checkbox primitives with built-in error state
 - [ ] 01-08-PLAN.md — Switch and Dropdown primitives
 - [ ] 01-09-PLAN.md — Modal primitive and design-system library sign-off
 - [ ] 01-10-PLAN.md — committed OpenAPI contract, typed client, MSW mock backend
@@ -166,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 6/15 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 7/15 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |

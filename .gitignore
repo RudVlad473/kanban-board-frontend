@@ -33,6 +33,10 @@ playwright-report/
 src/**/__screenshots__/
 storybook-static/
 
+# GSD / harness runtime state (not meant to be committed)
+.gsd/
+.claude/worktrees/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
