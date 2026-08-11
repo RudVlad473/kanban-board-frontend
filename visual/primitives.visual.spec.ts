@@ -67,6 +67,39 @@ const storyIds = [
     "components-ui-modal--closed",
 ];
 
+// ADR tech/0010 mobile-first retrofit: two representative mobile-viewport (375px,
+// breakpoint.mobile) stories per primitive (three for Modal, the primitive that actually gained
+// mobile-specific CSS) — not every existing story duplicated, per the ADR's "at least its
+// primary/most-representative states" bar rather than full duplication. Captured at a real 375px
+// Playwright page viewport (see `viewportForStory` below) so any `md:`/`lg:` responsive classes
+// genuinely evaluate against that width, rather than relying on Storybook's own viewport
+// addon/global — which only resizes a nested manager iframe that doesn't exist when a test
+// navigates directly to `/iframe.html` the way this spec (and the a11y project) already does.
+const mobileStoryIds = [
+    "components-ui-button--mobile-primary",
+    "components-ui-button--mobile-sizes",
+    "components-ui-icon-button--mobile-default",
+    "components-ui-icon-button--mobile-sizes",
+    "components-ui-text-field--mobile-idle",
+    "components-ui-text-field--mobile-long-value",
+    "components-ui-checkbox--mobile-unchecked",
+    "components-ui-checkbox--mobile-sizes",
+    "components-ui-switch--mobile-off",
+    "components-ui-switch--mobile-sizes",
+    "components-ui-dropdown--mobile-open",
+    "components-ui-dropdown--mobile-long-item-list",
+    "components-ui-modal--mobile-open",
+    "components-ui-modal--mobile-with-footer-actions",
+    "components-ui-modal--mobile-long-content",
+];
+
+// Matches .storybook/preview.ts's MOBILE_VIEWPORT styles (375x667).
+const MOBILE_VIEWPORT_SIZE = { width: 375, height: 667 };
+
+function viewportForStory(storyId: string) {
+    return storyId.includes("--mobile-") ? MOBILE_VIEWPORT_SIZE : null;
+}
+
 async function gotoStory(page: Page, url: string) {
     await page.goto(url);
     // Modal is the one primitive whose actual visible surface does not live inside
@@ -92,17 +125,25 @@ async function gotoStory(page: Page, url: string) {
 }
 
 // Screenshotting the story's root element (not the page, not even #storybook-root) crops to its
-// actual rendered bounds instead of the full 1280x720 viewport — most primitives take up under
-// 10% of that, so a full-page capture was mostly wasted whitespace in every baseline and every
+// actual rendered bounds instead of the full page viewport — most primitives take up under 10% of
+// that, so a full-page capture was mostly wasted whitespace in every baseline and every
 // comparison. This also scales correctly for future, larger primitives (Modal, Dropdown) without
 // needing a hand-picked viewport size per story.
-for (const storyId of storyIds) {
+for (const storyId of [...storyIds, ...mobileStoryIds]) {
+    const mobileViewport = viewportForStory(storyId);
+
     test(`${storyId} — light`, async ({ page }) => {
+        if (mobileViewport) {
+            await page.setViewportSize(mobileViewport);
+        }
         const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
         await expect(root).toHaveScreenshot(`${storyId}-light.png`);
     });
 
     test(`${storyId} — dark`, async ({ page }) => {
+        if (mobileViewport) {
+            await page.setViewportSize(mobileViewport);
+        }
         const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
         await expect(root).toHaveScreenshot(`${storyId}-dark.png`);
     });
