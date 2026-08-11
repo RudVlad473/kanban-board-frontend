@@ -1,10 +1,19 @@
-import { describe, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+
 import { Button } from "./button";
 
-describe("Button", () => {
+/*
+ * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
+ * blanket regression net rather than a hand-picked set of viewport-conditional assertions.
+ * Button has no viewport-conditional behavior of its own (confirmed in the ADR tech/0010 mobile
+ * review — fixed-size control, no md:/lg: classes) — every test here runs identically at both
+ * sizes, which is itself the point.
+ */
+describeForEachDevice("Button", () => {
     it("is found by its accessible role and name", async () => {
         // Arrange
         const screen = await render(<Button onClick={vi.fn()}>Create Account</Button>);

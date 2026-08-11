@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -44,7 +44,14 @@ const getBackdropElement = () => {
     return backdrop;
 };
 
-describe("Modal", () => {
+/*
+ * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
+ * blanket regression net rather than a hand-picked set of viewport-conditional assertions. Most
+ * tests below run identically at both sizes; the padding test further down branches on `device`
+ * because that assertion genuinely differs by viewport (the whole reason describeForEachDevice
+ * exists in the first place).
+ */
+describeForEachDevice("Modal", (device) => {
     it("renders nothing into the accessibility tree while closed, leaving the page behind it reachable", async () => {
         // Arrange
         const screen = await renderModal();
@@ -168,37 +175,32 @@ describe("Modal", () => {
         expect(innerScrollRegion.scrollHeight).toBeGreaterThan(innerScrollRegion.clientHeight);
     });
 
-    describeForEachDevice(
-        "applies mobile-first internal padding — tighter on mobile, roomier at tablet/desktop",
-        (device) => {
-            it("renders the padding this device's breakpoint resolves to", async () => {
-                /*
-                 * Arrange — ADR tech/0010: the panel's own width already scales down correctly at
-                 * a narrow viewport (w-[min(90vw,28rem)]), but the padding did not — asserts the
-                 * mobile-first p-4 md:p-6 utility pair actually resolves to different real
-                 * computed padding at the two viewports (page.viewport already resized the test
-                 * iframe to this device's size in describeForEachDevice's beforeEach), not just
-                 * that both class names are present in the className string.
-                 */
-                const screen = await render(
-                    <Modal.Root defaultOpen>
-                        <Modal.Content>
-                            <Modal.Title>Task activity</Modal.Title>
-                        </Modal.Content>
-                    </Modal.Root>,
-                );
-                const dialog = screen.getByRole("dialog").element() as HTMLElement;
-                const scrollWrapper = dialog.firstElementChild as HTMLElement;
+    it("applies mobile-first internal padding — tighter on mobile, roomier at tablet/desktop: renders the padding this device's breakpoint resolves to", async () => {
+        /*
+         * Arrange — ADR tech/0010: the panel's own width already scales down correctly at a
+         * narrow viewport (w-[min(90vw,28rem)]), but the padding did not — asserts the
+         * mobile-first p-4 md:p-6 utility pair actually resolves to different real computed
+         * padding at the two viewports (page.viewport already resized the test iframe to this
+         * device's size in describeForEachDevice's beforeEach), not just that both class names
+         * are present in the className string.
+         */
+        const screen = await render(
+            <Modal.Root defaultOpen>
+                <Modal.Content>
+                    <Modal.Title>Task activity</Modal.Title>
+                </Modal.Content>
+            </Modal.Root>,
+        );
+        const dialog = screen.getByRole("dialog").element() as HTMLElement;
+        const scrollWrapper = dialog.firstElementChild as HTMLElement;
 
-                // Act
-                const paddingLeft = getComputedStyle(scrollWrapper).paddingLeft;
+        // Act
+        const paddingLeft = getComputedStyle(scrollWrapper).paddingLeft;
 
-                // Assert — p-4 (16px) below the md breakpoint (768px), md:p-6 (24px) at/above it.
-                const expectedPadding = device === DEVICE_TYPE.MOBILE ? "16px" : "24px";
-                expect(paddingLeft).toBe(expectedPadding);
-            });
-        },
-    );
+        // Assert — p-4 (16px) below the md breakpoint (768px), md:p-6 (24px) at/above it.
+        const expectedPadding = device === DEVICE_TYPE.MOBILE ? "16px" : "24px";
+        expect(paddingLeft).toBe(expectedPadding);
+    });
 
     it("does not dismiss on a backdrop click when isDismissableOnBackdropClick is false", async () => {
         // Arrange

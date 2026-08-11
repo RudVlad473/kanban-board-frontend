@@ -1,10 +1,19 @@
-import { describe, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+
 import { Switch } from "./switch";
 
-describe("Switch", () => {
+/*
+ * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
+ * blanket regression net rather than a hand-picked set of viewport-conditional assertions.
+ * Switch has no viewport-conditional behavior of its own (confirmed in the ADR tech/0010 mobile
+ * review — fixed-size tracks, no md:/lg: classes) — every test here runs identically at both
+ * sizes, which is itself the point.
+ */
+describeForEachDevice("Switch", () => {
     it("is found by role switch with the label as its accessible name, and renders no visible text", async () => {
         // Arrange
         const screen = await render(<Switch label="Toggle dark mode" />);

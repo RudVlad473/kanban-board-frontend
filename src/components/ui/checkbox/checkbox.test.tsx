@@ -1,10 +1,19 @@
-import { describe, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+
 import { Checkbox } from "./checkbox";
 
-describe("Checkbox", () => {
+/*
+ * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
+ * blanket regression net rather than a hand-picked set of viewport-conditional assertions.
+ * Checkbox has no viewport-conditional behavior of its own (confirmed in the ADR tech/0010
+ * mobile review — fixed-size boxes, no md:/lg: classes) — every test here runs identically at
+ * both sizes, which is itself the point.
+ */
+describeForEachDevice("Checkbox", () => {
     it("is found by role checkbox with the label as its accessible name, and clicking the label toggles it", async () => {
         // Arrange
         const onCheckedChange = vi.fn();
