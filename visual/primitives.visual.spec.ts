@@ -28,19 +28,28 @@ const storyIds = [
 
 async function gotoStory(page: Page, url: string) {
     await page.goto(url);
-    // #storybook-root exists as an empty shell before the story mounts — wait for an actual
-    // child, not just the container, so the screenshot never races Storybook's own bootstrap.
-    await page.locator("#storybook-root > *").first().waitFor({ state: "visible" });
+    // #storybook-root itself is a full-width block (its own bounding box stretches to the
+    // viewport regardless of content), so the screenshot target is its first real child — the
+    // story's own single root element (every story here renders one root: a bare primitive, or
+    // a wrapping <div> for multi-element stories like "Sizes") — not the shell around it.
+    const root = page.locator("#storybook-root > *").first();
+    await root.waitFor({ state: "visible" });
+    return root;
 }
 
+// Screenshotting the story's root element (not the page, not even #storybook-root) crops to its
+// actual rendered bounds instead of the full 1280x720 viewport — most primitives take up under
+// 10% of that, so a full-page capture was mostly wasted whitespace in every baseline and every
+// comparison. This also scales correctly for future, larger primitives (Modal, Dropdown) without
+// needing a hand-picked viewport size per story.
 for (const storyId of storyIds) {
     test(`${storyId} — light`, async ({ page }) => {
-        await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
-        await expect(page).toHaveScreenshot(`${storyId}-light.png`);
+        const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
+        await expect(root).toHaveScreenshot(`${storyId}-light.png`);
     });
 
     test(`${storyId} — dark`, async ({ page }) => {
-        await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
-        await expect(page).toHaveScreenshot(`${storyId}-dark.png`);
+        const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
+        await expect(root).toHaveScreenshot(`${storyId}-dark.png`);
     });
 }

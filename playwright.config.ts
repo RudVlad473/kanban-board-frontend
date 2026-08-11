@@ -27,7 +27,17 @@ export default defineConfig({
     projects: [
         {
             name: "visual",
-            use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${String(PORT)}` },
+            use: {
+                ...devices["Desktop Chrome"],
+                baseURL: `http://localhost:${String(PORT)}`,
+                // Desktop Chrome's default 1280x720 viewport is far larger than any current
+                // primitive needs — a block/flex story wrapper without an explicit width
+                // stretches to fill it (standard CSS, not a Storybook quirk), so most baselines
+                // were mostly whitespace. 640x480 leaves headroom for a multi-button "Sizes"
+                // story and future, larger primitives (Modal, Dropdown) without the previous
+                // 1280px-wide waste on today's single-control stories.
+                viewport: { width: 640, height: 480 },
+            },
         },
     ],
 });
