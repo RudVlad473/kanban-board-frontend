@@ -48,7 +48,9 @@ describe("style dictionary token pipeline (D-12)", () => {
     it("expands the composite font-heading-xl typography token into four individually-addressable custom properties", async () => {
         const css = await buildModeCss("light", "css");
         expect(css).toContain("@theme");
-        expect(css).toContain("--font-heading-xl: Plus Jakarta Sans;");
+        expect(css).toContain(
+            "--font-heading-xl: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;",
+        );
         expect(css).toContain("--text-heading-xl: 24px;");
         expect(css).toContain("--font-weight-heading-xl: 700;");
         expect(css).toContain("--leading-heading-xl: 30px;");
@@ -63,7 +65,7 @@ describe("style dictionary token pipeline (D-12)", () => {
         const css = await buildFullCss();
         expect(css).toMatch(/--color-bg-app:\s*#/); // color
         expect(css).toMatch(/--space-4:\s*16px/); // spacing
-        expect(css).toMatch(/--font-heading-xl:\s*Plus Jakarta Sans/); // typography
+        expect(css).toMatch(/--font-heading-xl:\s*var\(--font-plus-jakarta-sans\)/); // typography
         expect(css).toMatch(/--radius-sm:\s*4px/); // radius
         expect(css).toMatch(/--shadow-sm:\s*0px/); // shadow
         expect(css).toMatch(/--breakpoint-sm:\s*375px/); // breakpoint

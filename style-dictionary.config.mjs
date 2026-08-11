@@ -23,6 +23,20 @@ StyleDictionary.registerTransformGroup({
 const BREAKPOINT_ALIASES = { mobile: "sm", tablet: "md", desktop: "lg" };
 
 /**
+ * A `fontFamily` DTCG value names a family (e.g. "Plus Jakarta Sans"); the actual font file is
+ * loaded elsewhere via `next/font/google`, which exposes it under a CSS variable rather than the
+ * literal family name (browsers resolve an unadorned family string against locally installed
+ * fonts only — virtually no user has "Plus Jakarta Sans" installed, so a literal value silently
+ * falls back to the system default everywhere the token is consumed). `next/font`'s own
+ * convention names that variable `--font-<kebab-case-family>` (see the `variable:` option in
+ * `app/layout.tsx`), so deriving the same slug here keeps the two files coupled by convention
+ * without a shared constant.
+ */
+function fontFamilyVariableSlug(fontFamily) {
+    return fontFamily.toLowerCase().replace(/\s+/g, "-");
+}
+
+/**
  * Expands one composite `typography` token into Tailwind v4's separately-addressable custom
  * properties. Tailwind v4 has no composite type, so `font-heading-xl` becomes four (or five,
  * with letter-spacing) individual properties: `--font-<name>` (family), `--text-<name>` (size),
@@ -34,8 +48,9 @@ function typographyDeclarations(token) {
     // token.path is e.g. ["font", "heading-xl"] — drop the leading category segment so the
     // per-property suffix is "heading-xl", not "font-heading-xl" (which would double the prefix).
     const suffix = token.path.slice(1).join("-");
+    const fontVar = `--font-${fontFamilyVariableSlug(value.fontFamily)}`;
     const lines = [
-        `  --font-${suffix}: ${value.fontFamily};`,
+        `  --font-${suffix}: var(${fontVar}), ui-sans-serif, system-ui, sans-serif;`,
         `  --text-${suffix}: ${value.fontSize};`,
         `  --font-weight-${suffix}: ${value.fontWeight};`,
         `  --leading-${suffix}: ${value.lineHeight};`,

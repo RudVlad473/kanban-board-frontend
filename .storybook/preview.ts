@@ -4,6 +4,18 @@ import "../src/styles/globals.css";
 // (decorators/parameters/initialGlobals/afterEach) is the addon's contract for `addons: [...]`.
 import * as a11yAddonAnnotations from "@storybook/addon-a11y/preview";
 import { definePreview } from "@storybook/nextjs-vite";
+import { Plus_Jakarta_Sans } from "next/font/google";
+
+// Mirrors app/layout.tsx's font loader exactly (same weights, same `variable` name). Stories
+// never render RootLayout, so the `--font-plus-jakarta-sans` custom property the generated
+// typography tokens reference (style-dictionary.config.mjs) would otherwise be undefined here,
+// silently falling back to the browser default font in every story and visual-regression
+// baseline.
+const plusJakartaSans = Plus_Jakarta_Sans({
+    variable: "--font-plus-jakarta-sans",
+    subsets: ["latin"],
+    weight: ["500", "700"],
+});
 
 export default definePreview({
     addons: [a11yAddonAnnotations],
@@ -41,6 +53,7 @@ export default definePreview({
     },
     decorators: [
         (Story, context) => {
+            document.documentElement.classList.add(plusJakartaSans.variable);
             document.documentElement.classList.toggle("dark", context.globals.theme === "dark");
 
             return Story();
