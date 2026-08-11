@@ -138,13 +138,17 @@ type DropdownItemProps = Omit<SelectItemProps, "className" | "disabled" | "value
     children?: ReactNode;
 };
 
+// Popup insets its items by `p-1` (4px) from its own `rounded-md` (24px) edge — small enough that
+// a square-cornered highlight on the first/last item still visibly pokes past that large a
+// corner radius. `first:`/`last:` keep the fix scoped to the item actually touching the popup's
+// curve; middle items' highlights stay square, matching the popup's own straight side edges.
 const Item = ({ value, isDisabled = false, className, children, ...props }: DropdownItemProps) => {
     return (
         <Select.Item
             value={value}
             disabled={isDisabled}
             className={cn(
-                "flex cursor-pointer items-center justify-between gap-2 rounded-sm px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary outline-none data-[disabled]:cursor-not-allowed data-[disabled]:text-text-muted data-[disabled]:opacity-50 data-[highlighted]:bg-bg-app",
+                "flex cursor-pointer items-center justify-between gap-2 rounded-sm px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary outline-none data-[disabled]:cursor-not-allowed data-[disabled]:text-text-muted data-[disabled]:opacity-50 data-[highlighted]:bg-bg-app first:data-[highlighted]:rounded-t-md last:data-[highlighted]:rounded-b-md",
                 className,
             )}
             {...props}

@@ -19,6 +19,16 @@ const renderDropdown = (props: RootProps = {}) =>
         </Dropdown.Root>,
     );
 
+// Narrows `document.activeElement` (nullable) to `Element` without a non-null assertion — throws
+// with a clear message instead of a silent `null` reaching `getComputedStyle`.
+const getActiveElement = () => {
+    const active = document.activeElement;
+    if (!active) {
+        throw new Error("Expected an active element, but document.activeElement is null.");
+    }
+    return active;
+};
+
 describe("Dropdown", () => {
     it("renders a collapsed trigger whose accessible name is its content, with the list not present in the accessibility tree while closed", async () => {
         // Arrange
@@ -180,6 +190,40 @@ describe("Dropdown", () => {
 
         // Assert
         await expect.poll(() => getFade(long.container)).not.toBeNull();
+    });
+
+    it("rounds the first item's top corners and the last item's bottom corners when highlighted, keeping middle items square", async () => {
+        // Arrange — the popup's own `rounded-md` corner is large enough (measured plan 01-04
+        // token) that a square-cornered highlight on the item touching that corner visibly pokes
+        // past the popup's own rounded silhouette. Only the item actually adjacent to a rounded
+        // corner should round to match; a middle item has no rounded popup edge to clash with.
+        const screen = await render(
+            <Dropdown.Root>
+                <Dropdown.Trigger placeholder="Select a status" />
+                <Dropdown.Content>
+                    <Dropdown.Item value="a">A</Dropdown.Item>
+                    <Dropdown.Item value="b">B</Dropdown.Item>
+                    <Dropdown.Item value="c">C</Dropdown.Item>
+                </Dropdown.Content>
+            </Dropdown.Root>,
+        );
+        const trigger = screen.getByRole("combobox", { name: "Select a status" });
+        trigger.element().focus();
+        await userEvent.keyboard("{Enter}");
+
+        // Act — walk the highlight through first (A), middle (B), last (C).
+        const firstRadius = getComputedStyle(getActiveElement()).borderRadius;
+        await userEvent.keyboard("{ArrowDown}");
+        const middleRadius = getComputedStyle(getActiveElement()).borderRadius;
+        await userEvent.keyboard("{ArrowDown}");
+        const lastRadius = getComputedStyle(getActiveElement()).borderRadius;
+
+        // Assert — top-left/top-right rounded on first, bottom-left/bottom-right rounded on last,
+        // and all four corners equal (square, un-rounded relative to the popup's curve) on middle.
+        expect(firstRadius).toBe("24px 24px 4px 4px");
+        expect(lastRadius).toBe("4px 4px 24px 24px");
+        const middleCorners = middleRadius.split(" ");
+        expect(new Set(middleCorners).size).toBe(1);
     });
 
     it("makes an isDisabled item unselectable and skipped by arrow navigation", async () => {
