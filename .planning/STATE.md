@@ -31,8 +31,12 @@ against a backend that doesn't exist yet.
 
 Phase: 01 (foundation-auth-preferences) — EXECUTING
 Plan: 7 of 15 (waves 1-6 merged; wave 7 not yet started)
-Status: Wave 6 (Button/IconButton primitives) merged and post-merge gate green; ready for Wave 7
-Last activity: 2026-08-11 — merged wave 6 worktree, fixed WCAG contrast bug in color tokens, resolved icon-library checkpoint (lucide-react)
+Status: Wave 6 merged; post-session hardening applied (self-hosted fonts, Props naming, AAA test
+  markers, cropped visual baselines, root cleanup, README). Ready for Wave 7.
+Last activity: 2026-08-11 — merged wave 6 worktree, fixed WCAG contrast bug in color tokens,
+  resolved icon-library checkpoint (lucide-react), self-hosted Plus Jakarta Sans font, applied a
+  batch of user-requested code-quality conventions (Props naming, AAA test markers, cropped
+  visual-regression screenshots, root-level file cleanup, README, no-restricted-syntax lint rule)
 
 Progress: [████░░░░░░] 40%
 
@@ -91,6 +95,13 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-11T08:52:33.509Z
-Stopped at: Wave 5 (01-05) merged, post-merge gate green, tabWidth:4 Prettier change applied and committed. About to start Wave 6 (01-06, checkpoint plan) — must be presented to user before proceeding.
-Resume file: .planning/HANDOFF.json (stale — should be deleted after this resumption)
+Last session: 2026-08-11T12:03:22.403Z
+Stopped at: Wave 6 (01-06, Button/IconButton) merged and gated. A long, real font-rendering
+  investigation followed (self-hosted @font-face was a genuine, needed fix; a later CI-race
+  premise turned out to be a misjudgment — see WINDOWS.md and feedback_ui_change_signoff memory).
+  A batch of user-requested code-quality conventions applied afterward: Props naming (D-26w), AAA
+  test markers (D-26x), parametrized-test-loop convention (D-26y), cropped visual-regression
+  screenshots, root-level file cleanup (docs/planning-history/), README, no-restricted-syntax
+  lint rule for inline type imports, removed unused @testing-library/react. Next: Wave 7
+  (01-07, TextField/Checkbox primitives) — not a checkpoint plan, would run autonomously.
+Resume file: none — no outstanding checkpoint or handoff artifact.
