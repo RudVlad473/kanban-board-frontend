@@ -116,10 +116,12 @@ src/
 - All component styling is mobile-first: unprefixed Tailwind utilities target the mobile breakpoint (`breakpoint.mobile`, 375px); `md:`/`lg:` prefixes progressively enhance for tablet (768px) and desktop (1440px), per the `breakpoint.*` tokens. Enforcement: code review.
 - Every component's Storybook stories carry two viewport variants — mobile (375px) and desktop (1440px) — via the Storybook viewport parameter. A new or changed story missing its mobile/desktop pair is a review-blocking gap. Enforcement: code review; Storybook viewport addon configuration in `.storybook/preview.ts`.
 
-## Visual regression (docs/adr/tech/0008)
+## Visual regression (docs/adr/tech/0008, docs/adr/tech/0011)
 
 - Visual regression baselines are only regenerated inside the same environment CI uses, never on an arbitrary local machine and committed as-is. Enforcement: none — stated-but-unenforced; no automated check currently distinguishes a CI-generated baseline from a locally-generated one, revisit if a flaky/host-mismatched baseline actually happens.
 - Visual regression tests are scoped to Storybook design-system component stories only, never full application screens. Enforcement: a naming/directory convention (`*.visual.spec.ts` under a `visual/` directory reading only from `storybook-static`); code review.
+- **For now, that scope is further narrowed to `components/ui/` primitives only** — feature-level components (auth forms, theme toggle, and future boards/columns/tasks UI) get Storybook stories and axe/behavioral coverage as normal but no `visual/*.visual.spec.ts` entry or baseline generation, pending a separate deliberate decision to extend coverage. Enforcement: code review; `visual/primitives.visual.spec.ts` is the only visual-regression spec file expected to exist until that decision is made.
+- `.github/workflows/visual-baselines.yml`'s `workflow_dispatch` has no branch restriction and `--update-snapshots` overwrites baselines unconditionally with no review step — treat any dispatch as capable of committing a bug as the new "correct" baseline until guardrails exist (tracked as a todo). Enforcement: none yet — procedural discipline only; do not dispatch against a branch whose visual output hasn't already been reviewed.
 
 ## Prerequisites
 
