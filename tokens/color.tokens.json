@@ -6,15 +6,23 @@
                 "$value": "#635FC7",
                 "$description": "Primary CTA background, active Dropdown item indicator, focus ring, Switch on-track, links"
             },
-            "300": { "$type": "color", "$value": "#A8A4FF", "$description": "Primary CTA hover/active state only" }
+            "300": {
+                "$type": "color",
+                "$value": "#5854BE",
+                "$description": "Primary CTA hover/active state only. Darkened from the Figma-source #A8A4FF (2.23:1 against white on-primary text) to #5854BE (6.13:1) to meet WCAG AA 4.5:1 — caught by axe-core in plan 01-05's Storybook a11y checks."
+            }
         },
         "red": {
             "500": {
                 "$type": "color",
-                "$value": "#EA5555",
-                "$description": "Destructive button, TextField error border/text"
+                "$value": "#C93F3C",
+                "$description": "Destructive button, TextField error border/text. Darkened from the Figma-source #EA5555 (3.54:1 against white on-primary text, also 3.54:1 as error text on surface) to #C93F3C (4.93:1) to meet WCAG AA 4.5:1."
             },
-            "300": { "$type": "color", "$value": "#FF9898", "$description": "Destructive button hover state only" }
+            "300": {
+                "$type": "color",
+                "$value": "#B23632",
+                "$description": "Destructive button hover state only. Darkened from the Figma-source #FF9898 (2.06:1 against white on-primary text) to #B23632 (6.06:1) to meet WCAG AA 4.5:1."
+            }
         },
         "grey": {
             "900": { "$type": "color", "$value": "#000112", "$description": "Deepest-contrast dark-mode element" },
