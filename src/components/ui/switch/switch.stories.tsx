@@ -75,3 +75,17 @@ export const WithIcons: Story = {
         iconOff: <Moon />,
     },
 };
+
+// ADR tech/0010: mobile-viewport coverage. Switch has no `md:`/`lg:` responsive classes — a
+// fixed-size control (32x20/40x24/48x28 tracks, D-18) that doesn't change shape across
+// breakpoints — so no CSS changes were warranted; confirmed rather than assumed by adding
+// MobileOff and MobileSizes (the multi-switch row most likely to reveal a narrow-viewport
+// wrapping/overflow issue if one existed).
+export const MobileOff: Story = {
+    globals: { viewport: "mobile" },
+};
+
+export const MobileSizes: Story = {
+    render: Sizes.render,
+    globals: { viewport: "mobile" },
+};
