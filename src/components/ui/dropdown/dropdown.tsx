@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 import { Check, ChevronDown } from "lucide-react";
 import { createContext, useContext, useId, type ReactNode } from "react";
 
-import { useOverflowFade } from "@/hooks/use-overflow-fade";
+import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
 import { cn } from "@/lib/cn";
 
 // D-19: Dropdown's public shape mirrors Base UI's own Select composition — Root/Trigger/Content/
@@ -67,12 +67,16 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
     // must be wired in explicitly via `aria-labelledby`, or the trigger has no accessible name
     // at all despite rendering visible text.
     const valueId = useId();
-    // A trailing-edge fade signals that more of the selected label exists off-screen once it
-    // overflows — the same Safari-address-bar affordance TextField's input gets. `Select.Value`
-    // forwards its ref to the underlying `<span>`, so the hook observes it directly; a re-render
-    // that swaps the rendered label text (a real DOM text-node change) is exactly what the hook's
-    // internal `MutationObserver` catches, no extra wiring needed on selection change.
-    const { ref: overflowRef, isOverflowing } = useOverflowFade<HTMLSpanElement>();
+    // A trailing-edge "…" indicator signals that more of the selected label exists off-screen
+    // once it overflows. `Select.Value` already truncates its text with CSS `text-overflow:
+    // ellipsis` (`truncate`, below) — this adds the same deliberate, consistently-styled cue
+    // TextField's input gets (which has no native ellipsis of its own, only horizontal scroll),
+    // rather than relying on two different primitives signalling overflow two different ways.
+    // `Select.Value` forwards its ref to the underlying `<span>`, so the hook observes it
+    // directly; a re-render that swaps the rendered label text (a real DOM text-node change) is
+    // exactly what the hook's internal `MutationObserver` catches, no extra wiring needed on
+    // selection change.
+    const { ref: overflowRef, isOverflowing } = useOverflowIndicator<HTMLSpanElement>();
     return (
         <Select.Trigger
             aria-labelledby={valueId}
@@ -81,8 +85,9 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
         >
             {/* `min-w-0` lets this flex item actually shrink below its content's min-content size
                 (a flex item's default `min-width: auto` would otherwise block it) — required for
-                both the existing `truncate` backstop and the overflow fade below to have a bounded
-                box to measure against, rather than pushing the trigger wider than its own anchor. */}
+                both the existing `truncate` backstop and the overflow indicator below to have a
+                bounded box to measure against, rather than pushing the trigger wider than its own
+                anchor. */}
             <span className="relative min-w-0 flex-1 overflow-hidden">
                 <Select.Value
                     ref={overflowRef}
@@ -91,10 +96,15 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
                     className="block truncate text-left text-text-primary data-[placeholder]:text-text-muted"
                 />
                 {isOverflowing ? (
+                    // An opaque `bg-bg-surface` patch under the glyph — not a gradient — so the
+                    // "…" reads clearly; `text-text-muted` keeps it legible in both themes.
                     <span
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-linear-to-r from-transparent to-bg-surface"
-                    />
+                        data-overflow-indicator=""
+                        className="pointer-events-none absolute inset-y-0 right-0 flex items-center bg-bg-surface pl-1 text-text-muted"
+                    >
+                        …
+                    </span>
                 ) : null}
             </span>
             <Select.Icon className="text-text-muted">

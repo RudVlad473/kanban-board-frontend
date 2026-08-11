@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
 import { useEffect } from "react";
 
-import { useOverflowFade } from "@/hooks/use-overflow-fade";
+import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
 import { cn } from "@/lib/cn";
 
 // Composite typography classes follow button.tsx's established pattern (plan 01-06): the
@@ -63,13 +63,14 @@ export const TextField = ({
     onInput,
     ...props
 }: Props) => {
-    // A trailing-edge fade signals that more of the value exists off-screen once it overflows the
-    // input's own box — the Safari-address-bar affordance for the horizontal-scroll backstop the
-    // input already gets natively. `recheck` covers keystrokes (a native input's own `.value`
-    // changing isn't a DOM mutation the hook's internal MutationObserver can see, and the input's
-    // box doesn't resize as the value grows) and the effect below covers controlled `value`
-    // updates that never fire a native input event at all.
-    const { ref: overflowRef, isOverflowing, recheck } = useOverflowFade<HTMLInputElement>();
+    // A trailing-edge "…" indicator signals that more of the value exists off-screen once it
+    // overflows the input's own box — the horizontal-scroll backstop the input already gets
+    // natively stays exactly as-is; this only adds a visible cue that there's more to scroll to.
+    // `recheck` covers keystrokes (a native input's own `.value` changing isn't a DOM mutation the
+    // hook's internal MutationObserver can see, and the input's box doesn't resize as the value
+    // grows) and the effect below covers controlled `value` updates that never fire a native input
+    // event at all.
+    const { ref: overflowRef, isOverflowing, recheck } = useOverflowIndicator<HTMLInputElement>();
 
     useEffect(() => {
         recheck();
@@ -104,13 +105,19 @@ export const TextField = ({
                     {...props}
                 />
                 {isOverflowing ? (
+                    // An opaque `bg-bg-surface` patch under the glyph — not a gradient — so the
+                    // "…" itself reads clearly rather than fading in like the trailing text does;
+                    // `text-text-muted` keeps it legible without hardcoding a color per theme.
                     <span
                         aria-hidden="true"
+                        data-overflow-indicator=""
                         className={cn(
-                            "pointer-events-none absolute inset-y-0 w-8 rounded-r-md bg-linear-to-r from-transparent to-bg-surface",
-                            trailing ? "right-11" : "right-0",
+                            "pointer-events-none absolute inset-y-0 flex items-center bg-bg-surface pl-1 text-text-muted",
+                            trailing ? "right-11" : "right-0 rounded-r-md pr-2",
                         )}
-                    />
+                    >
+                        …
+                    </span>
                 ) : null}
                 {trailing ? <span className="absolute inset-y-0 right-3 flex items-center">{trailing}</span> : null}
             </div>

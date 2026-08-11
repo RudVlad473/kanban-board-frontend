@@ -156,13 +156,13 @@ describe("Dropdown", () => {
         expect(borderColor).toBe("rgb(201, 63, 60)");
     });
 
-    it("shows a trailing-edge fade on the trigger only once the selected label overflows it", async () => {
-        // Arrange — same Safari-address-bar affordance as TextField's, over the trigger's
-        // rendered selected-value label. `Select.Value` falls back to the raw `value` string as
-        // its own label until a matching `Dropdown.Item` registers a different one, which is a
-        // convenient way to force a genuinely long rendered label without depending on that
-        // registration timing.
-        const getFade = (container: HTMLElement) => container.querySelector('[aria-hidden="true"].bg-linear-to-r');
+    it("shows a trailing-edge overflow indicator on the trigger only once the selected label overflows it", async () => {
+        // Arrange — same "…" cue as TextField's (previously a gradient fade — replaced per human
+        // feedback that it wasn't obvious enough), over the trigger's rendered selected-value
+        // label. `Select.Value` falls back to the raw `value` string as its own label until a
+        // matching `Dropdown.Item` registers a different one, which is a convenient way to force a
+        // genuinely long rendered label without depending on that registration timing.
+        const getIndicator = (container: HTMLElement) => container.querySelector("[data-overflow-indicator]");
         const longValue = "A very long board name that will definitely overflow the trigger width";
 
         const short = await render(
@@ -175,7 +175,7 @@ describe("Dropdown", () => {
                 </Dropdown.Root>
             </div>,
         );
-        await expect.poll(() => getFade(short.container)).toBeNull();
+        await expect.poll(() => getIndicator(short.container)).toBeNull();
 
         const long = await render(
             <div style={{ width: "150px" }}>
@@ -189,7 +189,8 @@ describe("Dropdown", () => {
         );
 
         // Assert
-        await expect.poll(() => getFade(long.container)).not.toBeNull();
+        await expect.poll(() => getIndicator(long.container)).not.toBeNull();
+        expect(getIndicator(long.container)?.textContent).toBe("…");
     });
 
     it("rounds the first item's top corners and the last item's bottom corners when highlighted, keeping middle items square", async () => {

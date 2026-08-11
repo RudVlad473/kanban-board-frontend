@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Tracks whether an element's own content overflows its inline-axis box
- * (`scrollWidth > clientWidth`) — the signal a trailing-edge "overflow fade" mask needs to decide
- * whether to render itself at all. Two DOM-change sources are handled automatically:
+ * (`scrollWidth > clientWidth`) — the signal a trailing-edge "there's more content" indicator
+ * needs to decide whether to render itself at all. Two DOM-change sources are handled
+ * automatically:
  * - the element's own box resizing (a `ResizeObserver` on the element), and
  * - its rendered content changing as real DOM nodes/text (a `MutationObserver` watching
  *   `childList`/`characterData`/`subtree`) — covers e.g. a `<span>` whose text content is
@@ -18,7 +19,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * handler (and/or a `value`-keyed effect, for controlled updates that never fire a native input
  * event at all).
  */
-export function useOverflowFade<T extends HTMLElement>() {
+export function useOverflowIndicator<T extends HTMLElement>() {
     const ref = useRef<T | null>(null);
     const [isOverflowing, setIsOverflowing] = useState(false);
 
