@@ -111,6 +111,11 @@ src/
 
 - ESLint (with `eslint-plugin-tailwindcss`) and Prettier (with `prettier-plugin-tailwindcss`) must both report zero errors before merge. Enforcement: required CI status check running both on every PR.
 
+## Responsive strategy (docs/adr/tech/0010)
+
+- All component styling is mobile-first: unprefixed Tailwind utilities target the mobile breakpoint (`breakpoint.mobile`, 375px); `md:`/`lg:` prefixes progressively enhance for tablet (768px) and desktop (1440px), per the `breakpoint.*` tokens. Enforcement: code review.
+- Every component's Storybook stories carry two viewport variants — mobile (375px) and desktop (1440px) — via the Storybook viewport parameter. A new or changed story missing its mobile/desktop pair is a review-blocking gap. Enforcement: code review; Storybook viewport addon configuration in `.storybook/preview.ts`.
+
 ## Visual regression (docs/adr/tech/0008)
 
 - Visual regression baselines are only regenerated inside the same environment CI uses, never on an arbitrary local machine and committed as-is. Enforcement: none — stated-but-unenforced; no automated check currently distinguishes a CI-generated baseline from a locally-generated one, revisit if a flaky/host-mismatched baseline actually happens.
