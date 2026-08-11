@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { describeForEachDevice } from "@/test/viewport";
+
 import { Dropdown } from "./dropdown";
 
 type RootProps = ComponentProps<typeof Dropdown.Root>;
@@ -235,6 +237,37 @@ describe("Dropdown", () => {
         expect(lastRadius).toBe("4px 4px 24px 24px");
         const middleCorners = middleRadius.split(" ");
         expect(new Set(middleCorners).size).toBe(1);
+    });
+
+    describeForEachDevice("keeps the popup within the viewport when the trigger sits near a narrow edge", () => {
+        it("does not let the popup overflow past either horizontal edge of the viewport", async () => {
+            /*
+             * Arrange — ADR tech/0010 mobile review: collisionPadding=16 (dropdown.tsx) exists
+             * specifically because a trigger near a viewport's edge is far more likely on a
+             * narrow mobile viewport than a wide desktop one. Pin the trigger near the right edge
+             * (a left margin computed from the live viewport width, so it's genuinely near the
+             * edge at both device sizes, not just a fixed pixel offset that only reaches the edge
+             * at one of them) to actually exercise Floating UI's collision handling.
+             */
+            const screen = await render(
+                <div style={{ marginLeft: `${String(window.innerWidth - 220)}px`, width: "200px" }}>
+                    <Dropdown.Root defaultOpen>
+                        <Dropdown.Trigger placeholder="Select a board" />
+                        <Dropdown.Content>
+                            <Dropdown.Item value="a">A</Dropdown.Item>
+                        </Dropdown.Content>
+                    </Dropdown.Root>
+                </div>,
+            );
+            const popup = screen.getByRole("listbox").element() as HTMLElement;
+
+            // Act
+            const popupRect = popup.getBoundingClientRect();
+
+            // Assert
+            expect(popupRect.right).toBeLessThanOrEqual(window.innerWidth);
+            expect(popupRect.left).toBeGreaterThanOrEqual(0);
+        });
     });
 
     it("clips the rounded/shadowed silhouette to its own bounds and scrolls the listbox itself, not the silhouette wrapper, once the item list overflows", async () => {

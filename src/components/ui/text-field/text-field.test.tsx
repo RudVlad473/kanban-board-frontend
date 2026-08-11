@@ -2,9 +2,35 @@ import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { describeForEachDevice } from "@/test/viewport";
+
 import { TextField } from "./text-field";
 
 describe("TextField", () => {
+    describeForEachDevice(
+        "fills its container's width at any viewport (already fluid, no fixed desktop-only width)",
+        () => {
+            it("renders the input at (approximately) the current viewport width when unconstrained", async () => {
+                /*
+                 * Arrange — no wrapping width constraint (unlike the LongValue story's 320px
+                 * wrapper); it's TextField's own w-full under test here, not some ancestor's
+                 * fixed width. page.viewport already resized the test iframe for this device.
+                 */
+                const screen = await render(<TextField label="Email" />);
+                const input = screen.getByRole("textbox", { name: "Email" });
+
+                // Act
+                const inputWidth = input.element().getBoundingClientRect().width;
+
+                /*
+                 * Assert — within a small tolerance of the real viewport width, proving the
+                 * field's width tracks whatever viewport it renders in rather than a fixed value.
+                 */
+                expect(inputWidth).toBeGreaterThan(window.innerWidth - 20);
+            });
+        },
+    );
+
     it("associates the visible label with the input as its accessible name, and clicking the label focuses the input", async () => {
         // Arrange
         const screen = await render(<TextField label="Email" />);

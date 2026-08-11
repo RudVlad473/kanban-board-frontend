@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { DEVICE_TYPE } from "@/lib/viewport-breakpoints";
+import { describeForEachDevice } from "@/test/viewport";
+
 import { Modal } from "./modal";
 
 type RootProps = ComponentProps<typeof Modal.Root>;
@@ -165,29 +168,37 @@ describe("Modal", () => {
         expect(innerScrollRegion.scrollHeight).toBeGreaterThan(innerScrollRegion.clientHeight);
     });
 
-    it("applies mobile-first internal padding — tighter on mobile, roomier at tablet/desktop", async () => {
-        /*
-         * Arrange — ADR tech/0010: the panel's own width already scales down correctly at a
-         * narrow viewport (w-[min(90vw,28rem)]), but the padding did not — this asserts the
-         * mobile-first p-4 md:p-6 utility pair is actually present on the scroll wrapper.
-         * Vitest Browser Mode doesn't expose a per-test viewport resize, so this checks the
-         * source-level responsive utility classes rather than a live breakpoint switch — the two
-         * rendered widths themselves are covered by the Storybook Mobile/Desktop story pair.
-         */
-        const screen = await render(
-            <Modal.Root defaultOpen>
-                <Modal.Content>
-                    <Modal.Title>Task activity</Modal.Title>
-                </Modal.Content>
-            </Modal.Root>,
-        );
-        const dialog = screen.getByRole("dialog").element() as HTMLElement;
-        const scrollWrapper = dialog.firstElementChild as HTMLElement;
+    describeForEachDevice(
+        "applies mobile-first internal padding — tighter on mobile, roomier at tablet/desktop",
+        (device) => {
+            it("renders the padding this device's breakpoint resolves to", async () => {
+                /*
+                 * Arrange — ADR tech/0010: the panel's own width already scales down correctly at
+                 * a narrow viewport (w-[min(90vw,28rem)]), but the padding did not — asserts the
+                 * mobile-first p-4 md:p-6 utility pair actually resolves to different real
+                 * computed padding at the two viewports (page.viewport already resized the test
+                 * iframe to this device's size in describeForEachDevice's beforeEach), not just
+                 * that both class names are present in the className string.
+                 */
+                const screen = await render(
+                    <Modal.Root defaultOpen>
+                        <Modal.Content>
+                            <Modal.Title>Task activity</Modal.Title>
+                        </Modal.Content>
+                    </Modal.Root>,
+                );
+                const dialog = screen.getByRole("dialog").element() as HTMLElement;
+                const scrollWrapper = dialog.firstElementChild as HTMLElement;
 
-        // Assert
-        expect(scrollWrapper.className).toMatch(/(?:^|\s)p-4(?:\s|$)/);
-        expect(scrollWrapper.className).toMatch(/(?:^|\s)md:p-6(?:\s|$)/);
-    });
+                // Act
+                const paddingLeft = getComputedStyle(scrollWrapper).paddingLeft;
+
+                // Assert — p-4 (16px) below the md breakpoint (768px), md:p-6 (24px) at/above it.
+                const expectedPadding = device === DEVICE_TYPE.MOBILE ? "16px" : "24px";
+                expect(paddingLeft).toBe(expectedPadding);
+            });
+        },
+    );
 
     it("does not dismiss on a backdrop click when isDismissableOnBackdropClick is false", async () => {
         // Arrange
