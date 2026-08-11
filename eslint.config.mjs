@@ -136,7 +136,7 @@ const eslintConfig = defineConfig([
                         { pattern: "@/hooks/**", group: "internal" },
                         { pattern: "@/lib/**", group: "internal" },
                         { pattern: "@/styles/**", group: "internal" },
-                        { pattern: "@/test/**", group: "internal" },
+                        { pattern: "@/test-utils/**", group: "internal" },
                         { pattern: "@/types/**", group: "internal" },
                     ],
                     "newlines-between": "always",

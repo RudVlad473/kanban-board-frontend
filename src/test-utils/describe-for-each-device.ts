@@ -4,14 +4,6 @@ import { page } from "vitest/browser";
 import { DEVICE_TYPE, VIEWPORT_SIZES, type DeviceType } from "@/lib/viewport-breakpoints";
 
 /**
- * `src/test/` is a new sixth-ish home alongside CONVENTIONS.md's existing six (features/ui/
- * layout/hooks/lib/styles) — none of those cleanly fit shared Vitest test infrastructure that is
- * never imported by application code (only by other test files), and this file's own import of
- * `vitest/browser` would make it unusable from anywhere else anyway. Kept as a single file rather
- * than a new placement-rule category since it's the first thing to need this home.
- */
-
-/**
  * Runs the same test body once per `DeviceType`, resizing the Vitest Browser Mode test iframe
  * (`page.viewport`, a real per-test resize — not to be confused with Storybook's own `viewport`
  * global, which only resizes a nested manager iframe that doesn't exist in this context) to that

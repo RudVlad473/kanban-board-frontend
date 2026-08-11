@@ -4,7 +4,7 @@ import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { DEVICE_TYPE } from "@/lib/viewport-breakpoints";
-import { describeForEachDevice } from "@/test/viewport";
+import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { Modal } from "./modal";
 

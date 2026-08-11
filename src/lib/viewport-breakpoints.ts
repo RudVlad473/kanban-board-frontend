@@ -2,10 +2,10 @@
  * Single source of truth for this project's two test/story viewport sizes (ADR tech/0010) — used
  * from three different loader contexts that each need the exact same numbers: `.storybook/
  * preview.ts` (Vite, the `viewport` toolbar control), `visual/primitives.visual.spec.ts`
- * (Playwright, `page.setViewportSize`), and `src/test/viewport.ts` (Vitest Browser Mode,
- * `page.viewport`). All three resolve plain TS with no side effects and no framework-specific
- * code, so one shared module works cleanly across all of them without needing per-context
- * duplication or a build step of its own.
+ * (Playwright, `page.setViewportSize`), and `src/test-utils/describe-for-each-device.ts` (Vitest
+ * Browser Mode, `page.viewport`). All three resolve plain TS with no side effects and no
+ * framework-specific code, so one shared module works cleanly across all of them without needing
+ * per-context duplication or a build step of its own.
  *
  * ADR tech/0012's enum-like constant pattern: keys mirror their own string values, the type is
  * always derived from the object, `as const` is required.
