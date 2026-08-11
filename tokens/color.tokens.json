@@ -36,7 +36,12 @@
             "500": {
                 "$type": "color",
                 "$value": "#828FA3",
-                "$description": "Placeholder/disabled/secondary text (both themes)"
+                "$description": "Placeholder/disabled/secondary text (dark theme; also placeholder/disabled in light theme, both exempt from axe's color-contrast rule)"
+            },
+            "550": {
+                "$type": "color",
+                "$value": "#6B7686",
+                "$description": "Secondary/muted real text content in light theme only (e.g. TextField's Field.Description). Darkened from the Figma-source #828FA3 (3.27:1 against white, caught by axe-core in plan 01-07's Storybook a11y checks) to #6B7686 (4.61:1) to meet WCAG AA 4.5:1. Kept separate from grey.500 rather than replacing it: grey.500 on dark-theme surfaces (#20212C/#2B2C37) already passes at 5.3:1/4.6:1, and darkening it further would only reduce that dark-mode margin for no light-mode benefit."
             },
             "200": { "$type": "color", "$value": "#E4EBFA", "$description": "Borders/dividers (light theme)" },
             "100": { "$type": "color", "$value": "#F4F7FD", "$description": "App background (light theme)" }
