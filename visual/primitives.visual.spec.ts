@@ -12,6 +12,14 @@ const storyIds = [
     "components-ui-harness-probe--hovered",
     "components-ui-harness-probe--focused",
     "components-ui-harness-probe--disabled",
+    // Button (plan 01-06, Task 2) — seven stories, D-22 baselines in both mode scopes.
+    "components-ui-button--primary",
+    "components-ui-button--secondary",
+    "components-ui-button--destructive",
+    "components-ui-button--sizes",
+    "components-ui-button--hover",
+    "components-ui-button--focus",
+    "components-ui-button--disabled",
 ];
 
 for (const storyId of storyIds) {
