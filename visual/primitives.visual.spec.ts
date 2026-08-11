@@ -30,11 +30,17 @@ const storyIds = [
 // before Storybook has mounted the story into #storybook-root, so the wait order matters: the
 // story's root content must exist FIRST (so the browser has actually started the woff2 request
 // self-hosted via font-display: swap, src/styles/fonts.css), then `document.fonts.ready` waits
-// for that real, now-pending load to finish. `toHaveScreenshot`'s own stability polling accepts
-// the FIRST visually-stable frame it sees — on a slower/differently-scheduled CI runner that can
-// land after the fallback font paints but before the real font finishes downloading and swaps
-// in, silently baselining every story against the wrong typeface even though the page mounted
-// correctly. Confirmed via a CI-side diagnostic run (see git history around this commit).
+// for that real, now-pending load to finish.
+//
+// `document.fonts.ready` resolving is not the same instant as the browser having PAINTED the
+// swapped-in font — there is a further layout/paint cycle between the promise settling and the
+// pixels actually reflecting it. This was verified to be a genuine race (not just "add any
+// delay and it goes away"): re-running the exact same command repeatedly reproduced both a
+// fallback-font screenshot and a correct one, with no code difference between runs — the only
+// reliable fix is to explicitly wait for a rendered frame after the promise resolves, not to
+// rely on incidental delays elsewhere in the test (a console.log() before the earlier attempt
+// happened to "fix" it by accident, which is what exposed this as a race rather than a stable
+// win/lose split by test-file shape).
 async function gotoStoryAndWaitForFonts(page: import("@playwright/test").Page, url: string) {
     await page.goto(url);
     // #storybook-root exists as an empty shell before the story mounts — wait for an actual
@@ -42,6 +48,10 @@ async function gotoStoryAndWaitForFonts(page: import("@playwright/test").Page, u
     // request) exists.
     await page.locator("#storybook-root > *").first().waitFor({ state: "visible" });
     await page.evaluate(() => document.fonts.ready);
+    // Two animation frames: the first is guaranteed scheduled after the current style/layout
+    // pass that the font swap triggered; the second guarantees that frame was actually
+    // presented, not just queued. One rAF alone was insufficient in local repro testing.
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
 
 for (const storyId of storyIds) {
