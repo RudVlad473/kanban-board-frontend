@@ -54,10 +54,15 @@ const Trigger = ({ className, ...props }: TriggerProps) => {
 type ContentProps = Omit<DialogPopupProps, "className"> & { className?: string };
 
 // UI-SPEC Color/Spacing: panel `bg-bg-surface` at the `radius.lg`/`shadow.lg` tokens measured in
-// plan 01-04, `p-6` (24px) internal padding. The backdrop is a fixed black scrim at reduced
-// opacity regardless of the active theme — a dimming overlay is not a themed surface, the same
-// mode-invariant treatment this pipeline already gives the shadow tokens (src/styles/tokens.css
-// defines shadow-sm/md/lg once, with no `.dark` override).
+// plan 01-04, `p-4 md:p-6` (16px mobile / 24px tablet+) internal padding — ADR tech/0010's mobile
+// review: the panel's own `w-[min(90vw,28rem)]` already scales down correctly at a 375px
+// viewport (90vw beats the 28rem cap there), but the original flat `p-6` (24px on every side)
+// ate a larger share of that already-narrow width than it does on desktop; a mobile-first
+// `p-4 md:p-6` gives back some of that room on small screens without changing anything at
+// tablet/desktop widths. The backdrop is a fixed black scrim at reduced opacity regardless of the
+// active theme — a dimming overlay is not a themed surface, the same mode-invariant treatment
+// this pipeline already gives the shadow tokens (src/styles/tokens.css defines shadow-sm/md/lg
+// once, with no `.dark` override).
 //
 // `rounded-lg`/`shadow-lg` and `overflow-y-auto` are deliberately on two different elements. The
 // outer `Dialog.Popup` owns the panel's silhouette (radius, shadow, sizing) and clips to it with
@@ -80,7 +85,7 @@ const Content = ({ className, children, ...props }: ContentProps) => {
                 )}
                 {...props}
             >
-                <div className="max-h-[calc(100vh-6rem)] overflow-y-auto p-6">{children}</div>
+                <div className="max-h-[calc(100vh-6rem)] overflow-y-auto p-4 md:p-6">{children}</div>
             </Dialog.Popup>
         </Dialog.Portal>
     );

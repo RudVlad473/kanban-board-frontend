@@ -157,6 +157,28 @@ describe("Modal", () => {
         expect(innerScrollRegion.scrollHeight).toBeGreaterThan(innerScrollRegion.clientHeight);
     });
 
+    it("applies mobile-first internal padding — tighter on mobile, roomier at tablet/desktop", async () => {
+        // Arrange — ADR tech/0010: the panel's own width already scales down correctly at a
+        // narrow viewport (w-[min(90vw,28rem)]), but the padding did not — this asserts the
+        // mobile-first p-4 md:p-6 utility pair is actually present on the scroll wrapper.
+        // Vitest Browser Mode doesn't expose a per-test viewport resize, so this checks the
+        // source-level responsive utility classes rather than a live breakpoint switch — the two
+        // rendered widths themselves are covered by the Storybook Mobile/Desktop story pair.
+        const screen = await render(
+            <Modal.Root defaultOpen>
+                <Modal.Content>
+                    <Modal.Title>Task activity</Modal.Title>
+                </Modal.Content>
+            </Modal.Root>,
+        );
+        const dialog = screen.getByRole("dialog").element() as HTMLElement;
+        const scrollWrapper = dialog.firstElementChild as HTMLElement;
+
+        // Assert
+        expect(scrollWrapper.className).toMatch(/(?:^|\s)p-4(?:\s|$)/);
+        expect(scrollWrapper.className).toMatch(/(?:^|\s)md:p-6(?:\s|$)/);
+    });
+
     it("does not dismiss on a backdrop click when isDismissableOnBackdropClick is false", async () => {
         // Arrange
         const onOpenChange = vi.fn();

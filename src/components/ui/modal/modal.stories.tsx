@@ -85,3 +85,24 @@ export const Closed: Story = {
         defaultOpen: false,
     },
 };
+
+// ADR tech/0010: mobile-viewport coverage. Modal is the primitive most likely to actually need
+// mobile-specific treatment (see modal.tsx's `p-4 md:p-6`) — the panel's `w-[min(90vw,28rem)]`
+// width already scales down correctly at 375px, but the padding didn't until this pass. Three
+// mobile stories rather than the usual two per component: Open (baseline silhouette at the
+// narrowest supported width), WithFooterActions (two side-by-side buttons are the layout most
+// likely to feel cramped once padding eats into an already-narrow panel), and LongContent (the
+// scroll/silhouette fix from c31a704 needs to keep holding at mobile width too, not just desktop).
+export const MobileOpen: Story = {
+    globals: { viewport: "mobile" },
+};
+
+export const MobileWithFooterActions: Story = {
+    render: WithFooterActions.render,
+    globals: { viewport: "mobile" },
+};
+
+export const MobileLongContent: Story = {
+    render: LongContent.render,
+    globals: { viewport: "mobile" },
+};
