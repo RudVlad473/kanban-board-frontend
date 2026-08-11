@@ -58,18 +58,29 @@ type ContentProps = Omit<DialogPopupProps, "className"> & { className?: string }
 // opacity regardless of the active theme — a dimming overlay is not a themed surface, the same
 // mode-invariant treatment this pipeline already gives the shadow tokens (src/styles/tokens.css
 // defines shadow-sm/md/lg once, with no `.dark` override).
+//
+// `rounded-lg`/`shadow-lg` and `overflow-y-auto` are deliberately on two different elements. The
+// outer `Dialog.Popup` owns the panel's silhouette (radius, shadow, sizing) and clips to it with
+// `overflow-hidden`; an inner `div` owns the scroll region and the `p-6` padding. Putting
+// `overflow-y-auto` directly on the rounded/shadowed element (the original layout) let the native
+// scrollbar and the scrolled content's edge render outside the rounded corners once the body
+// actually scrolled (`LongContent`) — the corner/shadow silhouette only looked correct while
+// unscrolled. Clipping on the outer element and scrolling on the inner one keeps the panel's
+// silhouette intact regardless of scroll position or scrollbar presence, and keeps the header
+// (`Modal.Title`) scrolling away with the rest of the content rather than pinned outside the
+// rounded frame.
 const Content = ({ className, children, ...props }: ContentProps) => {
     return (
         <Dialog.Portal>
             <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50" />
             <Dialog.Popup
                 className={cn(
-                    "fixed top-1/2 left-1/2 z-50 max-h-[calc(100vh-6rem)] w-[min(90vw,28rem)] -translate-1/2 overflow-y-auto rounded-lg bg-bg-surface p-6 shadow-lg outline-none",
+                    "fixed top-1/2 left-1/2 z-50 max-h-[calc(100vh-6rem)] w-[min(90vw,28rem)] -translate-1/2 overflow-hidden rounded-lg bg-bg-surface shadow-lg outline-none",
                     className,
                 )}
                 {...props}
             >
-                {children}
+                <div className="max-h-[calc(100vh-6rem)] overflow-y-auto p-6">{children}</div>
             </Dialog.Popup>
         </Dialog.Portal>
     );

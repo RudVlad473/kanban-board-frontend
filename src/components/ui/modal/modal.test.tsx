@@ -121,6 +121,42 @@ describe("Modal", () => {
         await expect.element(screen.getByRole("dialog")).not.toBeInTheDocument();
     });
 
+    it("clips the rounded/shadowed panel to its own bounds and scrolls an inner content region, not the panel itself, once content overflows", async () => {
+        // Arrange — `rounded-lg`/`shadow-lg`/`overflow-hidden` live on the dialog popup itself;
+        // the scrollable region is a separate inner wrapper. Putting `overflow-y-auto` directly on
+        // the rounded/shadowed element let the native scrollbar and the scrolled content's edge
+        // render outside the rounded corners once the body actually scrolled, breaking the panel's
+        // silhouette. This guards that regression by asserting the popup itself never grows past
+        // its cap (so it never needs to scroll) while its inner child does.
+        const longContent = Array.from({ length: 40 }, (_, index) => {
+            const position = String(index);
+            return <p key={position}>{`Activity entry ${position} — long content to force scrolling.`}</p>;
+        });
+        const screen = await render(
+            <Modal.Root defaultOpen>
+                <Modal.Content>
+                    <Modal.Title>Task activity</Modal.Title>
+                    <div>{longContent}</div>
+                </Modal.Content>
+            </Modal.Root>,
+        );
+        const dialog = screen.getByRole("dialog").element() as HTMLElement;
+        const innerScrollRegion = dialog.firstElementChild as HTMLElement;
+
+        // Act
+        const popupStyle = getComputedStyle(dialog);
+        const innerStyle = getComputedStyle(innerScrollRegion);
+
+        // Assert — the popup carries the silhouette and clips to it; it does not itself scroll.
+        expect(popupStyle.overflow).toBe("hidden");
+        expect(popupStyle.borderRadius).not.toBe("0px");
+        expect(popupStyle.boxShadow).not.toBe("none");
+        expect(dialog.scrollHeight).toBe(dialog.clientHeight);
+        // The inner wrapper is the one that actually scrolls the overflowing content.
+        expect(innerStyle.overflowY).toBe("auto");
+        expect(innerScrollRegion.scrollHeight).toBeGreaterThan(innerScrollRegion.clientHeight);
+    });
+
     it("does not dismiss on a backdrop click when isDismissableOnBackdropClick is false", async () => {
         // Arrange
         const onOpenChange = vi.fn();
