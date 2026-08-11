@@ -1,65 +1,69 @@
 {
-  "color": {
-    "bg": {
-      "app": { "$type": "color", "$value": "{color.grey.800}", "$description": "App background (dark theme)" },
-      "surface": {
-        "$type": "color",
-        "$value": "{color.grey.700}",
-        "$description": "Auth card / sidebar / Dropdown / Modal surface (dark theme)"
-      },
-      "primary": { "$type": "color", "$value": "{color.purple.500}", "$description": "Primary CTA background" },
-      "primary-hover": {
-        "$type": "color",
-        "$value": "{color.purple.300}",
-        "$description": "Primary CTA hover/active state"
-      },
-      "danger": { "$type": "color", "$value": "{color.red.500}", "$description": "Destructive button background" },
-      "danger-hover": {
-        "$type": "color",
-        "$value": "{color.red.300}",
-        "$description": "Destructive button hover state"
-      }
-    },
-    "border": {
-      "default": {
-        "$type": "color",
-        "$value": "{color.grey.600}",
-        "$description": "Default borders/dividers (dark theme)"
-      },
-      "danger": {
-        "$type": "color",
-        "$value": "{color.red.500}",
-        "$description": "TextField/Checkbox/Dropdown error border (D-17)"
-      }
-    },
-    "text": {
-      "primary": {
-        "$type": "color",
-        "$value": "{color.white}",
-        "$description": "Primary body/heading text (dark theme)"
-      },
-      "muted": {
-        "$type": "color",
-        "$value": "{color.grey.500}",
-        "$description": "Placeholder/disabled/secondary text"
-      },
-      "danger": {
-        "$type": "color",
-        "$value": "{color.red.500}",
-        "$description": "TextField/Checkbox/Dropdown error text (D-17)"
-      },
-      "on-primary": {
-        "$type": "color",
-        "$value": "{color.white}",
-        "$description": "Text on top of an accent-filled surface"
-      }
-    },
-    "ring": {
-      "focus": {
-        "$type": "color",
-        "$value": "{color.purple.500}",
-        "$description": "Focus-visible outline on all interactive primitives"
-      }
+    "color": {
+        "bg": {
+            "app": { "$type": "color", "$value": "{color.grey.800}", "$description": "App background (dark theme)" },
+            "surface": {
+                "$type": "color",
+                "$value": "{color.grey.700}",
+                "$description": "Auth card / sidebar / Dropdown / Modal surface (dark theme)"
+            },
+            "primary": { "$type": "color", "$value": "{color.purple.500}", "$description": "Primary CTA background" },
+            "primary-hover": {
+                "$type": "color",
+                "$value": "{color.purple.300}",
+                "$description": "Primary CTA hover/active state"
+            },
+            "danger": {
+                "$type": "color",
+                "$value": "{color.red.500}",
+                "$description": "Destructive button background"
+            },
+            "danger-hover": {
+                "$type": "color",
+                "$value": "{color.red.300}",
+                "$description": "Destructive button hover state"
+            }
+        },
+        "border": {
+            "default": {
+                "$type": "color",
+                "$value": "{color.grey.600}",
+                "$description": "Default borders/dividers (dark theme)"
+            },
+            "danger": {
+                "$type": "color",
+                "$value": "{color.red.500}",
+                "$description": "TextField/Checkbox/Dropdown error border (D-17)"
+            }
+        },
+        "text": {
+            "primary": {
+                "$type": "color",
+                "$value": "{color.white}",
+                "$description": "Primary body/heading text (dark theme)"
+            },
+            "muted": {
+                "$type": "color",
+                "$value": "{color.grey.500}",
+                "$description": "Placeholder/disabled/secondary text"
+            },
+            "danger": {
+                "$type": "color",
+                "$value": "{color.red.500}",
+                "$description": "TextField/Checkbox/Dropdown error text (D-17)"
+            },
+            "on-primary": {
+                "$type": "color",
+                "$value": "{color.white}",
+                "$description": "Text on top of an accent-filled surface"
+            }
+        },
+        "ring": {
+            "focus": {
+                "$type": "color",
+                "$value": "{color.purple.500}",
+                "$description": "Focus-visible outline on all interactive primitives"
+            }
+        }
     }
-  }
 }

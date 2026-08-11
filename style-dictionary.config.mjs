@@ -13,8 +13,8 @@ import StyleDictionary from "style-dictionary";
  * color tier.
  */
 StyleDictionary.registerTransformGroup({
-  name: "css-raw",
-  transforms: ["name/kebab"],
+    name: "css-raw",
+    transforms: ["name/kebab"],
 });
 
 /** Breakpoint tokens are authored as `breakpoint.mobile/tablet/desktop` (D-07) but Tailwind v4's
@@ -30,74 +30,74 @@ const BREAKPOINT_ALIASES = { mobile: "sm", tablet: "md", desktop: "lg" };
  * (letter-spacing, only when present).
  */
 function typographyDeclarations(token) {
-  const value = token.$value ?? token.value;
-  // token.path is e.g. ["font", "heading-xl"] — drop the leading category segment so the
-  // per-property suffix is "heading-xl", not "font-heading-xl" (which would double the prefix).
-  const suffix = token.path.slice(1).join("-");
-  const lines = [
-    `  --font-${suffix}: ${value.fontFamily};`,
-    `  --text-${suffix}: ${value.fontSize};`,
-    `  --font-weight-${suffix}: ${value.fontWeight};`,
-    `  --leading-${suffix}: ${value.lineHeight};`,
-  ];
-  if (value.letterSpacing) {
-    lines.push(`  --tracking-${suffix}: ${value.letterSpacing};`);
-  }
-  return lines;
+    const value = token.$value ?? token.value;
+    // token.path is e.g. ["font", "heading-xl"] — drop the leading category segment so the
+    // per-property suffix is "heading-xl", not "font-heading-xl" (which would double the prefix).
+    const suffix = token.path.slice(1).join("-");
+    const lines = [
+        `  --font-${suffix}: ${value.fontFamily};`,
+        `  --text-${suffix}: ${value.fontSize};`,
+        `  --font-weight-${suffix}: ${value.fontWeight};`,
+        `  --leading-${suffix}: ${value.lineHeight};`,
+    ];
+    if (value.letterSpacing) {
+        lines.push(`  --tracking-${suffix}: ${value.letterSpacing};`);
+    }
+    return lines;
 }
 
 function breakpointDeclaration(token) {
-  const suffix = token.path.slice(1).join("-");
-  const alias = BREAKPOINT_ALIASES[suffix] ?? suffix;
-  const value = token.$value ?? token.value;
-  return `  --breakpoint-${alias}: ${value};`;
+    const suffix = token.path.slice(1).join("-");
+    const alias = BREAKPOINT_ALIASES[suffix] ?? suffix;
+    const value = token.$value ?? token.value;
+    return `  --breakpoint-${alias}: ${value};`;
 }
 
 function tokenDeclarations(dictionary) {
-  const lines = [];
-  for (const token of dictionary.allTokens) {
-    const type = token.$type ?? token.type;
-    if (type === "typography") {
-      lines.push(...typographyDeclarations(token));
-      continue;
+    const lines = [];
+    for (const token of dictionary.allTokens) {
+        const type = token.$type ?? token.type;
+        if (type === "typography") {
+            lines.push(...typographyDeclarations(token));
+            continue;
+        }
+        if (token.path[0] === "breakpoint") {
+            lines.push(breakpointDeclaration(token));
+            continue;
+        }
+        const value = token.$value ?? token.value;
+        lines.push(`  --${token.name}: ${value};`);
     }
-    if (token.path[0] === "breakpoint") {
-      lines.push(breakpointDeclaration(token));
-      continue;
-    }
-    const value = token.$value ?? token.value;
-    lines.push(`  --${token.name}: ${value};`);
-  }
-  return lines;
+    return lines;
 }
 
 StyleDictionary.registerFormat({
-  name: "css/tailwind-theme",
-  format: ({ dictionary }) => {
-    const lines = tokenDeclarations(dictionary);
-    // Tailwind v4 base spacing unit (D-04's extension): generates the whole numeric utility
-    // ladder (p-1 ... p-16) mechanically from this one value, so 12px (space-3) needs no
-    // special case.
-    lines.unshift("  --spacing: 4px;");
-    return `@theme {\n${lines.join("\n")}\n}\n`;
-  },
+    name: "css/tailwind-theme",
+    format: ({ dictionary }) => {
+        const lines = tokenDeclarations(dictionary);
+        // Tailwind v4 base spacing unit (D-04's extension): generates the whole numeric utility
+        // ladder (p-1 ... p-16) mechanically from this one value, so 12px (space-3) needs no
+        // special case.
+        lines.unshift("  --spacing: 4px;");
+        return `@theme {\n${lines.join("\n")}\n}\n`;
+    },
 });
 
 StyleDictionary.registerFormat({
-  name: "css/tailwind-dark-scope",
-  format: ({ dictionary }) => {
-    const lines = tokenDeclarations(dictionary);
-    return `.dark {\n${lines.join("\n")}\n}\n`;
-  },
+    name: "css/tailwind-dark-scope",
+    format: ({ dictionary }) => {
+        const lines = tokenDeclarations(dictionary);
+        return `.dark {\n${lines.join("\n")}\n}\n`;
+    },
 });
 
 // The five categories that don't vary by color mode — included in every build.
 const modeInvariantSources = [
-  "tokens/spacing.tokens.json",
-  "tokens/typography.tokens.json",
-  "tokens/radius.tokens.json",
-  "tokens/shadow.tokens.json",
-  "tokens/breakpoint.tokens.json",
+    "tokens/spacing.tokens.json",
+    "tokens/typography.tokens.json",
+    "tokens/radius.tokens.json",
+    "tokens/shadow.tokens.json",
+    "tokens/breakpoint.tokens.json",
 ];
 
 /**
@@ -110,37 +110,37 @@ const modeInvariantSources = [
  * builds both and concatenates the CSS text itself — @theme block first, .dark block second).
  */
 export function createConfig(mode) {
-  if (mode === "dark") {
-    return {
-      source: ["tokens/color.tokens.json", "tokens/color.dark.tokens.json"],
-      platforms: {
-        "css-dark": {
-          transformGroup: "css-raw",
-          files: [
-            {
-              destination: "tokens.dark.part.css",
-              format: "css/tailwind-dark-scope",
+    if (mode === "dark") {
+        return {
+            source: ["tokens/color.tokens.json", "tokens/color.dark.tokens.json"],
+            platforms: {
+                "css-dark": {
+                    transformGroup: "css-raw",
+                    files: [
+                        {
+                            destination: "tokens.dark.part.css",
+                            format: "css/tailwind-dark-scope",
+                        },
+                    ],
+                },
             },
-          ],
-        },
-      },
-    };
-  }
+        };
+    }
 
-  return {
-    source: ["tokens/color.tokens.json", "tokens/color.light.tokens.json", ...modeInvariantSources],
-    platforms: {
-      css: {
-        transformGroup: "css-raw",
-        files: [
-          {
-            destination: "tokens.theme.part.css",
-            format: "css/tailwind-theme",
-          },
-        ],
-      },
-    },
-  };
+    return {
+        source: ["tokens/color.tokens.json", "tokens/color.light.tokens.json", ...modeInvariantSources],
+        platforms: {
+            css: {
+                transformGroup: "css-raw",
+                files: [
+                    {
+                        destination: "tokens.theme.part.css",
+                        format: "css/tailwind-theme",
+                    },
+                ],
+            },
+        },
+    };
 }
 
 export default createConfig("light");

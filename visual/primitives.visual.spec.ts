@@ -8,20 +8,20 @@ import { expect, test } from "@playwright/test";
 // This file, and the harness-probe stories it screenshots, are deleted by plan 01-06 once
 // Button — the first real primitive — carries its own visual baseline.
 const storyIds = [
-  "components-ui-harness-probe--default",
-  "components-ui-harness-probe--hovered",
-  "components-ui-harness-probe--focused",
-  "components-ui-harness-probe--disabled",
+    "components-ui-harness-probe--default",
+    "components-ui-harness-probe--hovered",
+    "components-ui-harness-probe--focused",
+    "components-ui-harness-probe--disabled",
 ];
 
 for (const storyId of storyIds) {
-  test(`${storyId} — light`, async ({ page }) => {
-    await page.goto(`/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
-    await expect(page).toHaveScreenshot(`${storyId}-light.png`);
-  });
+    test(`${storyId} — light`, async ({ page }) => {
+        await page.goto(`/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
+        await expect(page).toHaveScreenshot(`${storyId}-light.png`);
+    });
 
-  test(`${storyId} — dark`, async ({ page }) => {
-    await page.goto(`/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
-    await expect(page).toHaveScreenshot(`${storyId}-dark.png`);
-  });
+    test(`${storyId} — dark`, async ({ page }) => {
+        await page.goto(`/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
+        await expect(page).toHaveScreenshot(`${storyId}-dark.png`);
+    });
 }

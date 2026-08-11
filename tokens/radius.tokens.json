@@ -1,19 +1,19 @@
 {
-  "radius": {
-    "sm": {
-      "$type": "dimension",
-      "$value": "4px",
-      "$description": "Text Field / Dropdown corner radius — measured from PDF page 1 'Text Field (Idle)' frame: 27px at a 600 DPI render, converted to CSS px (27 / (600/96) = 4.32px, rounded to 4px)."
-    },
-    "md": {
-      "$type": "dimension",
-      "$value": "24px",
-      "$description": "Button Secondary corner radius — measured from PDF page 1 'Button Secondary' frame: 152px at a 600 DPI render, converted to CSS px (152 / (600/96) = 24.32px, rounded to 24px)."
-    },
-    "lg": {
-      "$type": "dimension",
-      "$value": "28px",
-      "$description": "Button Primary (L) corner radius — measured from PDF page 1 'Button Primary (L)' frame: 180px at a 600 DPI render, converted to CSS px (180 / (600/96) = 28.8px, rounded to 28px)."
+    "radius": {
+        "sm": {
+            "$type": "dimension",
+            "$value": "4px",
+            "$description": "Text Field / Dropdown corner radius — measured from PDF page 1 'Text Field (Idle)' frame: 27px at a 600 DPI render, converted to CSS px (27 / (600/96) = 4.32px, rounded to 4px)."
+        },
+        "md": {
+            "$type": "dimension",
+            "$value": "24px",
+            "$description": "Button Secondary corner radius — measured from PDF page 1 'Button Secondary' frame: 152px at a 600 DPI render, converted to CSS px (152 / (600/96) = 24.32px, rounded to 24px)."
+        },
+        "lg": {
+            "$type": "dimension",
+            "$value": "28px",
+            "$description": "Button Primary (L) corner radius — measured from PDF page 1 'Button Primary (L)' frame: 180px at a 600 DPI render, converted to CSS px (180 / (600/96) = 28.8px, rounded to 28px)."
+        }
     }
-  }
 }

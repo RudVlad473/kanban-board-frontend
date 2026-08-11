@@ -12,55 +12,55 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 // instead of restating the five aliases by hand — an alias added later to tsconfig.json is picked
 // up here automatically, so the two files can never drift apart.
 type TsconfigShape = {
-  compilerOptions: { paths: Record<string, string[]> };
+    compilerOptions: { paths: Record<string, string[]> };
 };
 
 const tsconfig = JSON.parse(readFileSync(path.join(rootDir, "tsconfig.json"), "utf-8")) as TsconfigShape;
 
 const alias = Object.entries(tsconfig.compilerOptions.paths).map(([key, [target]]) => ({
-  find: key.replace(/\/\*$/, ""),
-  replacement: path.resolve(rootDir, target.replace(/\/\*$/, "")),
+    find: key.replace(/\/\*$/, ""),
+    replacement: path.resolve(rootDir, target.replace(/\/\*$/, "")),
 }));
 
 export default defineConfig({
-  test: {
-    projects: [
-      {
-        resolve: { alias },
-        test: {
-          name: "tokens",
-          environment: "node",
-          include: ["tokens/**/*.test.ts"],
-        },
-      },
-      {
-        resolve: { alias },
-        test: {
-          name: "browser",
-          include: ["src/**/*.test.tsx"],
-          setupFiles: ["./vitest.setup.ts"],
-          browser: {
-            enabled: true,
-            headless: true,
-            provider: playwright(),
-            instances: [{ browser: "chromium" }],
-          },
-        },
-      },
-      {
-        resolve: { alias },
-        plugins: [storybookTest({ configDir: path.join(rootDir, ".storybook") })],
-        test: {
-          name: "storybook",
-          setupFiles: ["./.storybook/vitest.setup.ts"],
-          browser: {
-            enabled: true,
-            headless: true,
-            provider: playwright(),
-            instances: [{ browser: "chromium" }],
-          },
-        },
-      },
-    ],
-  },
+    test: {
+        projects: [
+            {
+                resolve: { alias },
+                test: {
+                    name: "tokens",
+                    environment: "node",
+                    include: ["tokens/**/*.test.ts"],
+                },
+            },
+            {
+                resolve: { alias },
+                test: {
+                    name: "browser",
+                    include: ["src/**/*.test.tsx"],
+                    setupFiles: ["./vitest.setup.ts"],
+                    browser: {
+                        enabled: true,
+                        headless: true,
+                        provider: playwright(),
+                        instances: [{ browser: "chromium" }],
+                    },
+                },
+            },
+            {
+                resolve: { alias },
+                plugins: [storybookTest({ configDir: path.join(rootDir, ".storybook") })],
+                test: {
+                    name: "storybook",
+                    setupFiles: ["./.storybook/vitest.setup.ts"],
+                    browser: {
+                        enabled: true,
+                        headless: true,
+                        provider: playwright(),
+                        instances: [{ browser: "chromium" }],
+                    },
+                },
+            },
+        ],
+    },
 });

@@ -12,41 +12,41 @@ const root = path.resolve(rootArg);
 const port = Number(portArg);
 
 const MIME_TYPES = {
-  ".css": "text/css",
-  ".html": "text/html",
-  ".js": "text/javascript",
-  ".json": "application/json",
-  ".map": "application/json",
-  ".png": "image/png",
-  ".svg": "image/svg+xml",
-  ".woff": "font/woff",
-  ".woff2": "font/woff2",
+    ".css": "text/css",
+    ".html": "text/html",
+    ".js": "text/javascript",
+    ".json": "application/json",
+    ".map": "application/json",
+    ".png": "image/png",
+    ".svg": "image/svg+xml",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
 };
 
 const server = createServer((req, res) => {
-  void (async () => {
-    const requestUrl = new URL(req.url ?? "/", "http://localhost");
-    let filePath = path.join(root, decodeURIComponent(requestUrl.pathname));
+    void (async () => {
+        const requestUrl = new URL(req.url ?? "/", "http://localhost");
+        let filePath = path.join(root, decodeURIComponent(requestUrl.pathname));
 
-    try {
-      const stats = await stat(filePath);
+        try {
+            const stats = await stat(filePath);
 
-      if (stats.isDirectory()) {
-        filePath = path.join(filePath, "index.html");
-      }
+            if (stats.isDirectory()) {
+                filePath = path.join(filePath, "index.html");
+            }
 
-      const data = await readFile(filePath);
-      const contentType = MIME_TYPES[path.extname(filePath)] ?? "application/octet-stream";
+            const data = await readFile(filePath);
+            const contentType = MIME_TYPES[path.extname(filePath)] ?? "application/octet-stream";
 
-      res.writeHead(200, { "Content-Type": contentType });
-      res.end(data);
-    } catch {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("Not found");
-    }
-  })();
+            res.writeHead(200, { "Content-Type": contentType });
+            res.end(data);
+        } catch {
+            res.writeHead(404, { "Content-Type": "text/plain" });
+            res.end("Not found");
+        }
+    })();
 });
 
 server.listen(port, () => {
-  console.log(`Serving ${root} at http://localhost:${String(port)}`);
+    console.log(`Serving ${root} at http://localhost:${String(port)}`);
 });

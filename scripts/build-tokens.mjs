@@ -16,20 +16,20 @@ const repoRoot = path.resolve(__dirname, "..");
 const outputPath = path.join(repoRoot, "src/styles/tokens.css");
 
 async function buildModeCss(mode, platformName) {
-  const sd = new StyleDictionary(createConfig(mode));
-  const [{ output }] = await sd.formatPlatform(platformName);
-  return output;
+    const sd = new StyleDictionary(createConfig(mode));
+    const [{ output }] = await sd.formatPlatform(platformName);
+    return output;
 }
 
 async function main() {
-  const [themeCss, darkCss] = await Promise.all([buildModeCss("light", "css"), buildModeCss("dark", "css-dark")]);
+    const [themeCss, darkCss] = await Promise.all([buildModeCss("light", "css"), buildModeCss("dark", "css-dark")]);
 
-  await mkdir(path.dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, `${themeCss}\n${darkCss}`);
-  console.log(`✔ wrote ${path.relative(repoRoot, outputPath)}`);
+    await mkdir(path.dirname(outputPath), { recursive: true });
+    await writeFile(outputPath, `${themeCss}\n${darkCss}`);
+    console.log(`✔ wrote ${path.relative(repoRoot, outputPath)}`);
 }
 
 main().catch((error) => {
-  console.error(error);
-  process.exit(1);
+    console.error(error);
+    process.exit(1);
 });

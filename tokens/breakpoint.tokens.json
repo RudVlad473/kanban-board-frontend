@@ -1,7 +1,7 @@
 {
-  "breakpoint": {
-    "mobile": { "$type": "dimension", "$value": "375px", "$description": "Emitted as --breakpoint-sm" },
-    "tablet": { "$type": "dimension", "$value": "768px", "$description": "Emitted as --breakpoint-md" },
-    "desktop": { "$type": "dimension", "$value": "1440px", "$description": "Emitted as --breakpoint-lg" }
-  }
+    "breakpoint": {
+        "mobile": { "$type": "dimension", "$value": "375px", "$description": "Emitted as --breakpoint-sm" },
+        "tablet": { "$type": "dimension", "$value": "768px", "$description": "Emitted as --breakpoint-md" },
+        "desktop": { "$type": "dimension", "$value": "1440px", "$description": "Emitted as --breakpoint-lg" }
+    }
 }

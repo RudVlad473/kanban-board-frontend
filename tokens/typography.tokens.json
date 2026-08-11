@@ -1,56 +1,56 @@
 {
-  "font": {
-    "heading-xl": {
-      "$type": "typography",
-      "$description": "App-level page heading (post-auth, e.g. board title bar)",
-      "$value": {
-        "fontFamily": "Plus Jakarta Sans",
-        "fontWeight": "700",
-        "fontSize": "24px",
-        "lineHeight": "30px"
-      }
-    },
-    "heading-l": {
-      "$type": "typography",
-      "$description": "Auth card heading (Sign Up / Sign In)",
-      "$value": {
-        "fontFamily": "Plus Jakarta Sans",
-        "fontWeight": "700",
-        "fontSize": "18px",
-        "lineHeight": "23px"
-      }
-    },
-    "heading-s": {
-      "$type": "typography",
-      "$description": "Column-style uppercase labels",
-      "$value": {
-        "fontFamily": "Plus Jakarta Sans",
-        "fontWeight": "700",
-        "fontSize": "12px",
-        "lineHeight": "15px",
-        "letterSpacing": "2.4px",
-        "textTransform": "uppercase"
-      }
-    },
-    "body-l": {
-      "$type": "typography",
-      "$description": "Primary body copy, form helper text",
-      "$value": {
-        "fontFamily": "Plus Jakarta Sans",
-        "fontWeight": "500",
-        "fontSize": "13px",
-        "lineHeight": "23px"
-      }
-    },
-    "body-m": {
-      "$type": "typography",
-      "$description": "Compact counts/meta text, form field labels",
-      "$value": {
-        "fontFamily": "Plus Jakarta Sans",
-        "fontWeight": "700",
-        "fontSize": "12px",
-        "lineHeight": "15px"
-      }
+    "font": {
+        "heading-xl": {
+            "$type": "typography",
+            "$description": "App-level page heading (post-auth, e.g. board title bar)",
+            "$value": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontWeight": "700",
+                "fontSize": "24px",
+                "lineHeight": "30px"
+            }
+        },
+        "heading-l": {
+            "$type": "typography",
+            "$description": "Auth card heading (Sign Up / Sign In)",
+            "$value": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontWeight": "700",
+                "fontSize": "18px",
+                "lineHeight": "23px"
+            }
+        },
+        "heading-s": {
+            "$type": "typography",
+            "$description": "Column-style uppercase labels",
+            "$value": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontWeight": "700",
+                "fontSize": "12px",
+                "lineHeight": "15px",
+                "letterSpacing": "2.4px",
+                "textTransform": "uppercase"
+            }
+        },
+        "body-l": {
+            "$type": "typography",
+            "$description": "Primary body copy, form helper text",
+            "$value": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontWeight": "500",
+                "fontSize": "13px",
+                "lineHeight": "23px"
+            }
+        },
+        "body-m": {
+            "$type": "typography",
+            "$description": "Compact counts/meta text, form field labels",
+            "$value": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontWeight": "700",
+                "fontSize": "12px",
+                "lineHeight": "15px"
+            }
+        }
     }
-  }
 }
