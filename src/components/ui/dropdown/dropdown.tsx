@@ -123,26 +123,33 @@ type DropdownContentProps = Omit<SelectPopupProps, "className"> & {
 // `w-[var(--anchor-width)]` reads the CSS variable Base UI's Positioner sets from the trigger's
 // own measured width, so the popup always matches the trigger it belongs to.
 //
-// `rounded-md`/`shadow-md` and `overflow-y-auto` are deliberately on two different elements — the
-// same fix as Modal's panel (modal.tsx). Putting the scroll directly on the rounded/shadowed
-// element let the scrollable region's edge and an in-flow scrollbar (Firefox reserves layout
-// width for it; Chrome's overlay scrollbar merely hides the same underlying bug) render against
-// or outside the rounded corner once the item list actually needed to scroll. The outer
-// `Select.Popup` now only owns the silhouette and clips to it with `overflow-hidden`; an inner
-// `div` owns the scroll region and the `p-1` item-list padding.
+// The silhouette (`rounded-md`/`shadow-md`/`overflow-hidden`) and the scroll
+// (`overflow-y-auto`/`max-h-72`) are deliberately on two different elements — the same
+// class of fix as Modal's panel (modal.tsx), but inverted: here the OUTER wrapper carries the
+// silhouette and clips it, while `Select.Popup` (the inner element) carries the scroll. Modal's
+// `Dialog.Popup` has no ARIA role of its own, so an inner scroll wrapper worked there; `Select.
+// Popup` carries `role="listbox"`, which per ARIA requires its children to be `option` roles
+// directly — wrapping the options in a plain scroll `<div>` between the listbox and its options
+// violates that (axe `aria-required-children`), so the listbox itself has to stay the scrollable
+// element and a plain outer `<div>` (no ARIA role) owns the silhouette instead. Putting the scroll
+// directly on the rounded/shadowed element (the original layout) let the scrollable region's edge
+// and an in-flow scrollbar (Firefox reserves layout width for it; Chrome's overlay scrollbar
+// merely hides the same underlying bug) render against or outside the rounded corner once the
+// item list actually needed to scroll.
 const Content = ({ className, children, ...props }: DropdownContentProps) => {
     return (
         <Select.Portal>
             <Select.Positioner className="z-50 outline-none" sideOffset={4}>
-                <Select.Popup
+                <div
                     className={cn(
-                        "max-h-72 w-[var(--anchor-width)] overflow-hidden rounded-md border border-border-default bg-bg-surface shadow-md outline-none",
+                        "w-[var(--anchor-width)] overflow-hidden rounded-md border border-border-default bg-bg-surface shadow-md",
                         className,
                     )}
-                    {...props}
                 >
-                    <div className="max-h-72 overflow-y-auto p-1">{children}</div>
-                </Select.Popup>
+                    <Select.Popup className="max-h-72 overflow-y-auto p-1 outline-none" {...props}>
+                        {children}
+                    </Select.Popup>
+                </div>
             </Select.Positioner>
         </Select.Portal>
     );
