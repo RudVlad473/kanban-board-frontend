@@ -34,6 +34,15 @@ const storyIds = [
     "components-ui-text-field--password",
     "components-ui-text-field--sizes",
     "components-ui-text-field--long-value",
+    // Checkbox (plan 01-07, Task 2) — eight stories.
+    "components-ui-checkbox--unchecked",
+    "components-ui-checkbox--checked",
+    "components-ui-checkbox--hover",
+    "components-ui-checkbox--focus",
+    "components-ui-checkbox--error",
+    "components-ui-checkbox--disabled",
+    "components-ui-checkbox--sizes",
+    "components-ui-checkbox--checked-with-strikethrough",
 ];
 
 async function gotoStory(page: Page, url: string) {
