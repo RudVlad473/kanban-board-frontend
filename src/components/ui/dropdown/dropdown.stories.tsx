@@ -68,8 +68,8 @@ export const Disabled: Story = {
 };
 
 // Mirrors TextField's LongValue story: a selected label long enough to overflow the trigger's
-// own width shows the trailing-edge overflow fade (the trigger is narrowed via a wrapping style
-// to force the overflow, the same technique TextField's LongValue story uses).
+// own width shows the trailing-edge overflow indicator (the trigger is narrowed via a wrapping
+// style to force the overflow, the same technique TextField's LongValue story uses).
 export const LongSelectedValue: Story = {
     args: {
         defaultValue: "A very long board name that will definitely overflow the trigger width",
@@ -107,4 +107,23 @@ export const LongItemList: Story = {
             </Dropdown.Content>
         </Dropdown.Root>
     ),
+};
+
+// ADR tech/0010: mobile-viewport coverage. Dropdown's own width already matches its trigger
+// (`w-[var(--anchor-width)]`), which is itself `w-full` of its container — already fluid — but
+// the popup's *positioning* is the real mobile-specific concern (see dropdown.tsx's
+// `collisionPadding={16}`): a trigger near a narrow viewport's edge is far more likely on mobile
+// than on a wide desktop canvas. MobileOpen and MobileLongItemList are the two states most likely
+// to reveal a positioning/scrolling problem at a genuinely narrow width.
+export const MobileOpen: Story = {
+    args: {
+        defaultOpen: true,
+    },
+    globals: { viewport: "mobile" },
+};
+
+export const MobileLongItemList: Story = {
+    args: LongItemList.args,
+    render: LongItemList.render,
+    globals: { viewport: "mobile" },
 };

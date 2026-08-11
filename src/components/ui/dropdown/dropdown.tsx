@@ -136,10 +136,16 @@ type DropdownContentProps = Omit<SelectPopupProps, "className"> & {
 // and an in-flow scrollbar (Firefox reserves layout width for it; Chrome's overlay scrollbar
 // merely hides the same underlying bug) render against or outside the rounded corner once the
 // item list actually needed to scroll.
+// ADR tech/0010 mobile review: `collisionPadding` defaults to Floating UI's generic 5px, which on
+// a narrow 375px viewport can let the popup render flush (or nearly so) against the screen edge
+// once the trigger sits near it. 16px (this design system's own `space-4`, UI-SPEC's spacing
+// scale) keeps a real margin on every side regardless of viewport — a single always-on value,
+// not a mobile/desktop split, since Floating UI's own collision detection only actually engages
+// near an edge in the first place, which mobile viewports make far more likely to happen at all.
 const Content = ({ className, children, ...props }: DropdownContentProps) => {
     return (
         <Select.Portal>
-            <Select.Positioner className="z-50 outline-none" sideOffset={4}>
+            <Select.Positioner className="z-50 outline-none" sideOffset={4} collisionPadding={16}>
                 <div
                     className={cn(
                         "w-[var(--anchor-width)] overflow-hidden rounded-md border border-border-default bg-bg-surface shadow-md",
