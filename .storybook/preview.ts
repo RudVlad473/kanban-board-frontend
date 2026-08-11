@@ -42,6 +42,11 @@ export default definePreview({
     decorators: [
         (Story, context) => {
             document.documentElement.classList.toggle("dark", context.globals.theme === "dark");
+            // Mirror app/layout.tsx's <body> so stories render against the same themed
+            // page background real usage does — otherwise dark-mode text tokens (e.g.
+            // text-text-primary, white) sit on the browser's default white canvas
+            // wherever a component doesn't paint its own background.
+            document.body.classList.add("bg-bg-app", "text-text-primary");
 
             return Story();
         },
