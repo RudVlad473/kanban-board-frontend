@@ -24,6 +24,25 @@ const storyIds = [
     "components-ui-icon-button--hover",
     "components-ui-icon-button--focus",
     "components-ui-icon-button--disabled",
+    // TextField (plan 01-07, Task 1) — nine stories.
+    "components-ui-text-field--idle",
+    "components-ui-text-field--focused",
+    "components-ui-text-field--filled",
+    "components-ui-text-field--error",
+    "components-ui-text-field--disabled",
+    "components-ui-text-field--with-description",
+    "components-ui-text-field--password",
+    "components-ui-text-field--sizes",
+    "components-ui-text-field--long-value",
+    // Checkbox (plan 01-07, Task 2) — eight stories.
+    "components-ui-checkbox--unchecked",
+    "components-ui-checkbox--checked",
+    "components-ui-checkbox--hover",
+    "components-ui-checkbox--focus",
+    "components-ui-checkbox--error",
+    "components-ui-checkbox--disabled",
+    "components-ui-checkbox--sizes",
+    "components-ui-checkbox--checked-with-strikethrough",
 ];
 
 async function gotoStory(page: Page, url: string) {
