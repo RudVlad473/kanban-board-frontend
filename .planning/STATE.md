@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: foundation-auth-preferences
 status: executing
-stopped_at: Phase 1 UI-SPEC approved
-last_updated: "2026-08-11T12:26:14.722Z"
+stopped_at: Wave 8 (01-08, Switch/Dropdown) merged, recovered from an orphaned worktree
+last_updated: "2026-08-11T15:39:25.134Z"
 last_activity: 2026-08-11
 last_activity_desc: "merged wave 5 worktree, applied tabWidth:4 Prettier change"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 15
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -30,17 +30,17 @@ against a backend that doesn't exist yet.
 ## Current Position
 
 Phase: 01 (foundation-auth-preferences) — EXECUTING
-Plan: 8 of 15 (waves 1-7 merged; wave 8 not yet started)
-Status: Wave 7 (TextField/Checkbox primitives) merged and gated. Not a checkpoint plan — ran
-  autonomously. A real WCAG AA contrast bug (color-text-muted, 3.27:1) was caught and fixed at
-  the token root (new grey.550, 4.61:1, light-mode only). Post-merge gate needed two known,
-  pre-documented Windows workarounds (stale .next/types after fresh checkout; stale Vite
-  pre-bundle cache) — both harmless, both already logged. Visual-regression baselines for the 17
-  new stories still need to be generated via the "Visual baselines" CI workflow (WINDOWS.md id 4).
-Last activity: 2026-08-11 — merged wave 7 worktree, fixed WCAG contrast bug in color-text-muted,
-  gitignored .gsd/ and .claude/worktrees/ (pre-existing gap, tripped Prettier post-merge)
+Plan: 9 of 15 (waves 1-8 merged; wave 9 not yet started)
+Status: Wave 8 (Switch/Dropdown primitives) merged. Recovered from an interrupted prior session's
+  orphaned, locked worktree — both primitives were already fully written and passing but
+  uncommitted; re-verified (tsc, lint, both browser-mode suites, full storybook/axe project,
+  storybook build) before committing each task atomically and merging. No code changes needed.
+  Visual-regression baselines for the 14 new stories still need to be generated via the
+  "Visual baselines" CI workflow (WINDOWS.md id 5).
+Last activity: 2026-08-11 — recovered and merged wave 8's orphaned worktree, logged WINDOWS.md
+  id 5, cleaned up the stale worktree/branch
 
-Progress: [████░░░░░░] 47%
+Progress: [█████░░░░░] 53%
 
 ## Performance Metrics
 
@@ -97,15 +97,14 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-11T14:35:00.000Z
-Stopped at: Wave 7 (01-07, TextField/Checkbox primitives) fully closed out, CI green on
-  origin/master. Beyond the wave itself: found and fixed a real dark-mode bug (label text
-  invisible — body/Storybook canvas never painted a themed background, so white text-primary
-  tokens sat on the default white canvas), which in turn exposed a second real contrast issue
-  (color-text-muted only passed AA against bg-surface, not the slightly darker bg-app) — both
-  fixed and baselines regenerated (30 dark-mode PNGs, 0 light-mode changes). Also added
-  React Testing Library as a fourth Vitest project ("unit", jsdom) for future logic/hook tests,
-  alongside — not replacing — the existing real-browser component-test suite; proven with a
-  throwaway RtlHarnessProbe smoke test (D-26z). Next: Wave 8 (01-08, Switch/Dropdown primitives)
-  — autonomous, not a checkpoint plan.
+Last session: 2026-08-11T15:39:25.115Z
+Stopped at: Wave 8 (01-08, Switch/Dropdown primitives) merged to master (fast-forward, commit
+  b5b6fbe). Found an orphaned, locked worktree from a prior session that was interrupted before
+  committing — both primitives were already fully written and passing. Re-verified everything
+  from scratch (tsc --noEmit, pnpm lint, both browser-mode test suites, the full storybook/axe
+  project across all 6 primitives — 44/44 passing, 0 violations — and pnpm build-storybook)
+  before committing each task atomically, merging, and cleaning up the worktree and its branch.
+  No code changes were needed; the recovered work was correct as found. Logged WINDOWS.md id 5
+  for the still-unrun visual-baselines CI dispatch (same pattern as ids 1/4). Next: Wave 9
+  (01-09, Modal) — NOT autonomous, a checkpoint plan.
 Resume file: none — no outstanding checkpoint or handoff artifact.
