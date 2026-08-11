@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
 import { cn } from "@/lib/cn";
+import type { ClassNameProp } from "@/types/props";
 
 /*
  * Composite typography classes follow button.tsx's established pattern (plan 01-06): the
@@ -40,7 +41,8 @@ const textFieldVariants = cva(
 );
 
 type Props = Omit<ComponentProps<typeof Field.Control>, "className" | "disabled" | "size" | "children"> &
-    Pick<VariantProps<typeof textFieldVariants>, "size"> & {
+    Pick<VariantProps<typeof textFieldVariants>, "size"> &
+    ClassNameProp & {
         /** Required — an unlabelled input must not be constructible. */
         label: string;
         description?: string;
@@ -49,7 +51,6 @@ type Props = Omit<ComponentProps<typeof Field.Control>, "className" | "disabled"
         isDisabled?: boolean;
         /** Rendered inside the field's visual box, absolutely positioned — e.g. a password-visibility IconButton. */
         trailing?: ReactNode;
-        className?: string;
     };
 
 export const TextField = ({

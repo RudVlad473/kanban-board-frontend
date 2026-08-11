@@ -10,6 +10,7 @@ import type {
 import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
+import type { ClassNameProp } from "@/types/props";
 
 /*
  * D-15: focus trapping, scroll locking, Escape-to-close, focus restoration and the
@@ -46,7 +47,7 @@ const Root = ({ isOpen, isDismissableOnBackdropClick = true, onOpenChange, child
     );
 };
 
-type TriggerProps = Omit<DialogTriggerProps, "className"> & { className?: string };
+type TriggerProps = Omit<DialogTriggerProps, "className"> & ClassNameProp;
 
 /*
  * Unstyled by design — a modal's opener is ordinarily a real `Button` composed in via Base UI's
@@ -57,7 +58,7 @@ const Trigger = ({ className, ...props }: TriggerProps) => {
     return <Dialog.Trigger className={className} {...props} />;
 };
 
-type ContentProps = Omit<DialogPopupProps, "className"> & { className?: string };
+type ContentProps = Omit<DialogPopupProps, "className"> & ClassNameProp;
 
 /*
  * UI-SPEC Color/Spacing: panel `bg-bg-surface` at the `radius.lg`/`shadow.lg` tokens measured in
@@ -99,7 +100,7 @@ const Content = ({ className, children, ...props }: ContentProps) => {
     );
 };
 
-type TitleProps = Omit<DialogTitleProps, "className"> & { className?: string };
+type TitleProps = Omit<DialogTitleProps, "className"> & ClassNameProp;
 
 const Title = ({ className, ...props }: TitleProps) => {
     return (
@@ -113,7 +114,7 @@ const Title = ({ className, ...props }: TitleProps) => {
     );
 };
 
-type DescriptionProps = Omit<DialogDescriptionProps, "className"> & { className?: string };
+type DescriptionProps = Omit<DialogDescriptionProps, "className"> & ClassNameProp;
 
 const Description = ({ className, ...props }: DescriptionProps) => {
     return (
@@ -135,7 +136,7 @@ const Footer = ({ className, ...props }: FooterProps) => {
     return <div className={cn("flex items-center justify-end gap-4", className)} {...props} />;
 };
 
-type CloseProps = Omit<DialogCloseProps, "className"> & { className?: string };
+type CloseProps = Omit<DialogCloseProps, "className"> & ClassNameProp;
 
 const Close = ({ className, ...props }: CloseProps) => {
     return <Dialog.Close className={className} {...props} />;

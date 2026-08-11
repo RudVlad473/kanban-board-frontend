@@ -24,7 +24,8 @@
             "@/hooks/*": ["./src/hooks/*"],
             "@/lib/*": ["./src/lib/*"],
             "@/styles/*": ["./src/styles/*"],
-            "@/test/*": ["./src/test/*"]
+            "@/test/*": ["./src/test/*"],
+            "@/types/*": ["./src/types/*"]
         }
     },
     "include": [

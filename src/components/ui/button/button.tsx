@@ -3,6 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/cn";
+import type { ClassNameProp } from "@/types/props";
 
 /*
  * Base classes shared by every variant/size. Typography reads two working generated utilities
@@ -50,9 +51,9 @@ const buttonVariants = cva(
 );
 
 type Props = Omit<ComponentProps<typeof BaseButton>, "disabled" | "className"> &
-    VariantProps<typeof buttonVariants> & {
+    VariantProps<typeof buttonVariants> &
+    ClassNameProp & {
         isDisabled?: boolean;
-        className?: string;
     };
 
 export const Button = ({ variant, size, isDisabled = false, className, ...props }: Props) => {

@@ -6,6 +6,7 @@ import { createContext, useContext, useId, type ReactNode } from "react";
 
 import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
 import { cn } from "@/lib/cn";
+import type { ClassNameProp } from "@/types/props";
 
 /*
  * D-19: Dropdown's public shape mirrors Base UI's own Select composition — Root/Trigger/Content/
@@ -23,12 +24,12 @@ import { cn } from "@/lib/cn";
  */
 const DropdownContext = createContext<{ hasError: boolean }>({ hasError: false });
 
-type DropdownRootProps = Omit<SelectRootProps<string>, "disabled" | "children"> & {
-    hasError?: boolean;
-    isDisabled?: boolean;
-    className?: string;
-    children?: ReactNode;
-};
+type DropdownRootProps = Omit<SelectRootProps<string>, "disabled" | "children"> &
+    ClassNameProp & {
+        hasError?: boolean;
+        isDisabled?: boolean;
+        children?: ReactNode;
+    };
 
 const Root = ({ hasError = false, isDisabled = false, className, children, ...props }: DropdownRootProps) => {
     return (
@@ -61,10 +62,10 @@ const triggerVariants = cva(
     },
 );
 
-type DropdownTriggerProps = Omit<SelectTriggerProps, "className" | "children" | "disabled"> & {
-    placeholder?: string;
-    className?: string;
-};
+type DropdownTriggerProps = Omit<SelectTriggerProps, "className" | "children" | "disabled"> &
+    ClassNameProp & {
+        placeholder?: string;
+    };
 
 const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => {
     const { hasError } = useContext(DropdownContext);
@@ -126,9 +127,7 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
     );
 };
 
-type DropdownContentProps = Omit<SelectPopupProps, "className"> & {
-    className?: string;
-};
+type DropdownContentProps = Omit<SelectPopupProps, "className"> & ClassNameProp;
 
 /*
  * `shadow.md`/`radius.md` — the popup elevation and corner measured in plan 01-04, the same
@@ -175,13 +174,13 @@ const Content = ({ className, children, ...props }: DropdownContentProps) => {
     );
 };
 
-type DropdownItemProps = Omit<SelectItemProps, "className" | "disabled" | "value" | "children"> & {
-    /** A unique value identifying this item — required, so an item cannot be constructed value-less. */
-    value: string;
-    isDisabled?: boolean;
-    className?: string;
-    children?: ReactNode;
-};
+type DropdownItemProps = Omit<SelectItemProps, "className" | "disabled" | "value" | "children"> &
+    ClassNameProp & {
+        /** A unique value identifying this item — required, so an item cannot be constructed value-less. */
+        value: string;
+        isDisabled?: boolean;
+        children?: ReactNode;
+    };
 
 /*
  * Popup insets its items by `p-1` (4px) from its own `rounded-md` (24px) edge — small enough that

@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/cn";
+import type { ClassNameProp } from "@/types/props";
 
 /*
  * D-18: 16/20/24px boxes for sm/md/lg, with the tick glyph inset 4px (`space-1`) on every side —
@@ -39,7 +40,8 @@ const checkboxVariants = cva(
 );
 
 type Props = Omit<ComponentProps<typeof BaseCheckbox.Root>, "className" | "disabled" | "checked" | "children"> &
-    Pick<VariantProps<typeof checkboxVariants>, "size"> & {
+    Pick<VariantProps<typeof checkboxVariants>, "size"> &
+    ClassNameProp & {
         /** Required — an unlabelled control must not be constructible. */
         label: string;
         isChecked?: boolean;
@@ -51,7 +53,6 @@ type Props = Omit<ComponentProps<typeof BaseCheckbox.Root>, "className" | "disab
          * not want it.
          */
         hasStrikethroughWhenChecked?: boolean;
-        className?: string;
     };
 
 export const Checkbox = ({

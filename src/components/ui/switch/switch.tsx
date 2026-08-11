@@ -3,6 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
+import type { ClassNameProp } from "@/types/props";
 
 /*
  * D-18: track sized 32x20 / 40x24 / 48x28 (sm/md/lg), a `p-0.5` (2px) inset around a
@@ -67,7 +68,8 @@ const thumbVariants = cva(
 );
 
 type Props = Omit<ComponentProps<typeof BaseSwitch.Root>, "className" | "disabled" | "checked" | "children"> &
-    Pick<VariantProps<typeof rootVariants>, "size"> & {
+    Pick<VariantProps<typeof rootVariants>, "size"> &
+    ClassNameProp & {
         /** Required — the theme toggle renders no visible text, so this is the control's only name. */
         label: string;
         isChecked?: boolean;
@@ -76,7 +78,6 @@ type Props = Omit<ComponentProps<typeof BaseSwitch.Root>, "className" | "disable
         iconOn?: ReactNode;
         /** Rendered inside the thumb, shown only while unchecked. Marked `aria-hidden` — `label` carries the name. */
         iconOff?: ReactNode;
-        className?: string;
     };
 
 export const Switch = ({ label, isChecked, isDisabled = false, iconOn, iconOff, size, className, ...props }: Props) => {

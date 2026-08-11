@@ -3,6 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
+import type { ClassNameProp } from "@/types/props";
 
 /*
  * Base UI has no dedicated icon-button component (RESEARCH.md Standard Stack), so this wraps
@@ -35,12 +36,12 @@ const iconButtonVariants = cva(
 );
 
 type Props = Omit<ComponentProps<typeof BaseButton>, "disabled" | "className" | "children"> &
-    VariantProps<typeof iconButtonVariants> & {
+    VariantProps<typeof iconButtonVariants> &
+    ClassNameProp & {
         /** Required — an icon-only control must always expose an accessible name. */
         label: string;
         icon: ReactNode;
         isDisabled?: boolean;
-        className?: string;
     };
 
 export const IconButton = ({ variant, size, isDisabled = false, label, icon, className, ...props }: Props) => {
