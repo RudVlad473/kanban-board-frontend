@@ -25,16 +25,22 @@ const storyIds = [
     "components-ui-icon-button--disabled",
 ];
 
-// Playwright's `toHaveScreenshot` waits for the page to settle (network idle, no in-flight
-// animations) but NOT for `document.fonts.ready` — self-hosted @font-face uses `font-display:
-// swap` (src/styles/fonts.css), which paints the fallback font immediately and swaps to the
-// real one once the woff2 finishes downloading. On a fast local machine that swap usually
-// completes before Playwright captures the screenshot, masking the race; a slower/differently
-// scheduled CI runner reliably wins the race the other way, silently baselining every story
-// against the wrong typeface. Waiting on the Font Loading API's own readiness promise removes
-// the race entirely, regardless of environment speed.
+// `@font-face` only triggers a font fetch once something on the page actually needs to paint
+// with that family — `document.fonts.ready` resolves trivially (nothing pending) if checked
+// before Storybook has mounted the story into #storybook-root, so the wait order matters: the
+// story's root content must exist FIRST (so the browser has actually started the woff2 request
+// self-hosted via font-display: swap, src/styles/fonts.css), then `document.fonts.ready` waits
+// for that real, now-pending load to finish. `toHaveScreenshot`'s own stability polling accepts
+// the FIRST visually-stable frame it sees — on a slower/differently-scheduled CI runner that can
+// land after the fallback font paints but before the real font finishes downloading and swaps
+// in, silently baselining every story against the wrong typeface even though the page mounted
+// correctly. Confirmed via a CI-side diagnostic run (see git history around this commit).
 async function gotoStoryAndWaitForFonts(page: import("@playwright/test").Page, url: string) {
     await page.goto(url);
+    // #storybook-root exists as an empty shell before the story mounts — wait for an actual
+    // child, not just the container, or this resolves before any content (and thus any font
+    // request) exists.
+    await page.locator("#storybook-root > *").first().waitFor({ state: "visible" });
     await page.evaluate(() => document.fonts.ready);
 }
 

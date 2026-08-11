@@ -28,38 +28,6 @@ jobs:
             - name: Build Storybook
               run: pnpm build-storybook
 
-            - name: DEBUG font loading
-              run: |
-                  node scripts/serve-static.mjs storybook-static 6007 &
-                  sleep 2
-                  node -e "
-                  const { chromium } = require('@playwright/test');
-                  (async () => {
-                    const browser = await chromium.launch();
-                    const page = await browser.newPage();
-                    const netlog = [];
-                    page.on('response', r => { if (r.url().includes('woff2') || r.url().includes('fonts')) netlog.push(r.url() + ' -> ' + r.status()); });
-                    page.on('requestfailed', r => { if (r.url().includes('woff2') || r.url().includes('fonts')) netlog.push('FAILED: ' + r.url() + ' -> ' + r.failure()?.errorText); });
-                    await page.goto('http://localhost:6007/iframe.html?id=components-ui-button--primary&viewMode=story');
-                    await page.evaluate(() => document.fonts.ready);
-                    const info = await page.evaluate(() => {
-                      const buttons = Array.from(document.querySelectorAll('button'));
-                      const real = buttons.find(b => b.textContent.includes('Create Account'));
-                      const fontsList = Array.from(document.fonts).map(f => ({ family: f.family, weight: f.weight, status: f.status }));
-                      return {
-                        computedFont: real ? getComputedStyle(real).fontFamily : 'BUTTON NOT FOUND',
-                        fontsCount: document.fonts.size,
-                        fontsList,
-                      };
-                    });
-                    console.log('NETWORK LOG:', JSON.stringify(netlog, null, 2));
-                    console.log('PAGE INFO:', JSON.stringify(info, null, 2));
-                    await browser.close();
-                    process.exit(0);
-                  })();
-                  "
-                  kill %1 2>/dev/null || true
-
             - name: Update visual baselines
               run: pnpm exec playwright test --update-snapshots
 
