@@ -38,6 +38,22 @@ export default defineConfig({
             {
                 resolve: { alias },
                 test: {
+                    /*
+                     * Node-mode tests for the MSW mock backend (plan 01-10) — drives the handlers
+                     * through the real `externalApi` client with the Node server listening, the
+                     * same path the BFF Route Handlers use, not a browser environment.
+                     */
+                    name: "node",
+                    environment: "node",
+                    include: ["src/lib/mocks/**/*.test.ts"],
+                    env: {
+                        EXTERNAL_API_BASE_URL: process.env.EXTERNAL_API_BASE_URL ?? "http://localhost:8080/api",
+                    },
+                },
+            },
+            {
+                resolve: { alias },
+                test: {
                     name: "browser",
                     include: ["src/**/*.test.tsx"],
                     exclude: ["src/**/*.unit.test.tsx"],

@@ -4,6 +4,7 @@ allowBuilds:
     # builder (@storybook/builder-vite / @storybook/csf-plugin, used by @storybook/nextjs-vite) to
     # actually run.
     esbuild: true
+    msw: true
     sharp: false
     unrs-resolver: false
 minimumReleaseAgeExclude:

@@ -20,7 +20,8 @@
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build",
         "test:visual": "playwright test",
-        "test:all": "pnpm test && pnpm exec playwright test"
+        "test:all": "pnpm test && pnpm exec playwright test",
+        "api:generate": "openapi-typescript docs/api/kanban-board-openapi.json -o src/lib/api/generated-types.ts"
     },
     "dependencies": {
         "@base-ui/react": "1.7.0",
@@ -28,8 +29,10 @@
         "clsx": "2.1.1",
         "lucide-react": "1.31.0",
         "next": "16.3.0",
+        "openapi-fetch": "0.17.0",
         "react": "19.2.8",
         "react-dom": "19.2.8",
+        "server-only": "0.0.1",
         "tailwind-merge": "3.6.0"
     },
     "devDependencies": {
@@ -57,6 +60,8 @@
         "husky": "9.1.7",
         "jsdom": "30.0.1",
         "lint-staged": "17.3.0",
+        "msw": "2.15.0",
+        "openapi-typescript": "7.13.0",
         "prettier": "3.9.6",
         "prettier-plugin-tailwindcss": "0.8.1",
         "storybook": "10.5.7",
@@ -67,5 +72,10 @@
         "vitest": "4.1.10",
         "vitest-browser-react": "2.2.0"
     },
-    "packageManager": "pnpm@11.20.0"
+    "packageManager": "pnpm@11.20.0",
+    "msw": {
+        "workerDirectory": [
+            "public"
+        ]
+    }
 }

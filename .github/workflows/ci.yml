@@ -12,6 +12,10 @@ concurrency:
 
 env:
     NEXT_TELEMETRY_DISABLED: "1"
+    # Local-mock server URL (docs/api/kanban-board-openapi.json's declared server URL). No real
+    # backend exists yet — MSW intercepts every call this hits, in both `pnpm build` and `pnpm
+    # test` (ADR tech/0006: per-environment, never a literal in source; this is CI's environment).
+    EXTERNAL_API_BASE_URL: "http://localhost:8080/api"
 
 jobs:
     quality:
@@ -37,6 +41,11 @@ jobs:
 
             - name: Format check
               run: pnpm format:check
+
+            - name: API types drift
+              run: |
+                  pnpm api:generate
+                  git diff --exit-code src/lib/api/generated-types.ts
 
             - name: Build
               run: pnpm build
