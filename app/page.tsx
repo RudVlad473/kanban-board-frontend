@@ -1,30 +1,27 @@
-"use client";
-
 /*
- * Temporary developer affordance proving the token pipeline's two mode scopes resolve under
- * the same semantic token names (D-09). Plan 01-14 replaces this with the real Switch-driven,
- * account-persisted theme toggle and removes the theme-probe button.
+ * The public landing route (`src/lib/routes.ts`'s `PUBLIC_PATHS`). The temporary theme probe
+ * added in plan 01-04 is gone — plan 01-14 lands the real Switch-driven, account-persisted theme
+ * toggle. A signed-in visitor is redirected away from here to `/boards` by `proxy.ts` before this
+ * ever renders.
  */
-const toggleTheme = () => {
-    document.documentElement.classList.toggle("dark");
-};
-
 const Home = () => {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg-app">
-            <div className="flex flex-col items-center gap-2 rounded-lg bg-bg-surface p-6">
-                <h1 className="text-3xl font-bold text-text-primary">Kanban Board</h1>
-                <p data-testid="scaffold-probe" className="text-text-muted">
-                    Scaffold verified end to end.
+            <div className="flex flex-col items-center gap-4 rounded-lg bg-bg-surface p-6">
+                <h1 className="font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
+                    Kanban Board
+                </h1>
+                <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
+                    Organize your work into boards, columns, and tasks.
                 </p>
-                <button
-                    type="button"
-                    onClick={toggleTheme}
-                    data-testid="theme-probe"
-                    className="rounded-md bg-bg-primary px-4 py-2 text-text-on-primary"
-                >
-                    Toggle theme
-                </button>
+                <div className="flex gap-4">
+                    <a href="/login" className="text-bg-primary hover:text-bg-primary-hover">
+                        Sign In
+                    </a>
+                    <a href="/register" className="text-bg-primary hover:text-bg-primary-hover">
+                        Create Account
+                    </a>
+                </div>
             </div>
         </div>
     );

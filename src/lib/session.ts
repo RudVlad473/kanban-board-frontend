@@ -17,7 +17,14 @@ export type SessionPayload = {
     theme: "LIGHT" | "DARK";
 };
 
-const COOKIE_NAME = "session";
+/**
+ * Exported so `proxy.ts` (plan 01-13) can read the same cookie name from `NextRequest`'s own
+ * cookie API without duplicating the literal string — `proxy.ts` runs outside the Server
+ * Component/Route Handler/Server Action request scope that `next/headers`'s `cookies()` requires,
+ * so it cannot call `session.verify()` directly.
+ */
+export const SESSION_COOKIE_NAME = "session";
+const COOKIE_NAME = SESSION_COOKIE_NAME;
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // seven days, absolute expiry (ADR tech/0001)
 
 /**
@@ -80,16 +87,19 @@ export const createSessionService = (secret: string) => {
         });
     };
 
-    const verify = async (): Promise<SessionPayload | null> => {
-        const cookieStore = await cookies();
-        const value = cookieStore.get(COOKIE_NAME)?.value;
-
-        if (!value) {
+    /**
+     * The actual jose verify + shape check, taking a raw token value rather than reading
+     * `cookies()` itself — the piece `verify()` below and `proxy.ts`'s route guard both need,
+     * factored out once so neither reimplements JWT verification (`proxy.ts` reads its cookie via
+     * `NextRequest.cookies`, not `next/headers`, since it runs outside that request scope).
+     */
+    const verifyToken = async (token: string | undefined): Promise<SessionPayload | null> => {
+        if (!token) {
             return null;
         }
 
         try {
-            const { payload } = await jwtVerify(value, key);
+            const { payload } = await jwtVerify(token, key);
 
             if (!isSessionPayload(payload)) {
                 return null;
@@ -110,12 +120,17 @@ export const createSessionService = (secret: string) => {
         }
     };
 
+    const verify = async (): Promise<SessionPayload | null> => {
+        const cookieStore = await cookies();
+        return verifyToken(cookieStore.get(COOKIE_NAME)?.value);
+    };
+
     const destroy = async (): Promise<void> => {
         const cookieStore = await cookies();
         cookieStore.delete(COOKIE_NAME);
     };
 
-    return { create, verify, destroy };
+    return { create, verify, verifyToken, destroy };
 };
 
 const secret = process.env.SESSION_SECRET;
