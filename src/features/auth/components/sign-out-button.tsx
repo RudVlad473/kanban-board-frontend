@@ -4,20 +4,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button/button";
+import { postSignOut } from "@/features/auth/api/auth-api";
 import { SIGN_IN_PATH } from "@/lib/routes";
-
-const SIGN_OUT_ENDPOINT = "/api/auth/signout";
-
-const postSignOut = async (): Promise<void> => {
-    const response = await fetch(SIGN_OUT_ENDPOINT, {
-        method: "POST",
-        credentials: "same-origin",
-    });
-
-    if (!response.ok) {
-        throw new Error("Sign-out failed.");
-    }
-};
 
 /**
  * Sign-out is non-destructive (UI-SPEC Copywriting Contract) — no confirmation modal. Posts to

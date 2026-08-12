@@ -1,47 +1,60 @@
+import { bffApi } from "@/lib/api/bff-client";
 import type { SignInInput, SignUpInput } from "@/lib/validation/auth-schemas";
 
 /*
- * Thin same-origin fetch wrappers over this app's own `/api/auth/...` BFF Route Handlers — never
- * the external contract's base URL, which the browser must never learn (ADR tech/0001). Both
- * routes' success bodies are a bare `{ ok: true }` (plan 01-11); every non-2xx response carries
- * `{ message: string }`, which is thrown here so a mutation hook's `onError` gets copy that
- * already matches UI-SPEC's Copywriting Contract without re-deriving it.
+ * Thin typed wrappers over this app's own `/api/auth/...` BFF Route Handlers — never the external
+ * contract's base URL, which the browser must never learn (ADR tech/0001). `bffApi` is generated
+ * from docs/api/bff-openapi.json (pnpm bff-api:generate), itself derived from the same Zod schemas
+ * these Route Handlers validate against, so the request shape here and the server's can't drift
+ * apart. Every non-2xx response's `message` (when present) is thrown so a mutation hook's `onError`
+ * gets copy that already matches UI-SPEC's Copywriting Contract without re-deriving it.
  */
 
-const SIGN_UP_ENDPOINT = "/api/auth/signup";
-const SIGN_IN_ENDPOINT = "/api/auth/signin";
 const FALLBACK_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
 type SignAuthResponse = { ok: true };
 
-const extractMessage = (body: unknown): string | undefined => {
-    if (typeof body !== "object" || body === null || !("message" in body)) {
+const extractMessage = (error: unknown): string | undefined => {
+    if (typeof error !== "object" || error === null || !("message" in error)) {
         return undefined;
     }
 
-    const { message } = body;
+    const { message } = error;
     return typeof message === "string" ? message : undefined;
 };
 
-const postAuthRequest = async ({ url, body }: { url: string; body: unknown }): Promise<SignAuthResponse> => {
-    const response = await fetch(url, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-    });
+export const postSignUp = async (input: SignUpInput): Promise<SignAuthResponse> => {
+    const { data, error } = await bffApi.POST("/api/auth/signup", { body: input });
 
-    const responseBody: unknown = await response.json();
-
-    if (!response.ok) {
-        throw new Error(extractMessage(responseBody) ?? FALLBACK_ERROR_MESSAGE);
+    if (error !== undefined) {
+        throw new Error(extractMessage(error) ?? FALLBACK_ERROR_MESSAGE);
     }
 
-    return responseBody as SignAuthResponse;
+    return data;
 };
 
-export const postSignUp = (input: SignUpInput): Promise<SignAuthResponse> =>
-    postAuthRequest({ url: SIGN_UP_ENDPOINT, body: input });
+export const postSignIn = async (input: SignInInput): Promise<SignAuthResponse> => {
+    const { data, error } = await bffApi.POST("/api/auth/signin", { body: input });
 
-export const postSignIn = (input: SignInInput): Promise<SignAuthResponse> =>
-    postAuthRequest({ url: SIGN_IN_ENDPOINT, body: input });
+    if (error !== undefined) {
+        throw new Error(extractMessage(error) ?? FALLBACK_ERROR_MESSAGE);
+    }
+
+    return data;
+};
+
+export const postSignOut = async (): Promise<void> => {
+    const { error } = await bffApi.POST("/api/auth/signout");
+
+    /*
+     * The BFF route declares no error response at all, so the generated type claims `error` is
+     * always `undefined` — true today (the route only ever clears a cookie and returns 200), but
+     * widened through `unknown` so a future failure path added there doesn't silently bypass this
+     * check (same pattern as app/api/auth/signin/route.ts's `upstreamError`).
+     */
+    const responseError: unknown = error;
+
+    if (responseError !== undefined) {
+        throw new Error(extractMessage(responseError) ?? "Sign-out failed.");
+    }
+};
