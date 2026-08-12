@@ -178,6 +178,43 @@ describeForEachDevice("TextField", () => {
         await expect.poll(() => isTruncating(input.element() as HTMLElement)).toBe(true);
     });
 
+    it("clips without an ellipsis glyph while focused, then restores the ellipsis on blur (round-10 fix)", async () => {
+        /*
+         * Arrange — `text-overflow: ellipsis` fights the browser's own caret-follow auto-scroll on
+         * a focused `<input>`: Firefox never paints the glyph on `<input>` at all (Mozilla
+         * Bugzilla #15154, unfixable via CSS), and even Chromium can render it against a stale
+         * scroll offset once focus moves the caret, producing the human-reported "blank field with
+         * a stray ellipsis" glitch. Neither the rendered glyph nor the native caret-scroll position
+         * is introspectable via computed styles or jsdom — see round-10's SUMMARY for a
+         * screenshot-based Playwright repro against the built Storybook confirming the visual fix.
+         * What IS reliably assertable here is the underlying CSS decision that drives the fix:
+         * `text-overflow` itself must read `clip` (no glyph) while focused and `ellipsis` again the
+         * moment focus leaves — proving the `focus:text-clip` class is wired up and takes effect,
+         * without depending on a real render of the glyph itself.
+         */
+        const overflow = await render(
+            <div style={{ width: "320px" }}>
+                <TextField label="Overflow value" defaultValue={"x".repeat(300)} />
+            </div>,
+        );
+        const input = overflow.getByRole("textbox", { name: "Overflow value" }).element() as HTMLInputElement;
+
+        // Assert — blurred (initial) state carries the ellipsis.
+        expect(getComputedStyle(input).textOverflow).toBe("ellipsis");
+
+        // Act
+        input.focus();
+
+        // Assert — focused state clips without a glyph, avoiding the caret-scroll conflict.
+        await expect.poll(() => getComputedStyle(input).textOverflow).toBe("clip");
+
+        // Act
+        input.blur();
+
+        // Assert — blurring restores the ellipsis.
+        await expect.poll(() => getComputedStyle(input).textOverflow).toBe("ellipsis");
+    });
+
     it("holds its rendered width against a 300-character value instead of expanding or wrapping the layout", async () => {
         /*
          * Arrange — distinct labels keep each render's locator query unambiguous, since

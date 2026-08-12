@@ -19,9 +19,24 @@ import type { ClassNameProp } from "@/types/props";
  * border width and bled over the border/corner radius. Dropdown's own overflow-indicator hook
  * usage is unrelated and intentionally untouched — its trigger is a `<span>`, not a native input,
  * so it has no `text-overflow` box to truncate against.
+ *
+ * `focus:text-clip` (round-10 human-reported visual bug): `text-overflow: ellipsis` on a native
+ * `<input>` fights the browser's own caret-follow auto-scroll while the field is focused —
+ * confirmed two independent, real-browser-engine symptoms via a Playwright repro against the
+ * built Storybook (not just DOM-property assertions, since neither the ellipsis glyph nor the
+ * native caret-scroll position is introspectable via computed styles or jsdom): (1) Firefox
+ * never paints the "…" glyph on `<input>` at all, focused or not — a 20+-year-old, still-open,
+ * WontFix Firefox limitation (Mozilla Bugzilla #15154) — so the value simply clips with no
+ * truncation cue; (2) even in Chromium, once focus moves the caret and the browser auto-scrolls
+ * the input's internal text to keep it visible, the ellipsis is never recomputed against the new
+ * scroll offset, so it either vanishes or (per the human's second screenshot) briefly renders
+ * against a stale/blank scroll position. Neither engine's focused-state ellipsis rendering can be
+ * trusted, so the fix scopes the ellipsis to the *blurred* state only: `text-clip` (plain
+ * `text-overflow: clip`, no glyph) while focused, where native caret-scroll alone already works
+ * correctly in both engines, and `truncate`'s ellipsis returns the moment the field blurs.
  */
 const textFieldVariants = cva(
-    "w-full truncate rounded-md border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
+    "w-full truncate rounded-md border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus:text-clip focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
     {
         variants: {
             size: {
