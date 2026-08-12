@@ -76,12 +76,48 @@ jobs:
               run: pnpm build-storybook
 
             - name: Run visual regression
-              run: pnpm exec playwright test
+              run: pnpm exec playwright test --project visual
 
             - name: Upload Playwright report
               if: failure()
               uses: actions/upload-artifact@v4
               with:
                   name: playwright-report
+                  path: playwright-report/
+                  retention-days: 7
+
+    e2e:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        needs: quality
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: 24
+                  cache: "pnpm"
+
+            - run: pnpm install --frozen-lockfile
+
+            - name: Install Playwright browsers
+              run: pnpm exec playwright install --with-deps chromium
+
+            # A fresh secret per run — real credential material, never committed, scoped to this
+            # job only. Exported via GITHUB_ENV so it's visible to the E2E step below and, through
+            # it, to playwright.config.ts's e2e webServer (which forwards it to `next start`).
+            - name: Generate a workflow-scoped session secret
+              run: echo "SESSION_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+            - name: Run E2E tests
+              run: pnpm exec playwright test --project e2e
+
+            - name: Upload Playwright report
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-e2e-report
                   path: playwright-report/
                   retention-days: 7

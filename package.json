@@ -19,7 +19,8 @@
         "test:a11y": "vitest run --project storybook",
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build",
-        "test:visual": "playwright test",
+        "test:visual": "playwright test --project visual",
+        "test:e2e": "playwright test --project e2e",
         "test:all": "pnpm test && pnpm exec playwright test",
         "api:generate": "openapi-typescript docs/api/kanban-board-openapi.json -o src/lib/api/generated-types.ts"
     },
