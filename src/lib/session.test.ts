@@ -100,9 +100,25 @@ describe("session", () => {
         if (!record) {
             throw new Error("expected create() to have written a cookie");
         }
-        const lastChar = record.value.at(-1);
-        const flipped = lastChar === "A" ? "B" : "A";
-        cookieStore.set("session", { value: record.value.slice(0, -1) + flipped, options: record.options });
+        /*
+         * Flip a character inside the PAYLOAD segment, not the signature's last character — a
+         * naive last-character flip can land on HS256's unused trailing padding bits (32 bytes
+         * base64url-encodes to 43 characters, so the final character's low 2 bits are never
+         * decoded), leaving the signature bytes — and therefore verification — unchanged. Altering
+         * the payload instead guarantees the recomputed signature no longer matches.
+         */
+        const [header, payload, signature] = record.value.split(".");
+        if (!header || !payload || !signature) {
+            throw new Error("expected create() to have written a well-formed JWT");
+        }
+        const tamperIndex = Math.floor(payload.length / 2);
+        const originalChar = payload[tamperIndex];
+        const flippedChar = originalChar === "A" ? "B" : "A";
+        const tamperedPayload = payload.slice(0, tamperIndex) + flippedChar + payload.slice(tamperIndex + 1);
+        cookieStore.set("session", {
+            value: `${header}.${tamperedPayload}.${signature}`,
+            options: record.options,
+        });
 
         await expect(service.verify()).resolves.toBeNull();
     });
