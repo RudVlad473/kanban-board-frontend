@@ -310,6 +310,8 @@ const eslintConfig = defineConfig([
         "node_modules/**",
         "src/styles/tokens.css",
         "src/lib/api/generated-types.ts",
+        // MSW's own generated browser worker script (`msw init public/ --save`, plan 01-10) — vendored, never hand-edited.
+        "public/mockServiceWorker.js",
         "storybook-static/**",
         "coverage/**",
         "test-results/**",

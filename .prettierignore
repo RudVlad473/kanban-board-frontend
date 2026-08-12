@@ -3,6 +3,7 @@ node_modules/
 pnpm-lock.yaml
 src/styles/tokens.css
 src/lib/api/generated-types.ts
+public/mockServiceWorker.js
 storybook-static/
 coverage/
 test-results/
