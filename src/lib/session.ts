@@ -20,7 +20,13 @@ export type SessionPayload = {
 const COOKIE_NAME = "session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // seven days, absolute expiry (ADR tech/0001)
 
-const isSessionPayload = (value: unknown): value is SessionPayload => {
+/**
+ * Runtime guard for an unverified value claiming to be a `SessionPayload` — used both by
+ * `verify()` below (a decoded-but-unchecked JWT payload) and by the sign-in Route Handler (an
+ * upstream response widened through `unknown`, since the generated type says `content?: never`
+ * for this operation's success case per the contract's own gap).
+ */
+export const isSessionPayload = (value: unknown): value is SessionPayload => {
     if (typeof value !== "object" || value === null) {
         return false;
     }

@@ -59,16 +59,30 @@ describe("session", () => {
     });
 
     it("writes the cookie with httpOnly, Secure and SameSite set", async () => {
+        /*
+         * Force the non-development branch explicitly (Vercel Preview/Production) rather than
+         * asserting against whatever NODE_ENV happens to be in this test run — a real check on
+         * the flag's value, not a tautology against the same expression session.ts itself uses.
+         */
+        vi.stubEnv("NODE_ENV", "production");
         const service = createSessionService(TEST_SECRET);
         await service.create(testPayload);
+        vi.unstubAllEnvs();
 
         const record = cookieStore.get("session");
 
-        expect(record?.options).toMatchObject({
-            httpOnly: true,
-            secure: process.env.NODE_ENV !== "development",
-            sameSite: "lax",
-        });
+        expect(record?.options).toMatchObject({ httpOnly: true, secure: true, sameSite: "lax" });
+    });
+
+    it("relaxes Secure only for local development (gated on NODE_ENV, not a custom flag)", async () => {
+        vi.stubEnv("NODE_ENV", "development");
+        const service = createSessionService(TEST_SECRET);
+        await service.create(testPayload);
+        vi.unstubAllEnvs();
+
+        const record = cookieStore.get("session");
+
+        expect(record?.options).toMatchObject({ secure: false });
     });
 
     it("returns the identity it was created for on verification", async () => {
