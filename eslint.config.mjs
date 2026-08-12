@@ -216,6 +216,18 @@ const eslintConfig = defineConfig([
                             from: { element: { type: "layout" } },
                             allow: [{ to: { element: { type: "ui" } } }, { to: { element: { type: "lib" } } }],
                         },
+                        /*
+                         * `src/lib/*` captures each subfolder (api, mocks, ...) as its own "lib"
+                         * element instance — a cross-instance lib->lib import (e.g. a mocks test
+                         * referencing the generated API types under lib/api) is exactly the kind
+                         * of domain-agnostic infrastructure sharing `lib/` exists for, unlike a
+                         * feature->feature import. Plan 01-10 surfaced the gap: no policy allowed
+                         * it yet.
+                         */
+                        {
+                            from: { element: { type: "lib" } },
+                            allow: [{ to: { element: { type: "lib" } } }],
+                        },
                     ],
                 },
             ],
