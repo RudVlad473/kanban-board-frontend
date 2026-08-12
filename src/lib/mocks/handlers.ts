@@ -82,7 +82,7 @@ export const handlers = [
         }
         const theme: Theme = body.theme;
 
-        const user = userId ? updateUserTheme(userId, theme) : undefined;
+        const user = userId ? updateUserTheme({ id: userId, theme }) : undefined;
 
         if (!user) {
             return HttpResponse.json({ message: "User not found." }, { status: 404 });

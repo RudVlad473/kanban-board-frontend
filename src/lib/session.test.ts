@@ -20,6 +20,7 @@ const fakeCookieJar = {
         const record = cookieStore.get(name);
         return record ? { name, value: record.value } : undefined;
     },
+    // eslint-disable-next-line no-restricted-syntax -- mocks next/headers' cookies().set(name, value, options); positional shape is dictated by that external API, not this project (ADR tech/0016 exemption)
     set: (name: string, value: string, options?: Record<string, unknown>) => {
         cookieStore.set(name, { value, options });
     },

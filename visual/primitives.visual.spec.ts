@@ -83,7 +83,7 @@ const storyIds = [
  */
 const deviceTypes = Object.values(DEVICE_TYPE);
 
-const gotoStory = async (page: Page, url: string) => {
+const gotoStory = async ({ page, url }: { page: Page; url: string }) => {
     await page.goto(url);
     /*
      * Modal is the one primitive whose actual visible surface does not live inside
@@ -129,13 +129,19 @@ for (const storyId of storyIds) {
 
         test(`${storyId} — ${deviceLabel} — light`, async ({ page }) => {
             await page.setViewportSize(viewportSize);
-            const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`);
+            const root = await gotoStory({
+                page,
+                url: `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`,
+            });
             await expect(root).toHaveScreenshot(`${storyId}-${deviceLabel}-light.png`);
         });
 
         test(`${storyId} — ${deviceLabel} — dark`, async ({ page }) => {
             await page.setViewportSize(viewportSize);
-            const root = await gotoStory(page, `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`);
+            const root = await gotoStory({
+                page,
+                url: `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`,
+            });
             await expect(root).toHaveScreenshot(`${storyId}-${deviceLabel}-dark.png`);
         });
     }

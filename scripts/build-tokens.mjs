@@ -17,14 +17,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 const outputPath = path.join(repoRoot, "src/styles/tokens.css");
 
-const buildModeCss = async (mode, platformName) => {
+const buildModeCss = async ({ mode, platformName }) => {
     const sd = new StyleDictionary(createConfig(mode));
     const [{ output }] = await sd.formatPlatform(platformName);
     return output;
 };
 
 const main = async () => {
-    const [themeCss, darkCss] = await Promise.all([buildModeCss("light", "css"), buildModeCss("dark", "css-dark")]);
+    const [themeCss, darkCss] = await Promise.all([
+        buildModeCss({ mode: "light", platformName: "css" }),
+        buildModeCss({ mode: "dark", platformName: "css-dark" }),
+    ]);
 
     await mkdir(path.dirname(outputPath), { recursive: true });
     await writeFile(outputPath, `${themeCss}\n${darkCss}`);

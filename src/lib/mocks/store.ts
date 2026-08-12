@@ -102,7 +102,7 @@ export const createUser = (input: { displayName: string; email: string; password
     return user;
 };
 
-export const updateUserTheme = (id: string, theme: Theme): UserRecord | undefined => {
+export const updateUserTheme = ({ id, theme }: { id: string; theme: Theme }): UserRecord | undefined => {
     const user = users.get(id);
 
     if (!user) {

@@ -304,6 +304,50 @@ const eslintConfig = defineConfig([
         },
     },
 
+    /*
+     * 8d. Multi-param functions take one destructured object parameter, not positional args
+     * (ADR tech/0016) — except a function/arrow expression sitting directly in a call/new
+     * argument list, whose arity is dictated by the API it's passed to (array-method callbacks,
+     * Promise executors, forwardRef, event handlers) and which this project cannot reshape.
+     * Each selector targets a *declaration* site (variable/class-method/object-method), which is
+     * exactly what excludes an inline callback argument — that arrow/function's parent is a
+     * CallExpression/NewExpression argument, never a VariableDeclarator/MethodDefinition/Property.
+     */
+    {
+        rules: {
+            "no-restricted-syntax": [
+                "error",
+                {
+                    selector: "TSImportType",
+                    message:
+                        'Use a top-level `import type { X } from "module"` instead of an inline `import("module").X` type query.',
+                },
+                {
+                    selector: "FunctionDeclaration[params.length>=2]",
+                    message:
+                        "Functions with 2+ parameters take one destructured object parameter instead of positional arguments (ADR tech/0016).",
+                },
+                {
+                    selector:
+                        "VariableDeclarator > ArrowFunctionExpression[params.length>=2], VariableDeclarator > FunctionExpression[params.length>=2]",
+                    message:
+                        "Functions with 2+ parameters take one destructured object parameter instead of positional arguments (ADR tech/0016).",
+                },
+                {
+                    selector:
+                        "MethodDefinition > FunctionExpression[params.length>=2], Property[method=true] > FunctionExpression[params.length>=2]",
+                    message:
+                        "Methods with 2+ parameters take one destructured object parameter instead of positional arguments (ADR tech/0016).",
+                },
+                {
+                    selector: "Property > ArrowFunctionExpression[params.length>=2]",
+                    message:
+                        "Functions with 2+ parameters take one destructured object parameter instead of positional arguments (ADR tech/0016).",
+                },
+            ],
+        },
+    },
+
     // 9. Generated/vendored trees are never hand-edited or worth linting.
     globalIgnores([
         ".next/**",

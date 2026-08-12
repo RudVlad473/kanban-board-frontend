@@ -24,11 +24,14 @@ identically at both sizes, which is itself the point — it's a blanket regressi
 mobile-specific test suite bolted onto a desktop one.
 
 ```ts
-describeForEachDevice("Modal", (device) => {
-    it("traps focus inside the dialog", async () => { /* same body, runs at both sizes */ });
-    it("renders the padding this device's breakpoint resolves to", async () => {
-        // branches on `device` only here, where the assertion actually differs
-    });
+describeForEachDevice({
+    name: "Modal",
+    body: (device) => {
+        it("traps focus inside the dialog", async () => { /* same body, runs at both sizes */ });
+        it("renders the padding this device's breakpoint resolves to", async () => {
+            // branches on `device` only here, where the assertion actually differs
+        });
+    },
 });
 ```
 

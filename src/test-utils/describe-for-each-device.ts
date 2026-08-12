@@ -11,13 +11,16 @@ import { DEVICE_TYPE, VIEWPORT_SIZES, type DeviceType } from "@/lib/viewport-bre
  * no test author manually writes `describe.each` or calls `page.viewport` directly.
  *
  * @example
- * describeForEachDevice("Modal padding", (device) => {
- *     it("renders the expected padding", async () => {
- *         // device is "MOBILE" | "DESKTOP" here, and the iframe is already that size.
- *     });
+ * describeForEachDevice({
+ *     name: "Modal padding",
+ *     body: (device) => {
+ *         it("renders the expected padding", async () => {
+ *             // device is "MOBILE" | "DESKTOP" here, and the iframe is already that size.
+ *         });
+ *     },
  * });
  */
-export const describeForEachDevice = (name: string, body: (device: DeviceType) => void) => {
+export const describeForEachDevice = ({ name, body }: { name: string; body: (device: DeviceType) => void }) => {
     describe.each(Object.values(DEVICE_TYPE))(`${name} (%s)`, (device) => {
         beforeEach(async () => {
             const { width, height } = VIEWPORT_SIZES[device];

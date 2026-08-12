@@ -17,7 +17,15 @@ import { createConfig } from "../style-dictionary.config.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const buildModeCss = async (mode: "light" | "dark", platform: string, baseDir: string = repoRoot) => {
+const buildModeCss = async ({
+    mode,
+    platform,
+    baseDir = repoRoot,
+}: {
+    mode: "light" | "dark";
+    platform: string;
+    baseDir?: string;
+}) => {
     const config = createConfig(mode) as unknown as Config;
     const absoluteConfig: Config = {
         ...config,
@@ -30,8 +38,8 @@ const buildModeCss = async (mode: "light" | "dark", platform: string, baseDir: s
 
 const buildFullCss = async (baseDir: string = repoRoot) => {
     const [theme, dark] = await Promise.all([
-        buildModeCss("light", "css", baseDir),
-        buildModeCss("dark", "css-dark", baseDir),
+        buildModeCss({ mode: "light", platform: "css", baseDir }),
+        buildModeCss({ mode: "dark", platform: "css-dark", baseDir }),
     ]);
     return `${theme}\n${dark}`;
 };
@@ -49,7 +57,7 @@ const copyTempTokens = async () => {
 describe("style dictionary token pipeline (D-12)", () => {
     it("expands the composite font-heading-xl typography token into four individually-addressable custom properties", async () => {
         // Act
-        const css = await buildModeCss("light", "css");
+        const css = await buildModeCss({ mode: "light", platform: "css" });
 
         // Assert
         expect(css).toContain("@theme");
@@ -63,7 +71,7 @@ describe("style dictionary token pipeline (D-12)", () => {
 
     it("carries font-heading-s's letter-spacing as a distinct --tracking-* custom property", async () => {
         // Act
-        const css = await buildModeCss("light", "css");
+        const css = await buildModeCss({ mode: "light", platform: "css" });
 
         // Assert
         expect(css).toContain("--tracking-heading-s: 2.4px;");
@@ -105,7 +113,7 @@ describe("style dictionary token pipeline (D-12)", () => {
             await writeFile(spacingPath, JSON.stringify(spacingTokens, null, 2));
 
             // Act
-            const css = await buildModeCss("light", "css", tmpRoot);
+            const css = await buildModeCss({ mode: "light", platform: "css", baseDir: tmpRoot });
 
             // Assert
             expect(css).toContain("--space-1: 5px;");
@@ -127,7 +135,7 @@ describe("style dictionary token pipeline (D-12)", () => {
             await writeFile(lightPath, JSON.stringify(lightTokens, null, 2));
 
             // Act + Assert
-            await expect(buildModeCss("light", "css", tmpRoot)).rejects.toBeTruthy();
+            await expect(buildModeCss({ mode: "light", platform: "css", baseDir: tmpRoot })).rejects.toBeTruthy();
         } finally {
             await rm(tmpRoot, { recursive: true, force: true });
         }
