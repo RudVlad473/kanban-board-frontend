@@ -1,9 +1,7 @@
 import { Field } from "@base-ui/react/field";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
-import { useEffect } from "react";
 
-import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
 import { cn } from "@/lib/cn";
 import type { ClassNameProp } from "@/types/props";
 
@@ -12,9 +10,18 @@ import type { ClassNameProp } from "@/types/props";
  * generated `font-{name}` utility carries family, `text-{name}` carries size, and weight is read
  * directly via Tailwind's arbitrary-property syntax because the token pipeline's `--font-weight-*`
  * namespace collides with `--font-*` (WINDOWS.md id 2 — a pre-existing, out-of-scope pipeline bug).
+ *
+ * `truncate` (Tailwind's `overflow: hidden; text-overflow: ellipsis; white-space: nowrap`
+ * shorthand — same utility Dropdown's trigger already relies on) renders the "…" as part of the
+ * input's own native text box, inset by the input's own padding. This replaced a custom
+ * absolutely-positioned overlay span + `useOverflowIndicator` hook, which read as a broken white
+ * cutoff because the overlay's `right-0`/`right-11` offsets didn't account for the input's own
+ * border width and bled over the border/corner radius. Dropdown's own overflow-indicator hook
+ * usage is unrelated and intentionally untouched — its trigger is a `<span>`, not a native input,
+ * so it has no `text-overflow` box to truncate against.
  */
 const textFieldVariants = cva(
-    "w-full rounded-md border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
+    "w-full truncate rounded-md border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
     {
         variants: {
             size: {
@@ -63,25 +70,8 @@ export const TextField = ({
     trailing,
     className,
     type = "text",
-    onInput,
     ...props
 }: Props) => {
-    /*
-     * A trailing-edge "…" indicator signals that more of the value exists off-screen once it
-     * overflows the input's own box — the horizontal-scroll backstop the input already gets
-     * natively stays exactly as-is; this only adds a visible cue that there's more to scroll to.
-     * `recheck` covers keystrokes (a native input's own `.value` changing isn't a DOM mutation the
-     * hook's internal MutationObserver can see, and the input's box doesn't resize as the value
-     * grows) and the effect below covers controlled `value` updates that never fire a native input
-     * event at all.
-     */
-    const { ref: overflowRef, isOverflowing, recheck } = useOverflowIndicator<HTMLInputElement>();
-
-    useEffect(() => {
-        recheck();
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the controlled value only; `recheck` is a stable identity from the hook.
-    }, [props.value]);
-
     return (
         /*
          * Field.Root/Field.Label/Field.Control/Field.Description/Field.Error wire up label
@@ -95,7 +85,6 @@ export const TextField = ({
             </Field.Label>
             <div className="relative">
                 <Field.Control
-                    ref={overflowRef}
                     type={type}
                     className={cn(
                         textFieldVariants({
@@ -105,29 +94,8 @@ export const TextField = ({
                         }),
                         className,
                     )}
-                    onInput={(event) => {
-                        onInput?.(event);
-                        recheck();
-                    }}
                     {...props}
                 />
-                {isOverflowing ? (
-                    /*
-                     * An opaque `bg-bg-surface` patch under the glyph — not a gradient — so the
-                     * "…" itself reads clearly rather than fading in like the trailing text does;
-                     * `text-text-muted` keeps it legible without hardcoding a color per theme.
-                     */
-                    <span
-                        aria-hidden="true"
-                        data-overflow-indicator=""
-                        className={cn(
-                            "pointer-events-none absolute inset-y-0 flex items-center bg-bg-surface pl-1 text-text-muted",
-                            trailing ? "right-11" : "right-0 rounded-r-md pr-2",
-                        )}
-                    >
-                        …
-                    </span>
-                ) : null}
                 {trailing ? <span className="absolute inset-y-0 right-3 flex items-center">{trailing}</span> : null}
             </div>
             {description ? (

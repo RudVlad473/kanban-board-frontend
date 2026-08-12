@@ -97,8 +97,9 @@ export const Sizes: Story = {
 };
 
 /*
- * UI-SPEC's overflow backstop: a 300-character value must scroll inside the field rather than
- * expanding or wrapping the surrounding layout — this story carries that state's visual baseline.
+ * UI-SPEC's overflow backstop: a 300-character value must truncate with a native ellipsis inside
+ * the field rather than expanding or wrapping the surrounding layout — this story carries that
+ * state's visual baseline.
  */
 export const LongValue: Story = {
     render: (args) => (

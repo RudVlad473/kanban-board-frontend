@@ -130,31 +130,35 @@ describeForEachDevice("TextField", () => {
         ).toBe(true);
     });
 
-    it("shows a trailing-edge overflow indicator only once the value overflows the field, including on live typing", async () => {
+    it("truncates overflowing values with a native ellipsis instead of expanding the field, including on live typing", async () => {
         /*
-         * Arrange — a small "…" cue signalling more content exists off-screen (previously a
-         * gradient fade — replaced per human feedback that it wasn't obvious enough). It must
-         * stay absent for short/fitting content (no visual noise over normal fields) and appear
-         * once the value actually overflows, including as the user types past the field's width
-         * (a native input's own `.value` change is invisible to the hook's internal
-         * MutationObserver, so the fix wires an explicit `onInput` recheck).
+         * Arrange — the overflow cue is now native CSS truncation (`truncate`: `overflow-hidden`,
+         * `text-overflow: ellipsis`, `whitespace-nowrap`) applied to the input itself, not a
+         * separate absolutely-positioned overlay span. A previous overlay-patch implementation
+         * bled over the input's own border/corner radius because its offsets didn't account for
+         * border width (round-9 human-reported visual bug); native truncation renders inside the
+         * input's own padded box, so there's nothing to offset. `scrollWidth > clientWidth` is the
+         * same overflow signal `useOverflowIndicator` uses elsewhere (Dropdown) — here read
+         * directly off the input, since there's no separate indicator element to query.
          */
-        const getIndicator = (container: HTMLElement) => container.querySelector("[data-overflow-indicator]");
+        const isTruncating = (el: HTMLElement) => el.scrollWidth > el.clientWidth;
 
         const short = await render(
             <div style={{ width: "320px" }}>
                 <TextField label="Short value" defaultValue="hi" />
             </div>,
         );
-        await expect.poll(() => getIndicator(short.container)).toBeNull();
+        const shortInput = short.getByRole("textbox", { name: "Short value" });
+        await expect.element(shortInput).toHaveClass("truncate");
+        expect(isTruncating(shortInput.element() as HTMLElement)).toBe(false);
 
         const long = await render(
             <div style={{ width: "320px" }}>
                 <TextField label="Long value" defaultValue={"x".repeat(300)} />
             </div>,
         );
-        await expect.poll(() => getIndicator(long.container)).not.toBeNull();
-        expect(getIndicator(long.container)?.textContent).toBe("…");
+        const longInput = long.getByRole("textbox", { name: "Long value" });
+        await expect.poll(() => isTruncating(longInput.element() as HTMLElement)).toBe(true);
 
         const typing = await render(
             <div style={{ width: "320px" }}>
@@ -162,13 +166,16 @@ describeForEachDevice("TextField", () => {
             </div>,
         );
         const input = typing.getByRole("textbox", { name: "Typed value" });
-        expect(getIndicator(typing.container)).toBeNull();
+        expect(isTruncating(input.element() as HTMLElement)).toBe(false);
 
         // Act
         await userEvent.type(input.element(), "x".repeat(200));
 
-        // Assert
-        await expect.poll(() => getIndicator(typing.container)).not.toBeNull();
+        /*
+         * Assert — native truncation needs no explicit recheck wiring; the browser lays out the
+         * ellipsis itself as `.value` grows.
+         */
+        await expect.poll(() => isTruncating(input.element() as HTMLElement)).toBe(true);
     });
 
     it("holds its rendered width against a 300-character value instead of expanding or wrapping the layout", async () => {
