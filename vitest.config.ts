@@ -24,6 +24,17 @@ const alias = Object.entries(tsconfig.compilerOptions.paths).map(([key, [target]
     replacement: path.resolve(rootDir, target.replace(/\/\*$/, "")),
 }));
 
+/*
+ * `server-only`'s real package throws unconditionally when required outside Next.js's own
+ * webpack build (see src/test-utils/server-only-stub.ts) — every test project gets this alias so
+ * any module under test that starts with `import "server-only"` can still be imported here.
+ */
+const serverOnlyAlias = {
+    find: "server-only",
+    replacement: path.resolve(rootDir, "src/test-utils/server-only-stub.ts"),
+};
+const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
+
 export default defineConfig({
     test: {
         projects: [
@@ -36,18 +47,22 @@ export default defineConfig({
                 },
             },
             {
-                resolve: { alias },
+                resolve: { alias: aliasWithServerOnlyStub },
                 test: {
                     /*
-                     * Node-mode tests for the MSW mock backend (plan 01-10) — drives the handlers
-                     * through the real `externalApi` client with the Node server listening, the
-                     * same path the BFF Route Handlers use, not a browser environment.
+                     * Node-mode tests for the MSW mock backend (plan 01-10) and, since plan 01-11,
+                     * the session module and BFF auth Route Handlers — both mock `next/headers`'
+                     * `cookies()` (no real Next.js request scope exists outside an actual render)
+                     * and, for the Route Handler tests, also drive the handlers through the real
+                     * `externalApi` client with the Node MSW server listening, the same path the
+                     * deployed app uses, not a browser environment.
                      */
                     name: "node",
                     environment: "node",
-                    include: ["src/lib/mocks/**/*.test.ts"],
+                    include: ["src/lib/mocks/**/*.test.ts", "src/lib/session.test.ts", "app/api/auth/**/*.test.ts"],
                     env: {
                         EXTERNAL_API_BASE_URL: process.env.EXTERNAL_API_BASE_URL ?? "http://localhost:8080/api",
+                        SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",
                     },
                 },
             },
