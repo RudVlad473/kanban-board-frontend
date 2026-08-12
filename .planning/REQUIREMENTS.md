@@ -11,8 +11,8 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Authentication
 
-- [ ] **AUTH-01**: User can sign up with email, display name, and password
-- [ ] **AUTH-02**: User can sign in with email and password
+- [x] **AUTH-01**: User can sign up with email, display name, and password
+- [x] **AUTH-02**: User can sign in with email and password
 - [ ] **AUTH-03**: Unauthenticated visitor is redirected to sign-in when requesting a board
   or board-list route
 
@@ -37,9 +37,11 @@ Requirements for initial release. Each maps to a roadmap phase.
 - [ ] **TASK-01**: User can create a task within a column (title, optional description)
 - [ ] **TASK-02**: User can view a task's detail — title, description, subtasks checklist,
   current column
+
 - [ ] **TASK-03**: User can edit a task's title and description
 - [ ] **TASK-04**: User can move a task between columns via drag-and-drop, applied
   optimistically and reconciled against the server
+
 - [ ] **TASK-05**: User can delete a task (cascades to its subtasks)
 
 ### Subtasks
@@ -47,6 +49,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 - [ ] **SUBTASK-01**: User can add a subtask to a task
 - [ ] **SUBTASK-02**: User can toggle a subtask's completion state, independent of the task's
   column
+
 - [ ] **SUBTASK-03**: User can edit a subtask's title
 - [ ] **SUBTASK-04**: User can delete a subtask
 
@@ -91,8 +94,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Pending |
 | THEME-01 | Phase 1 | Pending |
 | BOARD-01 | Phase 2 | Pending |
@@ -117,6 +120,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SYNC-01 | Phase 4 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 24 total
 - Mapped to phases: 24
 - Unmapped: 0 ✓
