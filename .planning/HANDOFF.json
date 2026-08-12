@@ -1,0 +1,62 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-08-12T12:30:05.295Z",
+  "phase": "01",
+  "phase_name": "foundation-auth-preferences",
+  "phase_dir": ".planning/phases/01-foundation-auth-preferences",
+  "plan": 12,
+  "task": 0,
+  "total_tasks": 3,
+  "status": "paused",
+  "completed_tasks": [
+    { "id": "01-10", "name": "OpenAPI contract, typed client, MSW mock backend", "status": "done", "commit": "32a4fea" },
+    { "id": "01-11", "name": "Session, DAL, BFF sign-up/sign-in/sign-out routes", "status": "done", "commit": "c1494d7" },
+    { "id": "adr-0016", "name": "Named-object-parameter lint rule + full retrofit", "status": "done", "commit": "61f7b75" }
+  ],
+  "remaining_tasks": [
+    { "id": "01-12", "name": "Sign-up/sign-in UI surfaces", "status": "not_started" },
+    { "id": "01-13", "name": "Route guards (proxy + DAL)", "status": "not_started" },
+    { "id": "01-14", "name": "Theme preference (THEME-01)", "status": "not_started" },
+    { "id": "01-15", "name": "Vercel deployment", "status": "not_started" }
+  ],
+  "blockers": [
+    {
+      "description": ".env.local exists but EXTERNAL_API_BASE_URL and SESSION_SECRET are empty strings, which the fail-fast checks correctly reject (empty string is falsy) — pnpm build/dev fail locally until real values are set",
+      "type": "human_action",
+      "workaround": "Not blocking for continued plan execution: each executor works in an isolated worktree and sets up its own throwaway env for build/lint/test verification, which already passed for 01-10 and 01-11. Only blocks local `pnpm build`/`pnpm dev` in the main tree, and will genuinely block plan 01-15 (Vercel deployment) which needs real per-environment values."
+    }
+  ],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {
+      "action": "Set real values in .env.local: EXTERNAL_API_BASE_URL=http://localhost:8080/api (per plan 01-10's OpenAPI contract server URL — MSW intercepts it regardless of value while no backend is deployed) and SESSION_SECRET=<output of `openssl rand -base64 32`>",
+      "context": "Needed to run `pnpm build`/`pnpm dev` in the main worktree locally; not needed to resume plan execution via isolated executor worktrees",
+      "blocking": false
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Plan 01-10 Task 1 (mocked signup/signin response shape): user-dto-from-signin — signup returns bare user id string, signin returns full UserResponseDTO",
+      "rationale": "Lets the BFF write the theme cookie at sign-in with no extra round trip so the next render paints the right theme immediately",
+      "phase": "01"
+    },
+    {
+      "decision": "Plan 01-11 Task 1 (session cookie library): jose",
+      "rationale": "User's explicit choice over iron-session — explicit JWT sign/verify control",
+      "phase": "01"
+    },
+    {
+      "decision": "src/lib/session.ts exports a factory function (createSessionService(secret)) returning { create, verify, destroy }, instantiated once as the `session` singleton — not three standalone exported functions (the plan's literal text) and not a class requiring `new`",
+      "rationale": "User dislikes scattered util-function exports but also dislikes class-instantiation ceremony; a parameterized factory groups the three under one cohesive name while keeping the secret an injected parameter rather than each function reaching into process.env directly",
+      "phase": "01"
+    },
+    {
+      "decision": "ADR tech/0016 added: multi-param (2+) declared functions/arrows/methods take one destructured object parameter instead of positional args, enforced via 5 no-restricted-syntax selectors in eslint.config.mjs. Exempts (a) function/arrow expressions passed inline as a call/new argument (their arity is dictated by the API they're passed to — array callbacks, Promise executor, forwardRef, event handlers) and (b) object methods faking a fixed third-party interface shape (documented via eslint-disable-next-line, not a selector) — e.g. mocks of next/headers' cookies().set(name, value, options).",
+      "rationale": "User flagged positional multi-arg functions as a readability problem at call sites; scoped narrowly after discussion to avoid breaking idiomatic callback signatures this project doesn't control",
+      "phase": "01"
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Resolve .env.local (optional, only needed for local pnpm build/dev — not for continued execution), then run /gsd-execute-phase 01 to resume plan 01-12 (sign-up/sign-in UI surfaces). Read this handoff's Required Reading list first.",
+  "context_notes": "Executing phase 01 wave-by-wave via gsd-executor agents in git worktree isolation (isolation=\"worktree\"), one plan per wave since waves 10-15 each have exactly one plan with a linear dependency chain. Pattern per wave: capture EXPECTED_BASE=$(git rev-parse HEAD) and a WAVE_WORKTREE_MANIFEST, dispatch Agent(subagent_type=\"gsd-executor\", isolation=\"worktree\"), then record+cleanup-wave to merge. IMPORTANT: the harness sometimes auto-merges the worktree back to master on its own (saw this for 01-10) and sometimes doesn't (01-11 needed an explicit worktree.cleanup-wave call) — always check `git log --oneline -3` after an executor returns before assuming cleanup-wave is needed. Both times, cleanup-wave (or the harness) left a stray .claude/worktrees/<agent-id>/ directory and a worktree-agent-<id> branch behind after a successful merge — always `rm -rf` the directory and `git branch -D` the branch as a follow-up, they are not cleaned up automatically. Also: local master must be pushed to origin before dispatching a new worktree-isolated wave, or the harness's worktree forks from a stale origin/HEAD and the worktree_branch_check guard HALTs with exit 42 (base mismatch) — push after every wave's merge, not just at the end. Blocking checkpoint:decision tasks (plan 01-10 Task 1, plan 01-11 Task 1) were resolved via AskUserQuestion up front and passed into the executor's dispatch prompt as a pre-resolved decision (with instruction not to re-prompt), rather than letting the executor run to the checkpoint and pause — saves a wasted worktree round-trip since the orchestrator already has full plan context to present the decision faithfully."
+}
