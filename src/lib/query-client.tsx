@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useState, type PropsWithChildren } from "react";
 
 /*
  * Created inside component state, not a module-scope singleton — a module-scope `QueryClient`
@@ -10,7 +10,7 @@ import { useState, type ReactNode } from "react";
  * a failed sign-in/sign-up must not be silently retried, both because it would double-count
  * against any future rate limit and because the user is standing there waiting for an answer.
  */
-export const QueryProvider = ({ children }: { children: ReactNode }) => {
+export const QueryProvider = ({ children }: PropsWithChildren) => {
     const [queryClient] = useState(
         () =>
             new QueryClient({

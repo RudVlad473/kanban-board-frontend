@@ -7,6 +7,7 @@ import "../src/styles/globals.css";
 import * as a11yAddonAnnotations from "@storybook/addon-a11y/preview";
 import { definePreview } from "@storybook/nextjs-vite";
 
+import { QueryProvider } from "@/lib/query-client";
 import { DEVICE_TYPE, VIEWPORT_SIZES } from "@/lib/viewport-breakpoints";
 
 /*
@@ -86,6 +87,14 @@ export default definePreview({
         viewport: DEVICE_TYPE.DESKTOP,
     },
     decorators: [
+        /*
+         * Every dependency a story needs to exercise real hooks/mutations rather than a fully
+         * isolated presentational render — TanStack Query's provider today, the future global
+         * store once one exists — belongs here, not copy-pasted into each stories file's own
+         * `decorators` array (a per-file wrapper broke Storybook's static CSF indexing, which
+         * requires each *.stories.tsx default export to be a literal object).
+         */
+        (Story) => <QueryProvider>{Story()}</QueryProvider>,
         (Story, context) => {
             document.documentElement.classList.toggle("dark", context.globals.theme === "dark");
             /*

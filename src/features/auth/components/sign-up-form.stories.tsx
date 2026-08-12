@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { QueryProvider } from "@/lib/query-client";
-
 import { AuthCard } from "./auth-card";
 import { SignUpForm } from "./sign-up-form";
 
@@ -11,9 +9,9 @@ import { SignUpForm } from "./sign-up-form";
  * sign-up-form.test.tsx. Every state below is reached through this file's own staging props
  * (`defaultValues`/`forceFieldErrors`/`forceServerError`/`forceSubmitting`/
  * `defaultPasswordRevealed`), the same non-interactive pattern Dropdown/Modal already use via
- * `defaultOpen`. `QueryProvider` (not a bare `QueryClientProvider`) is required in every story
- * because `SignUpForm` calls `useSignUp`, which calls `useMutation` — there is no play function
- * here to ever trigger a real request, so no MSW handler is needed either.
+ * `defaultOpen`. `QueryProvider` is supplied globally (.storybook/preview.tsx) because
+ * `SignUpForm` calls `useSignUp`, which calls `useMutation` — there is no play function here to
+ * ever trigger a real request, so no MSW handler is needed either.
  */
 const meta: Meta<typeof SignUpForm> = {
     component: SignUpForm,
@@ -30,11 +28,9 @@ const meta: Meta<typeof SignUpForm> = {
     },
     decorators: [
         (Story) => (
-            <QueryProvider>
-                <AuthCard title="Sign Up">
-                    <Story />
-                </AuthCard>
-            </QueryProvider>
+            <AuthCard title="Sign Up">
+                <Story />
+            </AuthCard>
         ),
     ],
 };

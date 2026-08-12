@@ -2,7 +2,7 @@ import { Select } from "@base-ui/react/select";
 import type { SelectItemProps, SelectPopupProps, SelectRootProps, SelectTriggerProps } from "@base-ui/react/select";
 import { cva } from "class-variance-authority";
 import { Check, ChevronDown } from "lucide-react";
-import { createContext, useContext, useId, type ReactNode } from "react";
+import { createContext, useContext, useId, type PropsWithChildren } from "react";
 
 import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
 import { cn } from "@/lib/cn";
@@ -24,12 +24,13 @@ import type { ClassNameProp } from "@/types/props";
  */
 const DropdownContext = createContext<{ hasError: boolean }>({ hasError: false });
 
-type DropdownRootProps = Omit<SelectRootProps<string>, "disabled" | "children"> &
-    ClassNameProp & {
-        hasError?: boolean;
-        isDisabled?: boolean;
-        children?: ReactNode;
-    };
+type DropdownRootProps = PropsWithChildren<
+    Omit<SelectRootProps<string>, "disabled" | "children"> &
+        ClassNameProp & {
+            hasError?: boolean;
+            isDisabled?: boolean;
+        }
+>;
 
 const Root = ({ hasError = false, isDisabled = false, className, children, ...props }: DropdownRootProps) => {
     return (
@@ -46,9 +47,13 @@ const Root = ({ hasError = false, isDisabled = false, className, children, ...pr
 /*
  * D-17: the same danger border token TextField and Checkbox use, on the same 12px
  * (`px-4 py-3`)/`h-10` box shape as TextField's own trigger-like control.
+ * `rounded-sm` (radius.sm, 4px) — tokens/radius.tokens.json documents this token as the measured
+ * "Text Field / Dropdown corner radius"; `rounded-md` (24px, "Button Secondary corner radius")
+ * was wired in by mistake and never caught. The floating popup below (`popupVariants`) keeps its
+ * own `rounded-md` — the token's description covers this trigger, not the popup surface.
  */
 const triggerVariants = cva(
-    "flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none data-[disabled]:cursor-not-allowed data-[disabled]:text-text-muted data-[disabled]:opacity-50",
+    "flex h-10 w-full items-center justify-between gap-2 rounded-sm border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none data-[disabled]:cursor-not-allowed data-[disabled]:text-text-muted data-[disabled]:opacity-50",
     {
         variants: {
             state: {
@@ -174,13 +179,14 @@ const Content = ({ className, children, ...props }: DropdownContentProps) => {
     );
 };
 
-type DropdownItemProps = Omit<SelectItemProps, "className" | "disabled" | "value" | "children"> &
-    ClassNameProp & {
-        /** A unique value identifying this item — required, so an item cannot be constructed value-less. */
-        value: string;
-        isDisabled?: boolean;
-        children?: ReactNode;
-    };
+type DropdownItemProps = PropsWithChildren<
+    Omit<SelectItemProps, "className" | "disabled" | "value" | "children"> &
+        ClassNameProp & {
+            /** A unique value identifying this item — required, so an item cannot be constructed value-less. */
+            value: string;
+            isDisabled?: boolean;
+        }
+>;
 
 /*
  * Popup insets its items by `p-1` (4px) from its own `rounded-md` (24px) edge — small enough that

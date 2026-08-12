@@ -7,7 +7,7 @@ import type {
     DialogTitleProps,
     DialogTriggerProps,
 } from "@base-ui/react/dialog";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, PropsWithChildren } from "react";
 
 import { cn } from "@/lib/cn";
 import type { ClassNameProp } from "@/types/props";
@@ -27,12 +27,13 @@ import type { ClassNameProp } from "@/types/props";
  * public props so a consumer can only reach them through `isOpen`/`isDismissableOnBackdropClick` —
  * no two conflicting ways to say the same thing.
  */
-type RootProps = Omit<DialogRootProps, "open" | "disablePointerDismissal" | "onOpenChange" | "children"> & {
-    isOpen?: boolean;
-    isDismissableOnBackdropClick?: boolean;
-    onOpenChange?: (isOpen: boolean) => void;
-    children?: ReactNode;
-};
+type RootProps = PropsWithChildren<
+    Omit<DialogRootProps, "open" | "disablePointerDismissal" | "onOpenChange" | "children"> & {
+        isOpen?: boolean;
+        isDismissableOnBackdropClick?: boolean;
+        onOpenChange?: (isOpen: boolean) => void;
+    }
+>;
 
 const Root = ({ isOpen, isDismissableOnBackdropClick = true, onOpenChange, children, ...props }: RootProps) => {
     return (

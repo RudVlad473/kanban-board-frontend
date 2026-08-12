@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { PropsWithChildren } from "react";
 
 /*
  * Shared presentational shell for both auth screens (sign-up/sign-in) — UI-SPEC names the auth
@@ -6,11 +6,10 @@ import type { ReactNode } from "react";
  * shell carries no decoration of its own beyond the surface/elevation/spacing tokens named there.
  */
 
-type Props = {
+type Props = PropsWithChildren<{
     /** Rendered through `font-heading-l` per UI-SPEC's Typography usage mapping ("Sign Up" / "Sign In"). */
     title: string;
-    children: ReactNode;
-};
+}>;
 
 export const AuthCard = ({ title, children }: Props) => {
     return (

@@ -169,7 +169,7 @@ const eslintConfig = defineConfig([
              * same category as next.config.ts above.
              */
             ".storybook/main.ts",
-            ".storybook/preview.ts",
+            ".storybook/preview.tsx",
         ],
         rules: {
             "import-x/no-default-export": "off",

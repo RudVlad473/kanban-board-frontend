@@ -96,6 +96,14 @@ export const SignUpForm = ({
                         type="button"
                         variant="ghost"
                         size="sm"
+                        /*
+                         * Ghost's default hover (`hover:bg-bg-app`) fills a visibly-tinted circle
+                         * against the field's own white surface, reading as a jarring blob rather
+                         * than a quiet affordance once nested inside TextField's trailing slot —
+                         * overridden here (not on IconButton itself) since this is specific to icons
+                         * embedded inside an already-bordered input, not ghost buttons generally.
+                         */
+                        className="hover:bg-transparent"
                         label={isPasswordRevealed ? "Hide password" : "Show password"}
                         icon={isPasswordRevealed ? <EyeOff /> : <Eye />}
                         onClick={() => {

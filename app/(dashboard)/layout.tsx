@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { ReactNode } from "react";
+import type { PropsWithChildren } from "react";
 
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { verifySession } from "@/lib/dal";
@@ -11,7 +11,7 @@ import { SIGN_IN_PATH } from "@/lib/routes";
  * here itself is what keeps this route group closed even if the guard were disabled entirely
  * (the CVE-2025-29927 proxy-bypass class).
  */
-const DashboardLayout = async ({ children }: { children: ReactNode }) => {
+const DashboardLayout = async ({ children }: PropsWithChildren) => {
     const identity = await verifySession();
 
     if (!identity) {

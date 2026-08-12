@@ -36,7 +36,12 @@ import type { ClassNameProp } from "@/types/props";
  * correctly in both engines, and `truncate`'s ellipsis returns the moment the field blurs.
  */
 const textFieldVariants = cva(
-    "w-full truncate rounded-md border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus:text-clip focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
+    /*
+     * `rounded-sm` (radius.sm, 4px) — tokens/radius.tokens.json documents this token as the
+     * measured "Text Field / Dropdown corner radius" from the Figma source; `rounded-md` (24px,
+     * "Button Secondary corner radius") was wired in by mistake in plan 01-07 and never caught.
+     */
+    "w-full truncate rounded-sm border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus:text-clip focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
     {
         variants: {
             size: {

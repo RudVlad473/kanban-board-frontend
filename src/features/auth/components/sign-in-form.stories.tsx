@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { QueryProvider } from "@/lib/query-client";
-
 import { AuthCard } from "./auth-card";
 import { SignInForm } from "./sign-in-form";
 
@@ -23,11 +21,9 @@ const meta: Meta<typeof SignInForm> = {
     },
     decorators: [
         (Story) => (
-            <QueryProvider>
-                <AuthCard title="Sign In">
-                    <Story />
-                </AuthCard>
-            </QueryProvider>
+            <AuthCard title="Sign In">
+                <Story />
+            </AuthCard>
         ),
     ],
 };
