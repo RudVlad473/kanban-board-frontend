@@ -1,62 +1,98 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-12T12:30:05.295Z",
+  "timestamp": "2026-08-13T00:27:02.864Z",
   "phase": "01",
   "phase_name": "foundation-auth-preferences",
   "phase_dir": ".planning/phases/01-foundation-auth-preferences",
-  "plan": 12,
+  "plan": 14,
   "task": 0,
-  "total_tasks": 3,
+  "total_tasks": 2,
   "status": "paused",
   "completed_tasks": [
-    { "id": "01-10", "name": "OpenAPI contract, typed client, MSW mock backend", "status": "done", "commit": "32a4fea" },
-    { "id": "01-11", "name": "Session, DAL, BFF sign-up/sign-in/sign-out routes", "status": "done", "commit": "c1494d7" },
-    { "id": "adr-0016", "name": "Named-object-parameter lint rule + full retrofit", "status": "done", "commit": "61f7b75" }
+    { "id": "01-12", "name": "Sign-up/sign-in UI surfaces", "status": "done", "commit": "51c492f" },
+    { "id": "01-13", "name": "Route guards (proxy + DAL) + e2e specs", "status": "done", "commit": "a3bff1e" },
+    {
+      "id": "gap-fixes",
+      "name": "Manual-mode fixes from UI review of wave 12 (not a GSD plan -- ad-hoc conversation)",
+      "status": "done",
+      "commit": "5111647..4d19bf6",
+      "detail": "openapi-fetch typed BFF client (replacing raw fetch in auth-api.ts), TextField/Dropdown radius fix (rounded-md 24px -> rounded-sm 4px, matching tokens/radius.tokens.json's documented measurement), quieted trailing-slot IconButton hover inside TextField, PropsWithChildren sweep across components with a children prop, QueryProvider moved to a global Storybook decorator (.storybook/preview.tsx), react/jsx-newline lint rule added and auto-fixed repo-wide, .planning/config.json created with workflow.human_verify_mode=mid-flight"
+    }
   ],
   "remaining_tasks": [
-    { "id": "01-12", "name": "Sign-up/sign-in UI surfaces", "status": "not_started" },
-    { "id": "01-13", "name": "Route guards (proxy + DAL)", "status": "not_started" },
+    {
+      "id": "gap-closure-plan",
+      "name": "Create and execute a gap-closure plan for the UI-review backlog",
+      "status": "not_started",
+      "detail": "Loading states across primitives (Button/IconButton/TextField/Dropdown -- user wants ALL inputs/buttons/dropdowns covered) and validation-schema alignment with the real backend (docs below have exact rules already researched)"
+    },
     { "id": "01-14", "name": "Theme preference (THEME-01)", "status": "not_started" },
     { "id": "01-15", "name": "Vercel deployment", "status": "not_started" }
   ],
   "blockers": [
     {
-      "description": ".env.local exists but EXTERNAL_API_BASE_URL and SESSION_SECRET are empty strings, which the fail-fast checks correctly reject (empty string is falsy) — pnpm build/dev fail locally until real values are set",
+      "description": ".env.local exists but EXTERNAL_API_BASE_URL and SESSION_SECRET are empty strings, which the fail-fast checks correctly reject -- pnpm build/dev fail locally until real values are set",
       "type": "human_action",
-      "workaround": "Not blocking for continued plan execution: each executor works in an isolated worktree and sets up its own throwaway env for build/lint/test verification, which already passed for 01-10 and 01-11. Only blocks local `pnpm build`/`pnpm dev` in the main tree, and will genuinely block plan 01-15 (Vercel deployment) which needs real per-environment values."
+      "workaround": "Not blocking for continued plan execution: each executor works in an isolated worktree and sets up its own throwaway env. Only blocks local pnpm build/dev in the main tree, and will genuinely block plan 01-15 (Vercel deployment)."
     }
   ],
   "async_jobs": [],
   "human_actions_pending": [
     {
-      "action": "Set real values in .env.local: EXTERNAL_API_BASE_URL=http://localhost:8080/api (per plan 01-10's OpenAPI contract server URL — MSW intercepts it regardless of value while no backend is deployed) and SESSION_SECRET=<output of `openssl rand -base64 32`>",
-      "context": "Needed to run `pnpm build`/`pnpm dev` in the main worktree locally; not needed to resume plan execution via isolated executor worktrees",
+      "action": "Set real values in .env.local: EXTERNAL_API_BASE_URL=http://localhost:8080/api and SESSION_SECRET=<output of `openssl rand -base64 32`>",
+      "context": "Needed to run pnpm build/pnpm dev in the main worktree locally; not needed to resume plan execution via isolated executor worktrees",
       "blocking": false
     }
   ],
   "decisions": [
     {
-      "decision": "Plan 01-10 Task 1 (mocked signup/signin response shape): user-dto-from-signin — signup returns bare user id string, signin returns full UserResponseDTO",
-      "rationale": "Lets the BFF write the theme cookie at sign-in with no extra round trip so the next render paints the right theme immediately",
+      "decision": "HTTP client for the browser->BFF layer: openapi-fetch, not axios or ky",
+      "rationale": "openapi-fetch was already used server-side (server-client.ts, ADR tech/0005) for the BFF->external-API layer; the whole architecture already bets on OpenAPI-as-source-of-truth for drift prevention. axios was never actually decided anywhere in this project's history (verified by grepping every ADR/RESEARCH.md/PROJECT.md -- the user misremembered). TanStack Query (already implemented since wave 12) already owns retry policy (retry: false on mutations, ADR tech/0002), so openapi-fetch's lack of built-in retry/timeout doesn't matter here.",
       "phase": "01"
     },
     {
-      "decision": "Plan 01-11 Task 1 (session cookie library): jose",
-      "rationale": "User's explicit choice over iron-session — explicit JWT sign/verify control",
+      "decision": "BFF's own OpenAPI schema (docs/api/bff-openapi.json) is generated via scripts/generate-bff-openapi.mjs using Zod 4's built-in z.toJSONSchema() on the existing signUpSchema/signInSchema -- no new dependency, request/response shapes for signup/signin/signout can't drift from the Route Handlers.",
+      "rationale": "Keeps a single source of truth (the Zod schema) for both server-side validation and the typed client, mirroring the external contract's own committed-JSON + codegen pattern (ADR tech/0005).",
       "phase": "01"
     },
     {
-      "decision": "src/lib/session.ts exports a factory function (createSessionService(secret)) returning { create, verify, destroy }, instantiated once as the `session` singleton — not three standalone exported functions (the plan's literal text) and not a class requiring `new`",
-      "rationale": "User dislikes scattered util-function exports but also dislikes class-instantiation ceremony; a parameterized factory groups the three under one cohesive name while keeping the secret an injected parameter rather than each function reaching into process.env directly",
+      "decision": "TextField/Dropdown trigger radius changed from rounded-md (24px) to rounded-sm (4px). Dropdown's floating popup keeps rounded-md -- the token's description only covers the trigger, not the popup surface.",
+      "rationale": "tokens/radius.tokens.json documents radius.sm=4px as the measured 'Text Field / Dropdown corner radius' from Figma, and radius.md=24px as 'Button Secondary corner radius'. Both primitives were wired to the wrong token since plans 01-07/01-08 -- confirmed via git log and both plans' SUMMARY.md that this was never a deliberate choice, just an oversight (Button correctly uses radius.lg).",
       "phase": "01"
     },
     {
-      "decision": "ADR tech/0016 added: multi-param (2+) declared functions/arrows/methods take one destructured object parameter instead of positional args, enforced via 5 no-restricted-syntax selectors in eslint.config.mjs. Exempts (a) function/arrow expressions passed inline as a call/new argument (their arity is dictated by the API they're passed to — array callbacks, Promise executor, forwardRef, event handlers) and (b) object methods faking a fixed third-party interface shape (documented via eslint-disable-next-line, not a selector) — e.g. mocks of next/headers' cookies().set(name, value, options).",
-      "rationale": "User flagged positional multi-arg functions as a readability problem at call sites; scoped narrowly after discussion to avoid breaking idiomatic callback signatures this project doesn't control",
+      "decision": "Trailing-slot IconButton hover (password-toggle in TextField) quieted via a per-usage className override (hover:bg-transparent), not a change to IconButton's ghost variant globally.",
+      "rationale": "User confirmed scope: 'just trailing-slot icons inside inputs' -- ghost's default hover (hover:bg-bg-app) is fine standalone but reads as a jarring blob nested inside an already-bordered input.",
+      "phase": "01"
+    },
+    {
+      "decision": "Loading states must be designed/implemented for ALL primitive inputs, buttons, and dropdowns (Button, IconButton, TextField, Dropdown) -- not just the two auth forms. Not yet started.",
+      "rationale": "User: 'we should add loading state for all the primitives that are inputs buttons or links'. Currently only Button's isDisabled is wired during a pending mutation; TextField inputs stay enabled/editable during submit.",
+      "phase": "01"
+    },
+    {
+      "decision": "Validation rules must match the REAL backend (kanban-board-backend repo), not researcher defaults. Real rules found: password 8-64 chars + must contain uppercase+lowercase+digit+special char (current frontend only checks min 8, no complexity, no max); displayName is OPTIONAL server-side (frontend currently requires it) and if provided must be 3-32 chars, letters+spaces only (current frontend has zero character-class check); email uses standard @Email format (frontend's z.email() roughly matches, no gap). NOT YET IMPLEMENTED -- auth-schemas.ts still has the old under-validated rules.",
+      "rationale": "docs/api/kanban-board-openapi.json's SignupRequestDTO/SigninRequestDTO declare zero constraints (bare strings) -- the real rules only exist in the backend's Java Bean Validation annotations (SignupRequestDTO.java, DisplayName.java, Password.java, ValidationConstants.java), fetched via a shallow clone of https://github.com/RudVlad473/kanban-board-backend. Open product question still unresolved: should Name stay required on this app's frontend even though the backend allows omitting it?",
+      "phase": "01"
+    },
+    {
+      "decision": "Storybook's QueryProvider moved from a per-stories-file decorator to a single global decorator in .storybook/preview.tsx (renamed from .ts).",
+      "rationale": "A first attempt wrapped each story's meta object in a createIntegrationStory(...) factory function call -- this broke Storybook's static CSF indexing, which requires every *.stories.tsx default export to be a literal object, not a function-call result. Confirmed by actually running pnpm test (not just tsc/lint) -- the whole storybook vitest project failed to even start.",
+      "phase": "01"
+    },
+    {
+      "decision": "workflow.human_verify_mode set to mid-flight in .planning/config.json (was defaulting to end-of-phase).",
+      "rationale": "end-of-phase batches every checkpoint:human-verify task into one review at the very end of a phase -- this is exactly how wave 12's auth UI (icon hover, radius bug, missing loading states, unresearched validation rules) shipped and merged without any human look until the user happened to review it well after the fact. User: 'let's remove the auto advance rule and add more human checks, i feel like we're drifting off a bit'. Note: workflow.auto_advance was already false by default (no config.json existed at all before this session) -- the actual fix is human_verify_mode, not auto_advance.",
+      "phase": "01"
+    },
+    {
+      "decision": "react/jsx-newline (require blank line between sibling JSX elements) added as a new lint rule, auto-fixed across 23 files.",
+      "rationale": "User's explicit code-style ask. The rule is bundled transitively via eslint-config-next's eslint-plugin-react dependency (v7.37.5) -- no new package install needed, already resolvable in node_modules/.pnpm.",
       "phase": "01"
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Resolve .env.local (optional, only needed for local pnpm build/dev — not for continued execution), then run /gsd-execute-phase 01 to resume plan 01-12 (sign-up/sign-in UI surfaces). Read this handoff's Required Reading list first.",
-  "context_notes": "Executing phase 01 wave-by-wave via gsd-executor agents in git worktree isolation (isolation=\"worktree\"), one plan per wave since waves 10-15 each have exactly one plan with a linear dependency chain. Pattern per wave: capture EXPECTED_BASE=$(git rev-parse HEAD) and a WAVE_WORKTREE_MANIFEST, dispatch Agent(subagent_type=\"gsd-executor\", isolation=\"worktree\"), then record+cleanup-wave to merge. IMPORTANT: the harness sometimes auto-merges the worktree back to master on its own (saw this for 01-10) and sometimes doesn't (01-11 needed an explicit worktree.cleanup-wave call) — always check `git log --oneline -3` after an executor returns before assuming cleanup-wave is needed. Both times, cleanup-wave (or the harness) left a stray .claude/worktrees/<agent-id>/ directory and a worktree-agent-<id> branch behind after a successful merge — always `rm -rf` the directory and `git branch -D` the branch as a follow-up, they are not cleaned up automatically. Also: local master must be pushed to origin before dispatching a new worktree-isolated wave, or the harness's worktree forks from a stale origin/HEAD and the worktree_branch_check guard HALTs with exit 42 (base mismatch) — push after every wave's merge, not just at the end. Blocking checkpoint:decision tasks (plan 01-10 Task 1, plan 01-11 Task 1) were resolved via AskUserQuestion up front and passed into the executor's dispatch prompt as a pre-resolved decision (with instruction not to re-prompt), rather than letting the executor run to the checkpoint and pause — saves a wasted worktree round-trip since the orchestrator already has full plan context to present the decision faithfully."
+  "next_action": "Run /gsd-plan-phase 01 --gaps to create a formal gap-closure plan covering: (1) primitive loading states (Button/IconButton/TextField/Dropdown), (2) validation-schema alignment with the real backend rules already researched (see decisions above) -- including resolving the open 'should Name stay required' question with the user first. Execute that gap-closure plan via /gsd-execute-phase 01 --gaps-only, THEN resume the normal wave sequence at plan 01-14 (theme preference) via /gsd-execute-phase 01.",
+  "context_notes": "This session executed waves 12-13 through the normal GSD executor/worktree pipeline (same pattern as prior sessions: isolation=\"worktree\", capture EXPECTED_BASE, dispatch gsd-executor, merge --ff-only, push, cleanup). After wave 12 merged, the user reviewed the actual rendered UI (via a Storybook dev server this session launched with `pnpm storybook` and never explicitly stopped -- may still be running on localhost:6006 if this is the same machine) and found four real problems the automated verification never caught: a too-flashy icon hover, missing loading states, unresearched validation rules, and a radius bug. Fixing these devolved into an UNTRACKED ad-hoc conversation -- editing files directly outside any PLAN.md, no SUMMARY.md, no atomic per-task GSD commits -- because discovered work didn't fit any existing plan and I didn't route it through GSD's gap-closure mechanism. The user explicitly caught this ('how did it even happen that we're working outside gsd') and the correction was: finish the small in-flight fixes manually (which happened -- see completed_tasks gap-fixes entry), then return to GSD properly via a real gap-closure plan for what's left (loading states + validation), rather than continuing ad-hoc. That gap-closure plan was proposed but not yet created when this pause was invoked -- it is the literal next action, not wave 14.",
+  "windows_notes": "Two stray worktree directories from waves 12/13 (.claude/worktrees/agent-ab0d213518a049f33, agent-aecf416d644931899) needed the robocopy-mirror-then-rd /s /q \\\\?\\<path> workaround for Windows long-path removal, same as prior sessions. agent-ab0d213518a049f33 was fully removed this session; agent-aecf416d644931899 STILL HAS a handful of locked native binaries (esbuild, next-swc, oxc-parser/resolver, rolldown-binding, tailwindcss-oxide, lightningcss .node/.exe files) that 'Access is denied' on delete -- likely held by a still-running dev-server/language-service process. Retry cleanup once no such process is running: `cmd /c \"rd /s /q \\\\\\\\?\\\\C:\\\\Dev\\\\Repos\\\\kanban-board-frontend\\\\.claude\\\\worktrees\\\\agent-aecf416d644931899\"`. Non-blocking -- git worktree list no longer shows either, and both branches are already deleted."
 }
