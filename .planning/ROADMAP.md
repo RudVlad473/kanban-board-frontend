@@ -68,7 +68,7 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 9/15 plans executed
+**Plans**: 11/15 plans executed
 
 Plans:
 
@@ -81,8 +81,8 @@ Plans:
 - [x] 01-07-PLAN.md — TextField and Checkbox primitives with built-in error state
 - [x] 01-08-PLAN.md — Switch and Dropdown primitives
 - [x] 01-09-PLAN.md — Modal primitive and design-system library sign-off
-- [ ] 01-10-PLAN.md — committed OpenAPI contract, typed client, MSW mock backend
-- [ ] 01-11-PLAN.md — session cookie, Data Access Layer, BFF auth endpoints
+- [x] 01-10-PLAN.md — committed OpenAPI contract, typed client, MSW mock backend
+- [x] 01-11-PLAN.md — session cookie, Data Access Layer, BFF auth endpoints
 - [ ] 01-12-PLAN.md — sign-up and sign-in forms and routes (AUTH-01, AUTH-02)
 - [ ] 01-13-PLAN.md — route guard with defence in depth and auth end-to-end specs (AUTH-03)
 - [ ] 01-14-PLAN.md — theme persistence and toggle (THEME-01)
@@ -166,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 8/15 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 11/15 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
