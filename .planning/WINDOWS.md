@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 2
 waived_count: 0
-fixed_count: 3
+fixed_count: 4
 total_count: 6
-last_updated: 2026-08-11T16:13:16.075Z
+last_updated: 2026-08-12T09:33:19.344Z
 ---
 
 # Broken Windows Ledger
@@ -20,7 +20,7 @@ last_updated: 2026-08-11T16:13:16.075Z
 | 3 | 01 | deviation | N/A (tooling/environment) |  | Node's -e/require path resolution treats a bash-style /tmp/... path literally (mapping to C:\\tmp\\...), NOT the same location Git Bash's own /tmp resolves to (C:\\Users\\<user>\\AppData\\Local\\Temp\\...). Any node -e script reading a file that Bash/gh CLI just wrote to /tmp/... will silently ENOENT or read a stale/wrong file unless you use the real Windows-resolved path (visible in Read tool output) instead. Caused real confusion diagnosing a CI visual-baseline issue this session -- a hash comparison via node -e against the wrong path family produced misleading 'still broken' results. Prefer PowerShell's Get-FileHash (PowerShell tool, not Bash) for cross-tool file verification on Windows, or consistently stay within one tool (Bash-only or Node-only) for a given file path. | open |  | 2026-08-11T12:03:22.403Z |  |
 | 4 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-07 (TextField + Checkbox) added 17 new stories (34 light/dark assertions) to visual/primitives.visual.spec.ts, on top of Button/IconButton's already-baselined 13. No baseline PNGs exist yet for the new TextField/Checkbox entries -- same root cause as the now-fixed id 1 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. | fixed |  | 2026-08-11T12:55:01.000Z | 2026-08-11T13:17:41.225Z |
 | 5 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-08 (Switch + Dropdown) added 14 new stories (28 light/dark assertions) to visual/primitives.visual.spec.ts, on top of the existing 30. No baseline PNGs exist yet for the new Switch/Dropdown entries -- same root cause as ids 1/4 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. | fixed |  | 2026-08-11T15:35:12.302Z | 2026-08-11T15:45:20.532Z |
-| 6 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-09 (Modal, the seventh and final primitive) added 5 new stories (10 light/dark assertions) to visual/primitives.visual.spec.ts, on top of the existing 44. No baseline PNGs exist yet for the new Modal entries -- same root cause as ids 1/4/5 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. This also blocks the plan's own Task 2 checkpoint, which asks a human to visually compare all seven primitives including Modal against the Figma reference. | open |  | 2026-08-11T16:13:16.075Z |  |
+| 6 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-09 (Modal, the seventh and final primitive) added 5 new stories (10 light/dark assertions) to visual/primitives.visual.spec.ts, on top of the existing 44. No baseline PNGs exist yet for the new Modal entries -- same root cause as ids 1/4/5 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. This also blocks the plan's own Task 2 checkpoint, which asks a human to visually compare all seven primitives including Modal against the Figma reference. | fixed |  | 2026-08-11T16:13:16.075Z | 2026-08-12T09:33:19.344Z |
 
 ````json
 [
@@ -91,10 +91,10 @@ last_updated: 2026-08-11T16:13:16.075Z
     "file": "visual/primitives.visual.spec.ts",
     "line": null,
     "description": "Plan 01-09 (Modal, the seventh and final primitive) added 5 new stories (10 light/dark assertions) to visual/primitives.visual.spec.ts, on top of the existing 44. No baseline PNGs exist yet for the new Modal entries -- same root cause as ids 1/4/5 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run \"Visual baselines\" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. This also blocks the plan's own Task 2 checkpoint, which asks a human to visually compare all seven primitives including Modal against the Figma reference.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-08-11T16:13:16.075Z",
-    "resolved_at": null
+    "resolved_at": "2026-08-12T09:33:19.344Z"
   }
 ]
 ````
