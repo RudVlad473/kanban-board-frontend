@@ -261,10 +261,14 @@ export interface components {
         };
         UpdateBoardRequestDTO: {
             name?: string;
+            /** Format: int64 */
+            version: number;
         };
         BoardResponseDTO: {
             id?: string;
             name?: string;
+            /** Format: int64 */
+            version?: number;
         };
         UpdateColumnRequestDTO: {
             name: string;
@@ -345,6 +349,8 @@ export interface components {
         BoardFullResponseDTO: {
             id?: string;
             name?: string;
+            /** Format: int64 */
+            version?: number;
             columns?: components["schemas"]["ColumnFullResponseDTO"][];
         };
         ColumnFullResponseDTO: {
@@ -376,7 +382,7 @@ export interface components {
         ActivityLogResponseDTO: {
             eventId?: string;
             /** @enum {string} */
-            action?: "TASK_CREATED" | "TASK_MOVED" | "TASK_DELETED" | "BOARD_CREATED" | "COLUMN_CREATED" | "COLUMN_DELETED";
+            action?: "TASK_CREATED" | "TASK_MOVED" | "TASK_DELETED" | "TASK_UPDATED" | "BOARD_CREATED" | "BOARD_UPDATED" | "BOARD_DELETED" | "COLUMN_CREATED" | "COLUMN_DELETED" | "COLUMN_UPDATED" | "COLUMN_REORDERED" | "SUBTASK_CREATED" | "SUBTASK_UPDATED" | "SUBTASK_DELETED";
             detail?: string;
             userId?: string;
             /** Format: date-time */
@@ -387,33 +393,33 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            pageable?: components["schemas"]["PageableObject"];
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ActivityLogResponseDTO"][];
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            numberOfElements?: number;
             first?: boolean;
             last?: boolean;
+            pageable?: components["schemas"]["PageableObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
             empty?: boolean;
         };
         PageableObject: {
-            paged?: boolean;
-            /** Format: int32 */
-            pageNumber?: number;
-            /** Format: int32 */
-            pageSize?: number;
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
             unpaged?: boolean;
         };
         SortObject: {
-            sorted?: boolean;
             empty?: boolean;
+            sorted?: boolean;
             unsorted?: boolean;
         };
     };
@@ -720,7 +726,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": string;
+                    "*/*": components["schemas"]["UserResponseDTO"];
                 };
             };
         };
@@ -743,7 +749,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "*/*": components["schemas"]["UserResponseDTO"];
+                };
             };
         };
     };
@@ -875,7 +883,6 @@ export interface operations {
         parameters: {
             query: {
                 userId: string;
-                dto: components["schemas"]["SaveSubtaskRequestDTO"];
             };
             header?: never;
             path: {
@@ -883,7 +890,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSubtaskRequestDTO"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

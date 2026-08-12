@@ -1,77 +1,67 @@
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "OpenAPI definition",
-    "version": "v0"
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
   },
-  "servers": [
-    {
-      "url": "http://localhost:8080/api",
-      "description": "Generated server url"
-    }
-  ],
-  "paths": {
-    "/users/me/theme": {
-      "get": {
-        "tags": [
-          "user-controller"
-        ],
-        "operationId": "getTheme",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+  "servers" : [ {
+    "url" : "http://localhost",
+    "description" : "Generated server url"
+  } ],
+  "paths" : {
+    "/users/me/theme" : {
+      "get" : {
+        "tags" : [ "user-controller" ],
+        "operationId" : "getTheme",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponseDTO"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseDTO"
                 }
               }
             }
           }
         }
       },
-      "put": {
-        "tags": [
-          "user-controller"
-        ],
-        "operationId": "updateTheme",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+      "put" : {
+        "tags" : [ "user-controller" ],
+        "operationId" : "updateTheme",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateThemeRequestDTO"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateThemeRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseDTO"
                 }
               }
             }
@@ -79,392 +69,345 @@
         }
       }
     },
-    "/boards/{boardId}": {
-      "put": {
-        "tags": [
-          "board-controller"
-        ],
-        "operationId": "updateById",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+    "/boards/{boardId}" : {
+      "put" : {
+        "tags" : [ "board-controller" ],
+        "operationId" : "updateById",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateBoardRequestDTO"
+        }, {
+          "name" : "boardId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateBoardRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/BoardResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardResponseDTO"
                 }
               }
             }
           }
         }
       },
-      "delete": {
-        "tags": [
-          "board-controller"
-        ],
-        "operationId": "deleteById",
-        "parameters": [
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+      "delete" : {
+        "tags" : [ "board-controller" ],
+        "operationId" : "deleteById",
+        "parameters" : [ {
+          "name" : "boardId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+        }, {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           }
         }
       }
     },
-    "/boards/{boardId}/columns/{columnId}": {
-      "put": {
-        "tags": [
-          "column-controller"
-        ],
-        "operationId": "updateById_1",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+    "/boards/{boardId}/columns/{columnId}" : {
+      "put" : {
+        "tags" : [ "column-controller" ],
+        "operationId" : "updateById_1",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateColumnRequestDTO"
+        }, {
+          "name" : "columnId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateColumnRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ColumnResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ColumnResponseDTO"
                 }
               }
             }
           }
         }
       },
-      "post": {
-        "tags": [
-          "column-controller"
-        ],
-        "operationId": "addTaskByColumnId",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+      "post" : {
+        "tags" : [ "column-controller" ],
+        "operationId" : "addTaskByColumnId",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SaveTaskRequestDTO"
+        }, {
+          "name" : "columnId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SaveTaskRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaskResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskResponseDTO"
                 }
               }
             }
           }
         }
       },
-      "delete": {
-        "tags": [
-          "column-controller"
-        ],
-        "operationId": "deleteById_1",
-        "parameters": [
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+      "delete" : {
+        "tags" : [ "column-controller" ],
+        "operationId" : "deleteById_1",
+        "parameters" : [ {
+          "name" : "columnId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+        }, {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           }
         }
       }
     },
-    "/boards/{boardId}/columns/{columnId}/tasks/{taskId}": {
-      "put": {
-        "tags": [
-          "task-controller"
-        ],
-        "operationId": "updateById_2",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+    "/boards/{boardId}/columns/{columnId}/tasks/{taskId}" : {
+      "put" : {
+        "tags" : [ "task-controller" ],
+        "operationId" : "updateById_2",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTaskRequestDTO"
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateTaskRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaskResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskResponseDTO"
                 }
               }
             }
           }
         }
       },
-      "delete": {
-        "tags": [
-          "task-controller"
-        ],
-        "operationId": "deleteById_2",
-        "parameters": [
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+      "delete" : {
+        "tags" : [ "task-controller" ],
+        "operationId" : "deleteById_2",
+        "parameters" : [ {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+        }, {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           }
         }
       }
     },
-    "/boards/{boardId}/columns/{columnId}/tasks/{taskId}/subtasks/{subtaskId}": {
-      "put": {
-        "tags": [
-          "subtask-controller"
-        ],
-        "operationId": "updateById_3",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "subtaskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+    "/boards/{boardId}/columns/{columnId}/tasks/{taskId}/subtasks/{subtaskId}" : {
+      "put" : {
+        "tags" : [ "subtask-controller" ],
+        "operationId" : "updateById_3",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSubtaskRequestDTO"
+        }, {
+          "name" : "subtaskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateSubtaskRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/SubtaskResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SubtaskResponseDTO"
                 }
               }
             }
           }
         }
       },
-      "delete": {
-        "tags": [
-          "subtask-controller"
-        ],
-        "operationId": "deleteById_3",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "subtaskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+      "delete" : {
+        "tags" : [ "subtask-controller" ],
+        "operationId" : "deleteById_3",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+        }, {
+          "name" : "subtaskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           }
         }
       }
     },
-    "/signup": {
-      "post": {
-        "tags": [
-          "authentication-controller"
-        ],
-        "operationId": "signup",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SignupRequestDTO"
+    "/signup" : {
+      "post" : {
+        "tags" : [ "authentication-controller" ],
+        "operationId" : "signup",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SignupRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "string"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseDTO"
                 }
               }
             }
@@ -472,54 +415,55 @@
         }
       }
     },
-    "/signin": {
-      "post": {
-        "tags": [
-          "authentication-controller"
-        ],
-        "operationId": "signin",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SigninRequestDTO"
+    "/signin" : {
+      "post" : {
+        "tags" : [ "authentication-controller" ],
+        "operationId" : "signin",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SigninRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseDTO"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/boards": {
-      "get": {
-        "tags": [
-          "board-controller"
-        ],
-        "operationId": "findAllByUserId",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+    "/boards" : {
+      "get" : {
+        "tags" : [ "board-controller" ],
+        "operationId" : "findAllByUserId",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BoardResponseDTO"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/BoardResponseDTO"
                   }
                 }
               }
@@ -527,38 +471,34 @@
           }
         }
       },
-      "post": {
-        "tags": [
-          "board-controller"
-        ],
-        "operationId": "save",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+      "post" : {
+        "tags" : [ "board-controller" ],
+        "operationId" : "save",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SaveBoardRequestDTO"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SaveBoardRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/BoardResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardResponseDTO"
                 }
               }
             }
@@ -566,40 +506,35 @@
         }
       }
     },
-    "/boards/{boardId}/columns": {
-      "get": {
-        "tags": [
-          "column-controller"
-        ],
-        "operationId": "findAllByBoardId",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+    "/boards/{boardId}/columns" : {
+      "get" : {
+        "tags" : [ "column-controller" ],
+        "operationId" : "findAllByBoardId",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ColumnResponseDTO"
+        }, {
+          "name" : "boardId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ColumnResponseDTO"
                   }
                 }
               }
@@ -607,47 +542,42 @@
           }
         }
       },
-      "post": {
-        "tags": [
-          "board-controller"
-        ],
-        "operationId": "addColumnByBoardId",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+      "post" : {
+        "tags" : [ "board-controller" ],
+        "operationId" : "addColumnByBoardId",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SaveColumnRequestDTO"
+        }, {
+          "name" : "boardId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SaveColumnRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ColumnResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ColumnResponseDTO"
                 }
               }
             }
@@ -655,40 +585,35 @@
         }
       }
     },
-    "/boards/{boardId}/columns/{columnId}/tasks/{taskId}/subtasks": {
-      "get": {
-        "tags": [
-          "subtask-controller"
-        ],
-        "operationId": "findAllByTaskId",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+    "/boards/{boardId}/columns/{columnId}/tasks/{taskId}/subtasks" : {
+      "get" : {
+        "tags" : [ "subtask-controller" ],
+        "operationId" : "findAllByTaskId",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SubtaskResponseDTO"
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SubtaskResponseDTO"
                   }
                 }
               }
@@ -696,94 +621,42 @@
           }
         }
       },
-      "post": {
-        "tags": [
-          "task-controller"
-        ],
-        "operationId": "addSubtaskByTaskId",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          {
-            "name": "dto",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/SaveSubtaskRequestDTO"
-            }
+      "post" : {
+        "tags" : [ "task-controller" ],
+        "operationId" : "addSubtaskByTaskId",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/SubtaskResponseDTO"
-                }
-              }
-            }
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
           }
-        }
-      }
-    },
-    "/tasks/{taskId}/move": {
-      "patch": {
-        "tags": [
-          "task-move-controller"
-        ],
-        "operationId": "moveToColumn",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MoveTaskRequestDTO"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SaveSubtaskRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaskResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SubtaskResponseDTO"
                 }
               }
             }
@@ -791,48 +664,43 @@
         }
       }
     },
-    "/boards/{boardId}/columns/{columnId}/reorder": {
-      "patch": {
-        "tags": [
-          "column-controller"
-        ],
-        "operationId": "reorder",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
+    "/tasks/{taskId}/move" : {
+      "patch" : {
+        "tags" : [ "task-move-controller" ],
+        "operationId" : "moveToColumn",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReorderColumnRequestDTO"
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MoveTaskRequestDTO"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ColumnResponseDTO"
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskResponseDTO"
                 }
               }
             }
@@ -840,38 +708,43 @@
         }
       }
     },
-    "/boards/{boardId}/full": {
-      "get": {
-        "tags": [
-          "board-controller"
-        ],
-        "operationId": "findFullById",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
+    "/boards/{boardId}/columns/{columnId}/reorder" : {
+      "patch" : {
+        "tags" : [ "column-controller" ],
+        "operationId" : "reorder",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "columnId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReorderColumnRequestDTO"
+              }
             }
           },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/BoardFullResponseDTO"
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ColumnResponseDTO"
                 }
               }
             }
@@ -879,40 +752,69 @@
         }
       }
     },
-    "/boards/{boardId}/columns/{columnId}/tasks": {
-      "get": {
-        "tags": [
-          "task-controller"
-        ],
-        "operationId": "findAllByColumnId",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
+    "/boards/{boardId}/full" : {
+      "get" : {
+        "tags" : [ "board-controller" ],
+        "operationId" : "findFullById",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "boardId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardFullResponseDTO"
+                }
+              }
             }
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TaskResponseDTO"
+        }
+      }
+    },
+    "/boards/{boardId}/columns/{columnId}/tasks" : {
+      "get" : {
+        "tags" : [ "task-controller" ],
+        "operationId" : "findAllByColumnId",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "columnId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TaskResponseDTO"
                   }
                 }
               }
@@ -921,46 +823,40 @@
         }
       }
     },
-    "/boards/{boardId}/activity": {
-      "get": {
-        "tags": [
-          "activity-controller"
-        ],
-        "operationId": "findAllByBoardId_1",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          {
-            "name": "pageable",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Pageable"
-            }
+    "/boards/{boardId}/activity" : {
+      "get" : {
+        "tags" : [ "activity-controller" ],
+        "operationId" : "findAllByBoardId_1",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageActivityLogResponseDTO"
+        }, {
+          "name" : "boardId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        }, {
+          "name" : "pageable",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageActivityLogResponseDTO"
                 }
               }
             }
@@ -969,493 +865,472 @@
       }
     }
   },
-  "components": {
-    "schemas": {
-      "UpdateThemeRequestDTO": {
-        "type": "object",
-        "properties": {
-          "theme": {
-            "type": "string",
-            "enum": [
-              "LIGHT",
-              "DARK"
-            ]
+  "components" : {
+    "schemas" : {
+      "UpdateThemeRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "theme" : {
+            "type" : "string",
+            "enum" : [ "LIGHT", "DARK" ]
           }
         },
-        "required": [
-          "theme"
-        ]
+        "required" : [ "theme" ]
       },
-      "UserResponseDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
+      "UserResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
           },
-          "email": {
-            "type": "string"
+          "email" : {
+            "type" : "string"
           },
-          "displayName": {
-            "type": "string"
+          "displayName" : {
+            "type" : "string"
           },
-          "theme": {
-            "type": "string",
-            "enum": [
-              "LIGHT",
-              "DARK"
-            ]
+          "theme" : {
+            "type" : "string",
+            "enum" : [ "LIGHT", "DARK" ]
           }
         }
       },
-      "UpdateBoardRequestDTO": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
+      "UpdateBoardRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "BoardResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         }
       },
-      "BoardResponseDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
+      "UpdateColumnRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 32,
+            "minLength" : 3
           },
-          "name": {
-            "type": "string"
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "name", "version" ]
+      },
+      "ColumnResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
-      "UpdateColumnRequestDTO": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 32,
-            "minLength": 3
+      "UpdateTaskRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
           },
-          "version": {
-            "type": "integer",
-            "format": "int64"
+          "description" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
-        "required": [
-          "name",
-          "version"
-        ]
+        "required" : [ "version" ]
       },
-      "ColumnResponseDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
+      "TaskResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
           },
-          "name": {
-            "type": "string"
+          "title" : {
+            "type" : "string"
           },
-          "version": {
-            "type": "integer",
-            "format": "int64"
+          "description" : {
+            "type" : "string"
           },
-          "position": {
-            "type": "integer",
-            "format": "int32"
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
-      "UpdateTaskRequestDTO": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
+      "UpdateSubtaskRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
           },
-          "description": {
-            "type": "string"
+          "isCompleted" : {
+            "type" : "boolean"
           },
-          "version": {
-            "type": "integer",
-            "format": "int64"
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
-        "required": [
-          "version"
-        ]
+        "required" : [ "version" ]
       },
-      "TaskResponseDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
+      "SubtaskResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
           },
-          "title": {
-            "type": "string"
+          "title" : {
+            "type" : "string"
           },
-          "description": {
-            "type": "string"
+          "isCompleted" : {
+            "type" : "boolean"
           },
-          "version": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "position": {
-            "type": "integer",
-            "format": "int32"
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         }
       },
-      "UpdateSubtaskRequestDTO": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
+      "SignupRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
           },
-          "isCompleted": {
-            "type": "boolean"
+          "email" : {
+            "type" : "string"
           },
-          "version": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        "required": [
-          "version"
-        ]
-      },
-      "SubtaskResponseDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "isCompleted": {
-            "type": "boolean"
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64"
+          "password" : {
+            "type" : "string"
           }
         }
       },
-      "SignupRequestDTO": {
-        "type": "object",
-        "properties": {
-          "displayName": {
-            "type": "string"
+      "SigninRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
           },
-          "email": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
+          "password" : {
+            "type" : "string"
           }
         }
       },
-      "SigninRequestDTO": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string"
+      "SaveBoardRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "name" ]
+      },
+      "SaveColumnRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 32,
+            "minLength" : 3
+          }
+        },
+        "required" : [ "name" ]
+      },
+      "SaveTaskRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 32,
+            "minLength" : 3
           },
-          "password": {
-            "type": "string"
+          "description" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "title" ]
+      },
+      "SaveSubtaskRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
           }
         }
       },
-      "SaveBoardRequestDTO": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1
+      "MoveTaskRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "targetColumnId" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "targetPosition" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
           }
         },
-        "required": [
-          "name"
-        ]
+        "required" : [ "targetColumnId", "version" ]
       },
-      "SaveColumnRequestDTO": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 32,
-            "minLength": 3
+      "ReorderColumnRequestDTO" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "targetPosition" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
           }
         },
-        "required": [
-          "name"
-        ]
+        "required" : [ "targetPosition", "version" ]
       },
-      "SaveTaskRequestDTO": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "maxLength": 32,
-            "minLength": 3
+      "BoardFullResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
           },
-          "description": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "title"
-        ]
-      },
-      "SaveSubtaskRequestDTO": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
-          }
-        }
-      },
-      "MoveTaskRequestDTO": {
-        "type": "object",
-        "properties": {
-          "targetColumnId": {
-            "type": "string",
-            "minLength": 1
+          "name" : {
+            "type" : "string"
           },
-          "version": {
-            "type": "integer",
-            "format": "int64"
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "targetPosition": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "targetColumnId",
-          "version"
-        ]
-      },
-      "ReorderColumnRequestDTO": {
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "targetPosition": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "targetPosition",
-          "version"
-        ]
-      },
-      "BoardFullResponseDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ColumnFullResponseDTO"
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ColumnFullResponseDTO"
             }
           }
         }
       },
-      "ColumnFullResponseDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
+      "ColumnFullResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
           },
-          "name": {
-            "type": "string"
+          "name" : {
+            "type" : "string"
           },
-          "version": {
-            "type": "integer",
-            "format": "int64"
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "position": {
-            "type": "integer",
-            "format": "int32"
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
           },
-          "tasks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TaskFullResponseDTO"
+          "tasks" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TaskFullResponseDTO"
             }
           }
         }
       },
-      "TaskFullResponseDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
+      "TaskFullResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
           },
-          "title": {
-            "type": "string"
+          "title" : {
+            "type" : "string"
           },
-          "description": {
-            "type": "string"
+          "description" : {
+            "type" : "string"
           },
-          "version": {
-            "type": "integer",
-            "format": "int64"
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "position": {
-            "type": "integer",
-            "format": "int32"
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
           },
-          "subtasks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SubtaskResponseDTO"
+          "subtasks" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SubtaskResponseDTO"
             }
           }
         }
       },
-      "Pageable": {
-        "type": "object",
-        "properties": {
-          "page": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
+      "Pageable" : {
+        "type" : "object",
+        "properties" : {
+          "page" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
           },
-          "size": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1
+          "size" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
           },
-          "sort": {
-            "type": "array",
-            "items": {
-              "type": "string"
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
             }
           }
         }
       },
-      "ActivityLogResponseDTO": {
-        "type": "object",
-        "properties": {
-          "eventId": {
-            "type": "string"
+      "ActivityLogResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "eventId" : {
+            "type" : "string"
           },
-          "action": {
-            "type": "string",
-            "enum": [
-              "TASK_CREATED",
-              "TASK_MOVED",
-              "TASK_DELETED",
-              "BOARD_CREATED",
-              "COLUMN_CREATED",
-              "COLUMN_DELETED"
-            ]
+          "action" : {
+            "type" : "string",
+            "enum" : [ "TASK_CREATED", "TASK_MOVED", "TASK_DELETED", "TASK_UPDATED", "BOARD_CREATED", "BOARD_UPDATED", "BOARD_DELETED", "COLUMN_CREATED", "COLUMN_DELETED", "COLUMN_UPDATED", "COLUMN_REORDERED", "SUBTASK_CREATED", "SUBTASK_UPDATED", "SUBTASK_DELETED" ]
           },
-          "detail": {
-            "type": "string"
+          "detail" : {
+            "type" : "string"
           },
-          "userId": {
-            "type": "string"
+          "userId" : {
+            "type" : "string"
           },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },
-      "PageActivityLogResponseDTO": {
-        "type": "object",
-        "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
+      "PageActivityLogResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
           },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ActivityLogResponseDTO"
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityLogResponseDTO"
             }
           },
-          "number": {
-            "type": "integer",
-            "format": "int32"
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
+          "first" : {
+            "type" : "boolean"
           },
-          "first": {
-            "type": "boolean"
+          "last" : {
+            "type" : "boolean"
           },
-          "last": {
-            "type": "boolean"
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
-          "empty": {
-            "type": "boolean"
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "empty" : {
+            "type" : "boolean"
           }
         }
       },
-      "PageableObject": {
-        "type": "object",
-        "properties": {
-          "paged": {
-            "type": "boolean"
+      "PageableObject" : {
+        "type" : "object",
+        "properties" : {
+          "offset" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
+          "paged" : {
+            "type" : "boolean"
           },
-          "offset": {
-            "type": "integer",
-            "format": "int64"
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           },
-          "unpaged": {
-            "type": "boolean"
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
-      "SortObject": {
-        "type": "object",
-        "properties": {
-          "sorted": {
-            "type": "boolean"
+      "SortObject" : {
+        "type" : "object",
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
           },
-          "empty": {
-            "type": "boolean"
+          "sorted" : {
+            "type" : "boolean"
           },
-          "unsorted": {
-            "type": "boolean"
+          "unsorted" : {
+            "type" : "boolean"
           }
         }
       }
