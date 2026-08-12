@@ -35,6 +35,7 @@ export const Ghost: Story = {
     render: () => (
         <div className="flex items-center gap-4">
             <IconButton label="Show password" icon={<Eye />} variant="ghost" />
+
             <IconButton label="Hide password" icon={<EyeOff />} variant="ghost" />
         </div>
     ),
@@ -44,7 +45,9 @@ export const Sizes: Story = {
     render: (args) => (
         <div className="flex items-center gap-4">
             <IconButton {...args} size="sm" />
+
             <IconButton {...args} size="md" />
+
             <IconButton {...args} size="lg" />
         </div>
     ),

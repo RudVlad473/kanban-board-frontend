@@ -11,13 +11,16 @@ const Home = () => {
                 <h1 className="font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
                     Kanban Board
                 </h1>
+
                 <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
                     Organize your work into boards, columns, and tasks.
                 </p>
+
                 <div className="flex gap-4">
                     <a href="/login" className="text-bg-primary hover:text-bg-primary-hover">
                         Sign In
                     </a>
+
                     <a href="/register" className="text-bg-primary hover:text-bg-primary-hover">
                         Create Account
                     </a>

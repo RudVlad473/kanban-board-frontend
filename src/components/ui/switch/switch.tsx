@@ -101,6 +101,7 @@ export const Switch = ({ label, isChecked, isDisabled = false, iconOn, iconOff, 
                             {iconOn}
                         </span>
                     ) : null}
+
                     {iconOff ? (
                         <span aria-hidden="true" className="hidden group-data-[unchecked]:inline-flex">
                             {iconOff}

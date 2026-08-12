@@ -13,9 +13,12 @@ const renderDropdown = (props: RootProps = {}) =>
     render(
         <Dropdown.Root {...props}>
             <Dropdown.Trigger placeholder="Select a status" />
+
             <Dropdown.Content>
                 <Dropdown.Item value="todo">Todo</Dropdown.Item>
+
                 <Dropdown.Item value="doing">Doing</Dropdown.Item>
+
                 <Dropdown.Item value="done">Done</Dropdown.Item>
             </Dropdown.Content>
         </Dropdown.Root>,
@@ -191,6 +194,7 @@ describeForEachDevice({
                 <div style={{ width: "200px" }}>
                     <Dropdown.Root defaultValue="todo">
                         <Dropdown.Trigger placeholder="Select a status" />
+
                         <Dropdown.Content>
                             <Dropdown.Item value="todo">Todo</Dropdown.Item>
                         </Dropdown.Content>
@@ -203,6 +207,7 @@ describeForEachDevice({
                 <div style={{ width: "150px" }}>
                     <Dropdown.Root defaultValue={longValue}>
                         <Dropdown.Trigger placeholder="Select a board" />
+
                         <Dropdown.Content>
                             <Dropdown.Item value={longValue}>{longValue}</Dropdown.Item>
                         </Dropdown.Content>
@@ -225,9 +230,12 @@ describeForEachDevice({
             const screen = await render(
                 <Dropdown.Root>
                     <Dropdown.Trigger placeholder="Select a status" />
+
                     <Dropdown.Content>
                         <Dropdown.Item value="a">A</Dropdown.Item>
+
                         <Dropdown.Item value="b">B</Dropdown.Item>
+
                         <Dropdown.Item value="c">C</Dropdown.Item>
                     </Dropdown.Content>
                 </Dropdown.Root>,
@@ -266,6 +274,7 @@ describeForEachDevice({
                 <div style={{ marginLeft: `${String(window.innerWidth - 220)}px`, width: "200px" }}>
                     <Dropdown.Root defaultOpen>
                         <Dropdown.Trigger placeholder="Select a board" />
+
                         <Dropdown.Content>
                             <Dropdown.Item value="a">A</Dropdown.Item>
                         </Dropdown.Content>
@@ -297,6 +306,7 @@ describeForEachDevice({
             const screen = await render(
                 <Dropdown.Root defaultOpen>
                     <Dropdown.Trigger placeholder="Select a board" />
+
                     <Dropdown.Content>
                         {Array.from({ length: 20 }, (_, index) => {
                             const position = String(index);
@@ -339,11 +349,14 @@ describeForEachDevice({
             const screen = await render(
                 <Dropdown.Root onValueChange={onValueChange}>
                     <Dropdown.Trigger placeholder="Select a status" />
+
                     <Dropdown.Content>
                         <Dropdown.Item value="todo">Todo</Dropdown.Item>
+
                         <Dropdown.Item value="doing" isDisabled>
                             Doing
                         </Dropdown.Item>
+
                         <Dropdown.Item value="done">Done</Dropdown.Item>
                     </Dropdown.Content>
                 </Dropdown.Root>,

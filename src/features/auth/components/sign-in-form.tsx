@@ -82,6 +82,7 @@ export const SignInForm = ({
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.email?.message}
                 {...register("email")}
             />
+
             <TextField
                 label="Password"
                 type={isPasswordRevealed ? "text" : "password"}
@@ -109,6 +110,7 @@ export const SignInForm = ({
                 }
                 {...register("password")}
             />
+
             {serverErrorMessage ? (
                 <p
                     role="alert"
@@ -117,9 +119,11 @@ export const SignInForm = ({
                     {serverErrorMessage}
                 </p>
             ) : null}
+
             <Button type="submit" variant="primary" isDisabled={isPending} aria-busy={isPending}>
                 Sign In
             </Button>
+
             <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
                 {/*
                  * A plain anchor, not next/link's `Link` — see sign-up-form.tsx's identical comment
@@ -128,6 +132,7 @@ export const SignInForm = ({
                  * plain Vitest Browser Mode test environment).
                  */}
                 {"Don't have an account? "}
+
                 <a href="/register" className="text-bg-primary hover:text-bg-primary-hover">
                     Create Account
                 </a>

@@ -111,6 +111,7 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
                     placeholder={placeholder}
                     className="block truncate text-left text-text-primary data-[placeholder]:text-text-muted"
                 />
+
                 {isOverflowing ? (
                     /*
                      * An opaque `bg-bg-surface` patch under the glyph — not a gradient — so the
@@ -125,6 +126,7 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
                     </span>
                 ) : null}
             </span>
+
             <Select.Icon className="text-text-muted">
                 <ChevronDown aria-hidden="true" className="size-4" />
             </Select.Icon>
@@ -206,6 +208,7 @@ const Item = ({ value, isDisabled = false, className, children, ...props }: Drop
             {...props}
         >
             <Select.ItemText>{children}</Select.ItemText>
+
             {/* The active/selected item indicator uses the accent colour (UI-SPEC Color). */}
             <Select.ItemIndicator className="text-bg-primary">
                 <Check aria-hidden="true" className="size-4" strokeWidth={3} />

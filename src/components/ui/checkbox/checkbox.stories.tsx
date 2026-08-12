@@ -69,7 +69,9 @@ export const Sizes: Story = {
     render: (args) => (
         <div className="flex items-center gap-4">
             <Checkbox {...args} size="sm" label="Small" defaultChecked />
+
             <Checkbox {...args} size="md" label="Medium" defaultChecked />
+
             <Checkbox {...args} size="lg" label="Large" defaultChecked />
         </div>
     ),

@@ -81,6 +81,7 @@ export const Checkbox = ({
                     <Check strokeWidth={3} />
                 </BaseCheckbox.Indicator>
             </BaseCheckbox.Root>
+
             <Field.Label
                 className={cn(
                     "font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary",

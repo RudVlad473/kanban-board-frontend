@@ -16,6 +16,7 @@ const meta: Meta<typeof Modal.Root> = {
     render: (args) => (
         <Modal.Root {...args}>
             <Modal.Trigger render={<Button>Open modal</Button>} />
+
             <Modal.Content>
                 <Modal.Title>Delete this board?</Modal.Title>
             </Modal.Content>
@@ -33,8 +34,10 @@ export const WithDescription: Story = {
     render: (args) => (
         <Modal.Root {...args}>
             <Modal.Trigger render={<Button>Open modal</Button>} />
+
             <Modal.Content>
                 <Modal.Title>Delete this board?</Modal.Title>
+
                 <Modal.Description>
                     This action cannot be undone. All columns and tasks inside it will be permanently deleted.
                 </Modal.Description>
@@ -47,10 +50,13 @@ export const WithFooterActions: Story = {
     render: (args) => (
         <Modal.Root {...args}>
             <Modal.Trigger render={<Button>Open modal</Button>} />
+
             <Modal.Content>
                 <Modal.Title>Rename board</Modal.Title>
+
                 <Modal.Footer>
                     <Button variant="secondary">Cancel</Button>
+
                     <Button variant="primary">Save Changes</Button>
                 </Modal.Footer>
             </Modal.Content>
@@ -62,8 +68,10 @@ export const LongContent: Story = {
     render: (args) => (
         <Modal.Root {...args}>
             <Modal.Trigger render={<Button>Open modal</Button>} />
+
             <Modal.Content>
                 <Modal.Title>Task activity</Modal.Title>
+
                 <div className="flex flex-col gap-4">
                     {Array.from({ length: 12 }, (_, index) => {
                         const position = String(index + 1);
@@ -74,6 +82,7 @@ export const LongContent: Story = {
                         );
                     })}
                 </div>
+
                 <Modal.Footer>
                     <Button variant="secondary">Close</Button>
                 </Modal.Footer>

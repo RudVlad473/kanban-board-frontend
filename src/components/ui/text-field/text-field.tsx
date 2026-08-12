@@ -103,6 +103,7 @@ export const TextField = ({
             <Field.Label className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
                 {label}
             </Field.Label>
+
             <div className="relative">
                 <Field.Control
                     type={type}
@@ -116,13 +117,16 @@ export const TextField = ({
                     )}
                     {...props}
                 />
+
                 {trailing ? <span className="absolute inset-y-0 right-3 flex items-center">{trailing}</span> : null}
             </div>
+
             {description ? (
                 <Field.Description className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
                     {description}
                 </Field.Description>
             ) : null}
+
             {/* `match` forced to `true` (rather than left to native/Form validity) because this
                 primitive's error state is fully externally controlled via `hasError`/`errorMessage`
                 — not native constraint validation or a Base UI <Form>. Conditionally mounting only

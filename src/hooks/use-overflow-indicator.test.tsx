@@ -15,6 +15,7 @@ const OverflowProbe = ({ text, width }: { text: string; width: number }) => {
             <div ref={ref} data-testid="probe" style={{ width, overflow: "hidden", whiteSpace: "nowrap" }}>
                 {text}
             </div>
+
             <span data-testid="status">{isOverflowing ? "overflowing" : "fits"}</span>
         </div>
     );

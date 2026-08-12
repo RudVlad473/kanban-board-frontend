@@ -90,7 +90,9 @@ export const Sizes: Story = {
     render: (args) => (
         <div className="flex w-64 flex-col gap-4">
             <TextField {...args} size="sm" label="Small" />
+
             <TextField {...args} size="md" label="Medium" />
+
             <TextField {...args} size="lg" label="Large" />
         </div>
     ),

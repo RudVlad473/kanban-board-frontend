@@ -17,6 +17,7 @@ export const AuthCard = ({ title, children }: Props) => {
             <h1 className="font-heading-l text-heading-l [font-weight:var(--font-weight-heading-l)] text-text-primary">
                 {title}
             </h1>
+
             {children}
         </div>
     );

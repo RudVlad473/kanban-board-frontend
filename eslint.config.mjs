@@ -64,6 +64,13 @@ const eslintConfig = defineConfig([
         },
     },
 
+    // 3b. Blank line required between sibling JSX elements/expressions (fixable).
+    {
+        rules: {
+            "react/jsx-newline": ["error", { prevent: false }],
+        },
+    },
+
     // 4. Unused vars/args/caught-errors as error, with an underscore-prefix escape hatch (D-26o).
     {
         rules: {

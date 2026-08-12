@@ -8,6 +8,7 @@ const BoardsPage = () => {
             <h1 className="font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
                 Boards
             </h1>
+
             <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
                 Board content arrives in phase 2.
             </p>

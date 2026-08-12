@@ -24,8 +24,10 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
                 <span className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
                     {identity.displayName}
                 </span>
+
                 <SignOutButton />
             </header>
+
             <main className="flex flex-1 flex-col">{children}</main>
         </div>
     );

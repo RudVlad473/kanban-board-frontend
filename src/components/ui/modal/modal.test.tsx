@@ -14,14 +14,20 @@ const renderModal = (props: RootProps = {}) =>
     render(
         <div>
             <button type="button">Outside link</button>
+
             <Modal.Root {...props}>
                 <Modal.Trigger>Open modal</Modal.Trigger>
+
                 <Modal.Content>
                     <Modal.Title>Delete board</Modal.Title>
+
                     <Modal.Description>This action cannot be undone.</Modal.Description>
+
                     <input type="text" aria-label="Confirmation text" />
+
                     <Modal.Footer>
                         <button type="button">Cancel</button>
+
                         <button type="button">Confirm</button>
                     </Modal.Footer>
                 </Modal.Content>
@@ -156,6 +162,7 @@ describeForEachDevice({
                 <Modal.Root defaultOpen>
                     <Modal.Content>
                         <Modal.Title>Task activity</Modal.Title>
+
                         <div>{longContent}</div>
                     </Modal.Content>
                 </Modal.Root>,

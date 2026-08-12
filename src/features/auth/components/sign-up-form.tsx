@@ -79,6 +79,7 @@ export const SignUpForm = ({
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.email?.message}
                 {...register("email")}
             />
+
             <TextField
                 label="Name"
                 type="text"
@@ -86,6 +87,7 @@ export const SignUpForm = ({
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.displayName?.message}
                 {...register("displayName")}
             />
+
             <TextField
                 label="Password"
                 type={isPasswordRevealed ? "text" : "password"}
@@ -113,6 +115,7 @@ export const SignUpForm = ({
                 }
                 {...register("password")}
             />
+
             {serverErrorMessage ? (
                 <p
                     role="alert"
@@ -121,9 +124,11 @@ export const SignUpForm = ({
                     {serverErrorMessage}
                 </p>
             ) : null}
+
             <Button type="submit" variant="primary" isDisabled={isPending} aria-busy={isPending}>
                 Create Account
             </Button>
+
             <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
                 {/*
                  * A plain anchor, not next/link's `Link` — this app's own BFF Route Handlers issue
@@ -133,6 +138,7 @@ export const SignUpForm = ({
                  * project's plain (non-Next-runtime) Vitest Browser Mode test environment.
                  */}
                 {"Already have an account? "}
+
                 <a href="/login" className="text-bg-primary hover:text-bg-primary-hover">
                     Sign In
                 </a>

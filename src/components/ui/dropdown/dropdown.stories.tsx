@@ -12,9 +12,12 @@ const meta: Meta<typeof Dropdown.Root> = {
     render: (args) => (
         <Dropdown.Root {...args}>
             <Dropdown.Trigger placeholder="Select a status" />
+
             <Dropdown.Content>
                 <Dropdown.Item value="todo">Todo</Dropdown.Item>
+
                 <Dropdown.Item value="doing">Doing</Dropdown.Item>
+
                 <Dropdown.Item value="done">Done</Dropdown.Item>
             </Dropdown.Content>
         </Dropdown.Root>
@@ -52,11 +55,14 @@ export const DisabledItem: Story = {
     render: (args) => (
         <Dropdown.Root {...args}>
             <Dropdown.Trigger placeholder="Select a status" />
+
             <Dropdown.Content>
                 <Dropdown.Item value="todo">Todo</Dropdown.Item>
+
                 <Dropdown.Item value="doing" isDisabled>
                     Doing
                 </Dropdown.Item>
+
                 <Dropdown.Item value="done">Done</Dropdown.Item>
             </Dropdown.Content>
         </Dropdown.Root>
@@ -82,6 +88,7 @@ export const LongSelectedValue: Story = {
         <div style={{ width: "220px" }}>
             <Dropdown.Root {...args}>
                 <Dropdown.Trigger placeholder="Select a board" />
+
                 <Dropdown.Content>
                     <Dropdown.Item value="A very long board name that will definitely overflow the trigger width">
                         A very long board name that will definitely overflow the trigger width
@@ -99,6 +106,7 @@ export const LongItemList: Story = {
     render: (args) => (
         <Dropdown.Root {...args}>
             <Dropdown.Trigger placeholder="Select a board" />
+
             <Dropdown.Content>
                 {Array.from({ length: 12 }, (_, index) => {
                     const position = String(index + 1);
