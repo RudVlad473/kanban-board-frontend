@@ -250,6 +250,94 @@ later.
 None — every gray area discussed had a concrete decision made; no "you decide" selections in
 this round.
 
+### Gap Closure — 2026-08-16 (post-wave-13 UI review + architecture discussion)
+
+Session context: after wave 12 merged, the user reviewed the actual rendered UI in Storybook and
+found real gaps automated checks missed (loading states, validation rules). That review, plus a
+separate architecture-questions discussion, produced the decisions below. All items are additive
+gap-closure work — no prior D-01..D-28 decision is superseded except where noted.
+
+- **GC-01 (loading states):** All primitive inputs/buttons/dropdowns — Button, IconButton,
+  TextField, Dropdown — get a loading state wired to pending mutations. Today only `Button`'s
+  `isDisabled` is wired; `TextField` stays editable during submit. Scope: every primitive that
+  is an input/button/dropdown, not just the two auth forms.
+- **GC-02 (validation-schema alignment):** `auth-schemas.ts` must match the real backend's Bean
+  Validation rules (already researched from `github.com/RudVlad473/kanban-board-backend`, cited
+  in full in `.planning/HANDOFF.json`'s `decisions` array — do not re-research):
+  - `password`: 8–64 chars, must contain ≥1 uppercase, ≥1 lowercase, ≥1 digit, ≥1 special char
+    (current schema only checks `min(8)`).
+  - `displayName`: **now optional** (resolved 2026-08-16 — user chose to match the backend
+    contract exactly over keeping it required for future display purposes); when provided,
+    3–32 chars, letters+spaces only (current schema has no character-class check and requires
+    it). Wherever a display name would render with none provided, fall back to something
+    reasonable (e.g. email or "User") — exact fallback text is an implementation detail for the
+    planner/executor to choose sensibly, not a locked decision.
+  - `email`: no change — already aligned with standard email format.
+- **GC-03 (route-level error boundaries):** No error boundary of any kind exists today (verified:
+  no `error.tsx`, no `ErrorBoundary`, nothing in `package.json`). Add Next.js App Router's native
+  `error.tsx` per protected route segment (at minimum `app/(dashboard)/error.tsx`) plus a root
+  `app/global-error.tsx` fallback — zero-dependency, framework-native route-crash isolation.
+  Widget-level isolation (e.g. one Task card crashing shouldn't blank the whole board) is
+  explicitly **deferred** — nothing renders list/board UI yet, so there's no widget to isolate;
+  revisit with `react-error-boundary` once board/column/task rendering exists.
+- **GC-04 (routes.ts consolidation):** `src/lib/routes.ts` currently exports 2 `as const` arrays
+  + 2 individual string consts + 2 predicate functions — not the enum-like `{ KEY: "KEY" } as
+  const` + derived-type pattern already established by ADR tech/0012 (`DEVICE_TYPE` in
+  `viewport-breakpoints.ts`, `THEME` in `mocks/store.ts`). Consolidate `routes.ts` into that same
+  pattern, adding a `boardDetail(id)` path builder for the dynamic segment. Fix every call site
+  currently bypassing it with a hardcoded literal: `use-sign-up.ts` and `use-sign-in.ts` (both
+  hardcode `"/boards"` instead of importing `BOARDS_PATH`), `app/page.tsx` and both auth forms'
+  cross-links (hardcode `"/login"`/`"/register"`), and both e2e specs (mix imported constants
+  with raw literals in the same file).
+- **GC-05 (test-utils extraction):** `sign-in-form.test.tsx` and `sign-up-form.test.tsx` each
+  hand-roll an identical `setupWorker()` + `beforeAll`/`afterEach`/`afterAll` lifecycle block
+  (~15 lines, byte-for-byte parallel) and an identical `<QueryProvider>` wrap in their render
+  helpers. Extract a shared MSW-worker lifecycle helper and a `renderWithProviders()` helper into
+  `src/test-utils/`; both files switch to the shared versions. No global store decorator yet —
+  no client-side store exists to decorate (revisit when board/column/task state management is
+  chosen, out of this phase's scope).
+- **GC-06 (gitleaks pre-commit):** Add gitleaks secret scanning (`gitleaks protect --staged` or
+  equivalent) to the existing Husky + lint-staged pre-commit chain (`.husky/pre-commit` →
+  `lint-staged.config.mjs`). User's explicit choice: use an npm-wrapper package that installs the
+  gitleaks binary via `postinstall`, not a manually-installed local binary — no per-contributor
+  setup step, works in CI unmodified.
+- **GC-07 (real RTL usage):** `@testing-library/react` is installed and wired into the jsdom
+  `unit` Vitest project (D-26z) but is exercised only by a disposable placeholder
+  (`src/lib/rtl-harness-probe.unit.test.tsx`, explicitly marked for deletion once a real test
+  exists). Add a real `renderHook`-based unit test for `use-sign-in.ts`/`use-sign-up.ts`
+  (TanStack Query mutation hooks — currently only exercised indirectly through slow browser-mode
+  component tests), then delete the placeholder.
+- **GC-08 (story reuse in tests):** No test file reuses a Storybook story today; each `.test.tsx`
+  hand-rolls its own render/provider setup even when a sibling `.stories.tsx` already declares
+  equivalent args/decorators. Adopt `composeStories()` to import a story's args/decorators into
+  `.test.tsx` files — **not** Storybook `play` functions. This is a deliberate constraint: D-25
+  (above) already decided interaction/keyboard-behavior assertions live exclusively in Vitest,
+  never in Storybook, specifically to avoid duplicating assertions across both tools; `play`
+  functions would reopen that. `composeStories()` only reuses the story's render setup — all
+  assertions stay in the `.test.tsx` file as today. Confirm the exact import path during planning
+  — Storybook 10.x moved portable-stories helpers out of the deprecated `@storybook/test`
+  package (not installed) and into the framework/renderer package itself; `@storybook/addon-vitest`
+  is already installed and already wires `.storybook/preview.tsx` annotations into every story's
+  auto-generated Vitest test (confirmed in `vitest.config.ts`/`.storybook/vitest.setup.ts`), so
+  the composeStories helper likely ships alongside it — verify rather than assume the exact
+  export path.
+
+Explicitly deferred (discussed, not part of this gap-closure — see rationale, not oversights):
+- **Mock store reset function** (`src/lib/mocks/store.ts` has no explicit `resetStore()`; test
+  isolation today relies on random emails per test). Worth revisiting once board/column/task mock
+  state lands and unique-random-values-per-test stops being sufficient for isolation — not urgent
+  today.
+- **Tailwind arbitrary-variant lint rule** (Zed's suggestion to rewrite `[&_[role=switch]]:` as
+  `**:[[role=switch]]:` — confirmed `eslint-plugin-tailwindcss@4.2.0` has no rule for this). Only
+  2 occurrences in the codebase; not worth a custom lint rule for a purely cosmetic pattern.
+- **Full ignore-file unification** (`.gitignore`/`.prettierignore`/`eslint.config.mjs`'s
+  `globalIgnores` have partial overlap). `.prettierignore` deliberately covers tracked-but-not-
+  reformatted files (`generated-types.ts`, `docs/`) — a genuinely different scope than
+  `.gitignore`'s "don't track at all," so full unification is wrong. A narrower fix
+  (`eslint-config-flat-gitignore` to stop ESLint's `globalIgnores` re-declaring pure
+  build-artifact patterns already in `.gitignore`) would be legitimate but is low-value —
+  deprioritized out of this gap-closure round.
+
 </decisions>
 
 <canonical_refs>
