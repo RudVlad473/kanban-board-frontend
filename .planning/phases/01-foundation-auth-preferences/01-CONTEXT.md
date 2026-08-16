@@ -197,23 +197,23 @@ later.
   `tailwind-merge` (so consumer classes correctly override conflicting base classes rather than
   just concatenating) — the escape hatch for one-off layout adjustments without needing a new
   named variant for every case.
-- **D-26w** *(2026-08-11, post-context correction)*: A component's props type is named plainly
+- **D-26w:** *(2026-08-11, post-context correction)* A component's props type is named plainly
   `Props` (not `ButtonProps`/`IconButtonProps`) — no name collision is expected since each
   component file is a separate module and consumers import the type alongside the component
   from that same file, not by a bare `Props` name floating in a shared namespace. Applied
   retroactively to `button.tsx`/`icon-button.tsx` (wave 6) and to every primitive from wave 7
   onward.
-- **D-26x** *(2026-08-11, post-context correction)*: Tests follow Arrange/Act/Assert, marked
+- **D-26x:** *(2026-08-11, post-context correction)* Tests follow Arrange/Act/Assert, marked
   with explicit `// Arrange`, `// Act`, `// Assert` comments separating the three phases — even
   when a phase is a single line, the marker stays, so the three concerns are never visually
   blended together. Applied retroactively to every existing test file.
-- **D-26y** *(2026-08-11, post-context correction)*: For a family of near-identical test cases
+- **D-26y:** *(2026-08-11, post-context correction)* For a family of near-identical test cases
   driven by a data list (e.g. one story ID per assertion), prefer a parametrized
   `for (const x of xs) { test(...) }` loop over hand-repeating near-identical `test()` blocks —
   see `visual/primitives.visual.spec.ts`'s `storyIds` loop. A preference, not a mandate: don't
   force a loop where the cases aren't actually uniform, and group tests with `describe()` where
   natural rather than leaving them flat just because a loop generated them.
-- **D-26z** *(2026-08-11, post-context correction)*: A fourth Vitest project, `unit` (jsdom, via
+- **D-26z:** *(2026-08-11, post-context correction)* A fourth Vitest project, `unit` (jsdom, via
   React Testing Library + `@testing-library/user-event`), covers pure logic/hook tests that don't
   depend on real CSS layout or paint — distinct from D-26's `browser` project (real Chromium via
   `vitest-browser-react`), which stays the only place components with `getComputedStyle()` or
