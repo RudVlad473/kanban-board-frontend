@@ -1,5 +1,6 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
+import { LoaderCircle } from "lucide-react";
 import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/cn";
@@ -54,8 +55,35 @@ type Props = Omit<ComponentProps<typeof BaseButton>, "disabled" | "className"> &
     VariantProps<typeof buttonVariants> &
     ClassNameProp & {
         isDisabled?: boolean;
+        /**
+         * Transient "a request is in flight" state — distinct from `isDisabled`'s static
+         * availability statement. Composes with it (either makes the control non-activatable), but
+         * only `isLoading` sets `aria-busy` and renders the spinner glyph.
+         */
+        isLoading?: boolean;
     };
 
-export const Button = ({ variant, size, isDisabled = false, className, ...props }: Props) => {
-    return <BaseButton disabled={isDisabled} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+export const Button = ({
+    variant,
+    size,
+    isDisabled = false,
+    isLoading = false,
+    className,
+    children,
+    ...props
+}: Props) => {
+    return (
+        <BaseButton
+            disabled={isDisabled || isLoading}
+            aria-busy={isLoading}
+            className={cn(buttonVariants({ variant, size }), className)}
+            {...props}
+        >
+            {isLoading ? (
+                <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
+            ) : null}
+
+            {children}
+        </BaseButton>
+    );
 };

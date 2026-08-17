@@ -78,6 +78,7 @@ export const SignInForm = ({
             <TextField
                 label="Email"
                 type="email"
+                isLoading={isPending}
                 hasError={forceFieldErrors || Boolean(errors.email)}
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.email?.message}
                 {...register("email")}
@@ -86,6 +87,7 @@ export const SignInForm = ({
             <TextField
                 label="Password"
                 type={isPasswordRevealed ? "text" : "password"}
+                isLoading={isPending}
                 hasError={forceFieldErrors || Boolean(errors.password)}
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.password?.message}
                 trailing={
@@ -120,7 +122,7 @@ export const SignInForm = ({
                 </p>
             ) : null}
 
-            <Button type="submit" variant="primary" isDisabled={isPending} aria-busy={isPending}>
+            <Button type="submit" variant="primary" isDisabled={isPending} isLoading={isPending}>
                 Sign In
             </Button>
 
