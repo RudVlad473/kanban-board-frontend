@@ -75,6 +75,7 @@ export const SignUpForm = ({
             <TextField
                 label="Email"
                 type="email"
+                isLoading={isPending}
                 hasError={forceFieldErrors || Boolean(errors.email)}
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.email?.message}
                 {...register("email")}
@@ -83,6 +84,7 @@ export const SignUpForm = ({
             <TextField
                 label="Name"
                 type="text"
+                isLoading={isPending}
                 hasError={forceFieldErrors || Boolean(errors.displayName)}
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.displayName?.message}
                 {...register("displayName")}
@@ -91,6 +93,7 @@ export const SignUpForm = ({
             <TextField
                 label="Password"
                 type={isPasswordRevealed ? "text" : "password"}
+                isLoading={isPending}
                 hasError={forceFieldErrors || Boolean(errors.password)}
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.password?.message}
                 trailing={
@@ -108,6 +111,7 @@ export const SignUpForm = ({
                         className="hover:bg-transparent"
                         label={isPasswordRevealed ? "Hide password" : "Show password"}
                         icon={isPasswordRevealed ? <EyeOff /> : <Eye />}
+                        isLoading={isPending}
                         onClick={() => {
                             setIsPasswordRevealed((revealed) => !revealed);
                         }}
@@ -125,7 +129,7 @@ export const SignUpForm = ({
                 </p>
             ) : null}
 
-            <Button type="submit" variant="primary" isDisabled={isPending} aria-busy={isPending}>
+            <Button type="submit" variant="primary" isDisabled={isPending} isLoading={isPending}>
                 Create Account
             </Button>
 

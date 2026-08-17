@@ -55,6 +55,11 @@ export const WithServerError: Story = {
     },
 };
 
+/*
+ * `forceSubmitting` now stages the whole form's busy state through the single `isPending` value
+ * every control reads from (plan 01-16) — both fields, the password toggle and the submit button
+ * all render their loading state together, not the button alone.
+ */
 export const Submitting: Story = {
     args: {
         forceSubmitting: true,
