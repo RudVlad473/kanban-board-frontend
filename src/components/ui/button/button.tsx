@@ -80,6 +80,17 @@ export const Button = ({
             {...props}
         >
             {isLoading ? (
+                /*
+                 * GC-13: a static-looking spinner in a live browser is expected, correct behavior
+                 * when that browser or OS has "reduce motion" enabled — `motion-reduce:` is
+                 * deliberately honoring an accessibility preference, not failing to animate.
+                 * Confirmed live by button.test.tsx's environment-aware regression test: with no
+                 * reduced-motion preference requested, the spinner's computed animation genuinely
+                 * runs (animationName: "spin", animationPlayState: "running"); the source-level
+                 * audit found no global animation-disabling override anywhere in this codebase. A
+                 * future "the spinner looks static" report is resolved by checking the reporter's
+                 * own reduced-motion setting first, not by re-investigating the CSS pipeline.
+                 */
                 <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
             ) : null}
 
