@@ -70,8 +70,8 @@ export default defineConfig({
                 resolve: { alias },
                 test: {
                     name: "browser",
-                    include: ["src/**/*.test.tsx"],
-                    exclude: ["src/**/*.unit.test.tsx"],
+                    include: ["src/**/*.test.tsx", "app/**/*.test.tsx"],
+                    exclude: ["src/**/*.unit.test.tsx", "app/**/*.unit.test.tsx"],
                     setupFiles: ["./vitest.setup.ts"],
                     browser: {
                         enabled: true,
