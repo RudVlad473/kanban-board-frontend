@@ -71,25 +71,60 @@ afterAll(() => {
 describe("POST /api/auth/signup", () => {
     it("creates the account upstream and returns success with a session cookie set", async () => {
         const email = uniqueEmail();
-        const response = await signUp(jsonRequest({ displayName: "New User", email, password: "correct-password" }));
+        const response = await signUp(jsonRequest({ displayName: "New User", email, password: "CorrectPass1!" }));
 
         expect(response.status).toBe(200);
         expect(cookieStore.get("session")).toBeDefined();
+        // The supplied name survives unchanged — the fallback never overwrites a real value.
         await expect(verifySession()).resolves.toMatchObject({ email, displayName: "New User" });
     });
 
+    it("derives the session's display name from the email's local part when no name is supplied", async () => {
+        const email = uniqueEmail();
+        const response = await signUp(jsonRequest({ email, password: "CorrectPass1!" }));
+
+        expect(response.status).toBe(200);
+        const [expectedDisplayName] = email.split("@");
+        // Not merely a non-empty string — the exact local part of the email that was sent.
+        await expect(verifySession()).resolves.toMatchObject({ email, displayName: expectedDisplayName });
+    });
+
     it("returns 400 with a per-field message and sets no cookie for a missing required field", async () => {
-        const response = await signUp(jsonRequest({ displayName: "", email: uniqueEmail(), password: "irrelevant" }));
+        const response = await signUp(jsonRequest({ email: "", password: "CorrectPass1!" }));
         const body = (await response.json()) as { errors: Record<string, string> };
 
         expect(response.status).toBe(400);
-        expect(body.errors.displayName).toBe("Can't be empty");
+        expect(body.errors.email).toBe("Can't be empty");
         expect(cookieStore.get("session")).toBeUndefined();
+    });
+
+    it("returns 400 for a password missing the required character classes, and never reaches the upstream endpoint", async () => {
+        let signupMatchCount = 0;
+        const countSignupMatch = ({ request }: { request: Request }) => {
+            if (request.url.includes("/signup")) {
+                signupMatchCount += 1;
+            }
+        };
+        server.events.on("request:match", countSignupMatch);
+
+        try {
+            const response = await signUp(jsonRequest({ email: uniqueEmail(), password: "noComplexity" }));
+            const body = (await response.json()) as { errors: Record<string, string> };
+
+            expect(response.status).toBe(400);
+            expect(body.errors.password).toBe(
+                "Password must include an uppercase letter, a lowercase letter, a number, and a special character.",
+            );
+            expect(cookieStore.get("session")).toBeUndefined();
+            expect(signupMatchCount).toBe(0);
+        } finally {
+            server.events.removeListener("request:match", countSignupMatch);
+        }
     });
 
     it("returns a non-2xx response with the generic failure copy for an already-registered email, and sets no cookie", async () => {
         const response = await signUp(
-            jsonRequest({ displayName: "Duplicate Demo", email: DEMO_USER_EMAIL, password: "whatever" }),
+            jsonRequest({ displayName: "Duplicate Demo", email: DEMO_USER_EMAIL, password: "Whatever123!" }),
         );
         const body = (await response.json()) as { message: string };
 

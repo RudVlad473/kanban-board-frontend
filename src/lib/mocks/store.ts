@@ -3,6 +3,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { resolveDisplayName } from "@/lib/display-name";
+
 /**
  * Contract-derived theme enum (docs/api/kanban-board-openapi.json's `UserResponseDTO.theme`),
  * declared per this project's enum-like-constant convention (ADR tech/0012) since it's a
@@ -87,11 +89,15 @@ export const findUserByEmail = (email: string): UserRecord | undefined =>
 
 export const findUserById = (id: string): UserRecord | undefined => users.get(id);
 
-export const createUser = (input: { displayName: string; email: string; password: string }): UserRecord => {
+export const createUser = (input: { displayName?: string; email: string; password: string }): UserRecord => {
+    /*
+     * The real backend permits an absent name (GC-02) — the mock mirrors that tolerance, storing
+     * the same resolved fallback the BFF's session payload would carry rather than an empty string.
+     */
     const user: UserRecord = {
         id: randomUUID(),
         email: input.email,
-        displayName: input.displayName,
+        displayName: resolveDisplayName(input),
         password: input.password,
         theme: THEME.LIGHT,
     };

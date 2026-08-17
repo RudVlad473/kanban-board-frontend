@@ -74,10 +74,10 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    displayName: string;
+                    displayName?: string;
                     /** Format: email */
                     email: string;
-                    password: string;
+                    password: string & (unknown & unknown & unknown & unknown);
                 };
             };
         };

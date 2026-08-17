@@ -1,6 +1,7 @@
 import "server-only";
 
 import { externalApi } from "@/lib/api/server-client";
+import { resolveDisplayName } from "@/lib/display-name";
 import { session } from "@/lib/session";
 import { signUpSchema, zodErrorToFieldErrors } from "@/lib/validation/auth-schemas";
 
@@ -45,10 +46,16 @@ export const POST = async (request: Request): Promise<Response> => {
         return Response.json({ message: SIGN_UP_FAILURE_MESSAGE }, { status: 409 });
     }
 
+    /*
+     * The fallback is resolved only here, assembling the session payload — the request forwarded
+     * upstream a few lines above carries `parsed.data` exactly as parsed, with no name substituted,
+     * since the backend permits an absent name and storing one the user never chose would be wrong
+     * (GC-02).
+     */
     await session.create({
         id: data,
         email: parsed.data.email,
-        displayName: parsed.data.displayName,
+        displayName: resolveDisplayName(parsed.data),
         theme: DEFAULT_NEW_ACCOUNT_THEME,
     });
 

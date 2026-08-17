@@ -39,7 +39,7 @@ const toUserResponseBody = (user: { id: string; email: string; displayName: stri
 export const handlers = [
     // POST /signup — Task 1 decision: returns the bare user id string.
     http.post(`${baseUrl}/signup`, async ({ request }) => {
-        const body = (await request.json()) as { displayName: string; email: string; password: string };
+        const body = (await request.json()) as { displayName?: string; email: string; password: string };
 
         if (findUserByEmail(body.email)) {
             return HttpResponse.json({ message: "An account with this email already exists." }, { status: 409 });

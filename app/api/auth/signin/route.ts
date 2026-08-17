@@ -1,6 +1,7 @@
 import "server-only";
 
 import { externalApi } from "@/lib/api/server-client";
+import { resolveDisplayName } from "@/lib/display-name";
 import { isSessionPayload, session } from "@/lib/session";
 import { signInSchema, zodErrorToFieldErrors } from "@/lib/validation/auth-schemas";
 
@@ -40,7 +41,12 @@ export const POST = async (request: Request): Promise<Response> => {
         return Response.json({ message: INVALID_CREDENTIALS_MESSAGE }, { status: 401 });
     }
 
-    await session.create(identity);
+    /*
+     * `isSessionPayload` only checks `displayName` is a string, not that it's non-empty — an
+     * account created without a name would otherwise put a blank into the dashboard chrome on
+     * every subsequent sign-in (GC-02).
+     */
+    await session.create({ ...identity, displayName: resolveDisplayName(identity) });
 
     return Response.json({ ok: true }, { status: 200 });
 };
