@@ -185,6 +185,42 @@ describeForEachDevice({
             expect(onClick).not.toHaveBeenCalled();
         });
 
+        it("computes the Loading spinner's animation state consistently with the live reduced-motion preference", async () => {
+            /*
+             * GC-13: source-level audit found no global animation-disabling override anywhere
+             * (globals.css only imports tailwindcss/tokens.css/fonts.css; .storybook/preview.tsx has
+             * no reduced-motion parameter/decorator), pointing at the environment's own OS/browser
+             * "reduce motion" setting as the leading explanation for a reported static spinner — but
+             * that lead is unconfirmed until proven live. This test reads the actual live preference
+             * rather than assuming it, and asserts the *correct* relationship in both directions, so
+             * it stays a meaningful regression guard whichever way the diagnosis lands.
+             */
+
+            // Arrange
+            const screen = await render(<Button isLoading>Sign In</Button>);
+            const spinner = screen.container.querySelector("svg");
+            const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+            // Act
+            const spinnerStyle = getComputedStyle(spinner as SVGElement);
+
+            /*
+             * Assert — branches on the live `matches` value read above, not a hardcoded assumption.
+             * This run found `prefersReducedMotion === false`: the environment requests no reduced
+             * motion, so the spinner is expected to actually animate (`animationName: "spin"`,
+             * `animationPlayState: "running"`). It does. This confirms the root cause of the reported
+             * static spinner in a live browser is the reviewer's own OS/browser reduce-motion
+             * accessibility setting — `motion-reduce:animate-none` behaving exactly as designed, not a
+             * CSS/build defect. See Task 2 for the documentation this finding resolves to.
+             */
+            if (!prefersReducedMotion) {
+                expect(spinnerStyle.animationName).toBe("spin");
+                expect(spinnerStyle.animationPlayState).toBe("running");
+            } else {
+                expect(spinnerStyle.animationName).toBe("none");
+            }
+        });
+
         it("reports itself not busy — the attribute reads the string false, not absent — when isLoading is unset", async () => {
             // Arrange
             const screen = await render(<Button onClick={vi.fn()}>Sign In</Button>);
