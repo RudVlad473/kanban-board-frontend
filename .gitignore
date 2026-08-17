@@ -30,7 +30,9 @@ playwright-report/
 .vitest-attachments/
 # Vitest Browser Mode's own failure screenshots, co-located next to the failing test file — not
 # the committed Playwright visual-regression baselines under visual/__screenshots__ (Task 3).
+# Covers both src/ (component tests) and app/ (route-boundary tests, plan 01-17) test locations.
 src/**/__screenshots__/
+app/**/__screenshots__/
 storybook-static/
 
 # GSD / harness runtime state (not meant to be committed)
