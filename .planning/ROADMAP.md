@@ -68,7 +68,7 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 16/28 plans executed
+**Plans**: 21/28 plans executed
 
 Plans:
 
@@ -103,12 +103,12 @@ folded-in pending todo — 01-CONTEXT.md items GC-09..GC-16). These carry wave 1
 01-20/01-21, no file overlap) except 01-28, which carries wave 14 (parallel with 01-14, since it
 depends on 01-20 having landed):
 
-- [ ] 01-22-PLAN.md — Button loading-spinner animation investigated and resolved (GC-13)
-- [ ] 01-23-PLAN.md — Checkbox isLoading/disabled visual treatment (GC-14)
-- [ ] 01-24-PLAN.md — TextField isLoading visual treatment investigated and fixed (GC-15)
-- [ ] 01-25-PLAN.md — Modal loading-composition convention established (GC-16)
+- [x] 01-22-PLAN.md — Button loading-spinner animation investigated and resolved (GC-13)
+- [x] 01-23-PLAN.md — Checkbox isLoading/disabled visual treatment (GC-14)
+- [x] 01-24-PLAN.md — TextField isLoading visual treatment investigated and fixed (GC-15)
+- [x] 01-25-PLAN.md — Modal loading-composition convention established (GC-16)
 - [ ] 01-26-PLAN.md — mock store persistence replaced with in-memory seed/reset (GC-09)
-- [ ] 01-27-PLAN.md — dal.ts comment and SETUP.md (GC-10, GC-11)
+- [x] 01-27-PLAN.md — dal.ts comment and SETUP.md (GC-10, GC-11)
 - [ ] 01-28-PLAN.md — RTL-for-hooks convention and CONVENTIONS.md "where code lives" section (GC-12)
 
 **UI hint**: yes
@@ -189,7 +189,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 16/21 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 21/28 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
