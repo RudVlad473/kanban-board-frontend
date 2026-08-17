@@ -133,5 +133,41 @@ describeForEachDevice({
             expect(onCheckedChange).not.toHaveBeenCalled();
             await expect.element(checkbox).toHaveAttribute("aria-checked", "false");
         });
+
+        /*
+         * GC-14 (plan 01-23) investigation: confirms `Field.Root`'s `disabled` prop reaches
+         * `Checkbox.Root` as a real DOM `disabled` property, not merely an ARIA attribute — the
+         * single propagation point `isLoading` (Task 2) will compose into via
+         * `disabled={isDisabled || isLoading}` on `Field.Root`, rather than adding a second,
+         * parallel `disabled` prop directly on `Checkbox.Root`. Task 2 will also add an `isBusy`
+         * cva axis mirroring `text-field.tsx`'s, with no spinner glyph — the tick box has no room
+         * for one, and the user's own words ("grayed out") describe an opacity treatment, not a
+         * spinner.
+         *
+         * Finding this investigation surfaced: Base UI's `Checkbox.Root` (v1.7.0) renders TWO
+         * elements — the visible `role="checkbox"` <span> `getByRole` returns (which only ever
+         * gets `data-disabled`/`aria-disabled`, never the DOM `disabled` property, since a <span>
+         * has no such property) and a visually-hidden, `aria-hidden` native <input type="checkbox">
+         * sibling that DOES receive the real `disabled` DOM property. `Field.Root`'s `disabled`
+         * prop genuinely reaches `Checkbox.Root` (confirmed on the hidden input below) — but the
+         * checkboxVariants `disabled:opacity-50 disabled:cursor-not-allowed` base classes on the
+         * visible span target the CSS `:disabled` pseudo-class, which can never match a <span>.
+         * That's a pre-existing bug this plan's own premise depends on (isLoading must produce
+         * "the same grayed-out opacity treatment isDisabled already gets" — it didn't, visually,
+         * until fixed here to `data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed`,
+         * matching the file's existing `data-[checked]:*` presence-based convention).
+         */
+        it("propagates Field.Root's disabled prop to Checkbox.Root's hidden native input as a real DOM disabled property", async () => {
+            // Arrange
+            const screen = await render(<Checkbox label="Remember me" isDisabled />);
+            const hiddenInput = screen.container.querySelector<HTMLInputElement>('input[type="checkbox"]');
+
+            /*
+             * Assert — the real DOM property, not only `aria-disabled`/`data-disabled` on the
+             * visible role="checkbox" span.
+             */
+            expect(hiddenInput).not.toBeNull();
+            expect(hiddenInput?.disabled).toBe(true);
+        });
     },
 });
