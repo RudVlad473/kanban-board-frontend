@@ -1,0 +1,85 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-08-17T21:04:54.943Z",
+  "phase": "01",
+  "phase_name": "foundation-auth-preferences",
+  "phase_dir": ".planning/phases/01-foundation-auth-preferences",
+  "plan": null,
+  "task": 0,
+  "total_tasks": 0,
+  "status": "paused",
+  "completed_tasks": [
+    {
+      "id": "01-19",
+      "name": "Validation schema alignment to real backend rules (GC-02) — resumed from a prior session's interrupted-worktree checkpoint, finished, merged to master, pushed",
+      "status": "done",
+      "commit": "54f1099"
+    }
+  ],
+  "remaining_tasks": [
+    {
+      "id": "01-20",
+      "name": "Route declaration consolidated, call sites fixed, auth hooks unit-tested (GC-04, GC-07)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-21",
+      "name": "Shared test utilities and story reuse in tests (GC-05, GC-08)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-26",
+      "name": "Mock store persistence replaced with in-memory seed/reset (GC-09)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-14",
+      "name": "Theme preference (THEME-01)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-28",
+      "name": "RTL-for-hooks convention + CONVENTIONS.md 'where code lives' section (GC-12)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-29",
+      "name": "GC-17: TextField isLoading overrides D-16 to use disabled, not readOnly — planned and plan-checker-verified, not executed",
+      "status": "not_started"
+    },
+    {
+      "id": "01-15",
+      "name": "Vercel deployment — has a blocking human-verify checkpoint, needs real .env.local values",
+      "status": "not_started"
+    }
+  ],
+  "blockers": [
+    {
+      "description": ".env.local has empty EXTERNAL_API_BASE_URL/SESSION_SECRET in the main tree — blocks pnpm build locally and will block plan 01-15 (Vercel deployment) specifically. Pre-existing, documented in SETUP.md.",
+      "type": "human_action",
+      "workaround": "Not blocking wave 01-20/01-21/01-26/01-14/01-28/01-29 — only 01-15 needs real values."
+    },
+    {
+      "description": "Switch.tsx likely has the same dormant disabled:opacity-50 CSS-selector bug that Checkbox had (WINDOWS.md id 8) — confirmed unverified/unfixed, still not routed through any gap-closure plan.",
+      "type": "technical",
+      "workaround": "Should probably become a GC item in a future gap-closure round; not blocking anything currently queued."
+    }
+  ],
+  "async_jobs": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {
+      "decision": "Declined to add any ESLint plugin enforcing \"use client\" directive presence. Checked 4 npm candidates via this project's package-legitimacy tool: 3 were SUS (low weekly downloads, or high downloads with no public repo), the 1 OK-verdict package (eslint-plugin-react-server-components) is a single-maintainer, 41-star, single-rule plugin. Decided the existing Next.js compiler build-time error (which already hard-fails with a specific message when a Server Component uses a client-only API) is sufficient; a lint rule would only add editor-time speed, not close a real silent-failure gap.",
+      "rationale": "Consistent with this project's established bar for adding dependencies (same caution applied to the 01-18 gitleaks-wrapper rejection) — no candidate cleared that bar for the marginal benefit offered.",
+      "phase": "01"
+    },
+    {
+      "decision": "Declined to add any \"use server\" directive lint enforcement.",
+      "rationale": "No plugin exists for this at all (searched), and moot regardless — this project has zero Server Actions anywhere (ADR tech/0002 chose Route Handlers + TanStack Query over Server Actions), so there is nothing for such a rule to ever apply to today.",
+      "phase": "01"
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Start wave 01-20/01-21/01-26 (parallel — all depend on 01-19, which is now merged and unblocks them). Run /gsd-execute-phase 01 to pick up the next incomplete wave.",
+  "context_notes": "This session resumed the prior session's interrupted plan 01-19 from its HANDOFF.json/.continue-here.md checkpoint (see git commit 54f1099 for the full close-out), then spent the remainder of the session on an extended architecture Q&A with the user (BFF proxy pattern, Server vs. Client Components, Route Handlers vs. Server Actions, how to test Server Actions) that surfaced real confusion and produced a persistent teaching workspace at C:\\Users\\andre\\learning\\nextjs\\ (OUTSIDE this repo, not tracked by git here — separate /teach workspace with its own MISSION.md/lessons/glossary). One concrete follow-up from that conversation (ESLint enforcement of \"use client\"/\"use server\") was investigated and explicitly declined, not deferred — see decisions above. The repo is at a clean plan boundary: 22/29 plans done, nothing mid-execution, no worktrees, no uncommitted files, master pushed and up to date with origin."
+}
