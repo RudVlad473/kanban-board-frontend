@@ -68,7 +68,7 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 21/29 plans executed
+**Plans**: 22/29 plans executed
 
 Plans:
 
@@ -94,7 +94,7 @@ Gap closure (added 2026-08-16 from the post-wave-13 UI review and architecture d
 - [x] 01-16-PLAN.md — loading states across the input, button and dropdown primitives (GC-01)
 - [x] 01-17-PLAN.md — route-level error boundaries for the protected group and the root (GC-03)
 - [x] 01-18-PLAN.md — gitleaks secret scanning in the pre-commit chain and CI (GC-06)
-- [ ] 01-19-PLAN.md — validation schemas aligned to the real backend rules (GC-02)
+- [x] 01-19-PLAN.md — validation schemas aligned to the real backend rules (GC-02)
 - [ ] 01-20-PLAN.md — route declaration consolidated, call sites fixed, auth hooks unit-tested (GC-04, GC-07)
 - [ ] 01-21-PLAN.md — shared test utilities and story reuse in tests (GC-05, GC-08)
 
@@ -196,7 +196,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 21/28 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 22/28 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
