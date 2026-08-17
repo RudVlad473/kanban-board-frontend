@@ -118,6 +118,14 @@ None - no external service configuration required.
 ## Next Phase Readiness
 GC-15 is closed. TextField's loading state now reads as a real, distinct "busy" state in both light and dark mode, matching the visual-treatment bar every other non-idle TextField state (error, disabled) already met. No blockers for subsequent gap-closure plans in this wave.
 
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/01-foundation-auth-preferences/01-24-SUMMARY.md`
+- FOUND: commit `abfa503` (Task 1 investigation)
+- FOUND: commit `b0115f4` (Task 2 RED)
+- FOUND: commit `6d87d0f` (Task 2 GREEN)
+- FOUND: commit `6afc89e` (plan metadata)
+
 ---
 *Phase: 01-foundation-auth-preferences*
 *Completed: 2026-08-17*
