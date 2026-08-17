@@ -435,6 +435,15 @@ gap-closure work — no prior decision is superseded except where noted.
   distinct, recognizable state rather than "identical to idle except for an invisible cursor
   change." This is a fix to already-merged 01-16 code, not a redesign — the readOnly-not-disabled
   mechanism itself stays exactly as D-16 decided.
+  **Superseded note (2026-08-17, GC-17):** the readOnly-not-disabled mechanism this paragraph
+  describes is overridden by GC-17 below — TextField's `isLoading` now composes into the shared
+  `disabled` prop like every other primitive. As a direct consequence, this entry's `opacity-70`/
+  `bg-bg-app` visual fix became unreachable the moment `isLoading` implies `disabled` (the native
+  `:disabled` pseudo-class always outranks a plain `opacity-70` class on CSS specificity, regardless
+  of source order) and was simplified back to `cursor-progress` only. Also note: "D-16" as cited
+  above and below was itself a mislabeling — the real D-16 in this document's original decisions
+  list (Primitives library section) is about Storybook stories being part of a primitive's
+  definition-of-done, unrelated to readOnly; that entry is left untouched by this correction.
 - **GC-16 (Modal loading pattern):** Modal was not in GC-01/01-16's scope and drives no async
   mutation directly (D-18: Modal is content-driven, no size axis). Establish the convention rather
   than adding a new prop to Modal itself: Modal.Root already supports controlled `isOpen`/
@@ -448,6 +457,25 @@ gap-closure work — no prior decision is superseded except where noted.
   plus a real Storybook story and a real behavioral test proving the pattern actually blocks both
   dismissal paths while loading and restores them once loading ends — a documented, thin
   implementation per this item's own explicitly lighter-weight scope, not a new feature.
+- **GC-17 (override D-16 — TextField's isLoading now sets disabled, not readOnly):** A live review
+  of every loading-state primitive (Button, IconButton, Checkbox as of GC-14, Dropdown) found
+  TextField as the sole remaining outlier: every other primitive already composes
+  `disabled={isDisabled || isLoading}`, while TextField instead set `readOnly={isLoading}` on
+  `Field.Control` (per 01-16, described in the GC-15 entry above, which mislabeled this mechanism as
+  "D-16" — the real D-16 is about Storybook stories, unrelated; see the superseded note appended to
+  that entry). The user's explicit decision, made during a live review of all loading-state
+  primitives: loading should imply disabled everywhere, including TextField — overriding the
+  readOnly-stays-focusable rationale. `Field.Root`'s `disabled` prop becomes
+  `isDisabled || isLoading` (matching Checkbox's/Button's exact composition), and
+  `readOnly={isLoading}` is removed from `Field.Control` entirely. `aria-busy` stays independently
+  wired to `isLoading`, unchanged. Direct consequence: GC-15's `opacity-70 bg-bg-app` isBusy visual
+  fix becomes unreachable the moment `isLoading` is true (native `:disabled` styling always wins on
+  CSS specificity over a plain `isBusy`-driven class), so the `isBusy` cva branch is simplified back
+  to `cursor-progress` only — a loading field now visually matches a disabled field (same reduced
+  opacity), differentiated solely by cursor, exactly mirroring Checkbox's (GC-14) precedent. Both
+  auth forms' pending-state tests, which asserted the old stays-focusable-while-frozen behaviour,
+  are updated to assert the new refuses-focus behaviour instead. This is a deliberate, explicit
+  override of a previously locked decision, not a bug — recorded as such, not silently changed.
 
 </decisions>
 
