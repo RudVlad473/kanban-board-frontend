@@ -167,6 +167,32 @@ describeForEachDevice({
                 .toHaveAttribute("aria-selected", "false");
         });
 
+        it("cannot be opened by click or by keyboard, and shows a busy trigger with a spinner in place of the chevron, when isLoading", async () => {
+            /*
+             * Arrange — a real open attempt (click, then a keyboard activation) is required: a
+             * trigger that merely carries the disabled attribute could still be opened by some
+             * other path, which this assertion rules out directly.
+             */
+            const onValueChange = vi.fn();
+            const screen = await renderDropdown({ isLoading: true, onValueChange });
+            const trigger = screen.getByRole("combobox", { name: "Select a status" });
+
+            // Assert (rendered state)
+            await expect.element(trigger).toBeDisabled();
+            await expect.element(trigger).toHaveAttribute("aria-busy", "true");
+            expect(trigger.element().querySelector("svg.animate-spin")).not.toBeNull();
+
+            // Act + Assert (click)
+            await trigger.click({ force: true });
+            expect(screen.getByRole("listbox").elements().length).toBe(0);
+
+            // Act + Assert (keyboard)
+            trigger.element().focus();
+            await userEvent.keyboard("{Enter}");
+            expect(screen.getByRole("listbox").elements().length).toBe(0);
+            expect(onValueChange).not.toHaveBeenCalled();
+        });
+
         it("renders the trigger with the danger border when hasError, matching TextField's token", async () => {
             // Arrange
             const screen = await renderDropdown({ hasError: true });

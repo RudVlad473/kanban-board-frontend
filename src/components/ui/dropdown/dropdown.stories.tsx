@@ -75,6 +75,12 @@ export const Disabled: Story = {
     },
 };
 
+export const Loading: Story = {
+    args: {
+        isLoading: true,
+    },
+};
+
 /*
  * Mirrors TextField's LongValue story: a selected label long enough to overflow the trigger's
  * own width shows the trailing-edge overflow indicator (the trigger is narrowed via a wrapping

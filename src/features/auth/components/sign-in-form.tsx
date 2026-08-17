@@ -105,6 +105,7 @@ export const SignInForm = ({
                         className="hover:bg-transparent"
                         label={isPasswordRevealed ? "Hide password" : "Show password"}
                         icon={isPasswordRevealed ? <EyeOff /> : <Eye />}
+                        isLoading={isPending}
                         onClick={() => {
                             setIsPasswordRevealed((revealed) => !revealed);
                         }}
