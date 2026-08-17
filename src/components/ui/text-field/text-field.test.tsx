@@ -136,6 +136,37 @@ describeForEachDevice({
             await expect.element(input).toBeVisible();
         });
 
+        it("GC-15 fix: a loading field is visually distinct from both idle and disabled, not merely 'not idle'", async () => {
+            /*
+             * Arrange — the pre-fix investigation (this test's prior form) proved idle and loading
+             * fields were computed-style-identical. The fix gives `isBusy` a real opacity/background
+             * treatment: `opacity-70` sits strictly between idle's `1` and disabled's `0.5` — a
+             * distinct third value, not a coincidental match to either neighbor — and `bg-bg-app`
+             * reads as visually recessed against the field's own idle `bg-bg-surface`.
+             */
+            const idle = await render(<TextField label="Idle field" />);
+            const idleInput = idle.getByRole("textbox", { name: "Idle field" });
+
+            const loading = await render(<TextField label="Loading field" isLoading />);
+            const loadingInput = loading.getByRole("textbox", { name: "Loading field" });
+
+            const disabled = await render(<TextField label="Disabled field" isDisabled />);
+            const disabledInput = disabled.getByRole("textbox", { name: "Disabled field" });
+
+            // Act
+            const idleStyle = getComputedStyle(idleInput.element());
+            const loadingStyle = getComputedStyle(loadingInput.element());
+            const disabledStyle = getComputedStyle(disabledInput.element());
+
+            // Assert — all three opacity values are pairwise distinct, loading strictly in between.
+            expect(idleStyle.opacity).toBe("1");
+            expect(loadingStyle.opacity).toBe("0.7");
+            expect(disabledStyle.opacity).toBe("0.5");
+
+            // Assert — the loading field's background differs from the idle field's.
+            expect(loadingStyle.backgroundColor).not.toBe(idleStyle.backgroundColor);
+        });
+
         it("renders a masked password input, and a trailing node inside the field rather than beside it", async () => {
             // Arrange
             const screen = await render(

@@ -61,10 +61,15 @@ const textFieldVariants = cva(
             /*
              * Driven internally by `isLoading` (below), not exposed as a standalone consumer-facing
              * variant — see the plan's Decisions block for why a loading field goes `readOnly`
-             * rather than `disabled`.
+             * rather than `disabled`. `opacity-70` sits strictly between idle's `1` and disabled's
+             * `0.5` — a distinct third value, not a coincidental match to either neighbor (GC-15).
+             * `bg-bg-app` (the app's own dominant "receded" background token, already used
+             * elsewhere for the same purpose) reads as recessed against the field's own idle
+             * `bg-bg-surface`, without reusing the danger-adjacent or disabled-specific tokens this
+             * primitive uses for its other two non-idle states.
              */
             isBusy: {
-                true: "cursor-progress",
+                true: "cursor-progress bg-bg-app opacity-70",
                 false: "",
             },
         },
