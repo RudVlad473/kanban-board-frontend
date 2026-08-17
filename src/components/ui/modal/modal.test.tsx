@@ -1,4 +1,5 @@
 import type { ComponentProps } from "react";
+import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -7,6 +8,7 @@ import { DEVICE_TYPE } from "@/lib/viewport-breakpoints";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { Modal } from "./modal";
+import { Button } from "../button/button";
 
 type RootProps = ComponentProps<typeof Modal.Root>;
 
@@ -223,6 +225,87 @@ describeForEachDevice({
             // Assert
             expect(onOpenChange).not.toHaveBeenCalled();
             await expect.element(screen.getByRole("dialog")).toBeVisible();
+        });
+
+        it("blocks both backdrop-click and Escape dismissal while a Modal.Footer action is loading, and restores both once loading ends — the isLoading-guards-dismissal convention documented on Modal.Root", async () => {
+            /*
+             * Arrange — a controlled wrapper composing Modal.Root's existing public surface exactly
+             * as the doc comment on `Root` prescribes: `isDismissableOnBackdropClick={!isLoading}`
+             * plus an `onOpenChange` guard that ignores a close request while `isLoading` is true. No
+             * new Modal prop exists or is needed. "Reopen" is a plain wrapper-level control (not part
+             * of the convention) letting this single test exercise both dismissal paths after loading
+             * ends without a fresh mount.
+             */
+            const ControlledModal = () => {
+                const [isOpen, setIsOpen] = useState(true);
+                const [isLoading, setIsLoading] = useState(true);
+
+                return (
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsOpen(true);
+                            }}
+                        >
+                            Reopen
+                        </button>
+
+                        <Modal.Root
+                            isOpen={isOpen}
+                            onOpenChange={(open) => {
+                                if (isLoading) return;
+                                setIsOpen(open);
+                            }}
+                            isDismissableOnBackdropClick={!isLoading}
+                        >
+                            <Modal.Content>
+                                <Modal.Title>Delete board</Modal.Title>
+
+                                <Modal.Footer>
+                                    <Button isLoading={isLoading}>Confirm</Button>
+                                </Modal.Footer>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsLoading(false);
+                                    }}
+                                >
+                                    Finish loading
+                                </button>
+                            </Modal.Content>
+                        </Modal.Root>
+                    </div>
+                );
+            };
+            const screen = await render(<ControlledModal />);
+            await expect.element(screen.getByRole("dialog")).toBeVisible();
+
+            // Act & Assert — while loading, a backdrop click does not close the modal.
+            const backdropWhileLoading = page.elementLocator(getBackdropElement());
+            await backdropWhileLoading.click({ position: { x: 4, y: 4 } });
+            await expect.element(screen.getByRole("dialog")).toBeVisible();
+
+            // Act & Assert — while loading, Escape does not close the modal either.
+            await userEvent.keyboard("{Escape}");
+            await expect.element(screen.getByRole("dialog")).toBeVisible();
+
+            // Act — the loading action finishes.
+            await screen.getByRole("button", { name: "Finish loading" }).click();
+
+            // Assert — a backdrop click now closes it.
+            const backdropAfterLoading = page.elementLocator(getBackdropElement());
+            await backdropAfterLoading.click({ position: { x: 4, y: 4 } });
+            await expect.element(screen.getByRole("dialog")).not.toBeInTheDocument();
+
+            // Act — reopen the same modal to prove Escape is restored too, in the same render tree.
+            await screen.getByRole("button", { name: "Reopen" }).click();
+            await expect.element(screen.getByRole("dialog")).toBeVisible();
+
+            // Assert — Escape now closes it as well.
+            await userEvent.keyboard("{Escape}");
+            await expect.element(screen.getByRole("dialog")).not.toBeInTheDocument();
         });
     },
 });

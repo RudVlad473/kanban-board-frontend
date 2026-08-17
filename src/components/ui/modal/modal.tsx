@@ -35,6 +35,15 @@ type RootProps = PropsWithChildren<
     }
 >;
 
+/*
+ * Modal has no `isLoading` prop of its own — a loading state belongs to the async action inside
+ * it (e.g. a submit `Button` in `Modal.Footer`, already `isLoading`-capable per GC-01), not to
+ * Modal itself. A consumer driving such an action MUST render Modal in controlled mode
+ * (`isOpen`/`onOpenChange`) and (1) pass `isDismissableOnBackdropClick={!isLoading}`, and (2)
+ * guard `onOpenChange` to ignore a close request while `isLoading` is true — Base UI's Dialog
+ * calls `onOpenChange(false)` on Escape regardless of `isDismissableOnBackdropClick` (which only
+ * governs backdrop clicks), so the Escape path needs this same guard, not a separate prop.
+ */
 const Root = ({ isOpen, isDismissableOnBackdropClick = true, onOpenChange, children, ...props }: RootProps) => {
     return (
         <Dialog.Root
