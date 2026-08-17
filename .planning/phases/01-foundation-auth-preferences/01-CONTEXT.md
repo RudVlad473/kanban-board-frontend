@@ -338,6 +338,117 @@ Explicitly deferred (discussed, not part of this gap-closure — see rationale, 
   build-artifact patterns already in `.gitignore`) would be legitimate but is low-value —
   deprioritized out of this gap-closure round.
 
+### Gap Closure — 2026-08-17 (round 2: post-wave-11 live UI review + a folded-in pending todo)
+
+Session context: after wave 11 (01-16/17/18) merged to master (commit 5103cae), the user reviewed
+the actual rendered UI (Storybook and, for the animation item, a real browser) and found four
+further gaps automated checks missed, all in already-shipped or newly-in-scope primitives. A
+separate pending todo (`.planning/todos/pending/2026-08-16-second-gap-closure-round-mock-
+persistence-dal-comment-setup-doc-conventions.md`), explicitly deferred by the user during the
+2026-08-16 session to be planned after wave 11 executed, is folded in as GC-09 through GC-12,
+preserving the numbering that todo file had already assigned itself. All items are additive
+gap-closure work — no prior decision is superseded except where noted.
+
+- **GC-09 (mock store persistence):** `src/lib/mocks/store.ts` mirrors its in-memory `Map` to a
+  JSON file in the OS temp dir (`STORE_MIRROR_FILE_PATH`, via `node:fs`/`node:os`/`node:path`)
+  purely to survive `next dev`'s hot-reloads. This is an invented, off-pattern approach — no disk
+  persistence. Replace it with plain in-memory seed state (`withDemoAccountSeeded`, already
+  present) plus an explicit exported reset function (`resetMockStore`) that clears the map and
+  reseeds only the demo account — no file I/O, no `readFileSync`/`writeFileSync`, no
+  `STORE_MIRROR_FILE_PATH`. A sign-up made during `next dev` is now forgotten on the next hot
+  reload, same as it always would have been without a database — an accepted, explicit tradeoff,
+  not an oversight. `node:crypto`'s `randomUUID` stays (unrelated to disk persistence; a separate,
+  already-tracked browser-worker-compatibility concern per 01-21-PLAN.md's read_first, out of this
+  item's scope). Also add an explicit CONVENTIONS.md rule under "Mock server (docs/adr/tech/0004)":
+  mock/test state lives in memory only, reset via an explicit seed/reset function — never ad-hoc
+  disk or browser-storage persistence to survive hot-reloads or test runs; cross-reload survival,
+  if genuinely needed later, is a distinct, deliberately reviewed decision, not a default reach.
+- **GC-10 (dal.ts comment):** `src/lib/dal.ts` has good prose explaining its role but never spells
+  out what "DAL" stands for. Add a file-level comment: "DAL = Data Access Layer — Next.js App
+  Router's own documented auth-pattern term (ADR tech/0001); this file is the authoritative,
+  server-only session-verification checkpoint."
+- **GC-11 (SETUP.md):** No single place documents manual/human setup steps a new contributor or CI
+  needs. Create `SETUP.md` at repo root (intended to later become a `.sh` script per the user's
+  stated direction — that migration is explicitly out of this item's scope). At minimum, document
+  the already-known blocker: `.env.local`'s `EXTERNAL_API_BASE_URL`/`SESSION_SECRET` need real
+  values before `pnpm build`/`pnpm dev` work in the main tree (today this is only documented in
+  `.planning/HANDOFF.json` and scattered plan SUMMARYs, not anywhere a human would naturally look;
+  omitting either currently throws `SESSION_SECRET is not set` — see 01-16-SUMMARY.md,
+  01-17-SUMMARY.md).
+- **GC-12 (RTL-for-hooks convention + CONVENTIONS.md "where code lives" section):** Two related
+  documentation additions, both landing in CONVENTIONS.md (already the ADR-backed placement/pattern
+  source of truth — extending it avoids a second doc drifting out of sync; a dedicated
+  `PROJECT_ROUTER.md` file was considered and rejected on 2026-08-16, not re-litigated here):
+  1. A "where tests live" table documenting `renderHook`/React Testing Library against the jsdom
+     `unit` Vitest project (D-26z) as the standard approach for hook/logic tests, citing
+     `src/features/auth/hooks/use-sign-in.unit.test.tsx` (landed by 01-20, GC-07) as the citable
+     precedent — **this item is sequenced after 01-20 lands** (`depends_on: ["01-20"]`) specifically
+     so that citation points at a real file, not a promise.
+  2. A concise "where code lives" quick-reference table (domain hooks vs. generic hooks vs.
+     domain-agnostic types vs. shared test infra vs. UI primitives vs. layout vs. `lib/`) —
+     categorized wisely, not an exhaustive folder listing, sitting alongside the existing
+     Placement rule rather than replacing it.
+- **GC-13 (Button loading-spinner animation):** `button.tsx`'s `isLoading` path (landed by 01-16)
+  renders a `LoaderCircle` with `animate-spin motion-reduce:animate-none`. The user reports it
+  renders static (non-animating) in live browser viewing. A source-level audit found
+  `--animate-spin: spin 1s linear infinite` present in generated `tokens.css`-adjacent Tailwind
+  defaults and `@keyframes spin` shipping via Tailwind v4's default theme, and found **no** global
+  animation-disabling override anywhere in `src/styles/` or `.storybook/` (`globals.css` only
+  imports `tailwindcss`/`tokens.css`/`fonts.css` plus a `dark` custom-variant; `.storybook/
+  preview.tsx` has no reduced-motion parameter or decorator). This is the strongest lead toward the
+  root cause being environmental (the reviewer's own OS/browser "reduce motion" accessibility
+  setting, which Tailwind's `motion-reduce:` variant is *designed* to honor — correct behavior, not
+  a bug) rather than a build/CSS defect, but it is **not yet confirmed by a live/runtime check** and
+  must not be assumed. Investigation protocol (must run before any fix): a real-browser (Vitest
+  Browser Mode) assertion of the Loading story's spinner reads `window.matchMedia('(prefers-
+  reduced-motion: reduce)').matches` in the CURRENT test environment and asserts the spinner's
+  computed `animationName`/`animationPlayState` match what that preference implies (`spin`/
+  `running` when no preference is requested, `none` when reduced motion is requested) — this
+  becomes a permanent regression test either way. If the environment-neutral (no-preference)
+  assertion passes, the root cause is confirmed environmental (working as intended per the
+  `motion-reduce:` variant) and the resolution is documentation only, no code fix. If it fails, the
+  specific defect the diagnostic surfaces (a CSS specificity collision, a Tailwind content-detection
+  gap, or something else — named concretely, not guessed) gets fixed at its source.
+- **GC-14 (Checkbox loading/disabled visual treatment):** Checkbox was **not** in GC-01/01-16's
+  original scope (Button, TextField, IconButton, Dropdown only) and has no `isLoading` prop today.
+  The user wants it "grayed out a bit, similar to loading patterns." Decision: Checkbox gets a real
+  `isLoading` prop mirroring Button/IconButton's exact composition pattern — composes with
+  `isDisabled` (`isDisabled={isDisabled || isLoading}` passed to `Field.Root`, the same single
+  disabled-propagation point D-15 already established for this primitive), sets `aria-busy`, and
+  adds an `isBusy` cva axis contributing `cursor-progress` (mirroring TextField's exact naming and
+  mechanism). No spinner glyph — the 16/20/24px tick box (D-18) has no room for one and none of the
+  four GC-01 primitives use a glyph on a control this small; the existing `disabled:opacity-50
+  disabled:cursor-not-allowed` base classes (already present in `checkboxVariants`) supply the
+  "grayed out" look for free once `Checkbox.Root` receives the composed disabled state, with no new
+  visual-only variant needed.
+- **GC-15 (TextField loading visual treatment):** Per 01-16-SUMMARY.md, `TextField`'s `isLoading`
+  goes `readOnly` (not `disabled`, deliberately, so the field stays focusable — see D-16's
+  decisions) plus an `isBusy` cva axis contributing only `cursor-progress`. A source-level read
+  confirms the finding: `cursor-progress` alone produces no visible difference until a sighted user
+  moves a pointer over the field and studies the cursor glyph — no opacity, background, or border
+  change accompanies it, unlike every disabled-state treatment elsewhere in this primitive set. This
+  is very likely the actual, source-confirmable root cause (not merely a live-rendering illusion),
+  but the investigation task must still confirm it live (computed-style assertion) before the fix
+  lands, per this round's anti-shallow-execution rule. Fix: extend the `isBusy` cva branch with a
+  real visual change — reduced opacity plus a background tint distinguishing it from both the
+  active (`bg-bg-surface`) and the `disabled` (`opacity-50`) states, so "busy" reads as its own
+  distinct, recognizable state rather than "identical to idle except for an invisible cursor
+  change." This is a fix to already-merged 01-16 code, not a redesign — the readOnly-not-disabled
+  mechanism itself stays exactly as D-16 decided.
+- **GC-16 (Modal loading pattern):** Modal was not in GC-01/01-16's scope and drives no async
+  mutation directly (D-18: Modal is content-driven, no size axis). Establish the convention rather
+  than adding a new prop to Modal itself: Modal.Root already supports controlled `isOpen`/
+  `onOpenChange` and an `isDismissableOnBackdropClick` prop; a consumer driving an async action from
+  inside a Modal (e.g. a form's submit button in `Modal.Footer`) is expected to (1) pass
+  `isDismissableOnBackdropClick={!isLoading}` so a backdrop click cannot dismiss the modal mid-
+  request, and (2) guard their own `onOpenChange` handler to ignore a close request (which Base UI's
+  Dialog fires on Escape too, confirmed by the existing `modal.test.tsx` Escape assertion) while
+  `isLoading` is true. Both mechanisms already exist on Modal's public surface today — no new prop
+  is added. This item's deliverable is documenting the convention (a doc comment on `Modal.Root`)
+  plus a real Storybook story and a real behavioral test proving the pattern actually blocks both
+  dismissal paths while loading and restores them once loading ends — a documented, thin
+  implementation per this item's own explicitly lighter-weight scope, not a new feature.
+
 </decisions>
 
 <canonical_refs>
