@@ -4,6 +4,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import boundaries from "eslint-plugin-boundaries";
 import importX from "eslint-plugin-import-x";
+import noUnsanitized from "eslint-plugin-no-unsanitized";
 import preferArrowFunctions from "eslint-plugin-prefer-arrow-functions";
 import tailwindcss from "eslint-plugin-tailwindcss";
 import tseslint from "typescript-eslint";
@@ -354,6 +355,15 @@ const eslintConfig = defineConfig([
                 },
             ],
         },
+    },
+
+    /*
+     * 8e. Flag unsanitized DOM sinks (`innerHTML`/`outerHTML`/`insertAdjacentHTML`,
+     * `dangerouslySetInnerHTML`, `document.write`, etc.) as errors — the realistic XSS vector in a
+     * React app, with near-zero false positives since it only fires on the specific sink APIs.
+     */
+    {
+        ...noUnsanitized.configs.recommended,
     },
 
     // 9. Generated/vendored trees are never hand-edited or worth linting.
