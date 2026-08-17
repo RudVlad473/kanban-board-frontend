@@ -96,3 +96,34 @@ export const Closed: Story = {
         defaultOpen: false,
     },
 };
+
+/*
+ * Demonstrates the isLoading-guards-dismissal composition documented on Modal.Root (plan 01-25):
+ * a Modal.Footer Button driving an in-flight action renders isLoading, per GC-01's existing
+ * Button convention. Visual-only per D-25 — this story stages the loading Button's appearance; it
+ * does not itself demonstrate the dismissal-blocking behavior, which is proven behaviorally in
+ * modal.test.tsx.
+ */
+export const Submitting: Story = {
+    render: (args) => (
+        <Modal.Root {...args}>
+            <Modal.Trigger render={<Button>Open modal</Button>} />
+
+            <Modal.Content>
+                <Modal.Title>Delete board</Modal.Title>
+
+                <Modal.Description>This action cannot be undone.</Modal.Description>
+
+                <Modal.Footer>
+                    <Button variant="secondary" isDisabled>
+                        Cancel
+                    </Button>
+
+                    <Button variant="destructive" isLoading>
+                        Delete
+                    </Button>
+                </Modal.Footer>
+            </Modal.Content>
+        </Modal.Root>
+    ),
+};

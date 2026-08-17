@@ -244,15 +244,17 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 7b. Storybook stories are dev-only demonstration fixtures, never imported by production
-     * code (Storybook's own build entry point globs *.stories.tsx directly) — a story composing a
-     * sibling primitive for a realistic preview (e.g. Modal's footer stories composing Button) is
-     * not the same "ui" primitives silently coupling to each other at runtime that policy 7 exists
-     * to prevent. Scoped to *.stories.tsx only; modal.tsx itself (and every other primitive's own
-     * implementation file) still cannot import a sibling primitive.
+     * 7b. Storybook stories and behavioral tests are dev-only fixtures, never imported by
+     * production code (Storybook's own build entry point globs *.stories.tsx directly; *.test.tsx
+     * is only ever imported by the test runner) — a story or test composing a sibling primitive
+     * for a realistic fixture (e.g. Modal's footer stories/tests composing Button) is not the same
+     * "ui" primitives silently coupling to each other at runtime that policy 7 exists to prevent.
+     * Scoped to *.stories.tsx and *.test.tsx only; modal.tsx itself (and every other primitive's
+     * own implementation file) still cannot import a sibling primitive. Extended to *.test.tsx in
+     * plan 01-25 (Modal's isLoading-dismissal test composing Button, same rationale as stories).
      */
     {
-        files: ["src/components/ui/**/*.stories.tsx"],
+        files: ["src/components/ui/**/*.stories.tsx", "src/components/ui/**/*.test.tsx"],
         rules: {
             "boundaries/dependencies": "off",
         },
