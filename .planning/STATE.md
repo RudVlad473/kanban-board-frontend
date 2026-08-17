@@ -6,15 +6,14 @@ current_phase: 01
 current_phase_name: foundation-auth-preferences
 status: executing
 stopped_at: Wave 9 (01-09, Modal + design-system library sign-off) merged after a 10-round
-  checkpoint-review loop; visual baselines dispatched and committed
-last_updated: "2026-08-12T09:40:00.000Z"
-last_activity: 2026-08-12
-last_activity_desc: "merged wave 9 worktree after human sign-off, fixed two real TextField bugs found during review, dispatched visual-baselines CI and committed 284 baseline PNGs"
+last_updated: "2026-08-17T08:21:04.103Z"
+last_activity: 2026-08-17
+last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 15
-  completed_plans: 9
+  total_plans: 21
+  completed_plans: 13
 ---
 
 # Project State
@@ -31,8 +30,8 @@ against a backend that doesn't exist yet.
 ## Current Position
 
 Phase: 01 (foundation-auth-preferences) — EXECUTING
-Plan: 10 of 15 (waves 1-9 merged; wave 10 not yet started)
-Status: Wave 9 (Modal + design-system library sign-off) merged to master. The Task 2 human-verify
+Plan: 1 of 21
+Status: Executing Phase 01
   checkpoint took 10 rounds of fix-and-re-review: 7 visual/behavioural bugs fixed (Button,
   Checkbox, Modal, Dropdown scroll/corner issues), a full mobile-first retrofit across all 7
   primitives (ADR tech/0010), and 6 new standing conventions (ADRs tech/0010-0015). The final two
@@ -43,7 +42,7 @@ Status: Wave 9 (Modal + design-system library sign-off) merged to master. The Ta
   (which had moved 8 commits independently) and fast-forward merged per project convention.
   Dispatched the "Visual baselines" CI workflow post-merge (run 31583094912) and committed all 284
   baseline PNGs (full 7-primitive library × light/dark × mobile/desktop). WINDOWS.md id 6 closed.
-Last activity: 2026-08-12 — merged wave 9, wrote 01-09-SUMMARY.md, dispatched and committed visual
+Last activity: 2026-08-17 — Phase 01 execution started
   baselines, cleaned up the worktree (hit and worked around a Windows long-path removal issue)
 
 Progress: [██████░░░░] 60%
