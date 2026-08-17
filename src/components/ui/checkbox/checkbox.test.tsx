@@ -169,5 +169,70 @@ describeForEachDevice({
             expect(hiddenInput).not.toBeNull();
             expect(hiddenInput?.disabled).toBe(true);
         });
+
+        it("renders isLoading with the same grayed-out opacity as isDisabled, reports aria-busy, and does not toggle on click or keyboard Space", async () => {
+            // Arrange
+            const onCheckedChange = vi.fn();
+            const loadingScreen = await render(
+                <Checkbox label="Loading checkbox" isLoading onCheckedChange={onCheckedChange} />,
+            );
+            const disabledScreen = await render(<Checkbox label="Disabled checkbox" isDisabled />);
+            const loadingCheckbox = loadingScreen.getByRole("checkbox", { name: "Loading checkbox" });
+            const disabledCheckbox = disabledScreen.getByRole("checkbox", { name: "Disabled checkbox" });
+
+            /*
+             * Assert — comparing directly against isDisabled's own computed opacity (not a
+             * hardcoded "0.5" literal alone) proves the visual treatment is genuinely shared, not
+             * merely both non-1.
+             */
+            const loadingOpacity = getComputedStyle(loadingCheckbox.element()).opacity;
+            const disabledOpacity = getComputedStyle(disabledCheckbox.element()).opacity;
+            expect(loadingOpacity).toBe(disabledOpacity);
+            await expect.element(loadingCheckbox).toHaveAttribute("aria-busy", "true");
+
+            // Act — a real pointer click.
+            (loadingCheckbox.element() as HTMLElement).click();
+
+            // Assert
+            expect(onCheckedChange).not.toHaveBeenCalled();
+
+            // Act — a real keyboard Space after focusing.
+            loadingCheckbox.element().focus();
+            await userEvent.keyboard(" ");
+
+            // Assert
+            expect(onCheckedChange).not.toHaveBeenCalled();
+        });
+
+        it("reports aria-busy=false (not absent) when not loading", async () => {
+            // Arrange
+            const screen = await render(<Checkbox label="Remember me" />);
+            const checkbox = screen.getByRole("checkbox", { name: "Remember me" });
+
+            // Assert
+            await expect.element(checkbox).toHaveAttribute("aria-busy", "false");
+        });
+
+        it("composes isLoading and isDisabled together into the same grayed-out, inert state either alone produces", async () => {
+            // Arrange
+            const onCheckedChange = vi.fn();
+            const bothScreen = await render(
+                <Checkbox label="Both checkbox" isLoading isDisabled onCheckedChange={onCheckedChange} />,
+            );
+            const disabledScreen = await render(<Checkbox label="Disabled-only checkbox" isDisabled />);
+            const bothCheckbox = bothScreen.getByRole("checkbox", { name: "Both checkbox" });
+            const disabledCheckbox = disabledScreen.getByRole("checkbox", { name: "Disabled-only checkbox" });
+
+            // Assert
+            const bothOpacity = getComputedStyle(bothCheckbox.element()).opacity;
+            const disabledOpacity = getComputedStyle(disabledCheckbox.element()).opacity;
+            expect(bothOpacity).toBe(disabledOpacity);
+
+            // Act
+            (bothCheckbox.element() as HTMLElement).click();
+
+            // Assert
+            expect(onCheckedChange).not.toHaveBeenCalled();
+        });
     },
 });
