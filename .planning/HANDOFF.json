@@ -1,98 +1,175 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-13T00:27:02.864Z",
+  "timestamp": "2026-08-17T12:05:08.425Z",
   "phase": "01",
   "phase_name": "foundation-auth-preferences",
   "phase_dir": ".planning/phases/01-foundation-auth-preferences",
-  "plan": 14,
-  "task": 0,
+  "plan": 19,
+  "task": 2,
   "total_tasks": 2,
   "status": "paused",
   "completed_tasks": [
-    { "id": "01-12", "name": "Sign-up/sign-in UI surfaces", "status": "done", "commit": "51c492f" },
-    { "id": "01-13", "name": "Route guards (proxy + DAL) + e2e specs", "status": "done", "commit": "a3bff1e" },
     {
-      "id": "gap-fixes",
-      "name": "Manual-mode fixes from UI review of wave 12 (not a GSD plan -- ad-hoc conversation)",
+      "id": "01-16",
+      "name": "Loading states across primitives + auth forms (GC-01)",
       "status": "done",
-      "commit": "5111647..4d19bf6",
-      "detail": "openapi-fetch typed BFF client (replacing raw fetch in auth-api.ts), TextField/Dropdown radius fix (rounded-md 24px -> rounded-sm 4px, matching tokens/radius.tokens.json's documented measurement), quieted trailing-slot IconButton hover inside TextField, PropsWithChildren sweep across components with a children prop, QueryProvider moved to a global Storybook decorator (.storybook/preview.tsx), react/jsx-newline lint rule added and auto-fixed repo-wide, .planning/config.json created with workflow.human_verify_mode=mid-flight"
+      "commit": "1d14109"
+    },
+    {
+      "id": "01-17",
+      "name": "Route-level error boundaries (GC-03)",
+      "status": "done",
+      "commit": "75af843"
+    },
+    {
+      "id": "01-18",
+      "name": "Gitleaks secret scanning, deviated to CI-only (GC-06)",
+      "status": "done",
+      "commit": "752c52f"
+    },
+    {
+      "id": "01-22",
+      "name": "Button spinner investigation (GC-13) -- resolved as working-as-designed, doc-only",
+      "status": "done",
+      "commit": "b4ea45f"
+    },
+    {
+      "id": "01-23",
+      "name": "Checkbox isLoading + fixed dormant disabled:opacity-50 selector bug (GC-14)",
+      "status": "done",
+      "commit": "43770f0"
+    },
+    {
+      "id": "01-24",
+      "name": "TextField loading visual fix (GC-15)",
+      "status": "done",
+      "commit": "6afc89e"
+    },
+    {
+      "id": "01-25",
+      "name": "Modal isLoading-guards-dismissal convention (GC-16)",
+      "status": "done",
+      "commit": "14a3078"
+    },
+    {
+      "id": "01-27",
+      "name": "dal.ts DAL comment + SETUP.md (GC-10, GC-11)",
+      "status": "done",
+      "commit": "752c52f"
+    },
+    {
+      "id": "01-29-planning",
+      "name": "Planned GC-17 (TextField isLoading overrides D-16 to use disabled, not readOnly) -- plan created and checker-verified, NOT executed yet",
+      "status": "done",
+      "commit": "b682b84"
+    },
+    {
+      "id": "01-19",
+      "name": "Validation schema alignment to real backend rules (GC-02)",
+      "status": "in_progress",
+      "progress": "Both tasks' file scope touched (auth-schemas.ts, display-name.ts, route handlers, mocks, BFF contract regen, sign-up-form.tsx/.test.tsx/.stories.tsx, 01-UI-SPEC.md copy). 69 relevant unit/component tests pass. Committed as WIP on the interrupted worktree's OWN branch (not master): worktree-agent-af88496caaa43c8ac, commit d5f58d3, base b682b84. NOT verified complete -- 2 real tsc errors remain in sign-up-form.tsx (zodResolver type inference conflicts with the now-optional displayName field). Neither task's <verify> block has been run to green. No SUMMARY.md written."
     }
   ],
   "remaining_tasks": [
     {
-      "id": "gap-closure-plan",
-      "name": "Create and execute a gap-closure plan for the UI-review backlog",
-      "status": "not_started",
-      "detail": "Loading states across primitives (Button/IconButton/TextField/Dropdown -- user wants ALL inputs/buttons/dropdowns covered) and validation-schema alignment with the real backend (docs below have exact rules already researched)"
+      "id": "01-19-finish",
+      "name": "Fix sign-up-form.tsx's 2 tsc errors, re-run both tasks' <verify> blocks, split into proper per-task commits, write SUMMARY.md",
+      "status": "in_progress"
     },
-    { "id": "01-14", "name": "Theme preference (THEME-01)", "status": "not_started" },
-    { "id": "01-15", "name": "Vercel deployment", "status": "not_started" }
+    {
+      "id": "01-20",
+      "name": "Route consolidation + auth hooks unit-tested (GC-04, GC-07)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-21",
+      "name": "Shared test utilities extraction (GC-05, GC-08)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-26",
+      "name": "Mock store persistence -> in-memory seed/reset (GC-09)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-28",
+      "name": "RTL-for-hooks convention + CONVENTIONS.md 'where code lives' section (GC-12)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-29",
+      "name": "GC-17: TextField isLoading overrides D-16 to use disabled, not readOnly -- planned and verified, not executed",
+      "status": "not_started"
+    },
+    {
+      "id": "01-14",
+      "name": "Theme preference (THEME-01)",
+      "status": "not_started"
+    },
+    {
+      "id": "01-15",
+      "name": "Vercel deployment",
+      "status": "not_started"
+    }
   ],
   "blockers": [
     {
-      "description": ".env.local exists but EXTERNAL_API_BASE_URL and SESSION_SECRET are empty strings, which the fail-fast checks correctly reject -- pnpm build/dev fail locally until real values are set",
+      "description": "sign-up-form.tsx: react-hook-form's zodResolver type inference conflicts with auth-schemas.ts's now-optional displayName field -- Resolver<{..displayName?: unknown}> is not assignable to Resolver<{..displayName?: string}>. Not yet diagnosed to root cause.",
+      "type": "technical",
+      "workaround": "Likely fix: an explicit resolver generic type param, or a schema-level .default(undefined)/output-type annotation on displayName in the zod schema. Needs investigation, not guessed at."
+    },
+    {
+      "description": ".env.local has empty EXTERNAL_API_BASE_URL/SESSION_SECRET in the main tree -- blocks pnpm build locally. Pre-existing, documented in SETUP.md (plan 01-27, already merged). Not blocking plan execution (worktree executors set their own throwaway env).",
       "type": "human_action",
-      "workaround": "Not blocking for continued plan execution: each executor works in an isolated worktree and sets up its own throwaway env. Only blocks local pnpm build/dev in the main tree, and will genuinely block plan 01-15 (Vercel deployment)."
+      "workaround": "Not blocking for continued execution. Will genuinely block plan 01-15 (Vercel deployment)."
+    },
+    {
+      "description": "Switch.tsx likely has the identical dormant disabled:opacity-50 CSS-selector bug that Checkbox had before 01-23 fixed it (Base UI never sets the real DOM disabled attribute on Switch's rendered root, so the :disabled pseudo-class never matches). Confirmed unverified/unfixed, logged as WINDOWS.md id 8, out of scope for any executed plan so far.",
+      "type": "technical",
+      "workaround": "Not yet routed through a gap-closure plan. Should probably become GC-18 or be folded into a future primitives-polish round."
     }
   ],
   "async_jobs": [],
-  "human_actions_pending": [
-    {
-      "action": "Set real values in .env.local: EXTERNAL_API_BASE_URL=http://localhost:8080/api and SESSION_SECRET=<output of `openssl rand -base64 32`>",
-      "context": "Needed to run pnpm build/pnpm dev in the main worktree locally; not needed to resume plan execution via isolated executor worktrees",
-      "blocking": false
-    }
-  ],
+  "human_actions_pending": [],
   "decisions": [
     {
-      "decision": "HTTP client for the browser->BFF layer: openapi-fetch, not axios or ky",
-      "rationale": "openapi-fetch was already used server-side (server-client.ts, ADR tech/0005) for the BFF->external-API layer; the whole architecture already bets on OpenAPI-as-source-of-truth for drift prevention. axios was never actually decided anywhere in this project's history (verified by grepping every ADR/RESEARCH.md/PROJECT.md -- the user misremembered). TanStack Query (already implemented since wave 12) already owns retry policy (retry: false on mutations, ADR tech/0002), so openapi-fetch's lack of built-in retry/timeout doesn't matter here.",
+      "decision": "User rejected both candidate npm wrappers for gitleaks (@b12k/gitleaks, @nogoo9/gitleaks) at 01-18's package-legitimacy checkpoint -- chose 'neither, reopen the approach'. Shipped as CI-only via the official gitleaks/gitleaks-action, no local pre-commit half.",
+      "rationale": "Both candidates were low-star, single-maintainer repackagings of the gitleaks binary -- not vetted enough for a mechanism that runs on every contributor machine.",
       "phase": "01"
     },
     {
-      "decision": "BFF's own OpenAPI schema (docs/api/bff-openapi.json) is generated via scripts/generate-bff-openapi.mjs using Zod 4's built-in z.toJSONSchema() on the existing signUpSchema/signInSchema -- no new dependency, request/response shapes for signup/signin/signout can't drift from the Route Handlers.",
-      "rationale": "Keeps a single source of truth (the Zod schema) for both server-side validation and the typed client, mirroring the external contract's own committed-JSON + codegen pattern (ADR tech/0005).",
+      "decision": "GC-09..GC-16 folded into a single gap-closure round 2 (plans 01-22..01-28), including the user's explicit choice to fold in the previously-deferred GC-09-12 pending todo now rather than wait for 01-19/20/21 to finish executing as originally planned.",
+      "rationale": "User's explicit call when asked -- efficiency of doing one planning pass instead of two.",
       "phase": "01"
     },
     {
-      "decision": "TextField/Dropdown trigger radius changed from rounded-md (24px) to rounded-sm (4px). Dropdown's floating popup keeps rounded-md -- the token's description only covers the trigger, not the popup surface.",
-      "rationale": "tokens/radius.tokens.json documents radius.sm=4px as the measured 'Text Field / Dropdown corner radius' from Figma, and radius.md=24px as 'Button Secondary corner radius'. Both primitives were wired to the wrong token since plans 01-07/01-08 -- confirmed via git log and both plans' SUMMARY.md that this was never a deliberate choice, just an oversight (Button correctly uses radius.lg).",
+      "decision": "GC-17 added: TextField's isLoading now overrides D-16 (the original 'readOnly not disabled, to stay focusable' decision) and composes disabled={isDisabled || isLoading}, matching every other primitive (Button, IconButton, Checkbox, Dropdown). Plan 01-29 created and plan-checker-verified; NOT executed yet.",
+      "rationale": "User's live UI review of the merged gap-closure-round-2 primitives: 'let's make sure that if component is loading it is automatically disabled too'. TextField was the sole outlier -- every other primitive already composed disabled with isLoading.",
       "phase": "01"
     },
     {
-      "decision": "Trailing-slot IconButton hover (password-toggle in TextField) quieted via a per-usage className override (hover:bg-transparent), not a change to IconButton's ghost variant globally.",
-      "rationale": "User confirmed scope: 'just trailing-slot icons inside inputs' -- ghost's default hover (hover:bg-bg-app) is fine standalone but reads as a jarring blob nested inside an already-bordered input.",
+      "decision": "Added eslint-plugin-no-unsanitized@4.1.5 (exact pin) for XSS-sink detection (innerHTML/dangerouslySetInnerHTML/etc). Explicitly chose this over the generic eslint-plugin-security package.",
+      "rationale": "User asked about security ESLint plugins not currently in use. no-unsanitized has near-zero false positives (fires only on specific sink APIs); eslint-plugin-security is noisy on TypeScript codebases and mostly catches what TS's type system already rules out.",
       "phase": "01"
     },
     {
-      "decision": "Loading states must be designed/implemented for ALL primitive inputs, buttons, and dropdowns (Button, IconButton, TextField, Dropdown) -- not just the two auth forms. Not yet started.",
-      "rationale": "User: 'we should add loading state for all the primitives that are inputs buttons or links'. Currently only Button's isDisabled is wired during a pending mutation; TextField inputs stay enabled/editable during submit.",
+      "decision": "Added .zed/tasks.json exposing every package.json script as a Zed editor task, plus a current-file vitest runner using $ZED_RELATIVE_FILE. Committed to git (user explicitly said 'let's commit').",
+      "rationale": "User request, unrelated to phase 01 scope -- pure tooling convenience.",
       "phase": "01"
     },
     {
-      "decision": "Validation rules must match the REAL backend (kanban-board-backend repo), not researcher defaults. Real rules found: password 8-64 chars + must contain uppercase+lowercase+digit+special char (current frontend only checks min 8, no complexity, no max); displayName is OPTIONAL server-side (frontend currently requires it) and if provided must be 3-32 chars, letters+spaces only (current frontend has zero character-class check); email uses standard @Email format (frontend's z.email() roughly matches, no gap). NOT YET IMPLEMENTED -- auth-schemas.ts still has the old under-validated rules.",
-      "rationale": "docs/api/kanban-board-openapi.json's SignupRequestDTO/SigninRequestDTO declare zero constraints (bare strings) -- the real rules only exist in the backend's Java Bean Validation annotations (SignupRequestDTO.java, DisplayName.java, Password.java, ValidationConstants.java), fetched via a shallow clone of https://github.com/RudVlad473/kanban-board-backend. Open product question still unresolved: should Name stay required on this app's frontend even though the backend allows omitting it?",
+      "decision": "01-23 fixed a real pre-existing bug: Checkbox's disabled:opacity-50/disabled:cursor-not-allowed used the CSS :disabled pseudo-class, which never matches Base UI's Checkbox.Root (renders a role=checkbox span + a separate hidden native input -- only the hidden input gets the real disabled attribute). Fixed to data-[disabled]:*.",
+      "rationale": "Discovered live during 01-23's investigation task. Same class of bug flagged (unfixed) on Switch.tsx -- see blockers.",
       "phase": "01"
     },
     {
-      "decision": "Storybook's QueryProvider moved from a per-stories-file decorator to a single global decorator in .storybook/preview.tsx (renamed from .ts).",
-      "rationale": "A first attempt wrapped each story's meta object in a createIntegrationStory(...) factory function call -- this broke Storybook's static CSF indexing, which requires every *.stories.tsx default export to be a literal object, not a function-call result. Confirmed by actually running pnpm test (not just tsc/lint) -- the whole storybook vitest project failed to even start.",
-      "phase": "01"
-    },
-    {
-      "decision": "workflow.human_verify_mode set to mid-flight in .planning/config.json (was defaulting to end-of-phase).",
-      "rationale": "end-of-phase batches every checkpoint:human-verify task into one review at the very end of a phase -- this is exactly how wave 12's auth UI (icon hover, radius bug, missing loading states, unresearched validation rules) shipped and merged without any human look until the user happened to review it well after the fact. User: 'let's remove the auto advance rule and add more human checks, i feel like we're drifting off a bit'. Note: workflow.auto_advance was already false by default (no config.json existed at all before this session) -- the actual fix is human_verify_mode, not auto_advance.",
-      "phase": "01"
-    },
-    {
-      "decision": "react/jsx-newline (require blank line between sibling JSX elements) added as a new lint rule, auto-fixed across 23 files.",
-      "rationale": "User's explicit code-style ask. The rule is bundled transitively via eslint-config-next's eslint-plugin-react dependency (v7.37.5) -- no new package install needed, already resolvable in node_modules/.pnpm.",
+      "decision": "01-22 closed GC-13 (Button spinner reported as 'static') as working-as-designed, not a defect -- doc-only change. Live diagnostic confirmed no reduced-motion emulation was configured anywhere in this environment, so the spinner's computed animationName/animationPlayState were genuinely 'spin'/'running'.",
+      "rationale": "The user's 'static' report was very likely their OS's prefers-reduced-motion accessibility setting doing exactly what button.tsx's motion-reduce:animate-none class was designed to respect.",
       "phase": "01"
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Run /gsd-plan-phase 01 --gaps to create a formal gap-closure plan covering: (1) primitive loading states (Button/IconButton/TextField/Dropdown), (2) validation-schema alignment with the real backend rules already researched (see decisions above) -- including resolving the open 'should Name stay required' question with the user first. Execute that gap-closure plan via /gsd-execute-phase 01 --gaps-only, THEN resume the normal wave sequence at plan 01-14 (theme preference) via /gsd-execute-phase 01.",
-  "context_notes": "This session executed waves 12-13 through the normal GSD executor/worktree pipeline (same pattern as prior sessions: isolation=\"worktree\", capture EXPECTED_BASE, dispatch gsd-executor, merge --ff-only, push, cleanup). After wave 12 merged, the user reviewed the actual rendered UI (via a Storybook dev server this session launched with `pnpm storybook` and never explicitly stopped -- may still be running on localhost:6006 if this is the same machine) and found four real problems the automated verification never caught: a too-flashy icon hover, missing loading states, unresearched validation rules, and a radius bug. Fixing these devolved into an UNTRACKED ad-hoc conversation -- editing files directly outside any PLAN.md, no SUMMARY.md, no atomic per-task GSD commits -- because discovered work didn't fit any existing plan and I didn't route it through GSD's gap-closure mechanism. The user explicitly caught this ('how did it even happen that we're working outside gsd') and the correction was: finish the small in-flight fixes manually (which happened -- see completed_tasks gap-fixes entry), then return to GSD properly via a real gap-closure plan for what's left (loading states + validation), rather than continuing ad-hoc. That gap-closure plan was proposed but not yet created when this pause was invoked -- it is the literal next action, not wave 14.",
-  "windows_notes": "Two stray worktree directories from waves 12/13 (.claude/worktrees/agent-ab0d213518a049f33, agent-aecf416d644931899) needed the robocopy-mirror-then-rd /s /q \\\\?\\<path> workaround for Windows long-path removal, same as prior sessions. agent-ab0d213518a049f33 was fully removed this session; agent-aecf416d644931899 STILL HAS a handful of locked native binaries (esbuild, next-swc, oxc-parser/resolver, rolldown-binding, tailwindcss-oxide, lightningcss .node/.exe files) that 'Access is denied' on delete -- likely held by a still-running dev-server/language-service process. Retry cleanup once no such process is running: `cmd /c \"rd /s /q \\\\\\\\?\\\\C:\\\\Dev\\\\Repos\\\\kanban-board-frontend\\\\.claude\\\\worktrees\\\\agent-aecf416d644931899\"`. Non-blocking -- git worktree list no longer shows either, and both branches are already deleted."
+  "next_action": "Diagnose and fix the 2 tsc errors in the worktree-agent-af88496caaa43c8ac worktree's sign-up-form.tsx (zodResolver/displayName type mismatch), then re-run both of 01-19's <verify> blocks to green, split the work into proper per-task commits (it currently spans both tasks in one WIP commit), write 01-19-SUMMARY.md, then continue the normal wave sequence: 01-20/01-21/01-26 (parallel, depend on 01-19) -> 01-14/01-28/01-29 (parallel, wave 14) -> 01-15 (deployment, has a blocking human-verify checkpoint and needs real .env values).",
+  "context_notes": "This session resumed a project already mid-phase-01, executed wave 1 of an existing gap-closure round (01-16/17/18), then the user did a live UI review (as previously agreed: always pause for explicit UI sign-off before continuing, regardless of a plan's autonomous flag) and found real bugs -- routed properly through a NEW gap-closure round (GC-09..16, plans 01-22..28) rather than ad-hoc fixes, per the blocking anti-pattern this phase's .continue-here.md already recorded from an earlier session. That round's first wave (01-22/23/24/25/27) executed and merged cleanly (one real merge conflict in WINDOWS.md between 01-23 and 01-25 both claiming id 7 -- resolved by keeping both, renumbering to 7/8). A follow-up live review then surfaced one more gap (GC-17, TextField disabled-vs-readOnly) which was also properly routed through a small single-item planning round rather than fixed ad-hoc. Execution then resumed on 01-19 (the next queued plan, GC-02 validation-schema alignment) -- the user interrupted this background executor mid-flight (via /gsd-pause-work) before it committed any task. The interrupted worktree's uncommitted changes represented real, substantial, mostly-working progress (69 tests passing) but 2 genuine unresolved tsc errors -- these were committed as an explicit 'wip:' commit on the worktree's OWN branch (not master, not disguised as a completed task) so nothing is lost, with the errors documented rather than silently left for a future session to rediscover.",
+  "windows_notes": "Standard Windows worktree-directory-removal lock pattern recurred multiple times this session (git worktree remove/rd fails with 'Filename too long' or 'Access is denied' even after the branch is deleted and git no longer tracks the worktree) -- resolved each time via the robocopy-mirror-then-delete trick (`robocopy <empty-dir> <target> /MIR` then `Remove-Item -Recurse -Force`), run via PowerShell in the background since it can exceed the 120s foreground timeout on this repo's large node_modules trees. One old stray directory from a much earlier session (agent-aecf416d644931899) is still present and was left alone (non-blocking, git worktree list doesn't reference it)."
 }
