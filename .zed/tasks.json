@@ -1,0 +1,114 @@
+// Zed tasks for kanban-board-frontend.
+// Run via the task picker (default: ctrl-shift-r on Linux/Windows, cmd-shift-r on macOS).
+[
+    {
+        "label": "dev",
+        "command": "pnpm dev",
+        "use_new_terminal": true,
+        "allow_concurrent_runs": true,
+        "reveal": "always"
+    },
+    {
+        "label": "build",
+        "command": "pnpm build",
+        "reveal": "always"
+    },
+    {
+        "label": "typecheck",
+        "command": "pnpm exec tsc --noEmit",
+        "reveal": "always"
+    },
+    {
+        "label": "lint",
+        "command": "pnpm lint",
+        "reveal": "always"
+    },
+    {
+        "label": "format",
+        "command": "pnpm format",
+        "reveal": "always"
+    },
+    {
+        "label": "format:check",
+        "command": "pnpm format:check",
+        "reveal": "always"
+    },
+    {
+        "label": "test: all (vitest)",
+        "command": "pnpm test",
+        "reveal": "always"
+    },
+    {
+        "label": "test: unit",
+        "command": "pnpm test:unit",
+        "reveal": "always"
+    },
+    {
+        "label": "test: browser",
+        "command": "pnpm test:browser",
+        "reveal": "always"
+    },
+    {
+        "label": "test: a11y (storybook)",
+        "command": "pnpm test:a11y",
+        "reveal": "always"
+    },
+    {
+        "label": "test: e2e (playwright)",
+        "command": "pnpm test:e2e",
+        "reveal": "always"
+    },
+    {
+        "label": "test: visual (playwright)",
+        "command": "pnpm test:visual",
+        "reveal": "always"
+    },
+    {
+        "label": "test: everything (unit + e2e + visual)",
+        "command": "pnpm test:all",
+        "reveal": "always"
+    },
+    {
+        "label": "test: current file (vitest)",
+        "command": "pnpm exec vitest run $ZED_RELATIVE_FILE",
+        "reveal": "always"
+    },
+    {
+        "label": "test: current file, watch (vitest)",
+        "command": "pnpm exec vitest $ZED_RELATIVE_FILE",
+        "use_new_terminal": true,
+        "allow_concurrent_runs": true,
+        "reveal": "always"
+    },
+    {
+        "label": "storybook",
+        "command": "pnpm storybook",
+        "use_new_terminal": true,
+        "allow_concurrent_runs": true,
+        "reveal": "always"
+    },
+    {
+        "label": "storybook: build",
+        "command": "pnpm build-storybook",
+        "reveal": "always"
+    },
+    {
+        "label": "api: generate types (external contract)",
+        "command": "pnpm api:generate",
+        "reveal": "always"
+    },
+    {
+        "label": "api: generate types (BFF contract)",
+        "command": "pnpm bff-api:generate",
+        "reveal": "always"
+    },
+    {
+        // Runs automatically after Zed creates a new git worktree.
+        // $ZED_WORKTREE_ROOT is the new worktree's root directory, and
+        // $ZED_MAIN_GIT_WORKTREE is the original repository's working directory.
+        "label": "Set up new worktree",
+        "command": "echo \"Setting up $ZED_WORKTREE_ROOT — edit this command\"",
+        "cwd": "$ZED_WORKTREE_ROOT",
+        "hooks": ["create_worktree"]
+    }
+]
