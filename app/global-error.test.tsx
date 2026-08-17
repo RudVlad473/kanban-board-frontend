@@ -14,14 +14,22 @@ describeForEachDevice({
     name: "app/global-error",
     body: () => {
         it("renders its own html element containing the recovery surface with app-wide copy", async () => {
-            // Arrange
+            /*
+             * Arrange — a document allows exactly one <html> element, so a browser reconciles the
+             * component's returned html element onto the real document.documentElement rather than
+             * nesting a second one inside the test container. Asserting the lang/class attributes
+             * landed there is how this boundary's own html element is proven to have rendered, as
+             * opposed to the component being a no-op that left the page shell untouched.
+             */
             const error = new Error("root layout blew up") as Error & { digest?: string };
 
             // Act
             const screen = await render(<GlobalError error={error} reset={vi.fn()} />);
 
             // Assert
-            expect(screen.container.querySelector("html")).not.toBeNull();
+            expect(document.documentElement.getAttribute("lang")).toBe("en");
+            expect(document.documentElement.classList.contains("h-full")).toBe(true);
+            expect(document.documentElement.classList.contains("antialiased")).toBe(true);
             await expect.element(screen.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
             await expect
                 .element(screen.getByText("The app ran into a problem and couldn't finish loading."))

@@ -162,6 +162,7 @@ const eslintConfig = defineConfig([
             "app/**/layout.tsx",
             "app/**/route.ts",
             "app/**/error.tsx",
+            "app/global-error.tsx",
             "app/**/loading.tsx",
             "app/**/not-found.tsx",
             "app/**/template.tsx",
