@@ -13,7 +13,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 - [x] **AUTH-01**: User can sign up with email, display name, and password
 - [x] **AUTH-02**: User can sign in with email and password
-- [ ] **AUTH-03**: Unauthenticated visitor is redirected to sign-in when requesting a board
+- [x] **AUTH-03**: Unauthenticated visitor is redirected to sign-in when requesting a board
   or board-list route
 
 ### Boards
@@ -96,7 +96,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Complete |
 | THEME-01 | Phase 1 | Pending |
 | BOARD-01 | Phase 2 | Pending |
 | BOARD-02 | Phase 2 | Pending |
