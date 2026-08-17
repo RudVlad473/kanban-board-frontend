@@ -75,7 +75,16 @@ describeForEachDevice({
             await expect.element(screen.getByRole("button", { name: "Create Account" })).toBeVisible();
         });
 
-        it("shows the required-field message on all three empty fields when submitted, and calls no endpoint", async () => {
+        it("marks the Name field optional through its accessible description, not its label", async () => {
+            // Arrange
+            const screen = await renderSignUpForm();
+
+            // Assert
+            await expect.element(screen.getByLabelText("Name")).toHaveAccessibleDescription("Optional");
+            await expect.element(screen.getByLabelText("Name")).toHaveAccessibleName("Name");
+        });
+
+        it("shows the required-field message on exactly two empty fields when submitted (Name is optional), and calls no endpoint", async () => {
             // Arrange
             let signUpMatchCount = 0;
             worker.use(
@@ -90,7 +99,7 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create Account" }).click();
 
             // Assert
-            await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(3);
+            await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
             expect(signUpMatchCount).toBe(0);
         });
 
@@ -98,7 +107,7 @@ describeForEachDevice({
             // Arrange
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
-            await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
+            await screen.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
             // Email is deliberately left empty.
 
             // Act
@@ -124,18 +133,67 @@ describeForEachDevice({
             expect(screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(0);
         });
 
-        it("shows the password length message on blur for a too-short password, and no other field", async () => {
-            // Arrange
-            const screen = await renderSignUpForm();
+        /*
+         * Parametrised over the rejected-value families (D-26y) rather than repeating
+         * near-identical blur-then-assert blocks — each case isolates exactly one rule violation.
+         */
+        const onBlurRejectedCases: {
+            description: string;
+            field: "Name" | "Password";
+            value: string;
+            message: string;
+        }[] = [
+            {
+                description: "a too-short name",
+                field: "Name",
+                value: "Al",
+                message: "Name must be between 3 and 32 characters.",
+            },
+            {
+                description: "a name containing a digit",
+                field: "Name",
+                value: "Alice1",
+                message: "Name can only contain letters and spaces.",
+            },
+            {
+                description: "a too-short password",
+                field: "Password",
+                value: "Short1!",
+                message: "Password must be between 8 and 64 characters.",
+            },
+            {
+                description: "a too-long password",
+                field: "Password",
+                value: `Aa1!${"a".repeat(63)}`,
+                message: "Password must be between 8 and 64 characters.",
+            },
+            {
+                description: "a password missing a character class",
+                field: "Password",
+                value: "nocomplexity1",
+                message:
+                    "Password must include an uppercase letter, a lowercase letter, a number, and a special character.",
+            },
+        ];
 
-            // Act
-            await screen.getByLabelText("Password", { exact: true }).fill("short");
-            await userEvent.tab();
+        for (const { description, field, value, message } of onBlurRejectedCases) {
+            it(`shows the ${field} field's own message on blur for ${description}, and no other field`, async () => {
+                // Arrange
+                const screen = await renderSignUpForm();
+                const locator =
+                    field === "Name"
+                        ? screen.getByRole("textbox", { name: "Name" })
+                        : screen.getByLabelText("Password", { exact: true });
 
-            // Assert
-            await expect.element(screen.getByText("Password must be at least 8 characters.")).toBeVisible();
-            expect(screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(0);
-        });
+                // Act
+                await locator.fill(value);
+                await userEvent.tab();
+
+                // Assert
+                await expect.element(screen.getByText(message)).toBeVisible();
+                expect(screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(0);
+            });
+        }
 
         it("does not show an error on an untouched field even while a sibling field shows one", async () => {
             // Arrange
@@ -155,7 +213,36 @@ describeForEachDevice({
                 .not.toHaveAttribute("aria-invalid", "true");
         });
 
-        it("calls the sign-up mutation exactly once with the entered values on a valid submit", async () => {
+        it("calls the sign-up mutation exactly once, with no name key at all, when the Name field is left empty", async () => {
+            // Arrange
+            const requestBodies: unknown[] = [];
+            worker.use(
+                http.post(SIGN_UP_PATH, async ({ request }) => {
+                    requestBodies.push(await request.json());
+                    return HttpResponse.json({ ok: true });
+                }),
+            );
+            const screen = await renderSignUpForm();
+            await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
+            await screen.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
+            // Name is deliberately left empty — the field being empty must not block the request.
+
+            // Act
+            await screen.getByRole("button", { name: "Create Account" }).click();
+
+            // Assert
+            await expect.poll(() => requestBodies.length).toBe(1);
+            /*
+             * `toEqual` (not `toMatchObject`) so an accidental `displayName: ""` would fail this too —
+             * the key must be entirely absent, not merely falsy.
+             */
+            expect(requestBodies[0]).toEqual({
+                email: "new@example.com",
+                password: "CorrectPassword1!",
+            });
+        });
+
+        it("calls the sign-up mutation exactly once with the entered values, including the name, on a valid submit", async () => {
             // Arrange
             const requestBodies: unknown[] = [];
             worker.use(
@@ -167,7 +254,7 @@ describeForEachDevice({
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
             await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
-            await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
+            await screen.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
 
             // Act
             await screen.getByRole("button", { name: "Create Account" }).click();
@@ -177,7 +264,7 @@ describeForEachDevice({
             expect(requestBodies[0]).toEqual({
                 email: "new@example.com",
                 displayName: "Jamie Rivera",
-                password: "correct-horse-battery-staple",
+                password: "CorrectPassword1!",
             });
         });
 
@@ -199,7 +286,7 @@ describeForEachDevice({
             const passwordField = screen.getByLabelText("Password", { exact: true });
             const emailValue = "new@example.com";
             const nameValue = "Jamie Rivera";
-            const passwordValue = "correct-horse-battery-staple";
+            const passwordValue = "CorrectPassword1!";
             await emailField.fill(emailValue);
             await nameField.fill(nameValue);
             await passwordField.fill(passwordValue);
@@ -274,7 +361,7 @@ describeForEachDevice({
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
             await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
-            await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
+            await screen.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
             const submitButton = screen.getByRole("button", { name: "Create Account" });
 
             // Act
@@ -300,7 +387,7 @@ describeForEachDevice({
             const emailValue = "existing@example.com";
             await screen.getByRole("textbox", { name: "Email" }).fill(emailValue);
             await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
-            await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
+            await screen.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
 
             // Act
             await screen.getByRole("button", { name: "Create Account" }).click();

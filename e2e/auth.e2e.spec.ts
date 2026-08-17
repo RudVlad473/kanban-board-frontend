@@ -17,7 +17,12 @@ test.describe("AUTH-01: sign up", () => {
 
         await page.goto("/register");
         await page.getByLabel("Email", { exact: true }).fill(freshEmail);
-        await page.getByLabel("Name", { exact: true }).fill("E2E Tester");
+        /*
+         * "Letters and spaces" only (GC-02) — a digit-bearing fixture name like "E2E Tester" now
+         * fails the sign-up form's own name validation, so this fixture must satisfy the same
+         * rules as the password fixture below.
+         */
+        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
         await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
         await page.getByRole("button", { name: "Create Account" }).click();
 

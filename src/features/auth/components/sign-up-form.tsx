@@ -22,8 +22,12 @@ const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 type Props = {
     /** Pre-fills field values (a plain React Hook Form `defaultValues` passthrough) — used by the "Filled"/"LongValues" stories, mirroring Dropdown's `defaultOpen`/TextField's `defaultValue` staging pattern (D-25's non-interactive alternative to a play function). */
     defaultValues?: Partial<SignUpInput>;
-    /** Storybook-only staging — renders every field's required-error state without a real submit. */
+    /** Storybook-only staging — renders Email/Password's required-error state without a real submit. */
     forceFieldErrors?: boolean;
+    /** Storybook-only staging — renders the Name field's error state with this message, without a real submit. */
+    forceNameError?: string;
+    /** Storybook-only staging — renders the Password field's error state with this message, without a real submit. */
+    forcePasswordError?: string;
     /** Storybook-only staging — renders the form-level failure banner without a real failed mutation. */
     forceServerError?: string;
     /** Storybook-only staging — renders the submit control's disabled/loading state without a real pending mutation. */
@@ -41,6 +45,8 @@ type Props = {
 export const SignUpForm = ({
     defaultValues,
     forceFieldErrors = false,
+    forceNameError,
+    forcePasswordError,
     forceServerError,
     forceSubmitting = false,
     defaultPasswordRevealed = false,
@@ -84,9 +90,10 @@ export const SignUpForm = ({
             <TextField
                 label="Name"
                 type="text"
+                description="Optional"
                 isLoading={isPending}
-                hasError={forceFieldErrors || Boolean(errors.displayName)}
-                errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.displayName?.message}
+                hasError={Boolean(forceNameError) || Boolean(errors.displayName)}
+                errorMessage={forceNameError ?? errors.displayName?.message}
                 {...register("displayName")}
             />
 
@@ -94,8 +101,10 @@ export const SignUpForm = ({
                 label="Password"
                 type={isPasswordRevealed ? "text" : "password"}
                 isLoading={isPending}
-                hasError={forceFieldErrors || Boolean(errors.password)}
-                errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.password?.message}
+                hasError={forceFieldErrors || Boolean(forcePasswordError) || Boolean(errors.password)}
+                errorMessage={
+                    forceFieldErrors ? REQUIRED_FIELD_MESSAGE : (forcePasswordError ?? errors.password?.message)
+                }
                 trailing={
                     <IconButton
                         type="button"

@@ -51,9 +51,28 @@ export const Filled: Story = {
     },
 };
 
+/*
+ * `forceFieldErrors` now stages only Email/Password's required-message state (GC-02) — Name is
+ * optional, so an untouched Name field never produces the required-field error the resolver
+ * would have shown before this plan.
+ */
 export const WithFieldErrors: Story = {
     args: {
         forceFieldErrors: true,
+    },
+};
+
+/*
+ * The Name-specific and password-complexity messages aren't reachable through `forceFieldErrors`
+ * (that staging path only ever produces the required-field message) — staged here instead through
+ * their own dedicated force props, the same non-interactive pattern `forceServerError` already
+ * uses (D-25: no play function, a visual-only CSF3 story).
+ */
+export const WithNameAndPasswordComplexityErrors: Story = {
+    args: {
+        forceNameError: "Name must be between 3 and 32 characters.",
+        forcePasswordError:
+            "Password must include an uppercase letter, a lowercase letter, a number, and a special character.",
     },
 };
 
