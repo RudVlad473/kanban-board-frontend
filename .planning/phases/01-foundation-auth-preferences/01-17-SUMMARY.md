@@ -287,3 +287,10 @@ compiled build confirms Next.js registered them.
 ---
 *Phase: 01-foundation-auth-preferences*
 *Completed: 2026-08-17*
+
+## Self-Check: PASSED
+
+- FOUND (via `git ls-files`): `src/components/layout/error-fallback/error-fallback.tsx`,
+  `error-fallback.test.tsx`, `error-fallback.stories.tsx`, `app/(dashboard)/error.tsx`,
+  `app/(dashboard)/error.test.tsx`, `app/global-error.tsx`, `app/global-error.test.tsx`.
+- FOUND (via `git log --oneline`): `9d45c6b`, `a15eb4f`, `746a1b6`, `052970e`, `75af843`.
