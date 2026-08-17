@@ -133,5 +133,106 @@ describeForEachDevice({
             expect(onCheckedChange).not.toHaveBeenCalled();
             await expect.element(checkbox).toHaveAttribute("aria-checked", "false");
         });
+
+        /*
+         * GC-14 (plan 01-23) investigation: confirms `Field.Root`'s `disabled` prop reaches
+         * `Checkbox.Root` as a real DOM `disabled` property, not merely an ARIA attribute — the
+         * single propagation point `isLoading` (Task 2) will compose into via
+         * `disabled={isDisabled || isLoading}` on `Field.Root`, rather than adding a second,
+         * parallel `disabled` prop directly on `Checkbox.Root`. Task 2 will also add an `isBusy`
+         * cva axis mirroring `text-field.tsx`'s, with no spinner glyph — the tick box has no room
+         * for one, and the user's own words ("grayed out") describe an opacity treatment, not a
+         * spinner.
+         *
+         * Finding this investigation surfaced: Base UI's `Checkbox.Root` (v1.7.0) renders TWO
+         * elements — the visible `role="checkbox"` <span> `getByRole` returns (which only ever
+         * gets `data-disabled`/`aria-disabled`, never the DOM `disabled` property, since a <span>
+         * has no such property) and a visually-hidden, `aria-hidden` native <input type="checkbox">
+         * sibling that DOES receive the real `disabled` DOM property. `Field.Root`'s `disabled`
+         * prop genuinely reaches `Checkbox.Root` (confirmed on the hidden input below) — but the
+         * checkboxVariants `disabled:opacity-50 disabled:cursor-not-allowed` base classes on the
+         * visible span target the CSS `:disabled` pseudo-class, which can never match a <span>.
+         * That's a pre-existing bug this plan's own premise depends on (isLoading must produce
+         * "the same grayed-out opacity treatment isDisabled already gets" — it didn't, visually,
+         * until fixed here to `data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed`,
+         * matching the file's existing `data-[checked]:*` presence-based convention).
+         */
+        it("propagates Field.Root's disabled prop to Checkbox.Root's hidden native input as a real DOM disabled property", async () => {
+            // Arrange
+            const screen = await render(<Checkbox label="Remember me" isDisabled />);
+            const hiddenInput = screen.container.querySelector<HTMLInputElement>('input[type="checkbox"]');
+
+            /*
+             * Assert — the real DOM property, not only `aria-disabled`/`data-disabled` on the
+             * visible role="checkbox" span.
+             */
+            expect(hiddenInput).not.toBeNull();
+            expect(hiddenInput?.disabled).toBe(true);
+        });
+
+        it("renders isLoading with the same grayed-out opacity as isDisabled, reports aria-busy, and does not toggle on click or keyboard Space", async () => {
+            // Arrange
+            const onCheckedChange = vi.fn();
+            const loadingScreen = await render(
+                <Checkbox label="Loading checkbox" isLoading onCheckedChange={onCheckedChange} />,
+            );
+            const disabledScreen = await render(<Checkbox label="Disabled checkbox" isDisabled />);
+            const loadingCheckbox = loadingScreen.getByRole("checkbox", { name: "Loading checkbox" });
+            const disabledCheckbox = disabledScreen.getByRole("checkbox", { name: "Disabled checkbox" });
+
+            /*
+             * Assert — comparing directly against isDisabled's own computed opacity (not a
+             * hardcoded "0.5" literal alone) proves the visual treatment is genuinely shared, not
+             * merely both non-1.
+             */
+            const loadingOpacity = getComputedStyle(loadingCheckbox.element()).opacity;
+            const disabledOpacity = getComputedStyle(disabledCheckbox.element()).opacity;
+            expect(loadingOpacity).toBe(disabledOpacity);
+            await expect.element(loadingCheckbox).toHaveAttribute("aria-busy", "true");
+
+            // Act — a real pointer click.
+            (loadingCheckbox.element() as HTMLElement).click();
+
+            // Assert
+            expect(onCheckedChange).not.toHaveBeenCalled();
+
+            // Act — a real keyboard Space after focusing.
+            loadingCheckbox.element().focus();
+            await userEvent.keyboard(" ");
+
+            // Assert
+            expect(onCheckedChange).not.toHaveBeenCalled();
+        });
+
+        it("reports aria-busy=false (not absent) when not loading", async () => {
+            // Arrange
+            const screen = await render(<Checkbox label="Remember me" />);
+            const checkbox = screen.getByRole("checkbox", { name: "Remember me" });
+
+            // Assert
+            await expect.element(checkbox).toHaveAttribute("aria-busy", "false");
+        });
+
+        it("composes isLoading and isDisabled together into the same grayed-out, inert state either alone produces", async () => {
+            // Arrange
+            const onCheckedChange = vi.fn();
+            const bothScreen = await render(
+                <Checkbox label="Both checkbox" isLoading isDisabled onCheckedChange={onCheckedChange} />,
+            );
+            const disabledScreen = await render(<Checkbox label="Disabled-only checkbox" isDisabled />);
+            const bothCheckbox = bothScreen.getByRole("checkbox", { name: "Both checkbox" });
+            const disabledCheckbox = disabledScreen.getByRole("checkbox", { name: "Disabled-only checkbox" });
+
+            // Assert
+            const bothOpacity = getComputedStyle(bothCheckbox.element()).opacity;
+            const disabledOpacity = getComputedStyle(disabledCheckbox.element()).opacity;
+            expect(bothOpacity).toBe(disabledOpacity);
+
+            // Act
+            (bothCheckbox.element() as HTMLElement).click();
+
+            // Assert
+            expect(onCheckedChange).not.toHaveBeenCalled();
+        });
     },
 });

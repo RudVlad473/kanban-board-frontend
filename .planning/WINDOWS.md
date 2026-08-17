@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 4
 waived_count: 0
 fixed_count: 4
-total_count: 7
-last_updated: 2026-08-17T10:27:52.284Z
+total_count: 8
+last_updated: 2026-08-17T10:37:44.785Z
 ---
 
 # Broken Windows Ledger
@@ -22,6 +22,7 @@ last_updated: 2026-08-17T10:27:52.284Z
 | 5 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-08 (Switch + Dropdown) added 14 new stories (28 light/dark assertions) to visual/primitives.visual.spec.ts, on top of the existing 30. No baseline PNGs exist yet for the new Switch/Dropdown entries -- same root cause as ids 1/4 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. | fixed |  | 2026-08-11T15:35:12.302Z | 2026-08-11T15:45:20.532Z |
 | 6 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-09 (Modal, the seventh and final primitive) added 5 new stories (10 light/dark assertions) to visual/primitives.visual.spec.ts, on top of the existing 44. No baseline PNGs exist yet for the new Modal entries -- same root cause as ids 1/4/5 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. This also blocks the plan's own Task 2 checkpoint, which asks a human to visually compare all seven primitives including Modal against the Figma reference. | fixed |  | 2026-08-11T16:13:16.075Z | 2026-08-12T09:33:19.344Z |
 | 7 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-25 (Modal Submitting story, GC-16) added 1 new story (2 light/dark assertions) to visual/primitives.visual.spec.ts. No baseline PNGs exist yet for components-ui-modal--submitting -- same root cause as ids 1/4/5/6 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. | open |  | 2026-08-17T10:27:52.284Z |  |
+| 8 | 01 | deviation | src/components/ui/checkbox/checkbox.tsx |  | Fixed dormant disabled-opacity CSS selector (disabled: -> data-[disabled]:) on Checkbox; Switch (src/components/ui/switch/switch.tsx) has the identical disabled:opacity-50/disabled:cursor-not-allowed pattern and likely the same dormant-selector bug, unverified and unfixed (out of plan 01-23's file scope). | open |  | 2026-08-17T10:37:44.785Z |  |
 
 ````json
 [
@@ -107,6 +108,18 @@ last_updated: 2026-08-17T10:27:52.284Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-17T10:27:52.284Z",
+    "resolved_at": null
+  },
+  {
+    "id": 8,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "src/components/ui/checkbox/checkbox.tsx",
+    "line": null,
+    "description": "Fixed dormant disabled-opacity CSS selector (disabled: -> data-[disabled]:) on Checkbox; Switch (src/components/ui/switch/switch.tsx) has the identical disabled:opacity-50/disabled:cursor-not-allowed pattern and likely the same dormant-selector bug, unverified and unfixed (out of plan 01-23's file scope).",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-17T10:37:44.785Z",
     "resolved_at": null
   }
 ]

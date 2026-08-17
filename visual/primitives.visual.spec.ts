@@ -41,7 +41,7 @@ const storyIds = [
     "components-ui-text-field--sizes",
     "components-ui-text-field--long-value",
     "components-ui-text-field--loading", // plan 01-16, Task 1
-    // Checkbox (plan 01-07, Task 2) — eight stories.
+    // Checkbox (plan 01-07, Task 2) — nine stories.
     "components-ui-checkbox--unchecked",
     "components-ui-checkbox--checked",
     "components-ui-checkbox--hover",
@@ -50,6 +50,7 @@ const storyIds = [
     "components-ui-checkbox--disabled",
     "components-ui-checkbox--sizes",
     "components-ui-checkbox--checked-with-strikethrough",
+    "components-ui-checkbox--loading", // plan 01-23
     // Switch (plan 01-08, Task 1) — seven stories.
     "components-ui-switch--off",
     "components-ui-switch--on",

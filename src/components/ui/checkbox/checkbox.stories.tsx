@@ -65,6 +65,12 @@ export const Disabled: Story = {
     },
 };
 
+export const Loading: Story = {
+    args: {
+        isLoading: true,
+    },
+};
+
 export const Sizes: Story = {
     render: (args) => (
         <div className="flex items-center gap-4">
