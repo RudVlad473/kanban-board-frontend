@@ -4,6 +4,11 @@ import { cache } from "react";
 
 import { session, type SessionPayload } from "@/lib/session";
 
+/*
+ * DAL = Data Access Layer — Next.js App Router's own documented auth-pattern term (ADR
+ * tech/0001); this file is the authoritative, server-only session-verification checkpoint.
+ */
+
 /**
  * The authoritative "who is this" check (RESEARCH.md Security Domain) — every Route Handler and
  * protected Server Component must call this for itself rather than trusting an upstream redirect
