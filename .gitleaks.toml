@@ -1,0 +1,19 @@
+title = "kanban-board-frontend gitleaks configuration"
+
+# Extends gitleaks' built-in default rule set rather than replacing it — see
+# https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml for what "default" means.
+# Detected automatically by the gitleaks CLI (and by gitleaks-action, which shells out to the same
+# CLI) as `.gitleaks.toml` at the repo root — no explicit `--config`/`GITLEAKS_CONFIG` wiring
+# needed in CI (see .github/workflows/ci.yml's `secrets` job).
+[extend]
+useDefault = true
+
+# No [[rules.allowlist]] entries below. GC-06's plan anticipated pnpm-lock.yaml and the committed
+# OpenAPI contract JSON under docs/api/ as likely standing false positives (integrity hashes and
+# example/schema values respectively can resemble credential shapes). Both were verified empirically
+# during this plan's Task 1 (a full working-tree scan with this exact config, and a full git-history
+# scan — see 01-18-SUMMARY.md) and produced zero findings under the default rule set. Per this
+# project's own rule ("allowlist nothing on suspicion; every entry carries a one-line reason"),
+# adding entries for a false positive that does not currently occur would itself be an unjustified
+# entry. If a future gitleaks rule update starts flagging either path, add a scoped allowlist entry
+# here then, with the reason recorded next to it.

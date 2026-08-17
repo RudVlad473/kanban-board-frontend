@@ -18,6 +18,32 @@ env:
     EXTERNAL_API_BASE_URL: "http://localhost:8080/api"
 
 jobs:
+    # GC-06: the authoritative secret scan (D-26h — hooks are a convenience, CI is the gate).
+    # No local pre-commit half exists for this control: the Task 1 checkpoint rejected both
+    # candidate npm gitleaks wrappers on supply-chain grounds (single-maintainer, low-star
+    # repackagings of a third-party binary), and this project has no devcontainer/direct-binary
+    # convention to fall back on for a vetted local binary — see 01-18-SUMMARY.md. This job uses
+    # the official gitleaks/gitleaks-action instead, which downloads and runs the real gitleaks
+    # binary itself (no pnpm/Node steps needed — unlike the other jobs below, it isn't consuming
+    # this project's own dependency tree). No `needs:` — a secret is worth reporting even when
+    # the build is broken, and this scan is fast enough not to wait behind `quality`.
+    secrets:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v5
+              with:
+                  # gitleaks-action diffs baseRef^..headRef from the push/PR event payload; a
+                  # shallow checkout (the default `fetch-depth: 1` used by the other jobs below)
+                  # would leave that history unreachable. This is the official usage pattern, not
+                  # a full-history re-scan on every run — see the action's own README.
+                  fetch-depth: 0
+
+            - name: Scan for secrets
+              uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     quality:
         runs-on: ubuntu-latest
         timeout-minutes: 15
