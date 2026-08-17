@@ -1,7 +1,7 @@
 import { Select } from "@base-ui/react/select";
 import type { SelectItemProps, SelectPopupProps, SelectRootProps, SelectTriggerProps } from "@base-ui/react/select";
 import { cva } from "class-variance-authority";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, LoaderCircle } from "lucide-react";
 import { createContext, useContext, useId, type PropsWithChildren } from "react";
 
 import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
@@ -18,25 +18,41 @@ import type { ClassNameProp } from "@/types/props";
  */
 
 /*
- * `hasError` lives on Root but must style Trigger — a sibling compound sub-component the
- * consumer instantiates as Root's child, not a prop Root can pass directly. Threaded via context
- * rather than cloning/inspecting Root's children.
+ * `hasError`/`isLoading` live on Root but must style Trigger — a sibling compound sub-component
+ * the consumer instantiates as Root's child, not a prop Root can pass directly. Threaded via
+ * context rather than cloning/inspecting Root's children.
  */
-const DropdownContext = createContext<{ hasError: boolean }>({ hasError: false });
+const DropdownContext = createContext<{ hasError: boolean; isLoading: boolean }>({
+    hasError: false,
+    isLoading: false,
+});
 
 type DropdownRootProps = PropsWithChildren<
     Omit<SelectRootProps<string>, "disabled" | "children"> &
         ClassNameProp & {
             hasError?: boolean;
             isDisabled?: boolean;
+            /**
+             * Transient "the data backing this dropdown is still loading" state — composes with
+             * `isDisabled` (either makes the trigger non-interactive), but only `isLoading` sets
+             * `aria-busy` and swaps the trailing chevron for a spinner.
+             */
+            isLoading?: boolean;
         }
 >;
 
-const Root = ({ hasError = false, isDisabled = false, className, children, ...props }: DropdownRootProps) => {
+const Root = ({
+    hasError = false,
+    isDisabled = false,
+    isLoading = false,
+    className,
+    children,
+    ...props
+}: DropdownRootProps) => {
     return (
-        <DropdownContext.Provider value={{ hasError }}>
+        <DropdownContext.Provider value={{ hasError, isLoading }}>
             <div className={cn("inline-block w-full", className)}>
-                <Select.Root disabled={isDisabled} {...props}>
+                <Select.Root disabled={isDisabled || isLoading} {...props}>
                     {children}
                 </Select.Root>
             </div>
@@ -73,7 +89,7 @@ type DropdownTriggerProps = Omit<SelectTriggerProps, "className" | "children" | 
     };
 
 const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => {
-    const { hasError } = useContext(DropdownContext);
+    const { hasError, isLoading } = useContext(DropdownContext);
     /*
      * ARIA's `combobox` role takes its accessible name from `author` only, never from content
      * (unlike `button`) — `Select.Value`'s rendered text (placeholder or selected item label)
@@ -96,6 +112,7 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
     return (
         <Select.Trigger
             aria-labelledby={valueId}
+            aria-busy={isLoading}
             className={cn(triggerVariants({ state: hasError ? "error" : "default" }), className)}
             {...props}
         >
@@ -128,7 +145,11 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
             </span>
 
             <Select.Icon className="text-text-muted">
-                <ChevronDown aria-hidden="true" className="size-4" />
+                {isLoading ? (
+                    <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
+                ) : (
+                    <ChevronDown aria-hidden="true" className="size-4" />
+                )}
             </Select.Icon>
         </Select.Trigger>
     );

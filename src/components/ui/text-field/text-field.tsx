@@ -58,11 +58,21 @@ const textFieldVariants = cva(
                 true: "pr-11",
                 false: "",
             },
+            /*
+             * Driven internally by `isLoading` (below), not exposed as a standalone consumer-facing
+             * variant — see the plan's Decisions block for why a loading field goes `readOnly`
+             * rather than `disabled`.
+             */
+            isBusy: {
+                true: "cursor-progress",
+                false: "",
+            },
         },
         defaultVariants: {
             size: "md",
             state: "default",
             hasTrailing: false,
+            isBusy: false,
         },
     },
 );
@@ -76,6 +86,12 @@ type Props = Omit<ComponentProps<typeof Field.Control>, "className" | "disabled"
         errorMessage?: string;
         hasError?: boolean;
         isDisabled?: boolean;
+        /**
+         * Transient "a request is in flight" state. Unlike `isDisabled`, a loading field goes
+         * `readOnly` (not `disabled`) so it stays focusable and its value stays legible — see the
+         * plan's Decisions block. Sets `aria-busy` independently of `isDisabled`.
+         */
+        isLoading?: boolean;
         /** Rendered inside the field's visual box, absolutely positioned — e.g. a password-visibility IconButton. */
         trailing?: ReactNode;
     };
@@ -86,6 +102,7 @@ export const TextField = ({
     errorMessage,
     hasError = false,
     isDisabled = false,
+    isLoading = false,
     size,
     trailing,
     className,
@@ -107,11 +124,14 @@ export const TextField = ({
             <div className="relative">
                 <Field.Control
                     type={type}
+                    readOnly={isLoading}
+                    aria-busy={isLoading}
                     className={cn(
                         textFieldVariants({
                             size,
                             state: hasError ? "error" : "default",
                             hasTrailing: Boolean(trailing),
+                            isBusy: isLoading,
                         }),
                         className,
                     )}

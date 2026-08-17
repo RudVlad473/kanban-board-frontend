@@ -109,6 +109,33 @@ describeForEachDevice({
             expect(onValueChange).not.toHaveBeenCalled();
         });
 
+        it("refuses a typed character, stays focusable, and reports itself busy when isLoading", async () => {
+            // Arrange
+            const onValueChange = vi.fn();
+            const screen = await render(
+                <TextField label="Email" defaultValue="a@b.com" isLoading onValueChange={onValueChange} />,
+            );
+            const input = screen.getByRole("textbox", { name: "Email" });
+            const valueBeforeTyping = (input.element() as HTMLInputElement).value;
+
+            // Assert (rendered state)
+            await expect.element(input).toHaveAttribute("aria-busy", "true");
+
+            /*
+             * Act — readOnly (not disabled) keeps the field focusable, unlike the isDisabled case
+             * above; the value must be provably unchanged by the typed character rather than merely
+             * asserting the readOnly property is set.
+             */
+            (input.element() as HTMLInputElement).focus();
+            expect(input.element()).toBe(document.activeElement);
+            await userEvent.keyboard("z");
+
+            // Assert
+            expect((input.element() as HTMLInputElement).value).toBe(valueBeforeTyping);
+            expect(onValueChange).not.toHaveBeenCalled();
+            await expect.element(input).toBeVisible();
+        });
+
         it("renders a masked password input, and a trailing node inside the field rather than beside it", async () => {
             // Arrange
             const screen = await render(

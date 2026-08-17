@@ -21,6 +21,7 @@ const storyIds = [
     "components-ui-button--hover",
     "components-ui-button--focus",
     "components-ui-button--disabled",
+    "components-ui-button--loading", // plan 01-16, Task 1
     // IconButton (plan 01-06, Task 3) — six stories.
     "components-ui-icon-button--default",
     "components-ui-icon-button--ghost",
@@ -28,6 +29,7 @@ const storyIds = [
     "components-ui-icon-button--hover",
     "components-ui-icon-button--focus",
     "components-ui-icon-button--disabled",
+    "components-ui-icon-button--loading", // plan 01-16, Task 2
     // TextField (plan 01-07, Task 1) — nine stories.
     "components-ui-text-field--idle",
     "components-ui-text-field--focused",
@@ -38,6 +40,7 @@ const storyIds = [
     "components-ui-text-field--password",
     "components-ui-text-field--sizes",
     "components-ui-text-field--long-value",
+    "components-ui-text-field--loading", // plan 01-16, Task 1
     // Checkbox (plan 01-07, Task 2) — eight stories.
     "components-ui-checkbox--unchecked",
     "components-ui-checkbox--checked",
@@ -63,6 +66,7 @@ const storyIds = [
     "components-ui-dropdown--disabled-item",
     "components-ui-dropdown--disabled",
     "components-ui-dropdown--long-item-list",
+    "components-ui-dropdown--loading", // plan 01-16, Task 2
     // Modal (plan 01-09, Task 1) — five stories, the seventh and final primitive (D-13/D-28).
     "components-ui-modal--open",
     "components-ui-modal--with-description",

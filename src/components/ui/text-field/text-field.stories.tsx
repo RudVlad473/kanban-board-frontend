@@ -59,6 +59,13 @@ export const Disabled: Story = {
     },
 };
 
+export const Loading: Story = {
+    args: {
+        isLoading: true,
+        defaultValue: "user@example.com",
+    },
+};
+
 export const WithDescription: Story = {
     args: {
         description: "We'll never share your email.",

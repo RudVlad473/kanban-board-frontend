@@ -132,7 +132,9 @@ describeForEachDevice({
                 }),
             );
             const screen = await renderSignInForm();
-            await screen.getByRole("textbox", { name: "Email" }).fill("demo@kanban-board.dev");
+            const emailField = screen.getByRole("textbox", { name: "Email" });
+            const emailValue = "demo@kanban-board.dev";
+            await emailField.fill(emailValue);
             await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
             const submitButton = screen.getByRole("button", { name: "Sign In" });
 
@@ -142,6 +144,16 @@ describeForEachDevice({
             // Assert
             await expect.element(submitButton).toBeDisabled();
             await expect.element(submitButton).toHaveAttribute("aria-busy", "true");
+            await expect.element(emailField).toHaveAttribute("aria-busy", "true");
+
+            /*
+             * Act + Assert — the field refuses a typed character while pending: its value after
+             * typing equals its value before typing, proving the readOnly submitted value cannot
+             * diverge from what the in-flight request already carries.
+             */
+            (emailField.element() as HTMLInputElement).focus();
+            await userEvent.keyboard("z");
+            expect((emailField.element() as HTMLInputElement).value).toBe(emailValue);
 
             // Act
             resolveResponse();
@@ -149,6 +161,11 @@ describeForEachDevice({
             // Assert
             await expect.element(submitButton).not.toBeDisabled();
             await expect.element(submitButton).toHaveAttribute("aria-busy", "false");
+            await expect.element(emailField).toHaveAttribute("aria-busy", "false");
+
+            // Act + Assert — editable again once the request settles.
+            await userEvent.keyboard("z");
+            expect((emailField.element() as HTMLInputElement).value).toBe(`${emailValue}z`);
         });
 
         it("renders the generic invalid-credentials message, clears the password, and keeps the email after a rejected sign-in", async () => {

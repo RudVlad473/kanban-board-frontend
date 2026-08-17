@@ -160,6 +160,40 @@ describeForEachDevice({
             expect(new Set([primaryBg, secondaryBg, destructiveBg]).size).toBe(3);
         });
 
+        it("renders not activatable, reports itself busy, and keeps the label visible alongside a spinner when isLoading", async () => {
+            // Arrange
+            const onClick = vi.fn();
+            const screen = await render(
+                <Button isLoading onClick={onClick}>
+                    Sign In
+                </Button>,
+            );
+            const button = screen.getByRole("button", { name: "Sign In" });
+
+            // Assert (rendered state)
+            await expect.element(button).toBeDisabled();
+            await expect.element(button).toHaveAttribute("aria-busy", "true");
+            await expect.element(screen.getByText("Sign In")).toBeVisible();
+
+            // Act + Assert (click) — a native DOM click() on a disabled button never dispatches.
+            (button.element() as HTMLButtonElement).click();
+            expect(onClick).not.toHaveBeenCalled();
+
+            // Act + Assert (keyboard)
+            button.element().focus();
+            await userEvent.keyboard("{Enter}");
+            expect(onClick).not.toHaveBeenCalled();
+        });
+
+        it("reports itself not busy — the attribute reads the string false, not absent — when isLoading is unset", async () => {
+            // Arrange
+            const screen = await render(<Button onClick={vi.fn()}>Sign In</Button>);
+            const button = screen.getByRole("button", { name: "Sign In" });
+
+            // Assert
+            await expect.element(button).toHaveAttribute("aria-busy", "false");
+        });
+
         it("renders a distinct height for each size", async () => {
             // Arrange
             const sm = await render(<Button size="sm">Small</Button>);

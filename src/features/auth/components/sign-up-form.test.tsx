@@ -181,7 +181,7 @@ describeForEachDevice({
             });
         });
 
-        it("disables the submit control and shows a loading state while in flight, then returns to normal", async () => {
+        it("disables the submit control and shows a loading state while in flight, freezes all three fields and the password toggle, then returns everything to normal", async () => {
             // Arrange — a manually-resolved gate holds the response open until the assertion runs.
             let resolveResponse: () => void = () => undefined;
             const responseGate = new Promise<void>((resolve) => {
@@ -194,9 +194,15 @@ describeForEachDevice({
                 }),
             );
             const screen = await renderSignUpForm();
-            await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
-            await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
-            await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
+            const emailField = screen.getByRole("textbox", { name: "Email" });
+            const nameField = screen.getByRole("textbox", { name: "Name" });
+            const passwordField = screen.getByLabelText("Password", { exact: true });
+            const emailValue = "new@example.com";
+            const nameValue = "Jamie Rivera";
+            const passwordValue = "correct-horse-battery-staple";
+            await emailField.fill(emailValue);
+            await nameField.fill(nameValue);
+            await passwordField.fill(passwordValue);
             const submitButton = screen.getByRole("button", { name: "Create Account" });
 
             // Act
@@ -206,12 +212,83 @@ describeForEachDevice({
             await expect.element(submitButton).toBeDisabled();
             await expect.element(submitButton).toHaveAttribute("aria-busy", "true");
 
+            /*
+             * Act + Assert — all three fields refuse a typed character while pending: each value
+             * after typing equals its value before typing.
+             */
+            (emailField.element() as HTMLInputElement).focus();
+            await userEvent.keyboard("z");
+            expect((emailField.element() as HTMLInputElement).value).toBe(emailValue);
+            (nameField.element() as HTMLInputElement).focus();
+            await userEvent.keyboard("z");
+            expect((nameField.element() as HTMLInputElement).value).toBe(nameValue);
+            (passwordField.element() as HTMLInputElement).focus();
+            await userEvent.keyboard("z");
+            expect((passwordField.element() as HTMLInputElement).value).toBe(passwordValue);
+
+            /*
+             * Act + Assert — the visibility toggle does not flip the password field's type while
+             * pending (it is non-activatable, the same suppressed-click proof the disabled tests
+             * use elsewhere).
+             */
+            const toggleButton = screen.getByRole("button", { name: "Show password" });
+            (toggleButton.element() as HTMLButtonElement).click();
+            await expect.element(passwordField).toHaveAttribute("type", "password");
+
             // Act — let the response resolve.
             resolveResponse();
 
             // Assert — back to normal.
             await expect.element(submitButton).not.toBeDisabled();
             await expect.element(submitButton).toHaveAttribute("aria-busy", "false");
+            await expect.element(emailField).toHaveAttribute("aria-busy", "false");
+            await expect.element(nameField).toHaveAttribute("aria-busy", "false");
+            await expect.element(passwordField).toHaveAttribute("aria-busy", "false");
+
+            // Act + Assert — editable again once the request settles.
+            await userEvent.keyboard("z");
+            expect((passwordField.element() as HTMLInputElement).value).toBe(`${passwordValue}z`);
+        });
+
+        it("recovers every control to editable/pressable again once a pending submission fails", async () => {
+            /*
+             * Arrange — a form that stays frozen after an error is the failure mode this test rules
+             * out; the success path alone would not catch it.
+             */
+            let rejectResponse: () => void = () => undefined;
+            const responseGate = new Promise<void>((_resolve, reject) => {
+                rejectResponse = () => {
+                    reject(new Error("simulated failure"));
+                };
+            });
+            worker.use(
+                http.post(SIGN_UP_PATH, async () => {
+                    try {
+                        await responseGate;
+                    } catch {
+                        return HttpResponse.json({ message: "Something went wrong." }, { status: 500 });
+                    }
+                    return HttpResponse.json({ ok: true });
+                }),
+            );
+            const screen = await renderSignUpForm();
+            await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
+            await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
+            await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
+            const submitButton = screen.getByRole("button", { name: "Create Account" });
+
+            // Act
+            await submitButton.click();
+            await expect.element(submitButton).toBeDisabled();
+            rejectResponse();
+
+            // Assert — every control is editable/pressable again once the failure lands.
+            await expect.element(submitButton).not.toBeDisabled();
+            await expect.element(submitButton).toHaveAttribute("aria-busy", "false");
+            const emailField = screen.getByRole("textbox", { name: "Email" });
+            await expect.element(emailField).toHaveAttribute("aria-busy", "false");
+            await userEvent.type(emailField.element(), "z");
+            expect((emailField.element() as HTMLInputElement).value).toBe("new@example.comz");
         });
 
         it("renders the generic failure message at form level and keeps the entered values after a failed sign-up", async () => {

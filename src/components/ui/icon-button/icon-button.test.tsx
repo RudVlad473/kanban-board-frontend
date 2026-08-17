@@ -74,6 +74,38 @@ describeForEachDevice({
             expect(onClick).not.toHaveBeenCalled();
         });
 
+        it("suppresses activation, reports itself busy, renders a spinner in place of the icon, and keeps its accessible name when isLoading", async () => {
+            // Arrange
+            const onClick = vi.fn();
+            const screen = await render(
+                <IconButton label="Show password" icon={<Eye />} isLoading onClick={onClick} />,
+            );
+            const button = screen.getByRole("button", { name: "Show password" });
+
+            // Assert (rendered state) — still resolvable by its accessible name while busy.
+            await expect.element(button).toBeDisabled();
+            await expect.element(button).toHaveAttribute("aria-busy", "true");
+            expect(button.element().querySelector("svg.animate-spin")).not.toBeNull();
+
+            // Act + Assert (click)
+            (button.element() as HTMLButtonElement).click();
+            expect(onClick).not.toHaveBeenCalled();
+
+            // Act + Assert (keyboard)
+            button.element().focus();
+            await userEvent.keyboard("{Enter}");
+            expect(onClick).not.toHaveBeenCalled();
+        });
+
+        it("reports itself not busy — the attribute reads the string false, not absent — when isLoading is unset", async () => {
+            // Arrange
+            const screen = await render(<IconButton label="Show password" icon={<Eye />} onClick={vi.fn()} />);
+            const button = screen.getByRole("button", { name: "Show password" });
+
+            // Assert
+            await expect.element(button).toHaveAttribute("aria-busy", "false");
+        });
+
         it("has a hit area of at least 44 x 44 CSS pixels at every size, including sm", async () => {
             // Arrange
             const sm = await render(<IconButton label="Small" icon={<Eye />} size="sm" />);
