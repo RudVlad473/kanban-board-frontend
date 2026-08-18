@@ -83,6 +83,25 @@ jobs:
             - name: Test
               run: pnpm test
 
+            # GC-23: `pnpm test`'s "node" Vitest project includes `src/**/*.integration.test.ts`
+            # (added by plan 01-32), which makes real authenticated calls against nonprod and
+            # therefore creates real accounts/sessions there — this job needs the same cleanup
+            # the `e2e` job below already needs. `if: always()` runs it after a failed suite too,
+            # since a failure mid-suite is exactly the case most likely to leave partial state
+            # behind. The response status is checked explicitly (not just piped through `curl -f`
+            # or similar) so a wrong/rotated secret fails the job loudly instead of the cleanup
+            # silently becoming a no-op.
+            - name: Reset nonprod state
+              if: always()
+              run: |
+                  status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+                    -H "X-Reset-Token: ${{ secrets.NONPROD_RESET_TOKEN }}" \
+                    https://kanban-board-rud-vlad-473-nonprod.duckdns.org/api/admin/reset)
+                  if [ "$status" != "204" ]; then
+                    echo "Reset endpoint returned $status, expected 204" >&2
+                    exit 1
+                  fi
+
     visual:
         runs-on: ubuntu-latest
         timeout-minutes: 15
@@ -143,6 +162,22 @@ jobs:
 
             - name: Run E2E tests
               run: pnpm exec playwright test --project e2e
+
+            # GC-23: this job's suite runs against the real, built application (playwright.config.ts's
+            # e2e webServer), creating real accounts/sessions in nonprod's shared database. `if: always()`
+            # runs it after a failed suite too, since a failure mid-suite is exactly the case most
+            # likely to leave partial state behind. The response status is checked explicitly so a
+            # wrong/rotated secret fails the job loudly instead of the cleanup silently becoming a no-op.
+            - name: Reset nonprod state
+              if: always()
+              run: |
+                  status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+                    -H "X-Reset-Token: ${{ secrets.NONPROD_RESET_TOKEN }}" \
+                    https://kanban-board-rud-vlad-473-nonprod.duckdns.org/api/admin/reset)
+                  if [ "$status" != "204" ]; then
+                    echo "Reset endpoint returned $status, expected 204" >&2
+                    exit 1
+                  fi
 
             - name: Upload Playwright report
               if: failure()
