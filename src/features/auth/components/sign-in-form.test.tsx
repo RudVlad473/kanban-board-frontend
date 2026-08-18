@@ -203,11 +203,12 @@ describeForEachDevice({
             await expect.element(emailField).toHaveAttribute("aria-busy", "true");
 
             /*
-             * Act + Assert — the field refuses a typed character while pending: its value after
-             * typing equals its value before typing, proving the readOnly submitted value cannot
-             * diverge from what the in-flight request already carries.
+             * Act + Assert — the field refuses focus while pending (GC-17: isLoading now composes
+             * into disabled), so a subsequent keypress never registers a value change.
              */
+            await expect.element(emailField).toBeDisabled();
             (emailField.element() as HTMLInputElement).focus();
+            expect(emailField.element()).not.toBe(document.activeElement);
             await userEvent.keyboard("z");
             expect((emailField.element() as HTMLInputElement).value).toBe(emailValue);
 
@@ -219,7 +220,12 @@ describeForEachDevice({
             await expect.element(submitButton).toHaveAttribute("aria-busy", "false");
             await expect.element(emailField).toHaveAttribute("aria-busy", "false");
 
-            // Act + Assert — editable again once the request settles.
+            /*
+             * Act + Assert — editable again once the request settles. The earlier `.focus()` call
+             * was refused by the browser (the field was genuinely disabled, not readOnly), so focus
+             * must be re-acquired explicitly now that the field is enabled again.
+             */
+            (emailField.element() as HTMLInputElement).focus();
             await userEvent.keyboard("z");
             expect((emailField.element() as HTMLInputElement).value).toBe(`${emailValue}z`);
         });
