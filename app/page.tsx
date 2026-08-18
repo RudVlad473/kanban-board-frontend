@@ -1,3 +1,5 @@
+import { ROUTE } from "@/lib/routes";
+
 /*
  * The public landing route (`src/lib/routes.ts`'s `PUBLIC_PATHS`). The temporary theme probe
  * added in plan 01-04 is gone — plan 01-14 lands the real Switch-driven, account-persisted theme
@@ -17,11 +19,11 @@ const Home = () => {
                 </p>
 
                 <div className="flex gap-4">
-                    <a href="/login" className="text-bg-primary hover:text-bg-primary-hover">
+                    <a href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">
                         Sign In
                     </a>
 
-                    <a href="/register" className="text-bg-primary hover:text-bg-primary-hover">
+                    <a href={ROUTE.SIGN_UP} className="text-bg-primary hover:text-bg-primary-hover">
                         Create Account
                     </a>
                 </div>

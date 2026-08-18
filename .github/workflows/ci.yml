@@ -65,6 +65,9 @@ jobs:
             - name: Lint
               run: pnpm lint
 
+            - name: Route declaration check
+              run: pnpm routes:check
+
             - name: Format check
               run: pnpm format:check
 

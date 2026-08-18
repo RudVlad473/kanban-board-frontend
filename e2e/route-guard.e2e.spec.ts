@@ -9,7 +9,7 @@ const SESSION_COOKIE_NAME = "session";
 const PROTECTED_HEADING = "Boards";
 
 const signIn = async (page: Page): Promise<void> => {
-    await page.goto("/login");
+    await page.goto(ROUTE.SIGN_IN);
     await page.getByLabel("Email", { exact: true }).fill(DEMO_USER_EMAIL);
     await page.getByLabel("Password", { exact: true }).fill(DEMO_USER_PASSWORD);
     await page.getByRole("button", { name: "Sign In" }).click();
@@ -41,7 +41,7 @@ test.describe("AUTH-03: route guard", () => {
     test("redirects a signed-in visitor away from the sign-in route to the board list", async ({ page }) => {
         await signIn(page);
 
-        await page.goto("/login");
+        await page.goto(ROUTE.SIGN_IN);
 
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
     });

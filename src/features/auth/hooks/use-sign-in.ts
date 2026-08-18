@@ -2,13 +2,8 @@ import { useMutation, type UseMutationResult } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { postSignIn } from "@/features/auth/api/auth-api";
+import { ROUTE } from "@/lib/routes";
 import type { SignInInput } from "@/lib/validation/auth-schemas";
-
-/*
- * Same post-authentication destination as use-sign-up.ts — see that file's comment for why
- * `router.refresh()` is required alongside `router.push()`.
- */
-const POST_SIGN_IN_PATH = "/boards";
 
 type SignInResponse = { ok: true };
 
@@ -26,7 +21,11 @@ export const useSignIn = (): UseMutationResult<SignInResponse, Error, SignInInpu
         mutationFn: postSignIn,
         retry: false,
         onSuccess: () => {
-            router.push(POST_SIGN_IN_PATH);
+            /*
+             * Same post-authentication destination as use-sign-up.ts — see that file's comment for
+             * why `router.refresh()` is required alongside `router.push()`.
+             */
+            router.push(ROUTE.BOARDS);
             router.refresh();
         },
     });

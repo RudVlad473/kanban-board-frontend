@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import { ROUTE } from "@/lib/routes";
+
 import { ErrorFallback } from "./error-fallback";
 
 /*
@@ -13,7 +15,7 @@ const meta: Meta<typeof ErrorFallback> = {
         title: "Something went wrong",
         description: "This part of the app ran into a problem. Your other work is unaffected.",
         onRetry: () => undefined,
-        homeHref: "/boards",
+        homeHref: ROUTE.BOARDS,
     },
 };
 

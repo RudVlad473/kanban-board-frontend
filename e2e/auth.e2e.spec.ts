@@ -15,7 +15,7 @@ test.describe("AUTH-01: sign up", () => {
     }) => {
         const freshEmail = `e2e-${randomUUID()}@example.com`;
 
-        await page.goto("/register");
+        await page.goto(ROUTE.SIGN_UP);
         await page.getByLabel("Email", { exact: true }).fill(freshEmail);
         /*
          * "Letters and spaces" only (GC-02) — a digit-bearing fixture name like "E2E Tester" now
@@ -38,7 +38,7 @@ test.describe("AUTH-01: sign up", () => {
 
 test.describe("AUTH-02: sign in", () => {
     test("signs in the demo account and stays signed in across a full page reload", async ({ page }) => {
-        await page.goto("/login");
+        await page.goto(ROUTE.SIGN_IN);
         await page.getByLabel("Email", { exact: true }).fill(DEMO_USER_EMAIL);
         await page.getByLabel("Password", { exact: true }).fill(DEMO_USER_PASSWORD);
         await page.getByRole("button", { name: "Sign In" }).click();
@@ -58,7 +58,7 @@ test.describe("AUTH-02: sign in", () => {
 
 test.describe("sign-out", () => {
     test("signs out and the board list redirects back to sign-in afterward", async ({ page }) => {
-        await page.goto("/login");
+        await page.goto(ROUTE.SIGN_IN);
         await page.getByLabel("Email", { exact: true }).fill(DEMO_USER_EMAIL);
         await page.getByLabel("Password", { exact: true }).fill(DEMO_USER_PASSWORD);
         await page.getByRole("button", { name: "Sign In" }).click();
