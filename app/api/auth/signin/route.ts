@@ -27,12 +27,11 @@ export const POST = async (request: Request): Promise<Response> => {
 
     /*
      * The contract declares no error-response schema for this operation at all, so the generated
-     * type claims `error` is always `undefined` — untrue at runtime, since the mock (and any real
-     * backend returning a non-2xx status) populates it. `POST /signin`'s success response is
-     * similarly a bare 200 with no body; the Task 1 checkpoint decision (01-10-SUMMARY.md) fills
-     * that gap with the full identity shape at runtime. Both are widened through `unknown` so the
-     * type-aware lint tier checks the real runtime shape, not the contract's incomplete claim
-     * (same pattern as src/lib/mocks/handlers.test.ts).
+     * type claims `error` is always `undefined` — untrue at runtime, since a real backend
+     * returning a non-2xx status populates it. `POST /signin`'s success response is similarly a
+     * bare 200 with no body; the Task 1 checkpoint decision (01-10-SUMMARY.md) fills that gap with
+     * the full identity shape at runtime. Both are widened through `unknown` so the type-aware
+     * lint tier checks the real runtime shape, not the contract's incomplete claim.
      */
     const upstreamError: unknown = error;
     const identity: unknown = data;

@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tasks/{taskId}/move": {
         parameters: {
             query?: never;
@@ -331,7 +347,7 @@ export interface components {
             description?: string;
         };
         SaveSubtaskRequestDTO: {
-            title?: string;
+            title: string;
         };
         MoveTaskRequestDTO: {
             targetColumnId: string;
@@ -399,11 +415,11 @@ export interface components {
             /** Format: int32 */
             number?: number;
             sort?: components["schemas"]["SortObject"];
-            first?: boolean;
-            last?: boolean;
-            pageable?: components["schemas"]["PageableObject"];
             /** Format: int32 */
             numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            first?: boolean;
+            last?: boolean;
             empty?: boolean;
         };
         PageableObject: {
@@ -412,9 +428,9 @@ export interface components {
             sort?: components["schemas"]["SortObject"];
             paged?: boolean;
             /** Format: int32 */
-            pageSize?: number;
-            /** Format: int32 */
             pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
             unpaged?: boolean;
         };
         SortObject: {
@@ -904,6 +920,26 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["SubtaskResponseDTO"];
                 };
+            };
+        };
+    };
+    reset: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Reset-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

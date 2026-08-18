@@ -9,9 +9,11 @@
  * ci.yml`'s `e2e` job always sets a real workflow-generated `SESSION_SECRET` so this fallback
  * never triggers there.
  */
+import { resolveTestApiBaseUrl } from "../src/test-utils/api-base-url";
+
 export const E2E_SESSION_SECRET = process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production";
 
-export const E2E_EXTERNAL_API_BASE_URL = process.env.EXTERNAL_API_BASE_URL ?? "http://localhost:8080/api";
+export const E2E_EXTERNAL_API_BASE_URL = resolveTestApiBaseUrl();
 
 export const E2E_PORT = 4173;
 

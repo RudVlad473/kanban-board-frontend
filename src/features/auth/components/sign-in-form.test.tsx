@@ -1,12 +1,11 @@
 import { composeStories } from "@storybook/react";
-import { http, HttpResponse } from "msw";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render, type RenderResult } from "vitest-browser-react";
 
+import { postSignIn } from "@/features/auth/api/auth-api";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
-import { setupMswWorker } from "@/test-utils/setup-msw-worker";
 
 import { SignInForm } from "./sign-in-form";
 import * as signInStories from "./sign-in-form.stories";
@@ -21,21 +20,26 @@ import * as signInStories from "./sign-in-form.stories";
 const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed } = composeStories(signInStories);
 
 /*
- * Same rationale as sign-up-form.test.tsx: a dedicated, test-local worker (not
- * src/lib/mocks/browser.ts's shared singleton, whose handlers pull in node:fs/os/crypto through
- * src/lib/mocks/store.ts — Node builtins a real browser page can't load).
+ * `SignInForm` never talks to a network — it calls `useSignIn`, which calls `postSignIn`
+ * (`@/features/auth/api/auth-api`), a thin typed wrapper over this app's own same-origin BFF
+ * route. Stubbing that module boundary — not a network layer — keeps the real component tree, the
+ * real resolver and real rendering under test, while never depending on any server (real or mock)
+ * actually being reachable (GC-22: no fake HTTP layer of any kind remains in this repository).
  */
-const worker = setupMswWorker();
+vi.mock("@/features/auth/api/auth-api", () => ({
+    postSignIn: vi.fn(),
+}));
+
+const mockedPostSignIn = vi.mocked(postSignIn);
 
 /*
- * Same rationale as sign-up-form.test.tsx: `useSignIn` calls `next/navigation`'s `useRouter`,
- * which needs a real Next.js App Router context this plain Vitest Browser Mode page doesn't have.
+ * `useSignIn` calls `next/navigation`'s `useRouter`, which needs a real Next.js App Router
+ * context this plain Vitest Browser Mode page doesn't have.
  */
 vi.mock("next/navigation", () => ({
     useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
-const SIGN_IN_PATH = "/api/auth/signin";
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
 
@@ -109,6 +113,10 @@ const signInStagedStoryCases = [
 describeForEachDevice({
     name: "SignInForm",
     body: () => {
+        afterEach(() => {
+            mockedPostSignIn.mockReset();
+        });
+
         it("renders two labelled fields and the primary submit control, each reachable by its accessible name", async () => {
             // Arrange
             const screen = await renderSignInForm();
@@ -121,13 +129,6 @@ describeForEachDevice({
 
         it("shows the required-field message on both fields when submitted empty, and calls no endpoint", async () => {
             // Arrange
-            let signInMatchCount = 0;
-            worker.use(
-                http.post(SIGN_IN_PATH, () => {
-                    signInMatchCount += 1;
-                    return HttpResponse.json({ ok: true });
-                }),
-            );
             const screen = await renderSignInForm();
 
             // Act
@@ -135,7 +136,7 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
-            expect(signInMatchCount).toBe(0);
+            expect(mockedPostSignIn).not.toHaveBeenCalled();
         });
 
         it("shows the email-format message on blur for an invalid email, and no other field", async () => {
@@ -153,13 +154,7 @@ describeForEachDevice({
 
         it("calls the sign-in mutation exactly once with valid credentials", async () => {
             // Arrange
-            const requestBodies: unknown[] = [];
-            worker.use(
-                http.post(SIGN_IN_PATH, async ({ request }) => {
-                    requestBodies.push(await request.json());
-                    return HttpResponse.json({ ok: true });
-                }),
-            );
+            mockedPostSignIn.mockResolvedValueOnce({ ok: true });
             const screen = await renderSignInForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("demo@kanban-board.dev");
             await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
@@ -168,8 +163,14 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Sign In" }).click();
 
             // Assert
-            await expect.poll(() => requestBodies.length).toBe(1);
-            expect(requestBodies[0]).toEqual({
+            await expect.poll(() => mockedPostSignIn.mock.calls.length).toBe(1);
+            /*
+             * Asserted against the mutation's first argument only — TanStack Query's `mutationFn`
+             * receives a second, internal context argument (`{ client, meta, mutationKey }`) that
+             * `postSignIn`'s own real signature never declares and this test has no business
+             * asserting on.
+             */
+            expect(mockedPostSignIn.mock.calls[0]?.[0]).toEqual({
                 email: "demo@kanban-board.dev",
                 password: "correct-horse-battery-staple",
             });
@@ -181,12 +182,10 @@ describeForEachDevice({
             const responseGate = new Promise<void>((resolve) => {
                 resolveResponse = resolve;
             });
-            worker.use(
-                http.post(SIGN_IN_PATH, async () => {
-                    await responseGate;
-                    return HttpResponse.json({ ok: true });
-                }),
-            );
+            mockedPostSignIn.mockImplementationOnce(async () => {
+                await responseGate;
+                return { ok: true };
+            });
             const screen = await renderSignInForm();
             const emailField = screen.getByRole("textbox", { name: "Email" });
             const emailValue = "demo@kanban-board.dev";
@@ -232,11 +231,7 @@ describeForEachDevice({
 
         it("renders the generic invalid-credentials message, clears the password, and keeps the email after a rejected sign-in", async () => {
             // Arrange
-            worker.use(
-                http.post(SIGN_IN_PATH, () =>
-                    HttpResponse.json({ message: INVALID_CREDENTIALS_MESSAGE }, { status: 401 }),
-                ),
-            );
+            mockedPostSignIn.mockRejectedValueOnce(new Error(INVALID_CREDENTIALS_MESSAGE));
             const screen = await renderSignInForm();
             const emailValue = "demo@kanban-board.dev";
             await screen.getByRole("textbox", { name: "Email" }).fill(emailValue);
@@ -253,11 +248,7 @@ describeForEachDevice({
 
         it("renders the identical failure message whether the email is unknown or the password is wrong", async () => {
             // Arrange — an unknown email.
-            worker.use(
-                http.post(SIGN_IN_PATH, () =>
-                    HttpResponse.json({ message: INVALID_CREDENTIALS_MESSAGE }, { status: 401 }),
-                ),
-            );
+            mockedPostSignIn.mockRejectedValueOnce(new Error(INVALID_CREDENTIALS_MESSAGE));
             const unknownEmailScreen = await renderSignInForm();
             await unknownEmailScreen.getByRole("textbox", { name: "Email" }).fill("nobody@example.com");
             await unknownEmailScreen.getByLabelText("Password", { exact: true }).fill("whatever-password");
@@ -272,9 +263,10 @@ describeForEachDevice({
             await unknownEmailScreen.unmount();
 
             /*
-             * Arrange — a wrong password for a real account (byte-identical mock response, per
-             * plan 01-11's own BFF-level guarantee; this test proves the UI renders it unchanged).
+             * Arrange — a wrong password for a real account (byte-identical rejection, per plan
+             * 01-11's own BFF-level guarantee; this test proves the UI renders it unchanged).
              */
+            mockedPostSignIn.mockRejectedValueOnce(new Error(INVALID_CREDENTIALS_MESSAGE));
             const wrongPasswordScreen = await renderSignInForm();
             await wrongPasswordScreen.getByRole("textbox", { name: "Email" }).fill("demo@kanban-board.dev");
             await wrongPasswordScreen.getByLabelText("Password", { exact: true }).fill("not-the-right-password");

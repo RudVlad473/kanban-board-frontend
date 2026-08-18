@@ -2,24 +2,19 @@ import "server-only";
 
 import { externalApi } from "@/lib/api/server-client";
 import { resolveDisplayName } from "@/lib/display-name";
-import { session } from "@/lib/session";
+import { isSessionPayload, session } from "@/lib/session";
 import { signUpSchema, zodErrorToFieldErrors } from "@/lib/validation/auth-schemas";
 
 /*
- * `POST /signup`'s only documented response is a bare 200 returning a string, with no schema for
- * the email-already-registered case (01-UI-SPEC.md's Copywriting Contract) — this copy covers
- * both the duplicate-email and unknown-failure triggers without committing to either.
+ * The contract still documents `POST /signup` as a bare 200 with no error schema (Finding 4,
+ * 01-RESEARCH.md's round-3 addendum) — the real backend returns 201 + the full identity record,
+ * confirmed directly against the live nonprod backend during planning (this plan's
+ * `<verified_backend_facts>`). No schema exists for the email-already-registered case either
+ * (01-UI-SPEC.md's Copywriting Contract) — this copy covers both the duplicate-email and
+ * unknown-failure triggers without committing to either.
  */
 const SIGN_UP_FAILURE_MESSAGE =
     "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
-
-/*
- * New accounts start on the LIGHT theme (matches src/lib/mocks/store.ts's `createUser` default) —
- * `POST /signup`'s response is a bare id string, not the full identity shape, so the session for
- * a brand-new account is assembled from the validated request body plus that default rather than
- * a second round-trip to `/signin`.
- */
-const DEFAULT_NEW_ACCOUNT_THEME = "LIGHT";
 
 export const POST = async (request: Request): Promise<Response> => {
     const body: unknown = await request.json();
@@ -29,35 +24,31 @@ export const POST = async (request: Request): Promise<Response> => {
         return Response.json({ errors: zodErrorToFieldErrors(parsed.error) }, { status: 400 });
     }
 
-    const { data, error } = await externalApi.POST("/signup", {
-        body: parsed.data,
-        parseAs: "text",
-    });
+    const { data, error } = await externalApi.POST("/signup", { body: parsed.data });
 
     /*
      * The contract declares no error-response schema for this operation, so the generated type
      * claims `error` is always `undefined` — untrue at runtime for the already-registered-email
      * case (and any other non-2xx upstream response). Widened through `unknown` so the type-aware
-     * lint tier checks the real runtime shape, not the contract's incomplete claim.
+     * lint tier checks the real runtime shape, not the contract's incomplete claim — the same
+     * pattern signin/route.ts already uses.
      */
     const upstreamError: unknown = error;
+    const identity: unknown = data;
 
-    if (upstreamError !== undefined || typeof data !== "string") {
+    if (upstreamError !== undefined || !isSessionPayload(identity)) {
         return Response.json({ message: SIGN_UP_FAILURE_MESSAGE }, { status: 409 });
     }
 
     /*
-     * The fallback is resolved only here, assembling the session payload — the request forwarded
-     * upstream a few lines above carries `parsed.data` exactly as parsed, with no name substituted,
-     * since the backend permits an absent name and storing one the user never chose would be wrong
-     * (GC-02).
+     * The session is built from the backend's own returned record — the identifier and theme are
+     * the backend's, not values assembled from the submitted form. `isSessionPayload` only checks
+     * `displayName` is a string, not that it's non-empty — an account created without a name
+     * (the backend permits an absent one) would otherwise put a blank into the dashboard chrome on
+     * every subsequent sign-in (GC-02), so `resolveDisplayName` still runs over the guarded
+     * identity here, mirroring signin/route.ts.
      */
-    await session.create({
-        id: data,
-        email: parsed.data.email,
-        displayName: resolveDisplayName(parsed.data),
-        theme: DEFAULT_NEW_ACCOUNT_THEME,
-    });
+    await session.create({ ...identity, displayName: resolveDisplayName(identity) });
 
     return Response.json({ ok: true }, { status: 200 });
 };

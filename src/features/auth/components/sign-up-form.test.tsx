@@ -1,12 +1,11 @@
 import { composeStories } from "@storybook/react";
-import { http, HttpResponse } from "msw";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render, type RenderResult } from "vitest-browser-react";
 
+import { postSignUp } from "@/features/auth/api/auth-api";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
-import { setupMswWorker } from "@/test-utils/setup-msw-worker";
 
 import { SignUpForm } from "./sign-up-form";
 import * as signUpStories from "./sign-up-form.stories";
@@ -21,15 +20,17 @@ import * as signUpStories from "./sign-up-form.stories";
 const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed } = composeStories(signUpStories);
 
 /*
- * A dedicated, test-local worker — not `src/lib/mocks/browser.ts`'s shared singleton — because
- * that module's handlers (`src/lib/mocks/handlers.ts`) pull in `src/lib/mocks/store.ts`, which
- * imports `node:fs`/`node:os`/`node:crypto` for its on-disk persistence mirror. Those Node builtins
- * cannot be bundled into a real browser page (confirmed: Vite externalizes them and the import
- * throws at test-file load). This form never talks to the external contract anyway — only to this
- * app's own same-origin `/api/auth/...` BFF routes — so a worker with no base handlers, populated
- * per test via `.use()`, is both sufficient and avoids the Node-only dependency entirely.
+ * `SignUpForm` never talks to a network — it calls `useSignUp`, which calls `postSignUp`
+ * (`@/features/auth/api/auth-api`), a thin typed wrapper over this app's own same-origin BFF
+ * route. Stubbing that module boundary — not a network layer — keeps the real component tree, the
+ * real resolver and real rendering under test, while never depending on any server (real or mock)
+ * actually being reachable (GC-22: no fake HTTP layer of any kind remains in this repository).
  */
-const worker = setupMswWorker();
+vi.mock("@/features/auth/api/auth-api", () => ({
+    postSignUp: vi.fn(),
+}));
+
+const mockedPostSignUp = vi.mocked(postSignUp);
 
 /*
  * `useSignUp` calls `next/navigation`'s `useRouter`, which requires a real Next.js App Router
@@ -41,7 +42,6 @@ vi.mock("next/navigation", () => ({
     useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
-const SIGN_UP_PATH = "/api/auth/signup";
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 
 const renderSignUpForm = () => renderWithProviders(<SignUpForm />);
@@ -120,6 +120,10 @@ const signUpStagedStoryCases = [
 describeForEachDevice({
     name: "SignUpForm",
     body: () => {
+        afterEach(() => {
+            mockedPostSignUp.mockReset();
+        });
+
         it("renders three labelled fields and the primary submit control, each reachable by its accessible name", async () => {
             // Arrange
             const screen = await renderSignUpForm();
@@ -142,13 +146,6 @@ describeForEachDevice({
 
         it("shows the required-field message on exactly two empty fields when submitted (Name is optional), and calls no endpoint", async () => {
             // Arrange
-            let signUpMatchCount = 0;
-            worker.use(
-                http.post(SIGN_UP_PATH, () => {
-                    signUpMatchCount += 1;
-                    return HttpResponse.json({ ok: true });
-                }),
-            );
             const screen = await renderSignUpForm();
 
             // Act
@@ -156,7 +153,7 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
-            expect(signUpMatchCount).toBe(0);
+            expect(mockedPostSignUp).not.toHaveBeenCalled();
         });
 
         it("shows the required-field message on a single empty field and none on the other two", async () => {
@@ -271,13 +268,7 @@ describeForEachDevice({
 
         it("calls the sign-up mutation exactly once, with no name key at all, when the Name field is left empty", async () => {
             // Arrange
-            const requestBodies: unknown[] = [];
-            worker.use(
-                http.post(SIGN_UP_PATH, async ({ request }) => {
-                    requestBodies.push(await request.json());
-                    return HttpResponse.json({ ok: true });
-                }),
-            );
+            mockedPostSignUp.mockResolvedValueOnce({ ok: true });
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
             await screen.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
@@ -287,12 +278,15 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create Account" }).click();
 
             // Assert
-            await expect.poll(() => requestBodies.length).toBe(1);
+            await expect.poll(() => mockedPostSignUp.mock.calls.length).toBe(1);
             /*
-             * `toEqual` (not `toMatchObject`) so an accidental `displayName: ""` would fail this too —
-             * the key must be entirely absent, not merely falsy.
+             * Asserted against the mutation's first argument only — TanStack Query's `mutationFn`
+             * receives a second, internal context argument (`{ client, meta, mutationKey }`) that
+             * `postSignUp`'s own real signature never declares and this test has no business
+             * asserting on. `toEqual` (not `toMatchObject`) so an accidental `displayName: ""`
+             * would fail this too — the key must be entirely absent, not merely falsy.
              */
-            expect(requestBodies[0]).toEqual({
+            expect(mockedPostSignUp.mock.calls[0]?.[0]).toEqual({
                 email: "new@example.com",
                 password: "CorrectPassword1!",
             });
@@ -300,13 +294,7 @@ describeForEachDevice({
 
         it("calls the sign-up mutation exactly once with the entered values, including the name, on a valid submit", async () => {
             // Arrange
-            const requestBodies: unknown[] = [];
-            worker.use(
-                http.post(SIGN_UP_PATH, async ({ request }) => {
-                    requestBodies.push(await request.json());
-                    return HttpResponse.json({ ok: true });
-                }),
-            );
+            mockedPostSignUp.mockResolvedValueOnce({ ok: true });
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
             await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
@@ -316,8 +304,8 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create Account" }).click();
 
             // Assert
-            await expect.poll(() => requestBodies.length).toBe(1);
-            expect(requestBodies[0]).toEqual({
+            await expect.poll(() => mockedPostSignUp.mock.calls.length).toBe(1);
+            expect(mockedPostSignUp.mock.calls[0]?.[0]).toEqual({
                 email: "new@example.com",
                 displayName: "Jamie Rivera",
                 password: "CorrectPassword1!",
@@ -330,12 +318,10 @@ describeForEachDevice({
             const responseGate = new Promise<void>((resolve) => {
                 resolveResponse = resolve;
             });
-            worker.use(
-                http.post(SIGN_UP_PATH, async () => {
-                    await responseGate;
-                    return HttpResponse.json({ ok: true });
-                }),
-            );
+            mockedPostSignUp.mockImplementationOnce(async () => {
+                await responseGate;
+                return { ok: true };
+            });
             const screen = await renderSignUpForm();
             const emailField = screen.getByRole("textbox", { name: "Email" });
             const nameField = screen.getByRole("textbox", { name: "Name" });
@@ -417,16 +403,10 @@ describeForEachDevice({
                     reject(new Error("simulated failure"));
                 };
             });
-            worker.use(
-                http.post(SIGN_UP_PATH, async () => {
-                    try {
-                        await responseGate;
-                    } catch {
-                        return HttpResponse.json({ message: "Something went wrong." }, { status: 500 });
-                    }
-                    return HttpResponse.json({ ok: true });
-                }),
-            );
+            mockedPostSignUp.mockImplementationOnce(async () => {
+                await responseGate;
+                return { ok: true };
+            });
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
             await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
@@ -451,7 +431,7 @@ describeForEachDevice({
             // Arrange
             const failureMessage =
                 "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
-            worker.use(http.post(SIGN_UP_PATH, () => HttpResponse.json({ message: failureMessage }, { status: 409 })));
+            mockedPostSignUp.mockRejectedValueOnce(new Error(failureMessage));
             const screen = await renderSignUpForm();
             const emailValue = "existing@example.com";
             await screen.getByRole("textbox", { name: "Email" }).fill(emailValue);

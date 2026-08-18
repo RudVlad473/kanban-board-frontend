@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 7
+open_count: 8
 waived_count: 0
 fixed_count: 4
-total_count: 11
-last_updated: 2026-08-18T09:09:54.559Z
+total_count: 12
+last_updated: 2026-08-18T18:39:44.805Z
 ---
 
 # Broken Windows Ledger
@@ -26,6 +26,7 @@ last_updated: 2026-08-18T09:09:54.559Z
 | 9 | 01 | deviation | src/components/ui/modal/modal.test.tsx |  | Pre-existing browser-mode timeout unrelated to 01-26 mock store rewrite | open |  | 2026-08-18T09:09:42.226Z |  |
 | 10 | 01 | deviation | src/components/ui/text-field/text-field.test.tsx |  | Pre-existing browser-mode timeout and onValueChange assertion mismatch, unrelated to 01-26 mock store rewrite | open |  | 2026-08-18T09:09:48.828Z |  |
 | 11 | 01 | deviation | app/layout.tsx | 11 | Pre-existing tsc TS2304 (Cannot find name LayoutProps), unrelated to 01-26 mock store rewrite | open |  | 2026-08-18T09:09:54.559Z |  |
+| 12 | 01 | deviation | app/api/auth/signup/route.ts |  | Task 01-30/Task-2 behaviours 3-4 (sign-up identity storage / failure path) verified manually against the live backend, not via a new committed automated node-project test; 01-33's Server Action tests are the intended replacement home for Route Handler coverage after 01-30 Task 1 deleted app/api/auth/routes.test.ts. | open |  | 2026-08-18T18:39:44.805Z |  |
 
 ````json
 [
@@ -159,6 +160,18 @@ last_updated: 2026-08-18T09:09:54.559Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-18T09:09:54.559Z",
+    "resolved_at": null
+  },
+  {
+    "id": 12,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "app/api/auth/signup/route.ts",
+    "line": null,
+    "description": "Task 01-30/Task-2 behaviours 3-4 (sign-up identity storage / failure path) verified manually against the live backend, not via a new committed automated node-project test; 01-33's Server Action tests are the intended replacement home for Route Handler coverage after 01-30 Task 1 deleted app/api/auth/routes.test.ts.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-18T18:39:44.805Z",
     "resolved_at": null
   }
 ]

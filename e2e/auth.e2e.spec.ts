@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
-import { DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "../src/lib/mocks/store";
+import { createFixtureAccount } from "./fixtures";
 import { ROUTE } from "../src/lib/routes";
 
 const SESSION_COOKIE_NAME = "session";
@@ -37,10 +37,15 @@ test.describe("AUTH-01: sign up", () => {
 });
 
 test.describe("AUTH-02: sign in", () => {
-    test("signs in the demo account and stays signed in across a full page reload", async ({ page }) => {
+    test("signs in a freshly created account and stays signed in across a full page reload", async ({
+        page,
+        request,
+    }) => {
+        const account = await createFixtureAccount(request);
+
         await page.goto(ROUTE.SIGN_IN);
-        await page.getByLabel("Email", { exact: true }).fill(DEMO_USER_EMAIL);
-        await page.getByLabel("Password", { exact: true }).fill(DEMO_USER_PASSWORD);
+        await page.getByLabel("Email", { exact: true }).fill(account.email);
+        await page.getByLabel("Password", { exact: true }).fill(account.password);
         await page.getByRole("button", { name: "Sign In" }).click();
 
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
@@ -57,10 +62,12 @@ test.describe("AUTH-02: sign in", () => {
 });
 
 test.describe("sign-out", () => {
-    test("signs out and the board list redirects back to sign-in afterward", async ({ page }) => {
+    test("signs out and the board list redirects back to sign-in afterward", async ({ page, request }) => {
+        const account = await createFixtureAccount(request);
+
         await page.goto(ROUTE.SIGN_IN);
-        await page.getByLabel("Email", { exact: true }).fill(DEMO_USER_EMAIL);
-        await page.getByLabel("Password", { exact: true }).fill(DEMO_USER_PASSWORD);
+        await page.getByLabel("Email", { exact: true }).fill(account.email);
+        await page.getByLabel("Password", { exact: true }).fill(account.password);
         await page.getByRole("button", { name: "Sign In" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 

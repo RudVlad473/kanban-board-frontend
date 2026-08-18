@@ -120,11 +120,10 @@ src/
 - All card/column dragging goes through the stable `@dnd-kit/core`/`@dnd-kit/sortable` line, not the pre-1.0 `@dnd-kit/react` rewrite. Enforcement: `package.json` dependency pinned accordingly; code review.
 - Every drag interaction remains keyboard-operable (dnd-kit's `KeyboardSensor` enabled). Enforcement: the existing Storybook + axe-core "no new violations" gate — a drag story with no keyboard-operable path fails it.
 
-## Mock server (docs/adr/tech/0004)
+## No fake HTTP layer (docs/adr/tech/0004, superseded on this point — see the round-3 gap-closure ADR)
 
-- All API calls inside Vitest Browser Mode and Playwright tests are intercepted by MSW; no live network call to any real or third-party host. Enforcement: MSW configured with `onUnhandledRequest: 'error'` — an unmocked request fails the test.
-- MSW handlers enforce the same `version`-conflict rejection (409) behavior as the real contract for every versioned mutation. Enforcement: a shared handler test asserting a stale-version request is rejected.
-- Mock/test state (e.g. `src/lib/mocks/store.ts`) lives in memory only, reset via an explicit seed/reset function (e.g. `resetMockStore()`) — never ad-hoc disk or browser-storage persistence to survive hot-reloads or test runs. If cross-reload survival is genuinely needed, that is a distinct, deliberately reviewed decision, not a default reach. Enforcement: code review.
+- This project runs no fake HTTP layer of any kind — every test layer (unit, component, end-to-end) and local development dial the deployed nonprod backend directly; there is no in-process mock server standing in for it anywhere in the codebase. Enforcement: code review; a repository-wide grep for a mock-server dependency or a hand-written response fixture module is expected to find nothing.
+- A test isolates itself by creating its own throwaway data against the real backend (e.g. a randomised fixture account per end-to-end test), never by faking a server response. Enforcement: code review — a test asserting behavior against invented response data rather than the real backend's own observed shape is a review-blocking gap.
 
 ## Typed API client (docs/adr/tech/0005)
 

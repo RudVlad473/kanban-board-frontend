@@ -15,8 +15,8 @@ import { signUpSchema, type SignUpInput } from "@/lib/validation/auth-schemas";
 /*
  * Duplicated verbatim from src/lib/validation/auth-schemas.ts's own (unexported)
  * REQUIRED_FIELD_MESSAGE — this file's story-staging-only "every field is required" demonstration
- * needs the exact copy the real resolver produces. Same string-duplication pattern already used
- * between the sign-in Route Handler and its MSW mock counterpart (src/lib/mocks/handlers.ts).
+ * needs the exact copy the real resolver produces, without importing the (unexported) constant
+ * across module boundaries just for this Storybook-only staging prop.
  */
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 
