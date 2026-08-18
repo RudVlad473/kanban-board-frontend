@@ -291,3 +291,350 @@ searching moot.
 **Files scanned:** Repo root directory listing only (10 files, all planning docs; no application
 code found).
 **Pattern extraction date:** 2026-08-10
+
+---
+
+# Round 3 Gap Closure Pattern Map (2026-08-18 addendum)
+
+**Mapped:** 2026-08-18
+**Scope:** GC-18 through GC-24 (`01-CONTEXT.md`) — session-cookie bridging, auth Server Actions
+migration, OpenAPI contract regen, MSW/mock-store removal, CI-only real-backend tests, ADR
+0002 carve-out.
+**Files analyzed:** 12 existing files (being rewritten or deleted) + ~6 new files
+**Analogs found:** 12 / 12 — unlike the 2026-08-10 map above, 27 of Phase 1's 29 plans have now
+shipped real code; this addendum points at that real code as ground truth, not at RESEARCH.md
+prose alone.
+
+**Companion reference (not a codebase analog):** `C:\Dev\Repos\kanban-board-backend`'s
+`docs/AUTH_FLOWS.md` + `docs/diagrams/auth-{signin,signup}-scenario.mmd` document the real
+backend's session-cookie contract (JSESSIONID, `ProblemDetail` error codes, 2-session ceiling).
+It is a different repo/language (Spring Boot) — read it for the *contract*, never as a pattern to
+copy Next.js/TypeScript code shape from.
+
+## File Classification (round 3)
+
+| File | Role | Data Flow | Closest Analog | Match Quality |
+|------|------|-----------|-----------------|---------------|
+| `src/lib/session.ts` (extend `SessionPayload`) | server-only utility (session codec) | transform (JWT encode/decode) | itself — current file, extend in place | exact (existing file, additive edit) |
+| `src/lib/api/server-client.ts` (add `.use()` middleware) | server-only service (typed HTTP client) | request-response, cross-cutting (every call) | itself — current file, extend in place; middleware shape read from installed `openapi-fetch@0.17.0`'s own `.d.ts` | exact |
+| `app/api/auth/signin/route.ts` → Server Action | route handler → Server Action (request-response) | request-response | itself (before), `use-sign-in.ts`+Next.js `useActionState` docs pattern (after) | exact (rewrite of existing file) |
+| `app/api/auth/signup/route.ts` → Server Action | route handler → Server Action | request-response | itself (before) | exact (rewrite) |
+| `app/api/auth/signout/route.ts` → Server Action | route handler → Server Action | request-response | itself (before) — simplest of the three, no upstream call | exact (rewrite) |
+| `src/features/auth/api/auth-api.ts` (deleted, folded into Server Actions) | client API wrapper (TanStack Query mutationFn source) | request-response | itself — read as "before" ground truth for what the Server Action inlines | exact (deletion target) |
+| `src/features/auth/hooks/use-sign-in.ts`, `use-sign-up.ts` (deleted) | hook (TanStack Query mutation) | request-response | itself — read as "before"; `sign-out-button.tsx`'s inline `useMutation` is the sibling pattern being replaced the same way | exact (deletion target) |
+| `src/features/auth/components/sign-out-button.tsx` (rewritten to Server Action + `useFormStatus`) | client component (mutation trigger) | request-response | itself (before) | exact (rewrite) |
+| `src/lib/mocks/store.ts` + handlers + `instrumentation.ts` MSW startup (deleted) | mock service / server startup hook | event-driven (request interception) | itself — read as deletion-target ground truth | exact (deletion target) |
+| `docs/adr/tech/0002-client-data-fetching-strategy.md` (amended via new entry) | doc (ADR) | — | itself, for "what reason (2) claimed" cross-reference; `docs/adr/tech/0016-named-object-parameters.md` (most recent ADR) for file-naming/structure convention of the *new* superseding ADR | role-match (structure), exact (content being superseded) |
+| `.planning/phases/01-foundation-auth-preferences/01-14-PLAN.md` (theme persistence, not yet executed) | plan doc | request-response | itself — read for its existing `externalApi` dependency, not rewritten by this round | exact (dependency note only, no code change this round) |
+| `.github/workflows/ci.yml` (add `POST /admin/reset` step, repoint `EXTERNAL_API_BASE_URL`) | CI config | batch | itself — existing `e2e` job's workflow-scoped-secret step (session secret) is the direct sibling pattern for the new `NONPROD_RESET_TOKEN` step | exact |
+
+## Pattern Assignments
+
+### `src/lib/session.ts` — extend `SessionPayload` (server-only utility, transform)
+
+**Analog:** itself, current file in full (`src/lib/session.ts:1-151`, read in full this session).
+
+**Current shape to preserve exactly** (imports, `server-only` guard, module-scope secret
+fail-fast, factory function returning `{create, verify, verifyToken, destroy}`):
+```typescript
+import "server-only";
+import { randomUUID } from "node:crypto";
+import { jwtVerify, SignJWT } from "jose";
+import { cookies } from "next/headers";
+
+export type SessionPayload = {
+    id: string;
+    email: string;
+    displayName: string;
+    theme: "LIGHT" | "DARK";
+};
+```
+**GC-18 change:** add a `jsessionId` field (or similarly named) to `SessionPayload`, and extend
+`isSessionPayload`'s runtime guard (`session.ts:36-49`) to check it — keep every other field/shape
+untouched. `create`/`verify`/`verifyToken`/`destroy`'s signatures and cookie-write options
+(`httpOnly`, `secure: process.env.NODE_ENV !== "development"`, `sameSite: "lax"`, absolute
+`expires`) stay exactly as today — GC-18 is additive to the payload only, not a session-mechanism
+redesign. Preserve the existing `createSessionService(secret)` factory pattern (testable via
+constructing a throwaway instance, not a hardcoded singleton) for any new logic this round adds.
+
+**Error-handling convention to preserve:** every JWT verify failure mode returns `null`, never
+throws (`session.ts:114-120`, "every failure mode... returns null rather than throwing, so no
+caller can mistake a rejection for a transient error").
+
+---
+
+### `src/lib/api/server-client.ts` — add cookie-bridging middleware (server-only service)
+
+**Analog:** itself, current file in full (`src/lib/api/server-client.ts:1-31`).
+
+**Current shape to preserve:**
+```typescript
+import "server-only";
+import createClient from "openapi-fetch";
+import type { paths } from "@/lib/api/generated-types";
+
+const readExternalApiBaseUrl = () => {
+    const baseUrl = process.env.EXTERNAL_API_BASE_URL;
+    if (!baseUrl) {
+        throw new Error("EXTERNAL_API_BASE_URL is not set. ... (ADR tech/0006).");
+    }
+    return baseUrl;
+};
+
+export const externalApi = createClient<paths>({ baseUrl: readExternalApiBaseUrl() });
+```
+**GC-18 change — add a `.use()` call immediately after the `createClient` call**, using the exact
+middleware shape read from this repo's installed `openapi-fetch@0.17.0` type source
+(`node_modules/.pnpm/openapi-fetch@0.17.0/node_modules/openapi-fetch/src/index.d.ts:145-190`,
+reproduced in `01-RESEARCH.md` Finding 1):
+```typescript
+externalApi.use({
+  onRequest: async ({ request }) => {
+    const identity = await session.verify();
+    if (identity?.jsessionId) {
+      request.headers.set("Cookie", `JSESSIONID=${identity.jsessionId}`);
+    }
+    return request;
+  },
+  onResponse: async ({ response }) => {
+    if (response.status === 401) {
+      // GC-18/finding 3 — forced full sign-out path; see session.ts's destroy()
+    }
+    return response;
+  },
+});
+```
+Keep this as a **single module-scope `.use()` call** — GC-18 requires the mechanism to be general
+(every `externalApi` caller, not auth-only), matching this file's existing single-export-instance
+shape. Preserve the `readExternalApiBaseUrl()` fail-fast pattern (ADR tech/0006, no hardcoded
+default) as the model for any new required-env-var reads this round adds (e.g. if a reset-token
+env var is read here — it is not; that lives in CI only, per Finding 6).
+
+**Verification-first note (carry into the plan, not just the pattern):** RESEARCH.md's Assumption
+A1 flags that whether `response.headers.getSetCookie()` actually surfaces the real backend's
+`Set-Cookie: JSESSIONID=...` through Next.js's patched server `fetch` is unverified — the first
+task touching this file should smoke-test that directly against live nonprod before building the
+rest of the middleware on top of it.
+
+---
+
+### `app/api/auth/signin/route.ts` → Server Action (rewrite)
+
+**Analog:** itself — current Route Handler, read in full (`app/api/auth/signin/route.ts:1-52`).
+**Note:** line 1 of the current file on disk reads `simport "server-only";` (a stray leading `s` —
+matches the "flag stray file corruption" note in this repo's recent commit history). Treat this as
+a pre-existing typo to fix as part of the rewrite, not a pattern to copy.
+
+**Shape to preserve when converting to a Server Action** (validation-then-upstream-call structure,
+byte-identical-response anti-enumeration comment, `resolveDisplayName` fallback call):
+```typescript
+import "server-only";
+import { externalApi } from "@/lib/api/server-client";
+import { resolveDisplayName } from "@/lib/display-name";
+import { isSessionPayload, session } from "@/lib/session";
+import { signInSchema, zodErrorToFieldErrors } from "@/lib/validation/auth-schemas";
+
+const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
+
+export const POST = async (request: Request): Promise<Response> => {
+    const body: unknown = await request.json();
+    const parsed = signInSchema.safeParse(body);
+    if (!parsed.success) {
+        return Response.json({ errors: zodErrorToFieldErrors(parsed.error) }, { status: 400 });
+    }
+    const { data, error } = await externalApi.POST("/signin", { body: parsed.data });
+    const upstreamError: unknown = error;
+    const identity: unknown = data;
+    if (upstreamError !== undefined || !isSessionPayload(identity)) {
+        return Response.json({ message: INVALID_CREDENTIALS_MESSAGE }, { status: 401 });
+    }
+    await session.create({ ...identity, displayName: resolveDisplayName(identity) });
+    return Response.json({ ok: true }, { status: 200 });
+};
+```
+**What changes going to a Server Action:** the `POST` Route Handler signature becomes a
+`"use server"` async function taking `(prevState, formData)` (per `01-RESEARCH.md` Finding 2's
+`useActionState` shape); the anti-enumeration collapse (`INVALID_CREDENTIALS_MESSAGE`, unchanged
+copy per GC-20) and the `resolveDisplayName` fallback call stay exactly as today; `Response.json`
+returns become the discriminated `SignInActionState` return value (`{status:"error", code, message}`
+per GC-20's threading of the backend's `ProblemDetail` `code`); success stops returning `{ok:true}`
+and instead calls `redirect(ROUTE.BOARDS)` directly (RESEARCH.md Finding 2, replacing
+`use-sign-in.ts`'s `router.push`+`router.refresh()` combo, since `redirect()` from a Server Action
+already guarantees the new cookie is present on the redirected request).
+
+---
+
+### `app/api/auth/signup/route.ts` → Server Action (rewrite)
+
+**Analog:** itself — current Route Handler, read in full (`app/api/auth/signup/route.ts:1-64`).
+
+**Known bug this rewrite fixes (GC-19):** current code assumes a bare-string 200 response via
+`parseAs: "text"` (`signup/route.ts:32-35`, `data` checked with `typeof data !== "string"` at
+line 45) — the real backend returns 201 + `UserResponseDTO`-shaped body + `Location` header
+(confirmed against `kanban-board-backend/docs/diagrams/auth-signup-scenario.mmd:47`). The
+regenerated `docs/api/kanban-board-openapi.json` (GC-19, via `pnpm api:generate`) will change the
+generated type for this operation — the rewrite must parse the real object shape, not a string,
+and should follow `signin/route.ts`'s `isSessionPayload`-style runtime guard pattern rather than
+`typeof data !== "string"`.
+
+**Structure to otherwise preserve:** the `SIGN_UP_FAILURE_MESSAGE` single-collapsed-error-message
+constant and comment explaining why (no documented duplicate-email schema); the
+`resolveDisplayName(parsed.data)` fallback call (GC-02); the `DEFAULT_NEW_ACCOUNT_THEME = "LIGHT"`
+constant. Same Server-Action-conversion shape as `signin` above (`"use server"`,
+`useActionState`-compatible return type carrying GC-20's `code`, success via `redirect()`).
+
+---
+
+### `app/api/auth/signout/route.ts` → Server Action (rewrite, simplest of the three)
+
+**Analog:** itself — current Route Handler, read in full (`app/api/auth/signout/route.ts:1-13`,
+the shortest and simplest of the three: no upstream call at all, `session.destroy()` then
+`{ok:true}`). This is the template for how little code GC-18's forced-full-sign-out path
+(`externalApi`'s `onResponse` 401 detection, Finding 3) needs to trigger — same
+`session.destroy()` call, invoked from wherever the 401 is detected.
+
+---
+
+### `src/features/auth/api/auth-api.ts` + `use-sign-in.ts`/`use-sign-up.ts` — deletion targets
+
+**Analog:** themselves — read in full as the "before" ground truth the executor is replacing.
+
+`auth-api.ts` (`1-61`) is a thin `bffApi`-typed wrapper posting to the app's own `/api/auth/...`
+Route Handlers, throwing `Error(message)` on any non-2xx response (`extractMessage` helper reused
+across all three functions). `use-sign-in.ts` (`1-33`) wraps `postSignIn` in a `useMutation` with
+`retry: false` and an `onSuccess` doing `router.push(ROUTE.BOARDS); router.refresh()`. Both are
+deleted outright once the corresponding Server Action exists — **the executor should copy their
+error-message-surfacing intent (server's own message, unmodified) and their `retry: false`
+philosophy for a credential submission into the new Server Action's error-state shape**, not
+carry the TanStack Query mechanism itself forward.
+
+**Test-file precedent to follow for the Server Actions' own tests:** `use-sign-in.unit.test.tsx`
+(GC-07's `renderHook`-based RTL test, jsdom `unit` Vitest project) is the citable precedent for
+hook/logic-level testing in this repo (per round-2 GC-12's CONVENTIONS.md addition) — a Server
+Action's unit test should follow the same jsdom/`unit`-project placement and mock
+`server-client.ts`'s HTTP boundary directly (GC-22), not any TanStack Query machinery.
+
+---
+
+### `src/features/auth/components/sign-out-button.tsx` — rewrite to Server Action + `useFormStatus`
+
+**Analog:** itself, current file in full (`sign-out-button.tsx:1-39`) — the closest existing
+"mutation-triggering button" shape in the repo (inline `useMutation`, `isDisabled`/`aria-busy`
+wired to `mutation.isPending`, `Button` primitive from `@/components/ui/button/button`).
+
+**Current shape:**
+```tsx
+"use client";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button/button";
+import { postSignOut } from "@/features/auth/api/auth-api";
+import { ROUTE } from "@/lib/routes";
+
+export const SignOutButton = () => {
+    const router = useRouter();
+    const mutation = useMutation({
+        mutationFn: postSignOut,
+        onSuccess: () => { router.push(ROUTE.SIGN_IN); router.refresh(); },
+    });
+    return (
+        <Button type="button" variant="secondary" isDisabled={mutation.isPending}
+            aria-busy={mutation.isPending} onClick={() => mutation.mutate()}>
+            Sign Out
+        </Button>
+    );
+};
+```
+**Rewrite shape:** replace `useMutation`+`onClick` with a `<form action={signOutAction}>` wrapping
+the `Button` (per RESEARCH.md Finding 2's `useActionState`/`useFormStatus` split-component
+pattern — `useFormStatus` must be read in a component that is a *child* of the `<form>`, not the
+one rendering it, so `SignOutButton` likely splits into a form wrapper + an inner submit-status
+button, mirroring the `sign-in-form.tsx`/`SubmitButton` split this round also introduces there).
+Preserve the `isDisabled`/`aria-busy` wiring semantics (now sourced from `useFormStatus()`'s
+`pending` instead of `mutation.isPending`) and the exact non-destructive/no-confirmation-modal
+behavior documented in the existing doc comment.
+
+---
+
+### MSW + `src/lib/mocks/store.ts` — deletion targets (GC-22)
+
+**Analog:** `instrumentation.ts` itself, read in full (`1-18`) — the entire file's purpose today
+is starting MSW's Node interception; GC-22 deletes the whole `register()` body's dynamic import +
+`server.listen()` call, leaving a Round-3 decision point (an empty/no-op `register()`, or deleting
+the file entirely if nothing else uses the `instrumentation` hook — verify no other consumer
+exists before deleting the file itself, not just its MSW content).
+
+`src/lib/mocks/store.ts` (97 lines) and its sibling handlers/node-server/browser files are deleted
+outright per `01-RESEARCH.md` Finding 5's full inventory table (reproduced there with exact file
+list, edited-vs-deleted classification, and every config default that silently assumed MSW —
+`vitest.config.ts:64`, `e2e/test-env.ts:14`, `.github/workflows/ci.yml:14-18` — that must be
+repointed at nonprod). Use that finding's table directly as the deletion/edit checklist; it is
+more precise than restating it here.
+
+---
+
+### `docs/adr/tech/0002-client-data-fetching-strategy.md` — new superseding ADR entry (GC-24)
+
+**Analog:** `docs/adr/tech/0016-named-object-parameters.md` (most recently numbered ADR in the
+repo, confirms the file-naming convention: `NNNN-kebab-case-title.md`, sequential, no gaps,
+zero existing precedent for sub-numbering like `0002-1`) for structure; `0002` itself for the
+specific "reason (2)" content being addressed.
+
+**Per `01-RESEARCH.md` Finding 7's recommendation** (reasoned, not a locked decision — flag for
+confirmation if the user prefers GC-24's literal `0002-1` phrasing instead): create
+`docs/adr/tech/0017-auth-server-actions-carve-out.md` as the next sequential number, containing an
+explicit "Supersedes/amends `tech/0002`" statement in its own body (this repo's ADRs don't use a
+formal supersession field — add it as prose, following `0002`'s own `## Decision Drivers` /
+`## Considered Options` / `## Decision Outcome` / `## Consequences` / `Sources:` section structure
+for consistency with every other ADR in `docs/adr/tech/`).
+
+## Shared Patterns (round 3)
+
+### `server-only` + fail-fast env-var reads (applies to `session.ts`, `server-client.ts`, any new server module)
+**Source:** `src/lib/session.ts:1,136-144`, `src/lib/api/server-client.ts:1,12-23` — both files
+open with `import "server-only";`, then a required-env-var read that throws a descriptive error
+naming the ADR/setup doc rather than silently defaulting. Apply this same shape to any new
+server-only module this round adds (e.g. a `NONPROD_RESET_TOKEN` reader, if one lands outside CI).
+
+### Widen-through-`unknown` for contract gaps (applies to every route/Server Action reading an upstream response)
+**Source:** `app/api/auth/signin/route.ts:37-38`, `signup/route.ts:43`, `auth-api.ts`'s
+`postSignOut` comment (`52-53`) — when the OpenAPI-generated type claims a field (`error`) is
+always `undefined` but the runtime response can actually populate it, widen through `unknown`
+first (`const upstreamError: unknown = error;`) so the type-aware ESLint tier (D-26n, strict +
+type-checked) still checks the real runtime shape rather than trusting the contract's incomplete
+claim. GC-19's contract regeneration should shrink how often this is needed, but the pattern stays
+valid for any remaining gaps.
+
+### Anti-enumeration collapsed error copy (applies to sign-in specifically)
+**Source:** `signin/route.ts:8-16`'s `INVALID_CREDENTIALS_MESSAGE` comment and constant — one
+fixed message/status for every distinct upstream failure cause (wrong password, unknown email,
+and now also the 2-concurrent-session ceiling per GC-20/AUTH_FLOWS.md D-08), never a
+cause-specific message. Preserve this constant and its comment verbatim in the Server Actions
+rewrite; only the delivery mechanism (`Response.json` → Server Action return value) changes.
+
+### DAL as the single source of identity (applies to any new code needing "who is signed in")
+**Source:** `src/lib/dal.ts:1-19` — `verifySession`, wrapped in React's `cache()`, is the *only*
+place `session.verify()` should be called from application code (Route Handlers/Server
+Components/Server Actions alike). Any new Server Action needing the current user's id reads it via
+`verifySession()`, not by calling `session.verify()` directly a second time.
+
+## No Analog Found (round 3)
+
+| File | Role | Data Flow | Reason |
+|------|------|-----------|--------|
+| `.github/workflows/ci.yml`'s new `POST /admin/reset` step | CI config step | batch | No prior reset-endpoint call exists in this repo's CI; closest sibling is the existing `e2e` job's workflow-scoped session-secret generation step (`.github/workflows/ci.yml:140-141`, structurally similar `$GITHUB_ENV`/secret pattern) — role-match only, not an exact analog since no prior POST-with-header-auth CI step exists |
+| `app/api/auth/*/route.ts` → Server Action file-convention shift itself (i.e., the file becoming a `"use server"` export used from a form `action`, wherever it physically lives — `app/actions/auth.ts` or similar) | Server Action | request-response | No prior Server Action exists anywhere in this repo (`grep "use server"` across `src/`/`app/` returned zero hits) — RESEARCH.md Finding 2's Next.js-docs-sourced code shape is the pattern source, not an in-repo analog, for the Server-Action-specific mechanics (`useActionState`/`useFormStatus` split) even though the validation/upstream-call/session-create body itself has a strong in-repo analog (the current Route Handlers, cited above) |
+
+## Metadata (round 3)
+
+**Analog search scope:** `src/lib/`, `src/features/auth/`, `app/api/auth/`, `app/instrumentation.ts`,
+`docs/adr/tech/`, `.github/workflows/ci.yml`, `.planning/phases/01-foundation-auth-preferences/`
+— targeted reads of every file `01-CONTEXT.md`'s round-3 "Existing Code Insights" subsection and
+`01-RESEARCH.md`'s round-3 addendum named explicitly, plus one `grep` confirming no `"use server"`
+precedent exists yet in this repo.
+**Files scanned:** 12 full-file reads (`session.ts`, `server-client.ts`, `dal.ts`,
+`signin/route.ts`, `signup/route.ts`, `signout/route.ts`, `auth-api.ts`, `use-sign-in.ts`,
+`sign-out-button.tsx`, `instrumentation.ts`, `docs/adr/tech/0002-*.md`) + 1 directory listing
+(`docs/adr/tech/`) + 1 repo-wide grep.
+**Pattern extraction date:** 2026-08-18
+</content>
