@@ -44,10 +44,11 @@ Default is `INTEGRATE`. Every `OPT-OUT` carries a reason. No row is left undecid
 | 22 | `PUT /boards/{b}/columns/{c}/tasks/{t}/subtasks/{s}` (`updateById_3`) | Edit / toggle a subtask | OPT-OUT | SUBTASK-02/03, Phase 4 |
 | 23 | `DELETE /boards/{b}/columns/{c}/tasks/{t}/subtasks/{s}` (`deleteById_3`) | Delete a subtask | OPT-OUT | SUBTASK-04, Phase 4 |
 | 24 | `GET /boards/{boardId}/activity` (`findAllByBoardId_1`) | Board activity log | OPT-OUT | ACTIVITY-01 is a **v2 requirement** (REQUIREMENTS.md §v2) — deferred, no UI design exists |
+| 25 | `POST /admin/reset` (`reset`) | Truncate every table on the nonprod backend | OPT-OUT | GC-23 — called by the CI pipeline as a shell step (plan 01-31, post-test-suite cleanup), never from application code. Not integrated behind any Route Handler/Server Action, so it carries no application-level requirement ID. |
 
-**Coverage summary:** 24 operations · 4 INTEGRATE (100 % of the operations this phase's
-requirements touch) · 20 OPT-OUT, every one assigned to a named later phase or to the v2 backlog.
-Zero undecided rows.
+**Coverage summary:** 25 operations · 4 INTEGRATE (100 % of the operations this phase's
+requirements touch) · 21 OPT-OUT, every one assigned to a named later phase, the v2 backlog, or —
+for the new reset route — to a CI shell step outside application code. Zero undecided rows.
 
 ## Contract gaps carried into planning (not silent)
 
