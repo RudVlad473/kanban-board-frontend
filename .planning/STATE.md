@@ -5,10 +5,8 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: foundation-auth-preferences
 status: executing
-stopped_at: Waves 3 & 4 (01-20/21/26/28/29) merged and pushed; holding before wave 14 (01-14) per
-  explicit user request pending review. Server Actions migration explored and captured as a note,
-  not yet planned.
-last_updated: "2026-08-18T13:15:00.000Z"
+stopped_at: Phase 01 round-3 gap-closure context gathered (Server Actions migration + real-backend session bridging), triggered by nonprod going live
+last_updated: "2026-08-18T15:40:52.917Z"
 last_activity: 2026-08-18
 last_activity_desc: Waves 3+4 executed and merged; Server Actions migration explored (gsd-explore)
 progress:
@@ -87,6 +85,7 @@ Recent decisions affecting current work:
 - `.env.local` has no real `SESSION_SECRET`/`EXTERNAL_API_BASE_URL` locally — blocks local
   `pnpm build` (unrelated pre-existing gap) and will block plan 01-15 (Vercel deployment)
   specifically. Not blocking wave 14.
+
 - User wants sign-up/sign-in/sign-out refactored from Route Handlers to Server Actions BEFORE
   01-14 is built, so 01-14 uses the new pattern too — see `.planning/notes/
   server-actions-migration-decision.md`. This is NOT YET PLANNED — needs a proper planning pass
@@ -104,8 +103,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-18T13:15:00.000Z
-Stopped at: Resumed from a clean plan-boundary checkpoint, then ran `/gsd-execute-phase 01`.
+Last session: 2026-08-18T15:40:52.871Z
+Stopped at: Phase 01 round-3 gap-closure context gathered (Server Actions migration + real-backend session bridging), triggered by nonprod going live
   Executed and merged wave 3 (01-20 route consolidation, 01-21 shared test utils — required
   approving `@storybook/react` as a devDependency mid-plan, 01-26 mock store in-memory rewrite)
   and wave 4 (01-28 RTL-for-hooks convention doc, 01-29 GC-17 TextField isLoading fix). Hit and
@@ -129,5 +128,5 @@ Stopped at: Resumed from a clean plan-boundary checkpoint, then ran `/gsd-execut
   Captured as `.planning/notes/server-actions-migration-decision.md` (commit `89f2421`, pushed).
   **This is exploration only — nothing planned or executed.** User then asked how to proceed and
   said they want to start a new conversation.
-Resume file: none — no HANDOFF.json/.continue-here.md checkpoint was created (clean stopping
+Resume file: .planning/phases/01-foundation-auth-preferences/01-CONTEXT.md
   point, not a mid-task interruption). Resume via `/gsd-resume-work` as normal.
