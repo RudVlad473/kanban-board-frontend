@@ -5,15 +5,17 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: foundation-auth-preferences
 status: executing
-stopped_at: Plan 01-19 (GC-02) finished and merged to master; next up is wave 01-20/01-21/01-26
-last_updated: "2026-08-18T08:55:35.255Z"
+stopped_at: Waves 3 & 4 (01-20/21/26/28/29) merged and pushed; holding before wave 14 (01-14) per
+  explicit user request pending review. Server Actions migration explored and captured as a note,
+  not yet planned.
+last_updated: "2026-08-18T13:15:00.000Z"
 last_activity: 2026-08-18
-last_activity_desc: Phase 01 execution resumed (wave continue)
+last_activity_desc: Waves 3+4 executed and merged; Server Actions migration explored (gsd-explore)
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 29
-  completed_plans: 22
+  completed_plans: 27
 ---
 
 # Project State
@@ -30,12 +32,12 @@ against a backend that doesn't exist yet.
 ## Current Position
 
 Phase: 01 (foundation-auth-preferences) — EXECUTING
-Plan: 22 of 29 complete
-Status: Executing Phase 01
-Last activity: 2026-08-18 — Phase 01 execution resumed (wave continue)
-  from an interrupted mid-session pause. See Session Continuity below for full detail.
+Plan: 27 of 29 complete
+Status: Executing Phase 01 — holding before wave 14 per user request
+Last activity: 2026-08-18 — Waves 3+4 merged and pushed; Server Actions migration explored.
+  See Session Continuity below for full detail.
 
-Progress: [████████░░] 76%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -82,8 +84,15 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-- None technical. Roadmap (PROJECT.md/REQUIREMENTS.md/ROADMAP.md) has not yet been formally
-  presented to the user for the standard approval gate — do this before `/gsd-plan-phase 1`.
+- `.env.local` has no real `SESSION_SECRET`/`EXTERNAL_API_BASE_URL` locally — blocks local
+  `pnpm build` (unrelated pre-existing gap) and will block plan 01-15 (Vercel deployment)
+  specifically. Not blocking wave 14.
+- User wants sign-up/sign-in/sign-out refactored from Route Handlers to Server Actions BEFORE
+  01-14 is built, so 01-14 uses the new pattern too — see `.planning/notes/
+  server-actions-migration-decision.md`. This is NOT YET PLANNED — needs a proper planning pass
+  (new gap-closure round or phase decision) before any code changes. Do not start 01-14 under the
+  old Route Handler pattern without first checking whether the user wants to plan the Server
+  Actions work first.
 
 ## Deferred Items
 
@@ -95,10 +104,30 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-18T00:00:00.000Z
-Stopped at: Session resumed from a clean plan-boundary HANDOFF.json/.continue-here.md checkpoint
-  (repo verified: `HEAD` == `origin/master` == `c805561`, no worktrees, no tracked uncommitted
-  files). User selected "Execute wave 01-20/21/26" as next action; proceeding to
-  `/gsd-execute-phase 01`. HANDOFF.json and the phase's .continue-here.md deleted (one-shot
-  artifacts, resumption complete).
-Resume file: none
+Last session: 2026-08-18T13:15:00.000Z
+Stopped at: Resumed from a clean plan-boundary checkpoint, then ran `/gsd-execute-phase 01`.
+  Executed and merged wave 3 (01-20 route consolidation, 01-21 shared test utils — required
+  approving `@storybook/react` as a devDependency mid-plan, 01-26 mock store in-memory rewrite)
+  and wave 4 (01-28 RTL-for-hooks convention doc, 01-29 GC-17 TextField isLoading fix). Hit and
+  resolved several Windows/worktree issues along the way: repeated stale-worktree-directory
+  removal failures (known issue, robocopy-mirror-then-delete workaround), a #683 fork-base
+  divergence (local master was 17 commits ahead of unpushed origin/master, causing Claude's
+  worktree harness to fork wave-4 executors from a stale base — both halted safely with zero work
+  lost per the #48 fail-closed guard; fixed by pushing, which should be done after every wave from
+  now on), and a stale `git index.lock` from a failed automated merge-rescue step. Both waves
+  verified post-merge (400/400 tests, lint clean, tsc clean each time) and pushed to origin.
+  User then explicitly asked to hold before wave 14 for review — did not auto-continue.
+  Remainder of the session was a `/gsd-explore` conversation (not execution) about migrating
+  auth mutations from Route Handlers to Server Actions, driven by user's dislike of the current
+  request/response chain and distrust of mocking in tests. Landed on: mutations-only scope (reads
+  stay TanStack Query), sequencing (refactor shipped auth first, then revise 01-14 to match), a
+  new three-layer testing strategy (seeded unit tests / no-op'd component tests / thin real-backend
+  e2e — grounded via research: "sociable unit tests" per Martin Fowler, echoes Kent C. Dodds'
+  Testing Trophy with one correction made mid-conversation), MSW's full deprecation (gated on a
+  non-prod backend, currently being deployed by the user, being ready to also cover local dev),
+  and a first-pass (explicitly not final) TanStack Query cache-seeding Storybook decorator design.
+  Captured as `.planning/notes/server-actions-migration-decision.md` (commit `89f2421`, pushed).
+  **This is exploration only — nothing planned or executed.** User then asked how to proceed and
+  said they want to start a new conversation.
+Resume file: none — no HANDOFF.json/.continue-here.md checkpoint was created (clean stopping
+  point, not a mid-task interruption). Resume via `/gsd-resume-work` as normal.
