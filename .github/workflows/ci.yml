@@ -77,11 +77,42 @@ jobs:
                   pnpm api:generate
                   git diff --exit-code src/lib/api/generated-types.ts
 
+            # Pre-existing gap, not introduced by this plan (GC-23/reset wiring): `next build`'s
+            # page-data collection imports session.ts for every Route Handler, and session.ts
+            # throws at module-eval time when SESSION_SECRET is unset (ADR tech/0001, "a default
+            # secret would fail silently, which is worse than a missing one"). This job has had no
+            # SESSION_SECRET at all, so `pnpm build` below has been failing on every push since
+            # before this plan (confirmed against a 2026-08-17 run, unrelated to plan 01-31's own
+            # changes) — this plan's own acceptance criteria require a real green run to prove the
+            # reset step, so the blocking gap is fixed here using the exact pattern the `e2e` job
+            # below already uses for the same purpose.
+            - name: Generate a workflow-scoped session secret
+              run: echo "SESSION_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
             - name: Build
               run: pnpm build
 
             - name: Test
               run: pnpm test
+
+            # GC-23: `pnpm test`'s "node" Vitest project includes `src/**/*.integration.test.ts`
+            # (added by plan 01-32), which makes real authenticated calls against nonprod and
+            # therefore creates real accounts/sessions there — this job needs the same cleanup
+            # the `e2e` job below already needs. `if: always()` runs it after a failed suite too,
+            # since a failure mid-suite is exactly the case most likely to leave partial state
+            # behind. The response status is checked explicitly (not just piped through `curl -f`
+            # or similar) so a wrong/rotated secret fails the job loudly instead of the cleanup
+            # silently becoming a no-op.
+            - name: Reset nonprod state
+              if: always()
+              run: |
+                  status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+                    -H "X-Reset-Token: ${{ secrets.NONPROD_RESET_TOKEN }}" \
+                    https://kanban-board-rud-vlad-473-nonprod.duckdns.org/api/admin/reset)
+                  if [ "$status" != "204" ]; then
+                    echo "Reset endpoint returned $status, expected 204" >&2
+                    exit 1
+                  fi
 
     visual:
         runs-on: ubuntu-latest
@@ -143,6 +174,22 @@ jobs:
 
             - name: Run E2E tests
               run: pnpm exec playwright test --project e2e
+
+            # GC-23: this job's suite runs against the real, built application (playwright.config.ts's
+            # e2e webServer), creating real accounts/sessions in nonprod's shared database. `if: always()`
+            # runs it after a failed suite too, since a failure mid-suite is exactly the case most
+            # likely to leave partial state behind. The response status is checked explicitly so a
+            # wrong/rotated secret fails the job loudly instead of the cleanup silently becoming a no-op.
+            - name: Reset nonprod state
+              if: always()
+              run: |
+                  status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+                    -H "X-Reset-Token: ${{ secrets.NONPROD_RESET_TOKEN }}" \
+                    https://kanban-board-rud-vlad-473-nonprod.duckdns.org/api/admin/reset)
+                  if [ "$status" != "204" ]; then
+                    echo "Reset endpoint returned $status, expected 204" >&2
+                    exit 1
+                  fi
 
             - name: Upload Playwright report
               if: failure()
