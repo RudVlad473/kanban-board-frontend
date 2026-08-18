@@ -92,9 +92,10 @@ type Props = Omit<ComponentProps<typeof Field.Control>, "className" | "disabled"
         hasError?: boolean;
         isDisabled?: boolean;
         /**
-         * Transient "a request is in flight" state. Unlike `isDisabled`, a loading field goes
-         * `readOnly` (not `disabled`) so it stays focusable and its value stays legible — see the
-         * plan's Decisions block. Sets `aria-busy` independently of `isDisabled`.
+         * Transient "a request is in flight" state. Composes into the same single `disabled` prop
+         * `Field.Root` already uses for `isDisabled` (`isDisabled || isLoading`), matching
+         * Button/IconButton/Checkbox/Dropdown's established composition pattern (GC-17, overriding
+         * the prior readOnly-based mechanism). Still independently sets `aria-busy`.
          */
         isLoading?: boolean;
         /** Rendered inside the field's visual box, absolutely positioned — e.g. a password-visibility IconButton. */
@@ -121,7 +122,7 @@ export const TextField = ({
          * hand-rolled bookkeeping (D-15). `disabled` on Field.Root propagates to Field.Control
          * automatically, so `isDisabled` only needs to be set once, here.
          */
-        <Field.Root invalid={hasError} disabled={isDisabled} className="flex w-full flex-col gap-1">
+        <Field.Root invalid={hasError} disabled={isDisabled || isLoading} className="flex w-full flex-col gap-1">
             <Field.Label className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
                 {label}
             </Field.Label>
@@ -129,7 +130,6 @@ export const TextField = ({
             <div className="relative">
                 <Field.Control
                     type={type}
-                    readOnly={isLoading}
                     aria-busy={isLoading}
                     className={cn(
                         textFieldVariants({
