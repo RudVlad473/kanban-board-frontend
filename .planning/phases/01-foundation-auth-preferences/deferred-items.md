@@ -75,3 +75,41 @@ composite-typography consumer (this plan's `button.tsx` included) back down to t
 (`font-<name> text-<name>`) instead of the current family+size+arbitrary-weight combination.
 
 Logged to `.planning/WINDOWS.md` (id 2, kind `deviation`).
+
+## From plan 01-26 (GC-09, mock store in-memory rewrite)
+
+### 3. Pre-existing flaky/broken browser-mode tests unrelated to the mock store
+
+**Found during:** Task 1 verification (`pnpm test`, full suite run).
+
+**Issue:** `pnpm test` reports 3 failed tests across 2 files, neither touched by this plan:
+- `src/components/ui/modal/modal.test.tsx` — "blocks both backdrop-click and Escape dismissal
+  while a Modal.Footer action is loading..." times out at 15000ms.
+- `src/components/ui/text-field/text-field.test.tsx` — "truncates overflowing values with a
+  native ellipsis..." times out at 15000ms, and "updates its value and calls onValueChange when
+  typed into" asserts a call with `"a"` but receives raw keystroke event objects instead
+  (`"x"`, `"xa"`, `"xax"` with event payloads) — looks like a stale/mismatched assertion against
+  the current component behavior, or browser-mode input-simulation flakiness.
+
+**Why not fixed inline:** Neither `Modal` nor `TextField` is in this plan's `files_modified`
+(`src/lib/mocks/store.ts`, `src/lib/mocks/store.unit.test.ts`, `CONVENTIONS.md`). Grepped both
+test files for any reference to the mock store — none found (the only "store" substring matches
+are the unrelated word "restores"). This plan's changes cannot have caused these failures.
+
+**Recommended follow-up:** Investigate `text-field.test.tsx`'s onValueChange assertion (looks
+like a real regression or a stale test, not flakiness — the received event-object args aren't
+what a timing issue would produce) and the two 15000ms browser-mode timeouts in a dedicated
+plan/session, ideally re-run in isolation to rule out CI/local resource contention.
+
+### 4. Pre-existing `tsc --noEmit` error in `app/layout.tsx`, unrelated to this plan
+
+**Found during:** Task 1 verification (`pnpm exec tsc --noEmit`).
+
+**Issue:** `app/layout.tsx(11,35): error TS2304: Cannot find name 'LayoutProps'.` — this plan
+never touches `app/layout.tsx`.
+
+**Why not fixed inline:** Out of this plan's `files_modified` scope entirely; likely a
+Next.js-generated ambient type (`.next/types`) not present in this worktree's build output.
+
+**Recommended follow-up:** Run `pnpm dev`/`pnpm build` once to regenerate `.next/types`, or
+replace the `LayoutProps` reference with an explicit prop type if it's not meant to be ambient.

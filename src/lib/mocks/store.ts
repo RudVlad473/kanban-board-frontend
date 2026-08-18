@@ -1,7 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 import { resolveDisplayName } from "@/lib/display-name";
 
@@ -31,39 +28,6 @@ export const DEMO_USER_EMAIL = "demo@kanban-board.dev";
 export const DEMO_USER_DISPLAY_NAME = "Demo User";
 export const DEMO_USER_PASSWORD = "DemoPassword123!";
 
-const STORE_MIRROR_FILE_PATH = join(tmpdir(), "kanban-board-mock-store.json");
-
-type PersistedShape = { users: UserRecord[] };
-
-/*
- * Mirrors the in-memory map to a JSON file under the OS temp directory so it survives hot
- * reloads within a running instance (Pitfall-adjacent: `next dev`'s module reload would otherwise
- * re-run this module's seed logic and silently forget every signed-up account). A missing or
- * unreadable file is treated as an empty store, not an error — the normal state on first boot.
- */
-const readPersistedUsers = (): UserRecord[] => {
-    try {
-        const raw = readFileSync(STORE_MIRROR_FILE_PATH, "utf-8");
-        const parsed = JSON.parse(raw) as PersistedShape;
-        return Array.isArray(parsed.users) ? parsed.users : [];
-    } catch {
-        return [];
-    }
-};
-
-const persistUsers = (currentUsers: Map<string, UserRecord>) => {
-    try {
-        const payload: PersistedShape = { users: [...currentUsers.values()] };
-        writeFileSync(STORE_MIRROR_FILE_PATH, JSON.stringify(payload), "utf-8");
-    } catch {
-        /*
-         * Best-effort mirror only — a write failure here (e.g. a read-only temp directory) must
-         * not crash the mock handler that triggered it; the in-memory map is still authoritative
-         * for the life of this instance.
-         */
-    }
-};
-
 const withDemoAccountSeeded = (initialUsers: UserRecord[]): UserRecord[] => {
     if (initialUsers.some((user) => user.id === DEMO_USER_ID)) {
         return initialUsers;
@@ -81,8 +45,20 @@ const withDemoAccountSeeded = (initialUsers: UserRecord[]): UserRecord[] => {
     ];
 };
 
-const users = new Map<string, UserRecord>(withDemoAccountSeeded(readPersistedUsers()).map((user) => [user.id, user]));
-persistUsers(users);
+const users = new Map<string, UserRecord>(withDemoAccountSeeded([]).map((user) => [user.id, user]));
+
+/*
+ * Explicit, on-demand reset back to exactly the seeded demo account — no disk I/O involved. A
+ * sign-up made during `next dev` is forgotten on the next hot reload; that is an accepted,
+ * explicit tradeoff (GC-09), not an oversight. Callers (tests, future tooling) that want a clean
+ * slate without restarting the process call this instead.
+ */
+export const resetMockStore = (): void => {
+    users.clear();
+    for (const user of withDemoAccountSeeded([])) {
+        users.set(user.id, user);
+    }
+};
 
 export const findUserByEmail = (email: string): UserRecord | undefined =>
     [...users.values()].find((user) => user.email === email);
@@ -103,7 +79,6 @@ export const createUser = (input: { displayName?: string; email: string; passwor
     };
 
     users.set(user.id, user);
-    persistUsers(users);
 
     return user;
 };
@@ -117,7 +92,6 @@ export const updateUserTheme = ({ id, theme }: { id: string; theme: Theme }): Us
 
     const updatedUser: UserRecord = { ...user, theme };
     users.set(id, updatedUser);
-    persistUsers(users);
 
     return updatedUser;
 };

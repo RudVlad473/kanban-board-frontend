@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 4
+open_count: 7
 waived_count: 0
 fixed_count: 4
-total_count: 8
-last_updated: 2026-08-17T10:37:44.785Z
+total_count: 11
+last_updated: 2026-08-18T09:09:54.559Z
 ---
 
 # Broken Windows Ledger
@@ -23,6 +23,9 @@ last_updated: 2026-08-17T10:37:44.785Z
 | 6 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-09 (Modal, the seventh and final primitive) added 5 new stories (10 light/dark assertions) to visual/primitives.visual.spec.ts, on top of the existing 44. No baseline PNGs exist yet for the new Modal entries -- same root cause as ids 1/4/5 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. This also blocks the plan's own Task 2 checkpoint, which asks a human to visually compare all seven primitives including Modal against the Figma reference. | fixed |  | 2026-08-11T16:13:16.075Z | 2026-08-12T09:33:19.344Z |
 | 7 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-25 (Modal Submitting story, GC-16) added 1 new story (2 light/dark assertions) to visual/primitives.visual.spec.ts. No baseline PNGs exist yet for components-ui-modal--submitting -- same root cause as ids 1/4/5/6 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. | open |  | 2026-08-17T10:27:52.284Z |  |
 | 8 | 01 | deviation | src/components/ui/checkbox/checkbox.tsx |  | Fixed dormant disabled-opacity CSS selector (disabled: -> data-[disabled]:) on Checkbox; Switch (src/components/ui/switch/switch.tsx) has the identical disabled:opacity-50/disabled:cursor-not-allowed pattern and likely the same dormant-selector bug, unverified and unfixed (out of plan 01-23's file scope). | open |  | 2026-08-17T10:37:44.785Z |  |
+| 9 | 01 | deviation | src/components/ui/modal/modal.test.tsx |  | Pre-existing browser-mode timeout unrelated to 01-26 mock store rewrite | open |  | 2026-08-18T09:09:42.226Z |  |
+| 10 | 01 | deviation | src/components/ui/text-field/text-field.test.tsx |  | Pre-existing browser-mode timeout and onValueChange assertion mismatch, unrelated to 01-26 mock store rewrite | open |  | 2026-08-18T09:09:48.828Z |  |
+| 11 | 01 | deviation | app/layout.tsx | 11 | Pre-existing tsc TS2304 (Cannot find name LayoutProps), unrelated to 01-26 mock store rewrite | open |  | 2026-08-18T09:09:54.559Z |  |
 
 ````json
 [
@@ -120,6 +123,42 @@ last_updated: 2026-08-17T10:37:44.785Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-17T10:37:44.785Z",
+    "resolved_at": null
+  },
+  {
+    "id": 9,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "src/components/ui/modal/modal.test.tsx",
+    "line": null,
+    "description": "Pre-existing browser-mode timeout unrelated to 01-26 mock store rewrite",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-18T09:09:42.226Z",
+    "resolved_at": null
+  },
+  {
+    "id": 10,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "src/components/ui/text-field/text-field.test.tsx",
+    "line": null,
+    "description": "Pre-existing browser-mode timeout and onValueChange assertion mismatch, unrelated to 01-26 mock store rewrite",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-18T09:09:48.828Z",
+    "resolved_at": null
+  },
+  {
+    "id": 11,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "app/layout.tsx",
+    "line": 11,
+    "description": "Pre-existing tsc TS2304 (Cannot find name LayoutProps), unrelated to 01-26 mock store rewrite",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-18T09:09:54.559Z",
     "resolved_at": null
   }
 ]
