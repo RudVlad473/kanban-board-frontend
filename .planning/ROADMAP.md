@@ -121,7 +121,8 @@ runs no earlier than wave 14:
 Gap closure round 3 (added 2026-08-18 — 01-CONTEXT.md items GC-18..GC-24: real-backend integration,
 session-cookie bridging, the auth Server Actions migration, mock removal, CI reset wiring and the
 ADR carve-out). Nonprod going live turned "point the base URL at a real backend" into real work, and
-these carry waves 14-18 — they execute *before* 01-14, which is rewaved to 19 and 01-15 to 20:
+these carry waves 14-18. They execute *before* 01-14 and 01-15, which now carry waves 19 and 20 —
+01-14 depends on 01-35, which settles the shape its theme persistence takes:
 
 - [ ] 01-30-PLAN.md — contract regenerated from the live backend, mock server deleted, every test target repointed (GC-19, GC-22)
 - [ ] 01-32-PLAN.md — session-cookie bridging to the real backend, proven end to end, with forced sign-out on upstream expiry (GC-18)
