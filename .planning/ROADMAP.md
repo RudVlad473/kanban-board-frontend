@@ -68,7 +68,7 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 22/29 plans executed
+**Plans**: 25/29 plans executed
 
 Plans:
 
@@ -95,8 +95,8 @@ Gap closure (added 2026-08-16 from the post-wave-13 UI review and architecture d
 - [x] 01-17-PLAN.md — route-level error boundaries for the protected group and the root (GC-03)
 - [x] 01-18-PLAN.md — gitleaks secret scanning in the pre-commit chain and CI (GC-06)
 - [x] 01-19-PLAN.md — validation schemas aligned to the real backend rules (GC-02)
-- [ ] 01-20-PLAN.md — route declaration consolidated, call sites fixed, auth hooks unit-tested (GC-04, GC-07)
-- [ ] 01-21-PLAN.md — shared test utilities and story reuse in tests (GC-05, GC-08)
+- [x] 01-20-PLAN.md — route declaration consolidated, call sites fixed, auth hooks unit-tested (GC-04, GC-07)
+- [x] 01-21-PLAN.md — shared test utilities and story reuse in tests (GC-05, GC-08)
 
 Gap closure round 2 (added 2026-08-17 from a live UI review of wave 11's primitives, plus a
 folded-in pending todo — 01-CONTEXT.md items GC-09..GC-16). These carry wave 13 (parallel with
@@ -107,7 +107,7 @@ depends on 01-20 having landed):
 - [x] 01-23-PLAN.md — Checkbox isLoading/disabled visual treatment (GC-14)
 - [x] 01-24-PLAN.md — TextField isLoading visual treatment investigated and fixed (GC-15)
 - [x] 01-25-PLAN.md — Modal loading-composition convention established (GC-16)
-- [ ] 01-26-PLAN.md — mock store persistence replaced with in-memory seed/reset (GC-09)
+- [x] 01-26-PLAN.md — mock store persistence replaced with in-memory seed/reset (GC-09)
 - [x] 01-27-PLAN.md — dal.ts comment and SETUP.md (GC-10, GC-11)
 - [ ] 01-28-PLAN.md — RTL-for-hooks convention and CONVENTIONS.md "where code lives" section (GC-12)
 
@@ -196,7 +196,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 22/28 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 25/29 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |

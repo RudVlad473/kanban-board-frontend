@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
+current_phase: 01
+current_phase_name: foundation-auth-preferences
 status: executing
 stopped_at: Plan 01-19 (GC-02) finished and merged to master; next up is wave 01-20/01-21/01-26
-last_updated: "2026-08-17T19:45:55.178Z"
-last_activity: 2026-08-17
-last_activity_desc: Phase 01 execution started
+last_updated: "2026-08-18T08:55:35.255Z"
+last_activity: 2026-08-18
+last_activity_desc: Phase 01 execution resumed (wave continue)
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 29
   completed_plans: 22
-current_phase: 01
-current_phase_name: foundation-auth-preferences
 ---
 
 # Project State
@@ -32,7 +32,7 @@ against a backend that doesn't exist yet.
 Phase: 01 (foundation-auth-preferences) — EXECUTING
 Plan: 22 of 29 complete
 Status: Executing Phase 01
-Last activity: 2026-08-17 — Finished plan 01-19 (GC-02, validation schema alignment), resumed
+Last activity: 2026-08-18 — Phase 01 execution resumed (wave continue)
   from an interrupted mid-session pause. See Session Continuity below for full detail.
 
 Progress: [████████░░] 76%
@@ -95,23 +95,10 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-17T19:45:00.000Z
-Stopped at: Resumed from a structured HANDOFF.json/.continue-here.md checkpoint left by a prior
-  session that was paused mid-plan-01-19 (GC-02, validation schema alignment) via
-  `/gsd-pause-work`. The interrupted worktree (`agent-af88496caaa43c8ac`, WIP commit `d5f58d3`,
-  69 tests passing but 2 unresolved tsc errors) was preserved intact rather than discarded, per
-  the checkpoint's own blocking constraint. Dispatched a gsd-executor into that SAME worktree to
-  finish the plan: root-caused the tsc errors (a `z.preprocess()` on the optional `displayName`
-  field widened the schema's input type to `unknown`, breaking `useForm`+`zodResolver`'s type
-  equality — fixed via `.optional().transform().pipe()`, which preserves input/output alignment),
-  ran both tasks' full verify blocks green (355/355 Vitest, 8/8 Playwright e2e — one e2e fixture
-  needed a name-rule-compliant rename), split the single WIP commit into two clean per-task
-  commits, and wrote 01-19-SUMMARY.md. Rebased the worktree branch onto master (which had gained
-  one commit, the pause/handoff commit, in the meantime) and fast-forward merged per project
-  convention. Removed the worktree (hit and worked around the recurring Windows long-path
-  removal issue via the robocopy /MIR trick). Updated ROADMAP.md's plan checklist and progress
-  count (22/29). Next: wave 01-20/01-21/01-26 (parallel, all depend on 01-19), then wave
-  01-14/01-28/01-29, then 01-15 (Vercel deployment — has a blocking human-verify checkpoint and
-  needs real `.env.local` values).
-Resume file: none — HANDOFF.json and the phase's .continue-here.md are being deleted as part of
-  this close-out (both were one-shot artifacts for the now-resolved checkpoint).
+Last session: 2026-08-18T00:00:00.000Z
+Stopped at: Session resumed from a clean plan-boundary HANDOFF.json/.continue-here.md checkpoint
+  (repo verified: `HEAD` == `origin/master` == `c805561`, no worktrees, no tracked uncommitted
+  files). User selected "Execute wave 01-20/21/26" as next action; proceeding to
+  `/gsd-execute-phase 01`. HANDOFF.json and the phase's .continue-here.md deleted (one-shot
+  artifacts, resumption complete).
+Resume file: none
