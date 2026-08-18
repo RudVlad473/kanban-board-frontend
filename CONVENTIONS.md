@@ -81,6 +81,28 @@ src/
 
 **When in doubt between step 2 and step 3/4, default to step 2** (feature-specific) — promote to `components/` only once a *second* domain actually needs it. Do not create a generic `src/shared/` catch-all folder; every file has one of the eight homes above.
 
+**Where tests live (by kind):**
+
+| Kind | Suffix | Location | Vitest/Playwright project | When to use |
+|------|--------|----------|---------------------------|-------------|
+| Component/behavioral | `*.test.tsx` | Co-located with the component | Vitest `browser` project (`vitest-browser-react`) | Anything needing real CSS/`getComputedStyle()` or axe-relevant rendering |
+| Hook/logic | `*.unit.test.{ts,tsx}` | Co-located with the hook or module | Vitest `unit` project (jsdom, `renderHook`/React Testing Library) | Pure logic and TanStack Query hooks, mocking their own API module rather than real layout/paint — canonical example: `src/features/auth/hooks/use-sign-in.unit.test.tsx` |
+| Story/a11y | `*.stories.tsx` | Co-located with the component | Vitest `storybook` project (`@storybook/addon-vitest`) | Visual states only per D-25, no play functions |
+| Visual regression | `*.visual.spec.ts` | Under `visual/` | Playwright `visual` project | `components/ui/` primitives only per ADR tech/0011 |
+| End-to-end | `*.e2e.spec.ts` | Under `e2e/` | Playwright `e2e` project | Full-navigation/server behavior |
+
+**Where code lives (quick reference)** — summarizes, not replaces, the eight-step Placement rule above:
+
+| Kind | Home | Notes |
+|------|------|-------|
+| Domain hook | `features/<domain>/hooks/` | No cross-feature imports |
+| Generic hook | `hooks/` | No domain awareness |
+| Domain-agnostic type reused across ≥2 unrelated components | `types/` | Runtime-free |
+| Shared test infrastructure | `test-utils/` | Never imported by application code |
+| Design-system primitive | `components/ui/` | No domain awareness |
+| Domain-aware layout/chrome | `components/layout/` | — |
+| Every other infrastructural concern | `lib/` | — |
+
 - No cross-feature imports — a component/hook in `features/boards/` must not import from `features/tasks/` (or any other feature) directly; if two domains need to share logic, promote it to `components/`, `hooks/`, or `lib/` per the rule above. Enforcement: `eslint-plugin-boundaries`, configured with an `element-types` block (`feature`, `ui`, `layout`, `lib`) and a `dependencies` policy forbidding `feature → feature` imports while allowing `feature → ui/layout/lib`; verified current (v7.2.0, 2026-08-09, ESLint 9/10 flat-config compatible).
 
 ## Auth (docs/adr/tech/0001)
