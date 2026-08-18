@@ -105,6 +105,16 @@ export default defineConfig({
                     environment: "jsdom",
                     include: ["src/**/*.unit.test.{ts,tsx}"],
                     setupFiles: ["./vitest.setup.unit.ts"],
+                    /*
+                     * `auth-actions.unit.test.ts` (plan 01-33) imports `@/features/auth/api/auth-
+                     * actions`, which imports the real (unmocked) `@/lib/session` — that module
+                     * throws at import time when `SESSION_SECRET` is unset, the same guard the
+                     * "node" project's own `env` block above already works around for
+                     * `session.test.ts`. Mirrors that project's fallback exactly.
+                     */
+                    env: {
+                        SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",
+                    },
                 },
             },
             {
