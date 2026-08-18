@@ -477,6 +477,101 @@ gap-closure work — no prior decision is superseded except where noted.
   are updated to assert the new refuses-focus behaviour instead. This is a deliberate, explicit
   override of a previously locked decision, not a bug — recorded as such, not silently changed.
 
+### Gap Closure — 2026-08-18 (round 3: Server Actions migration + real-backend integration)
+
+Session context: nonprod (`kanban-board-rud-vlad-473-nonprod.duckdns.org`) is now live and fully
+verified (backend Phase 8, all 7 requirements SATISFIED, `POST /admin/reset` proven end-to-end).
+This clears the gate the 2026-08-18 `/gsd-explore` session (captured in
+`.planning/notes/server-actions-migration-decision.md`) had left blocking wave 14: the auth
+Route-Handler-to-Server-Actions migration, and MSW's full removal. Reading the real backend's
+`docs/AUTH_FLOWS.md` and its two sequence diagrams (`auth-signin-scenario.mmd`,
+`auth-signup-scenario.mmd`) against this repo's actual code surfaced a bigger, more load-bearing
+problem than the Route-Handler-vs-Server-Action question alone: the real backend is a **stateful,
+Spring-Session/JSESSIONID-cookie-authenticated** service, while `src/lib/api/server-client.ts`'s
+`externalApi` client sends no cookie jar at all, and this app's own session (`src/lib/session.ts`)
+is an independent, self-signed JWT that never captures or forwards the upstream `Set-Cookie`.
+Pointing `EXTERNAL_API_BASE_URL` at a real backend does **not** "just work" as a per-environment
+config change (PROJECT.md's original framing) — this gap-closure round's real scope is session
+bridging first, with the auth Server Actions rewrite and MSW removal built on top of it. All items
+below are additive; no prior D-01..D-28/GC-01..GC-17 decision is superseded except GC-13's premise
+about MSW's role, made obsolete by GC-22.
+
+- **GC-18 (session bridging with the real backend, first task of this round):** The upstream
+  `JSESSIONID` is embedded as an extra encrypted field inside the app's existing signed session
+  JWT (`src/lib/session.ts`) — no new server-side session store (Redis/Vercel KV); keeps ADR
+  tech/0001's stateless-cookie pattern intact. A shared helper attaches the stored upstream cookie
+  to `externalApi` calls generally (not an auth-only special case) — auth is where the cookie is
+  minted, so the general mechanism has to be built here regardless; Phase 2's board/column/task
+  calls reuse it directly rather than re-deriving the same plumbing later. Because the backend's
+  `JSESSIONID` cookie (10 min) and the app's own JWT (7 days) have deliberately unrelated
+  lifetimes (AUTH_FLOWS.md), any proxied call that 401s because the upstream session quietly
+  expired triggers a **full sign-out**: the app's own cookie is cleared and the user is redirected
+  to sign-in, rather than leaving a UI that still looks signed-in while every subsequent call
+  fails the same way.
+- **GC-19 (regenerate the OpenAPI contract from the real backend):** `docs/api/kanban-board-openapi.json`
+  disagrees with both the current Route Handler code and the real backend on `/signup`'s response
+  shape (contract: 200+`UserResponseDTO`; current `app/api/auth/signup/route.ts`: assumes a bare
+  200 string via `parseAs: "text"`; real backend: 201+`UserResponseDTO`-shaped body+`Location`
+  header, plus documented 400/409/401 `ProblemDetail` cases the contract declares none of).
+  Regenerate the contract against the real backend using the `kanban-board-backend` repo already
+  cloned as a sibling directory (`C:\Dev\Repos\kanban-board-backend`). No dedicated Gradle
+  file-export task exists — verified: `springdoc-openapi-starter-webmvc-ui` serves the live spec
+  at `GET /api/docs` (confirmed working per that repo's 2026-08-09 fix,
+  `.planning/todos/completed/2026-08-09-fix-broken-api-docs-swagger-endpoint-swagger-annotations-ver.md`).
+  Regeneration means running the backend (`./gradlew bootRun`, `docker-compose`, or — since
+  nonprod is already live — simply fetching nonprod's own `/api/docs` directly) and saving the
+  response over `docs/api/kanban-board-openapi.json`, then re-running `pnpm api:generate`. Exact
+  mechanism (local run vs. hitting live nonprod) is Claude's discretion at execution time — both
+  produce the same spec.
+- **GC-20 (thread the backend's error `code` through Server Actions):** The real backend's error
+  responses are `ProblemDetail`-shaped (`{code, errors}` — `VALIDATION_FAILED`,
+  `DUPLICATE_RESOURCE`, `DATA_INTEGRITY_VIOLATION`, `BAD_CREDENTIALS`, `UNAUTHENTICATED`,
+  `ACCESS_DENIED`), not today's ad-hoc `{message}`/`{errors}` shapes. Server Actions' return type
+  carries both the `code` and a display message, so future UI/tests can branch on the specific
+  failure reason without re-parsing text. Sign-in's `401` error copy stays the existing generic
+  "Invalid email or password" (UI-SPEC's Copywriting Contract) even though the real cause may be
+  the 2-concurrent-session ceiling, not a wrong password — AUTH_FLOWS.md documents this collapse
+  as the backend's own deliberate anti-enumeration design (D-08); a more specific frontend message
+  would leak exactly the distinction the backend intentionally hides, and the backend gives no
+  signal a client could use to differentiate it anyway.
+- **GC-21 (deferred — `/boards`'s client-supplied `userId`):** `docs/api/kanban-board-openapi.json`
+  has `GET /boards` take `userId` as a client-supplied query parameter rather than deriving it
+  from the session — unusual for a session-authenticated backend, worth Phase 2 planning
+  attention. Out of this auth-only round's scope; flagged here so it isn't silently forgotten.
+- **GC-22 (MSW + `src/lib/mocks/store.ts` are fully removed, superseding GC-09's persistence fix
+  and GC-13's premise):** User's explicit position: "store.ts should die... it's a mocking
+  practice we never want to follow, our testing philosophy is Testing Trophy shape, testing close
+  to the actual env." Full removal, not a testing-only cut — `instrumentation.ts`'s dev-time MSW
+  startup is deleted too; local `pnpm dev` sets `EXTERNAL_API_BASE_URL` to the real nonprod
+  backend, same target as CI e2e and every unit/component test. No mock server remains anywhere in
+  the codebase. This is exactly the end state the 2026-08-18 exploration note flagged as gated on
+  nonprod stability — that gate is now cleared (Phase 8 fully verified). A Server Action's unit
+  test mocks `server-client.ts`'s HTTP boundary directly (the actual call boundary, seeded with
+  real response shapes) rather than any in-memory store — no fake `JSESSIONID`
+  issuance/expiry simulation either; session-cookie mechanics get their real proof from Layer 3
+  e2e against the live nonprod backend, not a fake.
+- **GC-23 (wire `POST /admin/reset` into CI, real-backend tests are CI-only for now):** Every
+  local-dev and e2e sign-up/sign-in against nonprod creates real rows in the shared nonprod
+  database. Accepted, not designed around with per-dev isolation — CI wires a post-test-suite step
+  calling the already-proven `POST /admin/reset` (Phase 8, shared-secret header auth) so state
+  used by the test run is cleared right after. Real-backend-dependent tests (anything requiring
+  `EXTERNAL_API_BASE_URL` pointed at nonprod) run in CI only for now; a local-run requirement is
+  explicitly deferred, not decided now. Offline/no-network local dev is an accepted tradeoff, not
+  designed for — consistent with removing MSW as the deliberate end state (GC-22), not an
+  oversight.
+- **GC-24 (ADR tech/0002 auth-scoped carve-out — new superseding entry):** `docs/adr/tech/0002-
+  client-data-fetching-strategy.md` rejected Server Actions for two reasons: (1) `useOptimistic`
+  has no auto-rollback on Action failure, (2) "harder to intercept with MSW from a component
+  test." Reason (2) is now fully obsolete project-wide (GC-22 removes MSW entirely, not just
+  weakens it as the exploration note had guessed). A **new ADR entry** (e.g. `tech/0002-1`, an
+  amendment/superseding document, not an in-place edit of 0002) states: auth mutations (no
+  optimistic/version-conflict semantics — never needed reason (1)'s rollback machinery) move to
+  Server Actions; board/column/task mutations (0002's real load-bearing case, with `version`-
+  conflict rollback) stay on TanStack Query, where reason (1) still fully applies and was never
+  about auth. The new entry also notes, as a one-sentence future-revisit breadcrumb only (not
+  reopening the core-domain decision now): reason (2)'s premise no longer holds project-wide, so a
+  future revisit of board/column/task Server Actions should weigh only reason (1).
+
 </decisions>
 
 <canonical_refs>
@@ -514,6 +609,23 @@ gap-closure work — no prior decision is superseded except where noted.
 - `kanban-task-management-web-app.pdf` (Figma export — referenced by PROJECT.md as the sole
   design source) — the source for all hand-transcribed DTCG token values (D-03).
 
+### Real backend contract (round 3 gap closure, 2026-08-18)
+- `kanban-board-backend` repo, cloned as a sibling directory at
+  `C:\Dev\Repos\kanban-board-backend` — `docs/AUTH_FLOWS.md`: the authoritative client-observable
+  contract for `POST /api/signup`/`POST /api/signin` (status codes, `ProblemDetail` error codes,
+  session/cookie facts — cookie lifetimes, `SameSite=strict`, CORS allow-list, 2-session ceiling,
+  CSRF disabled, session-id rotation). Read this before implementing GC-18/19/20.
+- Same repo, `docs/diagrams/auth-signin-scenario.mmd` / `auth-signup-scenario.mmd` — sequence
+  diagrams tracing the exact backend code path for both routes, including the collapsed-401
+  session-ceiling behavior (D-08) GC-20 depends on.
+- Same repo, `.planning/phases/08-isolated-nonprod-environment-live-and-resettable/` —
+  `08-VERIFICATION.md` proves nonprod live + `POST /admin/reset` end-to-end (GC-23's dependency);
+  `.env.nonprod.example` documents the deployed hostname
+  (`kanban-board-rud-vlad-473-nonprod.duckdns.org`).
+- `.planning/notes/server-actions-migration-decision.md` (this repo) — the 2026-08-18
+  `/gsd-explore` session that originated this round's scope (mutations-only, testing-strategy
+  overhaul, MSW deprecation gated on nonprod — gate now cleared).
+
 </canonical_refs>
 
 <code_context>
@@ -539,6 +651,25 @@ primitives, test harness) that every later phase will build on.
 - Plan 2+'s sign-up/sign-in forms (AUTH-01/02) integrate with TextField, Button, and Checkbox
   (e.g. "remember me"), all built in Plan 1, including their error/invalid states (D-17).
 
+### Round 3 gap-closure findings (2026-08-18) — existing code this round rewrites
+- `src/lib/session.ts` — self-signed JWT session (jose, HS256), no server-side store. GC-18
+  extends `SessionPayload` with the upstream `JSESSIONID` field; `create`/`verify`/`destroy` stay
+  the same shape otherwise.
+- `src/lib/api/server-client.ts` — `externalApi` (`openapi-fetch`, `server-only`) sends no cookie
+  jar at all today. GC-18's shared helper wraps/extends this so every call attaches the bridged
+  upstream cookie.
+- `app/api/auth/{signin,signup,signout}/route.ts` — become Server Actions this round (the
+  original phase's Route-Handler-BFF pattern, ADR tech/0001). `signup/route.ts` currently
+  hardcodes `parseAs: "text"` assuming a bare-string response — GC-19 replaces this with the real
+  201+object shape.
+- `src/features/auth/api/auth-api.ts`, `use-sign-in.ts`, `use-sign-up.ts` — TanStack Query
+  mutation wrappers being replaced by `useActionState`/`useFormStatus` per the exploration note;
+  `sign-out-button.tsx` similarly.
+- `src/lib/mocks/store.ts`, MSW handlers, `instrumentation.ts`'s dev-time MSW startup — deleted
+  entirely per GC-22.
+- `docs/adr/tech/0002-client-data-fetching-strategy.md` — amended via a new superseding entry
+  (GC-24), not edited in place.
+
 </code_context>
 
 <specifics>
@@ -554,10 +685,21 @@ primitives, test harness) that every later phase will build on.
 <deferred>
 ## Deferred Ideas
 
-None — discussion stayed within Phase 1's scope. Card was considered as an additional
-primitive (alongside Modal/IconButton/Switch) but not selected — CONVENTIONS.md already treats
-BoardCard/TaskCard as feature-specific components, not primitives; revisit only if real
-cross-feature reuse emerges in Phase 2+.
+None from Phase 1's original discussion — discussion stayed within Phase 1's scope. Card was
+considered as an additional primitive (alongside Modal/IconButton/Switch) but not selected —
+CONVENTIONS.md already treats BoardCard/TaskCard as feature-specific components, not primitives;
+revisit only if real cross-feature reuse emerges in Phase 2+.
+
+### From round 3 gap closure (2026-08-18)
+- **GC-21 — `/boards`'s client-supplied `userId` query param.** `docs/api/kanban-board-openapi.json`
+  has `GET /boards` accept `userId` as a client-supplied query parameter instead of deriving it
+  from the session — unusual for a session-authenticated backend. Out of this auth-only round's
+  scope; Phase 2 (Board Management) planning should pick this up.
+- **Reopening ADR tech/0002's core-domain decision** (board/column/task mutations via Server
+  Actions instead of TanStack Query) — explicitly not decided now; GC-24 leaves only a
+  future-revisit breadcrumb, not a reopened question.
+- **Local-run requirement for real-backend-dependent tests** — GC-23 keeps these CI-only for now;
+  whether they should also be runnable locally is an explicitly deferred future decision.
 
 </deferred>
 

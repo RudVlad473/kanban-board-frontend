@@ -135,3 +135,98 @@ None — every gray area discussed had a concrete user decision; no "you decide"
 ## Deferred Ideas
 
 None — discussion stayed within Phase 1's scope. Card (as a generic primitive, distinct from feature-specific BoardCard/TaskCard) was considered and explicitly not selected, not deferred to a future phase.
+
+---
+
+# Round 3 — 2026-08-18: Server Actions migration + real-backend integration
+
+> **Audit trail only.** Do not use as input to planning, research, or execution agents.
+> Decisions are captured in `01-CONTEXT.md`'s "Gap Closure — 2026-08-18 (round 3)" section.
+
+**Date:** 2026-08-18
+**Phase:** 01-foundation-auth-preferences
+**Areas discussed:** Session bridging with the real backend, Real contract vs. current code drift, Server Action unit-test path, ADR tech/0002 carve-out
+
+**Trigger:** User confirmed nonprod backend is live and pointed at `kanban-board-backend`'s
+`docs/AUTH_FLOWS.md` + sequence diagrams. This cleared the gate the 2026-08-18 `/gsd-explore`
+session (`.planning/notes/server-actions-migration-decision.md`) had left blocking wave 14.
+
+---
+
+## Session bridging with the real backend
+
+| Question | Selected |
+|---|---|
+| How to carry JSESSIONID between requests? | **Embed inside the existing session JWT** (not a new session store) |
+| What happens on upstream-session-expired 401? | **Full sign-out** — clear the app's own cookie, redirect to sign-in |
+| Sequencing vs. the Server Actions rewrite? | **Same round, first task** |
+| Scope — auth-only or general mechanism? | **Build the general mechanism now** — any future `externalApi` call reuses it |
+
+**Notes:** This area wasn't one of the four originally proposed gray areas going in — it surfaced
+from reading `server-client.ts`/`session.ts` against `AUTH_FLOWS.md` before presenting options,
+and turned out to be the most load-bearing decision of the round: the real backend is
+stateful/session-cookie-based, and this app's BFF currently forwards no cookie at all.
+
+---
+
+## Real contract vs. current code drift
+
+| Question | Selected |
+|---|---|
+| Regenerate `docs/api/kanban-board-openapi.json`? | **Yes** — against the `kanban-board-backend` repo (sibling directory), via its live `/api/docs` (springdoc), no dedicated Gradle export task exists |
+| Thread the backend's `ProblemDetail` `code` through Server Actions? | **Yes** |
+| Keep sign-in's 401 copy generic (matching the backend's D-08 anti-enumeration collapse)? | **Yes** |
+| Flag `/boards`'s client-supplied `userId` for Phase 2? | **Yes, deferred note only** |
+
+**Notes:** User specified the regeneration source directly ("go to backend repo pulled locally on
+this machine (neighbour of this repo) and regenerate schema using gradle command"). Verified: no
+literal single Gradle task produces the file — the actual mechanism is running the backend and
+fetching its live `GET /api/docs` (springdoc), confirmed working per that repo's own 2026-08-09
+fix record. Recorded in `01-CONTEXT.md` as GC-19 with the verified mechanism, not the literal
+"gradle command" phrasing, since no such task exists.
+
+---
+
+## Server Action unit-test path
+
+| Question | Selected |
+|---|---|
+| Unit-test seed path: mock store vs. mock `server-client.ts`? | **Neither in the store.ts sense — store.ts should die entirely** |
+| Scope of MSW removal? | **Full removal now** — MSW + `store.ts` gone, local dev points at nonprod too |
+| Handling shared nonprod DB pollution from dev/e2e? | **Wire `POST /admin/reset` into CI**, post-test-suite |
+| Offline/no-network local dev? | **Accepted tradeoff, not designed for** — real-backend tests are CI-only for now |
+
+**User's own words:** "store.ts should die, it's a mocking practice we never want to follow, our
+testing philosophy is trophy shape and testing close to actual env." This expanded the round's
+scope beyond auth-only mocking: MSW's dev-time startup (`instrumentation.ts`) is removed entirely,
+not just its use in tests.
+
+---
+
+## ADR tech/0002 carve-out
+
+| Question | Selected |
+|---|---|
+| ADR update format? | **New superseding entry** (e.g. `tech/0002-1`), not an in-place edit |
+| Flag reason (2)'s obsolescence as a future-revisit breadcrumb? | **Yes, breadcrumb only** — does not reopen the core-domain decision |
+
+**Notes:** Reason (2) ("harder to intercept with MSW from a component test") is now fully
+obsolete, not merely weakened as the 2026-08-18 exploration note had guessed — MSW is being
+removed entirely (this round), not just partially. Reason (1) (`useOptimistic` has no
+auto-rollback) still fully applies to board/column/task mutations and was never about auth.
+
+---
+
+## Claude's Discretion
+
+- Exact regeneration mechanism for the OpenAPI contract (local `./gradlew bootRun`/docker-compose
+  vs. fetching live nonprod's `/api/docs` directly) — both produce the same spec.
+
+## Deferred Ideas
+
+- `/boards`'s client-supplied `userId` query parameter — Phase 2 (Board Management) planning
+  attention, not this round's scope.
+- Reopening ADR tech/0002's core-domain decision (board/column/task Server Actions) — explicitly
+  not decided now, left as a breadcrumb only.
+- Whether real-backend-dependent tests should also run locally (not just CI) — explicitly
+  deferred, not decided now.
