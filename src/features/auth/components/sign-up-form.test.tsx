@@ -1,13 +1,24 @@
+import { composeStories } from "@storybook/react";
 import { http, HttpResponse } from "msw";
-import { setupWorker } from "msw/browser";
-import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { render } from "vitest-browser-react";
+import { render, type RenderResult } from "vitest-browser-react";
 
-import { QueryProvider } from "@/lib/query-client";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { renderWithProviders } from "@/test-utils/render-with-providers";
+import { setupMswWorker } from "@/test-utils/setup-msw-worker";
 
 import { SignUpForm } from "./sign-up-form";
+import * as signUpStories from "./sign-up-form.stories";
+
+/*
+ * Reuses sign-up-form.stories.tsx's own staged args/decorators (GC-08) instead of restating them
+ * here — the Storybook preview annotations registered in vitest.setup.ts (provider tree, theme
+ * class) are applied automatically since `setProjectAnnotations` runs once for this whole
+ * "browser" project. Every assertion below still lives in this file, per D-25 — composing a story
+ * only reuses its render setup, never its (nonexistent) play function.
+ */
+const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed } = composeStories(signUpStories);
 
 /*
  * A dedicated, test-local worker — not `src/lib/mocks/browser.ts`'s shared singleton — because
@@ -18,7 +29,7 @@ import { SignUpForm } from "./sign-up-form";
  * app's own same-origin `/api/auth/...` BFF routes — so a worker with no base handlers, populated
  * per test via `.use()`, is both sufficient and avoids the Node-only dependency entirely.
  */
-const worker = setupWorker();
+const worker = setupMswWorker();
 
 /*
  * `useSignUp` calls `next/navigation`'s `useRouter`, which requires a real Next.js App Router
@@ -33,28 +44,73 @@ vi.mock("next/navigation", () => ({
 const SIGN_UP_PATH = "/api/auth/signup";
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 
-const renderSignUpForm = () =>
-    render(
-        <QueryProvider>
-            <SignUpForm />
-        </QueryProvider>,
-    );
+const renderSignUpForm = () => renderWithProviders(<SignUpForm />);
 
 /*
- * Same rationale as app/api/auth/routes.test.ts's MSW usage, mirrored for the browser worker
- * (plan 01-10's `src/lib/mocks/browser.ts`) — this Route Handler doesn't exist in a plain Vitest
- * Browser Mode page, so every test that needs a response registers its own handler via
- * `worker.use()`, reset after each test.
+ * One case per composed story asserting the staged state that story is supposed to demonstrate —
+ * parametrised (D-26y) rather than a near-identical `it()` per story. These props are declared in
+ * sign-up-form.stories.tsx and, until this task, asserted nowhere; a human opening Storybook was
+ * their only check.
  */
-beforeAll(async () => {
-    await worker.start({ onUnhandledRequest: "bypass" });
-});
-afterEach(() => {
-    worker.resetHandlers();
-});
-afterAll(() => {
-    worker.stop();
-});
+const signUpStagedStoryCases = [
+    {
+        name: "Filled",
+        Story: Filled,
+        verify: async (screen: RenderResult) => {
+            await expect.element(screen.getByRole("textbox", { name: "Email" })).toHaveValue("user@example.com");
+            await expect.element(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Jamie Rivera");
+            await expect
+                .element(screen.getByLabelText("Password", { exact: true }))
+                .toHaveValue("correct-horse-battery-staple");
+        },
+    },
+    {
+        name: "WithFieldErrors",
+        Story: WithFieldErrors,
+        verify: async (screen: RenderResult) => {
+            // Only Email and Password stage the required-field message — Name is optional (GC-02).
+            await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
+        },
+    },
+    {
+        name: "WithServerError",
+        Story: WithServerError,
+        verify: async (screen: RenderResult) => {
+            await expect
+                .element(screen.getByRole("alert"))
+                .toHaveTextContent(
+                    "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.",
+                );
+        },
+    },
+    {
+        name: "Submitting",
+        Story: Submitting,
+        verify: async (screen: RenderResult) => {
+            const submitButton = screen.getByRole("button", { name: "Create Account" });
+            const emailField = screen.getByRole("textbox", { name: "Email" });
+
+            await expect.element(submitButton).toBeDisabled();
+            await expect.element(submitButton).toHaveAttribute("aria-busy", "true");
+            await expect.element(emailField).toHaveAttribute("aria-busy", "true");
+
+            // A field refuses a typed character while the story stages it as busy.
+            (emailField.element() as HTMLInputElement).focus();
+            await userEvent.keyboard("z");
+            expect((emailField.element() as HTMLInputElement).value).toBe("");
+        },
+    },
+    {
+        name: "PasswordRevealed",
+        Story: PasswordRevealed,
+        verify: async (screen: RenderResult) => {
+            const passwordField = screen.getByLabelText("Password", { exact: true });
+
+            await expect.element(passwordField).toHaveAttribute("type", "text");
+            await expect.element(screen.getByRole("button", { name: "Hide password" })).toBeVisible();
+        },
+    },
+];
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The
@@ -412,5 +468,15 @@ describeForEachDevice({
             await expect.element(passwordField).toHaveAttribute("type", "text");
             await expect.element(screen.getByRole("button", { name: "Hide password" })).toBeVisible();
         });
+
+        for (const { name, Story, verify } of signUpStagedStoryCases) {
+            it(`renders the "${name}" story's staged state`, async () => {
+                // Arrange
+                const screen = await render(<Story />);
+
+                // Assert
+                await verify(screen);
+            });
+        }
     },
 });

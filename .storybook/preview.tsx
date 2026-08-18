@@ -7,8 +7,7 @@ import "../src/styles/globals.css";
 import * as a11yAddonAnnotations from "@storybook/addon-a11y/preview";
 import { definePreview } from "@storybook/nextjs-vite";
 
-import { QueryProvider } from "@/lib/query-client";
-import { DEVICE_TYPE, VIEWPORT_SIZES } from "@/lib/viewport-breakpoints";
+import { previewAnnotations } from "./preview-annotations";
 
 /*
  * ADR tech/0010: two named viewports matching this project's own breakpoint tokens
@@ -19,93 +18,15 @@ import { DEVICE_TYPE, VIEWPORT_SIZES } from "@/lib/viewport-breakpoints";
  * package needed, only this configuration. Sizes come from the shared
  * `src/lib/viewport-breakpoints.ts` module (also read by the Playwright visual spec and the
  * Vitest dual-viewport test util) so all three stay numerically identical by construction.
+ *
+ * The actual parameters/globalTypes/initialGlobals/decorators values live in
+ * `preview-annotations.tsx` (plan 01-21, GC-08) — extracted so `vitest.setup.ts` can register the
+ * exact same project annotations for the "browser" Vitest project without importing this file
+ * (which pulls in `@storybook/nextjs-vite`'s `definePreview`, unusable outside the "storybook"
+ * project — see that file's own doc comment for the full rationale).
  */
 
 export default definePreview({
     addons: [a11yAddonAnnotations],
-    parameters: {
-        a11y: {
-            /*
-             * D-21: an axe violation fails the story rather than merely annotating it — nothing ships
-             * unverified.
-             */
-            test: "error",
-            options: {
-                rules: {
-                    /*
-                     * Storybook's own documented default for isolated component rendering: a story has no
-                     * page landmarks (<main>/<nav>/etc.) to violate, so "region" is a guaranteed
-                     * false-positive here, not a real accessibility gap.
-                     */
-                    region: { enabled: false },
-                },
-            },
-        },
-        viewport: {
-            options: {
-                [DEVICE_TYPE.MOBILE]: {
-                    name: `Mobile (${String(VIEWPORT_SIZES[DEVICE_TYPE.MOBILE].width)}px, breakpoint.mobile)`,
-                    styles: {
-                        width: `${String(VIEWPORT_SIZES[DEVICE_TYPE.MOBILE].width)}px`,
-                        height: `${String(VIEWPORT_SIZES[DEVICE_TYPE.MOBILE].height)}px`,
-                    },
-                    type: "mobile",
-                },
-                [DEVICE_TYPE.DESKTOP]: {
-                    name: `Desktop (${String(VIEWPORT_SIZES[DEVICE_TYPE.DESKTOP].width)}px, breakpoint.desktop)`,
-                    styles: {
-                        width: `${String(VIEWPORT_SIZES[DEVICE_TYPE.DESKTOP].width)}px`,
-                        height: `${String(VIEWPORT_SIZES[DEVICE_TYPE.DESKTOP].height)}px`,
-                    },
-                    type: "desktop",
-                },
-            },
-        },
-    },
-    globalTypes: {
-        theme: {
-            description: "Toggle the .dark class on the story canvas root",
-            toolbar: {
-                title: "Theme",
-                icon: "circlehollow",
-                items: [
-                    { value: "light", icon: "sun", title: "Light" },
-                    { value: "dark", icon: "moon", title: "Dark" },
-                ],
-                dynamicTitle: true,
-            },
-        },
-    },
-    initialGlobals: {
-        theme: "light",
-        /*
-         * Desktop by default, matching every existing story's implicit pre-ADR-0010 rendering. A
-         * human viewing any story flips the toolbar's viewport dropdown between Mobile/Desktop to
-         * see both instantly — there is no separate `Mobile*` story export per component; the
-         * toolbar control isn't tied to story identity, so one story covers both viewports.
-         */
-        viewport: DEVICE_TYPE.DESKTOP,
-    },
-    decorators: [
-        /*
-         * Every dependency a story needs to exercise real hooks/mutations rather than a fully
-         * isolated presentational render — TanStack Query's provider today, the future global
-         * store once one exists — belongs here, not copy-pasted into each stories file's own
-         * `decorators` array (a per-file wrapper broke Storybook's static CSF indexing, which
-         * requires each *.stories.tsx default export to be a literal object).
-         */
-        (Story) => <QueryProvider>{Story()}</QueryProvider>,
-        (Story, context) => {
-            document.documentElement.classList.toggle("dark", context.globals.theme === "dark");
-            /*
-             * Mirror app/layout.tsx's <body> so stories render against the same themed
-             * page background real usage does — otherwise dark-mode text tokens (e.g.
-             * text-text-primary, white) sit on the browser's default white canvas
-             * wherever a component doesn't paint its own background.
-             */
-            document.body.classList.add("bg-bg-app", "text-text-primary");
-
-            return Story();
-        },
-    ],
+    ...previewAnnotations,
 });

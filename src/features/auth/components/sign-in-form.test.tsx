@@ -1,20 +1,31 @@
+import { composeStories } from "@storybook/react";
 import { http, HttpResponse } from "msw";
-import { setupWorker } from "msw/browser";
-import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { render } from "vitest-browser-react";
+import { render, type RenderResult } from "vitest-browser-react";
 
-import { QueryProvider } from "@/lib/query-client";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { renderWithProviders } from "@/test-utils/render-with-providers";
+import { setupMswWorker } from "@/test-utils/setup-msw-worker";
 
 import { SignInForm } from "./sign-in-form";
+import * as signInStories from "./sign-in-form.stories";
+
+/*
+ * Reuses sign-in-form.stories.tsx's own staged args/decorators (GC-08) instead of restating them
+ * here — the Storybook preview annotations registered in vitest.setup.ts (provider tree, theme
+ * class) are applied automatically since `setProjectAnnotations` runs once for this whole
+ * "browser" project. Every assertion below still lives in this file, per D-25 — composing a story
+ * only reuses its render setup, never its (nonexistent) play function.
+ */
+const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed } = composeStories(signInStories);
 
 /*
  * Same rationale as sign-up-form.test.tsx: a dedicated, test-local worker (not
  * src/lib/mocks/browser.ts's shared singleton, whose handlers pull in node:fs/os/crypto through
  * src/lib/mocks/store.ts — Node builtins a real browser page can't load).
  */
-const worker = setupWorker();
+const worker = setupMswWorker();
 
 /*
  * Same rationale as sign-up-form.test.tsx: `useSignIn` calls `next/navigation`'s `useRouter`,
@@ -28,22 +39,67 @@ const SIGN_IN_PATH = "/api/auth/signin";
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
 
-const renderSignInForm = () =>
-    render(
-        <QueryProvider>
-            <SignInForm />
-        </QueryProvider>,
-    );
+const renderSignInForm = () => renderWithProviders(<SignInForm />);
 
-beforeAll(async () => {
-    await worker.start({ onUnhandledRequest: "bypass" });
-});
-afterEach(() => {
-    worker.resetHandlers();
-});
-afterAll(() => {
-    worker.stop();
-});
+/*
+ * One case per composed story asserting the staged state that story is supposed to demonstrate —
+ * parametrised (D-26y) rather than a near-identical `it()` per story. These props are declared in
+ * sign-in-form.stories.tsx and, until this task, asserted nowhere; a human opening Storybook was
+ * their only check.
+ */
+const signInStagedStoryCases = [
+    {
+        name: "Filled",
+        Story: Filled,
+        verify: async (screen: RenderResult) => {
+            await expect.element(screen.getByRole("textbox", { name: "Email" })).toHaveValue("user@example.com");
+            await expect
+                .element(screen.getByLabelText("Password", { exact: true }))
+                .toHaveValue("correct-horse-battery-staple");
+        },
+    },
+    {
+        name: "WithFieldErrors",
+        Story: WithFieldErrors,
+        verify: async (screen: RenderResult) => {
+            await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
+        },
+    },
+    {
+        name: "WithServerError",
+        Story: WithServerError,
+        verify: async (screen: RenderResult) => {
+            await expect.element(screen.getByRole("alert")).toHaveTextContent(INVALID_CREDENTIALS_MESSAGE);
+        },
+    },
+    {
+        name: "Submitting",
+        Story: Submitting,
+        verify: async (screen: RenderResult) => {
+            const submitButton = screen.getByRole("button", { name: "Sign In" });
+            const emailField = screen.getByRole("textbox", { name: "Email" });
+
+            await expect.element(submitButton).toBeDisabled();
+            await expect.element(submitButton).toHaveAttribute("aria-busy", "true");
+            await expect.element(emailField).toHaveAttribute("aria-busy", "true");
+
+            // A field refuses a typed character while the story stages it as busy.
+            (emailField.element() as HTMLInputElement).focus();
+            await userEvent.keyboard("z");
+            expect((emailField.element() as HTMLInputElement).value).toBe("");
+        },
+    },
+    {
+        name: "PasswordRevealed",
+        Story: PasswordRevealed,
+        verify: async (screen: RenderResult) => {
+            const passwordField = screen.getByLabelText("Password", { exact: true });
+
+            await expect.element(passwordField).toHaveAttribute("type", "text");
+            await expect.element(screen.getByRole("button", { name: "Hide password" })).toBeVisible();
+        },
+    },
+];
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The
@@ -239,5 +295,15 @@ describeForEachDevice({
             await expect.element(passwordField).toHaveAttribute("type", "text");
             await expect.element(screen.getByRole("button", { name: "Hide password" })).toBeVisible();
         });
+
+        for (const { name, Story, verify } of signInStagedStoryCases) {
+            it(`renders the "${name}" story's staged state`, async () => {
+                // Arrange
+                const screen = await render(<Story />);
+
+                // Assert
+                await verify(screen);
+            });
+        }
     },
 });
