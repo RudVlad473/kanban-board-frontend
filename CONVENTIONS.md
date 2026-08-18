@@ -102,6 +102,7 @@ src/
 
 - All API calls inside Vitest Browser Mode and Playwright tests are intercepted by MSW; no live network call to any real or third-party host. Enforcement: MSW configured with `onUnhandledRequest: 'error'` — an unmocked request fails the test.
 - MSW handlers enforce the same `version`-conflict rejection (409) behavior as the real contract for every versioned mutation. Enforcement: a shared handler test asserting a stale-version request is rejected.
+- Mock/test state (e.g. `src/lib/mocks/store.ts`) lives in memory only, reset via an explicit seed/reset function (e.g. `resetMockStore()`) — never ad-hoc disk or browser-storage persistence to survive hot-reloads or test runs. If cross-reload survival is genuinely needed, that is a distinct, deliberately reviewed decision, not a default reach. Enforcement: code review.
 
 ## Typed API client (docs/adr/tech/0005)
 
