@@ -112,3 +112,9 @@ GC-12 is closed. CONVENTIONS.md now gives any future contributor (or agent) a co
 ---
 *Phase: 01-foundation-auth-preferences*
 *Completed: 2026-08-18*
+
+## Self-Check: PASSED
+
+- FOUND: .planning/phases/01-foundation-auth-preferences/01-28-SUMMARY.md
+- FOUND: bbfe10d (Task 1 commit)
+- FOUND: d59701e (SUMMARY commit)
