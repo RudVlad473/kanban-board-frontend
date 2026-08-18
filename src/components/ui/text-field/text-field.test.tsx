@@ -132,17 +132,15 @@ describeForEachDevice({
             expect(onValueChange).not.toHaveBeenCalled();
         });
 
-        it("GC-15 fix: a loading field is visually distinct from both idle and disabled, not merely 'not idle'", async () => {
+        it("a loading field now visually matches disabled — native :disabled wins on CSS specificity — but keeps a distinct busy cursor", async () => {
             /*
-             * Arrange — the pre-fix investigation (this test's prior form) proved idle and loading
-             * fields were computed-style-identical. The fix gives `isBusy` a real opacity/background
-             * treatment: `opacity-70` sits strictly between idle's `1` and disabled's `0.5` — a
-             * distinct third value, not a coincidental match to either neighbor — and `bg-bg-app`
-             * reads as visually recessed against the field's own idle `bg-bg-surface`.
+             * Arrange — GC-17 makes `isLoading` compose into native `disabled`, so the base
+             * `disabled:opacity-50` class (specificity 0,2,0) now always outranks the `isBusy`
+             * branch's plain `opacity-70` class (0,1,0), regardless of source order — confirmed live
+             * here (not by specificity reasoning alone) before the `isBusy` cva branch was simplified
+             * to drop the now-unreachable opacity/background classes. Cursor remains the sole
+             * busy-vs-disabled differentiator, mirroring Checkbox's (GC-14) precedent.
              */
-            const idle = await render(<TextField label="Idle field" />);
-            const idleInput = idle.getByRole("textbox", { name: "Idle field" });
-
             const loading = await render(<TextField label="Loading field" isLoading />);
             const loadingInput = loading.getByRole("textbox", { name: "Loading field" });
 
@@ -150,17 +148,16 @@ describeForEachDevice({
             const disabledInput = disabled.getByRole("textbox", { name: "Disabled field" });
 
             // Act
-            const idleStyle = getComputedStyle(idleInput.element());
             const loadingStyle = getComputedStyle(loadingInput.element());
             const disabledStyle = getComputedStyle(disabledInput.element());
 
-            // Assert — all three opacity values are pairwise distinct, loading strictly in between.
-            expect(idleStyle.opacity).toBe("1");
-            expect(loadingStyle.opacity).toBe("0.7");
+            // Assert — loading now visually matches disabled (same opacity).
+            expect(loadingStyle.opacity).toBe("0.5");
             expect(disabledStyle.opacity).toBe("0.5");
 
-            // Assert — the loading field's background differs from the idle field's.
-            expect(loadingStyle.backgroundColor).not.toBe(idleStyle.backgroundColor);
+            // Assert — cursor is the sole remaining busy-vs-disabled differentiator.
+            expect(loadingStyle.cursor).toBe("progress");
+            expect(disabledStyle.cursor).not.toBe("progress");
         });
 
         it("renders a masked password input, and a trailing node inside the field rather than beside it", async () => {
