@@ -88,10 +88,20 @@ Recent decisions affecting current work:
 
 - User wants sign-up/sign-in/sign-out refactored from Route Handlers to Server Actions BEFORE
   01-14 is built, so 01-14 uses the new pattern too — see `.planning/notes/
-  server-actions-migration-decision.md`. This is NOT YET PLANNED — needs a proper planning pass
-  (new gap-closure round or phase decision) before any code changes. Do not start 01-14 under the
-  old Route Handler pattern without first checking whether the user wants to plan the Server
-  Actions work first.
+  server-actions-migration-decision.md`. **Context now captured** (round 3 gap closure,
+  2026-08-18, `01-CONTEXT.md` GC-18..GC-24) — nonprod backend confirmed live, which also
+  surfaced a bigger prerequisite: the real backend is session-cookie (JSESSIONID) authenticated
+  and this app currently forwards no cookie to it at all, so session-bridging (GC-18) must be
+  built first, before the Server Actions rewrite itself. Still NOT YET PLANNED into a PLAN.md —
+  next step is `/gsd-plan-phase 01`. Do not start 01-14 under the old Route Handler pattern
+  until this round's plan executes.
+- **Stray uncommitted corruption found in the working tree** (unrelated to this session's edits):
+  `app/api/auth/signin/route.ts` line 1 reads `simport "server-only";` instead of
+  `import "server-only";` — breaks the build. Not staged, not committed. Origin unknown (present
+  before this session's changes, not something this session's tool calls touched). Needs a
+  one-line manual fix or `git checkout -- app/api/auth/signin/route.ts` before that file is next
+  touched — GC-19/round-3 planning will rewrite this file anyway, but flag it now so it isn't
+  mistaken for intentional in-progress work.
 
 ## Deferred Items
 
@@ -104,29 +114,31 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-08-18T15:40:52.871Z
-Stopped at: Phase 01 round-3 gap-closure context gathered (Server Actions migration + real-backend session bridging), triggered by nonprod going live
-  Executed and merged wave 3 (01-20 route consolidation, 01-21 shared test utils — required
-  approving `@storybook/react` as a devDependency mid-plan, 01-26 mock store in-memory rewrite)
-  and wave 4 (01-28 RTL-for-hooks convention doc, 01-29 GC-17 TextField isLoading fix). Hit and
-  resolved several Windows/worktree issues along the way: repeated stale-worktree-directory
-  removal failures (known issue, robocopy-mirror-then-delete workaround), a #683 fork-base
-  divergence (local master was 17 commits ahead of unpushed origin/master, causing Claude's
-  worktree harness to fork wave-4 executors from a stale base — both halted safely with zero work
-  lost per the #48 fail-closed guard; fixed by pushing, which should be done after every wave from
-  now on), and a stale `git index.lock` from a failed automated merge-rescue step. Both waves
-  verified post-merge (400/400 tests, lint clean, tsc clean each time) and pushed to origin.
-  User then explicitly asked to hold before wave 14 for review — did not auto-continue.
-  Remainder of the session was a `/gsd-explore` conversation (not execution) about migrating
-  auth mutations from Route Handlers to Server Actions, driven by user's dislike of the current
-  request/response chain and distrust of mocking in tests. Landed on: mutations-only scope (reads
-  stay TanStack Query), sequencing (refactor shipped auth first, then revise 01-14 to match), a
-  new three-layer testing strategy (seeded unit tests / no-op'd component tests / thin real-backend
-  e2e — grounded via research: "sociable unit tests" per Martin Fowler, echoes Kent C. Dodds'
-  Testing Trophy with one correction made mid-conversation), MSW's full deprecation (gated on a
-  non-prod backend, currently being deployed by the user, being ready to also cover local dev),
-  and a first-pass (explicitly not final) TanStack Query cache-seeding Storybook decorator design.
-  Captured as `.planning/notes/server-actions-migration-decision.md` (commit `89f2421`, pushed).
-  **This is exploration only — nothing planned or executed.** User then asked how to proceed and
-  said they want to start a new conversation.
+Stopped at: Phase 01 round-3 gap-closure context gathered (Server Actions migration + real-backend
+  session bridging), triggered by nonprod going live. Prior session (summarized): waves 3+4
+  (01-20/21/26/28/29) merged and pushed, then a `/gsd-explore` conversation produced
+  `.planning/notes/server-actions-migration-decision.md` (commit `89f2421`), gated on nonprod
+  going live. Full detail in git history / that note.
+
+  **This session:** User confirmed nonprod is live and pointed at `kanban-board-backend`'s
+  `docs/AUTH_FLOWS.md` + auth sequence diagrams. Ran `/gsd-discuss-phase 01` (round 3) to capture
+  gap-closure context. Reading the real backend's contract against this app's actual code (not
+  just the exploration note) surfaced a bigger prerequisite than expected: the real backend is
+  Spring-Session/JSESSIONID-cookie-authenticated, and this app's `externalApi` client forwards no
+  cookie at all today — pointing `EXTERNAL_API_BASE_URL` at nonprod does not "just work." Seven
+  decisions captured as GC-18 through GC-24 in `01-CONTEXT.md`: (1) session-bridging via the
+  existing session JWT, built first; (2) full sign-out on upstream session expiry; (3) regenerate
+  `docs/api/kanban-board-openapi.json` from the real backend (kanban-board-backend repo, sibling
+  dir, via its live `/api/docs`); (4) thread the backend's ProblemDetail `code` through Server
+  Actions; (5) MSW + `src/lib/mocks/store.ts` fully removed — local dev also points at nonprod,
+  per user's explicit "store.ts should die" / Testing Trophy philosophy; (6) `POST /admin/reset`
+  wired into CI post-test-suite (real-backend tests are CI-only for now, not required locally);
+  (7) a new superseding ADR entry for tech/0002's auth-scoped carve-out. Committed
+  (`acdfb87`, `3a68cb5`), not yet pushed.
+
+  **Also found, unrelated to this session's own edits:** a stray uncommitted one-character
+  corruption in `app/api/auth/signin/route.ts` (`simport` instead of `import`) — see
+  Blockers/Concerns above. Left as-is, flagged, not fixed (that file is rewritten by this round's
+  plan anyway).
 Resume file: .planning/phases/01-foundation-auth-preferences/01-CONTEXT.md
-  point, not a mid-task interruption). Resume via `/gsd-resume-work` as normal.
+Next step: `/gsd-plan-phase 01` to turn round 3's captured context into an executable plan.
