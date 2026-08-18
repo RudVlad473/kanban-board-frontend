@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { session, type SessionPayload } from "@/lib/session";
+import { session, type SessionRecord } from "@/lib/session";
 
 /*
  * DAL = Data Access Layer — Next.js App Router's own documented auth-pattern term (ADR
@@ -16,4 +16,4 @@ import { session, type SessionPayload } from "@/lib/session";
  * pre-render check only, never the authorisation decision. Wrapped in React's `cache` so repeated
  * calls within a single server render don't re-verify the cookie more than once.
  */
-export const verifySession = cache(async (): Promise<SessionPayload | null> => session.verify());
+export const verifySession = cache(async (): Promise<SessionRecord | null> => session.verify());

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { externalApi } from "@/lib/api/server-client";
+import { extractUpstreamSessionId } from "@/lib/api/session-cookie";
 import { resolveDisplayName } from "@/lib/display-name";
 import { isSessionPayload, session } from "@/lib/session";
 import { signUpSchema, zodErrorToFieldErrors } from "@/lib/validation/auth-schemas";
@@ -24,7 +25,7 @@ export const POST = async (request: Request): Promise<Response> => {
         return Response.json({ errors: zodErrorToFieldErrors(parsed.error) }, { status: 400 });
     }
 
-    const { data, error } = await externalApi.POST("/signup", { body: parsed.data });
+    const { data, error, response } = await externalApi.POST("/signup", { body: parsed.data });
 
     /*
      * The contract declares no error-response schema for this operation, so the generated type
@@ -36,7 +37,14 @@ export const POST = async (request: Request): Promise<Response> => {
     const upstreamError: unknown = error;
     const identity: unknown = data;
 
-    if (upstreamError !== undefined || !isSessionPayload(identity)) {
+    /*
+     * A success response carrying no upstream credential (GC-18, T-01-50) is a failure, not a
+     * degraded success — creating a session that cannot authenticate anything would leave the user
+     * looking signed in while every subsequent call fails.
+     */
+    const jsessionId = extractUpstreamSessionId(response);
+
+    if (upstreamError !== undefined || !isSessionPayload(identity) || !jsessionId) {
         return Response.json({ message: SIGN_UP_FAILURE_MESSAGE }, { status: 409 });
     }
 
@@ -48,7 +56,7 @@ export const POST = async (request: Request): Promise<Response> => {
      * every subsequent sign-in (GC-02), so `resolveDisplayName` still runs over the guarded
      * identity here, mirroring signin/route.ts.
      */
-    await session.create({ ...identity, displayName: resolveDisplayName(identity) });
+    await session.create({ ...identity, displayName: resolveDisplayName(identity), jsessionId });
 
     return Response.json({ ok: true }, { status: 200 });
 };
