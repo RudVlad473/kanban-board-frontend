@@ -109,31 +109,27 @@ describeForEachDevice({
             expect(onValueChange).not.toHaveBeenCalled();
         });
 
-        it("refuses a typed character, stays focusable, and reports itself busy when isLoading", async () => {
+        it("renders disabled, refuses focus and typing, and reports itself busy when isLoading", async () => {
             // Arrange
             const onValueChange = vi.fn();
-            const screen = await render(
-                <TextField label="Email" defaultValue="a@b.com" isLoading onValueChange={onValueChange} />,
-            );
+            const screen = await render(<TextField label="Email" isLoading onValueChange={onValueChange} />);
             const input = screen.getByRole("textbox", { name: "Email" });
-            const valueBeforeTyping = (input.element() as HTMLInputElement).value;
 
             // Assert (rendered state)
+            await expect.element(input).toBeDisabled();
             await expect.element(input).toHaveAttribute("aria-busy", "true");
 
             /*
-             * Act — readOnly (not disabled) keeps the field focusable, unlike the isDisabled case
-             * above; the value must be provably unchanged by the typed character rather than merely
-             * asserting the readOnly property is set.
+             * Act + Assert (typing is suppressed) — a disabled input never becomes the active
+             * element, so the browser itself refuses focus; this proves activation is genuinely
+             * suppressed, not merely unasserted (GC-17: isLoading now composes into disabled,
+             * matching the isDisabled test above rather than the old readOnly-stays-focusable
+             * behaviour).
              */
             (input.element() as HTMLInputElement).focus();
-            expect(input.element()).toBe(document.activeElement);
+            expect(input.element()).not.toBe(document.activeElement);
             await userEvent.keyboard("z");
-
-            // Assert
-            expect((input.element() as HTMLInputElement).value).toBe(valueBeforeTyping);
             expect(onValueChange).not.toHaveBeenCalled();
-            await expect.element(input).toBeVisible();
         });
 
         it("GC-15 fix: a loading field is visually distinct from both idle and disabled, not merely 'not idle'", async () => {
