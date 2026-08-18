@@ -77,6 +77,18 @@ jobs:
                   pnpm api:generate
                   git diff --exit-code src/lib/api/generated-types.ts
 
+            # Pre-existing gap, not introduced by this plan (GC-23/reset wiring): `next build`'s
+            # page-data collection imports session.ts for every Route Handler, and session.ts
+            # throws at module-eval time when SESSION_SECRET is unset (ADR tech/0001, "a default
+            # secret would fail silently, which is worse than a missing one"). This job has had no
+            # SESSION_SECRET at all, so `pnpm build` below has been failing on every push since
+            # before this plan (confirmed against a 2026-08-17 run, unrelated to plan 01-31's own
+            # changes) — this plan's own acceptance criteria require a real green run to prove the
+            # reset step, so the blocking gap is fixed here using the exact pattern the `e2e` job
+            # below already uses for the same purpose.
+            - name: Generate a workflow-scoped session secret
+              run: echo "SESSION_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
             - name: Build
               run: pnpm build
 
