@@ -71,21 +71,64 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
 **Plans**: 27/35 plans executed
 
 Plans:
+**Wave 1**
 
 - [x] 01-01-PLAN.md — Next.js 16 scaffold, folder skeleton and path aliases, browser-verified
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [x] 01-02-PLAN.md — ESLint 10 strict type-checked config, Prettier, Husky + lint-staged
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [x] 01-03-PLAN.md — GitHub Actions CI, verified green by a real push
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [x] 01-04-PLAN.md — DTCG token pipeline through Style Dictionary into Tailwind v4 @theme
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [x] 01-05-PLAN.md — Vitest Browser Mode, Storybook with axe-core, Playwright visual regression
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [x] 01-06-PLAN.md — Button and IconButton primitives
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [x] 01-07-PLAN.md — TextField and Checkbox primitives with built-in error state
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [x] 01-08-PLAN.md — Switch and Dropdown primitives
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
 - [x] 01-09-PLAN.md — Modal primitive and design-system library sign-off
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
 - [x] 01-10-PLAN.md — committed OpenAPI contract, typed client, MSW mock backend
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
 - [x] 01-11-PLAN.md — session cookie, Data Access Layer, BFF auth endpoints
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
 - [x] 01-12-PLAN.md — sign-up and sign-in forms and routes (AUTH-01, AUTH-02)
+
+**Wave 13** *(blocked on Wave 12 completion)*
+
 - [x] 01-13-PLAN.md — route guard with defence in depth and auth end-to-end specs (AUTH-03)
+
+**Wave 19** *(blocked on Wave 13 completion)*
+
 - [ ] 01-14-PLAN.md — theme persistence and toggle (THEME-01)
+
+**Wave 20** *(blocked on Wave 19 completion)*
+
 - [ ] 01-15-PLAN.md — Vercel Preview and Production deployment, verified on the live URLs
 
 Gap closure (added 2026-08-16 from the post-wave-13 UI review and architecture discussion —

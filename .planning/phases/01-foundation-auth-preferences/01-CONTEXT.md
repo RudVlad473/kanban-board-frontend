@@ -189,10 +189,13 @@ later.
   case-insensitive, Vercel's Linux build servers are case-sensitive) is a general concern for
   any casing choice, not specific to kebab-case, and is mitigated by lint-staged/ESLint
   catching import-case mismatches before they reach CI.
-- **D-26u:** `class-variance-authority` (cva) for managing primitive variant/size/state
+- **D-26u [informational]:** `class-variance-authority` (cva) for managing primitive variant/size/state
   styling (the `sm`/`md`/`lg` sizes from D-18, `primary`/`secondary` variants, error states
   from D-17) — purpose-built for exactly this multi-axis-variant surface, pairs cleanly with
-  Tailwind.
+  Tailwind. Already implemented and shipped in Plan 1 (wave 6-9); verified 2026-08-18 that
+  `class-variance-authority` is a real dependency and is used in
+  `button.tsx`/`checkbox.tsx`/`dropdown.tsx`/`icon-button.tsx`/`switch.tsx`. No plan cites this
+  ID by string; nothing left to plan.
 - **D-26v:** Every primitive accepts and forwards a `className` prop, merged safely via
   `tailwind-merge` (so consumer classes correctly override conflicting base classes rather than
   just concatenating) — the escape hatch for one-off layout adjustments without needing a new
@@ -240,11 +243,12 @@ later.
   building any primitive reactively mid-feature-work. — *Correction (2026-08-10, post-context):
   the original discussion's phrasing implied "scaffold" belonged to Plan 2+; that was wrong —
   it's an unavoidable prerequisite of Plan 1, not a peer of the auth/theme feature work.*
-- **D-28:** ROADMAP.md's Phase 1 Success Criteria was updated (criterion 6, applied during this
+- **D-28 [informational]:** ROADMAP.md's Phase 1 Success Criteria was updated (criterion 6, applied during this
   discussion) to name the token-driven primitives library as an explicit, verifiable
   deliverable rather than leaving it implied by "technical foundation." Criterion 5 was further
   strengthened to name the CI checks explicitly and require the real-push verification from
-  D-26c.
+  D-26c. This decision describes an edit to ROADMAP.md itself, already applied (criterion 6 is
+  present in ROADMAP.md's Phase 1 Success Criteria today); no further plan action to take.
 
 ### Claude's Discretion
 None — every gray area discussed had a concrete decision made; no "you decide" selections in
