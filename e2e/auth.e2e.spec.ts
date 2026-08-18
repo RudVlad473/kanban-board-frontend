@@ -2,11 +2,20 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
-import { DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "../src/lib/mocks/store";
 import { ROUTE } from "../src/lib/routes";
 
 const SESSION_COOKIE_NAME = "session";
 const FRESH_PASSWORD = "E2eFreshPassword123!";
+
+/*
+ * Interim literals — Task 1 (01-30-PLAN.md) deletes the mock backend this suite previously
+ * imported a seeded demo account from; Task 3 replaces every use below with a throwaway account
+ * this suite creates itself against the real nonprod backend (`e2e/fixtures.ts`). Kept here only
+ * so this file still type-checks and the plan's other two tasks can be verified independently —
+ * these two scenarios are knowingly red until Task 3 lands.
+ */
+const DEMO_USER_EMAIL = "demo@kanban-board.dev";
+const DEMO_USER_PASSWORD = "DemoPassword123!";
 
 test.describe("AUTH-01: sign up", () => {
     test("creates an account, lands on the board list, and sets an httpOnly session cookie", async ({

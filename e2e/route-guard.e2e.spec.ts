@@ -2,11 +2,21 @@ import { expect, test, type Page } from "@playwright/test";
 import { SignJWT } from "jose";
 
 import { E2E_SESSION_SECRET } from "./test-env";
-import { DEMO_USER_DISPLAY_NAME, DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "../src/lib/mocks/store";
 import { ROUTE } from "../src/lib/routes";
 
 const SESSION_COOKIE_NAME = "session";
 const PROTECTED_HEADING = "Boards";
+
+/*
+ * Interim literals — Task 1 (01-30-PLAN.md) deletes the mock backend this suite previously
+ * imported a seeded demo account from; Task 3 replaces every use below with a throwaway account
+ * this suite creates itself against the real nonprod backend (`e2e/fixtures.ts`). Kept here only
+ * so this file still type-checks and the plan's other two tasks can be verified independently —
+ * this suite is knowingly red until Task 3 lands.
+ */
+const DEMO_USER_EMAIL = "demo@kanban-board.dev";
+const DEMO_USER_DISPLAY_NAME = "Demo User";
+const DEMO_USER_PASSWORD = "DemoPassword123!";
 
 const signIn = async (page: Page): Promise<void> => {
     await page.goto(ROUTE.SIGN_IN);

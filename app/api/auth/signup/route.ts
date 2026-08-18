@@ -14,10 +14,9 @@ const SIGN_UP_FAILURE_MESSAGE =
     "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
 
 /*
- * New accounts start on the LIGHT theme (matches src/lib/mocks/store.ts's `createUser` default) —
- * `POST /signup`'s response is a bare id string, not the full identity shape, so the session for
- * a brand-new account is assembled from the validated request body plus that default rather than
- * a second round-trip to `/signin`.
+ * New accounts start on the LIGHT theme — `POST /signup`'s response is a bare id string, not the
+ * full identity shape, so the session for a brand-new account is assembled from the validated
+ * request body plus that default rather than a second round-trip to `/signin`.
  */
 const DEFAULT_NEW_ACCOUNT_THEME = "LIGHT";
 

@@ -12,10 +12,11 @@ concurrency:
 
 env:
     NEXT_TELEMETRY_DISABLED: "1"
-    # Local-mock server URL (docs/api/kanban-board-openapi.json's declared server URL). No real
-    # backend exists yet — MSW intercepts every call this hits, in both `pnpm build` and `pnpm
-    # test` (ADR tech/0006: per-environment, never a literal in source; this is CI's environment).
-    EXTERNAL_API_BASE_URL: "http://localhost:8080/api"
+    # The deployed nonprod backend's real address (GC-22: no mock server remains anywhere in the
+    # codebase — every test layer and `pnpm build`/`pnpm test` dial this backend directly). Set
+    # per environment, never a literal read anywhere else in source (ADR tech/0006); this is CI's
+    # own environment value.
+    EXTERNAL_API_BASE_URL: "https://kanban-board-rud-vlad-473-nonprod.duckdns.org/api"
 
 jobs:
     # GC-06: the authoritative secret scan (D-26h — hooks are a convenience, CI is the gate).

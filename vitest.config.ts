@@ -6,6 +6,8 @@ import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
+import { resolveTestApiBaseUrl } from "./src/test-utils/api-base-url";
+
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 /*
@@ -50,18 +52,18 @@ export default defineConfig({
                 resolve: { alias: aliasWithServerOnlyStub },
                 test: {
                     /*
-                     * Node-mode tests for the MSW mock backend (plan 01-10) and, since plan 01-11,
-                     * the session module and BFF auth Route Handlers — both mock `next/headers`'
-                     * `cookies()` (no real Next.js request scope exists outside an actual render)
-                     * and, for the Route Handler tests, also drive the handlers through the real
-                     * `externalApi` client with the Node MSW server listening, the same path the
-                     * deployed app uses, not a browser environment.
+                     * Node-mode tests for the session module and, since plan 01-11, the BFF auth
+                     * Route Handlers — both mock `next/headers`' `cookies()` (no real Next.js
+                     * request scope exists outside an actual render). No mock server stands in for
+                     * the external API anymore (GC-22) — every call this project resolves dials the
+                     * deployed nonprod backend directly, the same path the deployed app uses, not a
+                     * browser environment.
                      */
                     name: "node",
                     environment: "node",
-                    include: ["src/lib/mocks/**/*.test.ts", "src/lib/session.test.ts", "app/api/auth/**/*.test.ts"],
+                    include: ["src/lib/session.test.ts", "app/api/auth/**/*.test.ts"],
                     env: {
-                        EXTERNAL_API_BASE_URL: process.env.EXTERNAL_API_BASE_URL ?? "http://localhost:8080/api",
+                        EXTERNAL_API_BASE_URL: resolveTestApiBaseUrl(),
                         SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",
                     },
                 },
