@@ -2,15 +2,8 @@ import { useMutation, type UseMutationResult } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { postSignUp } from "@/features/auth/api/auth-api";
+import { ROUTE } from "@/lib/routes";
 import type { SignUpInput } from "@/lib/validation/auth-schemas";
-
-/*
- * A brand-new account lands on the boards list, same destination as a returning sign-in
- * (use-sign-in.ts) — `router.refresh()` re-renders the current route tree so a Server Component
- * sees the session cookie `postSignUp`'s Route Handler just set, which the client router alone
- * would otherwise miss.
- */
-const POST_SIGN_UP_PATH = "/boards";
 
 type SignUpResponse = { ok: true };
 
@@ -27,7 +20,13 @@ export const useSignUp = (): UseMutationResult<SignUpResponse, Error, SignUpInpu
         mutationFn: postSignUp,
         retry: false,
         onSuccess: () => {
-            router.push(POST_SIGN_UP_PATH);
+            /*
+             * A brand-new account lands on the boards list, same destination as a returning
+             * sign-in (use-sign-in.ts) — `router.refresh()` re-renders the current route tree so
+             * a Server Component sees the session cookie `postSignUp`'s Route Handler just set,
+             * which the client router alone would otherwise miss.
+             */
+            router.push(ROUTE.BOARDS);
             router.refresh();
         },
     });

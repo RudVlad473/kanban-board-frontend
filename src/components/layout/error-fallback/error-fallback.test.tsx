@@ -2,6 +2,7 @@ import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { ROUTE } from "@/lib/routes";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { ErrorFallback } from "./error-fallback";
@@ -93,12 +94,12 @@ describeForEachDevice({
                     title="Something went wrong"
                     description="A problem occurred."
                     onRetry={vi.fn()}
-                    homeHref="/boards"
+                    homeHref={ROUTE.BOARDS}
                 />,
             );
 
             // Assert
-            await expect.element(screen.getByRole("link")).toHaveAttribute("href", "/boards");
+            await expect.element(screen.getByRole("link")).toHaveAttribute("href", ROUTE.BOARDS);
         });
 
         it("renders no link at all when homeHref is not supplied", async () => {

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { useSignUp } from "@/features/auth/hooks/use-sign-up";
+import { ROUTE } from "@/lib/routes";
 import { signUpSchema, type SignUpInput } from "@/lib/validation/auth-schemas";
 
 /*
@@ -152,7 +153,7 @@ export const SignUpForm = ({
                  */}
                 {"Already have an account? "}
 
-                <a href="/login" className="text-bg-primary hover:text-bg-primary-hover">
+                <a href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">
                     Sign In
                 </a>
             </p>

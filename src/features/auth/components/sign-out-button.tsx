@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button/button";
 import { postSignOut } from "@/features/auth/api/auth-api";
-import { SIGN_IN_PATH } from "@/lib/routes";
+import { ROUTE } from "@/lib/routes";
 
 /**
  * Sign-out is non-destructive (UI-SPEC Copywriting Contract) — no confirmation modal. Posts to
@@ -18,7 +18,7 @@ export const SignOutButton = () => {
     const mutation = useMutation({
         mutationFn: postSignOut,
         onSuccess: () => {
-            router.push(SIGN_IN_PATH);
+            router.push(ROUTE.SIGN_IN);
             router.refresh();
         },
     });

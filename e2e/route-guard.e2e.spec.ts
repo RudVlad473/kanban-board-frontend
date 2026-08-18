@@ -3,24 +3,24 @@ import { SignJWT } from "jose";
 
 import { E2E_SESSION_SECRET } from "./test-env";
 import { DEMO_USER_DISPLAY_NAME, DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "../src/lib/mocks/store";
-import { BOARDS_PATH, SIGN_IN_PATH } from "../src/lib/routes";
+import { ROUTE } from "../src/lib/routes";
 
 const SESSION_COOKIE_NAME = "session";
 const PROTECTED_HEADING = "Boards";
 
 const signIn = async (page: Page): Promise<void> => {
-    await page.goto("/login");
+    await page.goto(ROUTE.SIGN_IN);
     await page.getByLabel("Email", { exact: true }).fill(DEMO_USER_EMAIL);
     await page.getByLabel("Password", { exact: true }).fill(DEMO_USER_PASSWORD);
     await page.getByRole("button", { name: "Sign In" }).click();
-    await expect(page).toHaveURL(new RegExp(`${BOARDS_PATH}$`));
+    await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 };
 
 test.describe("AUTH-03: route guard", () => {
     test("redirects an unauthenticated visitor away from the board list and never paints it", async ({ page }) => {
-        await page.goto(BOARDS_PATH);
+        await page.goto(ROUTE.BOARDS);
 
-        await expect(page).toHaveURL(new RegExp(`${SIGN_IN_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
         /*
          * Assert on the absence of the content, not only the destination — the destination alone
          * does not prove nothing was painted first.
@@ -31,9 +31,9 @@ test.describe("AUTH-03: route guard", () => {
     test("redirects an unauthenticated visitor away from a board detail path, covering the /boards prefix", async ({
         page,
     }) => {
-        await page.goto(`${BOARDS_PATH}/some-board-id`);
+        await page.goto(`${ROUTE.BOARDS}/some-board-id`);
 
-        await expect(page).toHaveURL(new RegExp(`${SIGN_IN_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
         await expect(page.getByRole("heading", { name: PROTECTED_HEADING })).toHaveCount(0);
         await expect(page.getByRole("heading", { name: "Board", exact: true })).toHaveCount(0);
     });
@@ -41,9 +41,9 @@ test.describe("AUTH-03: route guard", () => {
     test("redirects a signed-in visitor away from the sign-in route to the board list", async ({ page }) => {
         await signIn(page);
 
-        await page.goto("/login");
+        await page.goto(ROUTE.SIGN_IN);
 
-        await expect(page).toHaveURL(new RegExp(`${BOARDS_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
     });
 
     test("treats a tampered session cookie exactly as unauthenticated", async ({ page, context }) => {
@@ -57,9 +57,9 @@ test.describe("AUTH-03: route guard", () => {
 
         await context.addCookies([{ ...sessionCookie, value: `${sessionCookie.value}tampered` }]);
 
-        await page.goto(BOARDS_PATH);
+        await page.goto(ROUTE.BOARDS);
 
-        await expect(page).toHaveURL(new RegExp(`${SIGN_IN_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
     });
 
     test("treats an expired session cookie exactly as unauthenticated", async ({ page, context }) => {
@@ -86,8 +86,8 @@ test.describe("AUTH-03: route guard", () => {
 
         await context.addCookies([{ ...sessionCookie, value: expiredToken }]);
 
-        await page.goto(BOARDS_PATH);
+        await page.goto(ROUTE.BOARDS);
 
-        await expect(page).toHaveURL(new RegExp(`${SIGN_IN_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
     });
 });
