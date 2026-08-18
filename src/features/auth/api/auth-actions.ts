@@ -113,11 +113,12 @@ export const signInAction = async (_previousState: AuthActionState, formData: Fo
     await session.create({ ...identity, displayName: resolveDisplayName(identity), jsessionId });
 
     /*
-     * The redirect replaces the router push and refresh the deleted `useSignIn` hook performed:
-     * because it happens on the server, the freshly written cookie is already present on the
-     * redirected request, so nothing needs to re-render the tree by hand. Outside any `try` and
-     * never caught — the redirect signals itself by throwing, and a `catch` that absorbed it would
-     * turn a working navigation into a silent no-op.
+     * The redirect replaces the client-side router push-and-refresh this app's sign-in flow used
+     * before plan 01-33's Server Actions migration: because it happens on the server, the freshly
+     * written cookie is already present on the redirected request, so nothing needs to re-render
+     * the tree by hand. Outside any `try` and never caught — the redirect signals itself by
+     * throwing, and a `catch` that absorbed it would turn a working navigation into a silent
+     * no-op.
      */
     redirect(ROUTE.BOARDS);
 };

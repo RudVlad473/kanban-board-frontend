@@ -9,8 +9,8 @@ import { SignInForm } from "./sign-in-form";
  * clearing) live exclusively in sign-in-form.test.tsx. Every state below is reached through this
  * file's own staging props, the same non-interactive pattern Dropdown/Modal already use via
  * `defaultOpen` — see sign-up-form.stories.tsx's identical comment for the full rationale,
- * including why `parameters.nextjs.appDirectory` is required (`useSignIn` calls
- * `next/navigation`'s `useRouter`).
+ * including why `parameters.nextjs.appDirectory` is required (the form imports `signInAction`, a
+ * `"use server"` Server Action, and no story here ever submits it — see 01-33-PLAN.md).
  */
 const meta: Meta<typeof SignInForm> = {
     component: SignInForm,

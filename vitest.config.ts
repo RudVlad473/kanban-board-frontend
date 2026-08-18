@@ -118,7 +118,31 @@ export default defineConfig({
                 },
             },
             {
-                resolve: { alias },
+                /*
+                 * The sign-in/sign-up stories (plan 01-33) render `SignInForm`/`SignUpForm`, which
+                 * import the real `signInAction`/`signUpAction` from `@/features/auth/api/auth-
+                 * actions` — a `"use server"` module whose import chain reaches `node:crypto` via
+                 * `@/lib/session`. `@storybook/nextjs-vite`'s Vitest-driven story rendering has no
+                 * server/client build split for `"use server"` modules, so it bundles that chain
+                 * whole for the browser and fails on the Node built-in. Aliased to a no-op stand-in
+                 * for this project only — no story ever submits a form (D-25), so the real action
+                 * is never actually invoked, only referenced.
+                 */
+                resolve: {
+                    /*
+                     * The specific alias must be listed BEFORE the general `@` -> `src` alias:
+                     * Vite tries aliases in array order and the general `@` prefix rule would
+                     * otherwise match first (every `@/...` import starts with `@`), rewriting the
+                     * path before this more specific entry ever gets a chance to apply.
+                     */
+                    alias: [
+                        {
+                            find: "@/features/auth/api/auth-actions",
+                            replacement: path.resolve(rootDir, "src/test-utils/auth-actions-storybook-stub.ts"),
+                        },
+                        ...alias,
+                    ],
+                },
                 plugins: [storybookTest({ configDir: path.join(rootDir, ".storybook") })],
                 test: {
                     name: "storybook",

@@ -3,7 +3,8 @@ import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render, type RenderResult } from "vitest-browser-react";
 
-import { postSignUp } from "@/features/auth/api/auth-api";
+import { AUTH_ACTION_IDLE, signUpAction, type AuthActionState } from "@/features/auth/api/auth-actions";
+import { PROBLEM_CODE, type ProblemCode } from "@/lib/api/problem-detail";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
@@ -20,31 +21,47 @@ import * as signUpStories from "./sign-up-form.stories";
 const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed } = composeStories(signUpStories);
 
 /*
- * `SignUpForm` never talks to a network — it calls `useSignUp`, which calls `postSignUp`
- * (`@/features/auth/api/auth-api`), a thin typed wrapper over this app's own same-origin BFF
- * route. Stubbing that module boundary — not a network layer — keeps the real component tree, the
- * real resolver and real rendering under test, while never depending on any server (real or mock)
- * actually being reachable (GC-22: no fake HTTP layer of any kind remains in this repository).
+ * `SignUpForm` submits directly to `signUpAction` (`@/features/auth/api/auth-actions`) through
+ * `useActionState` — the server function this app's form now calls, replacing the deleted fetch
+ * wrapper and mutation hook (plan 01-33). Stubbing that module boundary — not a network layer —
+ * keeps the real component tree, the real resolver and real rendering under test, while never
+ * depending on any server (real or mock) actually being reachable (GC-22: no fake HTTP layer of
+ * any kind remains in this repository). `AUTH_ACTION_IDLE` is re-declared here rather than
+ * imported through the mock factory (Vitest's hoisting forbids referencing an out-of-scope
+ * variable inside `vi.mock`'s factory) — its shape must stay byte-identical to the real constant.
  */
-vi.mock("@/features/auth/api/auth-api", () => ({
-    postSignUp: vi.fn(),
+vi.mock("@/features/auth/api/auth-actions", () => ({
+    signUpAction: vi.fn(),
+    AUTH_ACTION_IDLE: { status: "idle" },
 }));
 
-const mockedPostSignUp = vi.mocked(postSignUp);
-
-/*
- * `useSignUp` calls `next/navigation`'s `useRouter`, which requires a real Next.js App Router
- * context that doesn't exist in this plain Vitest Browser Mode page — mocked to a pair of no-op
- * spies so the component under test can render and submit without crashing. Navigation itself is
- * outside this file's ten behaviours (route guard/App Router integration is plan 01-13's concern).
- */
-vi.mock("next/navigation", () => ({
-    useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
+const mockedSignUpAction = vi.mocked(signUpAction);
 
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
+const SIGN_UP_FAILURE_MESSAGE =
+    "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
 
 const renderSignUpForm = () => renderWithProviders(<SignUpForm />);
+
+const formDataToObject = (formData: FormData): Record<string, string> => {
+    const result: Record<string, string> = {};
+    for (const [key, value] of formData.entries()) {
+        if (typeof value === "string" && value !== "") {
+            result[key] = value;
+        }
+    }
+    return result;
+};
+
+const buildErrorState = ({
+    code,
+    message,
+    fieldErrors,
+}: {
+    code: ProblemCode;
+    message: string;
+    fieldErrors?: Record<string, string>;
+}): AuthActionState => ({ status: "error", code, message, fieldErrors });
 
 /*
  * One case per composed story asserting the staged state that story is supposed to demonstrate —
@@ -76,11 +93,7 @@ const signUpStagedStoryCases = [
         name: "WithServerError",
         Story: WithServerError,
         verify: async (screen: RenderResult) => {
-            await expect
-                .element(screen.getByRole("alert"))
-                .toHaveTextContent(
-                    "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.",
-                );
+            await expect.element(screen.getByRole("alert")).toHaveTextContent(SIGN_UP_FAILURE_MESSAGE);
         },
     },
     {
@@ -121,7 +134,7 @@ describeForEachDevice({
     name: "SignUpForm",
     body: () => {
         afterEach(() => {
-            mockedPostSignUp.mockReset();
+            mockedSignUpAction.mockReset();
         });
 
         it("renders three labelled fields and the primary submit control, each reachable by its accessible name", async () => {
@@ -135,6 +148,20 @@ describeForEachDevice({
             await expect.element(screen.getByRole("button", { name: "Create Account" })).toBeVisible();
         });
 
+        it("submits through the form element's own action, not a submit handler, so it works before hydration", async () => {
+            // Arrange
+            const screen = await renderSignUpForm();
+
+            /*
+             * Assert — React renders a function-based `action` as a distinctive no-JS fallback
+             * (`javascript:throw new Error("A React form was unexpectedly submitted...")`), never
+             * as a real URL — the property that makes the form work before hydration, and it is
+             * invisible to every other assertion in this file.
+             */
+            const form = screen.container.querySelector("form");
+            expect(form?.getAttribute("action")).toContain("A React form was unexpectedly submitted");
+        });
+
         it("marks the Name field optional through its accessible description, not its label", async () => {
             // Arrange
             const screen = await renderSignUpForm();
@@ -144,8 +171,15 @@ describeForEachDevice({
             await expect.element(screen.getByLabelText("Name")).toHaveAccessibleName("Name");
         });
 
-        it("shows the required-field message on exactly two empty fields when submitted (Name is optional), and calls no endpoint", async () => {
+        it("renders the server-returned field errors on their own fields (Name excluded, it is optional) when an empty submission is rejected, calling signUpAction exactly once", async () => {
             // Arrange
+            mockedSignUpAction.mockResolvedValueOnce(
+                buildErrorState({
+                    code: PROBLEM_CODE.VALIDATION_FAILED,
+                    message: SIGN_UP_FAILURE_MESSAGE,
+                    fieldErrors: { email: REQUIRED_FIELD_MESSAGE, password: REQUIRED_FIELD_MESSAGE },
+                }),
+            );
             const screen = await renderSignUpForm();
 
             // Act
@@ -153,24 +187,7 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
-            expect(mockedPostSignUp).not.toHaveBeenCalled();
-        });
-
-        it("shows the required-field message on a single empty field and none on the other two", async () => {
-            // Arrange
-            const screen = await renderSignUpForm();
-            await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
-            await screen.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
-            // Email is deliberately left empty.
-
-            // Act
-            await screen.getByRole("button", { name: "Create Account" }).click();
-
-            // Assert
-            await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(1);
-            await expect
-                .element(screen.getByRole("textbox", { name: "Email" }))
-                .toHaveAttribute("aria-invalid", "true");
+            expect(mockedSignUpAction).toHaveBeenCalledOnce();
         });
 
         it("shows the email-format message on blur for an invalid email, and no other field", async () => {
@@ -266,9 +283,9 @@ describeForEachDevice({
                 .not.toHaveAttribute("aria-invalid", "true");
         });
 
-        it("calls the sign-up mutation exactly once, with no name key at all, when the Name field is left empty", async () => {
+        it("calls signUpAction exactly once, with no name key at all, when the Name field is left empty", async () => {
             // Arrange
-            mockedPostSignUp.mockResolvedValueOnce({ ok: true });
+            mockedSignUpAction.mockResolvedValueOnce(AUTH_ACTION_IDLE);
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
             await screen.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
@@ -278,23 +295,25 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create Account" }).click();
 
             // Assert
-            await expect.poll(() => mockedPostSignUp.mock.calls.length).toBe(1);
+            await expect.poll(() => mockedSignUpAction.mock.calls.length).toBe(1);
             /*
-             * Asserted against the mutation's first argument only — TanStack Query's `mutationFn`
-             * receives a second, internal context argument (`{ client, meta, mutationKey }`) that
-             * `postSignUp`'s own real signature never declares and this test has no business
-             * asserting on. `toEqual` (not `toMatchObject`) so an accidental `displayName: ""`
-             * would fail this too — the key must be entirely absent, not merely falsy.
+             * `formDataToObject` drops empty-string entries — a native `<form>` still submits an
+             * untouched text field as `""`, unlike the deleted mutation hook's plain object, which
+             * never had a `displayName` key at all when the field was empty. The behaviour this
+             * test protects (the server function receives no *meaningful* name) is unchanged; only
+             * the wire representation of "absent" is native `FormData`'s own, not this app's.
              */
-            expect(mockedPostSignUp.mock.calls[0]?.[0]).toEqual({
+            const submittedFormData = mockedSignUpAction.mock.calls[0]?.[1];
+            expect(submittedFormData).toBeInstanceOf(FormData);
+            expect(formDataToObject(submittedFormData)).toEqual({
                 email: "new@example.com",
                 password: "CorrectPassword1!",
             });
         });
 
-        it("calls the sign-up mutation exactly once with the entered values, including the name, on a valid submit", async () => {
+        it("calls signUpAction exactly once with the entered values, including the name, on a valid submit", async () => {
             // Arrange
-            mockedPostSignUp.mockResolvedValueOnce({ ok: true });
+            mockedSignUpAction.mockResolvedValueOnce(AUTH_ACTION_IDLE);
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
             await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
@@ -304,8 +323,9 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create Account" }).click();
 
             // Assert
-            await expect.poll(() => mockedPostSignUp.mock.calls.length).toBe(1);
-            expect(mockedPostSignUp.mock.calls[0]?.[0]).toEqual({
+            await expect.poll(() => mockedSignUpAction.mock.calls.length).toBe(1);
+            const submittedFormData = mockedSignUpAction.mock.calls[0]?.[1];
+            expect(formDataToObject(submittedFormData)).toEqual({
                 email: "new@example.com",
                 displayName: "Jamie Rivera",
                 password: "CorrectPassword1!",
@@ -314,14 +334,11 @@ describeForEachDevice({
 
         it("disables the submit control and shows a loading state while in flight, freezes all three fields and the password toggle, then returns everything to normal", async () => {
             // Arrange — a manually-resolved gate holds the response open until the assertion runs.
-            let resolveResponse: () => void = () => undefined;
-            const responseGate = new Promise<void>((resolve) => {
-                resolveResponse = resolve;
+            let resolveAction: (state: AuthActionState) => void = () => undefined;
+            const actionGate = new Promise<AuthActionState>((resolve) => {
+                resolveAction = resolve;
             });
-            mockedPostSignUp.mockImplementationOnce(async () => {
-                await responseGate;
-                return { ok: true };
-            });
+            mockedSignUpAction.mockImplementationOnce(async () => actionGate);
             const screen = await renderSignUpForm();
             const emailField = screen.getByRole("textbox", { name: "Email" });
             const nameField = screen.getByRole("textbox", { name: "Name" });
@@ -372,8 +389,8 @@ describeForEachDevice({
             (toggleButton.element() as HTMLButtonElement).click();
             await expect.element(passwordField).toHaveAttribute("type", "password");
 
-            // Act — let the response resolve.
-            resolveResponse();
+            // Act — let the action resolve.
+            resolveAction(AUTH_ACTION_IDLE);
 
             // Assert — back to normal.
             await expect.element(submitButton).not.toBeDisabled();
@@ -381,9 +398,17 @@ describeForEachDevice({
             await expect.element(emailField).toHaveAttribute("aria-busy", "false");
             await expect.element(nameField).toHaveAttribute("aria-busy", "false");
             await expect.element(passwordField).toHaveAttribute("aria-busy", "false");
+            /*
+             * React resets every uncontrolled field the instant a `<form action={fn}>` submission
+             * settles (its own built-in `requestFormReset`, fired around every action call); the
+             * form's effect restores the value straight after, in a separate, asynchronously
+             * flushed passive effect — polled for explicitly here rather than assumed synchronous
+             * with the `aria-busy` flip above, which can otherwise resolve first.
+             */
+            await expect.poll(() => (passwordField.element() as HTMLInputElement).value).toBe(passwordValue);
 
             /*
-             * Act + Assert — editable again once the request settles. The earlier `.focus()` call
+             * Act + Assert — editable again once the action settles. The earlier `.focus()` call
              * was refused by the browser (the field was genuinely disabled, not readOnly), so focus
              * must be re-acquired explicitly now that the field is enabled again.
              */
@@ -392,21 +417,16 @@ describeForEachDevice({
             expect((passwordField.element() as HTMLInputElement).value).toBe(`${passwordValue}z`);
         });
 
-        it("recovers every control to editable/pressable again once a pending submission fails", async () => {
+        it("recovers every control to editable/pressable again once a pending submission is rejected", async () => {
             /*
              * Arrange — a form that stays frozen after an error is the failure mode this test rules
              * out; the success path alone would not catch it.
              */
-            let rejectResponse: () => void = () => undefined;
-            const responseGate = new Promise<void>((_resolve, reject) => {
-                rejectResponse = () => {
-                    reject(new Error("simulated failure"));
-                };
+            let resolveAction: (state: AuthActionState) => void = () => undefined;
+            const actionGate = new Promise<AuthActionState>((resolve) => {
+                resolveAction = resolve;
             });
-            mockedPostSignUp.mockImplementationOnce(async () => {
-                await responseGate;
-                return { ok: true };
-            });
+            mockedSignUpAction.mockImplementationOnce(async () => actionGate);
             const screen = await renderSignUpForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("new@example.com");
             await screen.getByRole("textbox", { name: "Name" }).fill("Jamie Rivera");
@@ -416,7 +436,7 @@ describeForEachDevice({
             // Act
             await submitButton.click();
             await expect.element(submitButton).toBeDisabled();
-            rejectResponse();
+            resolveAction(buildErrorState({ code: PROBLEM_CODE.INTERNAL_ERROR, message: "simulated failure" }));
 
             // Assert — every control is editable/pressable again once the failure lands.
             await expect.element(submitButton).not.toBeDisabled();
@@ -429,9 +449,9 @@ describeForEachDevice({
 
         it("renders the generic failure message at form level and keeps the entered values after a failed sign-up", async () => {
             // Arrange
-            const failureMessage =
-                "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
-            mockedPostSignUp.mockRejectedValueOnce(new Error(failureMessage));
+            mockedSignUpAction.mockResolvedValueOnce(
+                buildErrorState({ code: PROBLEM_CODE.DUPLICATE_RESOURCE, message: SIGN_UP_FAILURE_MESSAGE }),
+            );
             const screen = await renderSignUpForm();
             const emailValue = "existing@example.com";
             await screen.getByRole("textbox", { name: "Email" }).fill(emailValue);
@@ -442,7 +462,7 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create Account" }).click();
 
             // Assert
-            await expect.element(screen.getByRole("alert")).toHaveTextContent(failureMessage);
+            await expect.element(screen.getByRole("alert")).toHaveTextContent(SIGN_UP_FAILURE_MESSAGE);
             await expect.element(screen.getByRole("textbox", { name: "Email" })).toHaveValue(emailValue);
         });
 

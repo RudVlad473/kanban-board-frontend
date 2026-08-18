@@ -3,7 +3,8 @@ import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render, type RenderResult } from "vitest-browser-react";
 
-import { postSignIn } from "@/features/auth/api/auth-api";
+import { AUTH_ACTION_IDLE, signInAction, type AuthActionState } from "@/features/auth/api/auth-actions";
+import { PROBLEM_CODE, type ProblemCode } from "@/lib/api/problem-detail";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
@@ -20,30 +21,46 @@ import * as signInStories from "./sign-in-form.stories";
 const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed } = composeStories(signInStories);
 
 /*
- * `SignInForm` never talks to a network — it calls `useSignIn`, which calls `postSignIn`
- * (`@/features/auth/api/auth-api`), a thin typed wrapper over this app's own same-origin BFF
- * route. Stubbing that module boundary — not a network layer — keeps the real component tree, the
- * real resolver and real rendering under test, while never depending on any server (real or mock)
- * actually being reachable (GC-22: no fake HTTP layer of any kind remains in this repository).
+ * `SignInForm` submits directly to `signInAction` (`@/features/auth/api/auth-actions`) through
+ * `useActionState` — the server function this app's form now calls, replacing the deleted fetch
+ * wrapper and mutation hook (plan 01-33). Stubbing that module boundary — not a network layer —
+ * keeps the real component tree, the real resolver and real rendering under test, while never
+ * depending on any server (real or mock) actually being reachable (GC-22: no fake HTTP layer of
+ * any kind remains in this repository). `AUTH_ACTION_IDLE` is re-declared here rather than
+ * imported through the mock factory (Vitest's hoisting forbids referencing an out-of-scope
+ * variable inside `vi.mock`'s factory) — its shape must stay byte-identical to the real constant.
  */
-vi.mock("@/features/auth/api/auth-api", () => ({
-    postSignIn: vi.fn(),
+vi.mock("@/features/auth/api/auth-actions", () => ({
+    signInAction: vi.fn(),
+    AUTH_ACTION_IDLE: { status: "idle" },
 }));
 
-const mockedPostSignIn = vi.mocked(postSignIn);
-
-/*
- * `useSignIn` calls `next/navigation`'s `useRouter`, which needs a real Next.js App Router
- * context this plain Vitest Browser Mode page doesn't have.
- */
-vi.mock("next/navigation", () => ({
-    useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
+const mockedSignInAction = vi.mocked(signInAction);
 
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
 
 const renderSignInForm = () => renderWithProviders(<SignInForm />);
+
+const formDataToObject = (formData: FormData): Record<string, string> => {
+    const result: Record<string, string> = {};
+    for (const [key, value] of formData.entries()) {
+        if (typeof value === "string") {
+            result[key] = value;
+        }
+    }
+    return result;
+};
+
+const buildErrorState = ({
+    code,
+    message,
+    fieldErrors,
+}: {
+    code: ProblemCode;
+    message: string;
+    fieldErrors?: Record<string, string>;
+}): AuthActionState => ({ status: "error", code, message, fieldErrors });
 
 /*
  * One case per composed story asserting the staged state that story is supposed to demonstrate —
@@ -114,7 +131,7 @@ describeForEachDevice({
     name: "SignInForm",
     body: () => {
         afterEach(() => {
-            mockedPostSignIn.mockReset();
+            mockedSignInAction.mockReset();
         });
 
         it("renders two labelled fields and the primary submit control, each reachable by its accessible name", async () => {
@@ -127,8 +144,29 @@ describeForEachDevice({
             await expect.element(screen.getByRole("button", { name: "Sign In" })).toBeVisible();
         });
 
-        it("shows the required-field message on both fields when submitted empty, and calls no endpoint", async () => {
+        it("submits through the form element's own action, not a submit handler, so it works before hydration", async () => {
             // Arrange
+            const screen = await renderSignInForm();
+
+            /*
+             * Assert — React renders a function-based `action` as a distinctive no-JS fallback
+             * (`javascript:throw new Error("A React form was unexpectedly submitted...")`), never
+             * as a real URL — the property that makes the form work before hydration, and it is
+             * invisible to every other assertion in this file.
+             */
+            const form = screen.container.querySelector("form");
+            expect(form?.getAttribute("action")).toContain("A React form was unexpectedly submitted");
+        });
+
+        it("renders the server-returned field errors on their own fields when an empty submission is rejected, calling signInAction exactly once", async () => {
+            // Arrange
+            mockedSignInAction.mockResolvedValueOnce(
+                buildErrorState({
+                    code: PROBLEM_CODE.VALIDATION_FAILED,
+                    message: INVALID_CREDENTIALS_MESSAGE,
+                    fieldErrors: { email: REQUIRED_FIELD_MESSAGE, password: REQUIRED_FIELD_MESSAGE },
+                }),
+            );
             const screen = await renderSignInForm();
 
             // Act
@@ -136,7 +174,7 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(() => screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
-            expect(mockedPostSignIn).not.toHaveBeenCalled();
+            expect(mockedSignInAction).toHaveBeenCalledOnce();
         });
 
         it("shows the email-format message on blur for an invalid email, and no other field", async () => {
@@ -152,9 +190,9 @@ describeForEachDevice({
             expect(screen.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(0);
         });
 
-        it("calls the sign-in mutation exactly once with valid credentials", async () => {
+        it("calls signInAction exactly once with the typed values on a valid submit", async () => {
             // Arrange
-            mockedPostSignIn.mockResolvedValueOnce({ ok: true });
+            mockedSignInAction.mockResolvedValueOnce(AUTH_ACTION_IDLE);
             const screen = await renderSignInForm();
             await screen.getByRole("textbox", { name: "Email" }).fill("demo@kanban-board.dev");
             await screen.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
@@ -163,14 +201,10 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Sign In" }).click();
 
             // Assert
-            await expect.poll(() => mockedPostSignIn.mock.calls.length).toBe(1);
-            /*
-             * Asserted against the mutation's first argument only — TanStack Query's `mutationFn`
-             * receives a second, internal context argument (`{ client, meta, mutationKey }`) that
-             * `postSignIn`'s own real signature never declares and this test has no business
-             * asserting on.
-             */
-            expect(mockedPostSignIn.mock.calls[0]?.[0]).toEqual({
+            await expect.poll(() => mockedSignInAction.mock.calls.length).toBe(1);
+            const submittedFormData = mockedSignInAction.mock.calls[0]?.[1];
+            expect(submittedFormData).toBeInstanceOf(FormData);
+            expect(formDataToObject(submittedFormData)).toEqual({
                 email: "demo@kanban-board.dev",
                 password: "correct-horse-battery-staple",
             });
@@ -178,14 +212,11 @@ describeForEachDevice({
 
         it("disables the submit control and shows a loading state while in flight", async () => {
             // Arrange
-            let resolveResponse: () => void = () => undefined;
-            const responseGate = new Promise<void>((resolve) => {
-                resolveResponse = resolve;
+            let resolveAction: (state: AuthActionState) => void = () => undefined;
+            const actionGate = new Promise<AuthActionState>((resolve) => {
+                resolveAction = resolve;
             });
-            mockedPostSignIn.mockImplementationOnce(async () => {
-                await responseGate;
-                return { ok: true };
-            });
+            mockedSignInAction.mockImplementationOnce(async () => actionGate);
             const screen = await renderSignInForm();
             const emailField = screen.getByRole("textbox", { name: "Email" });
             const emailValue = "demo@kanban-board.dev";
@@ -212,15 +243,23 @@ describeForEachDevice({
             expect((emailField.element() as HTMLInputElement).value).toBe(emailValue);
 
             // Act
-            resolveResponse();
+            resolveAction(AUTH_ACTION_IDLE);
 
             // Assert
             await expect.element(submitButton).not.toBeDisabled();
             await expect.element(submitButton).toHaveAttribute("aria-busy", "false");
             await expect.element(emailField).toHaveAttribute("aria-busy", "false");
+            /*
+             * React resets every uncontrolled field the instant a `<form action={fn}>` submission
+             * settles (its own built-in `requestFormReset`, fired around every action call); the
+             * form's effect restores the value straight after, in a separate, asynchronously
+             * flushed passive effect — polled for explicitly here rather than assumed synchronous
+             * with the `aria-busy` flip above, which can otherwise resolve first.
+             */
+            await expect.poll(() => (emailField.element() as HTMLInputElement).value).toBe(emailValue);
 
             /*
-             * Act + Assert — editable again once the request settles. The earlier `.focus()` call
+             * Act + Assert — editable again once the action settles. The earlier `.focus()` call
              * was refused by the browser (the field was genuinely disabled, not readOnly), so focus
              * must be re-acquired explicitly now that the field is enabled again.
              */
@@ -231,7 +270,9 @@ describeForEachDevice({
 
         it("renders the generic invalid-credentials message, clears the password, and keeps the email after a rejected sign-in", async () => {
             // Arrange
-            mockedPostSignIn.mockRejectedValueOnce(new Error(INVALID_CREDENTIALS_MESSAGE));
+            mockedSignInAction.mockResolvedValueOnce(
+                buildErrorState({ code: PROBLEM_CODE.BAD_CREDENTIALS, message: INVALID_CREDENTIALS_MESSAGE }),
+            );
             const screen = await renderSignInForm();
             const emailValue = "demo@kanban-board.dev";
             await screen.getByRole("textbox", { name: "Email" }).fill(emailValue);
@@ -246,36 +287,46 @@ describeForEachDevice({
             await expect.element(screen.getByLabelText("Password", { exact: true })).toHaveValue("");
         });
 
-        it("renders the identical failure message whether the email is unknown or the password is wrong", async () => {
-            // Arrange — an unknown email.
-            mockedPostSignIn.mockRejectedValueOnce(new Error(INVALID_CREDENTIALS_MESSAGE));
-            const unknownEmailScreen = await renderSignInForm();
-            await unknownEmailScreen.getByRole("textbox", { name: "Email" }).fill("nobody@example.com");
-            await unknownEmailScreen.getByLabelText("Password", { exact: true }).fill("whatever-password");
-            await unknownEmailScreen.getByRole("button", { name: "Sign In" }).click();
-            await expect.element(unknownEmailScreen.getByRole("alert")).toBeVisible();
-            const unknownEmailMessage = unknownEmailScreen.getByRole("alert").element().textContent;
+        it("renders the identical failure message for two different rejection codes (the anti-enumeration collapse)", async () => {
+            /*
+             * The backend collapses an unknown email, a wrong password and a refused third
+             * concurrent session into the exact same `BAD_CREDENTIALS` code (kanban-board-
+             * backend's docs/AUTH_FLOWS.md) — there is no distinct code per cause to feed this
+             * test. Feeding two genuinely different codes (`BAD_CREDENTIALS` and the
+             * `INTERNAL_ERROR` fallback `signInAction` uses for a malformed upstream response)
+             * instead proves the stronger property: this component's rendered message never
+             * varies with the code, whatever it is.
+             */
+            // Arrange — the first rejection code.
+            mockedSignInAction.mockResolvedValueOnce(
+                buildErrorState({ code: PROBLEM_CODE.BAD_CREDENTIALS, message: INVALID_CREDENTIALS_MESSAGE }),
+            );
+            const firstScreen = await renderSignInForm();
+            await firstScreen.getByRole("textbox", { name: "Email" }).fill("nobody@example.com");
+            await firstScreen.getByLabelText("Password", { exact: true }).fill("whatever-password");
+            await firstScreen.getByRole("button", { name: "Sign In" }).click();
+            await expect.element(firstScreen.getByRole("alert")).toBeVisible();
+            const firstMessage = firstScreen.getByRole("alert").element().textContent;
             /*
              * vitest-browser-react's queries resolve against the whole page, not the render's own
              * container — the first render must be unmounted before the second mounts, or both
              * forms' fields collide as duplicate matches for the same accessible name.
              */
-            await unknownEmailScreen.unmount();
+            await firstScreen.unmount();
 
-            /*
-             * Arrange — a wrong password for a real account (byte-identical rejection, per plan
-             * 01-11's own BFF-level guarantee; this test proves the UI renders it unchanged).
-             */
-            mockedPostSignIn.mockRejectedValueOnce(new Error(INVALID_CREDENTIALS_MESSAGE));
-            const wrongPasswordScreen = await renderSignInForm();
-            await wrongPasswordScreen.getByRole("textbox", { name: "Email" }).fill("demo@kanban-board.dev");
-            await wrongPasswordScreen.getByLabelText("Password", { exact: true }).fill("not-the-right-password");
-            await wrongPasswordScreen.getByRole("button", { name: "Sign In" }).click();
-            await expect.element(wrongPasswordScreen.getByRole("alert")).toBeVisible();
-            const wrongPasswordMessage = wrongPasswordScreen.getByRole("alert").element().textContent;
+            // Arrange — a different rejection code.
+            mockedSignInAction.mockResolvedValueOnce(
+                buildErrorState({ code: PROBLEM_CODE.INTERNAL_ERROR, message: INVALID_CREDENTIALS_MESSAGE }),
+            );
+            const secondScreen = await renderSignInForm();
+            await secondScreen.getByRole("textbox", { name: "Email" }).fill("demo@kanban-board.dev");
+            await secondScreen.getByLabelText("Password", { exact: true }).fill("not-the-right-password");
+            await secondScreen.getByRole("button", { name: "Sign In" }).click();
+            await expect.element(secondScreen.getByRole("alert")).toBeVisible();
+            const secondMessage = secondScreen.getByRole("alert").element().textContent;
 
             // Assert
-            expect(wrongPasswordMessage).toBe(unknownEmailMessage);
+            expect(secondMessage).toBe(firstMessage);
         });
 
         it("renders the password field masked by default, reveals it via the toggle, and updates the toggle's accessible name", async () => {

@@ -9,17 +9,17 @@ import { SignUpForm } from "./sign-up-form";
  * sign-up-form.test.tsx. Every state below is reached through this file's own staging props
  * (`defaultValues`/`forceFieldErrors`/`forceServerError`/`forceSubmitting`/
  * `defaultPasswordRevealed`), the same non-interactive pattern Dropdown/Modal already use via
- * `defaultOpen`. `QueryProvider` is supplied globally (.storybook/preview.tsx) because
- * `SignUpForm` calls `useSignUp`, which calls `useMutation` — there is no play function here to
- * ever trigger a real request, so no MSW handler is needed either.
+ * `defaultOpen`. There is no play function here to ever trigger a real submission, so
+ * `signUpAction` (the `"use server"` Server Action `SignUpForm` wires through `useActionState`)
+ * is referenced but never actually invoked by any story.
  */
 const meta: Meta<typeof SignUpForm> = {
     component: SignUpForm,
     /*
-     * `useSignUp` calls `next/navigation`'s `useRouter` — `@storybook/nextjs-vite` only mounts a
-     * working App Router context (rather than throwing "expected app router to be mounted") once
-     * `parameters.nextjs.appDirectory` is set, per the framework's own documented requirement for
-     * any story that imports an App Router `next/navigation` consumer.
+     * `@storybook/nextjs-vite` only mounts a working App Router context (rather than throwing
+     * "expected app router to be mounted") once `parameters.nextjs.appDirectory` is set — required
+     * here because the form imports `signUpAction` from a `"use server"` module, which Next.js's
+     * own tooling resolves through the same App Router machinery.
      */
     parameters: {
         nextjs: {
