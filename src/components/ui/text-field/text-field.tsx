@@ -60,16 +60,21 @@ const textFieldVariants = cva(
             },
             /*
              * Driven internally by `isLoading` (below), not exposed as a standalone consumer-facing
-             * variant — see the plan's Decisions block for why a loading field goes `readOnly`
-             * rather than `disabled`. `opacity-70` sits strictly between idle's `1` and disabled's
-             * `0.5` — a distinct third value, not a coincidental match to either neighbor (GC-15).
-             * `bg-bg-app` (the app's own dominant "receded" background token, already used
-             * elsewhere for the same purpose) reads as recessed against the field's own idle
-             * `bg-bg-surface`, without reusing the danger-adjacent or disabled-specific tokens this
-             * primitive uses for its other two non-idle states.
+             * variant. GC-17: `isLoading` now composes into native `disabled` (mirroring
+             * Checkbox/Button), so the base `disabled:opacity-50` class already delivers the
+             * grayed-out look the moment a field is loading — the previous `opacity-70 bg-bg-app`
+             * treatment here (GC-15) became CSS-unreachable, since a `:disabled`-qualified selector
+             * always outranks a plain class on specificity regardless of source order. This axis now
+             * only adds the cursor affordance, mirroring `checkbox.tsx`'s own `isBusy` comment — but
+             * as `disabled:cursor-progress` (not a bare `cursor-progress`), confirmed live to be
+             * necessary: a bare class shares that same specificity disadvantage against the base
+             * `disabled:cursor-not-allowed`, so it never wins either. Scoping this class to the same
+             * `disabled:` modifier puts both in the same `cn()`/tailwind-merge conflict group, where
+             * the later-declared class (this one) wins deterministically instead of falling back to
+             * CSS cascade order.
              */
             isBusy: {
-                true: "cursor-progress bg-bg-app opacity-70",
+                true: "disabled:cursor-progress",
                 false: "",
             },
         },
