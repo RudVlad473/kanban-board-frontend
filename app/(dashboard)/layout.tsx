@@ -3,7 +3,7 @@ import type { PropsWithChildren } from "react";
 
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { verifySession } from "@/lib/dal";
-import { SIGN_IN_PATH } from "@/lib/routes";
+import { ROUTE } from "@/lib/routes";
 
 /*
  * The authoritative check (RESEARCH.md Security Domain, T-01-05) — `proxy.ts`'s guard is an
@@ -15,7 +15,7 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
     const identity = await verifySession();
 
     if (!identity) {
-        redirect(SIGN_IN_PATH);
+        redirect(ROUTE.SIGN_IN);
     }
 
     return (

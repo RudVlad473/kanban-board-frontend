@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 import { DEMO_USER_EMAIL, DEMO_USER_PASSWORD } from "../src/lib/mocks/store";
-import { BOARDS_PATH, SIGN_IN_PATH } from "../src/lib/routes";
+import { ROUTE } from "../src/lib/routes";
 
 const SESSION_COOKIE_NAME = "session";
 const FRESH_PASSWORD = "E2eFreshPassword123!";
@@ -26,7 +26,7 @@ test.describe("AUTH-01: sign up", () => {
         await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
         await page.getByRole("button", { name: "Create Account" }).click();
 
-        await expect(page).toHaveURL(new RegExp(`${BOARDS_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
         const cookies = await context.cookies();
         const sessionCookie = cookies.find((cookie) => cookie.name === SESSION_COOKIE_NAME);
@@ -43,7 +43,7 @@ test.describe("AUTH-02: sign in", () => {
         await page.getByLabel("Password", { exact: true }).fill(DEMO_USER_PASSWORD);
         await page.getByRole("button", { name: "Sign In" }).click();
 
-        await expect(page).toHaveURL(new RegExp(`${BOARDS_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
         /*
          * The reload is the point of this test, not a formality — it proves the session survives
@@ -51,7 +51,7 @@ test.describe("AUTH-02: sign in", () => {
          */
         await page.reload();
 
-        await expect(page).toHaveURL(new RegExp(`${BOARDS_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
         await expect(page.getByRole("heading", { name: "Boards" })).toBeVisible();
     });
 });
@@ -62,12 +62,12 @@ test.describe("sign-out", () => {
         await page.getByLabel("Email", { exact: true }).fill(DEMO_USER_EMAIL);
         await page.getByLabel("Password", { exact: true }).fill(DEMO_USER_PASSWORD);
         await page.getByRole("button", { name: "Sign In" }).click();
-        await expect(page).toHaveURL(new RegExp(`${BOARDS_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
         await page.getByRole("button", { name: "Sign Out" }).click();
-        await expect(page).toHaveURL(new RegExp(`${SIGN_IN_PATH}$`));
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
 
-        await page.goto(BOARDS_PATH);
-        await expect(page).toHaveURL(new RegExp(`${SIGN_IN_PATH}$`));
+        await page.goto(ROUTE.BOARDS);
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
     });
 });

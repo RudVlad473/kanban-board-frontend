@@ -1,7 +1,7 @@
 "use client";
 
 import { ErrorFallback } from "@/components/layout/error-fallback/error-fallback";
-import { BOARDS_PATH } from "@/lib/routes";
+import { ROUTE } from "@/lib/routes";
 
 /*
  * Next.js requires every error boundary to be a client component. This is the protected route
@@ -20,7 +20,7 @@ const DashboardError = ({ error, reset }: Props) => {
             description="This part of the app ran into a problem. Your other work is unaffected."
             digest={error.digest}
             onRetry={reset}
-            homeHref={BOARDS_PATH}
+            homeHref={ROUTE.BOARDS}
         />
     );
 };

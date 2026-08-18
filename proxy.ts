@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { BOARDS_PATH, isProtectedPath, isPublicPath, SIGN_IN_PATH } from "@/lib/routes";
+import { isProtectedPath, isPublicPath, ROUTE } from "@/lib/routes";
 import { session, SESSION_COOKIE_NAME } from "@/lib/session";
 
 /*
@@ -27,11 +27,11 @@ const proxy = async (request: NextRequest): Promise<NextResponse> => {
      * added here.
      */
     if (isProtectedPath(pathname) && !identity) {
-        return NextResponse.redirect(new URL(SIGN_IN_PATH, request.url));
+        return NextResponse.redirect(new URL(ROUTE.SIGN_IN, request.url));
     }
 
     if (isPublicPath(pathname) && identity) {
-        return NextResponse.redirect(new URL(BOARDS_PATH, request.url));
+        return NextResponse.redirect(new URL(ROUTE.BOARDS, request.url));
     }
 
     return NextResponse.next();
