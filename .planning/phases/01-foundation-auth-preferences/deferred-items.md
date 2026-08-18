@@ -113,3 +113,29 @@ Next.js-generated ambient type (`.next/types`) not present in this worktree's bu
 
 **Recommended follow-up:** Run `pnpm dev`/`pnpm build` once to regenerate `.next/types`, or
 replace the `LayoutProps` reference with an explicit prop type if it's not meant to be ambient.
+
+## From plan 01-32 (GC-18, session bridging with the real backend)
+
+### 5. Forced sign-out on upstream session expiry cannot run from a Server Component
+
+**Found during:** Task 2, implementing `externalApi`'s `onResponse` middleware.
+
+**Issue:** `server-client.ts`'s `onResponse` middleware detects an upstream `401 UNAUTHENTICATED`
+refusal on an already-bridged call and forces a full sign-out by calling `session.destroy()`
+(clearing this app's own session cookie) and `redirect(ROUTE.SIGN_IN)`. Both operations are only
+valid from a context where a cookie write is permitted — a Server Action or a Route Handler.
+Within this round's scope, every call path that can reach `externalApi` is one of those two
+contexts (sign-in, sign-up, sign-out, and plan 01-14's theme route, once bridged), so the clear
+works everywhere this plan touches. It will stop working the moment Phase 2 adds a Server
+Component that calls `externalApi` directly for a `GET` (board data) — `cookies().delete()`
+inside a Server Component render throws, since a Server Component cannot mutate cookies
+mid-render (`01-RESEARCH.md`'s round-3 addendum, Finding 3).
+
+**Why not fixed inline:** No Server Component making such a call exists yet in this repository —
+building a fix for a call site that doesn't exist would be untestable, and this plan's own scope
+(GC-18, session bridging) doesn't add one.
+
+**Recommended follow-up:** Phase 2, when it adds the first Server Component reading board data
+through `externalApi`, should follow Next.js's own documented pattern for this case: redirect to
+a dedicated route/Route Handler that performs the actual cookie clear, rather than attempting an
+in-render mutation. Phase 2 is the named owner of this follow-up.

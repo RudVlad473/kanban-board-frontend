@@ -92,4 +92,57 @@ describe("server-client session bridge (real backend)", () => {
         expect(authenticatedResult.error).toBeUndefined();
         expect(authenticatedResult.data).toMatchObject({ id: identity.id, email });
     });
+
+    it("clears this app's session when a bridged call is refused as unauthenticated (an expired upstream session)", async () => {
+        // Arrange — a syntactically valid session whose credential does not correspond to any real upstream session.
+        await session.create({
+            id: "00000000-0000-4000-8000-000000000000",
+            email: "expired-session@example.com",
+            displayName: "Expired Session",
+            theme: "LIGHT",
+            jsessionId: "syntactically-valid-but-nonexistent-jsessionid",
+        });
+
+        // Act — the real backend refuses this credential; the response middleware clears the session and redirects.
+        const refusedCall = externalApi.GET("/users/me/theme", {
+            params: { query: { userId: "00000000-0000-4000-8000-000000000000" } },
+        });
+
+        // Assert — `redirect()` throws (the expected Next.js signal), and this app's session cookie is gone afterward.
+        await expect(refusedCall).rejects.toThrow();
+        await expect(session.verify()).resolves.toBeNull();
+    });
+
+    it("does not clear the session on a genuinely failed sign-in (wrong password)", async () => {
+        // Arrange — a real account with a real, stored session for it.
+        const email = `integration-badcred-${randomUUID()}@example.com`;
+        const signUpResult = await externalApi.POST("/signup", {
+            body: { email, password: TEST_PASSWORD, displayName: TEST_DISPLAY_NAME },
+        });
+        const identity: unknown = signUpResult.data;
+        if (!isSessionPayload(identity)) {
+            throw new Error(
+                `expected POST /signup to return a session-payload-shaped identity, got: ${JSON.stringify(identity)}`,
+            );
+        }
+        const setCookiePairs = signUpResult.response.headers.getSetCookie();
+        const jsessionCookie = setCookiePairs.find((pair) => pair.startsWith("JSESSIONID="));
+        const jsessionId = jsessionCookie?.slice("JSESSIONID=".length).split(";")[0];
+        if (!jsessionId) {
+            throw new Error("expected a JSESSIONID value to be extractable from the Set-Cookie header");
+        }
+        const storedRecord = { ...identity, displayName: TEST_DISPLAY_NAME, jsessionId };
+        await session.create(storedRecord);
+
+        // Act — a genuinely wrong password against the real backend, for the same account.
+        const wrongPasswordResult = await externalApi.POST("/signin", {
+            body: { email, password: "TotallyWrongPwd9!" },
+        });
+
+        // Assert — refused as BAD_CREDENTIALS (not UNAUTHENTICATED), and this app's own session is left untouched.
+        const wrongPasswordProblem = parseProblemDetail(wrongPasswordResult.error);
+        expect(wrongPasswordResult.response.status).toBe(401);
+        expect(wrongPasswordProblem?.code).toBe(PROBLEM_CODE.BAD_CREDENTIALS);
+        await expect(session.verify()).resolves.toEqual(storedRecord);
+    });
 });
