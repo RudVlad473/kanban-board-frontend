@@ -61,7 +61,7 @@ export default defineConfig({
                      */
                     name: "node",
                     environment: "node",
-                    include: ["src/lib/session.test.ts", "app/api/auth/**/*.test.ts"],
+                    include: ["src/lib/session.test.ts", "app/api/auth/**/*.test.ts", "src/**/*.integration.test.ts"],
                     env: {
                         EXTERNAL_API_BASE_URL: resolveTestApiBaseUrl(),
                         SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",
@@ -84,7 +84,14 @@ export default defineConfig({
                 },
             },
             {
-                resolve: { alias },
+                /*
+                 * Aliased with the `server-only` stub too (not just plain `alias`) — a jsdom test
+                 * can import a module that starts with `import "server-only"` (e.g.
+                 * `session-cookie.ts`) the same way the `node` project already can, per this
+                 * repo's own `server-only-stub.ts` documentation, which states the stub applies
+                 * "for every test project."
+                 */
+                resolve: { alias: aliasWithServerOnlyStub },
                 test: {
                     /*
                      * jsdom, not real-browser: for pure logic/hook tests with no CSS layout or

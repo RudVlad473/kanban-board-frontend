@@ -49,6 +49,32 @@ export const isSessionPayload = (value: unknown): value is SessionPayload => {
 };
 
 /**
+ * The identity plus the backend's own session credential (GC-18) — what the session cookie
+ * actually carries and what `verify`/`verifyToken` return. Kept as a separate type from
+ * `SessionPayload` rather than folding the credential into it: `isSessionPayload`'s second caller
+ * (the two auth Route Handlers, guarding a raw upstream response body) will never receive a
+ * credential on that body, so requiring one there would break that caller. There is still exactly
+ * one user and exactly one upstream session per cookie — this is one new type sitting alongside an
+ * unchanged one, not a promotion of the identity into something plural (see this plan's
+ * assumption-delta decision).
+ */
+export type SessionRecord = SessionPayload & { jsessionId: string };
+
+/**
+ * Runtime guard for an unverified value claiming to be a `SessionRecord` — defers to
+ * `isSessionPayload` for the identity fields and additionally requires `jsessionId` to be a
+ * string.
+ */
+export const isSessionRecord = (value: unknown): value is SessionRecord => {
+    if (!isSessionPayload(value)) {
+        return false;
+    }
+
+    const candidate = value as Record<string, unknown>;
+    return typeof candidate.jsessionId === "string";
+};
+
+/**
  * Builds an isolated session service over a given secret. Exported (not just the singleton below)
  * so tests can construct a throwaway instance with a test-only secret instead of mutating
  * `process.env` globally.
@@ -56,7 +82,7 @@ export const isSessionPayload = (value: unknown): value is SessionPayload => {
 export const createSessionService = (secret: string) => {
     const key = new TextEncoder().encode(secret);
 
-    const create = async (payload: SessionPayload): Promise<void> => {
+    const create = async (payload: SessionRecord): Promise<void> => {
         const expiresAt = new Date(Date.now() + SESSION_DURATION_SECONDS * 1000);
 
         /*
@@ -93,7 +119,7 @@ export const createSessionService = (secret: string) => {
      * factored out once so neither reimplements JWT verification (`proxy.ts` reads its cookie via
      * `NextRequest.cookies`, not `next/headers`, since it runs outside that request scope).
      */
-    const verifyToken = async (token: string | undefined): Promise<SessionPayload | null> => {
+    const verifyToken = async (token: string | undefined): Promise<SessionRecord | null> => {
         if (!token) {
             return null;
         }
@@ -101,16 +127,17 @@ export const createSessionService = (secret: string) => {
         try {
             const { payload } = await jwtVerify(token, key);
 
-            if (!isSessionPayload(payload)) {
+            if (!isSessionRecord(payload)) {
                 return null;
             }
 
             /*
-             * Return exactly the four identity fields — `payload` also carries jose's own
-             * reserved claims (`iat`/`exp`/`jti`), which callers should never see or depend on.
+             * Return exactly the five identity-plus-credential fields — `payload` also carries
+             * jose's own reserved claims (`iat`/`exp`/`jti`), which callers should never see or
+             * depend on.
              */
-            const { id, email, displayName, theme } = payload;
-            return { id, email, displayName, theme };
+            const { id, email, displayName, theme, jsessionId } = payload;
+            return { id, email, displayName, theme, jsessionId };
         } catch {
             /*
              * Every failure mode (malformed, bad signature, expired) returns null rather than
@@ -120,7 +147,7 @@ export const createSessionService = (secret: string) => {
         }
     };
 
-    const verify = async (): Promise<SessionPayload | null> => {
+    const verify = async (): Promise<SessionRecord | null> => {
         const cookieStore = await cookies();
         return verifyToken(cookieStore.get(COOKIE_NAME)?.value);
     };

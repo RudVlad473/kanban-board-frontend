@@ -1,7 +1,7 @@
 import { SignJWT } from "jose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createSessionService, type SessionPayload } from "@/lib/session";
+import { createSessionService, type SessionPayload, type SessionRecord } from "@/lib/session";
 
 type CookieRecord = { value: string; options?: Record<string, unknown> };
 
@@ -35,11 +35,12 @@ vi.mock("next/headers", () => ({
 
 const TEST_SECRET = "unit-test-session-secret-do-not-use-in-production";
 
-const testPayload: SessionPayload = {
+const testPayload: SessionRecord = {
     id: "11111111-1111-4111-8111-111111111111",
     email: "test@example.com",
     displayName: "Test User",
     theme: "LIGHT",
+    jsessionId: "upstream-jsessionid-abc123",
 };
 
 describe("session", () => {
@@ -86,11 +87,30 @@ describe("session", () => {
         expect(record?.options).toMatchObject({ secure: false });
     });
 
-    it("returns the identity it was created for on verification", async () => {
+    it("returns the identity and the upstream credential it was created for on verification", async () => {
         const service = createSessionService(TEST_SECRET);
         await service.create(testPayload);
 
         await expect(service.verify()).resolves.toEqual(testPayload);
+    });
+
+    it("returns null and does not throw for a token carrying the identity but no upstream credential", async () => {
+        const service = createSessionService(TEST_SECRET);
+        const key = new TextEncoder().encode(TEST_SECRET);
+        const identityOnlyPayload: SessionPayload = {
+            id: testPayload.id,
+            email: testPayload.email,
+            displayName: testPayload.displayName,
+            theme: testPayload.theme,
+        };
+        const tokenWithNoCredential = await new SignJWT({ ...identityOnlyPayload })
+            .setProtectedHeader({ alg: "HS256" })
+            .setIssuedAt()
+            .setExpirationTime(Math.floor(Date.now() / 1000) + 60 * 60)
+            .sign(key);
+        cookieStore.set("session", { value: tokenWithNoCredential });
+
+        await expect(service.verify()).resolves.toBeNull();
     });
 
     it("returns null for a session whose value has had a character altered", async () => {

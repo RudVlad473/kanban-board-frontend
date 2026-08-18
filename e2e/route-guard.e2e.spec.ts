@@ -81,6 +81,7 @@ test.describe("AUTH-03: route guard", () => {
             email: account.email,
             displayName: account.displayName,
             theme: "LIGHT",
+            jsessionId: "forged-e2e-jsessionid-does-not-matter",
         })
             .setProtectedHeader({ alg: "HS256" })
             .setIssuedAt(nowSeconds - 60 * 60 * 24 * 8)
