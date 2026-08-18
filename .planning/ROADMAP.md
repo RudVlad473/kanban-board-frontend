@@ -68,7 +68,7 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 27/29 plans executed
+**Plans**: 27/35 plans executed
 
 Plans:
 
@@ -117,6 +117,18 @@ gap-closure section — GC-17). Carries wave 14 (parallel with 01-28): 01-19 (wa
 runs no earlier than wave 14:
 
 - [x] 01-29-PLAN.md — TextField's isLoading composes into disabled instead of readOnly, overriding D-16 (GC-17)
+
+Gap closure round 3 (added 2026-08-18 — 01-CONTEXT.md items GC-18..GC-24: real-backend integration,
+session-cookie bridging, the auth Server Actions migration, mock removal, CI reset wiring and the
+ADR carve-out). Nonprod going live turned "point the base URL at a real backend" into real work, and
+these carry waves 14-18 — they execute *before* 01-14, which is rewaved to 19 and 01-15 to 20:
+
+- [ ] 01-30-PLAN.md — contract regenerated from the live backend, mock server deleted, every test target repointed (GC-19, GC-22)
+- [ ] 01-32-PLAN.md — session-cookie bridging to the real backend, proven end to end, with forced sign-out on upstream expiry (GC-18)
+- [ ] 01-31-PLAN.md — CI clears nonprod state after every real-backend suite (GC-23)
+- [ ] 01-33-PLAN.md — sign-in and sign-up become Server Actions carrying the backend's error code (GC-20, GC-24)
+- [ ] 01-34-PLAN.md — sign-out becomes a Server Action and the dead BFF client layer is removed (GC-24)
+- [ ] 01-35-PLAN.md — ADR carve-out, setup docs, and repair of the two unexecuted plans (GC-24)
 
 **UI hint**: yes
 
@@ -196,7 +208,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 27/29 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 27/35 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
