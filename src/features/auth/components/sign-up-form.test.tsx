@@ -1,11 +1,10 @@
 import { http, HttpResponse } from "msw";
-import { setupWorker } from "msw/browser";
-import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { render } from "vitest-browser-react";
 
-import { QueryProvider } from "@/lib/query-client";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { renderWithProviders } from "@/test-utils/render-with-providers";
+import { setupMswWorker } from "@/test-utils/setup-msw-worker";
 
 import { SignUpForm } from "./sign-up-form";
 
@@ -18,7 +17,7 @@ import { SignUpForm } from "./sign-up-form";
  * app's own same-origin `/api/auth/...` BFF routes — so a worker with no base handlers, populated
  * per test via `.use()`, is both sufficient and avoids the Node-only dependency entirely.
  */
-const worker = setupWorker();
+const worker = setupMswWorker();
 
 /*
  * `useSignUp` calls `next/navigation`'s `useRouter`, which requires a real Next.js App Router
@@ -33,28 +32,7 @@ vi.mock("next/navigation", () => ({
 const SIGN_UP_PATH = "/api/auth/signup";
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 
-const renderSignUpForm = () =>
-    render(
-        <QueryProvider>
-            <SignUpForm />
-        </QueryProvider>,
-    );
-
-/*
- * Same rationale as app/api/auth/routes.test.ts's MSW usage, mirrored for the browser worker
- * (plan 01-10's `src/lib/mocks/browser.ts`) — this Route Handler doesn't exist in a plain Vitest
- * Browser Mode page, so every test that needs a response registers its own handler via
- * `worker.use()`, reset after each test.
- */
-beforeAll(async () => {
-    await worker.start({ onUnhandledRequest: "bypass" });
-});
-afterEach(() => {
-    worker.resetHandlers();
-});
-afterAll(() => {
-    worker.stop();
-});
+const renderSignUpForm = () => renderWithProviders(<SignUpForm />);
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The

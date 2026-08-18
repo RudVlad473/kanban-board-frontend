@@ -1,11 +1,10 @@
 import { http, HttpResponse } from "msw";
-import { setupWorker } from "msw/browser";
-import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { render } from "vitest-browser-react";
 
-import { QueryProvider } from "@/lib/query-client";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { renderWithProviders } from "@/test-utils/render-with-providers";
+import { setupMswWorker } from "@/test-utils/setup-msw-worker";
 
 import { SignInForm } from "./sign-in-form";
 
@@ -14,7 +13,7 @@ import { SignInForm } from "./sign-in-form";
  * src/lib/mocks/browser.ts's shared singleton, whose handlers pull in node:fs/os/crypto through
  * src/lib/mocks/store.ts — Node builtins a real browser page can't load).
  */
-const worker = setupWorker();
+const worker = setupMswWorker();
 
 /*
  * Same rationale as sign-up-form.test.tsx: `useSignIn` calls `next/navigation`'s `useRouter`,
@@ -28,22 +27,7 @@ const SIGN_IN_PATH = "/api/auth/signin";
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
 
-const renderSignInForm = () =>
-    render(
-        <QueryProvider>
-            <SignInForm />
-        </QueryProvider>,
-    );
-
-beforeAll(async () => {
-    await worker.start({ onUnhandledRequest: "bypass" });
-});
-afterEach(() => {
-    worker.resetHandlers();
-});
-afterAll(() => {
-    worker.stop();
-});
+const renderSignInForm = () => renderWithProviders(<SignInForm />);
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The
