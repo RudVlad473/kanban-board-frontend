@@ -4,15 +4,14 @@
 
 A Next.js kanban board web app where a signed-in user creates boards, organizes work into
 columns, and manages tasks (with subtask checklists) via drag-and-drop — built against a
-versioned OpenAPI REST contract (backed by a mock server until a real backend is deployed),
-with light/dark theme support and optimistic-locking conflict handling. Solo-developer
-portfolio project.
+versioned OpenAPI REST contract, dialing the deployed non-production backend directly, with
+light/dark theme support and optimistic-locking conflict handling. Solo-developer portfolio
+project.
 
 ## Core Value
 
 A signed-in user can create boards, organize tasks across columns via drag-and-drop, and
-trust that every change is reliably persisted and reconciled — even against a backend that
-doesn't exist yet.
+trust that every change is reliably persisted and reconciled against the real backend.
 
 ## Requirements
 
@@ -54,8 +53,9 @@ doesn't exist yet.
 - **Design source**: Figma mocks exported as PDF (`kanban-task-management-web-app.pdf`) —
   fully specified design system, light/dark theme, mobile/tablet/desktop breakpoints.
 - **API contract**: `kanban-board-openapi.json` already exists and is the hard contract this
-  frontend is built against, even though no real backend is deployed yet. A contract-derived
-  MSW mock server stands in until a real backend exists, then the base URL swaps per environment.
+  frontend is built against. The deployed non-production backend serves it for real; every layer
+  (development, tests, CI) dials that backend directly, with no mock server standing in
+  (ADR tech/0018).
 - **Domain language**: Board (single-owner, top-level container) → Column (a Task's Column
   IS its status — there is no separate status field) → Task (title, optional description,
   zero or more Subtasks) → Subtask (checklist item, independent of the Task's Column). Every
@@ -72,9 +72,10 @@ doesn't exist yet.
 
 - **Framework/stack**: Next.js (App Router) + TanStack Query + dnd-kit + Tailwind + Base UI +
   DTCG design tokens via Style Dictionary — all user-imposed defaults, not open choices.
-- **Backend availability**: No real backend is deployed anywhere yet. The frontend is built
-  and tested against an MSW-mocked stand-in for the OpenAPI contract; swapping to a real base
-  URL is a per-environment config change, not a code change.
+- **Backend availability**: The real backend is deployed and live (non-production). The
+  frontend is built and tested directly against it, with no mock server anywhere
+  (ADR tech/0018); swapping the base URL per environment (local / Vercel Preview / Vercel
+  Production) is a config change, not a code change.
 - **Auth boundary**: Every authenticated call must go through a Next.js Route Handler BFF
   proxy; the session credential is an httpOnly cookie, never readable from client-side JS
   (ADR tech/0001).
@@ -100,7 +101,7 @@ doesn't exist yet.
 | httpOnly cookie via Next.js BFF proxy for auth (ADR tech/0001) | Avoids XSS exposure of localStorage/sessionStorage tokens; solves the SSR route-guard gap of in-memory bearer tokens | ✓ Locked |
 | TanStack Query for data fetching + optimistic mutations (ADR tech/0002) | Built-in `onMutate`/`onError`/`onSettled` rollback beats SWR/RTK Query/Server Actions for this contract | ✓ Locked |
 | dnd-kit (`@dnd-kit/core`/`sortable`, stable line) for drag-and-drop (ADR tech/0003) | Touch + keyboard a11y support that native HTML5 DnD and rivals lack | ✓ Locked |
-| MSW with hand-written resolvers as OpenAPI mock server (ADR tech/0004) | Only option giving full control over stateful 409 version-conflict behavior across Vitest Browser Mode + Playwright | ✓ Locked |
+| MSW with hand-written resolvers as OpenAPI mock server (ADR tech/0004) | Only option giving full control over stateful 409 version-conflict behavior across Vitest Browser Mode + Playwright | ⊘ Superseded — see ADR tech/0018 (no mock server; every layer dials the real backend) |
 | openapi-typescript + openapi-fetch for typed API client codegen (ADR tech/0005) | Best OpenAPI 3.1 fidelity vs. Orval/Kubb; hand-written client has no regeneration story | ✓ Locked |
 | Vercel for production hosting (ADR tech/0006) | Zero-caveat SSR/middleware support; free Hobby tier pauses instead of billing a solo dev | ✓ Locked |
 | ESLint + eslint-plugin-tailwindcss + Prettier + prettier-plugin-tailwindcss (ADR tech/0007) | Fixed ESLint static-analysis requirement rules out Biome-only combos | ✓ Locked |
@@ -113,7 +114,9 @@ doesn't exist yet.
 *Legend: ✓ Locked = explicit Accepted status in the source ADR. ◐ Proposed = a clear chosen
 decision in prose ("Decision Outcome"), but no explicit Accepted/status marker in the
 document — treated as confirmed for planning purposes; a future higher-or-equal-precedence
-source could revise it without tripping a locked-vs-locked conflict gate.*
+source could revise it without tripping a locked-vs-locked conflict gate. ⊘ Superseded = the
+decision was genuinely made and later genuinely reversed by a later ADR — kept in this table
+rather than deleted, since both halves of the history are worth keeping.*
 
 ---
 *Last updated: 2026-08-10 after initial project setup (ingest synthesis)*

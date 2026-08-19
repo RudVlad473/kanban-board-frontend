@@ -1,5 +1,8 @@
 # 0004 — OpenAPI-contract mock/stub server
 
+> **Superseded** by `docs/adr/tech/0018-no-mock-server.md` — no mock server remains anywhere in
+> this project; every layer dials the deployed non-production backend.
+
 ## Decision Drivers
 
 - No backend is deployed yet; the frontend must be built and fully

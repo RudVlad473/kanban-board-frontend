@@ -1,5 +1,9 @@
 # 0002 — Client data-fetching & mutation strategy
 
+> **Superseded in part** by `docs/adr/tech/0017-auth-server-actions-carve-out.md` — auth mutations
+> (sign-up, sign-in, sign-out) now use Server Actions; board/column/task mutations stay as decided
+> below.
+
 ## Decision Drivers
 
 - Every Column/Task/Subtask update, move, and reorder carries a
