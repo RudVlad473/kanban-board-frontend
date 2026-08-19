@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: foundation-auth-preferences
 status: executing
-stopped_at: Phase 01 round-4 gap-closure context captured (lib/ module layering + per-feature model.ts), 01-33 checkpoint still pending
-last_updated: "2026-08-19T09:09:40.460Z"
-last_activity: 2026-08-18
-last_activity_desc: Waves 3+4 executed and merged; Server Actions migration explored (gsd-explore)
+stopped_at: 01-33 checkpoint approved and merged (wave 7 complete); wave 8 (01-34, sign-out) next
+last_updated: "2026-08-19T12:24:56.000Z"
+last_activity: 2026-08-19
+last_activity_desc: 01-33 manual verify checkpoint driven via browser automation; found and fixed a "use server" invalid-export bug and a Tailwind content-scanner break; merged into master
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 38
-  completed_plans: 30
+  completed_plans: 31
 ---
 
 # Project State
@@ -30,12 +30,12 @@ against a backend that doesn't exist yet.
 ## Current Position
 
 Phase: 01 (foundation-auth-preferences) — EXECUTING
-Plan: 1 of 35
-Status: Ready to execute
-Last activity: 2026-08-18 — Phase 01 execution started
+Plan: 33 of 38 (01-33 complete; 01-34 next)
+Status: Wave 7 merged, wave 8 (01-34) ready to execute
+Last activity: 2026-08-19 — 01-33 checkpoint approved and merged
   See Session Continuity below for full detail.
 
-Progress: [█████████░] 93%
+Progress: [████████░░] 82% (31/38 plans)
 
 ## Performance Metrics
 
@@ -93,21 +93,21 @@ Recent decisions affecting current work:
 
 - User wants sign-up/sign-in/sign-out refactored from Route Handlers to Server Actions BEFORE
   01-14 is built, so 01-14 uses the new pattern too — see `.planning/notes/
-  server-actions-migration-decision.md`. **Context now captured** (round 3 gap closure,
-  2026-08-18, `01-CONTEXT.md` GC-18..GC-24) — nonprod backend confirmed live, which also
-  surfaced a bigger prerequisite: the real backend is session-cookie (JSESSIONID) authenticated
-  and this app currently forwards no cookie to it at all, so session-bridging (GC-18) must be
-  built first, before the Server Actions rewrite itself. Still NOT YET PLANNED into a PLAN.md —
-  next step is `/gsd-plan-phase 01`. Do not start 01-14 under the old Route Handler pattern
-  until this round's plan executes.
+  server-actions-migration-decision.md`. Sign-in/sign-up half now **done** (01-33, merged
+  2026-08-19); sign-out is 01-34, next up.
 
-- **Stray uncommitted corruption found in the working tree** (unrelated to this session's edits):
-  `app/api/auth/signin/route.ts` line 1 reads `simport "server-only";` instead of
-  `import "server-only";` — breaks the build. Not staged, not committed. Origin unknown (present
-  before this session's changes, not something this session's tool calls touched). Needs a
-  one-line manual fix or `git checkout -- app/api/auth/signin/route.ts` before that file is next
-  touched — GC-19/round-3 planning will rewrite this file anyway, but flag it now so it isn't
-  mistaken for intentional in-progress work.
+- **01-33's no-JS submission must-have does not actually hold** — found during this checkpoint
+  using a genuinely JS-disabled browser context: `sign-up-form.tsx`'s `formAction` wraps
+  `useActionState`'s `dispatch` in a plain client closure, so React can't generate a real
+  progressively-enhanceable POST target (renders `action="javascript:throw ..."` instead).
+  Explicitly de-scoped by the user ("not sure that's needed in 2026") rather than fixed — see
+  `01-33-SUMMARY.md` coverage D4 for the root cause and fix shape if ever revisited. The plan's
+  own `must_haves.truths` and the component's code comment still claim the property holds and
+  were not corrected.
+
+- ~~Stray uncommitted corruption in `app/api/auth/signin/route.ts` (`simport` typo)~~ — **moot**:
+  that file was deleted by 01-33 (replaced by Server Actions), and never carried the typo into
+  master.
 
 ## Deferred Items
 
@@ -119,9 +119,29 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-19T08:45:22.073Z
-Stopped at: Phase 01 round-4 gap-closure context captured (lib/ module layering + per-feature model.ts), 01-33 checkpoint still pending
-  session bridging), triggered by nonprod going live. Prior session (summarized): waves 3+4
+Last session: 2026-08-19T12:24:56.000Z
+Stopped at: 01-33 checkpoint approved and merged (wave 7 complete); wave 8 (01-34) ready to execute
+
+**This session:** Resumed with 01-33 paused at its Task 3 `checkpoint:human-verify` gate. Drove
+the manual browser walkthrough via Playwright automation (with the user setting local env vars)
+instead of the user doing it by hand. Found and fixed two real bugs invisible to the automated
+test suite: (1) Tailwind v4's content scanner choking on a wildcard placeholder in
+`01-17-PLAN.md`'s prose, hard-failing `next dev` on every route (fixed on `master` directly,
+commit `101a4e8`); (2) `auth-actions.ts` exporting a non-function constant from a `"use server"`
+file, which type-checks/builds fine but throws the moment an action is actually invoked (fixed in
+the worktree, commit `ab5b8ec`, split into new `auth-action-state.ts`). Also found the no-JS
+submission property this plan claims does not actually work (React's `formAction` wraps `dispatch`
+in a plain closure, breaking the progressively-enhanceable POST target) — user explicitly
+de-scoped verifying/fixing this rather than reopening the plan; documented in `01-33-SUMMARY.md`
+coverage D4 and in Blockers/Concerns above. All other checkpoint steps (sign-up, duplicate-email,
+field validation, sign-in, wrong-password, dark mode, narrow width) passed. User approved; merged
+`worktree-agent-aba0207b93f808d49` into master (`--no-ff`, commit `2140853`), post-merge
+`pnpm test` reran clean (396/396 — an earlier run's 11 timeouts were resource contention from a
+concurrently-open browser automation session, not a regression), worktree removed, tracking
+updated, 01-33-SUMMARY.md written.
+
+**Prior session (summarized):** gap-closure context (round 3,
+  session bridging), triggered by nonprod going live. Session before that (summarized): waves 3+4
   (01-20/21/26/28/29) merged and pushed, then a `/gsd-explore` conversation produced
   `.planning/notes/server-actions-migration-decision.md` (commit `89f2421`), gated on nonprod
   going live. Full detail in git history / that note.
@@ -142,9 +162,6 @@ Stopped at: Phase 01 round-4 gap-closure context captured (lib/ module layering 
   (7) a new superseding ADR entry for tech/0002's auth-scoped carve-out. Committed
   (`acdfb87`, `3a68cb5`), not yet pushed.
 
-  **Also found, unrelated to this session's own edits:** a stray uncommitted one-character
-  corruption in `app/api/auth/signin/route.ts` (`simport` instead of `import`) — see
-  Blockers/Concerns above. Left as-is, flagged, not fixed (that file is rewritten by this round's
-  plan anyway).
-Resume file: .planning/phases/01-foundation-auth-preferences/01-CONTEXT.md
-Next step: `/gsd-plan-phase 01` to turn round 3's captured context into an executable plan.
+Resume file: none (HANDOFF.json and .continue-here.md cleared — no mid-plan checkpoint pending)
+Next step: `/gsd-execute-phase 01` to run wave 8 (01-34, finish Server Actions migration —
+sign-out) onward through 01-38 (three-ring `lib/` split) before 01-14/01-15.
