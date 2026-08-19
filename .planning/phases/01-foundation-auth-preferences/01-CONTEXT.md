@@ -576,6 +576,65 @@ about MSW's role, made obsolete by GC-22.
   reopening the core-domain decision now): reason (2)'s premise no longer holds project-wide, so a
   future revisit of board/column/task Server Actions should weigh only reason (1).
 
+### Gap Closure — 2026-08-19 (round 4: lib/ module layering + per-feature model.ts)
+
+Session context: user raised architectural concerns about `src/lib/`'s flat, undifferentiated
+structure (CONVENTIONS.md placement rule step 8's single "everything else infrastructural →
+`lib/`" catch-all) mixing pure helpers, server-only secret-holding infrastructure, and
+browser-coupled infra with no signal distinguishing them — plus a domain-specific pure function
+(`resolveDisplayName`) that had no recognized home outside that catch-all. Worked through via
+`superpowers:brainstorming` (architectural path) to a fully approved design, written up at
+`docs/superpowers/specs/2026-08-19-lib-module-layering-design.md`. All items below are additive;
+no prior D-01..D-28/GC-01..GC-24 decision is superseded.
+
+- **GC-25 (three-ring split of `lib/`):** `src/lib/` splits into `lib/core/` (pure,
+  framework-agnostic, importable from anywhere — further subdivided by concern:
+  `styling/` (`cn.ts`), `routing/` (`routes.ts`), `viewport/` (`viewport-breakpoints.ts`),
+  `api-contract/` (`problem-detail.ts`, `generated-types.ts`, `bff-generated-types.ts`)),
+  `lib/server/` (server-only — every file already carries `import "server-only"`: `session.ts`,
+  `dal.ts`, `server-client.ts`, `session-cookie.ts`), and `lib/client/` (browser/React-runtime
+  infra: `query-client.tsx`, `bff-client.ts`). Dependency direction is enforced, not just
+  advisory: `lib/core/` has no outgoing dependency on `lib/server/` or `lib/client/`; `lib/server/`
+  and `lib/client/` must never import each other.
+- **GC-26 (per-feature `model.ts` for domain-specific pure logic):** `features/<domain>/` gains a
+  fourth recognized file kind alongside `api.ts`/`actions.ts`/`types.ts`/`hooks/`/`components/` —
+  `model.ts`, for pure functions that derive/transform domain data with no side effects and no API
+  calls. A file that would otherwise land in the `lib/` catch-all but is only ever consumed by one
+  domain belongs here instead, per the placement rule's own existing step 2 ("belongs to exactly
+  one domain → that domain's `features/<domain>/`"). `resolveDisplayName` moves from
+  `lib/display-name.ts` to `features/auth/model.ts` — it's only ever called from auth's own
+  routes/actions.
+- **GC-27 (feature-file naming — drop redundant feature-name prefixes on singular per-feature
+  files):** Extends the existing `types.ts` precedent (`features/boards/types.ts`, not
+  `boards-types.ts`) to the other singular, one-per-feature files: `features/auth/api/auth-api.ts`
+  → `features/auth/api.ts`; `features/auth/api/auth-actions.ts` → `features/auth/actions.ts`
+  (currently exists only on the unmerged `01-33` worktree branch). Does not apply to `components/`
+  or `hooks/` — those already have per-instance names (`sign-in-form.tsx`, `use-sign-in.ts`) that
+  must stay distinct since multiple files coexist in the same folder.
+- **GC-28 (mechanical enforcement via `eslint-plugin-boundaries`):** Replace the single flat `lib`
+  element type (`pattern: src/lib/*`) with three — `lib-core` (`src/lib/core/**`), `lib-server`
+  (`src/lib/server/**`), `lib-client` (`src/lib/client/**`) — with a dependency policy encoding
+  GC-25's ring directionality. This is the mechanical check that would have caught the exact class
+  of bug that produced the 01-33 Storybook stub (`session.ts`'s `node:crypto` chain reaching a
+  browser bundle through `auth-actions.ts`) at lint time instead of at Storybook runtime.
+- **GC-29 (sequencing — depends on 01-33 merging first):** This round's plan cannot execute until
+  wave 7's plan 01-33 merges into master. `features/auth/actions.ts` (GC-27's renamed
+  `auth-actions.ts`) currently exists only on the unmerged worktree branch
+  `worktree-agent-aba0207b93f808d49`. Plan this round's work to land after 01-33 (and reasonably
+  after 01-34, which also edits auth's Server Actions for sign-out) rather than in parallel with
+  them, to avoid a rename/move racing against in-flight edits on the same files.
+- **GC-30 (documentation updates):** `CONVENTIONS.md`'s "Project organization" section —
+  placement-rule step 8's single `lib/` catch-all line is replaced with GC-25's three-ring
+  breakdown, and the directory-tree illustration plus the "where code lives" quick-reference table
+  gain `model.ts` as a fourth per-feature file kind. `docs/adr/tech/0009-project-organization.md`
+  itself is not edited — it already defers the concrete structure to CONVENTIONS.md, not itself.
+- **Non-goals (explicit):** No behavior changes — pure reorg (file moves, renames, import-path
+  updates, one eslint config change). No `lib/domain/` ring added — nothing currently needs one,
+  and adding it now would repeat the over-engineering ADR tech/0009 already rejected Feature-Sliced
+  Design for. `features/boards/`, `features/tasks/`, etc. don't exist yet — this round only
+  touches `features/auth/`, but the `model.ts` kind and three-ring `lib/` structure apply to those
+  domains from the start once they're built.
+
 </decisions>
 
 <canonical_refs>
@@ -630,6 +689,14 @@ about MSW's role, made obsolete by GC-22.
   `/gsd-explore` session that originated this round's scope (mutations-only, testing-strategy
   overhaul, MSW deprecation gated on nonprod — gate now cleared).
 
+### `lib/` module layering (round 4 gap closure, 2026-08-19)
+- `docs/superpowers/specs/2026-08-19-lib-module-layering-design.md` — the full approved design:
+  three-ring `lib/` split, per-feature `model.ts`, feature-file naming convention, concrete file
+  mapping, `eslint-plugin-boundaries` policy changes, and CONVENTIONS.md update scope. Read this
+  before planning/implementing GC-25 through GC-30.
+- `eslint.config.mjs` — current `boundaries/elements` and `boundaries/dependencies` config (the
+  single flat `lib` element type GC-28 replaces).
+
 </canonical_refs>
 
 <code_context>
@@ -673,6 +740,22 @@ primitives, test harness) that every later phase will build on.
   entirely per GC-22.
 - `docs/adr/tech/0002-client-data-fetching-strategy.md` — amended via a new superseding entry
   (GC-24), not edited in place.
+
+### Round 4 gap-closure findings (2026-08-19) — existing code this round moves/renames
+- `src/lib/{cn.ts, display-name.ts, routes.ts, routes.unit.test.ts, viewport-breakpoints.ts}` +
+  `src/lib/api/{problem-detail.ts, problem-detail.unit.test.ts, generated-types.ts,
+  bff-generated-types.ts}` → `lib/core/` (subdivided by concern per GC-25).
+- `src/lib/{session.ts, session.test.ts, dal.ts}` + `src/lib/api/{server-client.ts,
+  server-client.integration.test.ts, session-cookie.ts, session-cookie.unit.test.ts}` →
+  `lib/server/`.
+- `src/lib/query-client.tsx` + `src/lib/api/bff-client.ts` → `lib/client/`.
+- `src/features/auth/api/auth-api.ts` → `src/features/auth/api.ts`; (worktree-only)
+  `src/features/auth/api/auth-actions.ts` → `src/features/auth/actions.ts`;
+  `src/lib/display-name.ts` → `src/features/auth/model.ts` (GC-26/GC-27).
+- `src/test-utils/auth-actions-storybook-stub.ts` — renamed to match the renamed module it stubs;
+  exact name is Claude's discretion at planning/execution time.
+- `eslint.config.mjs` — `boundaries/elements`/`boundaries/dependencies` updated per GC-28.
+- `CONVENTIONS.md` — "Project organization" section updated per GC-30.
 
 </code_context>
 

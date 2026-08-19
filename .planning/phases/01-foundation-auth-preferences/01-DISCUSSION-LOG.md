@@ -230,3 +230,76 @@ auto-rollback) still fully applies to board/column/task mutations and was never 
   not decided now, left as a breadcrumb only.
 - Whether real-backend-dependent tests should also run locally (not just CI) — explicitly
   deferred, not decided now.
+
+---
+
+# Round 4 — 2026-08-19: lib/ module layering + per-feature model.ts
+
+> **Audit trail only.** Do not use as input to planning, research, or execution agents.
+> Decisions are captured in `01-CONTEXT.md`'s "Gap Closure — 2026-08-19 (round 4)" section.
+
+**Date:** 2026-08-19
+**Phase:** 01-foundation-auth-preferences
+**Areas discussed:** `lib/` layering, per-feature naming for domain-specific pure logic, feature-file
+naming consistency, mechanical enforcement
+
+**Trigger:** User raised architecture concerns mid-checkpoint-wait on 01-33: `src/lib/` is a flat
+catch-all mixing pure helpers, server-only secret-holding infrastructure, and browser-coupled
+infra with no signal distinguishing them; `resolveDisplayName`/`verifySession` felt like
+unclassifiable "magic" utilities with no recognized kind. Worked through via
+`superpowers:brainstorming` (architectural path, not GSD's own discuss-phase flow) to a fully
+approved design doc before folding the outcome back into this phase's context.
+
+---
+
+## `lib/` layering
+
+| Question | Selected |
+|---|---|
+| How many rings? | **Three** — `core/` (pure), `server/` (server-only), `client/` (browser-coupled) |
+| Should `core/` stay one flat folder? | **No** — subdivided by concern: `styling/`, `routing/`, `viewport/`, `api-contract/` |
+| Add a fourth `lib/domain/` ring for business rules? | **Rejected** — nothing currently needs one; would repeat the over-engineering ADR tech/0009 already rejected FSD for |
+| Dependency direction enforced how? | **`eslint-plugin-boundaries`** (already installed) — `lib-core` has no outgoing dependency on `lib-server`/`lib-client`; the latter two must never import each other |
+
+**Notes:** The `server`/`client` split is grounded in an existing signal, not invented: 4 of the 10
+current `lib/` files already carry `import "server-only"`. A real bug already happened from the
+lack of enforcement — the 01-33 Storybook stub exists because `session.ts`'s `node:crypto` chain
+got bundled for the browser through `auth-actions.ts`; GC-28's eslint policy would catch this class
+of mistake at lint time.
+
+---
+
+## Domain-specific pure logic
+
+| Question | Selected |
+|---|---|
+| Where does `resolveDisplayName` belong? | **`features/auth/model.ts`**, not shared `lib/` — it's only ever called from auth's own routes/actions |
+| What's the recognized name for this file kind? | **`model.ts`** (user's choice, after considering `selectors.ts`/`logic.ts`) |
+| Does this apply project-wide? | **Yes** — every `features/<domain>/` gains `model.ts` as a fourth recognized kind alongside `api.ts`/`actions.ts`/`types.ts`/`hooks/`/`components/` |
+
+**Notes:** This reframed the original complaint — the fix for "`resolveDisplayName` feels like a
+random util" wasn't a better name inside `lib/core/`, it was recognizing the file was misplaced
+per the project's own existing placement rule (step 2: belongs to exactly one domain → that
+domain's `features/<domain>/`).
+
+---
+
+## Feature-file naming
+
+| Question | Selected |
+|---|---|
+| Drop feature-name prefixes on singular per-feature files? | **Yes** — `auth-api.ts` → `api.ts`, `auth-actions.ts` → `actions.ts` |
+| New rule, or extending an existing one? | **Extending** — `features/boards/types.ts` (not `boards-types.ts`) already established this precedent |
+| Does this apply to `components/`/`hooks/`? | **No** — those already have per-instance names that must stay distinct within their folder |
+
+---
+
+## Claude's Discretion
+
+- Exact filename for the renamed Storybook stub (`src/test-utils/auth-actions-storybook-stub.ts`)
+  once `auth-actions.ts` becomes `actions.ts` — finalized during planning/execution.
+
+## Deferred Ideas
+
+- None — this round's scope was fully resolved within the brainstorming session; no items were
+  pushed out to a future phase.
