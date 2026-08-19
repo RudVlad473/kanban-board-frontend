@@ -6,14 +6,14 @@ current_phase: 01
 current_phase_name: foundation-auth-preferences
 status: executing
 stopped_at: 01-33 checkpoint approved and merged (wave 7 complete); wave 8 (01-34, sign-out) next
-last_updated: "2026-08-19T13:04:00.320Z"
+last_updated: "2026-08-19T16:58:06.154Z"
 last_activity: 2026-08-19
-last_activity_desc: "01-33 manual verify checkpoint driven via browser automation; found and fixed a \\\\\\\"use server\\\\\\\" invalid-export bug and a Tailwind content-scanner break; merged into master"
+last_activity_desc: "01-33 manual verify checkpoint driven via browser automation; found and fixed a \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"use server\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" invalid-export bug and a Tailwind content-scanner break; merged into master"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 38
-  completed_plans: 31
+  completed_plans: 37
 ---
 
 # Project State
@@ -108,6 +108,8 @@ Recent decisions affecting current work:
 - ~~Stray uncommitted corruption in `app/api/auth/signin/route.ts` (`simport` typo)~~ — **moot**:
   that file was deleted by 01-33 (replaced by Server Actions), and never carried the typo into
   master.
+
+- Phase 01 paused at 01-15 (wave 14, final plan): Vercel deployment. Requires user Vercel account creation, GitHub app authorization, and manual verification against live Preview/Production URLs before it can run. 37/38 plans complete; all other waves merged, tested, and pushed to origin/master.
 
 ## Deferred Items
 
