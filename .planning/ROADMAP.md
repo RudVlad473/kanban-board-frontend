@@ -70,7 +70,7 @@ non-production backend directly).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 37/38 plans executed
+**Plans**: 38/38 plans executed
 
 Plans:
 **Wave 1**
@@ -131,7 +131,7 @@ Plans:
 
 **Wave 23** *(blocked on Wave 22 completion)*
 
-- [ ] 01-15-PLAN.md — Vercel Preview and Production deployment, verified on the live URLs
+- [x] 01-15-PLAN.md — Vercel Preview and Production deployment, verified on the live URLs
 
 Gap closure (added 2026-08-16 from the post-wave-13 UI review and architecture discussion —
 01-CONTEXT.md items GC-01..GC-08). These carry waves 11-13 and so execute *before* 01-14:
@@ -272,7 +272,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 37/38 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 38/38 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
