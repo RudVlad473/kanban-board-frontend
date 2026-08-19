@@ -68,7 +68,7 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 30/35 plans executed
+**Plans**: 30/38 plans executed
 
 Plans:
 **Wave 1**
@@ -173,6 +173,18 @@ these carry waves 14-18. They execute *before* 01-14 and 01-15, which now carry 
 - [ ] 01-33-PLAN.md — sign-in and sign-up become Server Actions carrying the backend's error code (GC-20, GC-24)
 - [ ] 01-34-PLAN.md — sign-out becomes a Server Action and the dead BFF client layer is removed (GC-24)
 - [ ] 01-35-PLAN.md — ADR carve-out, setup docs, and repair of the two unexecuted plans (GC-24)
+
+Gap closure round 4 (added 2026-08-19 — 01-CONTEXT.md items GC-25..GC-30 and
+`docs/superpowers/specs/2026-08-19-lib-module-layering-design.md`: the three-ring `lib/` split,
+per-feature `model.ts`, feature-file naming, `eslint-plugin-boundaries` policy, and the
+CONVENTIONS.md update). A pure reorganisation — file moves, renames, import-path updates, one eslint
+config change, no behaviour change. Per GC-29 these carry waves 19-21 and must land *after* 01-33 and
+01-34 merge (they rename/move `features/auth/actions.ts`, formerly `auth-actions.ts`), and after
+01-35 (which also edits CONVENTIONS.md):
+
+- [ ] 01-36-PLAN.md — three-ring boundaries policy turned on and the pure `lib/core/` ring moved (GC-25, GC-28)
+- [ ] 01-37-PLAN.md — `lib/server/` and `lib/client/` rings moved, `model.ts`/`actions.ts`/`schemas.ts` relocated into the auth feature, emptied folders removed (GC-25, GC-26, GC-27)
+- [ ] 01-38-PLAN.md — CONVENTIONS.md's project-organization section rewritten for the three rings and `model.ts` (GC-30)
 
 **UI hint**: yes
 
