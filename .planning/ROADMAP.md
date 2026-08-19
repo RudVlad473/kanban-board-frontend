@@ -22,7 +22,7 @@ it existing first.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation, Auth & Preferences** - Project scaffold, mock backend, and
+- [x] **Phase 1: Foundation, Auth & Preferences** - Project scaffold, mock backend, and (completed 2026-08-20)
   BFF-proxied auth let a user sign up, sign in, stay in a route-guarded session, and set a
   persisted theme
 
@@ -272,7 +272,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 38/38 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |

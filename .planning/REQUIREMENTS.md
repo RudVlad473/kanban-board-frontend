@@ -11,9 +11,9 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Authentication
 
-- [ ] **AUTH-01**: User can sign up with email, display name, and password
-- [ ] **AUTH-02**: User can sign in with email and password
-- [ ] **AUTH-03**: Unauthenticated visitor is redirected to sign-in when requesting a board
+- [x] **AUTH-01**: User can sign up with email, display name, and password
+- [x] **AUTH-02**: User can sign in with email and password
+- [x] **AUTH-03**: Unauthenticated visitor is redirected to sign-in when requesting a board
   or board-list route
 
 ### Boards
@@ -55,7 +55,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Theme
 
-- [ ] **THEME-01**: User can toggle light/dark theme, persisted per account across sessions
+- [x] **THEME-01**: User can toggle light/dark theme, persisted per account across sessions
 
 ### Sync
 
@@ -94,10 +94,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Gaps Found |
-| AUTH-02 | Phase 1 | Gaps Found |
-| AUTH-03 | Phase 1 | Gaps Found |
-| THEME-01 | Phase 1 | Gaps Found |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
+| THEME-01 | Phase 1 | Complete |
 | BOARD-01 | Phase 2 | Pending |
 | BOARD-02 | Phase 2 | Pending |
 | BOARD-03 | Phase 2 | Pending |
