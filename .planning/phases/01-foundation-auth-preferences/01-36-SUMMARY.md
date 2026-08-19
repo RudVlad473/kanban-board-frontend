@@ -176,3 +176,12 @@ None - no external service configuration required.
 ---
 *Phase: 01-foundation-auth-preferences*
 *Completed: 2026-08-19*
+
+## Self-Check: PASSED
+
+All created files verified present on disk (src/lib/core/styling/cn.ts,
+src/lib/core/routing/routes.ts, src/lib/core/viewport/viewport-breakpoints.ts,
+src/lib/core/api-contract/problem-detail.ts,
+src/lib/core/api-contract/generated-types.ts, this SUMMARY.md). All four task
+commits (71df8b5, 1f54c12, e4535a9) plus the summary commit (82fa466) verified
+present in `git log`.
