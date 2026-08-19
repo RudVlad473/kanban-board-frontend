@@ -70,7 +70,7 @@ non-production backend directly).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 33/38 plans executed
+**Plans**: 34/38 plans executed
 
 Plans:
 **Wave 1**
@@ -190,7 +190,7 @@ waves 22/23 (01-14 `depends_on: ["01-38"]`) so they run *after* this reorg rathe
 three-ring boundaries and 01-37 moved `dal.ts`; its theme cookie module now lands at
 `src/lib/server/theme.ts` in the server ring (01-REVIEWS.md LOW #5):
 
-- [ ] 01-36-PLAN.md — three-ring boundaries policy turned on (with a transitional legacy scaffold so lint stays green mid-move) and the pure `lib/core/` ring moved (GC-25, GC-28)
+- [x] 01-36-PLAN.md — three-ring boundaries policy turned on (with a transitional legacy scaffold so lint stays green mid-move) and the pure `lib/core/` ring moved (GC-25, GC-28)
 - [ ] 01-37-PLAN.md — `lib/server/` and `lib/client/` rings moved, `model.ts`/`actions.ts`/`schemas.ts` relocated into the auth feature, emptied folders removed, transitional legacy eslint scaffold removed (GC-25, GC-26, GC-27)
 - [ ] 01-38-PLAN.md — CONVENTIONS.md's project-organization section rewritten for the three rings and `model.ts` (GC-30)
 
@@ -272,7 +272,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 33/38 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 34/38 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
