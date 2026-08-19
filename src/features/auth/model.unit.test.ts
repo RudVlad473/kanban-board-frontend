@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveDisplayName } from "./display-name";
+import { resolveDisplayName } from "./model";
 
 describe("resolveDisplayName", () => {
     it("returns the trimmed name when one is present", () => {

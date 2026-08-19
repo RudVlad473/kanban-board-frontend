@@ -3,8 +3,8 @@ import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render, type RenderResult } from "vitest-browser-react";
 
-import { AUTH_ACTION_IDLE, type AuthActionState } from "@/features/auth/api/auth-action-state";
-import { signInAction } from "@/features/auth/api/auth-actions";
+import { AUTH_ACTION_IDLE, type AuthActionState } from "@/features/auth/action-state";
+import { signInAction } from "@/features/auth/actions";
 import { PROBLEM_CODE, type ProblemCode } from "@/lib/core/api-contract/problem-detail";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
@@ -22,7 +22,7 @@ import * as signInStories from "./sign-in-form.stories";
 const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed } = composeStories(signInStories);
 
 /*
- * `SignInForm` submits directly to `signInAction` (`@/features/auth/api/auth-actions`) through
+ * `SignInForm` submits directly to `signInAction` (`@/features/auth/actions`) through
  * `useActionState` — the server function this app's form now calls, replacing the deleted fetch
  * wrapper and mutation hook (plan 01-33). Stubbing that module boundary — not a network layer —
  * keeps the real component tree, the real resolver and real rendering under test, while never
@@ -31,7 +31,7 @@ const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed }
  * imported through the mock factory (Vitest's hoisting forbids referencing an out-of-scope
  * variable inside `vi.mock`'s factory) — its shape must stay byte-identical to the real constant.
  */
-vi.mock("@/features/auth/api/auth-actions", () => ({
+vi.mock("@/features/auth/actions", () => ({
     signInAction: vi.fn(),
     AUTH_ACTION_IDLE: { status: "idle" },
 }));

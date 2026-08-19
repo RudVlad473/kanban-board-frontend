@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { signInSchema, signUpSchema, zodErrorToFieldErrors } from "./auth-schemas";
+import { signInSchema, signUpSchema, zodErrorToFieldErrors } from "./schemas";
 
 const VALID_EMAIL = "user@example.com";
 const VALID_PASSWORD = "Correct1Password!";

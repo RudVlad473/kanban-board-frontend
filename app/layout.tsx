@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 
-import { QueryProvider } from "@/lib/query-client";
+import { QueryProvider } from "@/lib/client/query-client";
 
 export const metadata: Metadata = {
     title: "Kanban Board",

@@ -1,7 +1,7 @@
 import { SignJWT } from "jose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createSessionService, type SessionPayload, type SessionRecord } from "@/lib/session";
+import { createSessionService, type SessionPayload, type SessionRecord } from "@/lib/server/session";
 
 type CookieRecord = { value: string; options?: Record<string, unknown> };
 

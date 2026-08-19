@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isProtectedPath, isPublicPath, ROUTE } from "@/lib/core/routing/routes";
-import { session, SESSION_COOKIE_NAME } from "@/lib/session";
+import { session, SESSION_COOKIE_NAME } from "@/lib/server/session";
 
 /*
  * The Next.js 16 file convention (renamed from `middleware.ts` — RESEARCH.md Pitfall 2). This is

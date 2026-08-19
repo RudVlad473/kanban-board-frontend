@@ -3,7 +3,7 @@ import type { PropsWithChildren } from "react";
 
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { ROUTE } from "@/lib/core/routing/routes";
-import { verifySession } from "@/lib/dal";
+import { verifySession } from "@/lib/server/dal";
 
 /*
  * The authoritative check (RESEARCH.md Security Domain, T-01-05) — `proxy.ts`'s guard is an

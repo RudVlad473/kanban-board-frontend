@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { render, type RenderResult } from "vitest-browser-react";
 
-import { QueryProvider } from "@/lib/query-client";
+import { QueryProvider } from "@/lib/client/query-client";
 
 /**
  * Mounts `element` inside this app's provider tree (`QueryProvider` today; the future global

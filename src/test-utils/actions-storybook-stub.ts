@@ -1,7 +1,7 @@
 /**
- * A lightweight stand-in for `@/features/auth/api/auth-actions`'s runtime module, aliased for the
+ * A lightweight stand-in for `@/features/auth/actions`'s runtime module, aliased for the
  * "storybook" Vitest project only (`vitest.config.ts`). The real module opens with `"use server"`
- * and imports `@/lib/session`, whose chain reaches `node:crypto` — Next.js's own build splits a
+ * and imports `@/lib/server/session`, whose chain reaches `node:crypto` — Next.js's own build splits a
  * `"use server"` module's body out of whatever client bundle references it, but
  * `@storybook/nextjs-vite`'s Vitest-driven story rendering has no such split: it bundles the real
  * module whole for the browser, and `node:crypto` isn't available there ("Module 'node:crypto' has

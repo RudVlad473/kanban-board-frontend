@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { session, type SessionRecord } from "@/lib/session";
+import { session, type SessionRecord } from "@/lib/server/session";
 
 /*
  * DAL = Data Access Layer — Next.js App Router's own documented auth-pattern term (ADR
