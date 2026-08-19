@@ -27,6 +27,13 @@ const requestedProjects = process.argv.flatMap((arg, index, argv) => {
 const runsOnlyProject = (name: string): boolean =>
     requestedProjects.length > 0 && requestedProjects.every((project) => project === name);
 
+/*
+ * An unfiltered invocation (no `--project` at all) runs every project, `e2e` included — so the
+ * reset-capability precondition below must apply then too, not only when `e2e` is named
+ * explicitly.
+ */
+const includesProject = (name: string): boolean => requestedProjects.length === 0 || requestedProjects.includes(name);
+
 const visualWebServer: NonNullable<PlaywrightTestConfig["webServer"]> = {
     command: `node scripts/serve-static.mjs storybook-static ${String(PORT)}`,
     url: `http://localhost:${String(PORT)}`,
@@ -73,6 +80,13 @@ export default defineConfig({
      * with a Windows-rendered PNG.
      */
     ignoreSnapshots: !process.env.CI,
+    /*
+     * The `e2e` project creates real accounts on the shared nonprod backend and refuses to run at
+     * all without a working reset capability (`e2e/global-setup.ts`, `SETUP.md`) — a hard
+     * precondition, not best-effort cleanup. Only wired in when this run actually includes `e2e`,
+     * so a `visual`-only invocation (which never touches nonprod) is unaffected.
+     */
+    globalSetup: includesProject("e2e") ? "./e2e/global-setup.ts" : undefined,
     webServer: runsOnlyProject("visual")
         ? visualWebServer
         : runsOnlyProject("e2e")

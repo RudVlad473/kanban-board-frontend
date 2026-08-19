@@ -172,8 +172,14 @@ jobs:
             - name: Generate a workflow-scoped session secret
               run: echo "SESSION_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
 
+            # `playwright.config.ts`'s `globalSetup` (`e2e/global-setup.ts`) now refuses to run the
+            # suite at all without a working `NONPROD_RESET_TOKEN` — the same secret the "Reset
+            # nonprod state" step below already reads, now also required by the Playwright process
+            # itself as a precondition, not only for its own post-suite cleanup.
             - name: Run E2E tests
               run: pnpm exec playwright test --project e2e
+              env:
+                  NONPROD_RESET_TOKEN: ${{ secrets.NONPROD_RESET_TOKEN }}
 
             # GC-23: this job's suite runs against the real, built application (playwright.config.ts's
             # e2e webServer), creating real accounts/sessions in nonprod's shared database. `if: always()`

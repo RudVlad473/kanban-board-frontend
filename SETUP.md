@@ -21,6 +21,18 @@ Omitting either currently produces a `SESSION_SECRET is not set` failure during 
 established pattern. See `.env.example` for the exact variable names and further inline
 documentation.
 
+## `NONPROD_RESET_TOKEN` — required before `pnpm exec playwright test --project e2e`
+
+The `e2e` Playwright project creates real, permanent accounts on the shared nonprod backend (see
+the next section). Its `globalSetup` (`e2e/global-setup.ts`) calls the backend's own
+`POST /admin/reset` before any spec runs, and **refuses to run the suite at all** if that call
+fails — availability of the reset endpoint and a working token to call it is a precondition, not
+an afterthought cleanup step. Set `NONPROD_RESET_TOKEN` in your environment (or `.env.local`) to
+the same value CI's `NONPROD_RESET_TOKEN` repository secret holds (the `APP_RESET_TOKEN` value in
+the backend host's `.env.nonprod` — see `kanban-board-backend/.env.nonprod.example`) before
+running `--project e2e` locally. Omitting it fails fast with a clear error instead of letting the
+suite silently accumulate orphaned accounts with no way to clean them up.
+
 ## This project runs no fake HTTP layer (docs/adr/tech/0018)
 
 Development (`pnpm dev`), every automated test layer (unit, component, e2e), and CI all dial the
