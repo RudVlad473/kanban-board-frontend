@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { ROUTE } from "@/lib/routes";
+import { ROUTE } from "@/lib/core/routing/routes";
 
 import { ErrorFallback } from "./error-fallback";
 

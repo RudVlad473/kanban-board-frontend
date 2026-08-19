@@ -16,7 +16,7 @@ import { previewAnnotations } from "./preview-annotations";
  * which don't line up with the tokens mobile-first CSS is actually written against. The
  * `viewport` parameter/global is Storybook core in this version (10.5.7) — no separate addon
  * package needed, only this configuration. Sizes come from the shared
- * `src/lib/viewport-breakpoints.ts` module (also read by the Playwright visual spec and the
+ * `src/lib/core/viewport/viewport-breakpoints.ts` module (also read by the Playwright visual spec and the
  * Vitest dual-viewport test util) so all three stay numerically identical by construction.
  *
  * The actual parameters/globalTypes/initialGlobals/decorators values live in

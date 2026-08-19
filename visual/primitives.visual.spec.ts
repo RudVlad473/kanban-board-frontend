@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { DEVICE_TYPE, VIEWPORT_SIZES } from "../src/lib/viewport-breakpoints";
+import { DEVICE_TYPE, VIEWPORT_SIZES } from "../src/lib/core/viewport/viewport-breakpoints";
 
 /*
  * Visual-regression baselines for every design-system primitive's stories (D-22, ADR tech/0008)
@@ -80,7 +80,7 @@ const storyIds = [
 /*
  * ADR tech/0010: every story above is captured at both viewports — Playwright itself resizes the
  * page before navigating (`page.setViewportSize`, driven by the same shared
- * `src/lib/viewport-breakpoints.ts` sizes `.storybook/preview.ts`'s toolbar control and the
+ * `src/lib/core/viewport/viewport-breakpoints.ts` sizes `.storybook/preview.ts`'s toolbar control and the
  * Vitest dual-viewport test util both read) — rather than a separate `Mobile*` story export per
  * primitive. Storybook's own `viewport` global/toolbar only resizes a nested manager iframe that
  * doesn't exist when a test navigates directly to `/iframe.html` the way this spec does, so it

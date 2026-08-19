@@ -1,7 +1,7 @@
-import { ROUTE } from "@/lib/routes";
+import { ROUTE } from "@/lib/core/routing/routes";
 
 /*
- * The public landing route (`src/lib/routes.ts`'s `PUBLIC_PATHS`). The temporary theme probe
+ * The public landing route (`src/lib/core/routing/routes.ts`'s `PUBLIC_PATHS`). The temporary theme probe
  * added in plan 01-04 is gone — plan 01-14 lands the real Switch-driven, account-persisted theme
  * toggle. A signed-in visitor is redirected away from here to `/boards` by `proxy.ts` before this
  * ever renders.

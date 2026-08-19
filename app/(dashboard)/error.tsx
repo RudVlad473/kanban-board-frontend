@@ -1,7 +1,7 @@
 "use client";
 
 import { ErrorFallback } from "@/components/layout/error-fallback/error-fallback";
-import { ROUTE } from "@/lib/routes";
+import { ROUTE } from "@/lib/core/routing/routes";
 
 /*
  * Next.js requires every error boundary to be a client component. This is the protected route

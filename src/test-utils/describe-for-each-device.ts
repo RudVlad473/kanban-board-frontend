@@ -1,7 +1,7 @@
 import { beforeEach, describe } from "vitest";
 import { page } from "vitest/browser";
 
-import { DEVICE_TYPE, VIEWPORT_SIZES, type DeviceType } from "@/lib/viewport-breakpoints";
+import { DEVICE_TYPE, VIEWPORT_SIZES, type DeviceType } from "@/lib/core/viewport/viewport-breakpoints";
 
 /**
  * Runs the same test body once per `DeviceType`, resizing the Vitest Browser Mode test iframe

@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import type { PropsWithChildren } from "react";
 
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { ROUTE } from "@/lib/core/routing/routes";
 import { verifySession } from "@/lib/dal";
-import { ROUTE } from "@/lib/routes";
 
 /*
  * The authoritative check (RESEARCH.md Security Domain, T-01-05) — `proxy.ts`'s guard is an
