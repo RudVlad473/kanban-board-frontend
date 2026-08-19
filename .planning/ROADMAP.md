@@ -123,11 +123,11 @@ Plans:
 
 - [x] 01-13-PLAN.md — route guard with defence in depth and auth end-to-end specs (AUTH-03)
 
-**Wave 19** *(blocked on Wave 13 completion)*
+**Wave 22** *(blocked on 01-38; re-sequenced from wave 19 per 01-REVIEWS.md HIGH #2 to run after the round-4 lib reorg rather than concurrently with it)*
 
 - [ ] 01-14-PLAN.md — theme persistence and toggle (THEME-01)
 
-**Wave 20** *(blocked on Wave 19 completion)*
+**Wave 23** *(blocked on Wave 22 completion)*
 
 - [ ] 01-15-PLAN.md — Vercel Preview and Production deployment, verified on the live URLs
 
@@ -164,8 +164,10 @@ runs no earlier than wave 14:
 Gap closure round 3 (added 2026-08-18 — 01-CONTEXT.md items GC-18..GC-24: real-backend integration,
 session-cookie bridging, the auth Server Actions migration, mock removal, CI reset wiring and the
 ADR carve-out). Nonprod going live turned "point the base URL at a real backend" into real work, and
-these carry waves 14-18. They execute *before* 01-14 and 01-15, which now carry waves 19 and 20 —
-01-14 depends on 01-35, which settles the shape its theme persistence takes:
+these carry waves 14-18. They execute *before* 01-14 and 01-15, which carry waves 22 and 23 (see the
+round-4 note below — re-sequenced per 01-REVIEWS.md HIGH #2 to run after the lib reorg). 01-35 still
+settles the shape 01-14's theme persistence takes, and 01-14 now depends on 01-38 so it lands after
+both that decision and the reorg:
 
 - [x] 01-30-PLAN.md — contract regenerated from the live backend, mock server deleted, every test target repointed (GC-19, GC-22)
 - [x] 01-32-PLAN.md — session-cookie bridging to the real backend, proven end to end, with forced sign-out on upstream expiry (GC-18)
@@ -180,10 +182,14 @@ per-feature `model.ts`, feature-file naming, `eslint-plugin-boundaries` policy, 
 CONVENTIONS.md update). A pure reorganisation — file moves, renames, import-path updates, one eslint
 config change, no behaviour change. Per GC-29 these carry waves 19-21 and must land *after* 01-33 and
 01-34 merge (they rename/move `features/auth/actions.ts`, formerly `auth-actions.ts`), and after
-01-35 (which also edits CONVENTIONS.md):
+01-35 (which also edits CONVENTIONS.md). Per 01-REVIEWS.md HIGH #2, 01-14/01-15 were re-sequenced to
+waves 22/23 (01-14 `depends_on: ["01-38"]`) so they run *after* this reorg rather than concurrently —
+01-14 was creating `src/lib/theme.ts` and touching `app/api/` at the exact moment 01-36 turned on the
+three-ring boundaries and 01-37 moved `dal.ts`; its theme cookie module now lands at
+`src/lib/server/theme.ts` in the server ring (01-REVIEWS.md LOW #5):
 
-- [ ] 01-36-PLAN.md — three-ring boundaries policy turned on and the pure `lib/core/` ring moved (GC-25, GC-28)
-- [ ] 01-37-PLAN.md — `lib/server/` and `lib/client/` rings moved, `model.ts`/`actions.ts`/`schemas.ts` relocated into the auth feature, emptied folders removed (GC-25, GC-26, GC-27)
+- [ ] 01-36-PLAN.md — three-ring boundaries policy turned on (with a transitional legacy scaffold so lint stays green mid-move) and the pure `lib/core/` ring moved (GC-25, GC-28)
+- [ ] 01-37-PLAN.md — `lib/server/` and `lib/client/` rings moved, `model.ts`/`actions.ts`/`schemas.ts` relocated into the auth feature, emptied folders removed, transitional legacy eslint scaffold removed (GC-25, GC-26, GC-27)
 - [ ] 01-38-PLAN.md — CONVENTIONS.md's project-organization section rewritten for the three rings and `model.ts` (GC-30)
 
 **UI hint**: yes
