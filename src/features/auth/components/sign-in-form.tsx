@@ -2,13 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
-import { useSignIn } from "@/features/auth/hooks/use-sign-in";
+import { AUTH_ACTION_IDLE } from "@/features/auth/api/auth-action-state";
+import { signInAction } from "@/features/auth/api/auth-actions";
 import { ROUTE } from "@/lib/routes";
 import { signInSchema, type SignInInput } from "@/lib/validation/auth-schemas";
 
@@ -18,14 +19,25 @@ import { signInSchema, type SignInInput } from "@/lib/validation/auth-schemas";
  */
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 
+/**
+ * `FormData.get()` returns `FormDataEntryValue | null` (`string | File | null`) — every field in
+ * this form is a text input, so a non-string entry never legitimately occurs, but reading it
+ * through `String(...)` regardless would silently stringify a `File` to `"[object File]"` rather
+ * than surface the mismatch. Returns `""` for anything that isn't already a string.
+ */
+const readFormField = ({ formData, key }: { formData: FormData; key: string }): string => {
+    const value = formData.get(key);
+    return typeof value === "string" ? value : "";
+};
+
 type Props = {
     /** Pre-fills field values (a plain React Hook Form `defaultValues` passthrough) — used by the "Filled" story, mirroring Dropdown's `defaultOpen`/TextField's `defaultValue` staging pattern (D-25's non-interactive alternative to a play function). */
     defaultValues?: Partial<SignInInput>;
     /** Storybook-only staging — renders both fields' required-error state without a real submit. */
     forceFieldErrors?: boolean;
-    /** Storybook-only staging — renders the form-level failure banner without a real failed mutation. */
+    /** Storybook-only staging — renders the form-level failure banner without a real failed action. */
     forceServerError?: string;
-    /** Storybook-only staging — renders the submit control's disabled/loading state without a real pending mutation. */
+    /** Storybook-only staging — renders the submit control's disabled/loading state without a real pending action. */
     forceSubmitting?: boolean;
     /** Storybook-only staging — renders the password field already revealed. */
     defaultPasswordRevealed?: boolean;
@@ -34,8 +46,11 @@ type Props = {
 /**
  * React Hook Form + Zod sign-in form, mirroring sign-up-form.tsx's structure over `signInSchema` —
  * Email and Password fields, the "Sign In" primary CTA, and the same form-level live error
- * region. A rejected sign-in clears the password field (retyping a mistyped password is friction
- * with no security benefit) while leaving the email in place.
+ * region. Submits through the form element's own `action` (`useActionState` + `signInAction`), so
+ * it works before hydration — React Hook Form stays for display-time validation only (`mode:
+ * "onTouched"`), never gating submission itself. A rejected sign-in clears the password field
+ * (retyping a mistyped password is friction with no security benefit) while leaving the email in
+ * place.
  */
 export const SignInForm = ({
     defaultValues,
@@ -45,11 +60,11 @@ export const SignInForm = ({
     defaultPasswordRevealed = false,
 }: Props) => {
     const [isPasswordRevealed, setIsPasswordRevealed] = useState(defaultPasswordRevealed);
-    const mutation = useSignIn();
+    const [state, dispatch, isActionPending] = useActionState(signInAction, AUTH_ACTION_IDLE);
     const {
         register,
-        handleSubmit,
         resetField,
+        setValue,
         formState: { errors },
     } = useForm<SignInInput>({
         resolver: zodResolver(signInSchema),
@@ -57,31 +72,74 @@ export const SignInForm = ({
         defaultValues,
     });
 
-    const isPending = forceSubmitting || mutation.isPending;
-    const serverErrorMessage = forceServerError ?? (mutation.isError ? mutation.error.message : undefined);
+    /*
+     * React resets every uncontrolled field inside a `<form action={fn}>` once the action settles
+     * — the same progressive-enhancement default a plain HTML form gets after a completed,
+     * non-navigating submission (React's own `requestFormReset`, fired unconditionally by the host
+     * `<form>` component around every action call, success or failure alike). Captured here so it
+     * can be undone selectively below: `null` until the first real submission, so the effect never
+     * fires on mount.
+     */
+    const lastSubmittedRef = useRef<{ email: string; password: string } | null>(null);
+    const formAction = (formData: FormData) => {
+        lastSubmittedRef.current = {
+            email: readFormField({ formData, key: "email" }),
+            password: readFormField({ formData, key: "password" }),
+        };
+        dispatch(formData);
+    };
 
-    const onSubmit = handleSubmit((data) => {
-        mutation.mutate(data, {
-            onError: () => {
-                resetField("password");
-            },
-        });
-    });
+    /*
+     * Undoes React's own reset once the action settles, restoring the email in every case and the
+     * password only when there was no error — a rejected sign-in instead explicitly clears the
+     * password (retyping a mistyped password is friction with no security benefit, and retyping a
+     * correct address is friction with no benefit at all). Keyed on `isActionPending`, not `state`:
+     * a mocked/real resolution that happens to be reference-equal to the previous state (e.g. this
+     * component's own tests resolving back to the shared `AUTH_ACTION_IDLE` constant) would
+     * otherwise never re-run this effect at all, since `useActionState`'s `Object.is` bailout skips
+     * updating `state` for a value identical to what it already held.
+     */
+    useEffect(() => {
+        if (isActionPending) {
+            return;
+        }
+
+        const submitted = lastSubmittedRef.current;
+        if (!submitted) {
+            return;
+        }
+
+        setValue("email", submitted.email);
+        if (state.status === "error") {
+            resetField("password");
+        } else {
+            setValue("password", submitted.password);
+        }
+    }, [isActionPending, state, resetField, setValue]);
+
+    const isPending = forceSubmitting || isActionPending;
+    const serverErrorMessage = forceServerError ?? (state.status === "error" ? state.message : undefined);
+
+    /*
+     * Merge precedence: a client-side field error (React Hook Form's own `formState.errors`, from
+     * `mode: "onTouched"`) takes precedence over one the server function returned for the same
+     * field, because it is the more recent judgement of what the user currently has typed — the
+     * server's field errors reflect the values as of the last submission, which may already be
+     * stale by the time this renders.
+     */
+    const emailErrorMessage =
+        errors.email?.message ?? (state.status === "error" ? state.fieldErrors?.email : undefined);
+    const passwordErrorMessage =
+        errors.password?.message ?? (state.status === "error" ? state.fieldErrors?.password : undefined);
 
     return (
-        <form
-            noValidate
-            onSubmit={(event) => {
-                void onSubmit(event);
-            }}
-            className="flex flex-col gap-4"
-        >
+        <form noValidate action={formAction} className="flex flex-col gap-4">
             <TextField
                 label="Email"
                 type="email"
                 isLoading={isPending}
-                hasError={forceFieldErrors || Boolean(errors.email)}
-                errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.email?.message}
+                hasError={forceFieldErrors || Boolean(emailErrorMessage)}
+                errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : emailErrorMessage}
                 {...register("email")}
             />
 
@@ -89,8 +147,8 @@ export const SignInForm = ({
                 label="Password"
                 type={isPasswordRevealed ? "text" : "password"}
                 isLoading={isPending}
-                hasError={forceFieldErrors || Boolean(errors.password)}
-                errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : errors.password?.message}
+                hasError={forceFieldErrors || Boolean(passwordErrorMessage)}
+                errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : passwordErrorMessage}
                 trailing={
                     <IconButton
                         type="button"

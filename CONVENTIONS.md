@@ -86,7 +86,7 @@ src/
 | Kind | Suffix | Location | Vitest/Playwright project | When to use |
 |------|--------|----------|---------------------------|-------------|
 | Component/behavioral | `*.test.tsx` | Co-located with the component | Vitest `browser` project (`vitest-browser-react`) | Anything needing real CSS/`getComputedStyle()` or axe-relevant rendering |
-| Hook/logic | `*.unit.test.{ts,tsx}` | Co-located with the hook or module | Vitest `unit` project (jsdom, `renderHook`/React Testing Library) | Pure logic and TanStack Query hooks, mocking their own API module rather than real layout/paint — canonical example: `src/features/auth/hooks/use-sign-in.unit.test.tsx` |
+| Hook/logic | `*.unit.test.{ts,tsx}` | Co-located with the hook or module | Vitest `unit` project (jsdom, `renderHook`/React Testing Library) | Pure logic and TanStack Query hooks, mocking their own API module rather than real layout/paint — canonical example: `src/features/auth/api/auth-actions.unit.test.ts` (a server function's own logic test; a hook-*rendering* example, via `renderHook`, returns with plan 01-14's theme preference hook — sign-in/sign-up's hooks were deleted in plan 01-33) |
 | Story/a11y | `*.stories.tsx` | Co-located with the component | Vitest `storybook` project (`@storybook/addon-vitest`) | Visual states only per D-25, no play functions |
 | Visual regression | `*.visual.spec.ts` | Under `visual/` | Playwright `visual` project | `components/ui/` primitives only per ADR tech/0011 |
 | End-to-end | `*.e2e.spec.ts` | Under `e2e/` | Playwright `e2e` project | Full-navigation/server behavior |
