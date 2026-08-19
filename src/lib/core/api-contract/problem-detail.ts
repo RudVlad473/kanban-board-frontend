@@ -41,7 +41,7 @@ const isProblemCode = (value: unknown): value is ProblemCode =>
 
 /**
  * Runtime guard for an unverified value claiming to be a `ProblemDetail` — shaped like
- * `isSessionPayload` (`src/lib/session.ts`): every failure mode returns `null` rather than
+ * `isSessionPayload` (`src/lib/server/session.ts`): every failure mode returns `null` rather than
  * throwing, so no caller can mistake a rejection for a transient error. Rejects (returns `null`
  * for) anything that is not a well-formed problem response, including an object whose `code` is
  * not a member of `PROBLEM_CODE` — a half-populated value is never returned.

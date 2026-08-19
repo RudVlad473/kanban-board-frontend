@@ -3,12 +3,12 @@ import "server-only";
 import { redirect } from "next/navigation";
 import createClient from "openapi-fetch";
 
-import { toUpstreamCookieHeader } from "@/lib/api/session-cookie";
 import type { paths } from "@/lib/core/api-contract/generated-types";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
-import { verifySession } from "@/lib/dal";
-import { session } from "@/lib/session";
+import { verifySession } from "@/lib/server/dal";
+import { session } from "@/lib/server/session";
+import { toUpstreamCookieHeader } from "@/lib/server/session-cookie";
 
 /*
  * ADR tech/0006 forbids a hardcoded API base URL — a fallback default value here would silently

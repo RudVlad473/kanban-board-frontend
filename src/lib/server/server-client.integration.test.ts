@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { externalApi } from "@/lib/api/server-client";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
-import { isSessionPayload, session } from "@/lib/session";
+import { externalApi } from "@/lib/server/server-client";
+import { isSessionPayload, session } from "@/lib/server/session";
 
 /*
  * There is no real Next.js request scope in a Vitest run, so `next/headers`' `cookies()` is
- * mocked with the same in-memory jar `src/lib/session.test.ts` uses. Nothing else is mocked —
+ * mocked with the same in-memory jar `src/lib/server/session.test.ts` uses. Nothing else is mocked —
  * every call in this file dials the real, deployed nonprod backend (GC-22: no mock server remains
  * anywhere), which is the entire point of this test: it is the permanent proof that the session
  * bridge authenticates a real call against the real backend, not a fake.

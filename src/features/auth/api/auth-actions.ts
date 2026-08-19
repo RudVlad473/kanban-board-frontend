@@ -3,12 +3,12 @@
 import { redirect } from "next/navigation";
 
 import { type AuthActionState } from "@/features/auth/api/auth-action-state";
-import { externalApi } from "@/lib/api/server-client";
-import { extractUpstreamSessionId } from "@/lib/api/session-cookie";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { resolveDisplayName } from "@/lib/display-name";
-import { isSessionPayload, session } from "@/lib/session";
+import { externalApi } from "@/lib/server/server-client";
+import { isSessionPayload, session } from "@/lib/server/session";
+import { extractUpstreamSessionId } from "@/lib/server/session-cookie";
 import { signInSchema, signUpSchema, zodErrorToFieldErrors } from "@/lib/validation/auth-schemas";
 
 /*

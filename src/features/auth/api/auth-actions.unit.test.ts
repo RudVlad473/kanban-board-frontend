@@ -1,25 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { externalApi } from "@/lib/api/server-client";
 import { PROBLEM_CODE, type ProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
+import { externalApi } from "@/lib/server/server-client";
 
 import { AUTH_ACTION_IDLE } from "./auth-action-state";
 import { signInAction, signOutAction, signUpAction } from "./auth-actions";
 
 /*
- * `@/lib/api/server-client` is the real network boundary and the only thing worth stubbing
+ * `@/lib/server/server-client` is the real network boundary and the only thing worth stubbing
  * (GC-22) — `externalApi.POST` is seeded per test with the response shapes the live backend
  * actually returns, recorded in plan 01-30's summary and kanban-board-backend's own
  * docs/AUTH_FLOWS.md, not invented ones.
  */
-vi.mock("@/lib/api/server-client", () => ({
+vi.mock("@/lib/server/server-client", () => ({
     externalApi: { POST: vi.fn() },
 }));
 
 /*
  * `next/headers`'s `cookies()` requires a real Next.js request scope this plain Vitest test has
- * none of — stubbed with the same in-memory cookie jar `src/lib/session.test.ts` uses, so
+ * none of — stubbed with the same in-memory cookie jar `src/lib/server/session.test.ts` uses, so
  * `session.ts` itself (unmocked) runs its real create/verify logic against it.
  */
 type CookieRecord = { value: string; options?: Record<string, unknown> };

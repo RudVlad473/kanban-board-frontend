@@ -1,7 +1,7 @@
 import type { Decorator } from "@storybook/react";
 
+import { QueryProvider } from "@/lib/client/query-client";
 import { DEVICE_TYPE, VIEWPORT_SIZES } from "@/lib/core/viewport/viewport-breakpoints";
-import { QueryProvider } from "@/lib/query-client";
 
 /*
  * The raw project-annotations object `.storybook/preview.tsx` passes into `definePreview` —

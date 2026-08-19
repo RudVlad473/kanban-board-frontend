@@ -4,7 +4,7 @@ import {
     extractUpstreamSessionId,
     toUpstreamCookieHeader,
     UPSTREAM_SESSION_COOKIE_NAME,
-} from "@/lib/api/session-cookie";
+} from "@/lib/server/session-cookie";
 
 const responseWithSetCookies = (setCookiePairs: string[]): Response => {
     const response = new Response(null);

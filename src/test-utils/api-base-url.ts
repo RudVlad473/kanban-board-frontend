@@ -6,7 +6,7 @@
  * backend). Deliberately dependency-free and free of anything browser-only — `vitest.config.ts`
  * imports this module directly at config-evaluation time, outside any test environment.
  *
- * Application code is unaffected by this module — `src/lib/api/server-client.ts` keeps its
+ * Application code is unaffected by this module — `src/lib/server/server-client.ts` keeps its
  * fail-fast read with no fallback of its own, since ADR tech/0006 forbids a hardcoded default
  * there; this file exists only for test infrastructure (ADR tech/0014).
  */

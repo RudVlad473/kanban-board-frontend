@@ -61,7 +61,11 @@ export default defineConfig({
                      */
                     name: "node",
                     environment: "node",
-                    include: ["src/lib/session.test.ts", "app/api/auth/**/*.test.ts", "src/**/*.integration.test.ts"],
+                    include: [
+                        "src/lib/server/session.test.ts",
+                        "app/api/auth/**/*.test.ts",
+                        "src/**/*.integration.test.ts",
+                    ],
                     env: {
                         EXTERNAL_API_BASE_URL: resolveTestApiBaseUrl(),
                         SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",
