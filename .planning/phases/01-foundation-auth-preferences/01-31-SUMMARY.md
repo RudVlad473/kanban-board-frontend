@@ -9,7 +9,7 @@ requires:
   - phase: 01-foundation-auth-preferences
     provides: real-backend integration (01-30) and the server-client integration test that dials nonprod from inside the quality job's `pnpm test` (01-32)
 provides:
-  - "A post-suite `POST /api/admin/reset` cleanup step in both `quality` and `e2e` — code is correct and pushed, but not yet proven green (see Checkpoint below)"
+  - "A post-suite `POST /api/admin/reset` cleanup step in both `quality` and `e2e` — code is correct, pushed, and now proven green: `NONPROD_RESET_TOKEN` exists in the repo (confirmed via `gh api .../actions/secrets`, created 2026-08-18T20:15:10Z) and CI run 32241550956 (2026-08-19) shows both `quality` and `e2e` passing with the reset step's token masked (set) and the job not failing on the 204 check"
   - "A fix for a pre-existing, unrelated `quality`-job build failure (missing `SESSION_SECRET`) that was silently blocking every CI run on master before this plan"
 affects: [01-33, 01-34, 01-35]
 
@@ -47,19 +47,22 @@ coverage:
   - id: D2
     description: "A real pipeline run on the GitHub remote is green with the reset step executing successfully (204)"
     requirement: "AUTH-02"
-    verification: []
-    human_judgment: true
-    rationale: "NOT achieved. Two live runs (32179518739, 32180145965) both show the reset step receiving 403 with an EMPTY X-Reset-Token header — secrets.NONPROD_RESET_TOKEN resolves to nothing at workflow runtime. gh api repos/RudVlad473/kanban-board-frontend/actions/secrets independently confirms total_count: 0 — no repository secret exists in this repo at all, despite the Task 1 checkpoint being resolved as \"done\" (user reported adding it and getting a manual 204). This is a genuine precondition-not-met situation discovered empirically after the checkpoint was already marked resolved, not a re-demand of the credential itself. See Checkpoint section below — a human needs to actually add the secret (or find out why the addition didn't persist) before this can be verified."
+    verification:
+      - kind: other
+        ref: "gh run view 32241550956 — quality and e2e jobs both green, reset step's X-Reset-Token shown masked (set) in the log; gh api repos/RudVlad473/kanban-board-frontend/actions/secrets shows NONPROD_RESET_TOKEN present (created 2026-08-18T20:15:10Z)"
+        status: pass
+    human_judgment: false
+    rationale: "RESOLVED after this SUMMARY was first written. The initial two live runs (32179518739, 32180145965) genuinely failed with an empty token / zero secrets, as originally documented below. The user subsequently added the secret to the correct repo (see .continue-here.md's 2026-08-18T21:05 note: \"user first added the secret to the wrong repo, then corrected it\"). Re-verified 2026-08-19 via `gh api .../actions/secrets` (1 secret present) and CI run 32241550956 (quality + e2e both pass, reset step's token no longer empty). The only failing job on that run is `visual`, a pre-existing, unrelated screenshot-baseline gap (see .continue-here.md) — not part of this plan's `files_modified` or acceptance criteria."
 
 # Metrics
 duration: ~35min
-completed: 2026-08-18
-status: halted
+completed: 2026-08-19
+status: complete
 ---
 
 # Phase 01 Plan 31: Reset nonprod state after real-backend CI suites Summary
 
-**The CI reset-step wiring for GC-23 is written, committed, and pushed — but the pipeline is NOT yet proven green, because the `NONPROD_RESET_TOKEN` GitHub Actions repository secret this plan's own precondition claimed was added does not actually exist in the repo (`gh api .../actions/secrets` reports zero secrets, and two live runs show the token header empty).**
+**The CI reset-step wiring for GC-23 is written, committed, pushed, and now proven green: `NONPROD_RESET_TOKEN` exists in the repo and CI run 32241550956 (2026-08-19) shows `quality` and `e2e` both passing with the reset step executing successfully. (Originally halted — the first two live runs showed the token empty and zero secrets in the repo; resolved once the user added the secret to the correct repository, per `.continue-here.md`.)**
 
 ## Performance
 
@@ -124,25 +127,18 @@ The checkpoint resolution this executor was given states the user confirmed addi
 
 This executor did not attempt to read, derive, or guess the secret's value — none of the above required that. It only observed that the GitHub-side half of Task 1 (adding the value as a repository secret via Settings → Secrets and variables → Actions) does not appear to have persisted, been saved to this repo, or is not visible to this authenticated `gh` session for some other reason. Per the plan's own `<precondition>` rule, an unmet precondition is never auto-approved — this is surfaced as a checkpoint below rather than silently proceeding to claim a green run that did not happen.
 
-## User Setup Required
-
-**Blocking — required before this plan can be marked complete:**
-
-1. Go to `github.com/RudVlad473/kanban-board-frontend` → Settings → Secrets and variables → Actions.
-2. Confirm whether `NONPROD_RESET_TOKEN` is actually listed there. (As of this run, `gh api repos/RudVlad473/kanban-board-frontend/actions/secrets` shows zero secrets of any name in this repo — so most likely it is genuinely absent, not just misnamed.)
-3. If absent, add it again with the same `APP_RESET_TOKEN` value from the backend host's `.env.nonprod` (never commit it anywhere).
-4. Once added, either re-run the existing pushed workflow run or push again — the code side of this plan (`.github/workflows/ci.yml`, commits `1c85b4c` and `c4a3d92`) is already correct and needs no further changes to pick it up.
+**Resolution (2026-08-19):** The user added `NONPROD_RESET_TOKEN` to the correct repository (per `.continue-here.md`: it was first added to the wrong repo, then corrected). `gh api repos/RudVlad473/kanban-board-frontend/actions/secrets` now shows the secret present (`created_at: 2026-08-18T20:15:10Z`), and CI run `32241550956` (2026-08-19) shows `quality` and `e2e` both green with the reset step's `X-Reset-Token` masked (i.e. non-empty) in the log. Plan closed as complete; see coverage `D2` above.
 
 ## Next Phase Readiness
 
-- The code change is complete, verified statically, committed, and pushed to `origin/worktree-agent-a234de1b618af7fe2` — nothing further to write.
-- **This plan is NOT complete.** Its own `must_haves` explicitly requires "a real pipeline run on the GitHub remote, not... a locally valid workflow file" — that has not been achieved, twice, for a reason outside this executor's ability to fix (adding a GitHub repository secret requires the GitHub UI/an authenticated human, not just repo write access).
-- Once the secret is genuinely present, a fresh executor (or the orchestrator) should re-trigger the workflow on this branch (or after merge) and confirm both `quality` and `e2e` go green with the `Reset nonprod state` step showing a real `204`, then update this SUMMARY's `status` to `complete` and its coverage `D2` entry accordingly.
-- The `SESSION_SECRET` fix in `c4a3d92` benefits every other in-flight and future plan too — `master`'s `quality` job has been red on every push for at least a day; that fix should land regardless of this plan's own outcome.
+- The code change is complete, verified statically, committed, merged to master, and now proven green on a live CI run — nothing further to write.
+- **This plan is complete.** Its `must_haves` — a real, green pipeline run on the GitHub remote with the reset step executing — is satisfied by run `32241550956`.
+- The `SESSION_SECRET` fix in `c4a3d92` benefits every other in-flight and future plan too — it resolved a `master`-wide `quality` job failure unrelated to this plan's own scope.
+- The `visual` job's failure on run `32241550956` is a pre-existing, unrelated screenshot-baseline gap (documented in `.continue-here.md`, left pending by explicit user choice at the 01-09 checkpoint) — not part of this plan's `files_modified` or acceptance criteria.
 
 ---
 *Phase: 01-foundation-auth-preferences*
-*Completed: 2026-08-18 (halted at checkpoint — see Checkpoint/User Setup Required above)*
+*Completed: 2026-08-19 (resolved after initial checkpoint halt — see Resolution note above)*
 
 ## Self-Check: PASSED
 
