@@ -55,7 +55,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Theme
 
-- [ ] **THEME-01**: User can toggle light/dark theme, persisted per account across sessions
+- [x] **THEME-01**: User can toggle light/dark theme, persisted per account across sessions
 
 ### Sync
 
@@ -97,7 +97,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |
-| THEME-01 | Phase 1 | Pending |
+| THEME-01 | Phase 1 | Complete |
 | BOARD-01 | Phase 2 | Pending |
 | BOARD-02 | Phase 2 | Pending |
 | BOARD-03 | Phase 2 | Pending |

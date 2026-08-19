@@ -144,6 +144,10 @@ export default defineConfig({
                             find: "@/features/auth/actions",
                             replacement: path.resolve(rootDir, "src/test-utils/actions-storybook-stub.ts"),
                         },
+                        {
+                            find: "@/features/theme/actions",
+                            replacement: path.resolve(rootDir, "src/test-utils/theme-actions-storybook-stub.ts"),
+                        },
                         ...alias,
                     ],
                 },
