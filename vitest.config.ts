@@ -110,11 +110,11 @@ export default defineConfig({
                     include: ["src/**/*.unit.test.{ts,tsx}"],
                     setupFiles: ["./vitest.setup.unit.ts"],
                     /*
-                     * `auth-actions.unit.test.ts` (plan 01-33) imports `@/features/auth/api/auth-
-                     * actions`, which imports the real (unmocked) `@/lib/session` — that module
-                     * throws at import time when `SESSION_SECRET` is unset, the same guard the
-                     * "node" project's own `env` block above already works around for
-                     * `session.test.ts`. Mirrors that project's fallback exactly.
+                     * `actions.unit.test.ts` (plan 01-33) imports `@/features/auth/actions`, which
+                     * imports the real (unmocked) `@/lib/server/session` — that module throws at
+                     * import time when `SESSION_SECRET` is unset, the same guard the "node"
+                     * project's own `env` block above already works around for `session.test.ts`.
+                     * Mirrors that project's fallback exactly.
                      */
                     env: {
                         SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",
@@ -124,10 +124,10 @@ export default defineConfig({
             {
                 /*
                  * The sign-in/sign-up stories (plan 01-33) render `SignInForm`/`SignUpForm`, which
-                 * import the real `signInAction`/`signUpAction` from `@/features/auth/api/auth-
-                 * actions` — a `"use server"` module whose import chain reaches `node:crypto` via
-                 * `@/lib/session`. `@storybook/nextjs-vite`'s Vitest-driven story rendering has no
-                 * server/client build split for `"use server"` modules, so it bundles that chain
+                 * import the real `signInAction`/`signUpAction` from `@/features/auth/actions` — a
+                 * `"use server"` module whose import chain reaches `node:crypto` via
+                 * `@/lib/server/session`. `@storybook/nextjs-vite`'s Vitest-driven story rendering has
+                 * no server/client build split for `"use server"` modules, so it bundles that chain
                  * whole for the browser and fails on the Node built-in. Aliased to a no-op stand-in
                  * for this project only — no story ever submits a form (D-25), so the real action
                  * is never actually invoked, only referenced.
@@ -141,8 +141,8 @@ export default defineConfig({
                      */
                     alias: [
                         {
-                            find: "@/features/auth/api/auth-actions",
-                            replacement: path.resolve(rootDir, "src/test-utils/auth-actions-storybook-stub.ts"),
+                            find: "@/features/auth/actions",
+                            replacement: path.resolve(rootDir, "src/test-utils/actions-storybook-stub.ts"),
                         },
                         ...alias,
                     ],

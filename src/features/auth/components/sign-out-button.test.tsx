@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import { AUTH_ACTION_IDLE, type AuthActionState } from "@/features/auth/api/auth-action-state";
-import { signOutAction } from "@/features/auth/api/auth-actions";
+import { AUTH_ACTION_IDLE, type AuthActionState } from "@/features/auth/action-state";
+import { signOutAction } from "@/features/auth/actions";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
@@ -13,10 +13,10 @@ import { SignOutButton } from "./sign-out-button";
  * remains in this repository). This is also the only way to prove the fourth behaviour (asks the
  * backend for nothing): `signOutAction` is the sole export this component ever calls, so asserting
  * it was called exactly once with no other module touched is the whole of that property from this
- * component's vantage point — the server function's own unit test (auth-actions.unit.test.ts)
+ * component's vantage point — the server function's own unit test (actions.unit.test.ts)
  * separately proves the stubbed HTTP client itself is never invoked.
  */
-vi.mock("@/features/auth/api/auth-actions", () => ({
+vi.mock("@/features/auth/actions", () => ({
     signOutAction: vi.fn(),
 }));
 

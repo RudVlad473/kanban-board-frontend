@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { type AuthActionState } from "@/features/auth/api/auth-action-state";
+import { type AuthActionState } from "@/features/auth/action-state";
 import { resolveDisplayName } from "@/features/auth/model";
 import { signInSchema, signUpSchema, zodErrorToFieldErrors } from "@/features/auth/schemas";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
