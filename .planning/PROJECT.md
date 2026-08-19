@@ -19,18 +19,17 @@ trust that every change is reliably persisted and reconciled against the real ba
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- ✓ Authentication — sign up, sign in, and route-guarded access — Phase 1
+- ✓ Theme — light/dark toggle persisted per account — Phase 1
 
 ### Active
 
 <!-- Current scope. Building toward these. Full requirement list with acceptance criteria: .planning/REQUIREMENTS.md -->
 
-- [ ] Authentication — sign up, sign in, and route-guarded access
 - [ ] Boards — create, view, rename, delete boards; sidebar list with collapse/expand
 - [ ] Columns — add, rename, reorder, delete columns within a board
 - [ ] Tasks — create, view detail, edit, drag-and-drop move, delete tasks
 - [ ] Subtasks — add, edit, toggle-complete, delete subtask checklist items
-- [ ] Theme — light/dark toggle persisted per account
 - [ ] Sync — version-conflict detection with error + rollback on rejected writes
 
 ### Out of Scope
@@ -110,6 +109,8 @@ trust that every change is reliably persisted and reconciled against the real ba
 | Boards are single-owner; no collaboration model yet (ADR domain/0001) | Every endpoint is scoped by a single `userId`; multi-user is a distinct, unbuilt future concept | ◐ Proposed |
 | Hard cascade delete, no soft-delete/undo (ADR domain/0002) | Contract gives no trash/recovery mechanism at any containment level | ◐ Proposed |
 | Client-orchestrated multi-child creation; partial failures kept, not rolled back (ADR domain/0003) | No bulk-create/transactional endpoint exists; a rollback-delete was considered and rejected as unsafe | ◐ Proposed |
+| Auth mutations carved out to Server Actions; boards/columns/tasks stay on TanStack Query (ADR tech/0017) | `useActionState` gives auth forms progressive enhancement and simpler pending/error state than the client-mutation hooks tech/0002 chose for the rest of the app; core-domain mutations still need `useOptimistic` rollback, which Server Actions don't give for free | ✓ Locked |
+| No mock server anywhere — dev, every test layer, and CI all dial the real deployed nonprod backend (ADR tech/0018) | User's explicit Testing Trophy philosophy ("store.ts should die"); supersedes tech/0004's MSW choice | ✓ Locked |
 
 *Legend: ✓ Locked = explicit Accepted status in the source ADR. ◐ Proposed = a clear chosen
 decision in prose ("Decision Outcome"), but no explicit Accepted/status marker in the
@@ -119,4 +120,4 @@ decision was genuinely made and later genuinely reversed by a later ADR — kept
 rather than deleted, since both halves of the history are worth keeping.*
 
 ---
-*Last updated: 2026-08-10 after initial project setup (ingest synthesis)*
+*Last updated: 2026-08-20 after Phase 1 (foundation-auth-preferences)*

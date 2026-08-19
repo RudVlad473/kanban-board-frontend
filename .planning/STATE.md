@@ -21,22 +21,22 @@ milestone_name: milestone
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-10)
+See: .planning/PROJECT.md (updated 2026-08-20)
 
 **Core value:** A signed-in user can create boards, organize tasks across columns via
-drag-and-drop, and trust that every change is reliably persisted and reconciled — even
-against a backend that doesn't exist yet.
-**Current focus:** Phase 01 — foundation-auth-preferences
+drag-and-drop, and trust that every change is reliably persisted and reconciled against the
+real backend.
+**Current focus:** Phase 2 — Board Management
 
 ## Current Position
 
 Phase: 2 — Board Management
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-20 — Phase 01 complete, transitioned to Phase 2
-  See Session Continuity below for full detail.
+Last activity: 2026-08-20 — Phase 01 complete (38/38 plans, verification passed), transitioned
+  to Phase 2. See Session Continuity below for full detail.
 
-Progress: [████████░░] 82% (31/38 plans)
+Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans)
 
 ## Performance Metrics
 
@@ -66,51 +66,41 @@ Progress: [████████░░] 82% (31/38 plans)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Pre-Phase-1: Cross-ref-cycle BLOCKER fix — reworded ADR tech/0005 and tech/0009 to drop
-  literal `CONVENTIONS.md` filename mentions.
+- Phase 1: Auth mutations carved out to Server Actions (ADR tech/0017); boards/columns/tasks
+  stay on TanStack Query per the original ADR tech/0002 — a deliberate split, not an oversight.
 
-- Pre-Phase-1: Authored PRD.md from scratch (24 v1 + 2 v2 REQ-IDs) since hairsplitter's
-  ingest manifest had no functional-requirements content.
+- Phase 1: No mock server anywhere — dev, every test layer, and CI all dial the real deployed
+  nonprod backend (ADR tech/0018, supersedes tech/0004's MSW choice).
 
-- Pre-Phase-1: Project named "Kanban Board" (user's explicit pick).
+- Phase 1: `visual-baselines.yml` restricted to master-only dispatch and changed to open a PR
+  (image-diff review) instead of committing screenshots directly, closing a previously-flagged
+  unreviewed-overwrite risk.
 
 ### Pending Todos
-
-- Guard `visual-baselines.yml` against corrupting screenshot baselines (no branch restriction,
-  unconditional overwrite, no review step) —
-  `.planning/todos/pending/2026-08-11-guard-visual-baselines-dispatch-against-corrupting-screensho.md`.
-  Left pending by explicit user choice during the 01-09 checkpoint session.
 
 - Investigate stricter Prettier config for React/Next.js formatting (and whether the real gap is
   ESLint rules instead) —
   `.planning/todos/pending/2026-08-19-investigate-stricter-prettier-config-for-react-and-next-js-f.md`.
   Not scoped to a phase yet.
 
+- Fix path traversal in `scripts/serve-static.mjs` (Playwright visual webServer, dev/CI-only,
+  low exposure) — `.planning/todos/pending/2026-08-20-fix-path-traversal-in-serve-static-visual-test-server.md`.
+
+- Clear the theme cookie on sign-out (narrow shared-browser cross-account edge case, no data
+  exposure) — `.planning/todos/pending/2026-08-20-clear-theme-cookie-on-sign-out.md`.
+
 ### Blockers/Concerns
 
-- `.env.local` has no real `SESSION_SECRET`/`EXTERNAL_API_BASE_URL` locally — blocks local
-  `pnpm build` (unrelated pre-existing gap) and will block plan 01-15 (Vercel deployment)
-  specifically. Not blocking wave 14.
+- **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
+  `formAction` wraps `useActionState`'s `dispatch` in a plain client closure, so React can't
+  generate a real progressively-enhanceable POST target. Explicitly de-scoped by the user ("not
+  sure that's needed in 2026") — see `01-33-SUMMARY.md` coverage D4 if ever revisited. Still
+  live: not addressed by any later plan.
 
-- User wants sign-up/sign-in/sign-out refactored from Route Handlers to Server Actions BEFORE
-  01-14 is built, so 01-14 uses the new pattern too — see `.planning/notes/
-  server-actions-migration-decision.md`. Sign-in/sign-up half now **done** (01-33, merged
-  2026-08-19); sign-out is 01-34, next up.
-
-- **01-33's no-JS submission must-have does not actually hold** — found during this checkpoint
-  using a genuinely JS-disabled browser context: `sign-up-form.tsx`'s `formAction` wraps
-  `useActionState`'s `dispatch` in a plain client closure, so React can't generate a real
-  progressively-enhanceable POST target (renders `action="javascript:throw ..."` instead).
-  Explicitly de-scoped by the user ("not sure that's needed in 2026") rather than fixed — see
-  `01-33-SUMMARY.md` coverage D4 for the root cause and fix shape if ever revisited. The plan's
-  own `must_haves.truths` and the component's code comment still claim the property holds and
-  were not corrected.
-
-- ~~Stray uncommitted corruption in `app/api/auth/signin/route.ts` (`simport` typo)~~ — **moot**:
-  that file was deleted by 01-33 (replaced by Server Actions), and never carried the typo into
-  master.
-
-- Phase 01 paused at 01-15 (wave 14, final plan): Vercel deployment. Requires user Vercel account creation, GitHub app authorization, and manual verification against live Preview/Production URLs before it can run. 37/38 plans complete; all other waves merged, tested, and pushed to origin/master.
+- Local `pnpm build` still fails without a real `SESSION_SECRET` in `.env.local` (pre-existing
+  gap; CI and the deployed Vercel build are unaffected — CI generates its own secret, Vercel has
+  per-environment secrets set). User was asked to run `vercel env pull --yes` to fix locally;
+  unconfirmed whether that happened.
 
 ## Deferred Items
 
@@ -122,54 +112,25 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-19T12:24:56.000Z
-Stopped at: Phase 01 complete, ready to plan Phase 2
+Last session: 2026-08-20 (this session)
+Stopped at: Phase 01 complete (38/38 plans, verification passed 6/6), transitioned to Phase 2
 
-**This session:** Resumed with 01-33 paused at its Task 3 `checkpoint:human-verify` gate. Drove
-the manual browser walkthrough via Playwright automation (with the user setting local env vars)
-instead of the user doing it by hand. Found and fixed two real bugs invisible to the automated
-test suite: (1) Tailwind v4's content scanner choking on a wildcard placeholder in
-`01-17-PLAN.md`'s prose, hard-failing `next dev` on every route (fixed on `master` directly,
-commit `101a4e8`); (2) `auth-actions.ts` exporting a non-function constant from a `"use server"`
-file, which type-checks/builds fine but throws the moment an action is actually invoked (fixed in
-the worktree, commit `ab5b8ec`, split into new `auth-action-state.ts`). Also found the no-JS
-submission property this plan claims does not actually work (React's `formAction` wraps `dispatch`
-in a plain closure, breaking the progressively-enhanceable POST target) — user explicitly
-de-scoped verifying/fixing this rather than reopening the plan; documented in `01-33-SUMMARY.md`
-coverage D4 and in Blockers/Concerns above. All other checkpoint steps (sign-up, duplicate-email,
-field validation, sign-in, wrong-password, dark mode, narrow width) passed. User approved; merged
-`worktree-agent-aba0207b93f808d49` into master (`--no-ff`, commit `2140853`), post-merge
-`pnpm test` reran clean (396/396 — an earlier run's 11 timeouts were resource contention from a
-concurrently-open browser automation session, not a regression), worktree removed, tracking
-updated, 01-33-SUMMARY.md written.
+**This session:** Resumed with Phase 01 at 37/38, paused on 01-15 (Vercel deployment) pending
+user account setup. Installed and authenticated the Vercel CLI + MCP, created the
+`kanban-board-frontend` project (auto-linked to GitHub), and set distinct per-environment
+`SESSION_SECRET`/`EXTERNAL_API_BASE_URL` for Production/Preview/Development — unblocking 01-15
+without the manual dashboard walkthrough the plan originally called for. Ran `/gsd-execute-phase
+01`: 01-15 deployed to Preview + Production (both human-verified live against the real backend),
+merged. Ran the phase-closing gauntlet: code review (143 files, 0 critical/3 warning/2 info, no
+security issues), phase-goal verification (first pass: gaps_found — CI's `visual` job had been
+red since 2026-08-17 from 22 missing screenshot baselines). Fixed `visual-baselines.yml` (branch
+restriction + PR-based review, closing a previously-flagged unreviewed-overwrite risk; also fixed
+an unrelated pre-existing bug where it ran the wrong Playwright project), generated and merged
+the missing baselines, confirmed CI green on master, re-verified — passed 6/6. Marked Phase 01
+complete, evolved PROJECT.md (Auth/Theme requirements → Validated, ADR tech/0017 & 0018 decisions
+logged), filed 2 new todos for code-review findings (path traversal in the visual test server,
+theme cookie not cleared on sign-out — both non-blocking).
 
-**Prior session (summarized):** gap-closure context (round 3,
-  session bridging), triggered by nonprod going live. Session before that (summarized): waves 3+4
-  (01-20/21/26/28/29) merged and pushed, then a `/gsd-explore` conversation produced
-  `.planning/notes/server-actions-migration-decision.md` (commit `89f2421`), gated on nonprod
-  going live. Full detail in git history / that note.
-
-  **This session:** User confirmed nonprod is live and pointed at `kanban-board-backend`'s
-  `docs/AUTH_FLOWS.md` + auth sequence diagrams. Ran `/gsd-discuss-phase 01` (round 3) to capture
-  gap-closure context. Reading the real backend's contract against this app's actual code (not
-  just the exploration note) surfaced a bigger prerequisite than expected: the real backend is
-  Spring-Session/JSESSIONID-cookie-authenticated, and this app's `externalApi` client forwards no
-  cookie at all today — pointing `EXTERNAL_API_BASE_URL` at nonprod does not "just work." Seven
-  decisions captured as GC-18 through GC-24 in `01-CONTEXT.md`: (1) session-bridging via the
-  existing session JWT, built first; (2) full sign-out on upstream session expiry; (3) regenerate
-  `docs/api/kanban-board-openapi.json` from the real backend (kanban-board-backend repo, sibling
-  dir, via its live `/api/docs`); (4) thread the backend's ProblemDetail `code` through Server
-  Actions; (5) MSW + `src/lib/mocks/store.ts` fully removed — local dev also points at nonprod,
-  per user's explicit "store.ts should die" / Testing Trophy philosophy; (6) `POST /admin/reset`
-  wired into CI post-test-suite (real-backend tests are CI-only for now, not required locally);
-  (7) a new superseding ADR entry for tech/0002's auth-scoped carve-out. Committed
-  (`acdfb87`, `3a68cb5`), not yet pushed.
-
-Resume file: none (HANDOFF.json and .continue-here.md cleared — no mid-plan checkpoint pending)
-Next step: 01-15 (Vercel Preview + Production deployment) is the only plan left in Phase 01
-(37/38 complete) and needs the user to create a Vercel account, authorize the GitHub app for
-RudVlad473/kanban-board-frontend, and set per-environment SESSION_SECRET/EXTERNAL_API_BASE_URL
-before it can run.
-
-Last session: 2026-08-19T[resumed] — Session resumed via /gsd-resume-work; state loaded, no
-incomplete/interrupted work found beyond the known 01-15 user-setup blocker.
+Resume file: none
+Next step: `/gsd-discuss-phase 2` or `/gsd-plan-phase 2` to start Board Management (no CONTEXT.md
+exists yet for Phase 2).
