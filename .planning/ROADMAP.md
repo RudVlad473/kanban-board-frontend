@@ -2,10 +2,11 @@
 
 ## Overview
 
-Kanban Board is a solo-developer Next.js frontend built against a fixed OpenAPI contract
-with no deployed backend yet. The journey starts by standing up the technical foundation —
-feature-folder architecture, typed API client, MSW mock server, and BFF-proxied auth — while
-delivering account creation, sign-in, route-guarding, and theme preference (Phase 1). From
+Kanban Board is a solo-developer Next.js frontend built against a fixed OpenAPI contract,
+dialing a deployed non-production backend directly. The journey starts by standing up the
+technical foundation — feature-folder architecture, typed API client, and Server-Actions-based
+auth — while delivering account creation, sign-in, route-guarding, and theme preference
+(Phase 1). From
 there, each phase builds one level deeper into the Board → Column → Task/Subtask containment
 hierarchy: board management with the sidebar (Phase 2), column management within a board
 (Phase 3), and finally the full task/subtask workflow including drag-and-drop movement and
@@ -40,7 +41,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Goal**: A visitor can create an account, sign in, remain in a route-guarded session, and
 personalize their theme — running on a deployed technical foundation (feature-folder
-architecture, typed API client, MSW mock server, BFF auth proxy).
+architecture, typed API client, Server-Actions-based auth, dialing the deployed
+non-production backend directly).
 **Depends on**: Nothing (first phase)
 **Requirements**: AUTH-01, AUTH-02, AUTH-03, THEME-01
 **Success Criteria** (what must be TRUE):
@@ -58,10 +60,10 @@ architecture, typed API client, MSW mock server, BFF auth proxy).
      sign-out/sign-in and browser refresh.
 
   5. The app is live on Vercel (Preview + Production) with a working sign-in page, running
-     against the MSW-mocked API. A GitHub Actions CI workflow runs lint, Prettier format
-     check, build, and tests as required status checks on every push/PR, verified by an
-     actual push to the GitHub remote showing the pipeline run green (not just a
-     locally-valid workflow file).
+     against the deployed non-production backend. A GitHub Actions CI workflow runs lint,
+     Prettier format check, build, and tests as required status checks on every push/PR,
+     verified by an actual push to the GitHub remote showing the pipeline run green (not
+     just a locally-valid workflow file).
 
   6. A token-driven primitives library (Button, IconButton, TextField, Checkbox, Switch,
      Dropdown, Modal) exists — built from DTCG JSON via Style Dictionary into Tailwind v4
@@ -169,7 +171,7 @@ round-4 note below — re-sequenced per 01-REVIEWS.md HIGH #2 to run after the l
 settles the shape 01-14's theme persistence takes, and 01-14 now depends on 01-38 so it lands after
 both that decision and the reorg:
 
-- [x] 01-30-PLAN.md — contract regenerated from the live backend, mock server deleted, every test target repointed (GC-19, GC-22)
+- [x] 01-30-PLAN.md — contract regenerated from the live backend, the fake HTTP layer deleted, every test target repointed (GC-19, GC-22)
 - [x] 01-32-PLAN.md — session-cookie bridging to the real backend, proven end to end, with forced sign-out on upstream expiry (GC-18)
 - [x] 01-31-PLAN.md — CI clears nonprod state after every real-backend suite (GC-23)
 - [x] 01-33-PLAN.md — sign-in and sign-up become Server Actions carrying the backend's error code (GC-20, GC-24)
