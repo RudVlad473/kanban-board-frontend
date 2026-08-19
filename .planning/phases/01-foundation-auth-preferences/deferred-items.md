@@ -139,3 +139,37 @@ building a fix for a call site that doesn't exist would be untestable, and this 
 through `externalApi`, should follow Next.js's own documented pattern for this case: redirect to
 a dedicated route/Route Handler that performs the actual cookie clear, rather than attempting an
 in-render mutation. Phase 2 is the named owner of this follow-up.
+
+## From plan 01-34 (finish Server Actions migration — sign-out)
+
+### 6. Sign-out route is broken on the real backend
+
+**Found during:** Planning, observed directly against live nonprod on 2026-08-18 (see this
+plan's `<verified_backend_facts>` block); reconfirmed with no upstream call attempted from this
+codebase as of this plan's Task 1.
+
+**Issue:** `POST /api/logout` returns **500** with `code: INTERNAL_ERROR` and the detail
+`No static resource logout.`. The same route with the context path repeated (`POST
+/api/api/logout`) returns **200** — an artefact of the defect, not a real endpoint. Without the
+context path at all it returns 404. After the failed call, the same session credential still
+authenticated a subsequent read: the upstream session was **not** invalidated by any of these
+attempts. The cause is visible in the backend's own source: `SecurityConfiguration` builds its
+logout URL by prefixing the context path onto the route, while the framework matches that
+setting against the path with the context path already stripped — so the filter listens one
+segment deeper than any client can reach on purpose.
+
+**User-facing consequence:** This frontend cannot release an upstream session early. The backend
+caps an account at two live sessions and holds each one server-side for three hours, so a user
+who signs in from a third context inside that window is refused with the same message a wrong
+password produces (T-01-59, transfer disposition).
+
+**Why not fixed inline:** The defect is in the backend's own `SecurityConfiguration`, a
+repository this frontend does not own or control. Calling either URL form that currently answers
+(the 200-returning double-context-path form) would depend on an artefact of the bug that moves
+the moment it's fixed, with no test able to catch the drift — worse than not calling it at all.
+
+**Owner:** `kanban-board-backend` (the real backend repository). This frontend should dial
+`POST /api/logout` (the correct, contract-shaped URL) from `signOutAction` once the backend's
+logout route is confirmed fixed.
+
+Logged to `.planning/WINDOWS.md` (id 6, kind `deviation`).

@@ -7,6 +7,7 @@ import { ROUTE } from "../src/lib/routes";
 
 const SESSION_COOKIE_NAME = "session";
 const FRESH_PASSWORD = "E2eFreshPassword123!";
+const PROTECTED_HEADING = "Boards";
 
 test.describe("AUTH-01: sign up", () => {
     test("creates an account, lands on the board list, and sets an httpOnly session cookie", async ({
@@ -74,7 +75,13 @@ test.describe("sign-out", () => {
         await page.getByRole("button", { name: "Sign Out" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
 
+        /*
+         * After a sign-out, a direct request for the board list must be refused exactly as it is
+         * for a visitor who never signed in (route-guard.e2e.spec.ts's own assertion) — the
+         * destination alone does not prove nothing was painted first.
+         */
         await page.goto(ROUTE.BOARDS);
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
+        await expect(page.getByRole("heading", { name: PROTECTED_HEADING })).toHaveCount(0);
     });
 });

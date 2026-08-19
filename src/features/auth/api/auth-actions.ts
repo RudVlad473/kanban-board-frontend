@@ -166,3 +166,26 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
 
     redirect(ROUTE.BOARDS);
 };
+
+/*
+ * Sign-out never dials the backend's own sign-out route — verified broken during planning (see
+ * this plan's `<verified_backend_facts>`): it 500s, and the upstream session survives the failed
+ * call regardless. The finding, its cause and its user-facing consequence (the two-live-session
+ * ceiling cannot be released early) are recorded in
+ * `.planning/phases/01-foundation-auth-preferences/deferred-items.md` under "Sign-out route is
+ * broken on the real backend", with the backend repository named as owner. Until that route is
+ * fixed upstream, this application only ever destroys its own credential and lets the upstream
+ * session expire on its own — dialling the currently-answering URL form would call an artefact of
+ * the defect that moves the moment it's fixed, with no test able to catch the drift.
+ */
+// eslint-disable-next-line no-restricted-syntax -- React's useActionState calls this positionally (prevState, formData); the shape is dictated by that external API, not this project (ADR tech/0016 exemption, see signInAction's identical comment above)
+export const signOutAction = async (_previousState: AuthActionState, _formData: FormData): Promise<AuthActionState> => {
+    await session.destroy();
+
+    /*
+     * Outside any `try` and never caught, matching signInAction/signUpAction above — the redirect
+     * signals itself by throwing, and a `catch` that absorbed it would turn a working navigation
+     * into a silent no-op.
+     */
+    redirect(ROUTE.SIGN_IN);
+};
