@@ -165,5 +165,10 @@ updated, 01-33-SUMMARY.md written.
   (`acdfb87`, `3a68cb5`), not yet pushed.
 
 Resume file: none (HANDOFF.json and .continue-here.md cleared — no mid-plan checkpoint pending)
-Next step: `/gsd-execute-phase 01` to run wave 8 (01-34, finish Server Actions migration —
-sign-out) onward through 01-38 (three-ring `lib/` split) before 01-14/01-15.
+Next step: 01-15 (Vercel Preview + Production deployment) is the only plan left in Phase 01
+(37/38 complete) and needs the user to create a Vercel account, authorize the GitHub app for
+RudVlad473/kanban-board-frontend, and set per-environment SESSION_SECRET/EXTERNAL_API_BASE_URL
+before it can run.
+
+Last session: 2026-08-19T[resumed] — Session resumed via /gsd-resume-work; state loaded, no
+incomplete/interrupted work found beyond the known 01-15 user-setup blocker.
