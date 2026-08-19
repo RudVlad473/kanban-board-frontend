@@ -10,11 +10,11 @@ import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/api/auth-action-state";
 import { signUpAction } from "@/features/auth/api/auth-actions";
+import { signUpSchema, type SignUpInput } from "@/features/auth/schemas";
 import { ROUTE } from "@/lib/core/routing/routes";
-import { signUpSchema, type SignUpInput } from "@/lib/validation/auth-schemas";
 
 /*
- * Duplicated verbatim from src/lib/validation/auth-schemas.ts's own (unexported)
+ * Duplicated verbatim from src/features/auth/schemas.ts's own (unexported)
  * REQUIRED_FIELD_MESSAGE — this file's story-staging-only "every field is required" demonstration
  * needs the exact copy the real resolver produces, without importing the (unexported) constant
  * across module boundaries just for this Storybook-only staging prop.

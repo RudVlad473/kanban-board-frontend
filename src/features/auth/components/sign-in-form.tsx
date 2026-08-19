@@ -10,11 +10,11 @@ import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/api/auth-action-state";
 import { signInAction } from "@/features/auth/api/auth-actions";
+import { signInSchema, type SignInInput } from "@/features/auth/schemas";
 import { ROUTE } from "@/lib/core/routing/routes";
-import { signInSchema, type SignInInput } from "@/lib/validation/auth-schemas";
 
 /*
- * Duplicated verbatim from src/lib/validation/auth-schemas.ts's own (unexported)
+ * Duplicated verbatim from src/features/auth/schemas.ts's own (unexported)
  * REQUIRED_FIELD_MESSAGE — see sign-up-form.tsx's identical comment for the rationale.
  */
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";

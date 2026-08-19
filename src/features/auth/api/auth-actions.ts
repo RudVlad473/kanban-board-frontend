@@ -3,13 +3,13 @@
 import { redirect } from "next/navigation";
 
 import { type AuthActionState } from "@/features/auth/api/auth-action-state";
+import { resolveDisplayName } from "@/features/auth/model";
+import { signInSchema, signUpSchema, zodErrorToFieldErrors } from "@/features/auth/schemas";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
-import { resolveDisplayName } from "@/lib/display-name";
 import { externalApi } from "@/lib/server/server-client";
 import { isSessionPayload, session } from "@/lib/server/session";
 import { extractUpstreamSessionId } from "@/lib/server/session-cookie";
-import { signInSchema, signUpSchema, zodErrorToFieldErrors } from "@/lib/validation/auth-schemas";
 
 /*
  * A wrong credential and an unknown email must return byte-identical responses (T-01-08, account

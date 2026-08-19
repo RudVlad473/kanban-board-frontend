@@ -6,7 +6,7 @@ import { E2E_EXTERNAL_API_BASE_URL } from "./test-env";
 
 /*
  * Satisfies the backend's own password rule (8-64 characters, at least one upper-case letter, one
- * lower-case letter, one digit and one special character — src/lib/validation/auth-schemas.ts
+ * lower-case letter, one digit and one special character — src/features/auth/schemas.ts
  * mirrors the same rule) so this fixture is valid both for the direct API call below and for any
  * form that later retypes it (the sign-up scenario drives the real form, not this helper).
  */
