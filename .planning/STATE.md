@@ -80,6 +80,11 @@ Recent decisions affecting current work:
   `.planning/todos/pending/2026-08-11-guard-visual-baselines-dispatch-against-corrupting-screensho.md`.
   Left pending by explicit user choice during the 01-09 checkpoint session.
 
+- Investigate stricter Prettier config for React/Next.js formatting (and whether the real gap is
+  ESLint rules instead) —
+  `.planning/todos/pending/2026-08-19-investigate-stricter-prettier-config-for-react-and-next-js-f.md`.
+  Not scoped to a phase yet.
+
 ### Blockers/Concerns
 
 - `.env.local` has no real `SESSION_SECRET`/`EXTERNAL_API_BASE_URL` locally — blocks local
