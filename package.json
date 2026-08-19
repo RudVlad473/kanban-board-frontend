@@ -23,8 +23,7 @@
         "test:visual": "playwright test --project visual",
         "test:e2e": "playwright test --project e2e",
         "test:all": "pnpm test && pnpm exec playwright test",
-        "api:generate": "openapi-typescript docs/api/kanban-board-openapi.json -o src/lib/api/generated-types.ts",
-        "bff-api:generate": "node scripts/generate-bff-openapi.mjs && openapi-typescript docs/api/bff-openapi.json -o src/lib/api/bff-generated-types.ts"
+        "api:generate": "openapi-typescript docs/api/kanban-board-openapi.json -o src/lib/api/generated-types.ts"
     },
     "dependencies": {
         "@base-ui/react": "1.7.0",

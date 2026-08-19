@@ -1,39 +1,26 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button/button";
-import { postSignOut } from "@/features/auth/api/auth-api";
-import { ROUTE } from "@/lib/routes";
+import { AUTH_ACTION_IDLE } from "@/features/auth/api/auth-action-state";
+import { signOutAction } from "@/features/auth/api/auth-actions";
 
 /**
- * Sign-out is non-destructive (UI-SPEC Copywriting Contract) — no confirmation modal. Posts to
- * the sign-out BFF endpoint, then navigates to the sign-in route and refreshes the router so the
- * server re-renders `app/(dashboard)/layout.tsx` without the now-cleared session cookie.
+ * Sign-out is non-destructive (UI-SPEC Copywriting Contract) — no confirmation modal. Submits
+ * through the form element's own `action` (`useActionState` + `signOutAction`), so it works
+ * before hydration, mirroring sign-in-form.tsx/sign-up-form.tsx's idiom. The redirect happens on
+ * the server, so the layout re-renders without the cleared session cookie by itself — no router
+ * push or refresh needed here.
  */
 export const SignOutButton = () => {
-    const router = useRouter();
-
-    const mutation = useMutation({
-        mutationFn: postSignOut,
-        onSuccess: () => {
-            router.push(ROUTE.SIGN_IN);
-            router.refresh();
-        },
-    });
+    const [, dispatch, isActionPending] = useActionState(signOutAction, AUTH_ACTION_IDLE);
 
     return (
-        <Button
-            type="button"
-            variant="secondary"
-            isDisabled={mutation.isPending}
-            aria-busy={mutation.isPending}
-            onClick={() => {
-                mutation.mutate();
-            }}
-        >
-            Sign Out
-        </Button>
+        <form action={dispatch}>
+            <Button type="submit" variant="secondary" isDisabled={isActionPending} aria-busy={isActionPending}>
+                Sign Out
+            </Button>
+        </form>
     );
 };

@@ -5,7 +5,7 @@ import { externalApi } from "@/lib/api/server-client";
 import { ROUTE } from "@/lib/routes";
 
 import { AUTH_ACTION_IDLE } from "./auth-action-state";
-import { signInAction, signUpAction } from "./auth-actions";
+import { signInAction, signOutAction, signUpAction } from "./auth-actions";
 
 /*
  * `@/lib/api/server-client` is the real network boundary and the only thing worth stubbing
@@ -291,5 +291,21 @@ describe("signUpAction", () => {
             message: SIGN_UP_FAILURE_MESSAGE,
         });
         expect(cookieStore.get("session")).toBeUndefined();
+    });
+});
+
+describe("signOutAction", () => {
+    it("destroys the local session and redirects to sign-in, without calling the backend at all", async () => {
+        // Arrange
+        cookieStore.set("session", { value: "some-signed-session-token" });
+        const formData = buildFormData({});
+
+        // Act
+        await signOutAction(AUTH_ACTION_IDLE, formData);
+
+        // Assert
+        expect(cookieStore.get("session")).toBeUndefined();
+        expect(redirectSpy).toHaveBeenCalledExactlyOnceWith(ROUTE.SIGN_IN);
+        expect(mockedPost).not.toHaveBeenCalled();
     });
 });

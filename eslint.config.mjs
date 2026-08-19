@@ -374,7 +374,6 @@ const eslintConfig = defineConfig([
         "node_modules/**",
         "src/styles/tokens.css",
         "src/lib/api/generated-types.ts",
-        "src/lib/api/bff-generated-types.ts",
         // Stray worktree checkouts (isolation="worktree" executor dispatch) are never lint targets.
         ".claude/worktrees/**",
         // MSW's own generated browser worker script (`msw init public/ --save`, plan 01-10) — vendored, never hand-edited.
