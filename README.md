@@ -4,7 +4,9 @@ A Next.js kanban board web app where a signed-in user creates boards, organizes 
 columns, and manages tasks (with subtask checklists) via drag-and-drop — built against a
 versioned OpenAPI REST contract, dialing the deployed non-production backend directly, with
 light/dark theme support and optimistic-locking conflict handling. Solo-developer portfolio
-project.
+project. Currently completing **Phase 1: Foundation, Auth & Preferences** (scaffold, design
+tokens, primitives, BFF-proxied authentication, route guard, theme persistence, CI, and this
+Vercel deployment).
 
 See [`CONVENTIONS.md`](./CONVENTIONS.md) for the project's architecture and coding conventions,
 and [`docs/adr/`](./docs/adr) for the technology decisions behind them.
@@ -14,16 +16,85 @@ and [`docs/adr/`](./docs/adr) for the technology decisions behind them.
 Next.js (App Router) · TanStack Query · dnd-kit · Tailwind v4 · Base UI · DTCG design tokens via
 Style Dictionary · openapi-typescript/openapi-fetch.
 
+## Live deployment
+
+- **Production:** <https://kanban-board-frontend-ecru.vercel.app>
+- **Preview:** a fresh URL is produced by every `vercel deploy` (no stable alias) — the most
+  recent one at the time of writing is
+  <https://kanban-board-frontend-n3unru39j-rudvlad473s-projects.vercel.app>
+
+Both environments dial the same deployed non-production backend (see "No offline development"
+below) — there is no separate staging or production backend yet.
+
+## Prerequisites
+
+- Node.js `24.x` (pinned in `package.json`'s `engines` field)
+- pnpm `11.20.0` (pinned in `package.json`'s `packageManager` field — run via `corepack` or
+  install that exact version directly)
+
 ## Getting started
 
 ```bash
 pnpm install
+```
+
+Copy `.env.example` to `.env.local` and fill in the two required values (see
+[`SETUP.md`](./SETUP.md) for the exact steps and the traps a fresh clone should expect):
+
+```bash
+cp .env.example .env.local
+```
+
+- `EXTERNAL_API_BASE_URL` — the deployed non-production backend's base URL, including its `/api`
+  context path.
+- `SESSION_SECRET` — signs the session cookie. Generate one locally with
+  `openssl rand -base64 32`; never commit a real value. `pnpm build`/`pnpm dev` fail fast with a
+  clear error if this is unset (ADR tech/0001) — a default value would fail silently instead,
+  which is worse.
+
+```bash
 pnpm dev          # http://localhost:3000
 ```
 
 ```bash
 pnpm storybook     # http://localhost:6006 — design-system component catalogue
 ```
+
+## No offline development
+
+This project runs no fake HTTP layer anywhere (`docs/adr/tech/0018-no-mock-server.md`) —
+development, every automated test layer, and CI all dial the same deployed non-production
+backend directly. An account created while developing is a real row in a shared, non-production
+database, not a throwaway local fixture. See [`SETUP.md`](./SETUP.md) for the two operational
+traps that follow directly from this (the two-concurrent-session ceiling, and this application's
+sign-out not releasing a backend session) rather than repeating them here.
+
+## Scripts
+
+| Script                                    | What it does                                                                                               |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                                | Start the Next.js dev server (runs `tokens:build` first via `predev`)                                      |
+| `pnpm build`                              | Production build (runs `tokens:build` first via `prebuild`)                                                |
+| `pnpm start`                              | Serve a production build                                                                                   |
+| `pnpm lint`                               | ESLint over the whole repo                                                                                 |
+| `pnpm format` / `pnpm format:check`       | Prettier write / check                                                                                     |
+| `pnpm test`                               | Every Vitest project (token pipeline, browser-mode components, unit/hooks, Storybook a11y)                 |
+| `pnpm test:visual`                        | Playwright screenshot comparison against committed Storybook baselines (CI-only assertions — see §5 below) |
+| `pnpm test:e2e`                           | Playwright end-to-end specs against the live non-production backend                                        |
+| `pnpm storybook` / `pnpm build-storybook` | Run / build the design-system component catalogue                                                          |
+| `pnpm tokens:build`                       | Regenerate `src/styles/tokens.css` from the DTCG sources in `tokens/`                                      |
+| `pnpm api:generate`                       | Regenerate the typed API client from `docs/api/kanban-board-openapi.json`                                  |
+
+## Design tokens
+
+`tokens/*.tokens.json` (DTCG format) → Style Dictionary (`style-dictionary.config.mjs`) →
+`src/styles/tokens.css` (Tailwind v4 `@theme`). Run `pnpm tokens:build` after editing a token —
+it also runs automatically before `pnpm dev`/`pnpm build` (see `package.json`'s `predev`/
+`prebuild` scripts), so the generated file is never stale at build/deploy time — the same
+`pnpm build` command Vercel's own `buildCommand` invokes (see `vercel.json`). Never hand-edit
+`src/styles/tokens.css` directly — it's generated (and excluded from ESLint/Prettier accordingly)
+but still committed to git, so a diff review can see exactly what a token change actually
+produced.
 
 ## Testing
 
@@ -178,11 +249,12 @@ Two workflows, both required:
   committed baselines, §5).
 - **`visual-baselines.yml`** — manual dispatch only (§5's regeneration step above).
 
-## Design tokens
+## Deployment
 
-`tokens/*.tokens.json` (DTCG format) → Style Dictionary (`style-dictionary.config.mjs`) →
-`src/styles/tokens.css` (Tailwind v4 `@theme`). Run `pnpm tokens:build` after editing a token —
-it also runs automatically before `pnpm dev`/`pnpm build` (see `package.json`'s `predev`/
-`prebuild` scripts), so the generated file is never stale at build/deploy time. Never hand-edit
-`src/styles/tokens.css` directly — it's generated (and excluded from ESLint/Prettier accordingly)
-but still committed to git, so a diff review can see exactly what a token change actually produced.
+Hosted on [Vercel](https://vercel.com) (`docs/adr/tech/0006-production-hosting.md`) — Preview
+and Production, both built with `vercel.json`'s pinned `pnpm install --frozen-lockfile` /
+`pnpm build` commands, so the deployed build regenerates design tokens from the DTCG sources
+exactly as CI does rather than trusting the committed CSS. Neither `SESSION_SECRET` nor
+`EXTERNAL_API_BASE_URL` is ever committed — both are set per environment (Preview, Production)
+directly on the Vercel project, with a distinct `SESSION_SECRET` for each so a leaked preview
+secret can't mint production sessions. See "Live deployment" above for the current URLs.

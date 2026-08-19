@@ -51,5 +51,5 @@ storybook-static/
 *.sw?
 
 .vercel
-.env
-.env*.local
+
+.env*
