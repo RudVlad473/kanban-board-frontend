@@ -9,7 +9,7 @@ import type {
 } from "@base-ui/react/dialog";
 import type { ComponentProps, PropsWithChildren } from "react";
 
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*

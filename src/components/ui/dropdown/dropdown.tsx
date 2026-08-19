@@ -5,7 +5,7 @@ import { Check, ChevronDown, LoaderCircle } from "lucide-react";
 import { createContext, useContext, useId, type PropsWithChildren } from "react";
 
 import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*

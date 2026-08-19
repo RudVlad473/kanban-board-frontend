@@ -1,4 +1,4 @@
-import type { ProblemCode } from "@/lib/api/problem-detail";
+import type { ProblemCode } from "@/lib/core/api-contract/problem-detail";
 
 /**
  * The state both auth forms render, returned by `signInAction`/`signUpAction` through

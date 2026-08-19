@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isProtectedPath, isPublicPath, ROUTE } from "@/lib/routes";
+import { isProtectedPath, isPublicPath, ROUTE } from "@/lib/core/routing/routes";
 import { session, SESSION_COOKIE_NAME } from "@/lib/session";
 
 /*

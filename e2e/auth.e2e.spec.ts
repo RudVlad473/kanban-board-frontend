@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 import { createFixtureAccount } from "./fixtures";
-import { ROUTE } from "../src/lib/routes";
+import { ROUTE } from "../src/lib/core/routing/routes";
 
 const SESSION_COOKIE_NAME = "session";
 const FRESH_PASSWORD = "E2eFreshPassword123!";

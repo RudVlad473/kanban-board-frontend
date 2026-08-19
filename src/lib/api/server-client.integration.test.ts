@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PROBLEM_CODE, parseProblemDetail } from "@/lib/api/problem-detail";
 import { externalApi } from "@/lib/api/server-client";
+import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { isSessionPayload, session } from "@/lib/session";
 
 /*

@@ -10,7 +10,7 @@ import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/api/auth-action-state";
 import { signUpAction } from "@/features/auth/api/auth-actions";
-import { ROUTE } from "@/lib/routes";
+import { ROUTE } from "@/lib/core/routing/routes";
 import { signUpSchema, type SignUpInput } from "@/lib/validation/auth-schemas";
 
 /*

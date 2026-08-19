@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PROBLEM_CODE, type ProblemDetail } from "@/lib/api/problem-detail";
 import { externalApi } from "@/lib/api/server-client";
-import { ROUTE } from "@/lib/routes";
+import { PROBLEM_CODE, type ProblemDetail } from "@/lib/core/api-contract/problem-detail";
+import { ROUTE } from "@/lib/core/routing/routes";
 
 import { AUTH_ACTION_IDLE } from "./auth-action-state";
 import { signInAction, signOutAction, signUpAction } from "./auth-actions";

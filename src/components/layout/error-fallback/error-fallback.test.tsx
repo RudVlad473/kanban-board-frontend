@@ -2,7 +2,7 @@ import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
-import { ROUTE } from "@/lib/routes";
+import { ROUTE } from "@/lib/core/routing/routes";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { ErrorFallback } from "./error-fallback";

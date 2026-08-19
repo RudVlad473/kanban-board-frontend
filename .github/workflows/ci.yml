@@ -75,7 +75,7 @@ jobs:
             - name: API types drift
               run: |
                   pnpm api:generate
-                  git diff --exit-code src/lib/api/generated-types.ts
+                  git diff --exit-code src/lib/core/api-contract/generated-types.ts
 
             # Pre-existing gap, not introduced by this plan (GC-23/reset wiring): `next build`'s
             # page-data collection imports session.ts for every Route Handler, and session.ts

@@ -5,7 +5,7 @@ import { render, type RenderResult } from "vitest-browser-react";
 
 import { AUTH_ACTION_IDLE, type AuthActionState } from "@/features/auth/api/auth-action-state";
 import { signUpAction } from "@/features/auth/api/auth-actions";
-import { PROBLEM_CODE, type ProblemCode } from "@/lib/api/problem-detail";
+import { PROBLEM_CODE, type ProblemCode } from "@/lib/core/api-contract/problem-detail";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
