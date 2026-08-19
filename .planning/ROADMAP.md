@@ -70,7 +70,7 @@ non-production backend directly).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 32/38 plans executed
+**Plans**: 33/38 plans executed
 
 Plans:
 **Wave 1**
@@ -176,7 +176,7 @@ both that decision and the reorg:
 - [x] 01-31-PLAN.md — CI clears nonprod state after every real-backend suite (GC-23)
 - [x] 01-33-PLAN.md — sign-in and sign-up become Server Actions carrying the backend's error code (GC-20, GC-24)
 - [x] 01-34-PLAN.md — sign-out becomes a Server Action and the dead BFF client layer is removed (GC-24)
-- [ ] 01-35-PLAN.md — ADR carve-out, setup docs, and repair of the two unexecuted plans (GC-24)
+- [x] 01-35-PLAN.md — ADR carve-out, setup docs, and repair of the two unexecuted plans (GC-24)
 
 Gap closure round 4 (added 2026-08-19 — 01-CONTEXT.md items GC-25..GC-30 and
 `docs/superpowers/specs/2026-08-19-lib-module-layering-design.md`: the three-ring `lib/` split,
@@ -272,7 +272,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 32/38 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 33/38 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
