@@ -70,7 +70,7 @@ non-production backend directly).
      tokens, each primitive with a Storybook story, a co-located Vitest Browser Mode test,
      passing axe-core checks, and a Playwright visual-regression baseline — and is built
      before any auth/theme feature work consumes it.
-**Plans**: 36/38 plans executed
+**Plans**: 37/38 plans executed
 
 Plans:
 **Wave 1**
@@ -127,7 +127,7 @@ Plans:
 
 **Wave 22** *(blocked on 01-38; re-sequenced from wave 19 per 01-REVIEWS.md HIGH #2 to run after the round-4 lib reorg rather than concurrently with it)*
 
-- [ ] 01-14-PLAN.md — theme persistence and toggle (THEME-01)
+- [x] 01-14-PLAN.md — theme persistence and toggle (THEME-01)
 
 **Wave 23** *(blocked on Wave 22 completion)*
 
@@ -272,7 +272,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Preferences | 36/38 | In Progress|  |
+| 1. Foundation, Auth & Preferences | 37/38 | In Progress|  |
 | 2. Board Management | 0/TBD | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
