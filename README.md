@@ -2,7 +2,7 @@
 
 A Next.js kanban board web app where a signed-in user creates boards, organizes work into
 columns, and manages tasks (with subtask checklists) via drag-and-drop — built against a
-versioned OpenAPI REST contract (backed by a mock server until a real backend is deployed), with
+versioned OpenAPI REST contract, dialing the deployed non-production backend directly, with
 light/dark theme support and optimistic-locking conflict handling. Solo-developer portfolio
 project.
 
@@ -12,7 +12,7 @@ and [`docs/adr/`](./docs/adr) for the technology decisions behind them.
 ## Stack
 
 Next.js (App Router) · TanStack Query · dnd-kit · Tailwind v4 · Base UI · DTCG design tokens via
-Style Dictionary · MSW (mock API server) · openapi-typescript/openapi-fetch.
+Style Dictionary · openapi-typescript/openapi-fetch.
 
 ## Getting started
 
