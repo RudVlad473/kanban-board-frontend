@@ -2,7 +2,7 @@ import { Field } from "@base-ui/react/field";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
 
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*

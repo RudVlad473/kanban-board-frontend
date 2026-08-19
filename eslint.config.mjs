@@ -185,7 +185,32 @@ const eslintConfig = defineConfig([
         },
     },
 
-    // 7. Feature-boundary enforcement (CONVENTIONS.md's no-cross-feature-import rule).
+    /*
+     * 7. Feature-boundary enforcement (CONVENTIONS.md's no-cross-feature-import rule) plus the
+     * three-ring `lib/` split (GC-25/GC-28). Ring element patterns (`lib-core`/`lib-server`/
+     * `lib-client`, all `src/lib/<ring>/**`) are listed BEFORE the transitional `lib-legacy*`
+     * elements so a file that has already moved into a ring resolves to its ring, never to
+     * legacy — the two pattern families are disjoint anyway (verified with micromatch: a moved
+     * `src/lib/core/styling/cn.ts` does not match `src/lib/*`), so ordering here is belt-and-braces
+     * for intent, not a functional requirement.
+     *
+     * The `lib-legacy`/`lib-legacy-api`/`lib-legacy-validation` elements are a transitional
+     * scaffold, not the end state: they exist only because this round moves `src/lib/`'s files into
+     * `lib/core/`/`lib/server/`/`lib/client/` a few at a time across plans 01-36 and 01-37, and the
+     * `boundaries/dependencies` default below is `"disallow"`. Without a recognised element for the
+     * files that have NOT moved yet, every existing importer of a still-flat file (`@/lib/session`,
+     * `@/lib/dal`, etc.) would resolve its `to` element to nothing and lint would fail the instant
+     * the old flat `lib` element was removed — before a single file had moved. Each `lib-legacy*`
+     * element keeps capturing its current flat location by a narrow `*` pattern (direct children
+     * only, not `**`) and carries a blanket transitional policy (below) so any importer may reach a
+     * not-yet-moved file and a not-yet-moved file may reach anything, matching the total
+     * permissiveness the old single flat `lib` element had. As each file moves out of a flat
+     * location into a ring, it stops matching `lib-legacy*` and starts matching its ring, and the
+     * ring's strict directional policy starts applying to it — lint stays green at every
+     * intermediate step. Plan 01-37 Task 3, once the last flat file has moved, deletes the three
+     * `lib-legacy*` elements and their blanket policies entirely, leaving only the strict ring
+     * policies below.
+     */
     {
         plugins: {
             boundaries,
@@ -195,7 +220,12 @@ const eslintConfig = defineConfig([
                 { type: "feature", pattern: "src/features/*" },
                 { type: "ui", pattern: "src/components/ui/*" },
                 { type: "layout", pattern: "src/components/layout/*" },
-                { type: "lib", pattern: "src/lib/*" },
+                { type: "lib-core", pattern: "src/lib/core/**" },
+                { type: "lib-server", pattern: "src/lib/server/**" },
+                { type: "lib-client", pattern: "src/lib/client/**" },
+                { type: "lib-legacy", pattern: "src/lib/*" },
+                { type: "lib-legacy-api", pattern: "src/lib/api/*" },
+                { type: "lib-legacy-validation", pattern: "src/lib/validation/*" },
             ],
         },
         rules: {
@@ -214,28 +244,121 @@ const eslintConfig = defineConfig([
                             allow: [
                                 { to: { element: { type: "ui" } } },
                                 { to: { element: { type: "layout" } } },
-                                { to: { element: { type: "lib" } } },
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-server" } } },
+                                { to: { element: { type: "lib-client" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
                             ],
                         },
                         {
                             from: { element: { type: "ui" } },
-                            allow: [{ to: { element: { type: "lib" } } }],
+                            allow: [
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-client" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
+                            ],
                         },
                         {
                             from: { element: { type: "layout" } },
-                            allow: [{ to: { element: { type: "ui" } } }, { to: { element: { type: "lib" } } }],
+                            allow: [
+                                { to: { element: { type: "ui" } } },
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-client" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
+                            ],
                         },
                         /*
-                         * `src/lib/*` captures each subfolder (api, mocks, ...) as its own "lib"
-                         * element instance — a cross-instance lib->lib import (e.g. a mocks test
-                         * referencing the generated API types under lib/api) is exactly the kind
-                         * of domain-agnostic infrastructure sharing `lib/` exists for, unlike a
-                         * feature->feature import. Plan 01-10 surfaced the gap: no policy allowed
-                         * it yet.
+                         * Ring directionality (GC-25): `lib-core` never reaches `lib-server`/
+                         * `lib-client`; `lib-server`/`lib-client` may each reach `lib-core` and
+                         * themselves but never each other. This is the mechanical control that
+                         * prevents a server-only, secret-holding module's dependency chain from
+                         * reaching browser-bundled code (the class of bug that produced the 01-33
+                         * Storybook stub). Each ring may also still reach every `lib-legacy*`
+                         * element — transitional only, removed in 01-37 Task 3.
                          */
                         {
-                            from: { element: { type: "lib" } },
-                            allow: [{ to: { element: { type: "lib" } } }],
+                            from: { element: { type: "lib-core" } },
+                            allow: [
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
+                            ],
+                        },
+                        {
+                            from: { element: { type: "lib-server" } },
+                            allow: [
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-server" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
+                            ],
+                        },
+                        {
+                            from: { element: { type: "lib-client" } },
+                            allow: [
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-client" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
+                            ],
+                        },
+                        /*
+                         * Each `lib-legacy*` element may depend on every other element — the same
+                         * total permissiveness the old flat `lib` element had — so a still-flat file
+                         * that imports an already-moved ring file (or another still-flat file) never
+                         * trips the disallow default. This blanket legacy permissiveness exists ONLY
+                         * for the transition and is removed wholesale in 01-37 Task 3.
+                         */
+                        {
+                            from: { element: { type: "lib-legacy" } },
+                            allow: [
+                                { to: { element: { type: "feature" } } },
+                                { to: { element: { type: "ui" } } },
+                                { to: { element: { type: "layout" } } },
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-server" } } },
+                                { to: { element: { type: "lib-client" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
+                            ],
+                        },
+                        {
+                            from: { element: { type: "lib-legacy-api" } },
+                            allow: [
+                                { to: { element: { type: "feature" } } },
+                                { to: { element: { type: "ui" } } },
+                                { to: { element: { type: "layout" } } },
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-server" } } },
+                                { to: { element: { type: "lib-client" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
+                            ],
+                        },
+                        {
+                            from: { element: { type: "lib-legacy-validation" } },
+                            allow: [
+                                { to: { element: { type: "feature" } } },
+                                { to: { element: { type: "ui" } } },
+                                { to: { element: { type: "layout" } } },
+                                { to: { element: { type: "lib-core" } } },
+                                { to: { element: { type: "lib-server" } } },
+                                { to: { element: { type: "lib-client" } } },
+                                { to: { element: { type: "lib-legacy" } } },
+                                { to: { element: { type: "lib-legacy-api" } } },
+                                { to: { element: { type: "lib-legacy-validation" } } },
+                            ],
                         },
                     ],
                 },
