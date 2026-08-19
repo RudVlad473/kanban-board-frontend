@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { PropsWithChildren } from "react";
 
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { verifySession } from "@/lib/server/dal";
 
@@ -25,7 +26,11 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
                     {identity.displayName}
                 </span>
 
-                <SignOutButton />
+                <div className="flex items-center gap-4">
+                    <ThemeToggle initialTheme={identity.theme} isAuthenticated />
+
+                    <SignOutButton />
+                </div>
             </header>
 
             <main className="flex flex-1 flex-col">{children}</main>
