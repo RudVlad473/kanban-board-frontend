@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 
-import { PROBLEM_CODE, parseProblemDetail, type ProblemCode } from "@/lib/api/problem-detail";
+import { type AuthActionState } from "@/features/auth/api/auth-action-state";
+import { PROBLEM_CODE, parseProblemDetail } from "@/lib/api/problem-detail";
 import { externalApi } from "@/lib/api/server-client";
 import { extractUpstreamSessionId } from "@/lib/api/session-cookie";
 import { resolveDisplayName } from "@/lib/display-name";
@@ -33,17 +34,6 @@ const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
  */
 const SIGN_UP_FAILURE_MESSAGE =
     "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
-
-/**
- * The state both auth forms render, returned by `signInAction`/`signUpAction` through
- * `useActionState`. There is no success member: success redirects, so the form never renders one.
- * `fieldErrors` is optional — only a validation failure carries a per-field message map.
- */
-export type AuthActionState =
-    { status: "idle" } | { status: "error"; code: ProblemCode; message: string; fieldErrors?: Record<string, string> };
-
-/** The initial value both forms and every story seed `useActionState` with. */
-export const AUTH_ACTION_IDLE: AuthActionState = { status: "idle" };
 
 /*
  * `useActionState`'s action-function contract fixes this exact two-positional-argument shape

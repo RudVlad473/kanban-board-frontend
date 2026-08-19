@@ -4,7 +4,8 @@ import { PROBLEM_CODE, type ProblemDetail } from "@/lib/api/problem-detail";
 import { externalApi } from "@/lib/api/server-client";
 import { ROUTE } from "@/lib/routes";
 
-import { AUTH_ACTION_IDLE, signInAction, signUpAction } from "./auth-actions";
+import { AUTH_ACTION_IDLE } from "./auth-action-state";
+import { signInAction, signUpAction } from "./auth-actions";
 
 /*
  * `@/lib/api/server-client` is the real network boundary and the only thing worth stubbing

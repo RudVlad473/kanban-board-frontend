@@ -8,7 +8,8 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
-import { AUTH_ACTION_IDLE, signInAction } from "@/features/auth/api/auth-actions";
+import { AUTH_ACTION_IDLE } from "@/features/auth/api/auth-action-state";
+import { signInAction } from "@/features/auth/api/auth-actions";
 import { ROUTE } from "@/lib/routes";
 import { signInSchema, type SignInInput } from "@/lib/validation/auth-schemas";
 

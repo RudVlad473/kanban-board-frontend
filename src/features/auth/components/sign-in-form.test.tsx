@@ -3,7 +3,8 @@ import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render, type RenderResult } from "vitest-browser-react";
 
-import { AUTH_ACTION_IDLE, signInAction, type AuthActionState } from "@/features/auth/api/auth-actions";
+import { AUTH_ACTION_IDLE, type AuthActionState } from "@/features/auth/api/auth-action-state";
+import { signInAction } from "@/features/auth/api/auth-actions";
 import { PROBLEM_CODE, type ProblemCode } from "@/lib/api/problem-detail";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
