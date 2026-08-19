@@ -2,4 +2,6 @@
 @import "./tokens.css";
 @import "./fonts.css";
 
+@source not "../../.planning";
+
 @custom-variant dark (&:where(.dark, .dark *));
