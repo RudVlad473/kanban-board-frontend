@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 5/13 plans executed
+**Plans**: 7/13 plans executed
 
 Plans:
 
@@ -249,8 +249,8 @@ narrow path before any breadth is added:
 
 **Wave 5** *(blocked on 02-05)*
 
-- [ ] 02-06-PLAN.md — live-backend probe resolving list order, id format, error shape and board ownership; Route Handler test glob
-- [ ] 02-07-PLAN.md — `Toast` and `Menu` primitives (BOARD-02, BOARD-04, BOARD-05)
+- [x] 02-06-PLAN.md — live-backend probe resolving list order, id format, error shape and board ownership; Route Handler test glob
+- [x] 02-07-PLAN.md — `Toast` and `Menu` primitives (BOARD-02, BOARD-04, BOARD-05)
 
 **Wave 6** *(blocked on 02-06)*
 
@@ -331,6 +331,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 5/13 | In Progress|  |
+| 2. Board Management | 7/13 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
