@@ -1,6 +1,6 @@
 import { Toast as BaseToast } from "@base-ui/react/toast";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ToastProvider, useToast } from "./toast";
 
@@ -10,21 +10,39 @@ type ToastConfig = Parameters<ReturnType<typeof useToast>["add"]>[0];
  * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions (add,
  * upsert, action click, close, stacking) live exclusively in toast.test.tsx. A story cannot drive
  * `useToast().add()` from a play function per D-25, so each story instead seeds its own
- * `Toast.createToastManager()` instance synchronously (before the first render) and hands it to
- * `ToastProvider` via the `toastManager` prop Base UI documents specifically "for use outside of a
- * React component" — Storybook's per-story, client-only module evaluation is exactly that context,
- * not the concurrent-SSR-request hazard `toast.tsx`'s own WHY-comment forbids that factory for at
- * the app-runtime level. This file is the one place in this plan that constructs a manager
- * directly.
+ * `Toast.createToastManager()` instance and hands it to `ToastProvider` via the `toastManager`
+ * prop Base UI documents specifically "for use outside of a React component" — Storybook's
+ * per-story, client-only module evaluation is exactly that context, not the concurrent-SSR-request
+ * hazard `toast.tsx`'s own WHY-comment forbids that factory for at the app-runtime level. This
+ * file is the one place in this plan that constructs a manager directly.
+ *
+ * `add()` is called from a `useEffect` here, NOT from the `useState` initializer that constructs
+ * the manager. The installed `ToastProvider` (provider/ToastProvider.js) only reacts to a
+ * `toastManager` prop via its own `useEffect` subscribing to FUTURE events — the manager itself
+ * (createToastManager.js) is a bare emitter with no event buffer, so any `add()` called before
+ * that subscribe effect has run is emitted to zero listeners and silently lost. Verified directly:
+ * seeding inside the `useState` initializer (this component's very first render, before any
+ * effect anywhere has run) rendered every story with an empty, toast-less viewport region — a real
+ * bug caught by opening the stories in a browser, not by the automated test suite, which drives
+ * `add()` through `useToast()` from a component already mounted *inside* `ToastProvider` and so
+ * never hits this ordering at all. Seeding from this component's own `useEffect` instead relies on
+ * React's child-before-parent effect commit order: `ToastProvider` renders as this component's
+ * child, so its subscribe effect is guaranteed to run before this effect does.
  */
 const SeededToastCanvas = ({ configs }: { configs: ToastConfig[] }) => {
-    const [manager] = useState(() => {
-        const seeded = BaseToast.createToastManager();
+    const [manager] = useState(() => BaseToast.createToastManager());
+
+    useEffect(() => {
         configs.forEach((config) => {
-            seeded.add(config);
+            manager.add(config);
         });
-        return seeded;
-    });
+        /*
+         * configs is a story-static prop (never reassigned after mount) — re-seeding on every
+         * render would re-run add() for the same ids, which the installed manager treats as an
+         * update-in-place, not a duplicate, but is still unnecessary work on every re-render.
+         */
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [manager]);
 
     return (
         <div className="relative h-96 w-full bg-bg-app">
