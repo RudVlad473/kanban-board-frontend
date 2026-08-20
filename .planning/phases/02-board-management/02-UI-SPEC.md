@@ -53,12 +53,30 @@ Declared values — this project's own already-implemented 4px-base scale
 |-------|-------|-------|
 | `--space-1` | 4px | Icon-to-label gaps, popup item inset (`Dropdown.Content` `p-1`) |
 | `--space-2` | 8px | Compact element spacing, board-card internal gap |
-| `--space-3` | 12px | TextField/Dropdown trigger vertical padding (`py-3`) — the one non-template tier, already load-bearing on every Phase 1 form primitive; kept, not renegotiated |
 | `--space-4` | 16px | Default element spacing, modal padding (mobile), sidebar row horizontal padding |
 | `--space-6` | 24px | Section padding, modal padding (tablet+), board-view column gutters |
 | `--space-8` | 32px | Layout gaps between major regions |
 | `--space-12` | 48px | Major section breaks |
 | `--space-16` | 64px | Page-level spacing |
+
+This phase's new components (Sidebar, BoardCard, AddBoardModal, EditBoardModal,
+DeleteBoardConfirm, Toast) are built exclusively from the seven tiers above — the standard set
+(4/8/16/24/32/48/64). `--space-3` (12px) is deliberately **excluded** from this phase's own
+palette; it is not a tier this phase's new work is authorized to reach for.
+
+**Known deviation (pre-existing, out of scope to fix this phase):** `--space-3`/12px already
+exists in `tokens.css` and is load-bearing as the vertical padding (`py-3`) on `TextField`'s
+input box and `Dropdown`'s trigger/item rows (`src/components/ui/text-field/text-field.tsx:44`,
+`src/components/ui/dropdown/dropdown.tsx:72,226`) — components this UI-SPEC's own Design System
+section documents as already-implemented, tested, and visual-regression-baselined in Phase 1
+(plan 01-04), and which this phase explicitly **reuses as-is**, not rebuilds (see Sources note
+above: "Every new component this phase builds ... must consume these existing tokens/primitives,
+not invent new ones"). Remapping that padding to 8px or 16px would resize two shipped,
+baselined primitives' hit areas and visual proportions — a Phase 1 component edit and
+visual-regression re-baseline, not a Phase 2 UI-SPEC change, and out of scope for this phase's
+plan. Planner/executor should treat `--space-3` as a legacy exception confined to
+`TextField`/`Dropdown`'s existing internals: do not introduce any *new* usage of it this phase,
+and do not treat its presence in those two files as license to reach for 12px elsewhere.
 
 Exceptions:
 - **44×44px minimum touch target** on every icon-only control (`IconButton` `size-11`/`size-12`,
@@ -138,7 +156,7 @@ match `tokens.css`, not the PDF's raw swatches, if the two ever disagree.
 | Sidebar kebab menu items | **"Edit Board"** / **"Delete Board"** (PDF verbatim — relocated per D-07 onto the sidebar row, see Interaction Notes) |
 | Delete confirmation title | **"Delete this board?"** (PDF verbatim) |
 | Delete confirmation body | **"Are you sure you want to delete the '{Board Name}' board? This action will remove all columns and tasks and cannot be reversed."** (PDF verbatim, `{Board Name}` interpolated — reconciles with D-06's paraphrase; PDF's exact copy deck is canonical for wording, D-06's mechanic — plain confirm modal, no type-to-confirm — is what's actually locked) |
-| Delete confirmation actions | **"Delete"** (destructive) / **"Cancel"** (secondary) (PDF verbatim) |
+| Delete confirmation actions | **"Delete Board"** (destructive) / **"Keep Board"** (secondary) (PDF's "Delete"/"Cancel" pair replaced with action-specific labels — bare "Cancel" is a barred generic label; "Keep Board" names the alternative outcome instead of the dismissed action) |
 | Rename rollback error toast (D-15) | **"Couldn't rename board."** / **"Try again."** (title/description — pattern from 02-RESEARCH.md's cited `useToastManager` example) |
 | Delete failure error toast (D-09) | **"Couldn't delete board."** / **"Try again."** |
 | Partial column-creation error toast (D-04) | **"Couldn't create {N} column(s)."** / **"Retry"** action scoped to the failed column(s) only |
