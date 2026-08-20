@@ -7,6 +7,7 @@ import { resolveDisplayName } from "@/features/auth/model";
 import { signUpSchema, zodErrorToFieldErrors } from "@/features/auth/schemas";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
+import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { upstreamCookie } from "@/lib/server/cookies/upstream-cookie";
 import { externalApi } from "@/lib/server/server-client";
 import { isSessionPayload, session } from "@/lib/server/session";
@@ -65,6 +66,12 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
      * submitted form. `resolveDisplayName` still runs over the guarded identity (GC-02).
      */
     await session.create({ ...identity, displayName: resolveDisplayName(identity), jsessionId });
+
+    /*
+     * `app/layout.tsx` resolves the pre-paint `dark` scope from the theme cookie alone, so it has
+     * to be established here from the account's own stored preference, not left absent.
+     */
+    await themeCookie.write(identity.theme);
 
     redirect(ROUTE.BOARDS);
 };
