@@ -5,7 +5,7 @@ slug: board-management
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
 status: draft
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: 2026-08-20
 ---
 
@@ -60,7 +60,13 @@ created: 2026-08-20
 - [ ] `src/features/boards/components/*.test.tsx` — no existing component tests for this domain
 - [ ] `e2e/boards-*.e2e.spec.ts` — no existing e2e coverage; reuse `e2e/fixtures.ts`'s `createFixtureAccount` pattern to get a signed-in session before exercising board CRUD against the real nonprod backend
 - [ ] `src/components/ui/toast/toast.test.tsx` + `.stories.tsx` — new primitive, needs the same coverage shape as every other `components/ui/` primitive (behavioral test + Storybook stories; no visual-regression entry required per CONVENTIONS.md's current narrowed scope)
-- [ ] Framework install: none — Vitest/Playwright are already fully configured project-wide
+- [x] Framework install: none — Vitest/Playwright are already fully configured project-wide
+- [x] Config glob gap closed (02-06): `vitest.config.ts`'s `node` project `include` array was
+  widened from `"app/api/auth/**/*.test.ts"` (matched nothing since plan 01-33 deleted its
+  Route Handlers) to `"app/api/**/*.test.ts"`, proven by a throwaway
+  `app/api/boards/collection-probe.test.ts` file that was collected and executed by `pnpm test`
+  before being deleted. Every board/column/task Route Handler test this phase and Phases 3-4
+  write will now be collected automatically.
 
 ---
 
