@@ -1,16 +1,34 @@
 import "server-only";
 
-import type { Theme } from "@/lib/core/theme/theme";
+import { cookies } from "next/headers";
 
-// RED stub — Task 1 fills in the real bodies (see 02-03-PLAN.md).
+import { baseCookieOptions, COOKIE } from "@/lib/core/cookies/cookie-registry";
+import { isTheme, type Theme } from "@/lib/core/theme/theme";
+
+const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // outlives the session cookie's 7-day expiry
+
+/**
+ * Server-side theme cookie I/O — the flash-avoidance mechanism the root layout relies on
+ * (`app/layout.tsx`). `read` returns `null` for anything not shaped like a valid `Theme`
+ * (absent or tampered — this cookie is client-writable by design, see T-01-35/T-02-10).
+ */
 export const themeCookie = {
-    read: (): Promise<Theme | null> => {
-        throw new Error("not implemented");
+    read: async (): Promise<Theme | null> => {
+        const cookieStore = await cookies();
+        const value = cookieStore.get(COOKIE.THEME)?.value;
+        return isTheme(value) ? value : null;
     },
-    write: (_theme: Theme): Promise<void> => {
-        throw new Error("not implemented");
+    write: async (theme: Theme): Promise<void> => {
+        const cookieStore = await cookies();
+        cookieStore.set(COOKIE.THEME, theme, {
+            ...baseCookieOptions(),
+            httpOnly: false,
+            maxAge: THEME_COOKIE_MAX_AGE_SECONDS,
+        });
     },
-    clear: (): Promise<void> => {
-        throw new Error("not implemented");
+    // Clears the theme cookie on sign-out (folded todo FT-01) — added here for plan 02-04.
+    clear: async (): Promise<void> => {
+        const cookieStore = await cookies();
+        cookieStore.delete(COOKIE.THEME);
     },
 };
