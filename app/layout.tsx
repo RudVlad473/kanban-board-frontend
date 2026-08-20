@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 
+import { ToastProvider } from "@/components/ui/toast/toast";
 import { QueryProvider } from "@/lib/client/query-client";
 import { cn } from "@/lib/core/styling/cn";
 import { THEME } from "@/lib/core/theme/theme";
@@ -23,7 +24,9 @@ const RootLayout = async ({ children }: LayoutProps<"/">) => {
     return (
         <html lang="en" className={cn("h-full antialiased", theme === THEME.DARK && "dark")}>
             <body className="flex min-h-full flex-col bg-bg-app text-text-primary">
-                <QueryProvider>{children}</QueryProvider>
+                <QueryProvider>
+                    <ToastProvider>{children}</ToastProvider>
+                </QueryProvider>
             </body>
         </html>
     );
