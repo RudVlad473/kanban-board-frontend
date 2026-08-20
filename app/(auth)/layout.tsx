@@ -2,7 +2,7 @@ import type { PropsWithChildren } from "react";
 
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import { THEME } from "@/lib/core/theme/theme";
-import { readThemeCookie } from "@/lib/server/theme";
+import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 
 /** No stored preference resolves to light — matches the pre-hydration default `app/layout.tsx` applies when the cookie is absent (no `dark` class added). */
 const DEFAULT_THEME = THEME.LIGHT;
@@ -16,7 +16,7 @@ const DEFAULT_THEME = THEME.LIGHT;
  * directly, without calling the endpoint, so a visitor can set their theme before signing in).
  */
 const AuthLayout = async ({ children }: PropsWithChildren) => {
-    const theme = (await readThemeCookie()) ?? DEFAULT_THEME;
+    const theme = (await themeCookie.read()) ?? DEFAULT_THEME;
 
     return (
         <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-12 bg-bg-app px-4">

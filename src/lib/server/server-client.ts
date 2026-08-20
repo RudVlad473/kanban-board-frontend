@@ -6,9 +6,9 @@ import createClient from "openapi-fetch";
 import type { paths } from "@/lib/core/api-contract/generated-types";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
+import { upstreamCookie } from "@/lib/server/cookies/upstream-cookie";
 import { verifySession } from "@/lib/server/dal";
 import { session } from "@/lib/server/session";
-import { toUpstreamCookieHeader } from "@/lib/server/session-cookie";
 
 /*
  * ADR tech/0006 forbids a hardcoded API base URL — a fallback default value here would silently
@@ -59,7 +59,7 @@ externalApi.use({
 
         const record = await verifySession();
         if (record) {
-            request.headers.set("Cookie", toUpstreamCookieHeader(record.jsessionId));
+            request.headers.set("Cookie", upstreamCookie.toHeader(record.jsessionId));
         }
 
         return request;

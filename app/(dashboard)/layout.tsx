@@ -4,8 +4,8 @@ import type { PropsWithChildren } from "react";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import { ROUTE } from "@/lib/core/routing/routes";
+import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
-import { readThemeCookie } from "@/lib/server/theme";
 
 /*
  * The authoritative check (RESEARCH.md Security Domain, T-01-05) — `proxy.ts`'s guard is an
@@ -21,16 +21,10 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
     }
 
     /*
-     * The session JWT's own `theme` field is a snapshot taken at sign-in time — `updateThemeAction`
-     * (plan 01-14) never re-mints the session, it only writes the separate theme cookie, so a
-     * plain reload after toggling would otherwise show the toggle's control reverted to the
-     * stale sign-in-time value even though the account's real theme (and the root layout's own
-     * `dark` scope, which reads the same cookie) is already correct. Preferring the cookie here
-     * keeps the toggle's initial position in sync with what actually persisted; falling back to
-     * `identity.theme` covers the one case with no cookie yet — a fresh sign-in on a browser that
-     * has never toggled here before.
+     * The session JWT's `theme` is a sign-in-time snapshot that a later toggle never re-mints
+     * (see 01-14-SUMMARY.md); prefer the cookie so a reload reflects what actually persisted.
      */
-    const cookieTheme = await readThemeCookie();
+    const cookieTheme = await themeCookie.read();
     const initialTheme = cookieTheme ?? identity.theme;
 
     return (
