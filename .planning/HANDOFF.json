@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-08-20T20:21:13.862Z",
+  "phase": "02",
+  "phase_name": "Board Management",
+  "phase_dir": ".planning/phases/02-board-management",
+  "plan": 8,
+  "task": 3,
+  "total_tasks": 3,
+  "status": "paused",
+  "completed_tasks": [
+    { "id": 1, "name": "End-to-end tracer slice (Route Handler, useBoards, sidebar)", "status": "done", "commit": "8ec4cdd" },
+    { "id": 2, "name": "Per-layer tests and stories for the slice", "status": "done", "commit": "69a16fb" },
+    { "id": 3, "name": "Sign off the sidebar in a real browser", "status": "in_progress", "progress": "UI approved by user ('im satisfied with ui right now'); user has separate code-review comments not yet given. Two fixes landed this round: (a) restored next/link for board rows (commit 3988639) after full-page-reload bug was caught, verified by orchestrator via network-request inspection (RSC fetch only, no document reload, no /api/boards re-fetch); (b) lint-hardening pass (commit a205d32) adding no-restricted-syntax banning raw <a> regardless of href shape, escalating no-img-element to error. Formal 'approved' checkpoint reply not yet given — paused instead to collect code review comments first." }
+  ],
+  "remaining_tasks": [],
+  "blockers": [
+    { "description": "User wants to give code review comments on 02-08's implementation before formally closing the checkpoint", "type": "human_action", "workaround": "none — waiting on user input next session" }
+  ],
+  "async_jobs": [],
+  "human_actions_pending": [
+    { "action": "Give code review comments on plan 02-08's implementation (tracer slice: app/api/boards/route.ts, src/features/boards/*, src/components/layout/sidebar/sidebar.tsx)", "context": "User is satisfied with the UI/UX but has separate code-quality feedback to give before finalizing the checkpoint approval", "blocking": true }
+  ],
+  "decisions": [
+    { "decision": "Menu primitive: build a new Menu wrapping Base UI's Menu, not reuse Dropdown", "rationale": "Dropdown wraps Base UI Select (value-picker semantics, wrong ARIA role for an action menu); Base UI 1.7.0 does ship a full Menu entry point despite the plan's research doc claiming otherwise", "phase": "02" },
+    { "decision": "Board list ordering: reverse the fetched GET /boards array client-side for newest-first", "rationale": "Backend returns creation-order (oldest first); id-string-sort-descending and array-reversal produce identical output on observed data, user picked the simpler array-reversal", "phase": "02" },
+    { "decision": "Access control: proceed with board plans as written, no escalation needed", "rationale": "02-06's probe found all 3 cross-account access attempts (including one using the victim's own userId) rejected with 403 — backend derives identity from session cookie server-side, does not trust client-supplied userId", "phase": "02" },
+    { "decision": "Toast: rounded-sm radius (4px, matches Text Field/Dropdown token) instead of rounded-lg (Modal's radius)", "rationale": "User explicitly requested matching Text Field's radius over the Modal-radius convention toast.tsx originally copied", "phase": "02" },
+    { "decision": "Toast long-content: clamp Title(2 lines)/Description(3 lines) with overflow hidden, full text via native title attribute (hover tooltip), not a CSS hover-expand", "rationale": "A CSS hover-expand risked overlapping the toast stacked below it in the Stacked story", "phase": "02" },
+    { "decision": "Sidebar board links: real next/link Link, not a plain <a>", "rationale": "A plain <a> (copied from an auth-form precedent where full-page-reload doesn't matter) caused every board-to-board click to be a full page reload instead of client-side navigation — the app's most frequent interaction. next/link's ReferenceError: process is not defined in Vitest Browser Mode is worked around by mocking next/link in the test file instead of avoiding it in the component.", "phase": "02" }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Read the user's code review comments on plan 02-08 when given, relay them to the worktree agent (SendMessage to agent id aff6e55fca144924a, still resumable) or a fresh gsd-executor if that agent's context is gone, have it apply fixes, then continue the Task 3 checkpoint loop until the user gives a final 'approved'. After approval: write+commit SUMMARY.md, merge worktree-agent-aff6e55fca144924a into master, remove the worktree (rm -rf, git branch -D — note Windows file-lock issues, may need PowerShell Remove-Item retry), run post-merge tsc+test gate, update ROADMAP/STATE via roadmap.update-plan-progress for 02-08, commit tracking, push. Then continue with Wave 7 (plan 02-09, sidebar collapse/expand BOARD-06).",
+  "context_notes": "Phase 2 (Board Management) is 13 plans across 11 waves, mostly sequential single-plan waves with heavy UI content and checkpoints. Waves 1-5 (plans 02-01 through 02-07) are fully merged, tested, and pushed to origin/master, including a merged+CI-green visual-baselines PR for the new Toast/Menu primitives. Wave 6 (02-08) is the first real board-data UI (sidebar + boards list) and went through an unusually long checkpoint loop: two false starts on session-budget-exhausted test accounts (backend caps 2 concurrent sessions per account; UI sign-out does NOT free a slot because the upstream sign-out endpoint is broken/500s — only the frontend cookie clears), a genuine full-page-reload regression the user caught (screenshots/DOM snapshots can't distinguish a full reload from client-side nav — only network-request inspection can), and a follow-up lint-hardening pass to close that gap systematically. The dev server for 02-08's worktree is still running at http://localhost:3000 (worktree-agent-aff6e55fca144924a's own instance) — may or may not still be alive next session, check before reusing. This session established a working pattern: before handing any UI checkpoint back to the user, independently inspect it with browser tools first (Playwright MCP) rather than trusting the executor subagent's self-report — this is now saved as a standing memory preference (feedback_ui_change_signoff.md) along with a companion preference to investigate lint-rule coverage after any bug that slipped past tests/types/screenshots (feedback_lint_hardening_after_bugs.md)."
+}
