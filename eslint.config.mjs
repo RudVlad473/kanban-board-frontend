@@ -249,9 +249,18 @@ const eslintConfig = defineConfig([
                             ],
                         },
                         {
+                            /*
+                             * `layout -> feature` added this phase: CONVENTIONS.md's own placement
+                             * rule (step 4) already describes `components/layout/` as "domain-aware
+                             * layout/chrome" — Sidebar composing `features/boards`'s `useBoards()`
+                             * (02-RESEARCH.md's Recommended Project Structure) is exactly that, not
+                             * a new category of coupling. `feature -> layout` was already allowed
+                             * above; this is the read direction that composition actually needs.
+                             */
                             from: { element: { type: "layout" } },
                             allow: [
                                 { to: { element: { type: "ui" } } },
+                                { to: { element: { type: "feature" } } },
                                 { to: { element: { type: "lib-core" } } },
                                 { to: { element: { type: "lib-client" } } },
                             ],

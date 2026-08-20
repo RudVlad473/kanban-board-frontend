@@ -1,0 +1,95 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
+import { useBoards } from "@/features/boards/hooks/use-boards";
+import { boardDetail } from "@/lib/core/routing/routes";
+import { cn } from "@/lib/core/styling/cn";
+
+/*
+ * This phase's tracer slice — the sidebar's own board list, read-only. Create/rename/delete, the
+ * kebab menu and the collapse/expand toggle are all later plans (02-09 through 02-13); this
+ * component renders exactly the caption + board-row list this task's `<action>` scopes.
+ */
+
+/** A single pulsing placeholder row, sized to match a real board row's height (`h-11`). */
+const SkeletonRow = () => (
+    <div aria-hidden="true" className="h-11 shrink-0 animate-pulse rounded-sm bg-bg-app motion-reduce:animate-none" />
+);
+
+export const Sidebar = () => {
+    const pathname = usePathname();
+    const { data: boards, isPending, isError, refetch } = useBoards();
+
+    const count = boards?.length ?? 0;
+
+    return (
+        <nav
+            aria-label="Boards"
+            className="flex h-full w-75 shrink-0 flex-col border-r border-border-default bg-bg-surface"
+        >
+            <p className="p-6 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase">
+                {`ALL BOARDS (${String(count)})`}
+            </p>
+
+            {/* The board-list region is the panel's only scrolling part (UI-SPEC overflow rule). */}
+            <div className="flex-1 overflow-y-auto">
+                {isPending ? (
+                    <div aria-hidden="true" className="flex flex-col gap-2 px-4">
+                        <SkeletonRow />
+
+                        <SkeletonRow />
+
+                        <SkeletonRow />
+                    </div>
+                ) : isError ? (
+                    <div className="flex flex-col items-start gap-2 px-6 py-4">
+                        <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
+                            Couldn&apos;t load your boards.
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => void refetch()}
+                            className="rounded-sm font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary underline decoration-1 underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2"
+                        >
+                            Try again.
+                        </button>
+                    </div>
+                ) : (
+                    <ul className="flex flex-col gap-2 px-4">
+                        {boards.map((board) => {
+                            const isSelected = pathname === boardDetail(board.id);
+
+                            return (
+                                <li key={board.id} className="min-w-0">
+                                    {/*
+                                     * A plain anchor, not next/link's `Link` — matching
+                                     * sign-in-form.tsx/sign-up-form.tsx's identical, already-
+                                     * established rationale: `next/link` reads `process.env`
+                                     * internally, which is undefined in this project's plain Vitest
+                                     * Browser Mode test environment (confirmed directly — importing
+                                     * it here throws `ReferenceError: process is not defined` from
+                                     * `next/dist/client/has-base-path.js`), so this project avoids
+                                     * it everywhere rather than special-casing one component.
+                                     */}
+                                    <a
+                                        href={boardDetail(board.id)}
+                                        className={cn(
+                                            "flex h-11 min-w-0 items-center rounded-r-lg px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
+                                            isSelected
+                                                ? "bg-bg-primary text-text-on-primary"
+                                                : "text-text-muted hover:text-text-primary",
+                                        )}
+                                    >
+                                        <span className="truncate">{board.name}</span>
+                                    </a>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </div>
+        </nav>
+    );
+};

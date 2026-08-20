@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { PropsWithChildren } from "react";
 
+import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import { ROUTE } from "@/lib/core/routing/routes";
@@ -28,20 +29,24 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
     const initialTheme = cookieTheme ?? identity.theme;
 
     return (
-        <div className="flex min-h-full flex-col bg-bg-app">
-            <header className="flex items-center justify-between border-b border-border-default bg-bg-surface px-6 py-4">
-                <span className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
-                    {identity.displayName}
-                </span>
+        <div className="flex min-h-full bg-bg-app">
+            <Sidebar />
 
-                <div className="flex items-center gap-4">
-                    <ThemeToggle initialTheme={initialTheme} isAuthenticated />
+            <div className="flex min-w-0 flex-1 flex-col">
+                <header className="flex items-center justify-between border-b border-border-default bg-bg-surface px-6 py-4">
+                    <span className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
+                        {identity.displayName}
+                    </span>
 
-                    <SignOutButton />
-                </div>
-            </header>
+                    <div className="flex items-center gap-4">
+                        <ThemeToggle initialTheme={initialTheme} isAuthenticated />
 
-            <main className="flex flex-1 flex-col">{children}</main>
+                        <SignOutButton />
+                    </div>
+                </header>
+
+                <main className="flex flex-1 flex-col">{children}</main>
+            </div>
         </div>
     );
 };
