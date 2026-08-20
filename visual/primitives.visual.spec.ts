@@ -81,6 +81,12 @@ const storyIds = [
     "components-ui-toast--with-action",
     "components-ui-toast--stacked",
     "components-ui-toast--long-content",
+    // Menu (plan 02-07) — five stories.
+    "components-ui-menu--closed",
+    "components-ui-menu--open",
+    "components-ui-menu--with-destructive-item",
+    "components-ui-menu--with-disabled-item",
+    "components-ui-menu--long-item-list",
 ];
 
 /*
@@ -112,6 +118,19 @@ const gotoStory = async ({ page, url }: { page: Page; url: string }) => {
         const viewport = toastViewport.first();
         await viewport.waitFor({ state: "visible" });
         return viewport;
+    }
+    /*
+     * Menu (plan 02-07) has the same portal problem, via Base UI's Menu.Portal (D-15's
+     * precedent): an open Menu story's real popup — `role="menu"` — renders into document.body,
+     * not #storybook-root. Checked before the dialog branch below purely because it's the more
+     * specific/newer case; Menu never renders role="dialog" and Modal never renders role="menu",
+     * so the two branches never actually compete for the same story.
+     */
+    const menuPopup = page.locator('[role="menu"]');
+    if ((await menuPopup.count()) > 0) {
+        const popup = menuPopup.first();
+        await popup.waitFor({ state: "visible" });
+        return popup;
     }
     /*
      * Modal is the one primitive whose actual visible surface does not live inside
