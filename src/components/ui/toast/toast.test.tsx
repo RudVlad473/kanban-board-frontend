@@ -258,5 +258,52 @@ describeForEachDevice({
             // Assert
             expect(actionTextLeft).toBe(titleTextLeft);
         });
+
+        it("reserves room for the close button so a wrapped title never runs under it", async () => {
+            /*
+             * Arrange — long enough to wrap to two lines at the card's fixed width, reproducing the
+             * LongContent story's shape where a wrapped title line ran under the close icon before
+             * `pr-6` was added. Hovers first so Close is reachable per the "aria-hidden unless
+             * expanded" behavior already asserted elsewhere in this file.
+             *
+             * Deliberately measures actual rendered glyph extent via a DOM `Range`'s per-line
+             * `getClientRects()` (the max `right` across every line), not
+             * `element.getBoundingClientRect()` on the title itself — under Tailwind's global
+             * `border-box` sizing plus this element's flex-stretch width, the title's own box stays
+             * exactly as wide as its unpadded sibling regardless of how much right padding it
+             * carries (only the CONTENT area, where text is free to wrap into, shrinks). Comparing
+             * the outer box directly asserts the wrong thing — the same class of mistake the Action-
+             * alignment test above already caught once this session with `-ml-2`.
+             */
+            const getMaxLineRight = (element: HTMLElement) => {
+                const textNode = Array.from(element.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
+                if (!textNode) {
+                    throw new Error("Expected a text node as a direct child of the element.");
+                }
+                const range = document.createRange();
+                range.selectNodeContents(textNode);
+                const lineRects = Array.from(range.getClientRects());
+                return Math.max(...lineRects.map((rect) => rect.right));
+            };
+            const wrappingTitle =
+                "Couldn't create 6 column(s): Backlog, To Do, In Progress, In Review, Blocked, Done — every one of them failed to save.";
+            const screen = await renderToastHarness([{ title: wrappingTitle, description: "Try again." }]);
+            await screen.getByRole("button", { name: "Add toast 1" }).click();
+            const dialog = screen.getByRole("dialog", { name: wrappingTitle });
+            await dialog.hover();
+
+            // Act
+            const titleMaxLineRight = getMaxLineRight(screen.getByText(wrappingTitle).element() as HTMLElement);
+            const closeRect = screen
+                .getByRole("button", { name: "Dismiss notification" })
+                .element()
+                .getBoundingClientRect();
+
+            /*
+             * Assert — no rendered line of the wrapped title extends as far right as the close
+             * button's left edge, on either line (not just the first).
+             */
+            expect(titleMaxLineRight).toBeLessThanOrEqual(closeRect.left);
+        });
     },
 });

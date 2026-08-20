@@ -89,6 +89,14 @@ type TitleProps = Omit<ToastTitleProps, "className"> & ClassNameProp;
  * attribute (a real browser tooltip on hover/focus), the simplest option that can't overlap
  * anything. Only wired when `children` is a plain string — a consumer passing rich JSX children is
  * responsible for its own tooltip, same as any other primitive's `title` escape hatch.
+ *
+ * `pr-6`: Close is `absolute top-2 right-2 size-6` — an 8px inset plus a 24px icon, so its left
+ * edge sits 32px in from Root's right edge, while Content's own `p-4` only pulls Title's box 16px
+ * in. Left unreserved, a wrapped line runs another 16px right than that, straight into the icon's
+ * footprint (human review caught this on the LongContent story's second title line). `pr-6` (24px)
+ * pulls Title's own right edge 8px further left than Close's left edge, matching Close's own
+ * `right-2` inset for a symmetrical gap — verified directly by comparing the two elements'
+ * `getBoundingClientRect()`s, not assumed from the arithmetic alone.
  */
 const Title = ({ className, children, ...props }: TitleProps) => {
     const tooltip = typeof children === "string" ? children : undefined;
@@ -96,7 +104,7 @@ const Title = ({ className, children, ...props }: TitleProps) => {
         <BaseToast.Title
             title={tooltip}
             className={cn(
-                "line-clamp-2 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary",
+                "line-clamp-2 pr-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary",
                 className,
             )}
             {...props}
@@ -110,7 +118,12 @@ type DescriptionProps = Omit<ToastDescriptionProps, "className"> & ClassNameProp
 
 /*
  * Same `line-clamp`/native-`title`-tooltip treatment as `Title` above, at three lines instead of
- * two — a description is expected to run longer than a title before it needs capping.
+ * two — a description is expected to run longer than a title before it needs capping. Also
+ * reserves the same `pr-6` as Title: Content's `flex-col`/`gap-2` layout means Description only
+ * shares the close icon's vertical footprint when Title renders unusually short (a title shorter
+ * than the icon's own height), but nothing forces every future consumer's title to be that long,
+ * so the same protection is applied unconditionally rather than relying on Title always being
+ * tall enough to push Description clear.
  */
 const Description = ({ className, children, ...props }: DescriptionProps) => {
     const tooltip = typeof children === "string" ? children : undefined;
@@ -118,7 +131,7 @@ const Description = ({ className, children, ...props }: DescriptionProps) => {
         <BaseToast.Description
             title={tooltip}
             className={cn(
-                "line-clamp-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted",
+                "line-clamp-3 pr-6 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted",
                 className,
             )}
             {...props}
