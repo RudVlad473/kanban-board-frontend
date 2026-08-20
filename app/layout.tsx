@@ -3,6 +3,7 @@ import "@/styles/globals.css";
 
 import { QueryProvider } from "@/lib/client/query-client";
 import { cn } from "@/lib/core/styling/cn";
+import { THEME } from "@/lib/core/theme/theme";
 import { readThemeCookie } from "@/lib/server/theme";
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ const RootLayout = async ({ children }: LayoutProps<"/">) => {
     const theme = await readThemeCookie();
 
     return (
-        <html lang="en" className={cn("h-full antialiased", theme === "DARK" && "dark")}>
+        <html lang="en" className={cn("h-full antialiased", theme === THEME.DARK && "dark")}>
             <body className="flex min-h-full flex-col bg-bg-app text-text-primary">
                 <QueryProvider>{children}</QueryProvider>
             </body>

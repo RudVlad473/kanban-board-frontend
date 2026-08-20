@@ -2,27 +2,12 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-/**
- * The two values the backend's contract allows (`UpdateThemeRequestDTO.theme`,
- * `docs/api/kanban-board-openapi.json`). Declared here rather than pulled from the generated
- * client types so this module has no dependency on the OpenAPI contract shape — only on the two
- * literal values it names.
- */
-export type Theme = "LIGHT" | "DARK";
+import { baseCookieOptions, COOKIE } from "@/lib/core/cookies/cookie-registry";
+import { isTheme, type Theme } from "@/lib/core/theme/theme";
 
-/**
- * Exported so any server-only consumer that needs the literal cookie name (there is none today
- * beyond this module itself) never has to restate it. Deliberately a plain, non-httpOnly cookie —
- * it carries a display preference, not a credential (T-01-35, accepted low-severity disclosure),
- * and the root layout must be able to resolve it before any client script runs. Kept entirely
- * separate from `SESSION_COOKIE_NAME` (`src/lib/server/session.ts`) — the session cookie's
- * httpOnly protection is never widened to carry this.
- */
-export const THEME_COOKIE = "theme";
+export type { Theme };
 
 const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // a display preference should outlive the session cookie's 7-day expiry
-
-const isTheme = (value: string | undefined): value is Theme => value === "LIGHT" || value === "DARK";
 
 /**
  * Server-side read of the theme cookie — the whole flash-avoidance mechanism the root layout
@@ -34,7 +19,7 @@ const isTheme = (value: string | undefined): value is Theme => value === "LIGHT"
  */
 export const readThemeCookie = async (): Promise<Theme | null> => {
     const cookieStore = await cookies();
-    const value = cookieStore.get(THEME_COOKIE)?.value;
+    const value = cookieStore.get(COOKIE.THEME)?.value;
     return isTheme(value) ? value : null;
 };
 
@@ -45,15 +30,9 @@ export const readThemeCookie = async (): Promise<Theme | null> => {
  */
 export const writeThemeCookie = async (theme: Theme): Promise<void> => {
     const cookieStore = await cookies();
-    cookieStore.set(THEME_COOKIE, theme, {
+    cookieStore.set(COOKIE.THEME, theme, {
+        ...baseCookieOptions(),
         httpOnly: false,
-        /*
-         * Vercel Preview/Production are always HTTPS; only local `next dev` over
-         * http://localhost needs this relaxed — mirrors session.ts's identical guard.
-         */
-        secure: process.env.NODE_ENV !== "development",
-        sameSite: "lax",
-        path: "/",
         maxAge: THEME_COOKIE_MAX_AGE_SECONDS,
     });
 };

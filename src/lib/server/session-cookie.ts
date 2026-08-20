@@ -1,11 +1,13 @@
 import "server-only";
 
+import { COOKIE } from "@/lib/core/cookies/cookie-registry";
+
 /**
  * The name of the backend's own session cookie (Spring Session / JSESSIONID), confirmed directly
- * against live nonprod during planning (this plan's `<verified_backend_facts>`). Kept as a named
- * constant, not a literal repeated at each call site, so the one string never drifts.
+ * against live nonprod during planning (this plan's `<verified_backend_facts>`). Re-exported from
+ * `COOKIE.UPSTREAM_SESSION` so this module's existing importers keep resolving the same name.
  */
-export const UPSTREAM_SESSION_COOKIE_NAME = "JSESSIONID";
+export const UPSTREAM_SESSION_COOKIE_NAME = COOKIE.UPSTREAM_SESSION;
 
 /**
  * Reads the upstream credential out of a raw `Response`'s `Set-Cookie` headers. Deliberately uses

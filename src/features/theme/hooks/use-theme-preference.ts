@@ -4,22 +4,12 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { updateThemeAction } from "@/features/theme/actions";
-
-/**
- * Duplicated from `src/lib/server/theme.ts`'s `Theme` — that module carries `import "server-only"`
- * and cannot be imported here even as a type-only import risk (this project was already bitten
- * once by a "use server"/client-boundary assumption in 01-33; not repeating that here). Structurally
- * identical to `updateThemeAction`'s own parameter type, so no compatibility is lost.
- */
-export type Theme = "LIGHT" | "DARK";
+import { THEME, type Theme } from "@/lib/core/theme/theme";
 
 /*
- * The same literal `src/lib/server/theme.ts`'s `THEME_COOKIE` names, duplicated for the same
- * reason as the `Theme` type above — that module is server-only and cannot be imported into this
- * client hook. Used only by the unauthenticated path below, which writes the cookie itself
- * because it never calls `updateThemeAction` (there is no session to persist against yet). The
- * cookie is deliberately non-httpOnly (T-01-35), so a direct client-side write is a legitimate
- * mechanism, not a workaround.
+ * The literal `COOKIE.THEME` (`@/lib/core/cookies/cookie-registry.ts`) also names, duplicated
+ * here for the unauthenticated path below, which writes the cookie itself with no session to
+ * persist against yet.
  */
 const THEME_COOKIE_NAME = "theme";
 const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
@@ -27,7 +17,7 @@ const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 const FAILURE_MESSAGE = "Couldn't save your theme. Try again.";
 
 const applyDocumentThemeClass = (theme: Theme): void => {
-    document.documentElement.classList.toggle("dark", theme === "DARK");
+    document.documentElement.classList.toggle("dark", theme === THEME.DARK);
 };
 
 const writeThemeCookieClientSide = (theme: Theme): void => {
@@ -68,7 +58,7 @@ export const useThemePreference = ({ initialTheme, isAuthenticated }: UseThemePr
 
     const toggleTheme = (): void => {
         const previousTheme = theme;
-        const nextTheme: Theme = previousTheme === "DARK" ? "LIGHT" : "DARK";
+        const nextTheme: Theme = previousTheme === THEME.DARK ? THEME.LIGHT : THEME.DARK;
 
         /*
          * Optimistic: apply the new theme to the document root and local state first — the

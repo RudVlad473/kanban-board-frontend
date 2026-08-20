@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
+import { THEME } from "@/lib/core/theme/theme";
 import { externalApi } from "@/lib/server/server-client";
 import { isSessionPayload, session } from "@/lib/server/session";
 
@@ -99,7 +100,7 @@ describe("server-client session bridge (real backend)", () => {
             id: "00000000-0000-4000-8000-000000000000",
             email: "expired-session@example.com",
             displayName: "Expired Session",
-            theme: "LIGHT",
+            theme: THEME.LIGHT,
             jsessionId: "syntactically-valid-but-nonexistent-jsessionid",
         });
 

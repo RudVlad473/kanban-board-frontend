@@ -1,6 +1,7 @@
 import { SignJWT } from "jose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { THEME } from "@/lib/core/theme/theme";
 import { createSessionService, type SessionPayload, type SessionRecord } from "@/lib/server/session";
 
 type CookieRecord = { value: string; options?: Record<string, unknown> };
@@ -39,7 +40,7 @@ const testPayload: SessionRecord = {
     id: "11111111-1111-4111-8111-111111111111",
     email: "test@example.com",
     displayName: "Test User",
-    theme: "LIGHT",
+    theme: THEME.LIGHT,
     jsessionId: "upstream-jsessionid-abc123",
 };
 

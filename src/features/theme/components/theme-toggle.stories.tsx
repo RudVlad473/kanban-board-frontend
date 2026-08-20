@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import { THEME } from "@/lib/core/theme/theme";
+
 import { ThemeToggle } from "./theme-toggle";
 
 /*
@@ -30,13 +32,13 @@ type Story = StoryObj<typeof ThemeToggle>;
 
 export const Light: Story = {
     args: {
-        initialTheme: "LIGHT",
+        initialTheme: THEME.LIGHT,
     },
 };
 
 export const Dark: Story = {
     args: {
-        initialTheme: "DARK",
+        initialTheme: THEME.DARK,
     },
 };
 
@@ -46,7 +48,7 @@ export const Dark: Story = {
  */
 export const Focus: Story = {
     args: {
-        initialTheme: "LIGHT",
+        initialTheme: THEME.LIGHT,
     },
     decorators: [
         (Story) => (
@@ -59,7 +61,7 @@ export const Focus: Story = {
 
 export const SaveFailed: Story = {
     args: {
-        initialTheme: "LIGHT",
+        initialTheme: THEME.LIGHT,
         forceErrorMessage: "Couldn't save your theme. Try again.",
     },
 };

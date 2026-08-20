@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { ROUTE } from "../src/lib/core/routing/routes";
+import { THEME, type Theme } from "../src/lib/core/theme/theme";
 
 const TOGGLE_NAME = "Toggle dark mode";
 const PROTECTED_HEADING = "Boards";
@@ -25,7 +26,7 @@ const isDarkScopeApplied = (html: string) => /<html[^>]*\bclass="[^"]*\bdark\b[^
  * cookie itself is the actual condition every downstream assertion in this file depends on, not a
  * proxy for it.
  */
-const waitForThemeCookie = ({ page, theme }: { page: Page; theme: "LIGHT" | "DARK" }) =>
+const waitForThemeCookie = ({ page, theme }: { page: Page; theme: Theme }) =>
     expect.poll(() => page.evaluate(() => document.cookie)).toContain(`theme=${theme}`);
 
 /*
@@ -63,7 +64,7 @@ test.describe("THEME-01: theme persistence", () => {
         const toggle = page.getByRole("switch", { name: TOGGLE_NAME });
         const initialChecked = await toggle.getAttribute("aria-checked");
         const initialColor = await readBodyBackgroundColor(page);
-        const toggledTheme: "LIGHT" | "DARK" = initialChecked === "true" ? "LIGHT" : "DARK";
+        const toggledTheme: Theme = initialChecked === "true" ? THEME.LIGHT : THEME.DARK;
 
         /*
          * Scenario 1 — toggling changes the document root scope and a visible surface colour, not
@@ -85,7 +86,7 @@ test.describe("THEME-01: theme persistence", () => {
             throw new Error("expected page.reload() to return a Response");
         }
         const html = await reloadResponse.text();
-        expect(isDarkScopeApplied(html)).toBe(toggledTheme === "DARK");
+        expect(isDarkScopeApplied(html)).toBe(toggledTheme === THEME.DARK);
         await expect(toggle).toHaveAttribute("aria-checked", initialChecked === "true" ? "false" : "true");
 
         /*
@@ -110,7 +111,7 @@ test.describe("THEME-01: theme persistence", () => {
          * where they started. No further sign-in is needed (still within the sign-in from
          * Scenario 3), so this stays inside the two-session budget.
          */
-        const originalTheme: "LIGHT" | "DARK" = toggledTheme === "DARK" ? "LIGHT" : "DARK";
+        const originalTheme: Theme = toggledTheme === THEME.DARK ? THEME.LIGHT : THEME.DARK;
         await toggleAfterSignIn.click();
         await expect(toggleAfterSignIn).toHaveAttribute("aria-checked", initialChecked ?? "false");
         const finalColor = await readBodyBackgroundColor(page);
@@ -122,6 +123,6 @@ test.describe("THEME-01: theme persistence", () => {
             throw new Error("expected page.reload() to return a Response");
         }
         const finalHtml = await finalReloadResponse.text();
-        expect(isDarkScopeApplied(finalHtml)).toBe(originalTheme === "DARK");
+        expect(isDarkScopeApplied(finalHtml)).toBe(originalTheme === THEME.DARK);
     });
 });

@@ -5,6 +5,9 @@ import { randomUUID } from "node:crypto";
 import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 
+import { baseCookieOptions, COOKIE } from "@/lib/core/cookies/cookie-registry";
+import { isTheme, type Theme } from "@/lib/core/theme/theme";
+
 /**
  * The identity shape carried inside the session cookie — the full `UserResponseDTO` returned by
  * `POST /signin` (Task 1 decision recorded in 01-10-SUMMARY.md), not just a bare user id, so
@@ -14,7 +17,7 @@ export type SessionPayload = {
     id: string;
     email: string;
     displayName: string;
-    theme: "LIGHT" | "DARK";
+    theme: Theme;
 };
 
 /**
@@ -23,8 +26,7 @@ export type SessionPayload = {
  * Component/Route Handler/Server Action request scope that `next/headers`'s `cookies()` requires,
  * so it cannot call `session.verify()` directly.
  */
-export const SESSION_COOKIE_NAME = "session";
-const COOKIE_NAME = SESSION_COOKIE_NAME;
+export const SESSION_COOKIE_NAME = COOKIE.SESSION;
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // seven days, absolute expiry (ADR tech/0001)
 
 /**
@@ -44,7 +46,7 @@ export const isSessionPayload = (value: unknown): value is SessionPayload => {
         typeof candidate.id === "string" &&
         typeof candidate.email === "string" &&
         typeof candidate.displayName === "string" &&
-        (candidate.theme === "LIGHT" || candidate.theme === "DARK")
+        isTheme(candidate.theme as string | undefined)
     );
 };
 
@@ -99,16 +101,9 @@ export const createSessionService = (secret: string) => {
             .sign(key);
 
         const cookieStore = await cookies();
-        cookieStore.set(COOKIE_NAME, value, {
+        cookieStore.set(COOKIE.SESSION, value, {
+            ...baseCookieOptions(),
             httpOnly: true,
-            /*
-             * Vercel Preview/Production are always HTTPS; only a local `next dev` over
-             * http://localhost needs this relaxed, gated on the Node environment rather than a
-             * custom flag per the plan's explicit instruction.
-             */
-            secure: process.env.NODE_ENV !== "development",
-            sameSite: "lax",
-            path: "/",
             expires: expiresAt,
         });
     };
@@ -149,12 +144,12 @@ export const createSessionService = (secret: string) => {
 
     const verify = async (): Promise<SessionRecord | null> => {
         const cookieStore = await cookies();
-        return verifyToken(cookieStore.get(COOKIE_NAME)?.value);
+        return verifyToken(cookieStore.get(COOKIE.SESSION)?.value);
     };
 
     const destroy = async (): Promise<void> => {
         const cookieStore = await cookies();
-        cookieStore.delete(COOKIE_NAME);
+        cookieStore.delete(COOKIE.SESSION);
     };
 
     return { create, verify, verifyToken, destroy };
