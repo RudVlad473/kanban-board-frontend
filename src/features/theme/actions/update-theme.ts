@@ -18,15 +18,10 @@ export type UpdateThemeResult = { status: "success"; theme: Theme } | { status: 
 const themeSchema = z.enum([THEME.LIGHT, THEME.DARK]);
 
 /**
- * The theme persistence server function (01-35 Task 3's option-b decision, applied here). Placed
- * at this domain's flat `actions.ts`, mirroring `src/features/auth/actions.ts`'s naming
- * convention, not a re-created `app/api/` endpoint.
- *
- * Takes only the new theme value — there is no caller-suppliable identifier anywhere in this
- * signature for it to trust or ignore (T-01-06); the user id forwarded to the external contract
- * comes exclusively from `verifySession()` below. This is called first, before validation, so an
- * unauthenticated call is refused by this function's own check regardless of what value it
- * carries (T-01-05) — nothing else in this call path establishes that a session exists.
+ * The theme persistence server function (01-35 Task 3's option-b decision — see that plan's
+ * summary). Takes only the new theme value; the user id forwarded upstream comes exclusively from
+ * `verifySession()`, called first so an unauthenticated call is refused regardless of the value
+ * supplied (T-01-05/T-01-06).
  */
 export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult> => {
     const record = await verifySession();
@@ -35,11 +30,9 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
     }
 
     /*
-     * Validated after the session check, before calling upstream — an invalid value never reaches
-     * the backend. `theme`'s declared type already constrains it to the two allowed values at
-     * compile time, but a Server Action is invokable over the wire with an arbitrary request body
-     * regardless of what TypeScript claims about its caller, so this is real runtime defense, not
-     * a formality.
+     * Validated after the session check, before calling upstream — a Server Action is invokable
+     * over the wire with an arbitrary request body regardless of what TypeScript claims about its
+     * caller, so this is real runtime defense, not a formality.
      */
     const parsed = themeSchema.safeParse(theme);
     if (!parsed.success) {
@@ -52,10 +45,8 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
     });
 
     /*
-     * The contract declares only a 200 response for this operation with no error schema at all —
-     * the same gap `signInAction`/`signUpAction` already work around (`src/features/auth/
-     * actions.ts`) — so the generated type's claim about `error` is widened through `unknown`
-     * rather than trusted at face value.
+     * The contract declares only a 200 response with no error schema — the same gap sign-in.ts/
+     * sign-up.ts work around — so `error` is widened through `unknown` rather than trusted as-is.
      */
     const upstreamError: unknown = error;
     if (upstreamError !== undefined) {

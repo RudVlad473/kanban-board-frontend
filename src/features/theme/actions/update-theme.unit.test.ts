@@ -4,12 +4,13 @@ import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
 
-import { updateThemeAction } from "./actions";
+import { updateThemeAction } from "./update-theme";
 
 /*
  * `@/lib/server/server-client` is the real network boundary and the only thing worth stubbing
  * (GC-22) — `externalApi.PUT` is seeded per test with the response shapes the live backend
- * actually returns, mirroring `src/features/auth/actions.unit.test.ts`'s established pattern.
+ * actually returns, mirroring `src/features/auth/actions/sign-in.unit.test.ts`'s established
+ * pattern.
  */
 vi.mock("@/lib/server/server-client", () => ({
     externalApi: { PUT: vi.fn() },
@@ -62,9 +63,9 @@ const validRecord = {
 
 /**
  * `externalApi.PUT`'s declared return type comes from the external contract's generated types,
- * which — per `actions.ts`'s own comment — are known to be incomplete at runtime for this
+ * which — per `update-theme.ts`'s own comment — are known to be incomplete at runtime for this
  * operation (no error schema declared). Cast through this one named seam, mirroring
- * `src/features/auth/actions.unit.test.ts`'s identical idiom.
+ * `src/features/auth/actions/sign-in.unit.test.ts`'s identical idiom.
  */
 type UpstreamPutResult = Awaited<ReturnType<typeof externalApi.PUT>>;
 const mockUpstreamResponse = (result: { data?: unknown; error?: unknown }): void => {
