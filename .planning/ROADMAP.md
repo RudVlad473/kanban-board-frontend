@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 2/13 plans executed
+**Plans**: 3/13 plans executed
 
 Plans:
 
@@ -233,7 +233,7 @@ these execute *before* any BOARD-01..06 work, same pattern Phase 1's gap-closure
 
 **Wave 2** *(blocked on 02-01)*
 
-- [ ] 02-03-PLAN.md — theme and upstream cookie I/O relocated to `lib/server/cookies/`, factory-namespaced (PC-03)
+- [x] 02-03-PLAN.md — theme and upstream cookie I/O relocated to `lib/server/cookies/`, factory-namespaced (PC-03)
 
 **Wave 3** *(blocked on 02-03)*
 
@@ -331,6 +331,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 2/13 | In Progress|  |
+| 2. Board Management | 3/13 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
