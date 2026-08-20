@@ -174,12 +174,33 @@ this axis.
 
 | Finding | Implementation instruction |
 |---|---|
-| D-12/D-13 ordering | `GET /boards` returns creation order (oldest-first), not newest-first. Newest-first **is achievable**: reverse the array client-side (equivalently, sort by `id` descending as a string — P1 and P2 agree). Present to the developer as a checkpoint choice per D-13's explicit "don't silently downgrade" instruction (Task 4), even though the data supports either the reversed-server-order or id-descending-sort approach equally. |
+| D-12/D-13 ordering | `GET /boards` returns creation order (oldest-first), not newest-first. Newest-first **is achievable**: reverse the array client-side (equivalently, sort by `id` descending as a string — P1 and P2 agree). **Resolved by Task 4's checkpoint (see "Developer Decision" below): reverse the fetched `GET /boards` array client-side for newest-first.** |
 | A3 error shape | `parseProblemDetail`'s shape is reusable verbatim. `PROBLEM_CODE` (`src/lib/core/api-contract/problem-detail.ts`) must gain an `OPTIMISTIC_LOCK_CONFLICT` entry before board Route Handlers can recognize a 409 version conflict — no separate board-specific parser needed. |
 | P4 board-name bound | `minLength: 1` matches the contract. A `maxLength` exists (1000 chars is rejected) but its exact value was not pinned by this probe's two data points — see Escalate. |
 | P6 column-name bound | Exactly `3–32` characters, matching the contract's declared `SaveColumnRequestDTO`/`UpdateColumnRequestDTO` bounds. Zod schema: `z.string().min(3).max(32)`. |
 | P5 column position | Sequential creation produces strictly ascending `position` (0, 1, 2, ...) — confirms ADR domain/0003's no-parallel-calls assumption holds. |
-| P7 access control | Backend enforces board ownership server-side by session identity, independent of the client-supplied `userId` query parameter. The Route Handler's server-derived `userId` is sufficient; no additional frontend ownership check is required. |
+| P7 access control | Backend enforces board ownership server-side by session identity, independent of the client-supplied `userId` query parameter. The Route Handler's server-derived `userId` is sufficient; no additional frontend ownership check is required. **Resolved by Task 4's checkpoint (see "Developer Decision" below): the finding is trusted, proceed with board plans as written.** |
+
+---
+
+## Developer Decision (Task 4 checkpoint, 2026-08-20)
+
+The gate="blocking-human" checkpoint in Task 4 was presented to the developer with both findings
+quoted verbatim. Decisions given:
+
+- **Ordering:** `ordering-developer-choice` — reverse the fetched `GET /boards` array client-side
+  for newest-first display, rather than a server-side/id-based sort. Implementation for plan
+  02-08 onward: after `GET /boards` resolves, reverse the returned array before rendering the
+  sidebar list; this is equivalent in output to descending-id sort for this backend's data (P1,
+  P2) but keeps the sort logic anchored to the array the backend actually returns instead of a
+  second, independently-maintained id-comparison function.
+- **Access control:** `access-control-proceed` — the P7 finding (403 `ACCESS_DENIED` on all three
+  cross-account attempts, including the one using account A's own `userId`) is trusted. Board
+  plans proceed as written; the Route Handler's server-derived `userId` is confirmed sufficient
+  and no additional frontend ownership check is required.
+
+Both findings are now closed — nothing from this plan's seven observations remains open for a
+developer decision.
 
 ---
 
