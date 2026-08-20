@@ -37,6 +37,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("next/link", () => ({
     __esModule: true,
     default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
+        // eslint-disable-next-line no-restricted-syntax -- this IS the next/link stand-in itself (see comment above), not a component opting out of it
         <a href={href} className={className}>
             {children}
         </a>

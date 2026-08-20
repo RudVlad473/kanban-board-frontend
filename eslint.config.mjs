@@ -65,6 +65,18 @@ const eslintConfig = defineConfig([
         },
     },
 
+    /*
+     * 3a. `@next/next/no-img-element` escalated to error (ships as warn in core-web-vitals) — same
+     * "raw HTML element bypassing a Next-provided optimized equivalent" failure class as the raw
+     * `<a>` ban below (8f), and confirmed by a probe file this project has zero existing `<img>`
+     * usage to migrate, so there is nothing for this escalation to break.
+     */
+    {
+        rules: {
+            "@next/next/no-img-element": "error",
+        },
+    },
+
     // 3b. Blank line required between sibling JSX elements/expressions (fixable).
     {
         rules: {
@@ -400,6 +412,24 @@ const eslintConfig = defineConfig([
                     selector: "Property > ArrowFunctionExpression[params.length>=2]",
                     message:
                         "Functions with 2+ parameters take one destructured object parameter instead of positional arguments (ADR tech/0016).",
+                },
+                /*
+                 * 8f. Ban a raw `<a>` JSX element outright — `@next/next/no-html-link-for-pages`
+                 * (already active via `nextVitals` above) only fires on a static string-literal
+                 * `href`; it silently passes on `href={boardDetail(board.id)}` or any other
+                 * non-literal expression, because it can't statically evaluate arbitrary JS to know
+                 * the target is an internal route. That gap shipped a real bug this phase (02-08):
+                 * a `Sidebar` board row using a raw `<a>` instead of `next/link`'s `Link`, causing a
+                 * full page reload on every click instead of a client-side transition — passed type
+                 * -check and looked identical in a screenshot. This selector fires on every `<a>`
+                 * regardless of what its `href` expression is, forcing each one to be a conscious,
+                 * justified `// eslint-disable-next-line no-restricted-syntax` rather than an
+                 * unreviewed copy-paste.
+                 */
+                {
+                    selector: "JSXOpeningElement[name.name='a']",
+                    message:
+                        "Use next/link's Link for internal navigation, not a raw <a> — @next/next/no-html-link-for-pages only catches a static string-literal href, not a computed one. If this is a genuinely deliberate full-page-reload/external link, add a `// eslint-disable-next-line no-restricted-syntax` with a one-line reason.",
                 },
             ],
         },
