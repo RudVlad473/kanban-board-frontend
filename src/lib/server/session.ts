@@ -5,6 +5,8 @@ import { randomUUID } from "node:crypto";
 import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 
+import { isTheme, type Theme } from "@/lib/core/theme/theme";
+
 /**
  * The identity shape carried inside the session cookie — the full `UserResponseDTO` returned by
  * `POST /signin` (Task 1 decision recorded in 01-10-SUMMARY.md), not just a bare user id, so
@@ -14,7 +16,7 @@ export type SessionPayload = {
     id: string;
     email: string;
     displayName: string;
-    theme: "LIGHT" | "DARK";
+    theme: Theme;
 };
 
 /**
@@ -44,7 +46,7 @@ export const isSessionPayload = (value: unknown): value is SessionPayload => {
         typeof candidate.id === "string" &&
         typeof candidate.email === "string" &&
         typeof candidate.displayName === "string" &&
-        (candidate.theme === "LIGHT" || candidate.theme === "DARK")
+        isTheme(candidate.theme as string | undefined)
     );
 };
 

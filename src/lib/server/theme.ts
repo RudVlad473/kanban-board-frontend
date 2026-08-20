@@ -2,13 +2,9 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-/**
- * The two values the backend's contract allows (`UpdateThemeRequestDTO.theme`,
- * `docs/api/kanban-board-openapi.json`). Declared here rather than pulled from the generated
- * client types so this module has no dependency on the OpenAPI contract shape — only on the two
- * literal values it names.
- */
-export type Theme = "LIGHT" | "DARK";
+import { isTheme, type Theme } from "@/lib/core/theme/theme";
+
+export type { Theme };
 
 /**
  * Exported so any server-only consumer that needs the literal cookie name (there is none today
@@ -21,8 +17,6 @@ export type Theme = "LIGHT" | "DARK";
 export const THEME_COOKIE = "theme";
 
 const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // a display preference should outlive the session cookie's 7-day expiry
-
-const isTheme = (value: string | undefined): value is Theme => value === "LIGHT" || value === "DARK";
 
 /**
  * Server-side read of the theme cookie — the whole flash-avoidance mechanism the root layout
