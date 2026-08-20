@@ -25,10 +25,9 @@ vi.mock("@/lib/server/dal", () => ({
 }));
 
 /*
- * `next/headers`'s `cookies()` requires a real Next.js request scope this plain Vitest test has
- * none of — stubbed with the same in-memory cookie jar `actions.unit.test.ts` (auth) and
- * `session.test.ts` use, so `@/lib/server/theme` (unmocked) runs its real `writeThemeCookie`
- * logic against it.
+ * `next/headers`'s `cookies()` needs a real request scope this test has none of — stubbed with
+ * the same in-memory jar `session.test.ts` uses, so the real (unmocked) `themeCookie.write` from
+ * `@/lib/server/cookies/theme-cookie` runs against it.
  */
 type CookieRecord = { value: string; options?: Record<string, unknown> };
 const cookieStore = new Map<string, CookieRecord>();

@@ -3,9 +3,9 @@
 import { z } from "zod";
 
 import { THEME, type Theme } from "@/lib/core/theme/theme";
+import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
-import { writeThemeCookie } from "@/lib/server/theme";
 
 /**
  * `updateThemeAction`'s own result — no success member carries anything beyond the value that was
@@ -64,9 +64,9 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
 
     /*
      * Write the cookie only on confirmed success — the next server render resolves the new scope
-     * before hydration (`app/layout.tsx`'s `readThemeCookie` read).
+     * before hydration (`app/layout.tsx`'s `themeCookie.read()` call).
      */
-    await writeThemeCookie(parsed.data);
+    await themeCookie.write(parsed.data);
 
     return { status: "success", theme: parsed.data };
 };

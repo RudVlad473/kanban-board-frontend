@@ -84,8 +84,8 @@ const buildFormData = (fields: Record<string, string>): FormData => {
 };
 
 /**
- * A real `Response`, since `extractUpstreamSessionId` reads `response.headers.getSetCookie()` —
- * the array-returning form, not the single-string `headers.get()`. `jsessionId` omitted models a
+ * A real `Response`, since `upstreamCookie.extract` reads `response.headers.getSetCookie()` — the
+ * array-returning form, not the single-string `headers.get()`. `jsessionId` omitted models a
  * success body carrying no upstream credential (GC-18, T-01-50).
  */
 const buildUpstreamResponse = (jsessionId?: string): Response => {

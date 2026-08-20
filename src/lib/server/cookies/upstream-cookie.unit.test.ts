@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-    extractUpstreamSessionId,
-    toUpstreamCookieHeader,
-    UPSTREAM_SESSION_COOKIE_NAME,
-} from "@/lib/server/session-cookie";
+import { COOKIE } from "@/lib/core/cookies/cookie-registry";
+
+import { upstreamCookie } from "./upstream-cookie";
 
 const responseWithSetCookies = (setCookiePairs: string[]): Response => {
     const response = new Response(null);
@@ -14,13 +12,13 @@ const responseWithSetCookies = (setCookiePairs: string[]): Response => {
     return response;
 };
 
-describe("extractUpstreamSessionId", () => {
+describe("upstreamCookie.extract", () => {
     it("reads the value out of a single matching Set-Cookie pair", () => {
         // Arrange
         const response = responseWithSetCookies(["JSESSIONID=abc123; Path=/; HttpOnly; SameSite=Strict"]);
 
         // Act
-        const result = extractUpstreamSessionId(response);
+        const result = upstreamCookie.extract(response);
 
         // Assert
         expect(result).toBe("abc123");
@@ -35,7 +33,7 @@ describe("extractUpstreamSessionId", () => {
         ]);
 
         // Act
-        const result = extractUpstreamSessionId(response);
+        const result = upstreamCookie.extract(response);
 
         // Assert
         expect(result).toBe("xyz789");
@@ -48,10 +46,21 @@ describe("extractUpstreamSessionId", () => {
         ]);
 
         // Act
-        const result = extractUpstreamSessionId(response);
+        const result = upstreamCookie.extract(response);
 
         // Assert
         expect(result).toBe("commatest");
+    });
+
+    it("skips a malformed pair with no '=' separator rather than throwing", () => {
+        // Arrange
+        const response = responseWithSetCookies(["malformed-no-equals-sign", "JSESSIONID=recovered; Path=/"]);
+
+        // Act
+        const result = upstreamCookie.extract(response);
+
+        // Assert
+        expect(result).toBe("recovered");
     });
 
     const noMatchCases = [
@@ -65,7 +74,7 @@ describe("extractUpstreamSessionId", () => {
             const response = responseWithSetCookies(pairs);
 
             // Act
-            const result = extractUpstreamSessionId(response);
+            const result = upstreamCookie.extract(response);
 
             // Assert
             expect(result).toBeNull();
@@ -73,15 +82,15 @@ describe("extractUpstreamSessionId", () => {
     }
 });
 
-describe("toUpstreamCookieHeader", () => {
+describe("upstreamCookie.toHeader", () => {
     it("builds the Cookie request-header value from the raw session id", () => {
         // Arrange
         const jsessionId = "some-session-id";
 
         // Act
-        const header = toUpstreamCookieHeader(jsessionId);
+        const header = upstreamCookie.toHeader(jsessionId);
 
         // Assert
-        expect(header).toBe(`${UPSTREAM_SESSION_COOKIE_NAME}=some-session-id`);
+        expect(header).toBe(`${COOKIE.UPSTREAM_SESSION}=some-session-id`);
     });
 });

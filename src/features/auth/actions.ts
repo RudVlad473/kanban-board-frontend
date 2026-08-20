@@ -7,9 +7,9 @@ import { resolveDisplayName } from "@/features/auth/model";
 import { signInSchema, signUpSchema, zodErrorToFieldErrors } from "@/features/auth/schemas";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
+import { upstreamCookie } from "@/lib/server/cookies/upstream-cookie";
 import { externalApi } from "@/lib/server/server-client";
 import { isSessionPayload, session } from "@/lib/server/session";
-import { extractUpstreamSessionId } from "@/lib/server/session-cookie";
 
 /*
  * A wrong credential and an unknown email must return byte-identical responses (T-01-08, account
@@ -76,7 +76,7 @@ export const signInAction = async (_previousState: AuthActionState, formData: Fo
      * degraded success — creating a session that cannot authenticate anything would leave the user
      * looking signed in while every subsequent call fails.
      */
-    const jsessionId = extractUpstreamSessionId(response);
+    const jsessionId = upstreamCookie.extract(response);
 
     if (upstreamError !== undefined || !isSessionPayload(identity) || !jsessionId) {
         /*
@@ -146,7 +146,7 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
      * degraded success — creating a session that cannot authenticate anything would leave the user
      * looking signed in while every subsequent call fails.
      */
-    const jsessionId = extractUpstreamSessionId(response);
+    const jsessionId = upstreamCookie.extract(response);
 
     if (upstreamError !== undefined || !isSessionPayload(identity) || !jsessionId) {
         const problem = parseProblemDetail(upstreamError);
