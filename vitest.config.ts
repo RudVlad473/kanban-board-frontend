@@ -65,6 +65,8 @@ export default defineConfig({
                         "src/lib/server/session.test.ts",
                         "app/api/auth/**/*.test.ts",
                         "src/**/*.integration.test.ts",
+                        // Plain Node ESM with no jsdom/React dependency — belongs here, not "unit".
+                        "scripts/**/*.unit.test.mjs",
                     ],
                     env: {
                         EXTERNAL_API_BASE_URL: resolveTestApiBaseUrl(),
