@@ -1,7 +1,7 @@
 ---
 phase: 2
 slug: board-management
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-08-20
@@ -167,7 +167,7 @@ match `tokens.css`, not the PDF's raw swatches, if the two ever disagree.
 
 ## UI Considerations
 
-Applicable state considerations resolved: 15 covered, 3 backstop, 2 unresolved.
+Applicable state considerations resolved: 15 covered, 5 backstop, 0 unresolved.
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
@@ -185,9 +185,9 @@ Applicable state considerations resolved: 15 covered, 3 backstop, 2 unresolved.
 | populated | Board detail / column view | ✅ covered | PDF's full Todo/Doing/Done mockups — read-only rendering context this phase (column/task CRUD is Phase 3/4). |
 | partial | Add Board modal — some column rows named, some blank (D-02) | ✅ covered | D-02: 0-N named rows is a valid submission; empty rows are simply omitted from the POST sequence, not validation-blocked. |
 | overflow | Sidebar board list (many boards) | ✅ covered | Sidebar's board-list region scrolls independently (`overflow-y-auto`) once it exceeds the panel's available height — the "+ Create New Board" link and the bottom theme-toggle/"Hide Sidebar" controls stay pinned outside the scroll region (PDF's layout: list scrolls, footer controls don't move). |
-| overflow | Board-detail column view (many tasks per column) | ⚠ unresolved | Out of this phase's interactive scope (task CRUD is Phase 4), but BOARD-03 requires *rendering* a board's full contents — planner should confirm whether each column scrolls independently or the whole board-view region scrolls as one; PDF's mockups show columns of varying height with no visible per-column scrollbar, ambiguous which container actually scrolls. Flagged as a planning-time assumption, not a design-contract gap. |
+| overflow | Board-detail column view (many tasks per column) | 🧪 backstop | **Resolved (user decision, 2026-08-20):** each column scrolls independently, vertically — column headers (`TODO (N)`/`DOING (N)`/`DONE (N)`) stay pinned in place while that column's task list scrolls beneath them. No PDF mockup shows this state directly (all mockups fit within one viewport), so this is a held-out visual-state decision, not explicit PDF/CONTEXT evidence — lifts as a `must_haves` backstop truth for verification. |
 | zero-one-many | Sidebar board list | ✅ covered | 0 → D-10's empty state; 1-N → "ALL BOARDS (N)" caption pluralizes only the count, not the word "board(s)" itself (PDF never spells out the word "board" beside the count — caption text is static "ALL BOARDS", count varies). |
-| zero-one-many | Board-detail column view | ⚠ unresolved | 0 columns → covered (empty-board state). 1-N columns' layout (column width, wrap vs. horizontal-scroll once columns exceed viewport width) is PDF-documented for the *existing seed data* (3 columns) but this phase's own create-flow can legitimately produce boards with far more than 3 columns via D-02's "add rows beyond 3" — horizontal overflow behavior at, say, 6+ columns is not shown in any PDF mockup. Flagged for planner; likely resolution is horizontal scroll on the column row (consistent with `overflow` row above), but not explicitly PDF-evidenced. |
+| zero-one-many | Board-detail column view | 🧪 backstop | 0 columns → covered (empty-board state). **1-N columns resolved (user decision, 2026-08-20):** the column row scrolls horizontally once it exceeds viewport width — columns keep their fixed width rather than wrapping to a new row. No PDF mockup shows this (the seed data never exceeds 3 columns), so this is a held-out visual-state decision, not explicit PDF/CONTEXT evidence — lifts as a `must_haves` backstop truth for verification. |
 | long-text | Sidebar board-row name | ✅ covered | `truncate` (existing `TextField`/`Dropdown` pattern) applied to the board-row label — no PDF mockup shows an overlong board name, but the project's established truncation convention (ellipsis, blurred-state-only per `text-field.tsx`'s documented Firefox/Chromium caret-scroll fix) is the direct precedent to reuse. |
 | long-text | Add/Edit Board modal — board name & column name inputs | ✅ covered | Same `truncate`/`TextField` convention; backend length constraints already schema-verified in 02-RESEARCH.md (board name `minLength:1`, no max; column name `minLength:3,maxLength:32` for non-empty rows). |
 | long-text | Delete confirmation body ("{Board Name}") | ✅ covered | PDF's confirmation copy wraps across up to 2 lines for a long board name (visible in the PDF mockup itself, "Platform Launch" wraps mid-sentence) — the confirmation body text should wrap naturally, not truncate, since it's prose, not a label. |
@@ -243,11 +243,11 @@ pipeline built in Phase 1. The registry-vetting gate is not applicable to this p
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS (FLAG: "Retry" toast action label, non-blocking)
+- [x] Dimension 2 Visuals: PASS (FLAG: no explicit focal-point statement / aria-label confirmation, non-blocking)
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS (not applicable — no shadcn/registry in this project)
 
-**Approval:** pending
+**Approval:** approved 2026-08-20
