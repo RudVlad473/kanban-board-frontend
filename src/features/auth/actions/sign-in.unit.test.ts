@@ -5,8 +5,8 @@ import { ROUTE } from "@/lib/core/routing/routes";
 import { THEME } from "@/lib/core/theme/theme";
 import { externalApi } from "@/lib/server/server-client";
 
-import { AUTH_ACTION_IDLE } from "./action-state";
-import { signInAction, signOutAction, signUpAction } from "./actions";
+import { AUTH_ACTION_IDLE } from "../action-state";
+import { signInAction } from "./sign-in";
 
 /*
  * `@/lib/server/server-client` is the real network boundary and the only thing worth stubbing
@@ -58,12 +58,12 @@ const mockedPost = vi.mocked(externalApi.POST);
 
 /*
  * `externalApi.POST`'s declared return type comes from the external contract's generated types —
- * which, per auth-actions.ts's own comments, are known to be untrue at runtime for both of these
- * operations (no error schema, and a success schema that doesn't describe the real identity
- * body). Every response this file seeds is deliberately shaped like what the live backend
- * actually returns instead of what the contract claims, so it is cast through this one named seam
- * rather than fought at every call site — the same "widen and trust the runtime shape" idiom
- * auth-actions.ts itself uses via `unknown`.
+ * which, per sign-in.ts's own comments, are known to be untrue at runtime for this operation (no
+ * error schema, and a success schema that doesn't describe the real identity body). Every response
+ * this file seeds is deliberately shaped like what the live backend actually returns instead of
+ * what the contract claims, so it is cast through this one named seam rather than fought at every
+ * call site — the same "widen and trust the runtime shape" idiom sign-in.ts itself uses via
+ * `unknown`.
  */
 type UpstreamPostResult = Awaited<ReturnType<typeof externalApi.POST>>;
 const mockNextUpstreamResponse = (result: { data?: unknown; error?: unknown; response: Response }): void => {
@@ -72,8 +72,6 @@ const mockNextUpstreamResponse = (result: { data?: unknown; error?: unknown; res
 
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
-const SIGN_UP_FAILURE_MESSAGE =
-    "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
 
 const buildFormData = (fields: Record<string, string>): FormData => {
     const formData = new FormData();
@@ -243,70 +241,5 @@ describe("signInAction", () => {
         });
         expect(cookieStore.get("session")).toBeUndefined();
         expect(redirectSpy).not.toHaveBeenCalled();
-    });
-});
-
-describe("signUpAction", () => {
-    it("stores a session built from the backend's returned record and redirects to the board list on a valid sign-up", async () => {
-        // Arrange
-        mockNextUpstreamResponse({
-            data: validIdentity,
-            error: undefined,
-            response: buildUpstreamResponse("upstream-jsessionid-def456"),
-        });
-        const formData = buildFormData({
-            email: validIdentity.email,
-            displayName: validIdentity.displayName,
-            password: "CorrectPassword1!",
-        });
-
-        // Act
-        await signUpAction(AUTH_ACTION_IDLE, formData);
-
-        // Assert
-        const storedSession = cookieStore.get("session");
-        expect(storedSession).toBeDefined();
-        expect(redirectSpy).toHaveBeenCalledExactlyOnceWith(ROUTE.BOARDS);
-    });
-
-    it("returns the backend's duplicate reason and the existing collapsed failure copy when the address is already registered", async () => {
-        // Arrange
-        mockNextUpstreamResponse({
-            data: undefined,
-            error: buildProblemDetail({ code: PROBLEM_CODE.DUPLICATE_RESOURCE }),
-            response: buildUpstreamResponse(),
-        });
-        const formData = buildFormData({
-            email: "existing@example.com",
-            displayName: "",
-            password: "CorrectPassword1!",
-        });
-
-        // Act
-        const state = await signUpAction(AUTH_ACTION_IDLE, formData);
-
-        // Assert
-        expect(state).toEqual({
-            status: "error",
-            code: PROBLEM_CODE.DUPLICATE_RESOURCE,
-            message: SIGN_UP_FAILURE_MESSAGE,
-        });
-        expect(cookieStore.get("session")).toBeUndefined();
-    });
-});
-
-describe("signOutAction", () => {
-    it("destroys the local session and redirects to sign-in, without calling the backend at all", async () => {
-        // Arrange
-        cookieStore.set("session", { value: "some-signed-session-token" });
-        const formData = buildFormData({});
-
-        // Act
-        await signOutAction(AUTH_ACTION_IDLE, formData);
-
-        // Assert
-        expect(cookieStore.get("session")).toBeUndefined();
-        expect(redirectSpy).toHaveBeenCalledExactlyOnceWith(ROUTE.SIGN_IN);
-        expect(mockedPost).not.toHaveBeenCalled();
     });
 });
