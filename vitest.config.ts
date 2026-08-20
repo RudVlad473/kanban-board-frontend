@@ -162,6 +162,17 @@ export default defineConfig({
                             find: "@/features/theme/actions/update-theme",
                             replacement: path.resolve(rootDir, "src/test-utils/update-theme-action-storybook-stub.ts"),
                         },
+                        /*
+                         * `Sidebar` composes the real `useBoards()`, which calls `boardsApi.list()`
+                         * — a same-origin `fetch("/api/boards")` with no Route Handler to answer it
+                         * in this bare Vitest browser environment. Aliased so each `sidebar.
+                         * stories.tsx` story can stage its own fixed pending/error/populated state
+                         * instead of every story resolving to the same failed-fetch error state.
+                         */
+                        {
+                            find: "@/features/boards/hooks/use-boards",
+                            replacement: path.resolve(rootDir, "src/test-utils/use-boards-storybook-stub.ts"),
+                        },
                         ...alias,
                     ],
                 },
