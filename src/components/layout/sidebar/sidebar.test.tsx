@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { expect, it, vi } from "vitest";
 
 import { useBoards } from "@/features/boards/hooks/use-boards";
@@ -21,6 +22,25 @@ const mockedUseBoards = vi.mocked(useBoards);
 let currentPathname: string = ROUTE.BOARDS;
 vi.mock("next/navigation", () => ({
     usePathname: () => currentPathname,
+}));
+
+/*
+ * `next/link`'s real implementation reads `process.env` internally — undefined in this
+ * project's plain Vitest Browser Mode test environment (confirmed directly: importing it
+ * unmocked throws `ReferenceError: process is not defined` from
+ * `next/dist/client/has-base-path.js`). Mocked to a plain anchor so the test environment gap
+ * doesn't force `Sidebar` itself off client-side routing — `sidebar.tsx` keeps the real
+ * `next/link` for production navigation between boards, this project's single most frequent
+ * interaction, unlike the one-time auth-page transition `sign-in-form.tsx`/`sign-up-form.tsx`
+ * reasonably opted out of instead.
+ */
+vi.mock("next/link", () => ({
+    __esModule: true,
+    default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
+        <a href={href} className={className}>
+            {children}
+        </a>
+    ),
 }));
 
 const boards = [

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useBoards } from "@/features/boards/hooks/use-boards";
@@ -63,17 +64,7 @@ export const Sidebar = () => {
 
                             return (
                                 <li key={board.id} className="min-w-0">
-                                    {/*
-                                     * A plain anchor, not next/link's `Link` — matching
-                                     * sign-in-form.tsx/sign-up-form.tsx's identical, already-
-                                     * established rationale: `next/link` reads `process.env`
-                                     * internally, which is undefined in this project's plain Vitest
-                                     * Browser Mode test environment (confirmed directly — importing
-                                     * it here throws `ReferenceError: process is not defined` from
-                                     * `next/dist/client/has-base-path.js`), so this project avoids
-                                     * it everywhere rather than special-casing one component.
-                                     */}
-                                    <a
+                                    <Link
                                         href={boardDetail(board.id)}
                                         className={cn(
                                             "flex h-11 min-w-0 items-center rounded-r-lg px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
@@ -83,7 +74,7 @@ export const Sidebar = () => {
                                         )}
                                     >
                                         <span className="truncate">{board.name}</span>
-                                    </a>
+                                    </Link>
                                 </li>
                             );
                         })}
