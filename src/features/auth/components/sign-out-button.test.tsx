@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 
 import { AUTH_ACTION_IDLE, type AuthActionState } from "@/features/auth/action-state";
-import { signOutAction } from "@/features/auth/actions";
+import { signOutAction } from "@/features/auth/actions/sign-out";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
@@ -16,7 +16,7 @@ import { SignOutButton } from "./sign-out-button";
  * component's vantage point — the server function's own unit test (actions.unit.test.ts)
  * separately proves the stubbed HTTP client itself is never invoked.
  */
-vi.mock("@/features/auth/actions", () => ({
+vi.mock("@/features/auth/actions/sign-out", () => ({
     signOutAction: vi.fn(),
 }));
 
