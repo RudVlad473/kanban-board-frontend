@@ -217,7 +217,65 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: TBD
+**Plans**: 13 plans
+
+Plans:
+
+Prerequisite scope (02-CONTEXT.md items PC-01..PC-05 plus two folded pending todos FT-01/FT-02 —
+the theme/cookie/actions cleanup design at
+`docs/superpowers/specs/2026-08-20-theme-cookies-actions-cleanup-design.md`). Per 02-CONTEXT.md
+these execute *before* any BOARD-01..06 work, same pattern Phase 1's gap-closure rounds used:
+
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — `THEME` const and `COOKIE` registry in new `lib/core/` concern folders (PC-01, PC-02)
+- [ ] 02-02-PLAN.md — path-traversal containment in `scripts/serve-static.mjs`, with its first test (FT-02)
+
+**Wave 2** *(blocked on 02-01)*
+
+- [ ] 02-03-PLAN.md — theme and upstream cookie I/O relocated to `lib/server/cookies/`, factory-namespaced (PC-03)
+
+**Wave 3** *(blocked on 02-03)*
+
+- [ ] 02-04-PLAN.md — auth and theme Server Actions split one-per-file under `features/<domain>/actions/` (PC-04)
+
+**Wave 4** *(blocked on 02-04)*
+
+- [ ] 02-05-PLAN.md — theme cookie cleared on sign-out and written on sign-in; CONVENTIONS.md rules (FT-01, PC-05)
+
+Board management (BOARD-01..06). Wave 5 resolves the backend facts 02-RESEARCH.md could not verify
+and adds the two missing primitives; wave 6 is the tracer slice proving the whole data spine on one
+narrow path before any breadth is added:
+
+**Wave 5** *(blocked on 02-05)*
+
+- [ ] 02-06-PLAN.md — live-backend probe resolving list order, id format, error shape and board ownership; Route Handler test glob
+- [ ] 02-07-PLAN.md — `Toast` and `Menu` primitives (BOARD-02, BOARD-04, BOARD-05)
+
+**Wave 6** *(blocked on 02-06)*
+
+- [ ] 02-08-PLAN.md — TRACER: sidebar lists real boards end to end through a BFF Route Handler (BOARD-01)
+
+**Wave 7** *(blocked on 02-08)*
+
+- [ ] 02-09-PLAN.md — sidebar chrome, pinned controls, collapse and expand (BOARD-06)
+
+**Wave 8** *(blocked on 02-09, 02-07)*
+
+- [ ] 02-10-PLAN.md — client-orchestrated board creation with optional initial columns (BOARD-02)
+
+**Wave 9** *(blocked on 02-10)*
+
+- [ ] 02-11-PLAN.md — board detail view, empty state and auto-select routing (BOARD-03)
+
+**Wave 10** *(blocked on 02-11)*
+
+- [ ] 02-12-PLAN.md — per-board overflow menu and optimistic rename with rollback (BOARD-04)
+
+**Wave 11** *(blocked on 02-12)*
+
+- [ ] 02-13-PLAN.md — confirmed board delete, cascade and post-delete redirect (BOARD-05)
+
 **UI hint**: yes
 
 ### Phase 3: Column Management
@@ -273,6 +331,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 0/TBD | Not started | - |
+| 2. Board Management | 0/13 | Planned     | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
