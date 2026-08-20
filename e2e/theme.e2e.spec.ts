@@ -97,6 +97,13 @@ test.describe("THEME-01: theme persistence", () => {
         await page.getByRole("button", { name: "Sign Out" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
 
+        /*
+         * FT-01: signOutAction clears the theme cookie alongside the session cookie — proves the
+         * regression that would let a second account briefly render the first account's theme on
+         * a shared browser (T-02-18) doesn't happen.
+         */
+        await expect.poll(() => page.evaluate(() => document.cookie)).not.toContain("theme=");
+
         await page.getByLabel("Email", { exact: true }).fill(email);
         await page.getByLabel("Password", { exact: true }).fill(ACCOUNT_PASSWORD);
         await page.getByRole("button", { name: "Sign In" }).click();
@@ -105,6 +112,20 @@ test.describe("THEME-01: theme persistence", () => {
 
         const toggleAfterSignIn = page.getByRole("switch", { name: TOGGLE_NAME });
         await expect(toggleAfterSignIn).toHaveAttribute("aria-checked", initialChecked === "true" ? "false" : "true");
+
+        /*
+         * signInAction writes the theme cookie from the backend's own returned `identity.theme`
+         * (FT-01) — this observes that write, then proves the served HTML actually carries the
+         * `dark` scope on a fresh render, not just the toggle's `aria-checked` attribute (which
+         * comes from the session record and would keep passing even if the cookie write regressed).
+         */
+        await waitForThemeCookie({ page, theme: toggledTheme });
+        const postSignInReloadResponse = await page.reload();
+        if (!postSignInReloadResponse) {
+            throw new Error("expected page.reload() to return a Response");
+        }
+        const postSignInHtml = await postSignInReloadResponse.text();
+        expect(isDarkScopeApplied(postSignInHtml)).toBe(toggledTheme === THEME.DARK);
 
         /*
          * Scenario 4 — toggling back returns both the interface and the persisted preference to

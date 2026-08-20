@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ROUTE } from "@/lib/core/routing/routes";
+import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { externalApi } from "@/lib/server/server-client";
 
 import { AUTH_ACTION_IDLE } from "../action-state";
@@ -13,6 +14,14 @@ import { signOutAction } from "./sign-out";
  */
 vi.mock("@/lib/server/server-client", () => ({
     externalApi: { POST: vi.fn() },
+}));
+
+/*
+ * Mocked directly (rather than observed through the fake cookie jar below) so this test asserts
+ * the exact call `signOutAction` makes, not an indirect effect on cookie storage (FT-01).
+ */
+vi.mock("@/lib/server/cookies/theme-cookie", () => ({
+    themeCookie: { clear: vi.fn() },
 }));
 
 /*
@@ -52,6 +61,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const mockedPost = vi.mocked(externalApi.POST);
+const mockedThemeCookieClear = vi.mocked(themeCookie.clear);
 
 const buildFormData = (fields: Record<string, string>): FormData => {
     const formData = new FormData();
@@ -65,10 +75,11 @@ beforeEach(() => {
     cookieStore.clear();
     mockedPost.mockReset();
     redirectSpy.mockReset();
+    mockedThemeCookieClear.mockReset();
 });
 
 describe("signOutAction", () => {
-    it("destroys the local session and redirects to sign-in, without calling the backend at all", async () => {
+    it("destroys the local session, clears the theme cookie, and redirects to sign-in, without calling the backend at all", async () => {
         // Arrange
         cookieStore.set("session", { value: "some-signed-session-token" });
         const formData = buildFormData({});
@@ -78,6 +89,7 @@ describe("signOutAction", () => {
 
         // Assert
         expect(cookieStore.get("session")).toBeUndefined();
+        expect(mockedThemeCookieClear).toHaveBeenCalledExactlyOnceWith();
         expect(redirectSpy).toHaveBeenCalledExactlyOnceWith(ROUTE.SIGN_IN);
         expect(mockedPost).not.toHaveBeenCalled();
     });

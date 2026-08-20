@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PROBLEM_CODE, type ProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { THEME } from "@/lib/core/theme/theme";
+import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { externalApi } from "@/lib/server/server-client";
 
 import { AUTH_ACTION_IDLE } from "../action-state";
@@ -16,6 +17,14 @@ import { signUpAction } from "./sign-up";
  */
 vi.mock("@/lib/server/server-client", () => ({
     externalApi: { POST: vi.fn() },
+}));
+
+/*
+ * Mocked directly so a success test can assert the exact theme written, and a failure test can
+ * assert `write` was never called — neither is observable through the fake cookie jar alone (FT-01).
+ */
+vi.mock("@/lib/server/cookies/theme-cookie", () => ({
+    themeCookie: { write: vi.fn() },
 }));
 
 /*
@@ -55,6 +64,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const mockedPost = vi.mocked(externalApi.POST);
+const mockedThemeCookieWrite = vi.mocked(themeCookie.write);
 
 /*
  * `externalApi.POST`'s declared return type comes from the external contract's generated types —
@@ -119,6 +129,7 @@ beforeEach(() => {
     cookieStore.clear();
     mockedPost.mockReset();
     redirectSpy.mockReset();
+    mockedThemeCookieWrite.mockReset();
 });
 
 describe("signUpAction", () => {
@@ -141,6 +152,7 @@ describe("signUpAction", () => {
         // Assert
         const storedSession = cookieStore.get("session");
         expect(storedSession).toBeDefined();
+        expect(mockedThemeCookieWrite).toHaveBeenCalledExactlyOnceWith(validIdentity.theme);
         expect(redirectSpy).toHaveBeenCalledExactlyOnceWith(ROUTE.BOARDS);
     });
 
@@ -167,5 +179,6 @@ describe("signUpAction", () => {
             message: SIGN_UP_FAILURE_MESSAGE,
         });
         expect(cookieStore.get("session")).toBeUndefined();
+        expect(mockedThemeCookieWrite).not.toHaveBeenCalled();
     });
 });

@@ -50,7 +50,15 @@ src/
 │   ├── auth/
 │   │   ├── components/               # LoginForm, RegisterForm
 │   │   ├── hooks/                    # useSession, useLogin, useLogout
-│   │   └── api/                      # calls into the generated client; also where this domain's own Server Actions ("use server") live
+│   │   ├── api/                      # calls into the generated client
+│   │   ├── action-state.ts           # shared AuthActionState type consumed by every action below
+│   │   └── actions/                  # one Server Action ("use server") per file
+│   │       ├── sign-in.ts
+│   │       ├── sign-in.unit.test.ts
+│   │       ├── sign-up.ts
+│   │       ├── sign-up.unit.test.ts
+│   │       ├── sign-out.ts
+│   │       └── sign-out.unit.test.ts
 │   └── activity-log/
 │       ├── components/               # ActivityFeed, ActivityItem
 │       └── hooks/
@@ -65,8 +73,11 @@ src/
 │
 ├── hooks/                            # generic, non-domain hooks (useMediaQuery, useDebounce, useLocalStorage)
 ├── lib/
-│   ├── core/                         # pure, framework-agnostic — subdivided by concern: styling/, routing/, viewport/, api-contract/
+│   ├── core/                         # pure, framework-agnostic — subdivided by concern: styling/, routing/, viewport/, api-contract/, theme/, cookies/
+│   │   ├── theme/theme.ts            # lib/core/theme/ — THEME const, Theme type, isTheme guard
+│   │   └── cookies/cookie-registry.ts # COOKIE const, CookieName type, baseCookieOptions
 │   ├── server/                       # server-only; every file carries `import "server-only"`
+│   │   └── cookies/                  # lib/server/cookies/{theme-cookie,upstream-cookie}.ts — cookie I/O, factory-namespaced
 │   └── client/                       # browser/React-runtime infra
 ├── types/                            # domain-agnostic, runtime-free TYPE declarations reused across ≥2 unrelated components (docs/adr/tech/0013) — e.g. props.ts's ClassNameProp
 ├── test-utils/                       # shared test infrastructure never imported by application code, only by other test files (docs/adr/tech/0014) — e.g. describe-for-each-device.ts
@@ -85,7 +96,7 @@ src/
 
 **When in doubt between step 2 and step 3/4, default to step 2** (feature-specific) — promote to `components/` only once a *second* domain actually needs it. Do not create a generic `src/shared/` catch-all folder; every file has one of the eight homes above.
 
-**A domain's own Server Action (`"use server"` mutation function) lives in that domain's `api/` folder** — beside the client-side API-boundary code it replaces, not a separate top-level location. This keeps step 2's feature-folder rule and the `eslint-plugin-boundaries` policy applying unchanged: a Server Action is still domain-owned code, only the mechanism that dispatches it differs. Example: `src/features/auth/actions.ts` (docs/adr/tech/0017).
+**A domain's Server Actions (`"use server"` mutation functions) live one-per-file at `features/<domain>/actions/<action-name>.ts`, never a flat multi-export `actions.ts` and never a barrel `index.ts`** (docs/adr/tech/0017's mechanism; this phase's PC-04 for the per-file shape). Each action file carries its own co-located `*.unit.test.ts`. A shared type consumed by several of a domain's actions (e.g. auth's `action-state.ts`) stays at the feature root, not inside `actions/` — it isn't an action itself. This keeps step 2's feature-folder rule and the `eslint-plugin-boundaries` policy applying unchanged: a Server Action is still domain-owned code, only the mechanism that dispatches it differs. Board, column and task mutations stay on TanStack Query per ADR tech/0002's GC-24 amendment and therefore never gain an `actions/` folder. Examples: `src/features/auth/actions/{sign-in,sign-up,sign-out}.ts`, `src/features/theme/actions/update-theme.ts`.
 
 **Where tests live (by kind):**
 
@@ -107,7 +118,7 @@ src/
 | Shared test infrastructure | `test-utils/` | Never imported by application code |
 | Design-system primitive | `components/ui/` | No domain awareness |
 | Domain-aware layout/chrome | `components/layout/` | — |
-| Domain server function (`"use server"` mutation) | `features/<domain>/api/` | Lives beside the domain's other API-boundary code (docs/adr/tech/0017) |
+| Domain Server Action (`"use server"` mutation) | `features/<domain>/actions/<name>.ts` | One Server Action per file, its own co-located `*.unit.test.ts`, never a flat `actions.ts` (docs/adr/tech/0017, PC-04) |
 | Domain's pure model function | `features/<domain>/model.ts` | Derives/transforms that domain's data — no side effects, no API calls |
 | Pure, framework-agnostic infrastructure | `lib/core/` | Imports neither `lib/server/` nor `lib/client/` |
 | Server-only infrastructure | `lib/server/` | Carries `import "server-only"`; may import `lib/core/`, never `lib/client/` |
@@ -148,6 +159,7 @@ src/
 - ESLint (with `eslint-plugin-tailwindcss`) and Prettier (with `prettier-plugin-tailwindcss`) must both report zero errors before merge. Enforcement: required CI status check running both on every PR.
 - Two or more consecutive `//` line comments are written as a single `/** ... */` block instead — a single standalone `//` comment is unaffected. Enforcement: `@stylistic/eslint-plugin`'s `multiline-comment-style` rule, set to `"starred-block"`.
 - Every function is a `const` bound to an arrow function expression, never a `function` declaration or function expression (docs/adr/tech/0015) — except Next.js framework-forced default-export files (`page.tsx`, `layout.tsx`, `route.ts`, etc.), which declare the arrow-const normally and `export default` it on its own line, since `export default const foo = () => {}` isn't valid syntax. Class methods and object-literal method shorthand are unaffected. Enforcement: `eslint-plugin-prefer-arrow-functions` (autofix) plus core `func-style: ["error", "expression"]` as a backstop.
+- A comment explaining WHY is at most 1-3 lines (roughly one sentence) (PC-05). If the rationale needs more — a threat-model citation, a multi-step decision history — that belongs in the relevant ADR, `CONTEXT.md`, or `SUMMARY.md`, referenced by a short pointer (e.g. "see ADR tech/0018") rather than restated in full inline. Enforcement: code review — no automated tool measures comment-prose length.
 
 ## Responsive strategy (docs/adr/tech/0010, docs/adr/tech/0014)
 
