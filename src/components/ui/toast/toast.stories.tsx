@@ -102,14 +102,21 @@ export const Stacked: Story = {
     },
 };
 
+/*
+ * Deliberately longer than any real Copywriting Contract string this phase actually uses — long
+ * enough that both `Title` (2-line clamp) and `Description` (3-line clamp) visibly truncate with
+ * an ellipsis instead of growing the card, which the shorter, realistic copy in the other stories
+ * wouldn't demonstrate. The full text of each is still reachable via the native `title` tooltip
+ * (hover or focus) `Title`/`Description` set from their own string children.
+ */
 export const LongContent: Story = {
     args: {
         configs: [
             {
                 type: "danger",
-                title: "Couldn't create 4 column(s): Backlog, To Do, In Progress, Done.",
+                title: "Couldn't create 6 column(s): Backlog, To Do, In Progress, In Review, Blocked, Done — every one of them failed to save.",
                 description:
-                    "The board was created, but these columns failed to save. Retry to add them, or add them manually from the board view.",
+                    "The board itself was created successfully, but every column listed above failed to save to the server. You can retry to add them automatically, or add each one manually from the board view instead — either path leaves the board itself intact and only affects these columns.",
                 actionProps: { children: "Retry" },
                 timeout: 0,
             },

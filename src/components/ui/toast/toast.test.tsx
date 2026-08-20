@@ -172,5 +172,91 @@ describeForEachDevice({
             await expect.element(screen.getByText("Couldn't create 2 column(s).")).not.toBeInTheDocument();
             expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
         });
+
+        it("clamps a very long description to a bounded height instead of growing the card, exposing the full text via a native title tooltip", async () => {
+            /*
+             * Arrange — long enough that, unclamped, it would wrap to well over 3 lines at the
+             * card's fixed width. `-webkit-line-clamp`/`overflow: hidden` (Tailwind's `line-clamp-3`)
+             * caps the rendered box regardless of how much text is behind it.
+             */
+            const longDescription =
+                "The board itself was created successfully, but every column listed above failed to save to the server. You can retry to add them automatically, or add each one manually from the board view instead — either path leaves the board itself intact and only affects these columns.";
+            const screen = await renderToastHarness([
+                { title: "Couldn't create columns.", description: longDescription },
+            ]);
+
+            // Act
+            await screen.getByRole("button", { name: "Add toast 1" }).click();
+            const description = screen.getByText(longDescription);
+            const descriptionElement = description.element();
+            const descriptionStyle = getComputedStyle(descriptionElement);
+
+            /*
+             * Assert — the clamp is applied (a 3-line-tall box regardless of text length) and the
+             * full text is still reachable via the native `title` attribute Description sets from
+             * its own string children, not just visually truncated with nothing behind it.
+             */
+            expect(descriptionStyle.overflow).toBe("hidden");
+            expect(descriptionElement.getAttribute("title")).toBe(longDescription);
+            /*
+             * A 3-line clamp box is nowhere near tall enough to fit this description unclamped —
+             * this bounds the box height rather than asserting an exact pixel value tied to font
+             * metrics, which would be a brittle, unrelated regression trigger.
+             */
+            expect(descriptionElement.getBoundingClientRect().height).toBeLessThan(100);
+        });
+
+        it("renders the panel at the TextField/Dropdown radius token, not Modal's", async () => {
+            // Arrange
+            const screen = await renderToastHarness([{ title: "Couldn't rename board.", description: "Try again." }]);
+
+            // Act
+            await screen.getByRole("button", { name: "Add toast 1" }).click();
+            const dialog = screen.getByRole("dialog", { name: "Couldn't rename board." });
+
+            // Assert — radius.sm (4px), per human review; NOT radius.lg (28px) Modal.Content uses.
+            expect(getComputedStyle(dialog.element()).borderRadius).toBe("4px");
+        });
+
+        it("aligns the action button's visible text flush-left with the title and description above it", async () => {
+            /*
+             * Arrange — Action's `px-2` widens its click/hover target beyond the visible "Retry"
+             * glyph; a `-ml-2` on the same element cancels only that horizontal shift so the
+             * rendered text's left edge still lines up with Title/Description, which come from
+             * Content's own `p-4` with no extra horizontal inset of their own. Deliberately measures
+             * the actual rendered glyph position via a DOM `Range`, not `element.getBoundingClientRect()`
+             * on the button itself — the button's own box is *intentionally* offset left by `-ml-2`
+             * so that its padded-in text lands flush, so comparing box edges directly would assert
+             * the wrong thing (and did, the first time this test was written: the button's box edge
+             * came out 8px left of Title's, exactly the `-ml-2` compensating for `px-2`).
+             */
+            const getTextLeft = (element: HTMLElement) => {
+                const textNode = Array.from(element.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
+                if (!textNode) {
+                    throw new Error("Expected a text node as a direct child of the element.");
+                }
+                const range = document.createRange();
+                range.selectNodeContents(textNode);
+                return range.getBoundingClientRect().left;
+            };
+            const onRetry = vi.fn();
+            const screen = await renderToastHarness([
+                {
+                    title: "Couldn't create 2 column(s).",
+                    description: "Try again.",
+                    actionProps: { children: "Retry", onClick: onRetry },
+                },
+            ]);
+            await screen.getByRole("button", { name: "Add toast 1" }).click();
+
+            // Act
+            const titleTextLeft = getTextLeft(
+                screen.getByText("Couldn't create 2 column(s).").element() as HTMLElement,
+            );
+            const actionTextLeft = getTextLeft(screen.getByRole("button", { name: "Retry" }).element() as HTMLElement);
+
+            // Assert
+            expect(actionTextLeft).toBe(titleTextLeft);
+        });
     },
 });

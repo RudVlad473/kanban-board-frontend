@@ -37,9 +37,13 @@ export const useToast = BaseToast.useToastManager;
  * already carries `type` "to conditionally style the toast" (installed d.ts) and stamps it onto
  * the rendered element as `data-type`; adding a second prop would just duplicate state the
  * manager already owns. `relative` supports Close's `absolute` positioning below.
+ *
+ * `rounded-sm` (radius.sm, 4px) matches TextField/Dropdown's trigger radius, per human review —
+ * NOT Modal's `rounded-lg` (28px) this card's surface treatment otherwise borrows
+ * (`bg-bg-surface`/`shadow-lg` below still match Modal.Content; only the corner radius doesn't).
  */
 const rootVariants = cva(
-    "pointer-events-auto relative w-[min(90vw,24rem)] overflow-hidden rounded-lg border-l-4 bg-bg-surface shadow-lg",
+    "pointer-events-auto relative w-[min(90vw,24rem)] overflow-hidden rounded-sm border-l-4 bg-bg-surface shadow-lg",
     {
         variants: {
             variant: {
@@ -77,26 +81,50 @@ const Content = ({ className, children, ...props }: ContentProps) => {
 
 type TitleProps = Omit<ToastTitleProps, "className"> & ClassNameProp;
 
-const Title = ({ className, ...props }: TitleProps) => {
+/*
+ * `line-clamp-2` caps a runaway title at two lines (`overflow-hidden` + the `-webkit-line-clamp`
+ * ellipsis it sets) rather than letting the card keep growing taller — per human review, a
+ * CSS hover-expand was rejected because it risks the expanded card overlapping the toast stacked
+ * below it (Stacked story). The full, untruncated text is still reachable via the native `title`
+ * attribute (a real browser tooltip on hover/focus), the simplest option that can't overlap
+ * anything. Only wired when `children` is a plain string — a consumer passing rich JSX children is
+ * responsible for its own tooltip, same as any other primitive's `title` escape hatch.
+ */
+const Title = ({ className, children, ...props }: TitleProps) => {
+    const tooltip = typeof children === "string" ? children : undefined;
     return (
         <BaseToast.Title
+            title={tooltip}
             className={cn(
-                "font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary",
+                "line-clamp-2 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary",
                 className,
             )}
             {...props}
-        />
+        >
+            {children}
+        </BaseToast.Title>
     );
 };
 
 type DescriptionProps = Omit<ToastDescriptionProps, "className"> & ClassNameProp;
 
-const Description = ({ className, ...props }: DescriptionProps) => {
+/*
+ * Same `line-clamp`/native-`title`-tooltip treatment as `Title` above, at three lines instead of
+ * two — a description is expected to run longer than a title before it needs capping.
+ */
+const Description = ({ className, children, ...props }: DescriptionProps) => {
+    const tooltip = typeof children === "string" ? children : undefined;
     return (
         <BaseToast.Description
-            className={cn("font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted", className)}
+            title={tooltip}
+            className={cn(
+                "line-clamp-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted",
+                className,
+            )}
             {...props}
-        />
+        >
+            {children}
+        </BaseToast.Description>
     );
 };
 
@@ -107,12 +135,19 @@ type ActionProps = Omit<ToastActionProps, "className"> & ClassNameProp;
  * its own and renders nothing when neither `actionProps` nor `children` resolve to a renderable
  * node (installed source, `hasRenderableChildren`) — so `ToastProvider` below can render this
  * unconditionally for every toast without an `if (toast.actionProps)` guard of its own.
+ *
+ * `px-2` widens the click/hover target beyond the visible "Retry" glyph, which is correct for a
+ * comfortable hit area — but left unchecked it also shifts the glyph itself ~8px right of
+ * Title/Description's shared left edge (`Content`'s own `p-4`, no extra horizontal inset of its
+ * own), a visible misalignment human review caught. `-ml-2` cancels only the horizontal offset
+ * (not `py-1`, which doesn't shift anything horizontally) so the hit area keeps its full padded
+ * size while the rendered text lines up flush-left with the title and description above it.
  */
 const Action = ({ className, ...props }: ActionProps) => {
     return (
         <BaseToast.Action
             className={cn(
-                "self-start rounded-sm px-2 py-1 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary underline decoration-1 underline-offset-2 outline-none hover:no-underline focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2",
+                "-ml-2 self-start rounded-sm px-2 py-1 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary underline decoration-1 underline-offset-2 outline-none hover:no-underline focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2",
                 className,
             )}
             {...props}
