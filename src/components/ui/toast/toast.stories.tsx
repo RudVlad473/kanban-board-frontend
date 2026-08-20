@@ -61,13 +61,22 @@ type Story = StoryObj<typeof SeededToastCanvas>;
 
 export const Default: Story = {
     args: {
-        configs: [{ title: "Rollback complete", description: "The board name was restored." }],
+        /*
+         * `timeout: 0` (store.js: `duration > 0` gates whether an auto-close timer is ever
+         * scheduled at all) — a story is meant to sit still for human review, not auto-dismiss
+         * mid-review. Without it, the outer Storybook manager URL (full chrome: sidebar, addon
+         * panels, a11y panel) takes long enough to finish booting that Base UI's 5000ms default
+         * timeout had often already fired and closed the toast before a human ever saw it —
+         * reproduced directly by comparing a ~1s-after-navigation screenshot (toast visible) against
+         * a ~9s-after-navigation one (empty canvas) at the same URL.
+         */
+        configs: [{ title: "Rollback complete", description: "The board name was restored.", timeout: 0 }],
     },
 };
 
 export const Danger: Story = {
     args: {
-        configs: [{ type: "danger", title: "Couldn't delete board.", description: "Try again." }],
+        configs: [{ type: "danger", title: "Couldn't delete board.", description: "Try again.", timeout: 0 }],
     },
 };
 
@@ -78,6 +87,7 @@ export const WithAction: Story = {
                 title: "Couldn't create 2 column(s).",
                 description: "Try again.",
                 actionProps: { children: "Retry" },
+                timeout: 0,
             },
         ],
     },
@@ -86,8 +96,8 @@ export const WithAction: Story = {
 export const Stacked: Story = {
     args: {
         configs: [
-            { title: "Couldn't rename board.", description: "Try again." },
-            { type: "danger", title: "Couldn't delete board.", description: "Try again." },
+            { title: "Couldn't rename board.", description: "Try again.", timeout: 0 },
+            { type: "danger", title: "Couldn't delete board.", description: "Try again.", timeout: 0 },
         ],
     },
 };
@@ -101,6 +111,7 @@ export const LongContent: Story = {
                 description:
                     "The board was created, but these columns failed to save. Retry to add them, or add them manually from the board view.",
                 actionProps: { children: "Retry" },
+                timeout: 0,
             },
         ],
     },
