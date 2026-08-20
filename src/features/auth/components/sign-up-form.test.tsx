@@ -4,7 +4,7 @@ import { userEvent } from "vitest/browser";
 import { render, type RenderResult } from "vitest-browser-react";
 
 import { AUTH_ACTION_IDLE, type AuthActionState } from "@/features/auth/action-state";
-import { signUpAction } from "@/features/auth/actions";
+import { signUpAction } from "@/features/auth/actions/sign-up";
 import { PROBLEM_CODE, type ProblemCode } from "@/lib/core/api-contract/problem-detail";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
@@ -31,7 +31,7 @@ const { Filled, WithFieldErrors, WithServerError, Submitting, PasswordRevealed }
  * imported through the mock factory (Vitest's hoisting forbids referencing an out-of-scope
  * variable inside `vi.mock`'s factory) — its shape must stay byte-identical to the real constant.
  */
-vi.mock("@/features/auth/actions", () => ({
+vi.mock("@/features/auth/actions/sign-up", () => ({
     signUpAction: vi.fn(),
     AUTH_ACTION_IDLE: { status: "idle" },
 }));

@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 
-import { updateThemeAction, type UpdateThemeResult } from "@/features/theme/actions";
+import { updateThemeAction, type UpdateThemeResult } from "@/features/theme/actions/update-theme";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
@@ -14,7 +14,7 @@ import { ThemeToggle } from "./theme-toggle";
  * of any kind remains in this repository). Task 2's own action text names this module as the
  * seam to stub for driving the failure case.
  */
-vi.mock("@/features/theme/actions", () => ({
+vi.mock("@/features/theme/actions/update-theme", () => ({
     updateThemeAction: vi.fn(),
 }));
 

@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { updateThemeAction } from "@/features/theme/actions";
+import { updateThemeAction } from "@/features/theme/actions/update-theme";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
 
 /*

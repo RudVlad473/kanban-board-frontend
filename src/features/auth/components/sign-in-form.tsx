@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
-import { signInAction } from "@/features/auth/actions";
+import { signInAction } from "@/features/auth/actions/sign-in";
 import { signInSchema, type SignInInput } from "@/features/auth/schemas";
 import { ROUTE } from "@/lib/core/routing/routes";
 
