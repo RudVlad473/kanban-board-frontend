@@ -63,7 +63,13 @@ export default defineConfig({
                     environment: "node",
                     include: [
                         "src/lib/server/session.test.ts",
-                        "app/api/auth/**/*.test.ts",
+                        /*
+                         * Widened from "app/api/auth/**" (that glob's own Route Handlers were
+                         * deleted in plan 01-33 and matched nothing) so every Route Handler test
+                         * under app/api/ — this phase's board handlers and Phases 3-4's
+                         * column/task handlers — is collected without another config edit.
+                         */
+                        "app/api/**/*.test.ts",
                         "src/**/*.integration.test.ts",
                         // Plain Node ESM with no jsdom/React dependency — belongs here, not "unit".
                         "scripts/**/*.unit.test.mjs",
