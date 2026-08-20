@@ -83,6 +83,52 @@ naming initial columns" at board-creation time.
   versioned mutation). This establishes the general optimistic-update pattern board/column/task
   mutations follow project-wide, not just for rename.
 
+### Prerequisite: Theme/Cookie/Actions Cleanup (2026-08-20)
+
+Session context: before starting board-management work, the user raised a batch of architecture
+concerns in Phase 1's auth/theme code — worked through via `superpowers:brainstorming`
+(architectural path) to a fully approved design, written up at
+`docs/superpowers/specs/2026-08-20-theme-cookies-actions-cleanup-design.md`. **This is prerequisite
+scope, not board-management work** — it must be planned and executed as the first plan(s) in
+Phase 2's wave sequence, before any BOARD-01..06 work begins (same pattern Phase 1's gap-closure
+rounds used). All items below are additive to the Implementation Decisions above; none of D-01
+through D-15 are affected.
+
+- **PC-01 (THEME enum-like const):** A `THEME` const (`{ LIGHT: "LIGHT", DARK: "DARK" } as const`)
+  and derived `Theme` type move to a new pure concern folder, `lib/core/theme/` — recreating a
+  pattern that used to exist in the now-deleted `lib/mocks/store.ts` (GC-22) and was never rebuilt.
+  Fixes the current 3-way duplication of the `Theme` type (`lib/server/theme.ts`,
+  `lib/server/session.ts`, `features/theme/hooks/use-theme-preference.ts`) and replaces every
+  `"LIGHT"`/`"DARK"` string literal project-wide with `THEME.LIGHT`/`THEME.DARK`.
+- **PC-02 (centralized cookie registry):** A new pure concern folder, `lib/core/cookies/`, holds a
+  `COOKIE` const naming every cookie this app sets or reads (`SESSION`, `THEME`,
+  `UPSTREAM_SESSION`) plus a shared `baseCookieOptions()` helper for the option fields duplicated
+  across `session.ts`/`theme.ts` today (`secure`, `sameSite`, `path`). `session.ts` keeps its
+  existing `createSessionService` factory structure unchanged — it only switches to importing
+  `COOKIE.SESSION` instead of declaring its own constant.
+- **PC-03 (theme + upstream cookie I/O relocated and factory-namespaced):** A new
+  `lib/server/cookies/` subfolder (mirroring `lib/core/`'s own concern-subfolder convention) holds
+  `theme-cookie.ts` (replaces `lib/server/theme.ts`'s `readThemeCookie`/`writeThemeCookie`, now
+  `themeCookie.read()`/`themeCookie.write(theme)`) and `upstream-cookie.ts` (renamed from
+  `lib/server/session-cookie.ts`, now `upstreamCookie.extract(response)`/
+  `upstreamCookie.toHeader(jsessionId)`) — both factory-namespaced, matching the
+  `createSessionService` shape `session.ts` already uses. The rename resolves the naming collision
+  with `session.ts` that obscured why this module reads `response.headers.getSetCookie()` instead
+  of `next/headers`'s `cookies()` (it parses an external backend `Response`, not this app's own
+  request/response).
+- **PC-04 (`features/<domain>/actions/` — one file per Server Action):** Replaces GC-27's flat
+  `actions.ts` convention. `features/auth/actions.ts` splits into `features/auth/actions/{sign-in,
+  sign-up, sign-out}.ts` (each with its own co-located `*.unit.test.ts`); `features/theme/actions.ts`
+  becomes `features/theme/actions/update-theme.ts`. `action-state.ts` stays at the feature root
+  (shared type, not an action). New project-wide CONVENTIONS.md rule — applies automatically to any
+  future domain that gains a Server Action; board/column/task mutations stay on TanStack Query
+  (ADR tech/0002/GC-24) and are unaffected.
+- **PC-05 (comment length discipline):** New CONVENTIONS.md rule: a WHY-comment is at most 1-3
+  lines; longer rationale (threat-model citations, multi-step history) belongs in the relevant
+  ADR/CONTEXT.md/SUMMARY.md, referenced by a short pointer instead of restated inline. Enforcement
+  is code review (no automated prose-length linter). Applied retroactively only in files PC-01
+  through PC-04 already touch — not swept project-wide.
+
 ### Claude's Discretion
 
 None — every gray area discussed had a concrete decision made; no "you decide" selections in
@@ -141,6 +187,13 @@ this round.
 - `.planning/local-assets/kanban-task-management-web-app.pdf` (Figma export) — sole design
   source for the sidebar, board list, and modal visuals; feed to `/gsd-ui-phase 2` for the
   detailed design contract (ROADMAP.md marks this phase `UI hint: yes`).
+
+### Prerequisite cleanup (2026-08-20, PC-01 through PC-05)
+- `docs/superpowers/specs/2026-08-20-theme-cookies-actions-cleanup-design.md` — the full approved
+  design: `THEME`/`COOKIE` const placement, `lib/server/cookies/` relocation, the
+  `features/<domain>/actions/` convention, and the comment-length rule. Read this before
+  planning/implementing PC-01 through PC-05 — plan and execute this scope first, before any
+  board-management (BOARD-01..06) plan.
 
 ### Prior-phase context this phase inherits
 - `.planning/phases/01-foundation-auth-preferences/01-CONTEXT.md` — GC-21 (deferred from Phase 1)
