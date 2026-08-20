@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 4/13 plans executed
+**Plans**: 5/13 plans executed
 
 Plans:
 
@@ -241,7 +241,7 @@ these execute *before* any BOARD-01..06 work, same pattern Phase 1's gap-closure
 
 **Wave 4** *(blocked on 02-04)*
 
-- [ ] 02-05-PLAN.md — theme cookie cleared on sign-out and written on sign-in; CONVENTIONS.md rules (FT-01, PC-05)
+- [x] 02-05-PLAN.md — theme cookie cleared on sign-out and written on sign-in; CONVENTIONS.md rules (FT-01, PC-05)
 
 Board management (BOARD-01..06). Wave 5 resolves the backend facts 02-RESEARCH.md could not verify
 and adds the two missing primitives; wave 6 is the tracer slice proving the whole data spine on one
@@ -331,6 +331,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 4/13 | In Progress|  |
+| 2. Board Management | 5/13 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
