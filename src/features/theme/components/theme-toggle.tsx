@@ -3,7 +3,8 @@
 import { Moon, Sun } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch/switch";
-import { useThemePreference, type Theme } from "@/features/theme/hooks/use-theme-preference";
+import { useThemePreference } from "@/features/theme/hooks/use-theme-preference";
+import { THEME, type Theme } from "@/lib/core/theme/theme";
 
 /** UI-SPEC's Copywriting Contract row for the theme toggle — no visible text, only this label. */
 const TOGGLE_LABEL = "Toggle dark mode";
@@ -31,7 +32,7 @@ export const ThemeToggle = ({ initialTheme, isAuthenticated, forceErrorMessage }
         <div className="flex flex-col items-end gap-1">
             <Switch
                 label={TOGGLE_LABEL}
-                isChecked={theme === "DARK"}
+                isChecked={theme === THEME.DARK}
                 onCheckedChange={toggleTheme}
                 iconOn={<Moon />}
                 iconOff={<Sun />}

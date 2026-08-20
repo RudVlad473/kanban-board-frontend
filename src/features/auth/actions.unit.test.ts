@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PROBLEM_CODE, type ProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
+import { THEME } from "@/lib/core/theme/theme";
 import { externalApi } from "@/lib/server/server-client";
 
 import { AUTH_ACTION_IDLE } from "./action-state";
@@ -115,7 +116,7 @@ const validIdentity = {
     id: "11111111-1111-4111-8111-111111111111",
     email: "demo@kanban-board.dev",
     displayName: "Demo User",
-    theme: "LIGHT" as const,
+    theme: THEME.LIGHT,
 };
 
 beforeEach(() => {

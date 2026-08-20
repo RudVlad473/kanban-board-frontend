@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
-import type { Theme } from "@/lib/server/theme";
 
 import { updateThemeAction } from "./actions";
 
@@ -57,7 +57,7 @@ const validRecord = {
     id: "11111111-1111-4111-8111-111111111111",
     email: "demo@kanban-board.dev",
     displayName: "Demo User",
-    theme: "LIGHT" as const,
+    theme: THEME.LIGHT,
     jsessionId: "upstream-jsessionid-abc123",
 };
 
@@ -85,32 +85,32 @@ describe("updateThemeAction", () => {
     it("updates the theme and returns the updated value when the caller is signed in", async () => {
         // Arrange
         mockedVerifySession.mockResolvedValue(validRecord);
-        mockUpstreamResponse({ data: { ...validRecord, theme: "DARK" } });
+        mockUpstreamResponse({ data: { ...validRecord, theme: THEME.DARK } });
 
         // Act
-        const result = await updateThemeAction("DARK");
+        const result = await updateThemeAction(THEME.DARK);
 
         // Assert
-        expect(result).toEqual({ status: "success", theme: "DARK" });
+        expect(result).toEqual({ status: "success", theme: THEME.DARK });
         expect(mockedPut).toHaveBeenCalledExactlyOnceWith("/users/me/theme", {
             params: { query: { userId: validRecord.id } },
-            body: { theme: "DARK" },
+            body: { theme: THEME.DARK },
         });
     });
 
     it("is idempotent — a repeated identical update leaves the stored value equal after both calls, and both calls succeed", async () => {
         // Arrange
         mockedVerifySession.mockResolvedValue(validRecord);
-        mockUpstreamResponse({ data: { ...validRecord, theme: "DARK" } });
-        mockUpstreamResponse({ data: { ...validRecord, theme: "DARK" } });
+        mockUpstreamResponse({ data: { ...validRecord, theme: THEME.DARK } });
+        mockUpstreamResponse({ data: { ...validRecord, theme: THEME.DARK } });
 
         // Act
-        const first = await updateThemeAction("DARK");
-        const second = await updateThemeAction("DARK");
+        const first = await updateThemeAction(THEME.DARK);
+        const second = await updateThemeAction(THEME.DARK);
 
         // Assert
-        expect(first).toEqual({ status: "success", theme: "DARK" });
-        expect(second).toEqual({ status: "success", theme: "DARK" });
+        expect(first).toEqual({ status: "success", theme: THEME.DARK });
+        expect(second).toEqual({ status: "success", theme: THEME.DARK });
         expect(mockedPut).toHaveBeenCalledTimes(2);
     });
 
@@ -132,10 +132,10 @@ describe("updateThemeAction", () => {
     it("carries no caller-suppliable user id — the record updated is always the calling session's own", async () => {
         // Arrange
         mockedVerifySession.mockResolvedValue(validRecord);
-        mockUpstreamResponse({ data: { ...validRecord, theme: "DARK" } });
+        mockUpstreamResponse({ data: { ...validRecord, theme: THEME.DARK } });
 
         // Act
-        await updateThemeAction("DARK");
+        await updateThemeAction(THEME.DARK);
 
         /*
          * Assert — `updateThemeAction`'s own signature is `(theme: Theme) => ...`: there is no
@@ -151,7 +151,7 @@ describe("updateThemeAction", () => {
         mockedVerifySession.mockResolvedValue(null);
 
         // Act
-        const result = await updateThemeAction("DARK");
+        const result = await updateThemeAction(THEME.DARK);
 
         // Assert
         expect(result).toEqual({ status: "error" });
@@ -173,7 +173,7 @@ describe("updateThemeAction", () => {
         });
 
         // Act
-        const result = await updateThemeAction("DARK");
+        const result = await updateThemeAction(THEME.DARK);
 
         // Assert
         expect(result).toEqual({ status: "error" });

@@ -2,9 +2,10 @@
 
 import { z } from "zod";
 
+import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
-import { writeThemeCookie, type Theme } from "@/lib/server/theme";
+import { writeThemeCookie } from "@/lib/server/theme";
 
 /**
  * `updateThemeAction`'s own result — no success member carries anything beyond the value that was
@@ -14,7 +15,7 @@ import { writeThemeCookie, type Theme } from "@/lib/server/theme";
  */
 export type UpdateThemeResult = { status: "success"; theme: Theme } | { status: "error" };
 
-const themeSchema = z.enum(["LIGHT", "DARK"]);
+const themeSchema = z.enum([THEME.LIGHT, THEME.DARK]);
 
 /**
  * The theme persistence server function (01-35 Task 3's option-b decision, applied here). Placed

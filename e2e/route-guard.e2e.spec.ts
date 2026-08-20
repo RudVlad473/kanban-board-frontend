@@ -4,6 +4,7 @@ import { SignJWT } from "jose";
 import { createFixtureAccount, type FixtureAccount } from "./fixtures";
 import { E2E_SESSION_SECRET } from "./test-env";
 import { ROUTE } from "../src/lib/core/routing/routes";
+import { THEME } from "../src/lib/core/theme/theme";
 
 const SESSION_COOKIE_NAME = "session";
 const PROTECTED_HEADING = "Boards";
@@ -80,7 +81,7 @@ test.describe("AUTH-03: route guard", () => {
             id: account.id,
             email: account.email,
             displayName: account.displayName,
-            theme: "LIGHT",
+            theme: THEME.LIGHT,
             jsessionId: "forged-e2e-jsessionid-does-not-matter",
         })
             .setProtectedHeader({ alg: "HS256" })

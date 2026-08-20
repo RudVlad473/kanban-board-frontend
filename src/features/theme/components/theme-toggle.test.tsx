@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 
 import { updateThemeAction, type UpdateThemeResult } from "@/features/theme/actions";
+import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
@@ -19,7 +20,7 @@ vi.mock("@/features/theme/actions", () => ({
 
 const mockedUpdateThemeAction = vi.mocked(updateThemeAction);
 
-const renderToggle = (props: { initialTheme: "LIGHT" | "DARK"; isAuthenticated: boolean }) =>
+const renderToggle = (props: { initialTheme: Theme; isAuthenticated: boolean }) =>
     renderWithProviders(<ThemeToggle {...props} />);
 
 /*
@@ -37,7 +38,7 @@ describeForEachDevice({
 
         it("is found by role switch with the accessible name, and renders no visible text", async () => {
             // Arrange
-            const screen = await renderToggle({ initialTheme: "LIGHT", isAuthenticated: true });
+            const screen = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
 
             // Assert
             await expect.element(screen.getByRole("switch", { name: "Toggle dark mode" })).toBeVisible();
@@ -53,7 +54,7 @@ describeForEachDevice({
                 resolveAction = resolve;
             });
             mockedUpdateThemeAction.mockImplementationOnce(async () => actionGate);
-            const screen = await renderToggle({ initialTheme: "LIGHT", isAuthenticated: true });
+            const screen = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -67,7 +68,7 @@ describeForEachDevice({
             await expect.element(toggle).toHaveAttribute("aria-checked", "true");
 
             // Cleanup — let the pending call settle so it can't leak into the next test.
-            resolveAction({ status: "success", theme: "DARK" });
+            resolveAction({ status: "success", theme: THEME.DARK });
         });
 
         it("issues the persistence request only after the visual change, not before it", async () => {
@@ -77,7 +78,7 @@ describeForEachDevice({
                 resolveAction = resolve;
             });
             mockedUpdateThemeAction.mockImplementationOnce(async () => actionGate);
-            const screen = await renderToggle({ initialTheme: "LIGHT", isAuthenticated: true });
+            const screen = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -92,13 +93,13 @@ describeForEachDevice({
             expect(document.documentElement.classList.contains("dark")).toBe(true);
 
             // Cleanup
-            resolveAction({ status: "success", theme: "DARK" });
+            resolveAction({ status: "success", theme: THEME.DARK });
         });
 
         it("stays in the new position and shows no message when persistence succeeds", async () => {
             // Arrange
-            mockedUpdateThemeAction.mockResolvedValueOnce({ status: "success", theme: "DARK" });
-            const screen = await renderToggle({ initialTheme: "LIGHT", isAuthenticated: true });
+            mockedUpdateThemeAction.mockResolvedValueOnce({ status: "success", theme: THEME.DARK });
+            const screen = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -112,7 +113,7 @@ describeForEachDevice({
         it("returns to the previous position and tells the user when persistence fails", async () => {
             // Arrange
             mockedUpdateThemeAction.mockResolvedValueOnce({ status: "error" });
-            const screen = await renderToggle({ initialTheme: "LIGHT", isAuthenticated: true });
+            const screen = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -130,8 +131,8 @@ describeForEachDevice({
 
         it("is reachable by keyboard tab order and toggles on Space", async () => {
             // Arrange
-            mockedUpdateThemeAction.mockResolvedValueOnce({ status: "success", theme: "DARK" });
-            const screen = await renderToggle({ initialTheme: "LIGHT", isAuthenticated: true });
+            mockedUpdateThemeAction.mockResolvedValueOnce({ status: "success", theme: THEME.DARK });
+            const screen = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 
             // Assert (reachable)
@@ -147,9 +148,9 @@ describeForEachDevice({
 
         it("returns the interface and the stored preference to where they began after toggling twice", async () => {
             // Arrange
-            mockedUpdateThemeAction.mockResolvedValueOnce({ status: "success", theme: "DARK" });
-            mockedUpdateThemeAction.mockResolvedValueOnce({ status: "success", theme: "LIGHT" });
-            const screen = await renderToggle({ initialTheme: "LIGHT", isAuthenticated: true });
+            mockedUpdateThemeAction.mockResolvedValueOnce({ status: "success", theme: THEME.DARK });
+            mockedUpdateThemeAction.mockResolvedValueOnce({ status: "success", theme: THEME.LIGHT });
+            const screen = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -166,7 +167,7 @@ describeForEachDevice({
 
         it("updates the cookie and the document scope directly, without calling the server function, when unauthenticated", async () => {
             // Arrange
-            const screen = await renderToggle({ initialTheme: "LIGHT", isAuthenticated: false });
+            const screen = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: false });
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act

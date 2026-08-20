@@ -1,10 +1,11 @@
 import type { PropsWithChildren } from "react";
 
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
+import { THEME } from "@/lib/core/theme/theme";
 import { readThemeCookie } from "@/lib/server/theme";
 
 /** No stored preference resolves to light — matches the pre-hydration default `app/layout.tsx` applies when the cookie is absent (no `dark` class added). */
-const DEFAULT_THEME = "LIGHT";
+const DEFAULT_THEME = THEME.LIGHT;
 
 /*
  * Both auth screens centre their single AuthCard on the dominant app background — kept thin per
