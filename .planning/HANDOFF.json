@@ -1,59 +1,50 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-21T16:49:21.464Z",
+  "timestamp": "2026-08-21T22:21:15.548Z",
   "phase": "02.1",
   "phase_name": "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)",
   "phase_dir": ".planning/phases/02.1-testing-strategy-overhaul-and-code-quality-retrofit-no-mocki",
-  "plan": "02.1-10",
-  "task": 9,
-  "total_tasks": 15,
+  "plan": "02.1-15",
+  "task": 3,
+  "total_tasks": 3,
   "status": "paused",
   "completed_tasks": [
-    { "id": 1, "name": "02.1-01 RSC board-list tracer (Wave 1)", "status": "done", "commit": "f787789" },
-    { "id": 2, "name": "02.1-02 policy gates: mock-ban + comment-length checker (Wave 2)", "status": "done", "commit": "6953597" },
-    { "id": 3, "name": "02.1-03 generic cookie client (Wave 3)", "status": "done", "commit": "3028478" },
-    { "id": 4, "name": "02.1-04 route/E2E constants (Wave 3)", "status": "done", "commit": "c2a9b05" },
-    { "id": 5, "name": "02.1-05 ADRs 0019-0024 + CONVENTIONS.md rewrite (Wave 3)", "status": "done", "commit": "3a20865" },
-    { "id": 6, "name": "02.1-06 Server Action tests, real backend (Wave 3)", "status": "done", "commit": "fd7996b" },
-    { "id": 7, "name": "02.1-07 Button/IconButton/Checkbox/Switch/TextField composed-story tests (Wave 3)", "status": "done", "commit": "bfce5bc" },
-    { "id": 8, "name": "02.1-08 Dropdown/Menu/Modal/Toast/ErrorFallback composed-story tests (Wave 3)", "status": "done", "commit": "2e2ccca" },
-    { "id": 9, "name": "Wave 3 tracking update + cross-plan routes:check fix", "status": "done", "commit": "0d3b7fe" },
-    { "id": 10, "name": "02.1-09 auth/theme component no-mocking retrofit (Wave 4)", "status": "done", "commit": "4a3da24" },
+    { "id": 1, "name": "02.1-15 Task 1: flip both policy gates to blocking", "status": "done", "commit": "cff2b30" },
+    { "id": 2, "name": "02.1-15 Task 2: correct Enforcement clauses, add surviving-mock register", "status": "done", "commit": "04207e3" },
     {
-      "id": 11,
-      "name": "02.1-10 curl-based e2e seeding CLI (Wave 5)",
+      "id": 3,
+      "name": "02.1-15 Task 3: full-suite verification + decision-coverage table (checkpoint:human-verify)",
       "status": "in_progress",
-      "progress": "Merged to master (bffdae0). All post-merge gates pass: lint clean, full pnpm test 566+3(isolated-confirmed-flaky)=569 pass, pnpm build passes, routes:check passes, handlers:check passes. seed.sh/seed.ts independently verified against the real backend by the executor. NOT yet done: ROADMAP/STATE tracking update, commit, and push for this wave (the trivial `roadmap.update-plan-progress 02.1 02.1-10 complete` + commit + push step). Was also mid-way through attempting to run the full `pnpm exec playwright test --project e2e` suite myself when this pause was requested — blocked on missing NONPROD_RESET_TOKEN."
+      "progress": "All 11 required commands run for real and green (lint, format:check, routes:check, handlers:check, comments:check, tsc --noEmit, build, build-storybook, test 569/569, playwright e2e 10/10, playwright visual 260/260). Both spot-checks done (every vi.mock file matches the ADR tech/0020 register; the sidebar-shows-boards check is what BOARD-01 e2e already proves, not re-done by hand). Decision-coverage table (D-01..D-22) written to 02.1-15-SUMMARY.md, 02.1-VALIDATION.md fully checked off (nyquist_compliant: true). Commits cff2b30/04207e3/6f8168f all pushed as fast-forwards. Checkpoint presented to the user in chat. NOT yet resolved: waiting for the user's literal 'approved' reply (or a description of what's wrong) per the plan's <resume-signal>."
     }
   ],
   "remaining_tasks": [
-    { "id": 12, "name": "Finish Wave 5 tracking: roadmap.update-plan-progress 02.1 02.1-10 complete, commit, push", "status": "not_started" },
-    { "id": 13, "name": "Wave 6: execute 02.1-11..14 (comment-length sweep across src/components, src/features, src/lib+test-utils+app+proxy.ts, root configs+.storybook+scripts+e2e+visual — 4 parallel plans)", "status": "not_started" },
-    { "id": 14, "name": "Wave 7: execute 02.1-15 (flip gates to blocking, finish Enforcement columns, full-suite sign-off — autonomous:false, is a CHECKPOINT plan requiring human interaction)", "status": "not_started" },
-    { "id": 15, "name": "Post-execution: aggregate_results, code_review_gate, verify_phase_goal (spawn gsd-verifier), update_roadmap (phase.complete)", "status": "not_started" }
+    { "id": 4, "name": "Receive user's 'approved' reply (or handle their described issue) at the Task 3 checkpoint", "status": "not_started" },
+    { "id": 5, "name": "Post-execution: aggregate_results -> code_review_gate (if capability active) -> verify_phase_goal (spawn gsd-verifier) -> update_roadmap (phase.complete)", "status": "not_started" }
   ],
   "blockers": [
     {
-      "description": "NONPROD_RESET_TOKEN is not set (locally, and I could not read/set it myself — .env.local is denied to sandboxed access). Blocks the full `pnpm exec playwright test --project e2e` run, which is the last uncovered verification surface for 02.1-10 (curl-based e2e seeding CLI + narrowed e2e specs). This has been an open gap since Wave 1 (documented in .planning/WINDOWS.md by each affected plan's executor).",
+      "description": "Task 3 is a checkpoint:human-verify task by design (autonomous: false) — the phase cannot close without the user's explicit 'approved' reply. Not a technical problem; this is the plan's intended gate.",
       "type": "human_action",
-      "workaround": "Either (a) user sets NONPROD_RESET_TOKEN=<same value as CI secret / backend's APP_RESET_TOKEN> in .env.local, then the orchestrator re-runs `pnpm exec playwright test --project e2e` for real verification, or (b) explicitly accept this as a documented unrun-verify gap and proceed without a full e2e pass — seed.sh/seed.ts themselves were already verified directly against the real backend (account creation, board creation with session reuse, non-2xx error path all confirmed working)."
+      "workaround": "None needed — just wait for the user's reply. If they instead describe something wrong, address it, then re-present the checkpoint rather than closing the phase."
     }
   ],
   "async_jobs": [],
   "human_actions_pending": [
     {
-      "action": "Decide how to handle the NONPROD_RESET_TOKEN gap: set the token in .env.local (recommended, to get a real e2e verification pass) or explicitly say to skip it and move on.",
-      "context": "This was the exact question pending when /gsd-pause-work was invoked — the user asked to clarify rather than answering directly.",
-      "blocking": false
+      "action": "Reply 'approved' to close Phase 02.1, or describe what's wrong.",
+      "context": "Presented in chat after Task 3's full verification pass completed. The user has instead spent several turns discussing testing architecture (integration-test mocking rationale, Storybook-vs-renderWithProviders design, schema-test value) rather than answering the checkpoint directly — those discussions produced real follow-up work (see decisions below) but the checkpoint itself is still open.",
+      "blocking": true
     }
   ],
   "decisions": [
-    { "decision": "Ran /gsd-review 02.1 with --claude only, not --gemini", "rationale": "Gemini's free tier proved unusable this session: gemini-cli's OAuth login was deprecated by Google (IneligibleTierError), and after switching to API-key auth (~/.gemini/settings.json changed from oauth-personal to gemini-api-key — a persistent side effect on this machine), the free tier still hit a hard 0-quota wall on Pro and got 429-rate-limited on Flash even with a trimmed ~77K-token prompt.", "phase": "02.1" },
-    { "decision": "Chose 'Execute as-is' over re-planning phase 02.1 with the Claude review's feedback folded in", "rationale": "The review's findings were low/medium severity and narrow in scope (verify .reverse()/newestFirst() equivalence before 02.1-01, two metadata/prose drift items) — cheaper to handle inline during execution than to run a full replan cycle.", "phase": "02.1" },
-    { "decision": "Established a manual-merge-over-automation pattern for isolated-worktree wave execution", "rationale": "gsd-tools' `worktree.cleanup-wave` unconditionally blocks merging any branch containing file deletions (deliberate, undocumented opt-in gap per its own code comments referencing issues #2852/#3003) — every wave with an intentional file deletion (02.1-01, 02.1-06) required a manual `git merge --no-ff` + hand-resolved conflict instead. When two isolated worktrees both touched the same file in different ways (server-client.integration.test.ts: 02.1-04's EXTERNAL_PATH routing vs 02.1-03's more-correct expiredRecord.id test data), the correct resolution combined both improvements rather than picking one side.", "phase": "02.1" },
-    { "decision": "Added a full lint+test+build+routes+handlers gate on the MERGED result after every wave, not just per-plan verification inside each isolated worktree", "rationale": "Wave 3 alone had 3 cross-plan gaps that only a merged-result gate could catch: 02.1-04 touched 3 files 02.1-06 had already deleted (needed manual conflict resolution), 02.1-04 and 02.1-03 both touched server-client.integration.test.ts (content conflict), and 02.1-04's widened routes:check script flagged literals in NEW files 02.1-06 created in its own isolated worktree that 02.1-04 could never have seen. Each isolated worktree's own internal verification was necessarily blind to what its siblings were doing.", "phase": "02.1" }
+    { "decision": "Phase 02.2 inserted into ROADMAP.md/STATE.md (uncommitted — user's call when to commit, per gsd-phase's own anti-pattern rule)", "rationale": "User-driven design discussion concluded that composed Storybook stories should be rendered directly (no .run(), no renderWithProviders) with every provider living only in Storybook decorators — this closes a live, already-flagged QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx (only 4 files affected: sign-in-form.test.tsx, sign-out-button.test.tsx, sign-up-form.test.tsx, theme-toggle.test.tsx). Confirmed technically sound: composed stories are real React components (safe to render directly), and Storybook's addon-vitest UI integration is already handled by a fully separate auto-generated 'storybook' Vitest project (storybookTest() plugin), decoupled from whether hand-written tests call .run(). Scoped as a follow-up phase rather than folded into 02.1's close-out, since it revises an already-shipped, already-enforced convention (D-08/ADR tech/0021) across many files.", "phase": "02.2" },
+    { "decision": "Captured a pending todo rather than fixing inline: trim src/features/boards/schemas.unit.test.ts's rejection cases", "rationale": "Those cases (rejects non-array, rejects missing id, rejects string version) mostly re-test zod's own type-checking primitives, not project-specific business rules — unlike src/features/auth/schemas.unit.test.ts, which stays because its cases encode real backend-mirrored password/display-name rules (01-19-SUMMARY.md). Filed at .planning/todos/pending/2026-08-21-trim-boards-schema-unit-tests-that-just-retest-zod.md rather than actioned now, since it's unrelated to either 02.1's or 02.2's actual scope.", "phase": null },
+    { "decision": "Renamed baseCookieOptions to createBaseCookieOptions; added a durable naming rule to CONVENTIONS.md", "rationale": "User flagged that a function whose whole job is constructing and returning a new object should read as an action (create<Thing>), not a bare noun phrase. Small, safe, mechanical rename across 4 files (cookie-registry.ts + its test, cookie-client.ts + its test) done immediately rather than deferred, since it carried no behavioral risk. Committed and pushed as 6ea762e.", "phase": "02.1" },
+    { "decision": "Fixed two real, non-hypothetical bugs during Wave 6's post-merge gate rather than treating them as pre-existing/out-of-scope noise", "rationale": "(1) scripts/check-comment-length.unit.test.mjs asserted against text-field.tsx's live 26-line comment block as a fixture — Wave 6 compressed that block by design, so the test regressed against its own retrofit succeeding. Replaced with a synthetic-source fixture. (2) storybook-static/ was stale (built 2026-08-13, four days before the isLoading Button feature it needed to represent) — visual regression hung indefinitely on Button/IconButton 'loading' stories. Rebuilt via pnpm build-storybook; all 260 visual assertions then passed. Neither was a Wave 6 regression, but both were genuine cross-cutting gaps only the merged-result gate could surface.", "phase": "02.1" },
+    { "decision": "Excluded .claude/worktrees from tsconfig.json's include set; added a local .vscode/settings.json (gitignored) for the file/TS watcher", "rationale": "A runaway 3.4GB tsserver process was found mid-session — the editor had been indexing every parallel worktree's full copy of the codebase (4 worktrees during Wave 6) as separate inferred TypeScript projects, causing severe memory pressure that stalled the Playwright visual run. Killing the process alone is a one-time fix; the tsconfig exclusion is the durable one. Committed as dcc0c40.", "phase": "02.1" }
   ],
-  "uncommitted_files": [],
-  "next_action": "Ask the user to resolve the NONPROD_RESET_TOKEN question (set it now vs. skip and document as a gap). Then run: `node \"$GSD_TOOLS\" query roadmap.update-plan-progress \"02.1\" \"02.1-10\" \"complete\"` followed by a tracking commit (`docs(phase-02.1): update tracking after wave 5`) and `git push`. Then proceed to Wave 6 (spawn 4 parallel gsd-executor agents for 02.1-11..14 in worktree isolation, same pattern as every prior wave — capture HEAD first, check the intra-wave files_modified overlap across the 4 plans before dispatch).",
-  "context_notes": "This is a full /gsd-execute-phase 02.1 orchestration run (15 plans, 7 waves) driven end-to-end manually by the orchestrator following gsd-core/workflows/execute-phase.md, since this session's runtime doesn't auto-drive the bash-heavy workflow spec verbatim — every step (worktree dispatch, merge, conflict resolution, post-merge gate, tracking commit, push) was performed by hand-translating the workflow's intent into direct tool calls. This has worked well; the pattern is well-established by now (5 waves done, waves 6-7 are structurally identical to what's already succeeded). Two real infrastructure incidents were resolved mid-session and are documented as blocking anti-patterns below — both are now handled routinely (kill stray worktree-pointed node processes before each wave's gate; expect and correctly resolve merge conflicts from isolated-worktree cross-plan overlaps rather than trusting the pre-wave files_modified declaration alone)."
+  "uncommitted_files": [".planning/ROADMAP.md", ".planning/STATE.md"],
+  "next_action": "Nothing to do until the user replies. If they reply 'approved': run the post-execution steps (aggregate_results, code_review_gate if active, verify_phase_goal via gsd-verifier, update_roadmap phase.complete), then STATE.md's Current Phase pointer can move to 02.2. If they describe a problem instead: fix it, then re-present the Task 3 checkpoint rather than assuming approval.",
+  "context_notes": "This session resumed a HANDOFF.json pause from mid-Wave-5 (NONPROD_RESET_TOKEN question, now resolved — token was set, e2e/integration real-backend tests all verified). Closed Wave 5 tracking, executed Wave 6 (4 parallel gsd-executor agents in worktree isolation for 02.1-11..14, 3 of 4 hit real cross-plan merge conflicts resolved by combining both sides), then executed Wave 7 (02.1-15) directly in the main repo rather than an isolated worktree, since its Task 3 needs to hold a live conversation with the human — a subagent in a background worktree can't do that turn-by-turn. All agent-executable work for phase 02.1 is done and pushed; only the literal human sign-off remains, and the user has been using the wait to dig into (and meaningfully revise) the project's own testing architecture rather than answering yet — that's fine, treat it as in-scope discussion, not a stall."
 }
