@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { baseCookieOptions, type CookieName } from "@/lib/core/cookies/cookie-registry";
+import { createBaseCookieOptions, type CookieName } from "@/lib/core/cookies/cookie-registry";
 
 /**
  * The per-client cookie attributes a caller states explicitly — the same third-argument shape
@@ -44,7 +44,7 @@ export const createCookieClient = <TValue>({
     // eslint-disable-next-line no-restricted-syntax -- mirrors next/headers' cookies().set(name, value, options) value+options shape this client wraps (ADR tech/0016 exemption, same precedent as the test jars' set())
     write: async (value, overrides) => {
         const store = await cookies();
-        store.set(name, encode(value), { ...baseCookieOptions(), ...options, ...overrides });
+        store.set(name, encode(value), { ...createBaseCookieOptions(), ...options, ...overrides });
     },
     clear: async () => {
         const store = await cookies();

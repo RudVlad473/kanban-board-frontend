@@ -85,7 +85,7 @@ describe("createCookieClient", () => {
     });
 
     describe("write", () => {
-        it("sets the cookie under its registered name with the client's own configured options merged over baseCookieOptions()", async () => {
+        it("sets the cookie under its registered name with the client's own configured options merged over createBaseCookieOptions()", async () => {
             // Arrange
             const client = createCookieClient<string>({
                 name: COOKIE.THEME,
