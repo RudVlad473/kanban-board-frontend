@@ -1,13 +1,6 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { describe, expect, it } from "vitest";
 
 import { findLongCommentRuns, MAX_PROSE_LINES } from "./check-comment-length.mjs";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..");
 
 describe("findLongCommentRuns", () => {
     it("reports a violation naming the start line and run length for a block over the limit", () => {
@@ -124,10 +117,15 @@ describe("findLongCommentRuns", () => {
         expect(violations).toEqual([]);
     });
 
-    it("finds a known real 26-prose-line offender in this repository", () => {
+    it("finds a 26-prose-line offender in a synthetic block", () => {
+        /*
+         * A real-repo fixture (text-field.tsx's own 26-line block) previously stood in here, but
+         * D-22's sweep (02.1-11..14) drove the whole repo to zero violations by design — asserting
+         * against live file content would make this test regress every time the retrofit works.
+         */
         // Arrange
-        const filePath = path.join(repoRoot, "src/components/ui/text-field/text-field.tsx");
-        const source = readFileSync(filePath, "utf8");
+        const prose = Array.from({ length: 26 }, (_, index) => ` * line ${String(index)}`);
+        const source = ["/**", ...prose, " */", "export const a = 1;"].join("\n");
 
         // Act
         const violations = findLongCommentRuns({ source, max: MAX_PROSE_LINES });
