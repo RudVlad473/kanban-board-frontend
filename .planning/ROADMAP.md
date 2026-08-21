@@ -278,6 +278,17 @@ narrow path before any breadth is added:
 
 **UI hint**: yes
 
+### Phase 02.1: Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 2
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 02.1 to break down)
+
 ### Phase 3: Column Management
 
 **Goal**: A signed-in user can shape a board's workflow by adding, naming, reordering, and

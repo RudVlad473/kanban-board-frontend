@@ -5,12 +5,12 @@ current_phase: 02
 current_phase_name: Board Management
 status: paused
 stopped_at: 02-08 closed (approved as-is, code-review comments deferred to Phase 2.1); starting Phase 2.1 scoping
-last_updated: "2026-08-21T08:47:12.703Z"
+last_updated: "2026-08-21T08:53:15.321Z"
 last_activity: 2026-08-20
 last_activity_desc: Phase 02 execution started
-state_head: 6847f187261c483b49b14c100585c97816567d50
+state_head: 0f04a027d097d819127372e63e8cf0046a3999d3
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 1
   total_plans: 51
   completed_plans: 46
@@ -101,6 +101,10 @@ Recent decisions affecting current work:
   gap; CI and the deployed Vercel build are unaffected — CI generates its own secret, Vercel has
   per-environment secrets set). User was asked to run `vercel env pull --yes` to fix locally;
   unconfirmed whether that happened.
+
+### Roadmap Evolution
+
+- Phase 02.1 inserted after Phase 2: Testing strategy overhaul and code-quality retrofit (no-mocking policy, curl-based e2e seeding, Storybook-driven component tests) plus deferred 02-08 code-review scope (URGENT)
 
 ## Deferred Items
 
