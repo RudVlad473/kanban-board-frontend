@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { PROBLEM_CODE } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { type Theme } from "@/lib/core/theme/theme";
@@ -65,7 +66,7 @@ const buildFormData = (fields: Record<string, string>): FormData => {
  * not the behaviour under test (mirrors e2e/fixtures.ts's own createFixtureAccount).
  */
 const signUpDirect = async (email: string): Promise<{ id: string; theme: Theme }> => {
-    const result = await externalApi.POST("/signup", {
+    const result = await externalApi.POST(EXTERNAL_PATH.SIGN_UP, {
         body: { email, password: TEST_PASSWORD, displayName: TEST_DISPLAY_NAME },
     });
     const identity: unknown = result.data;

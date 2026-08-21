@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { externalApi } from "@/lib/server/server-client";
 import { isSessionPayload, session } from "@/lib/server/session";
@@ -45,7 +46,7 @@ type DirectAccount = { id: string; email: string; jsessionId: string; theme: The
  * not the behaviour under test (mirrors e2e/fixtures.ts's own createFixtureAccount).
  */
 const signUpDirect = async (email: string): Promise<DirectAccount> => {
-    const result = await externalApi.POST("/signup", {
+    const result = await externalApi.POST(EXTERNAL_PATH.SIGN_UP, {
         body: { email, password: TEST_PASSWORD, displayName: TEST_DISPLAY_NAME },
     });
     const identity: unknown = result.data;
@@ -73,7 +74,7 @@ const stageSession = async (account: DirectAccount): Promise<void> => {
 };
 
 const readTheme = async (account: DirectAccount): Promise<unknown> => {
-    const result = await externalApi.GET("/users/me/theme", { params: { query: { userId: account.id } } });
+    const result = await externalApi.GET(EXTERNAL_PATH.USER_THEME, { params: { query: { userId: account.id } } });
     return result.data;
 };
 

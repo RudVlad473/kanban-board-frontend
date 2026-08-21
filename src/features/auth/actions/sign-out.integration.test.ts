@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { upstreamCookie } from "@/lib/server/cookies/upstream-cookie";
@@ -68,7 +69,7 @@ describe("signOutAction (real backend)", () => {
     it("clears both the session cookie and the theme cookie and redirects to sign-in with a real session", async () => {
         // Arrange — a real account, staged exactly as server-client.integration.test.ts does.
         const email = `e2e-signout-${randomUUID()}@example.com`;
-        const signUpResult = await externalApi.POST("/signup", {
+        const signUpResult = await externalApi.POST(EXTERNAL_PATH.SIGN_UP, {
             body: { email, password: TEST_PASSWORD, displayName: TEST_DISPLAY_NAME },
         });
         const identity: unknown = signUpResult.data;
