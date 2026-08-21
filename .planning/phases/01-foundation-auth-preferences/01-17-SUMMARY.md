@@ -284,6 +284,17 @@ is a placeholder with no failure path) is an explicitly accepted scope boundary,
 both boundaries are proven by rendering the real components with a constructed `Error`, and the
 compiled build confirms Next.js registered them.
 
+## Addendum — 02.1-11 comment-length sweep (backfilled rationale)
+
+`ErrorFallback`'s optional "Back to boards" link is a plain `<a href>`, not `next/link`'s `Link`,
+with an `eslint-disable-next-line no-restricted-syntax` for the raw-anchor ban this repo otherwise
+enforces. This was implemented in this plan but never narrated in the SUMMARY at the time;
+backfilled here during plan `02.1-11`'s comment-compression sweep. Rationale: `ErrorFallback` is a
+hard-crash recovery surface (`app/(dashboard)/error.tsx`/`app/global-error.tsx`) — a full page
+reload is the deliberately safer choice there, since it discards whatever in-memory state (React
+tree, TanStack Query cache) triggered or was left corrupted by the error, rather than carrying it
+forward via a client-side transition the way `Link` would.
+
 ---
 *Phase: 01-foundation-auth-preferences*
 *Completed: 2026-08-17*
