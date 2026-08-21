@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 02.1
-current_phase_name: testing-strategy-overhaul-and-code-quality-retrofit
+current_phase_name: "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)"
 status: executing
 stopped_at: Phase 02.1 context gathered
-last_updated: "2026-08-21T10:19:45.068Z"
-last_activity: 2026-08-20
-last_activity_desc: Phase 02 execution started
-state_head: 118630e12c77a2e63b00785f70729e7a286ea0ea
+last_updated: "2026-08-21T11:10:25.729Z"
+last_activity: 2026-08-21
+last_activity_desc: Phase 02.1 execution started
+state_head: 0f55467cccfc1b260c395f7966768c7cf1c1c46c
 progress:
   total_phases: 5
   completed_phases: 1
@@ -26,14 +26,14 @@ See: .planning/PROJECT.md (updated 2026-08-20)
 **Core value:** A signed-in user can create boards, organize tasks across columns via
 drag-and-drop, and trust that every change is reliably persisted and reconciled against the
 real backend.
-**Current focus:** Phase 02 — Board Management
+**Current focus:** Phase 02.1 — Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)
 
 ## Current Position
 
-Phase: 02.1 (testing-strategy-overhaul-and-code-quality-retrofit) — READY TO EXECUTE
-Plan: 0 of 15
-Status: Ready to execute
-Last activity: 2026-08-20 — Phase 02 execution started
+Phase: 02.1 (Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)) — EXECUTING
+Plan: 1 of 15
+Status: Executing Phase 02.1
+Last activity: 2026-08-21 — Phase 02.1 execution started
   to Phase 2. See Session Continuity below for full detail.
 
 Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans)

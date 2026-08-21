@@ -287,13 +287,13 @@ rule CONVENTIONS.md has stated but never enforced — are written down as ADRs a
 blocking CI gates, so no future session reintroduces the patterns this phase removes.
 **Requirements**: D-01..D-22 (from 02.1-CONTEXT.md — decimal insertion, no REQUIREMENTS.md IDs)
 **Depends on:** Phase 2
-**Plans:** 15 plans
+**Plans:** 1/15 plans executed
 
 Plans:
 
 **Wave 1**
 
-- [ ] 02.1-01-PLAN.md — TRACER: RSC board read path replaces the Route Handler (D-01, D-02, D-03, D-12, D-21)
+- [x] 02.1-01-PLAN.md — TRACER: RSC board read path replaces the Route Handler (D-01, D-02, D-03, D-12, D-21)
 
 **Wave 2** *(blocked on 02.1-01)*
 
@@ -384,6 +384,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 8/13 | In Progress|  |
-| 02.1. Testing strategy overhaul & code-quality retrofit | 0/15 | Not started | - |
+| 02.1. Testing strategy overhaul & code-quality retrofit | 1/15 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
