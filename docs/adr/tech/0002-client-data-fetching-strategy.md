@@ -4,6 +4,14 @@
 > (sign-up, sign-in, sign-out) now use Server Actions; board/column/task mutations stay as decided
 > below.
 
+> **Superseded in part** by `docs/adr/tech/0019-server-entry-points.md` — the *read* half of this
+> decision is superseded outright: board/column/task/subtask list/detail reads no longer go
+> through `useQuery`; they are server-side React Server Component fetches instead. The *write*
+> half survives only as the optimistic-rollback wrapper `0019` describes — a `useMutation` around
+> a Server Action's `mutationFn`, never a direct `openapi-fetch` call from inside a query/mutation
+> hook. The Route Handler transport this decision assumed (`app/api/**/route.ts`) is banned
+> outright by `0019`.
+
 ## Decision Drivers
 
 - Every Column/Task/Subtask update, move, and reorder carries a
