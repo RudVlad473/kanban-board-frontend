@@ -3,15 +3,12 @@ import "server-only";
 import { COOKIE } from "@/lib/core/cookies/cookie-registry";
 
 /**
- * Parses the backend's own raw fetch `Response` — not this app's request/response, which is why
- * this can't use `next/headers`'s `cookies()` (T-02-08/T-02-09, GC-18).
+ * Deliberately NOT built on `createCookieClient` (D-20): this parses an upstream `fetch`
+ * `Response`'s `Set-Cookie` header, never `next/headers`'s `cookies()` — see docs/adr/tech/0020
+ * for the full reasoning.
  */
 export const upstreamCookie = {
-    /*
-     * Uses `getSetCookie()` (array form), not the comma-joined `headers.get("set-cookie")`: a
-     * cookie's own `Expires` attribute contains a comma, which would otherwise split one entry
-     * into two.
-     */
+    // getSetCookie() (array form) avoids an Expires attribute's comma splitting one entry into two.
     extract: (response: Response): string | null => {
         const setCookiePairs = response.headers.getSetCookie();
 
