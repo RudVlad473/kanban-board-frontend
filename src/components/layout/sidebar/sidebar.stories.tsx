@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import { createBoards } from "@/test-utils/factories/board";
+
 import { Sidebar } from "./sidebar";
 
 /*
@@ -30,13 +32,7 @@ export default meta;
 
 type Story = StoryObj<typeof Sidebar>;
 
-const boards = [
-    { id: "board-1", name: "Platform Launch", version: 0 },
-    { id: "board-2", name: "Marketing Plan", version: 0 },
-    { id: "board-3", name: "Roadmap", version: 0 },
-];
-
-export const Populated: Story = { args: { boards } };
+export const Populated: Story = { args: { boards: createBoards(3) } };
 
 export const Empty: Story = { args: { boards: [] } };
 

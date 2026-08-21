@@ -3,10 +3,10 @@ import { screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
 /*
- * `@storybook/react`, NOT `@storybook/nextjs-vite` — the latter's main entry eagerly imports real
- * Next.js internals (`process.env` read at module-evaluation time) that only resolve under the
- * Vite plugin the separate "storybook" Vitest project loads; this "browser" project does not
- * (vitest.setup.ts documents this in full).
+ * Composed from the plain React renderer package, not the Next.js-aware Storybook framework
+ * package — the latter's main entry eagerly imports real Next.js internals (`process.env` read at
+ * module-evaluation time) that only resolve under the Vite plugin the separate "storybook" Vitest
+ * project loads; this "browser" project does not (vitest.setup.ts documents this in full).
  */
 
 import * as stories from "./sidebar.stories";
@@ -17,6 +17,7 @@ import * as stories from "./sidebar.stories";
  * now (D-02/D-03), so there is no business-logic hook left to mock.
  */
 const mockRefresh = vi.fn();
+ 
 vi.mock("next/navigation", () => ({
     usePathname: () => "/boards",
     useRouter: () => ({ refresh: mockRefresh }),
@@ -32,6 +33,7 @@ vi.mock("next/navigation", () => ({
  * interaction, unlike the one-time auth-page transition `sign-in-form.tsx`/`sign-up-form.tsx`
  * reasonably opted out of instead.
  */
+ 
 vi.mock("next/link", () => ({
     __esModule: true,
     default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
