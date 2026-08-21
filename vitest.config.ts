@@ -37,6 +37,33 @@ const serverOnlyAlias = {
 };
 const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 
+/*
+ * Real stub modules (not Vitest mocks) for every Server Action a story or a composed-story test
+ * imports — each `"use server"` module's import chain reaches `node:crypto` via
+ * `@/lib/server/session`, which no browser test page can bundle (docs/adr/tech/0020). Shared by
+ * the `browser` and `storybook` projects below so their alias lists can never drift apart. Every
+ * entry is an exact specifier and must stay listed before the general `@` alias (Vite's `find` is
+ * a prefix match).
+ */
+const serverActionStubAlias = [
+    {
+        find: "@/features/auth/actions/sign-in",
+        replacement: path.resolve(rootDir, "src/test-utils/sign-in-action-storybook-stub.ts"),
+    },
+    {
+        find: "@/features/auth/actions/sign-up",
+        replacement: path.resolve(rootDir, "src/test-utils/sign-up-action-storybook-stub.ts"),
+    },
+    {
+        find: "@/features/auth/actions/sign-out",
+        replacement: path.resolve(rootDir, "src/test-utils/sign-out-action-storybook-stub.ts"),
+    },
+    {
+        find: "@/features/theme/actions/update-theme",
+        replacement: path.resolve(rootDir, "src/test-utils/update-theme-action-storybook-stub.ts"),
+    },
+];
+
 export default defineConfig({
     test: {
         projects: [
@@ -74,7 +101,7 @@ export default defineConfig({
                 },
             },
             {
-                resolve: { alias },
+                resolve: { alias: [...serverActionStubAlias, ...alias] },
                 test: {
                     name: "browser",
                     include: ["src/**/*.test.tsx", "app/**/*.test.tsx"],
@@ -124,39 +151,14 @@ export default defineConfig({
             },
             {
                 /*
-                 * The sign-in/sign-up/theme-toggle stories render components that import the real
-                 * per-action Server Action modules — each opens with `"use server"` and its import
-                 * chain reaches `node:crypto` via `@/lib/server/session`. `@storybook/nextjs-vite`'s
-                 * Vitest-driven story rendering has no server/client build split for `"use server"`
-                 * modules, so it bundles that chain whole for the browser and fails on the Node
-                 * built-in. Aliased to no-op stand-ins for this project only — no story ever
-                 * submits a form or triggers a real toggle (D-25), so the real actions are never
-                 * actually invoked, only referenced.
+                 * Stories render components that import real per-action Server Action modules —
+                 * `@storybook/nextjs-vite`'s Vitest-driven story rendering has no server/client
+                 * build split for `"use server"` modules, so it bundles that chain whole for the
+                 * browser. `serverActionStubAlias` (above) aliases them to real stub modules
+                 * instead — no story ever submits a form or triggers a real toggle (D-25).
                  */
                 resolve: {
-                    /*
-                     * Each entry below must be an EXACT specifier, not a prefix, and every entry
-                     * must be listed BEFORE the general `@` -> `src` alias: Vite's `find` string is
-                     * a prefix match, so a general `.../actions` entry would also match (and
-                     * mis-rewrite) a more specific per-action path before the general `@` entry
-                     * ever gets a chance to apply. No sign-out entry exists — no story imports it
-                     * (no sign-out-button.stories.tsx today); add one here if that ever changes.
-                     */
-                    alias: [
-                        {
-                            find: "@/features/auth/actions/sign-in",
-                            replacement: path.resolve(rootDir, "src/test-utils/sign-in-action-storybook-stub.ts"),
-                        },
-                        {
-                            find: "@/features/auth/actions/sign-up",
-                            replacement: path.resolve(rootDir, "src/test-utils/sign-up-action-storybook-stub.ts"),
-                        },
-                        {
-                            find: "@/features/theme/actions/update-theme",
-                            replacement: path.resolve(rootDir, "src/test-utils/update-theme-action-storybook-stub.ts"),
-                        },
-                        ...alias,
-                    ],
+                    alias: [...serverActionStubAlias, ...alias],
                 },
                 plugins: [storybookTest({ configDir: path.join(rootDir, ".storybook") })],
                 test: {
