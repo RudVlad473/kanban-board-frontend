@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 
-import { createFixtureAccount } from "./fixtures";
+import { seedAccount } from "./seed";
 import { ROUTE } from "../src/lib/core/routing/routes";
 
 const SESSION_COOKIE_NAME = "session";
@@ -14,8 +14,10 @@ test.describe("AUTH-01: sign up", () => {
         page,
         context,
     }) => {
+        // Arrange
         const freshEmail = `e2e-${randomUUID()}@example.com`;
 
+        // Act
         await page.goto(ROUTE.SIGN_UP);
         await page.getByLabel("Email", { exact: true }).fill(freshEmail);
         /*
@@ -27,6 +29,7 @@ test.describe("AUTH-01: sign up", () => {
         await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
         await page.getByRole("button", { name: "Create Account" }).click();
 
+        // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
         const cookies = await context.cookies();
@@ -38,17 +41,15 @@ test.describe("AUTH-01: sign up", () => {
 });
 
 test.describe("AUTH-02: sign in", () => {
-    test("signs in a freshly created account and stays signed in across a full page reload", async ({
-        page,
-        request,
-    }) => {
-        const account = await createFixtureAccount(request);
+    test("signs in a freshly created account and stays signed in across a full page reload", async ({ page }) => {
+        // Arrange
+        const account = seedAccount();
 
+        // Act
         await page.goto(ROUTE.SIGN_IN);
         await page.getByLabel("Email", { exact: true }).fill(account.email);
         await page.getByLabel("Password", { exact: true }).fill(account.password);
         await page.getByRole("button", { name: "Sign In" }).click();
-
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
         /*
@@ -57,15 +58,18 @@ test.describe("AUTH-02: sign in", () => {
          */
         await page.reload();
 
+        // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
         await expect(page.getByRole("heading", { name: "Boards" })).toBeVisible();
     });
 });
 
 test.describe("sign-out", () => {
-    test("signs out and the board list redirects back to sign-in afterward", async ({ page, request }) => {
-        const account = await createFixtureAccount(request);
+    test("signs out and the board list redirects back to sign-in afterward", async ({ page }) => {
+        // Arrange
+        const account = seedAccount();
 
+        // Act
         await page.goto(ROUTE.SIGN_IN);
         await page.getByLabel("Email", { exact: true }).fill(account.email);
         await page.getByLabel("Password", { exact: true }).fill(account.password);
@@ -73,6 +77,8 @@ test.describe("sign-out", () => {
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
         await page.getByRole("button", { name: "Sign Out" }).click();
+
+        // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
 
         /*

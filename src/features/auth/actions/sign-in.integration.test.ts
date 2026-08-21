@@ -63,7 +63,7 @@ const buildFormData = (fields: Record<string, string>): FormData => {
 
 /**
  * Creates a throwaway account directly against the real backend, bypassing the SUT — a fixture,
- * not the behaviour under test (mirrors e2e/fixtures.ts's own createFixtureAccount).
+ * not the behaviour under test (mirrors e2e/seed.ts's own seedAccount).
  */
 const signUpDirect = async (email: string): Promise<{ id: string; theme: Theme }> => {
     const result = await externalApi.POST(EXTERNAL_PATH.SIGN_UP, {

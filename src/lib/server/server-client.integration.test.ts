@@ -34,7 +34,7 @@ vi.mock("next/headers", () => ({
     cookies: vi.fn(() => Promise.resolve(fakeCookieJar)),
 }));
 
-// Satisfies the backend's own password rule (8-64 chars, upper/lower/digit/special) — mirrors e2e/fixtures.ts's FIXTURE_PASSWORD.
+// Satisfies the backend's own password rule (8-64 chars, upper/lower/digit/special) — mirrors e2e/seed.sh's SEED_PASSWORD.
 const TEST_PASSWORD = "IntegrationPwd1!";
 const TEST_DISPLAY_NAME = "Integration Test User";
 
