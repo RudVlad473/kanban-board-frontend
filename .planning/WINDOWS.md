@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 10
+open_count: 11
 waived_count: 0
 fixed_count: 4
-total_count: 14
-last_updated: 2026-08-21T13:45:23.244Z
+total_count: 15
+last_updated: 2026-08-21T16:38:36.596Z
 ---
 
 # Broken Windows Ledger
@@ -29,6 +29,7 @@ last_updated: 2026-08-21T13:45:23.244Z
 | 12 | 01 | deviation | app/api/auth/signup/route.ts |  | Task 01-30/Task-2 behaviours 3-4 (sign-up identity storage / failure path) verified manually against the live backend, not via a new committed automated node-project test; 01-33's Server Action tests are the intended replacement home for Route Handler coverage after 01-30 Task 1 deleted app/api/auth/routes.test.ts. | open |  | 2026-08-18T18:39:44.805Z |  |
 | 13 | 01 | deviation | .planning/phases/01-foundation-auth-preferences/deferred-items.md |  | Real backend's POST /api/logout returns 500 and never invalidates the upstream session; signOutAction deliberately never calls it (deferred-items.md #6, kanban-board-backend named as owner) | open |  | 2026-08-19T13:19:40.047Z |  |
 | 14 | 02.1 | unrun-verify | src/lib/server/server-client.integration.test.ts |  | 3 real-backend tests could not be run in this sandbox (network egress blocked, .env.local denied); needs a human/CI run with real network access | open |  | 2026-08-21T13:45:23.244Z |  |
+| 15 | 02.1 | unrun-verify | e2e/boards-list.e2e.spec.ts |  | BOARD-01 e2e spec (and the full pnpm exec playwright test --project e2e suite) could not be run in this sandbox — e2e/global-setup.ts hard-requires NONPROD_RESET_TOKEN (a GitHub Actions secret unavailable here). seed.sh/seed.ts's underlying HTTP behavior was independently verified directly against the real backend. | open |  | 2026-08-21T16:38:36.596Z |  |
 
 ````json
 [
@@ -198,6 +199,18 @@ last_updated: 2026-08-21T13:45:23.244Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-21T13:45:23.244Z",
+    "resolved_at": null
+  },
+  {
+    "id": 15,
+    "kind": "unrun-verify",
+    "phase": "02.1",
+    "file": "e2e/boards-list.e2e.spec.ts",
+    "line": null,
+    "description": "BOARD-01 e2e spec (and the full pnpm exec playwright test --project e2e suite) could not be run in this sandbox — e2e/global-setup.ts hard-requires NONPROD_RESET_TOKEN (a GitHub Actions secret unavailable here). seed.sh/seed.ts's underlying HTTP behavior was independently verified directly against the real backend.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-21T16:38:36.596Z",
     "resolved_at": null
   }
 ]
