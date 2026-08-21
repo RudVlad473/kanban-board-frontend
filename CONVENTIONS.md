@@ -96,7 +96,7 @@ src/
 
 **When in doubt between step 2 and step 3/4, default to step 2** (feature-specific) — promote to `components/` only once a *second* domain actually needs it. Do not create a generic `src/shared/` catch-all folder; every file has one of the eight homes above.
 
-**A domain's Server Actions (`"use server"` mutation functions) live one-per-file at `features/<domain>/actions/<action-name>.ts`, never a flat multi-export `actions.ts` and never a barrel `index.ts`** (docs/adr/tech/0017's mechanism; this phase's PC-04 for the per-file shape). Each action file carries its own co-located `*.unit.test.ts`. A shared type consumed by several of a domain's actions (e.g. auth's `action-state.ts`) stays at the feature root, not inside `actions/` — it isn't an action itself. This keeps step 2's feature-folder rule and the `eslint-plugin-boundaries` policy applying unchanged: a Server Action is still domain-owned code, only the mechanism that dispatches it differs. Board, column and task mutations stay on TanStack Query per ADR tech/0002's GC-24 amendment and therefore never gain an `actions/` folder. Examples: `src/features/auth/actions/{sign-in,sign-up,sign-out}.ts`, `src/features/theme/actions/update-theme.ts`.
+**A domain's Server Actions (`"use server"` mutation functions) live one-per-file at `features/<domain>/actions/<action-name>.ts`, never a flat multi-export `actions.ts` and never a barrel `index.ts`** (docs/adr/tech/0017's mechanism; this phase's PC-04 for the per-file shape). Each action file carries its own co-located `*.unit.test.ts`. A shared type consumed by several of a domain's actions (e.g. auth's `action-state.ts`) stays at the feature root, not inside `actions/` — it isn't an action itself. This keeps step 2's feature-folder rule and the `eslint-plugin-boundaries` policy applying unchanged: a Server Action is still domain-owned code, only the mechanism that dispatches it differs. Board, column, and task mutations are Server Actions too (docs/adr/tech/0019, narrowing ADR tech/0002's original TanStack-Query-for-everything decision) and therefore do gain an `actions/` folder, the same as auth's. A domain's server-only RSC read functions live at the sibling location `features/<domain>/server/<name>.ts` — `src/features/boards/server/load-boards.ts` is the example — kept separate from `actions/` because a read function is invoked directly by an RSC, never dispatched as a form action or a mutation. Examples: `src/features/auth/actions/{sign-in,sign-up,sign-out}.ts`, `src/features/theme/actions/update-theme.ts`, `src/features/boards/server/load-boards.ts`.
 
 **Where tests live (by kind):**
 
@@ -104,6 +104,7 @@ src/
 |------|--------|----------|---------------------------|-------------|
 | Component/behavioral | `*.test.tsx` | Co-located with the component | Vitest `browser` project (`vitest-browser-react`) | Anything needing real CSS/`getComputedStyle()` or axe-relevant rendering |
 | Hook/logic | `*.unit.test.{ts,tsx}` | Co-located with the hook or module | Vitest `unit` project (jsdom, `renderHook`/React Testing Library) | Pure logic and TanStack Query hooks, mocking their own API module rather than real layout/paint — canonical example: `src/features/auth/actions.unit.test.ts` (a server function's own logic test; a hook-*rendering* example, via `renderHook`, returns with plan 01-14's theme preference hook — sign-in/sign-up's hooks were deleted in plan 01-33) |
+| Real-backend integration | `*.integration.test.ts` | Co-located with the module | Vitest `node` project | A Server Action, RSC read function or server client exercised against the real deployed backend with no module mock (docs/adr/tech/0020) |
 | Story/a11y | `*.stories.tsx` | Co-located with the component | Vitest `storybook` project (`@storybook/addon-vitest`) | Visual states only per D-25, no play functions |
 | Visual regression | `*.visual.spec.ts` | Under `visual/` | Playwright `visual` project | `components/ui/` primitives only per ADR tech/0011 |
 | End-to-end | `*.e2e.spec.ts` | Under `e2e/` | Playwright `e2e` project | Full-navigation/server behavior |
@@ -128,13 +129,13 @@ src/
 
 ## Auth (docs/adr/tech/0001)
 
-- All authenticated calls to the external API go through the Next.js Route Handler BFF proxy; no client component holds or reads the raw session cookie/token directly. Enforcement: code review — no client-component `fetch()` targets the external API base URL directly, only the proxy's own server-side routes do.
+- All authenticated calls to the external API go through a Server Component or a Server Action — never a Route Handler BFF proxy, which no longer exists as a mechanism (docs/adr/tech/0019) — and every such module carries `import "server-only"`; no client component holds or reads the raw session cookie/token directly. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`); code review confirming no client-component `fetch()` targets the external API base URL directly.
 - The session cookie is set httpOnly, Secure, and SameSite=Lax (or stricter) — never readable from client-side JavaScript. Enforcement: a test asserting the `Set-Cookie` header on sign-in carries all three flags.
 
-## Data fetching & mutations (docs/adr/tech/0002)
+## Data fetching & mutations (docs/adr/tech/0019, narrows docs/adr/tech/0002)
 
-- All server-state reads and writes go through TanStack Query (`useQuery`/`useMutation`); no component calls the generated API client directly outside a query/mutation hook. Enforcement: lint rule forbidding direct `openapi-fetch` client imports outside a designated `src/queries/` (or equivalent) directory.
-- Every mutation against a versioned endpoint (Column/Task/Subtask update, move, reorder) implements both `onMutate` (optimistic snapshot) and `onError` (rollback). Enforcement: a shared mutation-hook factory that requires both callbacks; code review for any mutation not built through it.
+- Every server entry point is either a React Server Component for reads (server-side fetch, zod-validated per docs/adr/tech/0024, passed to a Client Component as plain props — no client-side query for list/detail data) or a Server Action for writes (create/rename/delete/move/reorder), invoked directly by an RSC/form or wrapped as a TanStack Query `mutationFn` when client-side optimistic `onMutate`/`onError` rollback is needed. Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
+- Every mutating Server Action calls `refresh()` from `next/cache` after its write succeeds — `app/(dashboard)/layout.tsx` is a persistent layout that does not re-render on ordinary navigation, so a mutation invoked deeper in the tree never reaches the sidebar's board list without it. Enforcement: code review; docs/adr/tech/0019's Consequences names the anti-pattern this bullet exists to prevent.
 
 ## Drag-and-drop (docs/adr/tech/0003)
 
@@ -159,7 +160,7 @@ src/
 - ESLint (with `eslint-plugin-tailwindcss`) and Prettier (with `prettier-plugin-tailwindcss`) must both report zero errors before merge. Enforcement: required CI status check running both on every PR.
 - Two or more consecutive `//` line comments are written as a single `/** ... */` block instead — a single standalone `//` comment is unaffected. Enforcement: `@stylistic/eslint-plugin`'s `multiline-comment-style` rule, set to `"starred-block"`.
 - Every function is a `const` bound to an arrow function expression, never a `function` declaration or function expression (docs/adr/tech/0015) — except Next.js framework-forced default-export files (`page.tsx`, `layout.tsx`, `route.ts`, etc.), which declare the arrow-const normally and `export default` it on its own line, since `export default const foo = () => {}` isn't valid syntax. Class methods and object-literal method shorthand are unaffected. Enforcement: `eslint-plugin-prefer-arrow-functions` (autofix) plus core `func-style: ["error", "expression"]` as a backstop.
-- A comment explaining WHY is at most 1-3 lines (roughly one sentence) (PC-05). If the rationale needs more — a threat-model citation, a multi-step decision history — that belongs in the relevant ADR, `CONTEXT.md`, or `SUMMARY.md`, referenced by a short pointer (e.g. "see ADR tech/0018") rather than restated in full inline. Enforcement: code review — no automated tool measures comment-prose length.
+- A comment explaining WHY is at most 1-3 lines (roughly one sentence) (PC-05). If the rationale needs more — a threat-model citation, a multi-step decision history — that belongs in the relevant ADR, `CONTEXT.md`, or `SUMMARY.md`, referenced by a short pointer (e.g. "see ADR tech/0018") rather than restated in full inline. Enforcement: `pnpm comments:check` (`scripts/check-comment-length.mjs`); an over-limit block can be marked exempt with a `comment-length-exempt:` marker line carrying a stated reason (docs/adr/tech/0023).
 
 ## Responsive strategy (docs/adr/tech/0010, docs/adr/tech/0014)
 
@@ -177,6 +178,43 @@ src/
 ## Enum-like constants (docs/adr/tech/0012)
 
 - Declare enum-like sets of string values as a `const` object literal with `as const`, keys mirroring their own string values (e.g. `export const DEVICE_TYPE = { MOBILE: "MOBILE", DESKTOP: "DESKTOP" } as const;`), never TypeScript's `enum` keyword. Derive the corresponding type from the object (`(typeof X)[keyof typeof X]`) rather than declaring it separately. Enforcement: code review. Does not apply retroactively to existing component prop string-literal unions (e.g. Button's `variant`/`size`) — only to standalone enum-like constants meant to be iterated or referenced by a shared runtime value.
+
+## Server entry points (docs/adr/tech/0019)
+
+- Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism, project-wide. Every server entry point is a React Server Component (reads) or a Server Action (writes). Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
+- Every board/column/task/subtask-mutating Server Action calls `refresh()` from `next/cache` after its write succeeds, since `app/(dashboard)/layout.tsx` does not re-render on ordinary navigation. Enforcement: code review.
+
+## No mocking (docs/adr/tech/0020, extends 0018)
+
+- No `vi.mock`/`vi.spyOn` (or equivalent) anywhere outside `*.stories.tsx` files. A narrow framework/environment shim (`next/link`, `next/headers`'s `cookies()`) is permitted only for a named platform limitation, never for this project's own modules, an API call, or a hook. Enforcement: `no-restricted-properties` in `eslint.config.mjs` (currently `"warn"`, raised to `"error"` once the retrofit sweep lands).
+- Entity fixtures are built by factory functions taking `Partial<T>` overrides (`src/test-utils/factories/`), not ad hoc per-test object literals and not a class requiring `new`. Enforcement: code review.
+
+## Component tests from stories (docs/adr/tech/0021)
+
+- Every component carries a co-located `*.stories.tsx` and a co-located `*.test.tsx` that imports those stories through `composeStories` (from `@storybook/react`, never `@storybook/nextjs-vite`) and drives them with `.run()`. `app/**/error.tsx`/`app/**/layout.tsx`-style thin route wrappers are exempt. Enforcement: `pnpm test:browser`; a component without a stories/test pair is a review-blocking gap.
+- Non-visual hooks are tested with React Testing Library's `renderHook` in the `unit` project, not Vitest Browser Mode — except a hook whose behavior depends on real layout measurement (`useOverflowIndicator` is the example), which stays in the `browser` project. Enforcement: code review.
+
+## End-to-end scope & seeding (docs/adr/tech/0022)
+
+- Playwright E2E specs cover only real business-logic happy paths (create, view, switch, edit, drag/move, delete including cascade, sign-in/out, theme switching) and must NOT assert on validation error copy, microcopy, or edge-case error-state rendering — that coverage lives in composed-story tests (docs/adr/tech/0021). Enforcement: code review.
+- Every E2E test body (or logical block) carries explicit `// Arrange` / `// Act` / `// Assert` comments. Enforcement: code review.
+- E2E data seeding is a curl-based CLI, reusing the sign-up response's own session credential via a cookie jar rather than signing in a second time (the backend caps one account at two concurrent sessions). Enforcement: `pnpm exec playwright test --project e2e` against the real deployed nonprod backend.
+
+## Comment length (docs/adr/tech/0023)
+
+- A comment block's prose may not exceed three consecutive lines, mechanically checked (not just code-reviewed). An over-limit block can be marked exempt with a `comment-length-exempt:` marker line carrying a stated reason. Enforcement: `pnpm comments:check` (`scripts/check-comment-length.mjs`), CI-wired (currently non-blocking).
+
+## Boundary validation (docs/adr/tech/0024)
+
+- Runtime shape validation at every API boundary uses zod: the schema is the single source of truth, the TypeScript type is derived via `z.infer`, and every parse is `.safeParse()`, never `.parse()`. Placement is feature-owned (`features/<domain>/schemas.ts`) until a second domain needs the identical shape, then promoted to `lib/core/api-contract/`. Enforcement: code review — a direct cast from an `openapi-fetch` response to a domain type without a zod parse in between is a review-blocking gap.
+
+## Out of scope for 02.1
+
+Two loosely-matched pending todos were deliberately reviewed and kept out of this phase's retrofit
+scope (D-17) — their absence from this phase's changes is not an oversight:
+
+- Theme cookie not cleared on sign-out — `.planning/todos/pending/2026-08-20-clear-theme-cookie-on-sign-out.md`.
+- Path traversal in `scripts/serve-static.mjs` (Playwright visual webServer, dev/CI-only) — `.planning/todos/pending/2026-08-20-fix-path-traversal-in-serve-static-visual-test-server.md`.
 
 ## Prerequisites
 
