@@ -1,6 +1,6 @@
 import { defineConfig, devices, type PlaywrightTestConfig } from "@playwright/test";
 
-import { E2E_BASE_URL, E2E_EXTERNAL_API_BASE_URL, E2E_PORT, E2E_SESSION_SECRET } from "./e2e/test-env";
+import { E2E_CONFIG } from "./e2e/test-env";
 
 const PORT = 6007;
 
@@ -47,13 +47,13 @@ const visualWebServer: NonNullable<PlaywrightTestConfig["webServer"]> = {
  * test-only fallback matching `vitest.config.ts`'s for local runs.
  */
 const e2eWebServer: NonNullable<PlaywrightTestConfig["webServer"]> = {
-    command: `pnpm build && pnpm exec next start -p ${String(E2E_PORT)}`,
-    url: E2E_BASE_URL,
+    command: `pnpm build && pnpm exec next start -p ${String(E2E_CONFIG.PORT)}`,
+    url: E2E_CONFIG.BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: {
-        SESSION_SECRET: E2E_SESSION_SECRET,
-        EXTERNAL_API_BASE_URL: E2E_EXTERNAL_API_BASE_URL,
+        SESSION_SECRET: E2E_CONFIG.SESSION_SECRET,
+        EXTERNAL_API_BASE_URL: E2E_CONFIG.EXTERNAL_API_BASE_URL,
     },
 };
 
@@ -115,7 +115,7 @@ export default defineConfig({
             testMatch: "**/*.e2e.spec.ts",
             use: {
                 ...devices["Desktop Chrome"],
-                baseURL: E2E_BASE_URL,
+                baseURL: E2E_CONFIG.BASE_URL,
             },
         },
     ],
