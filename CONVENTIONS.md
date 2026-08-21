@@ -186,7 +186,7 @@ src/
 
 ## No mocking (docs/adr/tech/0020, extends 0018)
 
-- No `vi.mock`/`vi.spyOn` (or equivalent) anywhere outside `*.stories.tsx` files. A narrow framework/environment shim (`next/link`, `next/headers`'s `cookies()`) is permitted only for a named platform limitation, never for this project's own modules, an API call, or a hook. Enforcement: `no-restricted-properties` in `eslint.config.mjs` (currently `"warn"`, raised to `"error"` once the retrofit sweep lands).
+- No `vi.mock`/`vi.spyOn` (or equivalent) anywhere outside `*.stories.tsx` files. A narrow framework/environment shim (`next/link`, `next/headers`'s `cookies()`) is permitted only for a named platform limitation, never for this project's own modules, an API call, or a hook. Enforcement: `no-restricted-properties` in `eslint.config.mjs`, set to `"error"` — blocking, not advisory.
 - Entity fixtures are built by factory functions taking `Partial<T>` overrides (`src/test-utils/factories/`), not ad hoc per-test object literals and not a class requiring `new`. Enforcement: code review.
 
 ## Component tests from stories (docs/adr/tech/0021)
@@ -202,7 +202,7 @@ src/
 
 ## Comment length (docs/adr/tech/0023)
 
-- A comment block's prose may not exceed three consecutive lines, mechanically checked (not just code-reviewed). An over-limit block can be marked exempt with a `comment-length-exempt:` marker line carrying a stated reason. Enforcement: `pnpm comments:check` (`scripts/check-comment-length.mjs`), CI-wired (currently non-blocking).
+- A comment block's prose may not exceed three consecutive lines, mechanically checked (not just code-reviewed). An over-limit block can be marked exempt with a `comment-length-exempt:` marker line carrying a stated reason. Enforcement: `pnpm comments:check` (`scripts/check-comment-length.mjs`), CI-wired and blocking.
 
 ## Boundary validation (docs/adr/tech/0024)
 

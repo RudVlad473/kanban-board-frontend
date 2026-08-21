@@ -65,12 +65,37 @@ this project's own established convention against class-needing-`new` patterns.
 
 - **Enforcement:** ESLint's `no-restricted-properties` rule in `eslint.config.mjs` flags
   `vi.mock`/`vi.spyOn` on any `**/*.{ts,tsx}` file, excluding `**/*.stories.{ts,tsx}`, citing this
-  ADR in its message. Kept at `"warn"` severity until the retroactive rewrite (D-16) lands across
-  every currently-violating file; a later plan raises it to `"error"`. A distinct rule ID
+  ADR in its message. Set to `"error"` — blocking, not advisory (plan `02.1-15` raised it once the
+  retroactive rewrite, D-16, closed every violating file). A distinct rule ID
   (`no-restricted-properties`, not a second `no-restricted-syntax` block) was required because
   ESLint flat config *replaces*, not merges, a rule's configuration per matching file — a second
   `no-restricted-syntax` block scoped to the same files would have silently dropped this project's
   pre-existing raw-`<a>`/positional-argument/`TSImportType` selectors for every `.ts`/`.tsx` file.
+
+### Surviving mock register
+
+Every remaining `vi.mock`/`vi.spyOn` in the repository, generated from
+`grep -rn "eslint-disable-next-line no-restricted-properties --" --include=*.ts --include=*.tsx src app e2e`
+— each row is a framework/environment shim carrying its own justifying disable directive, not a
+business-logic double. A new row here that names a module belonging to this project (rather than
+`next/headers`, `next/navigation`, or `next/link`) is a review-blocking regression.
+
+| File | Mocked specifier | Platform limitation |
+|------|-------------------|----------------------|
+| `src/components/layout/sidebar/sidebar.test.tsx` | `next/navigation` | No real Next.js router outside an actual request/render cycle in Vitest |
+| `src/components/layout/sidebar/sidebar.test.tsx` | `next/link` | Reads `process.env` internally, undefined in Vitest Browser Mode (`ReferenceError: process is not defined`) |
+| `src/features/auth/actions/sign-in.integration.test.ts` | `next/headers` | `cookies()` requires a real Next.js request scope no Vitest run provides |
+| `src/features/auth/actions/sign-in.integration.test.ts` | `next/navigation` | `redirect()` is a framework control-flow primitive that only resolves inside a real Next.js render/action scope |
+| `src/features/auth/actions/sign-out.integration.test.ts` | `next/headers` | `cookies()` requires a real Next.js request scope no Vitest run provides |
+| `src/features/auth/actions/sign-out.integration.test.ts` | `next/navigation` | `redirect()` is a framework control-flow primitive that only resolves inside a real Next.js render/action scope |
+| `src/features/auth/actions/sign-up.integration.test.ts` | `next/headers` | `cookies()` requires a real Next.js request scope no Vitest run provides |
+| `src/features/auth/actions/sign-up.integration.test.ts` | `next/navigation` | `redirect()` is a framework control-flow primitive that only resolves inside a real Next.js render/action scope |
+| `src/features/boards/server/load-boards.integration.test.ts` | `next/headers` | `cookies()` has no real request scope in a Vitest run |
+| `src/features/theme/actions/update-theme.integration.test.ts` | `next/headers` | `cookies()` requires a real Next.js request scope no Vitest run provides |
+| `src/lib/server/cookies/cookie-client.unit.test.ts` | `next/headers` | `cookies()` has no real request scope in a Vitest run |
+| `src/lib/server/cookies/theme-cookie.unit.test.ts` | `next/headers` | `cookies()` has no real request scope in a Vitest run |
+| `src/lib/server/server-client.integration.test.ts` | `next/headers` | `cookies()` has no real request scope in a Vitest run |
+| `src/lib/server/session.test.ts` | `next/headers` | `cookies()` has no real request scope in a Vitest run |
 - Real-backend tests are honestly slower than mocked ones, and every test layer now needs the
   nonprod backend reachable to run at all — the same cost `tech/0018` already accepted for the
   network layer, now extended to every module boundary a test previously faked.

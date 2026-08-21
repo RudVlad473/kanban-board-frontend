@@ -17,10 +17,10 @@ A comment's prose may not exceed three consecutive lines. Longer rationale belon
 ADR, `CONTEXT.md`, or `SUMMARY.md`, referenced by a short pointer (e.g. "see ADR tech/0018") —
 this is PC-05's existing rule, unchanged; what changes is that it is now mechanically checked.
 
-**Mechanism:** `scripts/check-comment-length.mjs` (`pnpm comments:check`), CI-wired as a
-non-blocking step (`continue-on-error: true`) until the retrofit sweep (plan `02.1-15`) brings the
-whole repo into compliance, after which it becomes blocking. Its `findLongCommentRuns({ source,
-max })` classifier tracks consecutive `//`/`/* */`/`/** */` comment lines as a single "run,"
+**Mechanism:** `scripts/check-comment-length.mjs` (`pnpm comments:check`), CI-wired as a blocking
+step — plan `02.1-15` removed the `continue-on-error: true` flag once the retrofit sweep brought
+the whole repo into compliance. Its `findLongCommentRuns({ source, max })` classifier tracks
+consecutive `//`/`/* */`/`/** */` comment lines as a single "run,"
 treating block-comment delimiters and bare `*` continuation lines as non-counting, non-breaking
 spacers — a `/** ... */` block with internal paragraph breaks but no truly blank line counts as one
 continuous run, not several shorter ones, matching how a human reader actually experiences the
@@ -48,9 +48,10 @@ purpose as thoroughly as no rule at all.
   (`app/`, `src/`, `e2e/`, `visual/`, `tokens/`, `scripts/`, `.storybook/`, top-level config/setup
   files) fails `pnpm comments:check` until either compressed to a short pointer or explicitly
   marked exempt with a stated reason.
-- The check runs non-blocking in CI until the retrofit sweep (D-22, plan `02.1-15`) brings the
-  repo's 88 known offender files into compliance — flipping it to blocking before that sweep lands
-  would fail every PR on pre-existing debt unrelated to the change being reviewed.
+- The check ran non-blocking in CI until the retrofit sweep (D-22) brought the repo's 88 known
+  offender files into compliance; plan `02.1-15` then flipped it to blocking, once flipping it
+  early would no longer have failed every PR on pre-existing debt unrelated to the change under
+  review.
 - A future contributor writing a long inline explanation gets fast, mechanical feedback instead of
   discovering the rule only at review time, or never.
 
@@ -60,7 +61,7 @@ threshold itself proves too strict for a real, recurring case that genuinely can
 pointed elsewhere.
 
 **Enforcement:** `pnpm comments:check` (`scripts/check-comment-length.mjs`), wired into CI as a
-currently-non-blocking step.
+blocking step.
 
 Sources:
 
