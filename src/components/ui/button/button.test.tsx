@@ -1,29 +1,73 @@
-import { expect, it, vi } from "vitest";
+/*
+ * Composed from the plain React renderer package, not @storybook/nextjs-vite — the latter's main
+ * entry eagerly imports real Next.js internals this "browser" project deliberately does not load
+ * (vitest.setup.ts documents this in full; sidebar.test.tsx is the proven precedent).
+ */
+import { composeStories } from "@storybook/react";
+import { screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { Button } from "./button";
+import * as stories from "./button.stories";
+
+const { Primary, Disabled, Loading } = composeStories(stories);
 
 /*
- * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
- * blanket regression net rather than a hand-picked set of viewport-conditional assertions.
- * Button has no viewport-conditional behavior of its own (confirmed in the ADR tech/0010 mobile
- * review — fixed-size control, no md:/lg: classes) — every test here runs identically at both
- * sizes, which is itself the point.
+ * composeStories' `.run()` and vitest-browser-react's `render()` don't clean up after each
+ * other — wipe the page body between tests so the two mechanisms never collide.
+ */
+afterEach(() => {
+    document.body.innerHTML = "";
+});
+
+/*
+ * ADR tech/0014: every primitive's suite runs at both viewports by default; Button has no
+ * viewport-conditional behavior of its own (ADR tech/0010 mobile review).
  */
 describeForEachDevice({
     name: "Button",
     body: () => {
-        it("is found by its accessible role and name", async () => {
-            // Arrange
-            const screen = await render(<Button onClick={vi.fn()}>Create Account</Button>);
+        // Shallow: copy, prop-driven aria/disabled state — asserted through composed stories (D-08).
+        it("renders the accessible name from its copy", async () => {
+            // Act
+            await Primary.run();
 
             // Assert
-            await expect.element(screen.getByRole("button", { name: "Create Account" })).toBeVisible();
+            expect(screen.getByRole("button", { name: "Create Account" })).toBeInTheDocument();
         });
 
+        it("renders disabled and keeps its accessible name when isDisabled", async () => {
+            // Act
+            await Disabled.run();
+
+            // Assert
+            expect(screen.getByRole("button", { name: "Create Account" })).toBeDisabled();
+        });
+
+        it("renders busy and keeps its label visible when isLoading", async () => {
+            // Act
+            await Loading.run();
+
+            // Assert
+            const button = screen.getByRole("button", { name: "Create Account" });
+            expect(button).toBeDisabled();
+            expect(button).toHaveAttribute("aria-busy", "true");
+            expect(screen.getByText("Create Account")).toBeVisible();
+        });
+
+        it("reports itself not busy — the attribute reads the string false, not absent — when isLoading is unset", async () => {
+            // Act
+            await Primary.run();
+
+            // Assert
+            expect(screen.getByRole("button", { name: "Create Account" })).toHaveAttribute("aria-busy", "false");
+        });
+
+        // Deep: real pointer/keyboard interaction and computed style — stay direct renders.
         it("invokes onClick exactly once on click", async () => {
             // Arrange
             const onClick = vi.fn();
@@ -64,7 +108,8 @@ describeForEachDevice({
             expect(onClick).toHaveBeenCalledOnce();
         });
 
-        it("renders disabled and suppresses activation on click and keyboard when isDisabled", async () => {
+        // Deep — real pointer/keyboard events; disabled-state rendering itself is the Disabled story above.
+        it("suppresses activation on click and keyboard when isDisabled", async () => {
             // Arrange
             const onClick = vi.fn();
             const screen = await render(
@@ -74,14 +119,32 @@ describeForEachDevice({
             );
             const button = screen.getByRole("button", { name: "Submit" });
 
-            // Assert (rendered state)
-            await expect.element(button).toBeDisabled();
-
             /*
              * Act + Assert (click) — a native DOM click() on a disabled button never dispatches the
              * click event, proving activation is genuinely suppressed by the browser, not merely
              * unasserted.
              */
+            (button.element() as HTMLButtonElement).click();
+            expect(onClick).not.toHaveBeenCalled();
+
+            // Act + Assert (keyboard)
+            button.element().focus();
+            await userEvent.keyboard("{Enter}");
+            expect(onClick).not.toHaveBeenCalled();
+        });
+
+        // Deep — real pointer/keyboard events; busy-state rendering itself is the Loading story above.
+        it("suppresses activation on click and keyboard when isLoading", async () => {
+            // Arrange
+            const onClick = vi.fn();
+            const screen = await render(
+                <Button isLoading onClick={onClick}>
+                    Sign In
+                </Button>,
+            );
+            const button = screen.getByRole("button", { name: "Sign In" });
+
+            // Act + Assert (click)
             (button.element() as HTMLButtonElement).click();
             expect(onClick).not.toHaveBeenCalled();
 
@@ -108,11 +171,8 @@ describeForEachDevice({
 
         it("keeps the on-primary (white) label color when a filled variant is disabled, instead of the low-contrast muted-text token", async () => {
             /*
-             * Arrange — `text-muted` is tuned for muted text on a *light surface*. Swapping to it on
-             * disable for a *filled* button (primary/destructive) combined with the shared
-             * `disabled:opacity-50` collapsed the label to near-invisible: a dark-grey label over an
-             * already-faded purple/red fill. The label must stay on the same on-primary token disabled
-             * as enabled — opacity alone communicates the disabled state.
+             * Arrange — disabled filled variants must keep the same on-primary label color as
+             * enabled (opacity alone signals disabled); see button.tsx's own token comment.
              */
             const primary = await render(
                 <Button variant="primary" isDisabled>
@@ -160,40 +220,10 @@ describeForEachDevice({
             expect(new Set([primaryBg, secondaryBg, destructiveBg]).size).toBe(3);
         });
 
-        it("renders not activatable, reports itself busy, and keeps the label visible alongside a spinner when isLoading", async () => {
-            // Arrange
-            const onClick = vi.fn();
-            const screen = await render(
-                <Button isLoading onClick={onClick}>
-                    Sign In
-                </Button>,
-            );
-            const button = screen.getByRole("button", { name: "Sign In" });
-
-            // Assert (rendered state)
-            await expect.element(button).toBeDisabled();
-            await expect.element(button).toHaveAttribute("aria-busy", "true");
-            await expect.element(screen.getByText("Sign In")).toBeVisible();
-
-            // Act + Assert (click) — a native DOM click() on a disabled button never dispatches.
-            (button.element() as HTMLButtonElement).click();
-            expect(onClick).not.toHaveBeenCalled();
-
-            // Act + Assert (keyboard)
-            button.element().focus();
-            await userEvent.keyboard("{Enter}");
-            expect(onClick).not.toHaveBeenCalled();
-        });
-
         it("computes the Loading spinner's animation state consistently with the live reduced-motion preference", async () => {
             /*
-             * GC-13: source-level audit found no global animation-disabling override anywhere
-             * (globals.css only imports tailwindcss/tokens.css/fonts.css; .storybook/preview.tsx has
-             * no reduced-motion parameter/decorator), pointing at the environment's own OS/browser
-             * "reduce motion" setting as the leading explanation for a reported static spinner — but
-             * that lead is unconfirmed until proven live. This test reads the actual live preference
-             * rather than assuming it, and asserts the *correct* relationship in both directions, so
-             * it stays a meaningful regression guard whichever way the diagnosis lands.
+             * GC-13: a static spinner is the live "reduce motion" preference, not a CSS defect —
+             * read the real preference rather than assuming it (see button.tsx's own comment).
              */
 
             // Arrange
@@ -204,30 +234,13 @@ describeForEachDevice({
             // Act
             const spinnerStyle = getComputedStyle(spinner as SVGElement);
 
-            /*
-             * Assert — branches on the live `matches` value read above, not a hardcoded assumption.
-             * This run found `prefersReducedMotion === false`: the environment requests no reduced
-             * motion, so the spinner is expected to actually animate (`animationName: "spin"`,
-             * `animationPlayState: "running"`). It does. This confirms the root cause of the reported
-             * static spinner in a live browser is the reviewer's own OS/browser reduce-motion
-             * accessibility setting — `motion-reduce:animate-none` behaving exactly as designed, not a
-             * CSS/build defect. See Task 2 for the documentation this finding resolves to.
-             */
+            // Assert — branches on the live `matches` value read above, not a hardcoded assumption.
             if (!prefersReducedMotion) {
                 expect(spinnerStyle.animationName).toBe("spin");
                 expect(spinnerStyle.animationPlayState).toBe("running");
             } else {
                 expect(spinnerStyle.animationName).toBe("none");
             }
-        });
-
-        it("reports itself not busy — the attribute reads the string false, not absent — when isLoading is unset", async () => {
-            // Arrange
-            const screen = await render(<Button onClick={vi.fn()}>Sign In</Button>);
-            const button = screen.getByRole("button", { name: "Sign In" });
-
-            // Assert
-            await expect.element(button).toHaveAttribute("aria-busy", "false");
         });
 
         it("renders a distinct height for each size", async () => {

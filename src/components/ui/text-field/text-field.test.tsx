@@ -1,41 +1,88 @@
-import { expect, it, vi } from "vitest";
+/*
+ * Composed from the plain React renderer package, not @storybook/nextjs-vite — the latter's main
+ * entry eagerly imports real Next.js internals this "browser" project deliberately does not load
+ * (vitest.setup.ts documents this in full; sidebar.test.tsx is the proven precedent).
+ */
+import { composeStories } from "@storybook/react";
+import { screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { TextField } from "./text-field";
+import * as stories from "./text-field.stories";
+
+const { Idle, Error, Disabled, Loading, Password } = composeStories(stories);
 
 /*
- * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
- * blanket regression net rather than a hand-picked set of viewport-conditional assertions. Most
- * tests below run identically at both sizes; the width test just below genuinely differs by
- * viewport already (it reads the live `window.innerWidth`, so no `device` branching is needed in
- * its own body).
+ * composeStories' `.run()` and vitest-browser-react's `render()` don't clean up after each
+ * other — wipe the page body between tests so the two mechanisms never collide.
+ */
+afterEach(() => {
+    document.body.innerHTML = "";
+});
+
+/*
+ * ADR tech/0014: every primitive's suite runs at both viewports by default; the width test below
+ * genuinely differs per viewport already (reads live window.innerWidth), needing no branching.
  */
 describeForEachDevice({
     name: "TextField",
     body: () => {
-        it("fills its container's width at any viewport, already fluid with no fixed desktop-only width — renders at (approximately) the current viewport width when unconstrained", async () => {
-            /*
-             * Arrange — no wrapping width constraint (unlike the LongValue story's 320px wrapper);
-             * it's TextField's own w-full under test here, not some ancestor's fixed width.
-             * page.viewport already resized the test iframe for this device.
-             */
-            const screen = await render(<TextField label="Email" />);
-            const input = screen.getByRole("textbox", { name: "Email" });
-
+        // Shallow: copy, prop-driven aria wiring, disabled/busy rendering — through composed stories (D-08).
+        it("associates the visible label with the input as its accessible name", async () => {
             // Act
-            const inputWidth = input.element().getBoundingClientRect().width;
+            await Idle.run();
 
-            /*
-             * Assert — within a small tolerance of the real viewport width, proving the field's width
-             * tracks whatever viewport it renders in rather than a fixed value.
-             */
-            expect(inputWidth).toBeGreaterThan(window.innerWidth - 20);
+            // Assert
+            expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
         });
 
-        it("associates the visible label with the input as its accessible name, and clicking the label focuses the input", async () => {
+        it("renders the error message, marks the input invalid, and exposes the message as its accessible description when hasError", async () => {
+            // Act
+            await Error.run();
+
+            // Assert
+            const input = screen.getByRole("textbox", { name: "Password" });
+            const message = screen.getByText("Can't be empty");
+            expect(message).toBeVisible();
+            expect(input).toHaveAttribute("aria-invalid", "true");
+            expect(input.getAttribute("aria-describedby")).toContain(message.id);
+        });
+
+        it("renders disabled when isDisabled", async () => {
+            // Act
+            await Disabled.run();
+
+            // Assert
+            expect(screen.getByRole("textbox", { name: "Email" })).toBeDisabled();
+        });
+
+        it("renders disabled and reports itself busy when isLoading", async () => {
+            // Act
+            await Loading.run();
+
+            // Assert
+            const input = screen.getByRole("textbox", { name: "Email" });
+            expect(input).toBeDisabled();
+            expect(input).toHaveAttribute("aria-busy", "true");
+        });
+
+        it("renders a masked password input with its trailing node inside the field rather than beside it", async () => {
+            // Act
+            await Password.run();
+
+            // Assert
+            const input = document.body.querySelector("input[type='password']");
+            const trailing = document.body.querySelector("svg");
+            expect(input).not.toBeNull();
+            expect(trailing?.closest(".relative")?.contains(input as Node)).toBe(true);
+        });
+
+        // Deep: real focus/typing/layout/computed-style behaviour — stay direct renders.
+        it("focuses the input when its label is clicked", async () => {
             // Arrange
             const screen = await render(<TextField label="Email" />);
             const input = screen.getByRole("textbox", { name: "Email" });
@@ -45,7 +92,6 @@ describeForEachDevice({
             await label.click();
 
             // Assert
-            await expect.element(input).toBeVisible();
             expect(input.element()).toBe(document.activeElement);
         });
 
@@ -63,22 +109,19 @@ describeForEachDevice({
             await expect.element(input).toHaveValue("a");
         });
 
-        it("renders the danger border and message, marks the input invalid, and exposes the message as its accessible description when hasError", async () => {
+        it("renders the danger border using the same semantic token as Checkbox when hasError", async () => {
             // Arrange
             const screen = await render(<TextField label="Password" hasError errorMessage="Can't be empty" />);
             const input = screen.getByRole("textbox", { name: "Password" });
 
             // Act
             const borderColor = getComputedStyle(input.element()).borderColor;
-            const message = screen.getByText("Can't be empty");
 
-            // Assert
-            expect(borderColor).toBe("rgb(201, 63, 60)"); // border-border-danger (#C93F3C)
-            await expect.element(message).toBeVisible();
-            await expect.element(input).toHaveAttribute("aria-invalid", "true");
-            expect(input.element().getAttribute("aria-describedby")).toContain(message.element().id);
+            // Assert — border-border-danger (#C93F3C), same as Checkbox.
+            expect(borderColor).toBe("rgb(201, 63, 60)");
         });
 
+        // Deep — a prop-combination invariant (no story stages errorMessage without hasError).
         it("renders no error message element and does not mark the input invalid when hasError is unset", async () => {
             // Arrange
             const screen = await render(<TextField label="Password" errorMessage="Can't be empty" />);
@@ -89,61 +132,44 @@ describeForEachDevice({
             await expect.element(input).not.toHaveAttribute("aria-invalid");
         });
 
-        it("renders disabled and prevents typing when isDisabled", async () => {
+        it("prevents typing when isDisabled", async () => {
             // Arrange
             const onValueChange = vi.fn();
             const screen = await render(<TextField label="Email" isDisabled onValueChange={onValueChange} />);
             const input = screen.getByRole("textbox", { name: "Email" });
 
-            // Assert (rendered state)
-            await expect.element(input).toBeDisabled();
-
-            /*
-             * Act + Assert (typing is suppressed) — a disabled input never becomes the active
-             * element, so the browser itself refuses focus; this proves activation is genuinely
-             * suppressed, not merely unasserted.
-             */
+            // Act — a disabled input never becomes the active element, proving suppression is real.
             (input.element() as HTMLInputElement).focus();
             expect(input.element()).not.toBe(document.activeElement);
             await userEvent.keyboard("a");
+
+            // Assert
             expect(onValueChange).not.toHaveBeenCalled();
         });
 
-        it("renders disabled, refuses focus and typing, and reports itself busy when isLoading", async () => {
+        it("refuses focus and typing when isLoading", async () => {
             // Arrange
             const onValueChange = vi.fn();
             const screen = await render(<TextField label="Email" isLoading onValueChange={onValueChange} />);
             const input = screen.getByRole("textbox", { name: "Email" });
 
-            // Assert (rendered state)
-            await expect.element(input).toBeDisabled();
-            await expect.element(input).toHaveAttribute("aria-busy", "true");
-
-            /*
-             * Act + Assert (typing is suppressed) — a disabled input never becomes the active
-             * element, so the browser itself refuses focus; this proves activation is genuinely
-             * suppressed, not merely unasserted (GC-17: isLoading now composes into disabled,
-             * matching the isDisabled test above rather than the old readOnly-stays-focusable
-             * behaviour).
-             */
+            // Act — isLoading composes into native disabled (GC-17), same suppression as isDisabled.
             (input.element() as HTMLInputElement).focus();
             expect(input.element()).not.toBe(document.activeElement);
             await userEvent.keyboard("z");
+
+            // Assert
             expect(onValueChange).not.toHaveBeenCalled();
         });
 
-        it("a loading field now visually matches disabled — native :disabled wins on CSS specificity — but keeps a distinct busy cursor", async () => {
+        it("a loading field visually matches disabled but keeps a distinct busy cursor", async () => {
             /*
-             * Arrange — GC-17 makes `isLoading` compose into native `disabled`, so the base
-             * `disabled:opacity-50` class (specificity 0,2,0) now always outranks the `isBusy`
-             * branch's plain `opacity-70` class (0,1,0), regardless of source order — confirmed live
-             * here (not by specificity reasoning alone) before the `isBusy` cva branch was simplified
-             * to drop the now-unreachable opacity/background classes. Cursor remains the sole
-             * busy-vs-disabled differentiator, mirroring Checkbox's (GC-14) precedent.
+             * Arrange — GC-17: isLoading composes into native disabled, so the base disabled:opacity-50
+             * class always outranks isBusy's own class on specificity; cursor stays the sole
+             * busy-vs-disabled differentiator (mirrors Checkbox's GC-14 precedent).
              */
             const loading = await render(<TextField label="Loading field" isLoading />);
             const loadingInput = loading.getByRole("textbox", { name: "Loading field" });
-
             const disabled = await render(<TextField label="Disabled field" isDisabled />);
             const disabledInput = disabled.getByRole("textbox", { name: "Disabled field" });
 
@@ -151,52 +177,17 @@ describeForEachDevice({
             const loadingStyle = getComputedStyle(loadingInput.element());
             const disabledStyle = getComputedStyle(disabledInput.element());
 
-            // Assert — loading now visually matches disabled (same opacity).
+            // Assert — loading visually matches disabled (same opacity), but a distinct cursor.
             expect(loadingStyle.opacity).toBe("0.5");
             expect(disabledStyle.opacity).toBe("0.5");
-
-            // Assert — cursor is the sole remaining busy-vs-disabled differentiator.
             expect(loadingStyle.cursor).toBe("progress");
             expect(disabledStyle.cursor).not.toBe("progress");
         });
 
-        it("renders a masked password input, and a trailing node inside the field rather than beside it", async () => {
-            // Arrange
-            const screen = await render(
-                <TextField
-                    label="Password"
-                    type="password"
-                    trailing={<span data-testid="trailing-slot">toggle</span>}
-                />,
-            );
-            const input = screen.container.querySelector("input[type='password']");
-            const trailing = screen.getByTestId("trailing-slot");
-
-            // Assert
-            expect(input).not.toBeNull();
-            await expect.element(trailing).toBeVisible();
-            /*
-             * The trailing slot's positioned ancestor is the same relative wrapper the input renders
-             * into, not a sibling elsewhere in the tree — proving it renders "inside" the field.
-             */
-            expect(
-                trailing
-                    .element()
-                    .closest(".relative")
-                    ?.contains(input as Node),
-            ).toBe(true);
-        });
-
         it("truncates overflowing values with a native ellipsis instead of expanding the field, including on live typing", async () => {
             /*
-             * Arrange — the overflow cue is now native CSS truncation (`truncate`: `overflow-hidden`,
-             * `text-overflow: ellipsis`, `whitespace-nowrap`) applied to the input itself, not a
-             * separate absolutely-positioned overlay span. A previous overlay-patch implementation
-             * bled over the input's own border/corner radius because its offsets didn't account for
-             * border width (round-9 human-reported visual bug); native truncation renders inside the
-             * input's own padded box, so there's nothing to offset. `scrollWidth > clientWidth` is the
-             * same overflow signal `useOverflowIndicator` uses elsewhere (Dropdown) — here read
-             * directly off the input, since there's no separate indicator element to query.
+             * Arrange — scrollWidth > clientWidth is the same overflow signal useOverflowIndicator
+             * uses elsewhere; read directly off the input since there's no separate indicator element.
              */
             const isTruncating = (el: HTMLElement) => el.scrollWidth > el.clientWidth;
 
@@ -228,26 +219,14 @@ describeForEachDevice({
             // Act
             await userEvent.type(input.element(), "x".repeat(200));
 
-            /*
-             * Assert — native truncation needs no explicit recheck wiring; the browser lays out the
-             * ellipsis itself as `.value` grows.
-             */
+            // Assert — native truncation needs no explicit recheck wiring.
             await expect.poll(() => isTruncating(input.element() as HTMLElement)).toBe(true);
         });
 
         it("clips without an ellipsis glyph while focused, then restores the ellipsis on blur (round-10 fix)", async () => {
             /*
-             * Arrange — `text-overflow: ellipsis` fights the browser's own caret-follow auto-scroll on
-             * a focused `<input>`: Firefox never paints the glyph on `<input>` at all (Mozilla
-             * Bugzilla #15154, unfixable via CSS), and even Chromium can render it against a stale
-             * scroll offset once focus moves the caret, producing the human-reported "blank field with
-             * a stray ellipsis" glitch. Neither the rendered glyph nor the native caret-scroll position
-             * is introspectable via computed styles or jsdom — see round-10's SUMMARY for a
-             * screenshot-based Playwright repro against the built Storybook confirming the visual fix.
-             * What IS reliably assertable here is the underlying CSS decision that drives the fix:
-             * `text-overflow` itself must read `clip` (no glyph) while focused and `ellipsis` again the
-             * moment focus leaves — proving the `focus:text-clip` class is wired up and takes effect,
-             * without depending on a real render of the glyph itself.
+             * Arrange — ellipsis fights the browser's caret-follow auto-scroll while focused (Firefox never
+             * paints it — Mozilla Bugzilla #15154); asserts the focus:text-clip decision. See round-10's SUMMARY.
              */
             const overflow = await render(
                 <div style={{ width: "320px" }}>
@@ -273,10 +252,7 @@ describeForEachDevice({
         });
 
         it("holds its rendered width against a 300-character value instead of expanding or wrapping the layout", async () => {
-            /*
-             * Arrange — distinct labels keep each render's locator query unambiguous, since
-             * locators resolve against the full page rather than a single render's own container.
-             */
+            // Arrange — distinct labels keep each render's locator query unambiguous.
             const empty = await render(
                 <div style={{ width: "320px" }}>
                     <TextField label="Name (empty)" />
@@ -298,6 +274,18 @@ describeForEachDevice({
 
             // Assert
             expect(filledWidth).toBe(emptyWidth);
+        });
+
+        it("fills its container's width at any viewport, with no fixed desktop-only width", async () => {
+            // Arrange — no wrapping width constraint; page.viewport already resized the test iframe.
+            const screen = await render(<TextField label="Email" />);
+            const input = screen.getByRole("textbox", { name: "Email" });
+
+            // Act
+            const inputWidth = input.element().getBoundingClientRect().width;
+
+            // Assert — within a small tolerance of the real viewport width.
+            expect(inputWidth).toBeGreaterThan(window.innerWidth - 20);
         });
     },
 });
