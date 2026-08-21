@@ -4,13 +4,9 @@ import { AuthCard } from "./auth-card";
 import { SignInForm } from "./sign-in-form";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
- * (typing, validation, submit, indistinguishable server error, password reveal, password
- * clearing) live exclusively in sign-in-form.test.tsx. Every state below is reached through this
- * file's own staging props, the same non-interactive pattern Dropdown/Modal already use via
- * `defaultOpen` — see sign-up-form.stories.tsx's identical comment for the full rationale,
- * including why `parameters.nextjs.appDirectory` is required (the form imports `signInAction`, a
- * `"use server"` Server Action, and no story here ever submits it — see 01-33-PLAN.md).
+ * Visual-only CSF3 (D-25); behavioral assertions live in sign-in-form.test.tsx. Every state below
+ * is reached through this file's own staging props (Dropdown/Modal's `defaultOpen` pattern), and
+ * `appDirectory` is required since the form imports `signInAction`, never invoked by any story.
  */
 const meta: Meta<typeof SignInForm> = {
     component: SignInForm,
