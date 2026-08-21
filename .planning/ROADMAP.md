@@ -287,7 +287,7 @@ rule CONVENTIONS.md has stated but never enforced — are written down as ADRs a
 blocking CI gates, so no future session reintroduces the patterns this phase removes.
 **Requirements**: D-01..D-22 (from 02.1-CONTEXT.md — decimal insertion, no REQUIREMENTS.md IDs)
 **Depends on:** Phase 2
-**Plans:** 2/15 plans executed
+**Plans:** 8/15 plans executed
 
 Plans:
 
@@ -301,12 +301,12 @@ Plans:
 
 **Wave 3** *(blocked on 02.1-02)*
 
-- [ ] 02.1-03-PLAN.md — typed reusable cookie client; session and cookie tests de-mocked (D-10, D-20)
-- [ ] 02.1-04-PLAN.md — external-path constants, `buildBoardDetailPath` rename, `E2E_CONFIG` object (D-13, D-14, D-15)
-- [ ] 02.1-05-PLAN.md — ADRs tech/0019-0024, tech/0002 supersession, CONVENTIONS.md rewrite (D-18)
-- [ ] 02.1-06-PLAN.md — Server Action tests rewritten against the real backend (D-04, D-16)
-- [ ] 02.1-07-PLAN.md — composed-story tests: Button, IconButton, Checkbox, Switch, TextField (D-08)
-- [ ] 02.1-08-PLAN.md — composed-story tests: Dropdown, Menu, Modal, Toast, ErrorFallback (D-08)
+- [x] 02.1-03-PLAN.md — typed reusable cookie client; session and cookie tests de-mocked (D-10, D-20)
+- [x] 02.1-04-PLAN.md — external-path constants, `buildBoardDetailPath` rename, `E2E_CONFIG` object (D-13, D-14, D-15)
+- [x] 02.1-05-PLAN.md — ADRs tech/0019-0024, tech/0002 supersession, CONVENTIONS.md rewrite (D-18)
+- [x] 02.1-06-PLAN.md — Server Action tests rewritten against the real backend (D-04, D-16)
+- [x] 02.1-07-PLAN.md — composed-story tests: Button, IconButton, Checkbox, Switch, TextField (D-08)
+- [x] 02.1-08-PLAN.md — composed-story tests: Dropdown, Menu, Modal, Toast, ErrorFallback (D-08)
 
 **Wave 4** *(blocked on 02.1-06, 02.1-07)*
 
@@ -384,6 +384,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 8/13 | In Progress|  |
-| 02.1. Testing strategy overhaul & code-quality retrofit | 2/15 | In Progress|  |
+| 02.1. Testing strategy overhaul & code-quality retrofit | 8/15 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
