@@ -13,12 +13,9 @@ import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*
- * D-07/02-RESEARCH.md Common Pitfall 3: an action menu, not a value picker — `Menu` wraps Base
- * UI's own `menu/` entry point (`role="menu"`/`menuitem"`s, verified against the installed
- * `node_modules/@base-ui/react/menu` surface at plan execution time), not the value-picker
- * primitive `Dropdown` wraps. No item ever renders as a persisted selection and the trigger's
- * glyph never changes after an item is activated — there is no selected-value state to reflect in
- * the first place.
+ * D-07: an action menu wrapping Base UI's dedicated `menu/` entry point (`role="menu"`), not the
+ * value-picker `Dropdown` wraps — no item renders as a persisted selection, the trigger's glyph
+ * never changes after activation (see 02-07-SUMMARY.md).
  */
 type RootProps = PropsWithChildren<Omit<BaseMenuRootProps, "disabled" | "children"> & { isDisabled?: boolean }>;
 
@@ -33,11 +30,9 @@ const Root = ({ isDisabled = false, children, ...props }: RootProps) => {
 type TriggerProps = Omit<BaseMenuTriggerProps, "className"> & ClassNameProp;
 
 /*
- * Unstyled by design — the same contribution-not-visuals contract `Modal.Trigger` documents. A
- * consumer composes a real control in via Base UI's `render` prop, e.g. the sidebar's kebab:
- * `<Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />` —
- * which keeps the required accessible name and 44px hit area without this file knowing anything
- * about boards.
+ * Unstyled by design, same contribution-not-visuals contract as `Modal.Trigger` — a consumer
+ * composes a real control via Base UI's `render` prop, e.g. the sidebar's kebab
+ * `<Menu.Trigger render={<IconButton .../>} />`, without this file knowing about boards.
  */
 const Trigger = ({ className, ...props }: TriggerProps) => {
     return <BaseMenu.Trigger className={className} {...props} />;
@@ -46,12 +41,9 @@ const Trigger = ({ className, ...props }: TriggerProps) => {
 type ContentProps = Omit<MenuPopupProps, "className"> & ClassNameProp;
 
 /*
- * `Dropdown.Content`'s exact popup silhouette/scroll split (outer plain `div` owns
- * `rounded-md`/`border-border-default`/`bg-bg-surface`/`shadow-md`/`overflow-hidden`, the Base UI
- * popup inside owns the padding and scroll), `sideOffset={4}`/`collisionPadding={16}` (ADR
- * tech/0010's mobile-edge review). Deliberately not sized off the trigger's own measured width the
- * way `Dropdown.Content` is (that CSS custom property Base UI's Positioner exposes) — a kebab
- * trigger is 44px wide and this menu must size to its own content instead.
+ * Mirrors `Dropdown.Content`'s popup silhouette/scroll split and `collisionPadding={16}` mobile
+ * margin (ADR tech/0010) — but deliberately NOT sized off the trigger's measured width, since a
+ * 44px kebab trigger must let this menu size to its own content instead (see 02-07-SUMMARY.md).
  */
 const Content = ({ className, children, ...props }: ContentProps) => {
     return (
@@ -64,19 +56,9 @@ const Content = ({ className, children, ...props }: ContentProps) => {
                     )}
                 >
                     {/*
-                     * `tabIndex={0}`: Base UI moves real DOM focus onto the popup itself when the
-                     * menu opens (verified directly — `document.activeElement` is this element,
-                     * not any item, until an arrow key is pressed), but renders it with
-                     * `tabindex="-1"` — deliberately outside the natural Tab sequence, correct per
-                     * the WAI-ARIA menu pattern (Tab closes a menu; arrow keys navigate it). axe's
-                     * `scrollable-region-focusable` rule doesn't recognize a programmatically
-                     * (JS `.focus()`) focused, negative-tabindex container as "keyboard
-                     * accessible" for a scrolling region, and fires on any story with enough items
-                     * to overflow `max-h-72` before an item has been arrow-key-highlighted.
-                     * Overriding to `0` keeps the already-correct roving-tabindex item navigation
-                     * unchanged (Escape/Arrow/Enter behavior is item-driven, not container-driven)
-                     * while giving the scrollable region itself a real place in the Tab order too.
-                     */}
+                     * `tabIndex={0}` gives the popup a Tab stop — Base UI defaults to
+                     * tabindex="-1" (correct per WAI-ARIA); satisfies axe's
+                     * scrollable-region-focusable rule once items overflow (see 02-07-SUMMARY.md). */}
                     <BaseMenu.Popup tabIndex={0} className="max-h-72 overflow-y-auto p-1 outline-none" {...props}>
                         {children}
                     </BaseMenu.Popup>
@@ -96,12 +78,9 @@ type ItemProps = PropsWithChildren<
 >;
 
 /*
- * `Dropdown.Item`'s padding/typography, minus the item-text/item-indicator wrapping its
- * value-picker sibling uses and minus the checkmark — an action menu item has no selected state
- * to indicate. Same first/last
- * highlight-corner rounding fix as `Dropdown.Item` (the popup's own `p-1` inset is small enough
- * that a square-cornered highlight visibly pokes past the popup's `rounded-md` curve on the item
- * actually touching it).
+ * Mirrors `Dropdown.Item`'s padding/typography minus the value-picker's item-text/indicator/
+ * checkmark wrapping — an action-menu item has no selected state. Same `first:`/`last:`
+ * corner-rounding fix as `Dropdown.Item` (see 01-09-SUMMARY.md).
  */
 const Item = ({ isDisabled = false, isDestructive = false, className, children, ...props }: ItemProps) => {
     return (

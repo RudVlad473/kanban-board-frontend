@@ -300,6 +300,28 @@ fast-forward merge to master — not merely assumed from earlier rounds. Visual-
 run `31583094912` confirmed `completed`/`success` via `gh run view` before downloading and
 committing its artifact.
 
+## Addendum — 02.1-11 comment-length sweep (backfilled rationale)
+
+Two implementation decisions from this plan's checkpoint-review round were carried in `modal.tsx`/
+`dropdown.tsx`'s own inline comments rather than narrated here at the time; backfilled now so both
+files' comments can point at this SUMMARY instead of restating them in full:
+
+- **Silhouette/scroll split (Modal's `Dialog.Popup`, Dropdown's `Select.Popup`):** the rounded/
+  shadowed silhouette and the scrollable region are deliberately on two different elements in both
+  primitives. Putting `overflow-y-auto` directly on the rounded/shadowed element let the native
+  scrollbar and the scrolled content's edge render outside the rounded corners once content
+  actually scrolled (Modal's `LongContent` story surfaced this). Dropdown's `Select.Popup` carries
+  `role="listbox"`, which per ARIA requires its children to be `option` roles directly — wrapping
+  the options in a plain scroll `<div>` between the listbox and its items would violate that (axe
+  `aria-required-children`), so Dropdown's listbox itself stays the scrollable element while a
+  plain outer `<div>` (no ARIA role) owns the silhouette; Modal has no such role constraint on
+  `Dialog.Popup`, so its outer element owns both silhouette and clip, with an inner `div` scrolling.
+- **Dropdown item corner rounding (`first:`/`last:`):** the popup insets its items by `p-1` (4px)
+  from its own `rounded-md` (24px) edge — small enough that a square-cornered highlight on the
+  first/last item still visibly pokes past that large a corner radius. Scoping the rounded
+  highlight to `first:`/`last:` keeps the fix to the item actually touching the popup's curve;
+  middle items' highlights stay square, matching the popup's own straight side edges.
+
 ---
 *Phase: 01-foundation-auth-preferences*
 *Completed: 2026-08-12*

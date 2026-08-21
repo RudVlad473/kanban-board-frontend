@@ -232,6 +232,18 @@ None - no external service configuration required.
 All claimed files verified present on disk; all three commit hashes (`1284a2b`, `923c572`,
 `06aff60`) verified present in `git log --oneline --all`.
 
+## Addendum — 02.1-11 comment-length sweep (backfilled rationale)
+
+Button's disabled state is opacity-only at the base `cva` level, with no shared `text-color`
+override: `primary`/`destructive` keep their white `text-on-primary` label at reduced opacity,
+which stays legible against their own already-faded fill. `secondary`'s fill is the light
+`bg-surface`, so it additionally gets a per-variant `disabled:text-text-muted` override —
+confirmed live that applying `text-muted` (a token meant for muted text on a light surface) to
+`primary`/`destructive` on top of `opacity-50` collapsed contrast to near-invisible, a dark-grey
+label on an already-faded purple/red fill. This decision was implemented in this plan's own
+`button.tsx` but never narrated in the SUMMARY at the time; backfilled here during plan `02.1-11`'s
+comment-compression sweep so `button.tsx`'s inline comment can point at it instead of restating it.
+
 ---
 *Phase: 01-foundation-auth-preferences*
 *Completed: 2026-08-11*

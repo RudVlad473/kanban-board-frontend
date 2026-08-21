@@ -9,12 +9,9 @@ import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*
- * D-19: Dropdown's public shape mirrors Base UI's own Select composition — Root/Trigger/Content/
- * Item — rather than a list-of-options prop; every future consumer (board selector, column
- * actions, task status) is written against this shape. Focus trapping, roving tabindex,
- * outside-click dismissal and typeahead all come from Select itself (D-15; RESEARCH.md's Don't
- * Hand-Roll table names exactly this category) — this file contains no `useEffect` reading or
- * writing `document.activeElement`.
+ * D-19: Dropdown's public shape mirrors Base UI's own Select composition (Root/Trigger/Content/
+ * Item), not a list-of-options prop; focus trapping, roving tabindex, outside-click dismissal and
+ * typeahead all come from Select itself (D-15, see 01-CONTEXT.md).
  */
 
 /*
@@ -61,12 +58,9 @@ const Root = ({
 };
 
 /*
- * D-17: the same danger border token TextField and Checkbox use, on the same 12px
- * (`px-4 py-3`)/`h-10` box shape as TextField's own trigger-like control.
- * `rounded-sm` (radius.sm, 4px) — tokens/radius.tokens.json documents this token as the measured
- * "Text Field / Dropdown corner radius"; `rounded-md` (24px, "Button Secondary corner radius")
- * was wired in by mistake and never caught. The floating popup below (`popupVariants`) keeps its
- * own `rounded-md` — the token's description covers this trigger, not the popup surface.
+ * D-17: same danger-border token as TextField/Checkbox, same 12px/`h-10` box shape as TextField's
+ * trigger. `rounded-sm` is the measured "Text Field / Dropdown corner radius" token; the popup
+ * below keeps its own `rounded-md`, which covers only that surface (see 01-CONTEXT.md).
  */
 const triggerVariants = cva(
     "flex h-10 w-full items-center justify-between gap-2 rounded-sm border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none data-[disabled]:cursor-not-allowed data-[disabled]:text-text-muted data-[disabled]:opacity-50",
@@ -91,22 +85,15 @@ type DropdownTriggerProps = Omit<SelectTriggerProps, "className" | "children" | 
 const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => {
     const { hasError, isLoading } = useContext(DropdownContext);
     /*
-     * ARIA's `combobox` role takes its accessible name from `author` only, never from content
-     * (unlike `button`) — `Select.Value`'s rendered text (placeholder or selected item label)
-     * must be wired in explicitly via `aria-labelledby`, or the trigger has no accessible name
-     * at all despite rendering visible text.
+     * ARIA's `combobox` role takes its accessible name from `author` only, never content —
+     * `Select.Value`'s rendered text must be wired in explicitly via `aria-labelledby`, or the
+     * trigger has no accessible name despite rendering visible text (see 01-CONTEXT.md D-15).
      */
     const valueId = useId();
     /*
-     * A trailing-edge "…" indicator signals that more of the selected label exists off-screen
-     * once it overflows. `Select.Value` already truncates its text with CSS `text-overflow:
-     * ellipsis` (`truncate`, below) — this adds the same deliberate, consistently-styled cue
-     * TextField's input gets (which has no native ellipsis of its own, only horizontal scroll),
-     * rather than relying on two different primitives signalling overflow two different ways.
-     * `Select.Value` forwards its ref to the underlying `<span>`, so the hook observes it
-     * directly; a re-render that swaps the rendered label text (a real DOM text-node change) is
-     * exactly what the hook's internal `MutationObserver` catches, no extra wiring needed on
-     * selection change.
+     * A trailing-edge "…" cue signals the selected label overflows, mirroring TextField's own
+     * indicator (see 01-09-SUMMARY.md); `useOverflowIndicator`'s own doc comment covers the
+     * ResizeObserver/MutationObserver mechanism this hook call relies on.
      */
     const { ref: overflowRef, isOverflowing } = useOverflowIndicator<HTMLSpanElement>();
     return (
@@ -158,30 +145,9 @@ const Trigger = ({ placeholder, className, ...props }: DropdownTriggerProps) => 
 type DropdownContentProps = Omit<SelectPopupProps, "className"> & ClassNameProp;
 
 /*
- * `shadow.md`/`radius.md` — the popup elevation and corner measured in plan 01-04, the same
- * surface-elevation treatment as every other elevated surface in this design system.
- * `w-[var(--anchor-width)]` reads the CSS variable Base UI's Positioner sets from the trigger's
- * own measured width, so the popup always matches the trigger it belongs to.
- *
- * The silhouette (`rounded-md`/`shadow-md`/`overflow-hidden`) and the scroll
- * (`overflow-y-auto`/`max-h-72`) are deliberately on two different elements — the same
- * class of fix as Modal's panel (modal.tsx), but inverted: here the OUTER wrapper carries the
- * silhouette and clips it, while `Select.Popup` (the inner element) carries the scroll. Modal's
- * `Dialog.Popup` has no ARIA role of its own, so an inner scroll wrapper worked there; `Select.
- * Popup` carries `role="listbox"`, which per ARIA requires its children to be `option` roles
- * directly — wrapping the options in a plain scroll `<div>` between the listbox and its options
- * violates that (axe `aria-required-children`), so the listbox itself has to stay the scrollable
- * element and a plain outer `<div>` (no ARIA role) owns the silhouette instead. Putting the scroll
- * directly on the rounded/shadowed element (the original layout) let the scrollable region's edge
- * and an in-flow scrollbar (Firefox reserves layout width for it; Chrome's overlay scrollbar
- * merely hides the same underlying bug) render against or outside the rounded corner once the
- * item list actually needed to scroll.
- * ADR tech/0010 mobile review: `collisionPadding` defaults to Floating UI's generic 5px, which on
- * a narrow 375px viewport can let the popup render flush (or nearly so) against the screen edge
- * once the trigger sits near it. 16px (this design system's own `space-4`, UI-SPEC's spacing
- * scale) keeps a real margin on every side regardless of viewport — a single always-on value,
- * not a mobile/desktop split, since Floating UI's own collision detection only actually engages
- * near an edge in the first place, which mobile viewports make far more likely to happen at all.
+ * Silhouette (`rounded-md`/`shadow-md`) and scroll live on different elements since `Select.
+ * Popup`'s `role="listbox"` forbids a non-option child between it and its items (axe
+ * `aria-required-children`, see 01-09-SUMMARY.md). Tokens: 01-04-SUMMARY.md; mobile margin: ADR tech/0010.
  */
 const Content = ({ className, children, ...props }: DropdownContentProps) => {
     return (
@@ -212,10 +178,9 @@ type DropdownItemProps = PropsWithChildren<
 >;
 
 /*
- * Popup insets its items by `p-1` (4px) from its own `rounded-md` (24px) edge — small enough that
- * a square-cornered highlight on the first/last item still visibly pokes past that large a
- * corner radius. `first:`/`last:` keep the fix scoped to the item actually touching the popup's
- * curve; middle items' highlights stay square, matching the popup's own straight side edges.
+ * `first:`/`last:` scope rounded item-highlight corners to just the item touching the popup's own
+ * `rounded-md` edge — a square highlight there visibly pokes past that curve at only `p-1` inset;
+ * middle items stay square, matching the popup's straight sides (see 01-09-SUMMARY.md).
  */
 const Item = ({ value, isDisabled = false, className, children, ...props }: DropdownItemProps) => {
     return (

@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 9
+open_count: 10
 waived_count: 0
 fixed_count: 6
-total_count: 15
-last_updated: 2026-08-21T17:46:44.823Z
+total_count: 16
+last_updated: 2026-08-21T18:38:07.036Z
 ---
 
 # Broken Windows Ledger
@@ -30,6 +30,7 @@ last_updated: 2026-08-21T17:46:44.823Z
 | 13 | 01 | deviation | .planning/phases/01-foundation-auth-preferences/deferred-items.md |  | Real backend's POST /api/logout returns 500 and never invalidates the upstream session; signOutAction deliberately never calls it (deferred-items.md #6, kanban-board-backend named as owner) | open |  | 2026-08-19T13:19:40.047Z |  |
 | 14 | 02.1 | unrun-verify | src/lib/server/server-client.integration.test.ts |  | 3 real-backend tests could not be run in this sandbox (network egress blocked, .env.local denied); needs a human/CI run with real network access | fixed |  | 2026-08-21T13:45:23.244Z | 2026-08-21T17:46:44.065Z |
 | 15 | 02.1 | unrun-verify | e2e/boards-list.e2e.spec.ts |  | BOARD-01 e2e spec (and the full pnpm exec playwright test --project e2e suite) could not be run in this sandbox — e2e/global-setup.ts hard-requires NONPROD_RESET_TOKEN (a GitHub Actions secret unavailable here). seed.sh/seed.ts's underlying HTTP behavior was independently verified directly against the real backend. | fixed |  | 2026-08-21T16:38:36.596Z | 2026-08-21T17:46:44.823Z |
+| 16 | 02.1 | unrun-verify | e2e/boards-list.e2e.spec.ts |  | BOARD-01 e2e not run in this worktree: NONPROD_RESET_TOKEN unset, matching the prior session's open question (see 02.1-11-SUMMARY.md coverage D5) | open |  | 2026-08-21T18:38:07.036Z |  |
 
 ````json
 [
@@ -212,6 +213,18 @@ last_updated: 2026-08-21T17:46:44.823Z
     "reason": "",
     "recorded_at": "2026-08-21T16:38:36.596Z",
     "resolved_at": "2026-08-21T17:46:44.823Z"
+  },
+  {
+    "id": 16,
+    "kind": "unrun-verify",
+    "phase": "02.1",
+    "file": "e2e/boards-list.e2e.spec.ts",
+    "line": null,
+    "description": "BOARD-01 e2e not run in this worktree: NONPROD_RESET_TOKEN unset, matching the prior session's open question (see 02.1-11-SUMMARY.md coverage D5)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-21T18:38:07.036Z",
+    "resolved_at": null
   }
 ]
 ````

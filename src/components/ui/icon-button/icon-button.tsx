@@ -7,11 +7,9 @@ import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*
- * Base UI has no dedicated icon-button component (RESEARCH.md Standard Stack), so this wraps
- * Base UI's Button exactly as button.tsx does (D-14: IconButton is a Button variant).
- * `h-11 w-11`/`h-12 w-12` keep the interactive hit area at or above the 44x44px accessibility
- * floor at every size (UI-SPEC Spacing Scale) even though the sm/md glyph is visually smaller —
- * the descendant `[&_svg]` selector sizes only the glyph, never the hit area.
+ * Base UI has no dedicated icon-button component, so this wraps Base UI's Button exactly as
+ * button.tsx does (D-14). `h-11 w-11`/`h-12 w-12` keep the hit area at or above the 44x44px
+ * floor at every size — the descendant `[&_svg]` selector sizes only the glyph (see 01-06-SUMMARY.md).
  */
 const iconButtonVariants = cva(
     "inline-flex shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:shrink-0",
@@ -44,10 +42,9 @@ type Props = Omit<ComponentProps<typeof BaseButton>, "disabled" | "className" | 
         icon: ReactNode;
         isDisabled?: boolean;
         /**
-         * Transient "a request is in flight" state — composes with `isDisabled` (either makes the
-         * control non-activatable), but only `isLoading` sets `aria-busy` and swaps the glyph for a
-         * spinner. `label` keeps supplying the accessible name unchanged, so a busy control is
-         * still identifiable.
+         * Transient "a request is in flight" state; composes with `isDisabled`, but only
+         * `isLoading` sets `aria-busy` and swaps the glyph for a spinner. `label` keeps supplying
+         * the accessible name unchanged, so a busy control is still identifiable.
          */
         isLoading?: boolean;
     };

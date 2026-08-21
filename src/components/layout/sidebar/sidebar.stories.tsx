@@ -5,16 +5,9 @@ import { createBoards } from "@/test-utils/factories/board";
 import { Sidebar } from "./sidebar";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. `Sidebar` is a
- * `components/layout/` component, not a `components/ui/` primitive (CONVENTIONS.md), so per
- * ADR tech/0011's current narrowed scope it gets stories + axe coverage here but no
- * `visual/primitives.visual.spec.ts` entry.
- *
- * `Sidebar` is RSC-fed (D-02) — each story stages `boards`/`loadFailed` directly as args, not
- * through a mocked hook. `parameters.nextjs.appDirectory` is required — `Sidebar` calls
- * `useRouter()` (for the load-failure retry control), which `@storybook/nextjs-vite` only mounts a
- * working App Router context for once that flag is set (mirrors theme-toggle.stories.tsx/
- * sign-in-form.stories.tsx's identical setup).
+ * Visual-only CSF3 (D-25), no play function — `Sidebar` is `components/layout/`, not a
+ * `components/ui/` primitive, so it gets stories/axe coverage but no visual-spec entry (ADR
+ * tech/0011). `appDirectory: true` is required for `useRouter()` (see 02.1-01-SUMMARY.md).
  */
 const meta: Meta<typeof Sidebar> = {
     component: Sidebar,

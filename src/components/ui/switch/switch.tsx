@@ -6,14 +6,9 @@ import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*
- * D-18: track sized 32x20 / 40x24 / 48x28 (sm/md/lg), a `p-0.5` (2px) inset around a
- * correspondingly sized thumb (16/20/24px — track height minus the inset on both sides). The
- * 44x44px minimum interactive area (UI-SPEC Spacing Scale) floors the actual `Switch.Root`
- * element itself — exactly as IconButton makes its real hit box 44x44 regardless of the visual
- * glyph size (icon-button.tsx) — while the visually smaller colored track is a plain nested
- * `span`, styled off the root's own `data-checked`/`data-unchecked` attribute via Tailwind's
- * `group` utility (the track itself carries no Base UI state of its own, so it cannot be styled
- * with the `data-[checked]` selector directly).
+ * D-18: track sized 32x20/40x24/48x28 (sm/md/lg); the 44x44px min interactive area floors
+ * `Switch.Root` itself, matching IconButton's real-vs-visual hit-box split. Track is a plain
+ * nested `span` styled via `group` off the root's `data-checked` (see 01-08-SUMMARY.md).
  */
 const rootVariants = cva(
     "group relative inline-flex shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",

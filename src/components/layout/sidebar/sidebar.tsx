@@ -8,10 +8,8 @@ import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 import { cn } from "@/lib/core/styling/cn";
 
 /*
- * This phase's tracer slice — the sidebar's own board list, read-only, now RSC-fed via props
- * instead of `useBoards()`. Create/rename/delete, the kebab menu and the collapse/expand toggle
- * are all later plans (02-09 through 02-13); this component renders exactly the caption +
- * board-row list this task's `<action>` scopes.
+ * Renders the sidebar's board list, RSC-fed via props (not `useBoards()`) — the server-entry-point
+ * architecture docs/adr/tech/0019 describes (see also 02.1-01-SUMMARY.md's RSC rebuild).
  */
 
 export const Sidebar = ({ boards, loadFailed = false }: { boards: Board[]; loadFailed?: boolean }) => {
