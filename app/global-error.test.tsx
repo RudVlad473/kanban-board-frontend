@@ -6,20 +6,18 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import GlobalError from "./global-error";
 
 /*
- * Rendering a component that returns its own html and body into a test container is legitimate
- * here and the only way to assert the element structure — this boundary replaces the root layout
- * entirely, so it has to restate that structure itself.
+ * Route error boundary — exempt from the stories requirement per docs/adr/tech/0021's carve-out.
+ * Rendering a component that returns its own html/body into a test container is legitimate and
+ * the only way to assert the structure — this boundary replaces the root layout entirely.
  */
 describeForEachDevice({
     name: "app/global-error",
     body: () => {
         it("renders its own html element containing the recovery surface with app-wide copy", async () => {
             /*
-             * Arrange — a document allows exactly one <html> element, so a browser reconciles the
-             * component's returned html element onto the real document.documentElement rather than
-             * nesting a second one inside the test container. Asserting the lang/class attributes
-             * landed there is how this boundary's own html element is proven to have rendered, as
-             * opposed to the component being a no-op that left the page shell untouched.
+             * Arrange — a document allows exactly one <html> element, so the browser reconciles the
+             * returned html element onto the real document.documentElement instead of nesting one
+             * inside the test container; asserting lang/class there proves it actually rendered.
              */
             const error = new Error("root layout blew up") as Error & { digest?: string };
 

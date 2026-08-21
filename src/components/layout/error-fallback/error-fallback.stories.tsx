@@ -30,3 +30,10 @@ export const WithReference: Story = {
         digest: "a1b2c3d4",
     },
 };
+
+// No homeHref — the route-boundary carve-out (global-error.tsx) never supplies one.
+export const WithoutHomeLink: Story = {
+    args: {
+        homeHref: undefined,
+    },
+};
