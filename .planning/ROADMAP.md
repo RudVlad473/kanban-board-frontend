@@ -287,7 +287,7 @@ rule CONVENTIONS.md has stated but never enforced — are written down as ADRs a
 blocking CI gates, so no future session reintroduces the patterns this phase removes.
 **Requirements**: D-01..D-22 (from 02.1-CONTEXT.md — decimal insertion, no REQUIREMENTS.md IDs)
 **Depends on:** Phase 2
-**Plans:** 11/15 plans executed
+**Plans:** 14/15 plans executed
 
 Plans:
 
@@ -318,10 +318,10 @@ Plans:
 
 **Wave 6** *(blocked on 02.1-07, 02.1-08, 02.1-09, 02.1-10)*
 
-- [ ] 02.1-11-PLAN.md — comment sweep: `src/components/` (D-22)
+- [x] 02.1-11-PLAN.md — comment sweep: `src/components/` (D-22)
 - [x] 02.1-12-PLAN.md — comment sweep: `src/features/` (D-22)
-- [ ] 02.1-13-PLAN.md — comment sweep: `src/lib/`, `src/test-utils/`, `app/`, `proxy.ts` (D-22)
-- [ ] 02.1-14-PLAN.md — comment sweep: root configs, `.storybook/`, `scripts/`, `e2e/`, `visual/` (D-22)
+- [x] 02.1-13-PLAN.md — comment sweep: `src/lib/`, `src/test-utils/`, `app/`, `proxy.ts` (D-22)
+- [x] 02.1-14-PLAN.md — comment sweep: root configs, `.storybook/`, `scripts/`, `e2e/`, `visual/` (D-22)
 
 **Wave 7** *(blocked on 02.1-11 through 02.1-14)*
 
@@ -384,6 +384,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 8/13 | In Progress|  |
-| 02.1. Testing strategy overhaul & code-quality retrofit | 11/15 | In Progress|  |
+| 02.1. Testing strategy overhaul & code-quality retrofit | 14/15 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |

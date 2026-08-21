@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 02.1
 current_phase_name: "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)"
 status: executing
-stopped_at: Completed 02.1-12-PLAN.md
-last_updated: "2026-08-21T18:32:52.268Z"
+stopped_at: Wave 6 complete (02.1-11..14), starting Wave 7
+last_updated: "2026-08-21T22:00:00.000Z"
 last_activity: 2026-08-21
-last_activity_desc: Wave 5 (02.1-10 curl-based e2e seeding CLI) merged, gated, e2e-verified, tracked
-state_head: 8326175e040d52e73e0987d5a60eea8d7546a111
+last_activity_desc: Wave 6 (02.1-11..14 comment-length sweep) merged, gated, e2e+visual-verified, tracked
+state_head: dcc0c40
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 66
-  completed_plans: 57
+  completed_plans: 60
 milestone_name: milestone
 ---
 
@@ -31,11 +31,11 @@ real backend.
 ## Current Position
 
 Phase: 02.1 (Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)) — EXECUTING
-Plan: 11 of 15 (Waves 1-5 done; Wave 6 next)
+Plan: 14 of 15 (Waves 1-6 done; Wave 7 next — human checkpoint)
 Status: Ready to execute
-Last activity: 2026-08-21 — Wave 5 (02.1-10) merged, gated, e2e-verified, tracked
+Last activity: 2026-08-21 — Wave 6 (02.1-11..14) merged, gated, e2e+visual-verified, tracked
 
-Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 02.1: 10/15 plans
+Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 02.1: 14/15 plans
 
 ## Performance Metrics
 
@@ -122,22 +122,38 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T18:32:52.024Z
-Stopped at: Completed 02.1-12-PLAN.md
+Last session: 2026-08-21T22:00:00.000Z
+Stopped at: Wave 6 complete (02.1-11..14), starting Wave 7
 
-**This session:** Resumed from a HANDOFF.json pause mid-Wave-5, with one open question: whether
-to set `NONPROD_RESET_TOKEN` (to unblock a real e2e Playwright run) or skip it. User resumed with
-"NONPROD_RESET_TOKEN is set". Confirmed the token in `.env.local`, ran the full
-`pnpm exec playwright test --project e2e` suite against the real nonprod backend (10 tests; 2
-failed on the first full-suite pass, both confirmed flaky-under-parallel-load and passing cleanly
-on isolated re-run — not a regression). Also re-ran `server-client.integration.test.ts`'s 3
-real-backend tests directly (previously blocked by sandboxed-executor network egress) — all pass.
-Closed WINDOWS.md ledger items 14 and 15 (both unrun-verify gaps, now verified). Completed Wave 5
-tracking: `roadmap.update-plan-progress 02.1 02.1-10 complete`, STATE.md updated. Next: tracking
-commit + push, then Wave 6 (02.1-11..14, comment-length sweep, 4 parallel plans), then Wave 7
-(02.1-15, human-checkpoint plan), then phase close-out.
+**This session:** Resumed from a HANDOFF.json pause mid-Wave-5 (NONPROD_RESET_TOKEN question),
+closed out Wave 5's tracking, then dispatched Wave 6 — 4 parallel `gsd-executor` agents
+(02.1-11..14, the repo-wide comment-length sweep) in isolated worktrees. All 4 completed and
+merged; 3 of 4 conflicted on files touched by more than one plan (`sidebar.stories.tsx`,
+`sidebar.test.tsx`, `load-boards.integration.test.ts`, all resolved by combining both sides'
+improvements) — the same cross-plan-overlap pattern Wave 3 hit. The post-merge gate then surfaced
+two real gaps neither individual plan could have caught:
+
+1. `scripts/check-comment-length.unit.test.mjs` asserted against `text-field.tsx`'s live 26-line
+   comment block as a fixture — Wave 6 compressed that block by design, so the test regressed
+   against its own retrofit's success. Fixed: replaced with a synthetic-source fixture.
+2. `storybook-static/` was stale (built 2026-08-13, four days before the `isLoading` Button
+   feature it was supposed to represent) — visual regression hung indefinitely on Button/IconButton
+   "loading" stories waiting for a story root that didn't match the stale manifest. Not a Wave 6
+   regression; fixed by rebuilding (`pnpm build-storybook`) before re-running. All 260 visual
+   assertions and all 10 e2e tests then passed clean.
+
+Also found and killed a runaway 3.4GB `tsserver` process — the editor had been indexing every
+parallel worktree's full copy of the codebase (`.claude/worktrees/agent-*`) as a separate inferred
+project. Fixed durably by excluding `.claude/worktrees` from `tsconfig.json`'s `include` set (plus
+a local, gitignored `.vscode/settings.json` for the file watcher).
+
+Wave 6 tracking (`roadmap.update-plan-progress` ×3 — 02.1-12 was self-tracked by its executor)
+is done; this commit finishes it. Next: Wave 7 (02.1-15) — the phase's one `autonomous: false`
+checkpoint plan (flips both policy gates from advisory to blocking, finishes CONVENTIONS.md's
+Enforcement columns, full-suite sign-off) — requires human interaction, not a plain background
+dispatch. Then post-execution: aggregate_results → code_review_gate → verify_phase_goal (spawn
+`gsd-verifier`) → update_roadmap (phase.complete).
 
 Resume file: None
-Next step: dispatch Wave 6 — 4 parallel `gsd-executor` agents in worktree isolation for
-02.1-11..14 (same pattern as Waves 1-5: capture HEAD, check intra-wave file overlap, dispatch,
-merge, full post-merge gate, track, push).
+Next step: read `02.1-15-PLAN.md`, re-read `execute-phase.md`'s checkpoint_handling step, and
+dispatch Wave 7 as a human-interaction plan rather than a background `Agent()` call.
