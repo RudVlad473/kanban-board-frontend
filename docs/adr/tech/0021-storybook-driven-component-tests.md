@@ -50,18 +50,55 @@ test("renders one row per board and the matching ALL BOARDS caption when populat
 });
 ```
 
-**Mechanism:** import `composeStories` from `@storybook/react`, never from `@storybook/nextjs-vite`
-— `@storybook/nextjs-vite`'s main entry eagerly imports real Next.js internals (an unresolvable
-`sb-original/image-context` virtual module, then `next/dist/client/components/navigation.js`,
-which reads `process.env` at module-evaluation time) that only resolve under
-`vite-plugin-storybook-nextjs`, the Vite plugin the *separate* "storybook" Vitest project loads —
-the "browser" project (where every component `.test.tsx` lives per `CONVENTIONS.md`'s
-test-location table) does not load that plugin, by design. Full reasoning:
-`vitest.setup.ts:27-42`'s own comment; this record only points at it rather than restating it.
-`setProjectAnnotations` is already wired in `vitest.setup.ts` and must not be re-wired anywhere
-else — a second call in `.storybook/vitest.setup.ts` (the "storybook" project's own setup file)
-would make `@storybook/addon-vitest` disable its own automatic per-story annotation provisioning,
-leaving every story without a render function.
+**Mechanism:** import `composeStories`/`setProjectAnnotations` from `@storybook/react`, never from
+`@storybook/nextjs-vite` — `@storybook/nextjs-vite`'s main entry eagerly imports real Next.js
+internals (an unresolvable `sb-original/image-context` virtual module, then
+`next/dist/client/components/navigation.js`, which reads `process.env` at module-evaluation time)
+that only resolve under `vite-plugin-storybook-nextjs`, the Vite plugin the *separate* "storybook"
+Vitest project loads via `storybookTest()` — the "browser" project (where every component
+`.test.tsx` lives per `CONVENTIONS.md`'s test-location table) does not load that plugin, by this
+project's own design (no Next.js runtime in Vitest Browser Mode; every component under test that
+needs `next/navigation` already gets its own `vi.mock`). `setProjectAnnotations` accepts an array
+of annotation objects and composes them — the same mechanism `definePreview`'s own `addons: [...]`
+composition uses under the hood — so passing the a11y addon's annotations alongside
+`preview-annotations.tsx`'s raw config in `vitest.setup.ts` reproduces `.storybook/preview.tsx`'s
+own composition without touching the Next.js framework package. `setProjectAnnotations` is wired in
+`vitest.setup.ts` and must not be re-wired anywhere else — a second call in
+`.storybook/vitest.setup.ts` (the "storybook" project's own setup file) would make
+`@storybook/addon-vitest` disable its own automatic per-story annotation provisioning, leaving
+every story without a render function (`SB_PREVIEW_API_0014 NoRenderFunctionError`). This
+detection (`requiresProjectAnnotations` in `@storybook/addon-vitest`'s vitest plugin, as of
+10.5.x) is a **naive substring match**, not an AST-aware check: it reads the raw text of every
+`setupFiles` entry located directly in the Storybook `configDir` (`.storybook/`) and disables
+auto-provisioning if the literal text `setProjectAnnotations` appears anywhere in that file —
+including inside a comment. `.storybook/vitest.setup.ts` must never contain that identifier as
+text, even to describe why it's absent (found the hard way during plan `02.1-14`'s comment
+compression, which briefly wrote that word into a comment there and broke every Storybook Vitest
+project test with `NoRenderFunctionError`, silently and only in that one project). `vitest.setup.ts`
+and `.storybook/preview-annotations.tsx` — both outside `.storybook/`'s own `configDir` scan or not
+listed as the "storybook" project's `setupFiles` — carry one-line pointers back to this record
+instead of restating it inline; they are not subject to this constraint.
+
+**Portable-stories composition surface (`.storybook/preview-annotations.tsx`):** the raw
+project-annotations object is extracted to its own module — with no `@storybook/nextjs-vite`
+import — precisely so `vitest.setup.ts` can register it via `@storybook/react`'s
+framework-agnostic `setProjectAnnotations` above, without pulling in `@storybook/nextjs-vite`'s
+browser preview bundle; `.storybook/preview.tsx` still owns the real `definePreview(...)` call and
+spreads this module's exported value into it. The exported `previewAnnotations` object is
+deliberately left without a `: Preview`/`satisfies Preview` type annotation — either one pins it to
+`@storybook/react`'s `ReactRenderer`-specific shape, which then fails to structurally satisfy
+`.storybook/preview.tsx`'s Next.js-augmented `definePreview` parameter type when spread in
+(`ProjectAnnotations<TRenderer>` isn't assignable across two different `TRenderer`
+instantiations) — left untyped, its natural object-literal inference (every string a literal, not
+widened to `string`) satisfies both call sites. The file's two decorators are written inline inside
+the `decorators` array, not extracted to named consts, so `docs/adr/tech/0016`'s
+one-destructured-parameter rule doesn't apply to them — that rule's own carve-out excludes a
+function/arrow expression whose arity is dictated by the API it's passed to, and Storybook's
+decorator signature is always the API-dictated two-parameter `(Story, context)`. The
+`DecoratorParams` type alias gives each inline decorator's `Story`/`context` parameters real types
+instead of implicit `any` (there is no contextual type for an inline arrow function inside an
+untyped object literal), satisfying strict-mode's `no-unsafe-*` lint rules without pinning anything
+else in the object.
 
 **Scope carve-out:** `app/**/error.tsx` and `app/**/layout.tsx`-style route files are exempt from
 the stories requirement — they are thin route wrappers composing components that already carry
@@ -99,8 +136,10 @@ automated presence check exists yet).
 
 Sources:
 
-- `vitest.setup.ts:21-49` — the `@storybook/react` vs `@storybook/nextjs-vite` reasoning this
-  record points at rather than restates, and the `setProjectAnnotations` wiring/placement rule.
+- `vitest.setup.ts` and `.storybook/preview-annotations.tsx` — the `@storybook/react` vs
+  `@storybook/nextjs-vite` reasoning, the `setProjectAnnotations` wiring/placement rule, and the
+  portable-stories composition surface documented above in full; both files now carry a one-line
+  pointer back here instead of restating it (D-22 comment-length sweep, plan `02.1-14`).
 - `docs/adr/tech/0018-no-mock-server.md` — the network-layer decision `tech/0020` extends, which
   this record's shallow-coverage move (replacing what mocked component tests used to assert) is
   downstream of.

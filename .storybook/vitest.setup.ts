@@ -1,10 +1,6 @@
 /*
- * Storybook 10.3+'s @storybook/addon-vitest applies this project's preview annotations
- * (decorators, parameters, globalTypes from .storybook/preview.tsx) to every story test
- * automatically — the manual project-annotation wiring pattern from pre-10.3 docs is neither
- * needed nor safe to write here: the addon's own runtime detects the call by name in this file
- * and disables its automatic provisioning to avoid a double-registration conflict, which then
- * leaves every story without a render function. Left present (and wired as this project's
- * setupFiles) as the place future custom Vitest setup for the `storybook` project would go.
+ * No manual annotation-registration call in this file — `@storybook/addon-vitest` auto-provisions
+ * stories unless that call's name is written anywhere in this file, even in a comment (see
+ * docs/adr/tech/0021). Kept as this project's setupFiles entry point for future custom setup.
  */
 export {};
