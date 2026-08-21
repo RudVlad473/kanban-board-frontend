@@ -3,10 +3,11 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 
 import { jwtVerify, SignJWT } from "jose";
-import { cookies } from "next/headers";
 
-import { baseCookieOptions, COOKIE } from "@/lib/core/cookies/cookie-registry";
+import { COOKIE } from "@/lib/core/cookies/cookie-registry";
 import { isTheme, type Theme } from "@/lib/core/theme/theme";
+
+import { createCookieClient } from "./cookies/cookie-client";
 
 /**
  * The identity shape carried inside the session cookie — the full `UserResponseDTO` returned by
@@ -21,19 +22,17 @@ export type SessionPayload = {
 };
 
 /**
- * Exported so `proxy.ts` (plan 01-13) can read the same cookie name from `NextRequest`'s own
- * cookie API without duplicating the literal string — `proxy.ts` runs outside the Server
- * Component/Route Handler/Server Action request scope that `next/headers`'s `cookies()` requires,
- * so it cannot call `session.verify()` directly.
+ * Exported so `proxy.ts` can read the same cookie name from `NextRequest`'s own cookie API — it
+ * runs outside the request scope `next/headers`'s `cookies()` needs, so it can't call
+ * `session.verify()` directly.
  */
 export const SESSION_COOKIE_NAME = COOKIE.SESSION;
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // seven days, absolute expiry (ADR tech/0001)
 
 /**
- * Runtime guard for an unverified value claiming to be a `SessionPayload` — used both by
- * `verify()` below (a decoded-but-unchecked JWT payload) and by the sign-in Route Handler (an
- * upstream response widened through `unknown`, since the generated type says `content?: never`
- * for this operation's success case per the contract's own gap).
+ * Runtime guard for an unverified value claiming to be a `SessionPayload` — used by `verify()`
+ * below and by the auth actions guarding a raw upstream response widened through `unknown`
+ * (the generated type says `content?: never` for this operation's success case).
  */
 export const isSessionPayload = (value: unknown): value is SessionPayload => {
     if (typeof value !== "object" || value === null) {
@@ -52,13 +51,8 @@ export const isSessionPayload = (value: unknown): value is SessionPayload => {
 
 /**
  * The identity plus the backend's own session credential (GC-18) — what the session cookie
- * actually carries and what `verify`/`verifyToken` return. Kept as a separate type from
- * `SessionPayload` rather than folding the credential into it: `isSessionPayload`'s second caller
- * (the two auth Route Handlers, guarding a raw upstream response body) will never receive a
- * credential on that body, so requiring one there would break that caller. There is still exactly
- * one user and exactly one upstream session per cookie — this is one new type sitting alongside an
- * unchanged one, not a promotion of the identity into something plural (see this plan's
- * assumption-delta decision).
+ * actually carries and what `verify`/`verifyToken` return. Kept separate from `SessionPayload`
+ * so callers guarding a bare upstream response body aren't forced to supply a credential.
  */
 export type SessionRecord = SessionPayload & { jsessionId: string };
 
@@ -84,14 +78,21 @@ export const isSessionRecord = (value: unknown): value is SessionRecord => {
 export const createSessionService = (secret: string) => {
     const key = new TextEncoder().encode(secret);
 
+    // The JWT string is the cookie value, so TValue is string; httpOnly stays explicit (T-02.1-09).
+    const cookie = createCookieClient<string>({
+        name: COOKIE.SESSION,
+        decode: (raw) => raw ?? null,
+        encode: (token) => token,
+        options: { httpOnly: true },
+    });
+
     const create = async (payload: SessionRecord): Promise<void> => {
         const expiresAt = new Date(Date.now() + SESSION_DURATION_SECONDS * 1000);
 
         /*
-         * `setJti` (a random JWT ID) guarantees a fresh value on every call even when two calls
-         * land within the same wall-clock second — `setIssuedAt`/`setExpirationTime` alone would
-         * otherwise produce a byte-identical token for two sign-ins in the same second, silently
-         * reintroducing the session-fixation gap (T-01-01) this function exists to close.
+         * `setJti` (a random JWT ID) guarantees a fresh value on every call even within the same
+         * wall-clock second, closing the session-fixation gap (T-01-01) a byte-identical token
+         * for two same-second sign-ins would otherwise reopen.
          */
         const value = await new SignJWT({ ...payload })
             .setProtectedHeader({ alg: "HS256" })
@@ -100,19 +101,13 @@ export const createSessionService = (secret: string) => {
             .setJti(randomUUID())
             .sign(key);
 
-        const cookieStore = await cookies();
-        cookieStore.set(COOKIE.SESSION, value, {
-            ...baseCookieOptions(),
-            httpOnly: true,
-            expires: expiresAt,
-        });
+        await cookie.write(value, { expires: expiresAt });
     };
 
     /**
-     * The actual jose verify + shape check, taking a raw token value rather than reading
-     * `cookies()` itself — the piece `verify()` below and `proxy.ts`'s route guard both need,
-     * factored out once so neither reimplements JWT verification (`proxy.ts` reads its cookie via
-     * `NextRequest.cookies`, not `next/headers`, since it runs outside that request scope).
+     * The actual jose verify + shape check, taking a raw token rather than reading the cookie
+     * itself — the piece `verify()` below and `proxy.ts`'s route guard both need, factored out
+     * once so neither reimplements JWT verification.
      */
     const verifyToken = async (token: string | undefined): Promise<SessionRecord | null> => {
         if (!token) {
@@ -142,14 +137,10 @@ export const createSessionService = (secret: string) => {
         }
     };
 
-    const verify = async (): Promise<SessionRecord | null> => {
-        const cookieStore = await cookies();
-        return verifyToken(cookieStore.get(COOKIE.SESSION)?.value);
-    };
+    const verify = async (): Promise<SessionRecord | null> => verifyToken((await cookie.read()) ?? undefined);
 
     const destroy = async (): Promise<void> => {
-        const cookieStore = await cookies();
-        cookieStore.delete(COOKIE.SESSION);
+        await cookie.clear();
     };
 
     return { create, verify, verifyToken, destroy };
