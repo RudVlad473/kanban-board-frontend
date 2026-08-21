@@ -9,7 +9,7 @@ const TOGGLE_NAME = "Toggle dark mode";
 const PROTECTED_HEADING = "Boards";
 
 /*
- * Matches the backend's password rule (`e2e/fixtures.ts`'s `FIXTURE_PASSWORD` comment) and the
+ * Matches the backend's password rule (`e2e/seed.sh`'s `SEED_PASSWORD` comment) and the
  * display-name rule (letters and spaces only, per `auth.e2e.spec.ts`'s AUTH-01 test).
  */
 const ACCOUNT_PASSWORD = "E2eThemePwd1!";
@@ -32,20 +32,20 @@ const waitForThemeCookie = ({ page, theme }: { page: Page; theme: Theme }) =>
 /*
  * ROADMAP Success Criterion 4 / THEME-01, proven end to end against the real, built application —
  * a single continuous scenario, not four independent tests, and driving the real sign-up form
- * (not `e2e/fixtures.ts`'s `createFixtureAccount`) rather than a plan-literal reading of "create
- * an account with createFixtureAccount": `createFixtureAccount`'s own raw `POST /signup` call
- * establishes a real upstream session exactly like a form-driven sign-up does (verified directly
- * against the live backend while writing this test), so calling it AND then signing in twice more
- * below (sign-in, sign-out, sign-in again) would need a *third* live session on one account — one
- * more than the backend's own two-concurrent-session cap allows (`e2e/fixtures.ts`'s doc comment;
- * `kanban-board-backend/docs/AUTH_FLOWS.md`, "What will break your E2E suite"), and the second
- * sign-in was refused with the same indistinguishable 401 a wrong password produces when this was
- * first written and run against the real backend. Signing up through the browser form instead
- * (mirroring `auth.e2e.spec.ts`'s own AUTH-01 test, which drives the same form for the same
- * reason) establishes exactly one session at sign-up, leaving exactly one more for the explicit
- * sign-in after sign-out below — precisely the two-session budget, no more. Do not "simplify" this
- * back to `createFixtureAccount`, and do not split this test or add a second test that reuses this
- * account (signing in a third time on it is refused identically to a wrong password).
+ * (not `e2e/seed.ts`'s `seedAccount`) rather than a plan-literal reading of "create an account
+ * with seedAccount": `seedAccount`'s own `POST /signup` call establishes a real upstream session
+ * exactly like a form-driven sign-up does (verified directly against the live backend while
+ * writing this test), so calling it AND then signing in twice more below (sign-in, sign-out,
+ * sign-in again) would need a *third* live session on one account — one more than the backend's
+ * own two-concurrent-session cap allows (`e2e/seed.sh`'s doc comment; `kanban-board-backend/docs/
+ * AUTH_FLOWS.md`, "What will break your E2E suite"), and the second sign-in was refused with the
+ * same indistinguishable 401 a wrong password produces when this was first written and run
+ * against the real backend. Signing up through the browser form instead (mirroring
+ * `auth.e2e.spec.ts`'s own AUTH-01 test, which drives the same form for the same reason)
+ * establishes exactly one session at sign-up, leaving exactly one more for the explicit sign-in
+ * after sign-out below — precisely the two-session budget, no more. Do not "simplify" this back
+ * to `seedAccount`, and do not split this test or add a second test that reuses this account
+ * (signing in a third time on it is refused identically to a wrong password).
  */
 test.describe("THEME-01: theme persistence", () => {
     test("toggles, persists across a reload, persists across sign-out and sign-in, and toggles back", async ({

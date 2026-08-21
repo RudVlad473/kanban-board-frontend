@@ -9,9 +9,9 @@ usage() {
 }
 
 # Satisfies the backend's password rule: 8-64 chars, upper, lower, digit, special.
-FIXTURE_PASSWORD="E2eFixturePwd1!"
+SEED_PASSWORD="E2eFixturePwd1!"
 # Satisfies the backend's display-name rule: 3-32 letters and spaces only, no digits.
-FIXTURE_DISPLAY_NAME="End To End Fixture"
+SEED_DISPLAY_NAME="End To End Fixture"
 
 # Builds a compact JSON object from name/value argument pairs via Node, avoiding hand-rolled
 # string-interpolation escaping bugs for both request bodies and this script's own JSON output.
@@ -43,7 +43,7 @@ cmd_account() {
     local email
     email="e2e-$(node -e 'console.log(require("crypto").randomUUID())')@example.com"
     local body
-    body=$(build_json email "$email" password "$FIXTURE_PASSWORD" displayName "$FIXTURE_DISPLAY_NAME")
+    body=$(build_json email "$email" password "$SEED_PASSWORD" displayName "$SEED_DISPLAY_NAME")
 
     local raw status body_out
     raw=$(curl -sS -c "$jar" -w '\n%{http_code}' -X POST "$EXTERNAL_API_BASE_URL/signup" \
@@ -59,7 +59,7 @@ cmd_account() {
     local id jsession_id
     id=$(json_field "$body_out" "id")
     # The jar stores each Set-Cookie as its own entry (Netscape format) — reading it here avoids
-    # the multi-header-collapsing problem extractJsessionId (e2e/fixtures.ts) exists to work around.
+    # the multi-header-collapsing problem the old TypeScript fixture helpers existed to work around.
     jsession_id=$(grep -i "JSESSIONID" "$jar" | tail -1 | awk '{print $NF}')
 
     if [ -z "$jsession_id" ]; then
@@ -67,7 +67,7 @@ cmd_account() {
         exit 1
     fi
 
-    build_json id "$id" email "$email" password "$FIXTURE_PASSWORD" displayName "$FIXTURE_DISPLAY_NAME" jsessionId "$jsession_id"
+    build_json id "$id" email "$email" password "$SEED_PASSWORD" displayName "$SEED_DISPLAY_NAME" jsessionId "$jsession_id"
 }
 
 cmd_board() {
