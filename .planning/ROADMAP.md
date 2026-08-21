@@ -280,14 +280,55 @@ narrow path before any breadth is added:
 
 ### Phase 02.1: Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Every server entry point in the codebase is a React Server Component or a Server Action
+(no Route Handlers), every test proves behaviour against the real deployed backend or through its
+own composed Storybook stories rather than through a mock, and both rules — plus the comment-length
+rule CONVENTIONS.md has stated but never enforced — are written down as ADRs and enforced by
+blocking CI gates, so no future session reintroduces the patterns this phase removes.
+**Requirements**: D-01..D-22 (from 02.1-CONTEXT.md — decimal insertion, no REQUIREMENTS.md IDs)
 **Depends on:** Phase 2
-**Plans:** 0 plans
+**Plans:** 15 plans
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 02.1 to break down)
+**Wave 1**
+
+- [ ] 02.1-01-PLAN.md — TRACER: RSC board read path replaces the Route Handler (D-01, D-02, D-03, D-12, D-21)
+
+**Wave 2** *(blocked on 02.1-01)*
+
+- [ ] 02.1-02-PLAN.md — policy gates: mock-ban lint rule and comment-length checker, advisory for now (D-04, D-19, D-22)
+
+**Wave 3** *(blocked on 02.1-02)*
+
+- [ ] 02.1-03-PLAN.md — typed reusable cookie client; session and cookie tests de-mocked (D-10, D-20)
+- [ ] 02.1-04-PLAN.md — external-path constants, `buildBoardDetailPath` rename, `E2E_CONFIG` object (D-13, D-14, D-15)
+- [ ] 02.1-05-PLAN.md — ADRs tech/0019-0024, tech/0002 supersession, CONVENTIONS.md rewrite (D-18)
+- [ ] 02.1-06-PLAN.md — Server Action tests rewritten against the real backend (D-04, D-16)
+- [ ] 02.1-07-PLAN.md — composed-story tests: Button, IconButton, Checkbox, Switch, TextField (D-08)
+- [ ] 02.1-08-PLAN.md — composed-story tests: Dropdown, Menu, Modal, Toast, ErrorFallback (D-08)
+
+**Wave 4** *(blocked on 02.1-06, 02.1-07)*
+
+- [ ] 02.1-09-PLAN.md — auth and theme component tests via Server Action stub aliases (D-04, D-08)
+
+**Wave 5** *(blocked on 02.1-04, 02.1-09)*
+
+- [ ] 02.1-10-PLAN.md — curl-based e2e seeding CLI, happy-path scope, Arrange-Act-Assert (D-05, D-06, D-07)
+
+**Wave 6** *(blocked on 02.1-07, 02.1-08, 02.1-09, 02.1-10)*
+
+- [ ] 02.1-11-PLAN.md — comment sweep: `src/components/` (D-22)
+- [ ] 02.1-12-PLAN.md — comment sweep: `src/features/` (D-22)
+- [ ] 02.1-13-PLAN.md — comment sweep: `src/lib/`, `src/test-utils/`, `app/`, `proxy.ts` (D-22)
+- [ ] 02.1-14-PLAN.md — comment sweep: root configs, `.storybook/`, `scripts/`, `e2e/`, `visual/` (D-22)
+
+**Wave 7** *(blocked on 02.1-11 through 02.1-14)*
+
+- [ ] 02.1-15-PLAN.md — gates flipped to blocking, Enforcement columns finished, full-suite sign-off
+
+Out of scope by explicit user decision (D-17): the theme-cookie-on-sign-out todo and the
+`scripts/serve-static.mjs` path-traversal todo stay in `.planning/todos/pending/`.
 
 ### Phase 3: Column Management
 
@@ -343,5 +384,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 8/13 | In Progress|  |
+| 02.1. Testing strategy overhaul & code-quality retrofit | 0/15 | Not started | - |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
