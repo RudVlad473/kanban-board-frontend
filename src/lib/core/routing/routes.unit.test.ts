@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { boardDetail, isProtectedPath, isPublicPath, PROTECTED_PREFIXES, PUBLIC_PATHS, ROUTE } from "./routes";
+import { buildBoardDetailPath, isProtectedPath, isPublicPath, PROTECTED_PREFIXES, PUBLIC_PATHS, ROUTE } from "./routes";
 
-describe("boardDetail", () => {
+describe("buildBoardDetailPath", () => {
     it("builds the board list path followed by a separator and the supplied id", () => {
         // Arrange
         const boardId = "abc-123";
 
         // Act
-        const result = boardDetail(boardId);
+        const result = buildBoardDetailPath(boardId);
 
         // Assert
         expect(result).toBe(`${ROUTE.BOARDS}/abc-123`);
