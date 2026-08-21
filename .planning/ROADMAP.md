@@ -287,7 +287,7 @@ rule CONVENTIONS.md has stated but never enforced — are written down as ADRs a
 blocking CI gates, so no future session reintroduces the patterns this phase removes.
 **Requirements**: D-01..D-22 (from 02.1-CONTEXT.md — decimal insertion, no REQUIREMENTS.md IDs)
 **Depends on:** Phase 2
-**Plans:** 1/15 plans executed
+**Plans:** 2/15 plans executed
 
 Plans:
 
@@ -297,7 +297,7 @@ Plans:
 
 **Wave 2** *(blocked on 02.1-01)*
 
-- [ ] 02.1-02-PLAN.md — policy gates: mock-ban lint rule and comment-length checker, advisory for now (D-04, D-19, D-22)
+- [x] 02.1-02-PLAN.md — policy gates: mock-ban lint rule and comment-length checker, advisory for now (D-04, D-19, D-22)
 
 **Wave 3** *(blocked on 02.1-02)*
 
@@ -384,6 +384,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 8/13 | In Progress|  |
-| 02.1. Testing strategy overhaul & code-quality retrofit | 1/15 | In Progress|  |
+| 02.1. Testing strategy overhaul & code-quality retrofit | 2/15 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
