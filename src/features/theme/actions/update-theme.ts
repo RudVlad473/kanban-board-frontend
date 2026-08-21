@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
@@ -39,7 +40,7 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
         return { status: "error" };
     }
 
-    const { error } = await externalApi.PUT("/users/me/theme", {
+    const { error } = await externalApi.PUT(EXTERNAL_PATH.USER_THEME, {
         params: { query: { userId: record.id } },
         body: { theme: parsed.data },
     });

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { type AuthActionState } from "@/features/auth/action-state";
 import { resolveDisplayName } from "@/features/auth/model";
 import { signInSchema, zodErrorToFieldErrors } from "@/features/auth/schemas";
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
@@ -38,7 +39,7 @@ export const signInAction = async (_previousState: AuthActionState, formData: Fo
         };
     }
 
-    const { data, error, response } = await externalApi.POST("/signin", { body: parsed.data });
+    const { data, error, response } = await externalApi.POST(EXTERNAL_PATH.SIGN_IN, { body: parsed.data });
 
     /*
      * The contract declares no error schema for this operation — `error` is untyped `undefined`

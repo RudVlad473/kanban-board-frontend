@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { SignJWT } from "jose";
 
 import { createFixtureAccount, type FixtureAccount } from "./fixtures";
-import { E2E_SESSION_SECRET } from "./test-env";
+import { E2E_CONFIG } from "./test-env";
 import { ROUTE } from "../src/lib/core/routing/routes";
 import { THEME } from "../src/lib/core/theme/theme";
 
@@ -75,7 +75,7 @@ test.describe("AUTH-03: route guard", () => {
             throw new Error("expected a session cookie to exist after signing in");
         }
 
-        const key = new TextEncoder().encode(E2E_SESSION_SECRET);
+        const key = new TextEncoder().encode(E2E_CONFIG.SESSION_SECRET);
         const nowSeconds = Math.floor(Date.now() / 1000);
         const expiredToken = await new SignJWT({
             id: account.id,

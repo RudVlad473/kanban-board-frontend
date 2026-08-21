@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import type { Board } from "@/features/boards/schemas";
-import { boardDetail } from "@/lib/core/routing/routes";
+import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 import { cn } from "@/lib/core/styling/cn";
 
 /*
@@ -48,12 +48,12 @@ export const Sidebar = ({ boards, loadFailed = false }: { boards: Board[]; loadF
                 ) : (
                     <ul className="flex flex-col gap-2 px-4">
                         {boards.map((board) => {
-                            const isSelected = pathname === boardDetail(board.id);
+                            const isSelected = pathname === buildBoardDetailPath(board.id);
 
                             return (
                                 <li key={board.id} className="min-w-0">
                                     <Link
-                                        href={boardDetail(board.id)}
+                                        href={buildBoardDetailPath(board.id)}
                                         className={cn(
                                             "flex h-11 min-w-0 items-center rounded-r-lg px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
                                             isSelected

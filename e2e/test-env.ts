@@ -1,20 +1,15 @@
 /**
- * Shared between `playwright.config.ts`'s `e2e` webServer (which forwards these as the spawned
- * `next start` process's env) and the specs themselves (which need the exact same
- * `SESSION_SECRET` to sign an already-expired token for the expired-cookie scenario). Resolving
- * both from the same module — rather than each independently reading `process.env` with its own
- * fallback — guarantees they can never see two different values.
- *
- * The fallback mirrors `vitest.config.ts`'s own test-only secret; in CI, `.github/workflows/
- * ci.yml`'s `e2e` job always sets a real workflow-generated `SESSION_SECRET` so this fallback
- * never triggers there.
+ * Single `as const` source (ADR tech/0012) for every E2E config value — `playwright.config.ts`'s
+ * spawned `next start` process and the specs themselves must never resolve two different values.
+ * See SETUP.md and .github/workflows/ci.yml for where each value comes from.
  */
 import { resolveTestApiBaseUrl } from "../src/test-utils/api-base-url";
 
-export const E2E_SESSION_SECRET = process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production";
+const E2E_PORT = 4173;
 
-export const E2E_EXTERNAL_API_BASE_URL = resolveTestApiBaseUrl();
-
-export const E2E_PORT = 4173;
-
-export const E2E_BASE_URL = `http://localhost:${String(E2E_PORT)}`;
+export const E2E_CONFIG = {
+    SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",
+    EXTERNAL_API_BASE_URL: resolveTestApiBaseUrl(),
+    PORT: E2E_PORT,
+    BASE_URL: `http://localhost:${String(E2E_PORT)}`,
+} as const;

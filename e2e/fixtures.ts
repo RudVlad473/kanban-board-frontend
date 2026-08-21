@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import type { APIRequestContext } from "@playwright/test";
 
-import { E2E_EXTERNAL_API_BASE_URL } from "./test-env";
+import { E2E_CONFIG } from "./test-env";
+import { EXTERNAL_PATH } from "../src/lib/core/api-contract/external-paths";
 
 /*
  * Satisfies the backend's own password rule (8-64 characters, at least one upper-case letter, one
@@ -50,7 +51,7 @@ const extractJsessionId = (headers: { name: string; value: string }[]): string =
 
 /**
  * Creates a throwaway account directly against the real backend's own sign-up route
- * (`E2E_EXTERNAL_API_BASE_URL`), bypassing this application entirely — a fixture is setup, not
+ * (`E2E_CONFIG.EXTERNAL_API_BASE_URL`), bypassing this application entirely — a fixture is setup, not
  * the behaviour under test. The sign-up scenario in `auth.e2e.spec.ts` is the one place that still
  * drives the real form instead of calling this helper, since AUTH-01 has to be proven through the
  * interface a user actually touches.
@@ -68,7 +69,7 @@ const extractJsessionId = (headers: { name: string; value: string }[]): string =
 export const createFixtureAccount = async (request: APIRequestContext): Promise<FixtureAccount> => {
     const email = `e2e-${randomUUID()}@example.com`;
 
-    const response = await request.post(`${E2E_EXTERNAL_API_BASE_URL}/signup`, {
+    const response = await request.post(`${E2E_CONFIG.EXTERNAL_API_BASE_URL}${EXTERNAL_PATH.SIGN_UP}`, {
         data: { email, password: FIXTURE_PASSWORD, displayName: FIXTURE_DISPLAY_NAME },
     });
 
@@ -100,7 +101,7 @@ export const createFixtureBoard = async ({
     account: FixtureAccount;
     name: string;
 }): Promise<{ id: string; name: string; version: number }> => {
-    const response = await request.post(`${E2E_EXTERNAL_API_BASE_URL}/boards`, {
+    const response = await request.post(`${E2E_CONFIG.EXTERNAL_API_BASE_URL}${EXTERNAL_PATH.BOARDS}`, {
         params: { userId: account.id },
         headers: { Cookie: `JSESSIONID=${account.jsessionId}` },
         data: { name },

@@ -47,7 +47,7 @@ const TEST_DISPLAY_NAME = "Integration Test User";
 /** Signs up a fresh, randomised account against the real backend and returns its session record. */
 const signUpAndSession = async () => {
     const email = `integration-load-boards-${randomUUID()}@example.com`;
-    const signUpResult = await externalApi.POST("/signup", {
+    const signUpResult = await externalApi.POST(EXTERNAL_PATH.SIGN_UP, {
         body: { email, password: TEST_PASSWORD, displayName: TEST_DISPLAY_NAME },
     });
 

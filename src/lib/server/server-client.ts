@@ -3,6 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import createClient from "openapi-fetch";
 
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import type { paths } from "@/lib/core/api-contract/generated-types";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
@@ -34,7 +35,7 @@ const readExternalApiBaseUrl = () => {
  * (T-01-49). Matched against `schemaPath`, the original OpenAPI path template, not the resolved
  * URL.
  */
-const UNAUTHENTICATED_SCHEMA_PATHS = new Set(["/signin", "/signup"]);
+const UNAUTHENTICATED_SCHEMA_PATHS = new Set<string>([EXTERNAL_PATH.SIGN_IN, EXTERNAL_PATH.SIGN_UP]);
 
 /**
  * The only client instance that targets the external API contract (Pattern 1, 01-RESEARCH.md).
