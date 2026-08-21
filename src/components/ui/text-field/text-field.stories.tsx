@@ -73,12 +73,8 @@ export const WithDescription: Story = {
 };
 
 /*
- * The password-visibility toggle (plan 01-12's first real consumer, an IconButton) occupies the
- * `trailing` slot. Stories can't import a sibling `ui` element (eslint-plugin-boundaries reserves
- * ui-to-ui composition for the `feature`/`layout` layers, ADR tech/0009), so this story stages
- * the same visual position with a bare glyph rather than the real IconButton primitive — the
- * `trailing` prop itself is a plain `ReactNode`, so this is a story-only substitution, not a
- * primitive-level restriction.
+ * Stages the trailing slot with a bare glyph, not the real IconButton primitive — ui-to-ui
+ * story imports are reserved for feature/layout layers (ADR tech/0009).
  */
 export const Password: Story = {
     args: {
