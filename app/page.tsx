@@ -1,10 +1,8 @@
 import { ROUTE } from "@/lib/core/routing/routes";
 
 /*
- * The public landing route (`src/lib/core/routing/routes.ts`'s `PUBLIC_PATHS`). The temporary theme probe
- * added in plan 01-04 is gone — plan 01-14 lands the real Switch-driven, account-persisted theme
- * toggle. A signed-in visitor is redirected away from here to `/boards` by `proxy.ts` before this
- * ever renders.
+ * The public landing route (`PUBLIC_PATHS`) — a signed-in visitor is redirected away to `/boards`
+ * by `proxy.ts` before this ever renders.
  */
 const Home = () => {
     return (
@@ -20,13 +18,8 @@ const Home = () => {
 
                 <div className="flex gap-4">
                     {/*
-                     * Plain anchors, not next/link's `Link` — this landing route is a
-                     * one-time, low-frequency transition (a signed-in visitor never even
-                     * reaches it; `proxy.ts` redirects them to `/boards` first), with no
-                     * client-side state worth preserving across it, matching sign-in-form.tsx/
-                     * sign-up-form.tsx's identical rationale (next/link also relies on
-                     * `process.env`, undefined in this project's plain Vitest Browser Mode test
-                     * environment).
+                     * Plain anchors, not next/link's `Link` — a one-time transition, and
+                     * next/link needs `process.env`, undefined in Vitest Browser Mode (see 01-12-SUMMARY.md).
                      */}
                     {/* eslint-disable-next-line no-restricted-syntax -- see comment above */}
                     <a href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">

@@ -4,21 +4,9 @@ import { page } from "vitest/browser";
 import { DEVICE_TYPE, VIEWPORT_SIZES, type DeviceType } from "@/lib/core/viewport/viewport-breakpoints";
 
 /**
- * Runs the same test body once per `DeviceType`, resizing the Vitest Browser Mode test iframe
- * (`page.viewport`, a real per-test resize — not to be confused with Storybook's own `viewport`
- * global, which only resizes a nested manager iframe that doesn't exist in this context) to that
- * device's dimensions before each `it()` inside. Callers write their `it()` blocks exactly once;
- * no test author manually writes `describe.each` or calls `page.viewport` directly.
- *
- * @example
- * describeForEachDevice({
- *     name: "Modal padding",
- *     body: (device) => {
- *         it("renders the expected padding", async () => {
- *             // device is "MOBILE" | "DESKTOP" here, and the iframe is already that size.
- *         });
- *     },
- * });
+ * Runs a suite's entire body once per `DeviceType`, resizing the real Vitest Browser Mode test
+ * iframe (`page.viewport`) first — a blanket regression net, never selectively applied to
+ * hand-picked assertions (docs/adr/tech/0014). Callers write `it()` blocks exactly once.
  */
 export const describeForEachDevice = ({ name, body }: { name: string; body: (device: DeviceType) => void }) => {
     describe.each(Object.values(DEVICE_TYPE))(`${name} (%s)`, (device) => {

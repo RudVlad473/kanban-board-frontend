@@ -5,10 +5,9 @@ import "@/styles/globals.css";
 import { ErrorFallback } from "@/components/layout/error-fallback/error-fallback";
 
 /*
- * Next.js swaps the entire root layout out when this boundary fires, so this file restates
- * everything app/layout.tsx normally provides (lang, html/body class lists, the stylesheet
- * import) — nothing from the root layout can be relied on to still be there. QueryProvider is
- * deliberately not imported here: it could itself be the thing that just failed.
+ * Next.js swaps out the entire root layout when this boundary fires, so this file restates what
+ * `app/layout.tsx` provides (lang, html/body, stylesheet) — `QueryProvider` deliberately excluded,
+ * since it could be the thing that just failed (see 01-17-SUMMARY.md).
  */
 type Props = {
     error: Error & { digest?: string };

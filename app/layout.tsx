@@ -13,10 +13,8 @@ export const metadata: Metadata = {
 };
 
 /*
- * The whole flash-avoidance mechanism (THEME-01): the theme cookie is read server-side and the
- * `dark` scope is applied here, before any client script runs, so the very first byte of HTML
- * already carries the right scope — no client-side correction after paint. Async because
- * `themeCookie.read()` calls `next/headers`'s `cookies()`.
+ * The flash-avoidance mechanism (THEME-01): the theme cookie is read server-side and the `dark`
+ * scope applied here, before any client script runs — the first byte of HTML already carries it.
  */
 const RootLayout = async ({ children }: LayoutProps<"/">) => {
     const theme = await themeCookie.read();

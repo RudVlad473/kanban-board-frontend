@@ -8,12 +8,9 @@ import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 const DEFAULT_THEME = THEME.LIGHT;
 
 /*
- * Both auth screens centre their single AuthCard on the dominant app background — kept thin per
- * CONVENTIONS.md's "app/ is routing only" rule; no business logic lives here beyond resolving the
- * theme cookie for the toggle's initial value. `gap-12` matches UI-SPEC's own `space-12` token —
- * "space between the auth card and the theme-toggle footer". A visitor here has no session yet
- * (`ThemeToggle`'s `isAuthenticated={false}` — the toggle updates the cookie and document scope
- * directly, without calling the endpoint, so a visitor can set their theme before signing in).
+ * Kept thin per CONVENTIONS.md's "app/ is routing only" rule — only resolves the theme cookie for
+ * the toggle's initial value (see 01-12-SUMMARY.md, 01-14-SUMMARY.md). `isAuthenticated={false}`:
+ * a pre-session visitor's toggle updates the cookie/document scope directly, no endpoint call.
  */
 const AuthLayout = async ({ children }: PropsWithChildren) => {
     const theme = (await themeCookie.read()) ?? DEFAULT_THEME;
