@@ -4,16 +4,9 @@ import { isProtectedPath, isPublicPath, ROUTE } from "@/lib/core/routing/routes"
 import { session, SESSION_COOKIE_NAME } from "@/lib/server/session";
 
 /*
- * The Next.js 16 file convention (renamed from `middleware.ts` — RESEARCH.md Pitfall 2). This is
- * an optimisation, not the authorisation decision: `app/(dashboard)/layout.tsx` calls
- * `verifySession()` itself and refuses access on its own authority, so disabling or bypassing
- * this file (the CVE-2025-29927 class of vulnerability) still does not expose protected content.
- *
- * `session.verifyToken()` is the same jose verification `session.verify()` uses, factored out so
- * this file doesn't reimplement it — it exists here rather than `session.verify()` because
- * `next/headers`'s `cookies()` requires a Server Component/Route Handler/Server Action request
- * scope that a proxy/middleware function does not have; `NextRequest.cookies` is this file's own
- * cookie-reading API instead.
+ * Next.js 16's file convention (renamed from `middleware.ts`; RESEARCH.md Pitfall 2) — an
+ * optimisation only, not the authoritative check: `app/(dashboard)/layout.tsx`'s own
+ * `verifySession()` call is what actually stops the CVE-2025-29927 bypass (see docs/adr/tech/0019, T-01-05).
  */
 const proxy = async (request: NextRequest): Promise<NextResponse> => {
     const { pathname } = request.nextUrl;
