@@ -8,6 +8,7 @@
         "start": "next start",
         "lint": "eslint .",
         "routes:check": "node scripts/check-routes.mjs",
+        "handlers:check": "node scripts/check-no-route-handlers.mjs",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "prepare": "husky",

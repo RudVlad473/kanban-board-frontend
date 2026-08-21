@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+/*
+ * D-01: fails the build if a Route Handler (any nested route.ts under app/) reappears — Route
+ * Handlers are banned project-wide as a data-access mechanism (docs/adr/tech/0019). Mirrors
+ * `scripts/check-routes.mjs`'s own structure.
+ */
+import { globSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, "..");
+
+const violations = globSync("app/**/route.{ts,tsx,js,mjs}", { cwd: repoRoot });
+
+if (violations.length > 0) {
+    console.error(
+        "handlers:check failed — Route Handlers are banned as a data-access mechanism " +
+            "(docs/adr/tech/0019). Use a React Server Component for reads or a Server Action for writes.\n",
+    );
+    for (const violation of violations) {
+        console.error(`  ${violation}`);
+    }
+    process.exit(1);
+}
+
+console.log("handlers:check passed — no Route Handler found under app/.");

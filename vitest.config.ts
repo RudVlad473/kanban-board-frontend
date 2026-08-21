@@ -63,13 +63,6 @@ export default defineConfig({
                     environment: "node",
                     include: [
                         "src/lib/server/session.test.ts",
-                        /*
-                         * Widened from "app/api/auth/**" (that glob's own Route Handlers were
-                         * deleted in plan 01-33 and matched nothing) so every Route Handler test
-                         * under app/api/ — this phase's board handlers and Phases 3-4's
-                         * column/task handlers — is collected without another config edit.
-                         */
-                        "app/api/**/*.test.ts",
                         "src/**/*.integration.test.ts",
                         // Plain Node ESM with no jsdom/React dependency — belongs here, not "unit".
                         "scripts/**/*.unit.test.mjs",
@@ -161,17 +154,6 @@ export default defineConfig({
                         {
                             find: "@/features/theme/actions/update-theme",
                             replacement: path.resolve(rootDir, "src/test-utils/update-theme-action-storybook-stub.ts"),
-                        },
-                        /*
-                         * `Sidebar` composes the real `useBoards()`, which calls `boardsApi.list()`
-                         * — a same-origin `fetch("/api/boards")` with no Route Handler to answer it
-                         * in this bare Vitest browser environment. Aliased so each `sidebar.
-                         * stories.tsx` story can stage its own fixed pending/error/populated state
-                         * instead of every story resolving to the same failed-fetch error state.
-                         */
-                        {
-                            find: "@/features/boards/hooks/use-boards",
-                            replacement: path.resolve(rootDir, "src/test-utils/use-boards-storybook-stub.ts"),
                         },
                         ...alias,
                     ],
