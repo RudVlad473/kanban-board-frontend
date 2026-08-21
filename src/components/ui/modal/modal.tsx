@@ -13,19 +13,15 @@ import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*
- * D-15: focus trapping, scroll locking, Escape-to-close, focus restoration and the
- * aria-labelledby/aria-describedby wiring from Modal.Title/Modal.Description all come from Base
- * UI's Dialog composition (Root/Trigger/Portal/Backdrop/Popup/Title/Description/Close) — this file
- * contains no `useEffect` reading or writing `document.activeElement`. Per D-18, Modal is
- * content-driven and takes no size axis; width is a `className` escape hatch on `Modal.Content`
- * (this plan's own prop-shape decision), not a `cva` size variant like the sized primitives.
+ * D-15: focus trapping, scroll locking, Escape-to-close and label/description wiring all come
+ * from Base UI's Dialog composition — no `useEffect` touching `document.activeElement`. D-18:
+ * Modal is content-driven, no size axis; width is a `className` escape hatch (see 01-CONTEXT.md).
  */
 
 /*
- * `isDismissableOnBackdropClick` is the public spelling of Base UI's `disablePointerDismissal`
- * (inverted, D-26s `is`-prefix convention); `open`/`disablePointerDismissal` are omitted from the
- * public props so a consumer can only reach them through `isOpen`/`isDismissableOnBackdropClick` —
- * no two conflicting ways to say the same thing.
+ * `isDismissableOnBackdropClick` is the public, inverted spelling of Base UI's
+ * `disablePointerDismissal` (D-26's `is`-prefix convention, see 01-CONTEXT.md); `open`/
+ * `disablePointerDismissal` are omitted so there's no second way to say the same thing.
  */
 type RootProps = PropsWithChildren<
     Omit<DialogRootProps, "open" | "disablePointerDismissal" | "onOpenChange" | "children"> & {
@@ -36,13 +32,9 @@ type RootProps = PropsWithChildren<
 >;
 
 /*
- * Modal has no `isLoading` prop of its own — a loading state belongs to the async action inside
- * it (e.g. a submit `Button` in `Modal.Footer`, already `isLoading`-capable per GC-01), not to
- * Modal itself. A consumer driving such an action MUST render Modal in controlled mode
- * (`isOpen`/`onOpenChange`) and (1) pass `isDismissableOnBackdropClick={!isLoading}`, and (2)
- * guard `onOpenChange` to ignore a close request while `isLoading` is true — Base UI's Dialog
- * calls `onOpenChange(false)` on Escape regardless of `isDismissableOnBackdropClick` (which only
- * governs backdrop clicks), so the Escape path needs this same guard, not a separate prop.
+ * Modal has no `isLoading` prop — that state belongs to the async action inside it (e.g. a
+ * `Modal.Footer` Button). A consumer driving one composes `isDismissableOnBackdropClick={!isLoading}`
+ * with a guarded `onOpenChange` (Escape bypasses the backdrop-only prop) — see 01-25-SUMMARY.md (GC-16).
  */
 const Root = ({ isOpen, isDismissableOnBackdropClick = true, onOpenChange, children, ...props }: RootProps) => {
     return (
@@ -71,27 +63,9 @@ const Trigger = ({ className, ...props }: TriggerProps) => {
 type ContentProps = Omit<DialogPopupProps, "className"> & ClassNameProp;
 
 /*
- * UI-SPEC Color/Spacing: panel `bg-bg-surface` at the `radius.lg`/`shadow.lg` tokens measured in
- * plan 01-04, `p-4 md:p-6` (16px mobile / 24px tablet+) internal padding — ADR tech/0010's mobile
- * review: the panel's own `w-[min(90vw,28rem)]` already scales down correctly at a 375px
- * viewport (90vw beats the 28rem cap there), but the original flat `p-6` (24px on every side)
- * ate a larger share of that already-narrow width than it does on desktop; a mobile-first
- * `p-4 md:p-6` gives back some of that room on small screens without changing anything at
- * tablet/desktop widths. The backdrop is a fixed black scrim at reduced opacity regardless of the
- * active theme — a dimming overlay is not a themed surface, the same mode-invariant treatment
- * this pipeline already gives the shadow tokens (src/styles/tokens.css defines shadow-sm/md/lg
- * once, with no `.dark` override).
- *
- * `rounded-lg`/`shadow-lg` and `overflow-y-auto` are deliberately on two different elements. The
- * outer `Dialog.Popup` owns the panel's silhouette (radius, shadow, sizing) and clips to it with
- * `overflow-hidden`; an inner `div` owns the scroll region and the `p-6` padding. Putting
- * `overflow-y-auto` directly on the rounded/shadowed element (the original layout) let the native
- * scrollbar and the scrolled content's edge render outside the rounded corners once the body
- * actually scrolled (`LongContent`) — the corner/shadow silhouette only looked correct while
- * unscrolled. Clipping on the outer element and scrolling on the inner one keeps the panel's
- * silhouette intact regardless of scroll position or scrollbar presence, and keeps the header
- * (`Modal.Title`) scrolling away with the rest of the content rather than pinned outside the
- * rounded frame.
+ * Panel tokens/mobile padding measured and reviewed in 01-04-SUMMARY.md and ADR tech/0010. Outer
+ * `Dialog.Popup` owns the silhouette (radius/shadow/clip); an inner `div` owns the scroll region,
+ * so the rounded corners stay intact once content actually scrolls (see 01-09-SUMMARY.md addendum).
  */
 const Content = ({ className, children, ...props }: ContentProps) => {
     return (
