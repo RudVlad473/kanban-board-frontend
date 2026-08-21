@@ -7,40 +7,23 @@ import { ToastProvider, useToast } from "./toast";
 type ToastConfig = Parameters<ReturnType<typeof useToast>["add"]>[0];
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions (add,
- * upsert, action click, close, stacking) live exclusively in toast.test.tsx. A story cannot drive
- * `useToast().add()` from a play function per D-25, so each story instead seeds its own
- * `Toast.createToastManager()` instance and hands it to `ToastProvider` via the `toastManager`
- * prop Base UI documents specifically "for use outside of a React component" — Storybook's
- * per-story, client-only module evaluation is exactly that context, not the concurrent-SSR-request
- * hazard `toast.tsx`'s own WHY-comment forbids that factory for at the app-runtime level. This
- * file is the one place in this plan that constructs a manager directly.
- *
- * `add()` is called from a `useEffect` here, NOT from the `useState` initializer that constructs
- * the manager. The installed `ToastProvider` (provider/ToastProvider.js) only reacts to a
- * `toastManager` prop via its own `useEffect` subscribing to FUTURE events — the manager itself
- * (createToastManager.js) is a bare emitter with no event buffer, so any `add()` called before
- * that subscribe effect has run is emitted to zero listeners and silently lost. Verified directly:
- * seeding inside the `useState` initializer (this component's very first render, before any
- * effect anywhere has run) rendered every story with an empty, toast-less viewport region — a real
- * bug caught by opening the stories in a browser, not by the automated test suite, which drives
- * `add()` through `useToast()` from a component already mounted *inside* `ToastProvider` and so
- * never hits this ordering at all. Seeding from this component's own `useEffect` instead relies on
- * React's child-before-parent effect commit order: `ToastProvider` renders as this component's
- * child, so its subscribe effect is guaranteed to run before this effect does.
+ * Visual-only CSF3 (D-25) — behavioural assertions live in toast.test.tsx. A story can't drive
+ * useToast().add() from a play function, so each story seeds its own Toast.createToastManager()
+ * and hands it to ToastProvider via toastManager, Base UI's documented outside-React-component API.
  */
 const SeededToastCanvas = ({ configs }: { configs: ToastConfig[] }) => {
     const [manager] = useState(() => BaseToast.createToastManager());
 
+    /*
+     * add() runs in an effect, not the useState initializer: ToastProvider only subscribes to the
+     * manager from its OWN effect, and React commits child effects before parent ones, so seeding
+     * any earlier (verified directly) emits to zero listeners and the toast never appears.
+     */
     useEffect(() => {
         configs.forEach((config) => {
             manager.add(config);
         });
-        /*
-         * configs is a story-static prop (never reassigned after mount) — re-seeding on every
-         * render would re-run add() for the same ids, which the installed manager treats as an
-         * update-in-place, not a duplicate, but is still unnecessary work on every re-render.
-         */
+        // configs is a story-static prop — re-seeding on every render is unnecessary work.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [manager]);
 
@@ -62,13 +45,9 @@ type Story = StoryObj<typeof SeededToastCanvas>;
 export const Default: Story = {
     args: {
         /*
-         * `timeout: 0` (store.js: `duration > 0` gates whether an auto-close timer is ever
-         * scheduled at all) — a story is meant to sit still for human review, not auto-dismiss
-         * mid-review. Without it, the outer Storybook manager URL (full chrome: sidebar, addon
-         * panels, a11y panel) takes long enough to finish booting that Base UI's 5000ms default
-         * timeout had often already fired and closed the toast before a human ever saw it —
-         * reproduced directly by comparing a ~1s-after-navigation screenshot (toast visible) against
-         * a ~9s-after-navigation one (empty canvas) at the same URL.
+         * `timeout: 0` disables the auto-close timer — Storybook's chrome takes long enough to
+         * boot that Base UI's 5000ms default had often already fired before a human ever saw the
+         * toast (reproduced directly comparing ~1s vs ~9s post-navigation screenshots).
          */
         configs: [{ title: "Rollback complete", description: "The board name was restored.", timeout: 0 }],
     },
@@ -103,11 +82,9 @@ export const Stacked: Story = {
 };
 
 /*
- * Deliberately longer than any real Copywriting Contract string this phase actually uses — long
- * enough that both `Title` (2-line clamp) and `Description` (3-line clamp) visibly truncate with
- * an ellipsis instead of growing the card, which the shorter, realistic copy in the other stories
- * wouldn't demonstrate. The full text of each is still reachable via the native `title` tooltip
- * (hover or focus) `Title`/`Description` set from their own string children.
+ * Deliberately longer than any real Copywriting Contract string — long enough that both Title
+ * (2-line clamp) and Description (3-line clamp) visibly truncate, which the other stories'
+ * shorter copy wouldn't demonstrate. Full text stays reachable via the native title tooltip.
  */
 export const LongContent: Story = {
     args: {

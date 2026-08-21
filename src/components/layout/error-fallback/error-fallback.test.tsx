@@ -1,4 +1,7 @@
-import { expect, it, vi } from "vitest";
+// @storybook/react (not @storybook/nextjs-vite) — see dropdown.test.tsx / vitest.setup.ts for why.
+import { composeStories } from "@storybook/react";
+import { cleanup, screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -6,57 +9,45 @@ import { ROUTE } from "@/lib/core/routing/routes";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { ErrorFallback } from "./error-fallback";
+import * as stories from "./error-fallback.stories";
 
-/*
- * ADR tech/0014: every component's whole behavioral suite runs at both viewports by default.
- * ErrorFallback has no viewport-conditional behaviour of its own — every test here runs
- * identically at both sizes, which is itself the point.
- */
+const { Default, WithReference, WithoutHomeLink } = composeStories(stories);
+
+// Composed stories mount via RTL's own render, which RTL never auto-unmounts between calls here.
+afterEach(cleanup);
+
+// ADR tech/0014: every component's whole behavioral suite runs at both viewports by default.
 describeForEachDevice({
     name: "ErrorFallback",
     body: () => {
         it("renders the supplied title and description, and nothing else in their place", async () => {
-            // Arrange
-            const screen = await render(
-                <ErrorFallback
-                    title="Something went wrong"
-                    description="This part of the app ran into a problem. Your other work is unaffected."
-                    onRetry={vi.fn()}
-                />,
-            );
+            // Act
+            await Default.run();
 
             // Assert
-            await expect.element(screen.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
-            await expect
-                .element(screen.getByText("This part of the app ran into a problem. Your other work is unaffected."))
-                .toBeVisible();
+            expect(screen.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
+            expect(
+                screen.getByText("This part of the app ran into a problem. Your other work is unaffected."),
+            ).toBeVisible();
         });
 
         it("renders a reference line with the digest when one is supplied", async () => {
-            // Arrange
-            const screen = await render(
-                <ErrorFallback
-                    title="Something went wrong"
-                    description="A problem occurred."
-                    onRetry={vi.fn()}
-                    digest="abc123"
-                />,
-            );
+            // Act
+            await WithReference.run();
 
             // Assert
-            await expect.element(screen.getByText("Reference: abc123")).toBeVisible();
+            expect(screen.getByText("Reference: a1b2c3d4")).toBeVisible();
         });
 
         it("renders no reference line at all when no digest is supplied", async () => {
-            // Arrange
-            const screen = await render(
-                <ErrorFallback title="Something went wrong" description="A problem occurred." onRetry={vi.fn()} />,
-            );
+            // Act
+            await Default.run();
 
             // Assert
-            expect(screen.container.textContent).not.toContain("Reference:");
+            expect(screen.queryByText(/^Reference:/)).not.toBeInTheDocument();
         });
 
+        // Deep: real click interaction + callback spy.
         it("invokes onRetry exactly once when the retry control is clicked", async () => {
             // Arrange
             const onRetry = vi.fn();
@@ -71,6 +62,7 @@ describeForEachDevice({
             expect(onRetry).toHaveBeenCalledOnce();
         });
 
+        // Deep: real keyboard/focus interaction.
         it("invokes onRetry exactly once on keyboard activation, and the control is reachable by keyboard", async () => {
             // Arrange
             const onRetry = vi.fn();
@@ -88,28 +80,19 @@ describeForEachDevice({
         });
 
         it("renders a link back to the boards list when homeHref is supplied", async () => {
-            // Arrange
-            const screen = await render(
-                <ErrorFallback
-                    title="Something went wrong"
-                    description="A problem occurred."
-                    onRetry={vi.fn()}
-                    homeHref={ROUTE.BOARDS}
-                />,
-            );
+            // Act — the Default story's meta.args already carries homeHref: ROUTE.BOARDS.
+            await Default.run();
 
             // Assert
-            await expect.element(screen.getByRole("link")).toHaveAttribute("href", ROUTE.BOARDS);
+            expect(screen.getByRole("link")).toHaveAttribute("href", ROUTE.BOARDS);
         });
 
         it("renders no link at all when homeHref is not supplied", async () => {
-            // Arrange
-            const screen = await render(
-                <ErrorFallback title="Something went wrong" description="A problem occurred." onRetry={vi.fn()} />,
-            );
+            // Act
+            await WithoutHomeLink.run();
 
             // Assert
-            await expect.element(screen.getByRole("link")).not.toBeInTheDocument();
+            expect(screen.queryByRole("link")).not.toBeInTheDocument();
         });
     },
 });

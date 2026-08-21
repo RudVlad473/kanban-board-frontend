@@ -6,9 +6,9 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import DashboardError from "./error";
 
 /*
- * Renders the real boundary component with a real Error — not merely asserted to exist by file
- * listing. Proves the segment boundary both renders the shared recovery surface and never puts
- * the thrown error's own text on screen.
+ * Route error boundary — exempt from the stories requirement per docs/adr/tech/0021's carve-out.
+ * Renders the real boundary with a real Error, proving the recovery surface renders and the
+ * thrown error's own text never leaks onto the page.
  */
 describeForEachDevice({
     name: "app/(dashboard)/error",

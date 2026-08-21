@@ -1,5 +1,6 @@
 import * as a11yAddonAnnotations from "@storybook/addon-a11y/preview";
 import { setProjectAnnotations } from "@storybook/react";
+import { render } from "@testing-library/react";
 
 /*
  * Registers @testing-library/jest-dom's matchers (toBeDisabled, toHaveAccessibleName, etc.)
@@ -46,4 +47,9 @@ import "./src/styles/globals.css";
  * detects a `setProjectAnnotations` call there by name and, on finding one, disables its own
  * automatic per-story annotation provisioning, leaving every story without a render function.
  */
-setProjectAnnotations([a11yAddonAnnotations, previewAnnotations]);
+/*
+ * `testingLibraryRender` wires composeStories' `.run()` to RTL's own tracked `render()` — without
+ * it, `.run()` uses an untracked fallback whose DOM (and any portal it opens) survives into later
+ * tests and collides once two tests share an accessible name (D-08 retrofit finding).
+ */
+setProjectAnnotations([a11yAddonAnnotations, previewAnnotations, { testingLibraryRender: render }]);

@@ -42,6 +42,14 @@ export const WithSelection: Story = {
     },
 };
 
+// Open + a selected value together — the shape dropdown.test.tsx needs to assert aria-selected.
+export const OpenWithSelection: Story = {
+    args: {
+        defaultOpen: true,
+        defaultValue: "doing",
+    },
+};
+
 export const Error: Story = {
     args: {
         hasError: true,

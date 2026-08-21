@@ -1,12 +1,21 @@
+// @storybook/react (not @storybook/nextjs-vite) — see dropdown.test.tsx / vitest.setup.ts for why.
+import { composeStories } from "@storybook/react";
+import { cleanup, screen } from "@testing-library/react";
 import { EllipsisVertical } from "lucide-react";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { Menu } from "./menu";
+import * as stories from "./menu.stories";
 import { IconButton } from "../icon-button/icon-button";
+
+const { Open, WithDisabledItem } = composeStories(stories);
+
+// Composed stories mount via RTL's own render, which RTL never auto-unmounts between calls here.
+afterEach(cleanup);
 
 /*
  * A single options object (ADR tech/0016) whose two callbacks default to fresh spies — every
@@ -32,18 +41,16 @@ const renderMenu = async ({
     return { screen, onRename, onDelete };
 };
 
-/*
- * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default.
- */
+// ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default.
 describeForEachDevice({
     name: "Menu",
     body: () => {
+        // Deep: real click interaction proving the trigger's accessible name never flips.
         it("renders a trigger reachable by its accessible name, whose visible glyph does not change after an item is activated", async () => {
             /*
-             * Arrange — the two cases this primitive exists to fix (02-RESEARCH.md Common Pitfall
-             * 3): unlike `Dropdown`'s `Select.Value`, there is no rendered "selected value" text to
-             * flip to the last-clicked item's label, so the trigger's own accessible name — set once,
-             * by `IconButton`'s own required `label` prop — must be identical before and after.
+             * Arrange — 02-RESEARCH.md Pitfall 3: unlike Dropdown, no rendered "selected value"
+             * exists to flip to the last-clicked item's label, so IconButton's own fixed `label`
+             * must stay identical before and after activation.
              */
             const { screen } = await renderMenu();
             const trigger = screen.getByRole("button", { name: "Board actions" });
@@ -59,26 +66,22 @@ describeForEachDevice({
         });
 
         it("exposes a menu role containing menuitem-role items, not listbox/option", async () => {
-            // Arrange
-            const { screen } = await renderMenu();
-            const trigger = screen.getByRole("button", { name: "Board actions" });
-
-            // Act
-            await trigger.click();
+            // Act — Open is already rendered open, no interaction needed for this rendered-state check.
+            await Open.run();
 
             // Assert
-            await expect.element(screen.getByRole("menu")).toBeVisible();
-            await expect.element(screen.getByRole("menuitem", { name: "Edit Board" })).toBeVisible();
-            await expect.element(screen.getByRole("menuitem", { name: "Delete Board" })).toBeVisible();
-            expect(screen.getByRole("listbox").elements().length).toBe(0);
-            expect(screen.getByRole("option").elements().length).toBe(0);
+            expect(screen.getByRole("menu")).toBeVisible();
+            expect(screen.getByRole("menuitem", { name: "Edit Board" })).toBeVisible();
+            expect(screen.getByRole("menuitem", { name: "Delete Board" })).toBeVisible();
+            expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+            expect(screen.queryByRole("option")).not.toBeInTheDocument();
         });
 
+        // Deep: real click interaction, before/after an activation.
         it("renders no selected-state indicator on any item, before or after activation", async () => {
             /*
-             * Arrange — the other half of Pitfall 3: `Select.ItemIndicator`'s checkmark has no
-             * equivalent here at all, so this asserts the DOM never carries an
-             * `aria-selected`/checkmark-style indicator, not merely that it's initially absent.
+             * Arrange — the other half of Pitfall 3: no checkmark-like indicator equivalent exists
+             * here, so this asserts the DOM never carries one, not merely that it's absent initially.
              */
             const { screen, onRename } = await renderMenu();
             const trigger = screen.getByRole("button", { name: "Board actions" });
@@ -98,6 +101,7 @@ describeForEachDevice({
             expect(itemAfter.querySelector('[data-selected], svg[class*="check" i]')).toBeNull();
         });
 
+        // Deep: real click interaction + callback spy.
         it("calls the activated item's onClick exactly once and closes the menu", async () => {
             // Arrange
             const { screen, onDelete } = await renderMenu();
@@ -112,6 +116,7 @@ describeForEachDevice({
             await expect.element(screen.getByRole("menu")).not.toBeInTheDocument();
         });
 
+        // Deep: Escape dismissal + focus restoration, real keyboard/focus behaviour.
         it("closes on Escape without activating anything and returns focus to the trigger", async () => {
             // Arrange
             const { screen, onRename, onDelete } = await renderMenu();
@@ -131,6 +136,7 @@ describeForEachDevice({
             await expect.poll(() => document.activeElement).toBe(triggerElement);
         });
 
+        // Deep: keyboard-driven highlight movement and activation, real focus behaviour.
         it("moves the highlight with Arrow Down/Up and activates the highlighted item on Enter", async () => {
             // Arrange
             const { screen, onDelete } = await renderMenu();
@@ -160,7 +166,16 @@ describeForEachDevice({
             }
         });
 
-        it("announces an isDisabled item as disabled and does not call its onClick on activation", async () => {
+        it("announces an isDisabled item as disabled to assistive technology", async () => {
+            // Act — WithDisabledItem is already open, no interaction needed for this rendered check.
+            await WithDisabledItem.run();
+
+            // Assert
+            expect(screen.getByRole("menuitem", { name: "Edit Board" })).toHaveAttribute("aria-disabled", "true");
+        });
+
+        // Deep: real click interaction proving the disabled guard, not merely the attribute.
+        it("does not call onClick when an isDisabled item is activated by click", async () => {
             // Arrange
             const onArchive = vi.fn();
             const screen = await render(
@@ -176,11 +191,6 @@ describeForEachDevice({
             );
             await screen.getByRole("button", { name: "Board actions" }).click();
 
-            // Assert (rendered state)
-            await expect
-                .element(screen.getByRole("menuitem", { name: "Archive Board" }))
-                .toHaveAttribute("aria-disabled", "true");
-
             /*
              * Act — `force: true` bypasses Playwright's own actionability guard (which itself
              * refuses to click an `aria-disabled="true"` element), so this exercises the
@@ -192,6 +202,7 @@ describeForEachDevice({
             expect(onArchive).not.toHaveBeenCalled();
         });
 
+        // Deep: getComputedStyle against a Tailwind custom-property-driven token.
         it("renders an isDestructive item in the danger text token", async () => {
             // Arrange
             const { screen } = await renderMenu();
@@ -203,10 +214,7 @@ describeForEachDevice({
             ).color;
             const defaultColor = getComputedStyle(screen.getByRole("menuitem", { name: "Edit Board" }).element()).color;
 
-            /*
-             * Assert — border-border-danger / text-text-danger token (#C93F3C), same as Button's
-             * destructive variant and Dropdown's error-state border.
-             */
+            // Assert — border-border-danger / text-text-danger token (#C93F3C).
             expect(destructiveColor).toBe("rgb(201, 63, 60)");
             expect(defaultColor).not.toBe("rgb(201, 63, 60)");
         });
