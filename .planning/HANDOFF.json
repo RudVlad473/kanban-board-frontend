@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-08-21T16:49:21.464Z",
+  "phase": "02.1",
+  "phase_name": "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)",
+  "phase_dir": ".planning/phases/02.1-testing-strategy-overhaul-and-code-quality-retrofit-no-mocki",
+  "plan": "02.1-10",
+  "task": 9,
+  "total_tasks": 15,
+  "status": "paused",
+  "completed_tasks": [
+    { "id": 1, "name": "02.1-01 RSC board-list tracer (Wave 1)", "status": "done", "commit": "f787789" },
+    { "id": 2, "name": "02.1-02 policy gates: mock-ban + comment-length checker (Wave 2)", "status": "done", "commit": "6953597" },
+    { "id": 3, "name": "02.1-03 generic cookie client (Wave 3)", "status": "done", "commit": "3028478" },
+    { "id": 4, "name": "02.1-04 route/E2E constants (Wave 3)", "status": "done", "commit": "c2a9b05" },
+    { "id": 5, "name": "02.1-05 ADRs 0019-0024 + CONVENTIONS.md rewrite (Wave 3)", "status": "done", "commit": "3a20865" },
+    { "id": 6, "name": "02.1-06 Server Action tests, real backend (Wave 3)", "status": "done", "commit": "fd7996b" },
+    { "id": 7, "name": "02.1-07 Button/IconButton/Checkbox/Switch/TextField composed-story tests (Wave 3)", "status": "done", "commit": "bfce5bc" },
+    { "id": 8, "name": "02.1-08 Dropdown/Menu/Modal/Toast/ErrorFallback composed-story tests (Wave 3)", "status": "done", "commit": "2e2ccca" },
+    { "id": 9, "name": "Wave 3 tracking update + cross-plan routes:check fix", "status": "done", "commit": "0d3b7fe" },
+    { "id": 10, "name": "02.1-09 auth/theme component no-mocking retrofit (Wave 4)", "status": "done", "commit": "4a3da24" },
+    {
+      "id": 11,
+      "name": "02.1-10 curl-based e2e seeding CLI (Wave 5)",
+      "status": "in_progress",
+      "progress": "Merged to master (bffdae0). All post-merge gates pass: lint clean, full pnpm test 566+3(isolated-confirmed-flaky)=569 pass, pnpm build passes, routes:check passes, handlers:check passes. seed.sh/seed.ts independently verified against the real backend by the executor. NOT yet done: ROADMAP/STATE tracking update, commit, and push for this wave (the trivial `roadmap.update-plan-progress 02.1 02.1-10 complete` + commit + push step). Was also mid-way through attempting to run the full `pnpm exec playwright test --project e2e` suite myself when this pause was requested — blocked on missing NONPROD_RESET_TOKEN."
+    }
+  ],
+  "remaining_tasks": [
+    { "id": 12, "name": "Finish Wave 5 tracking: roadmap.update-plan-progress 02.1 02.1-10 complete, commit, push", "status": "not_started" },
+    { "id": 13, "name": "Wave 6: execute 02.1-11..14 (comment-length sweep across src/components, src/features, src/lib+test-utils+app+proxy.ts, root configs+.storybook+scripts+e2e+visual — 4 parallel plans)", "status": "not_started" },
+    { "id": 14, "name": "Wave 7: execute 02.1-15 (flip gates to blocking, finish Enforcement columns, full-suite sign-off — autonomous:false, is a CHECKPOINT plan requiring human interaction)", "status": "not_started" },
+    { "id": 15, "name": "Post-execution: aggregate_results, code_review_gate, verify_phase_goal (spawn gsd-verifier), update_roadmap (phase.complete)", "status": "not_started" }
+  ],
+  "blockers": [
+    {
+      "description": "NONPROD_RESET_TOKEN is not set (locally, and I could not read/set it myself — .env.local is denied to sandboxed access). Blocks the full `pnpm exec playwright test --project e2e` run, which is the last uncovered verification surface for 02.1-10 (curl-based e2e seeding CLI + narrowed e2e specs). This has been an open gap since Wave 1 (documented in .planning/WINDOWS.md by each affected plan's executor).",
+      "type": "human_action",
+      "workaround": "Either (a) user sets NONPROD_RESET_TOKEN=<same value as CI secret / backend's APP_RESET_TOKEN> in .env.local, then the orchestrator re-runs `pnpm exec playwright test --project e2e` for real verification, or (b) explicitly accept this as a documented unrun-verify gap and proceed without a full e2e pass — seed.sh/seed.ts themselves were already verified directly against the real backend (account creation, board creation with session reuse, non-2xx error path all confirmed working)."
+    }
+  ],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {
+      "action": "Decide how to handle the NONPROD_RESET_TOKEN gap: set the token in .env.local (recommended, to get a real e2e verification pass) or explicitly say to skip it and move on.",
+      "context": "This was the exact question pending when /gsd-pause-work was invoked — the user asked to clarify rather than answering directly.",
+      "blocking": false
+    }
+  ],
+  "decisions": [
+    { "decision": "Ran /gsd-review 02.1 with --claude only, not --gemini", "rationale": "Gemini's free tier proved unusable this session: gemini-cli's OAuth login was deprecated by Google (IneligibleTierError), and after switching to API-key auth (~/.gemini/settings.json changed from oauth-personal to gemini-api-key — a persistent side effect on this machine), the free tier still hit a hard 0-quota wall on Pro and got 429-rate-limited on Flash even with a trimmed ~77K-token prompt.", "phase": "02.1" },
+    { "decision": "Chose 'Execute as-is' over re-planning phase 02.1 with the Claude review's feedback folded in", "rationale": "The review's findings were low/medium severity and narrow in scope (verify .reverse()/newestFirst() equivalence before 02.1-01, two metadata/prose drift items) — cheaper to handle inline during execution than to run a full replan cycle.", "phase": "02.1" },
+    { "decision": "Established a manual-merge-over-automation pattern for isolated-worktree wave execution", "rationale": "gsd-tools' `worktree.cleanup-wave` unconditionally blocks merging any branch containing file deletions (deliberate, undocumented opt-in gap per its own code comments referencing issues #2852/#3003) — every wave with an intentional file deletion (02.1-01, 02.1-06) required a manual `git merge --no-ff` + hand-resolved conflict instead. When two isolated worktrees both touched the same file in different ways (server-client.integration.test.ts: 02.1-04's EXTERNAL_PATH routing vs 02.1-03's more-correct expiredRecord.id test data), the correct resolution combined both improvements rather than picking one side.", "phase": "02.1" },
+    { "decision": "Added a full lint+test+build+routes+handlers gate on the MERGED result after every wave, not just per-plan verification inside each isolated worktree", "rationale": "Wave 3 alone had 3 cross-plan gaps that only a merged-result gate could catch: 02.1-04 touched 3 files 02.1-06 had already deleted (needed manual conflict resolution), 02.1-04 and 02.1-03 both touched server-client.integration.test.ts (content conflict), and 02.1-04's widened routes:check script flagged literals in NEW files 02.1-06 created in its own isolated worktree that 02.1-04 could never have seen. Each isolated worktree's own internal verification was necessarily blind to what its siblings were doing.", "phase": "02.1" }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Ask the user to resolve the NONPROD_RESET_TOKEN question (set it now vs. skip and document as a gap). Then run: `node \"$GSD_TOOLS\" query roadmap.update-plan-progress \"02.1\" \"02.1-10\" \"complete\"` followed by a tracking commit (`docs(phase-02.1): update tracking after wave 5`) and `git push`. Then proceed to Wave 6 (spawn 4 parallel gsd-executor agents for 02.1-11..14 in worktree isolation, same pattern as every prior wave — capture HEAD first, check the intra-wave files_modified overlap across the 4 plans before dispatch).",
+  "context_notes": "This is a full /gsd-execute-phase 02.1 orchestration run (15 plans, 7 waves) driven end-to-end manually by the orchestrator following gsd-core/workflows/execute-phase.md, since this session's runtime doesn't auto-drive the bash-heavy workflow spec verbatim — every step (worktree dispatch, merge, conflict resolution, post-merge gate, tracking commit, push) was performed by hand-translating the workflow's intent into direct tool calls. This has worked well; the pattern is well-established by now (5 waves done, waves 6-7 are structurally identical to what's already succeeded). Two real infrastructure incidents were resolved mid-session and are documented as blocking anti-patterns below — both are now handled routinely (kill stray worktree-pointed node processes before each wave's gate; expect and correctly resolve merge conflicts from isolated-worktree cross-plan overlaps rather than trusting the pre-wave files_modified declaration alone)."
+}
