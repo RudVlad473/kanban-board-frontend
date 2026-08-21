@@ -1,11 +1,24 @@
+/*
+ * @storybook/react (not @storybook/nextjs-vite) — the latter eagerly imports Next.js internals
+ * that only resolve under the Storybook Vite plugin the "storybook" project loads, not this
+ * "browser" project (vitest.setup.ts has the full reasoning).
+ */
+import { composeStories } from "@storybook/react";
+import { cleanup, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { Dropdown } from "./dropdown";
+import * as stories from "./dropdown.stories";
+
+const { Closed, Loading, OpenWithSelection } = composeStories(stories);
+
+// Composed stories mount via RTL's own render, which RTL never auto-unmounts between calls here.
+afterEach(cleanup);
 
 type RootProps = ComponentProps<typeof Dropdown.Root>;
 
@@ -36,26 +49,17 @@ const getActiveElement = () => {
     return active;
 };
 
-/*
- * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
- * blanket regression net rather than a hand-picked set of viewport-conditional assertions. Most
- * tests below run identically at both sizes; the edge-collision test further down genuinely
- * differs by viewport already (it reads the live `window.innerWidth`, so no `device` branching
- * is needed in its own body).
- */
+// ADR tech/0014: every primitive's whole suite runs at both viewports; deep tests below need it.
 describeForEachDevice({
     name: "Dropdown",
     body: () => {
         it("renders a collapsed trigger whose accessible name is its content, with the list not present in the accessibility tree while closed", async () => {
-            // Arrange
-            const screen = await renderDropdown();
-
             // Act
-            const trigger = screen.getByRole("combobox", { name: "Select a status" });
+            await Closed.run();
 
             // Assert
-            await expect.element(trigger).toBeVisible();
-            await expect.element(screen.getByRole("listbox")).not.toBeInTheDocument();
+            expect(screen.getByRole("combobox", { name: "Select a status" })).toBeVisible();
+            expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
         });
 
         // D-26y: two near-identical open-key cases, parametrized rather than hand-repeated.
@@ -63,6 +67,7 @@ describeForEachDevice({
             [" ", "Space"],
             ["{Enter}", "Enter"],
         ] as const) {
+            // Deep: real focus + keyboard interaction, not expressible as a static story.
             it(`opens the list and moves focus into it on ${keyName}`, async () => {
                 // Arrange
                 const screen = await renderDropdown();
@@ -78,6 +83,7 @@ describeForEachDevice({
             });
         }
 
+        // Deep: keyboard-driven active-item movement and selection, real focus behaviour.
         it("moves the active item with Arrow Down and Arrow Up, selects it with Enter, closes the list, and returns focus to the trigger", async () => {
             // Arrange
             const onValueChange = vi.fn();
@@ -85,11 +91,9 @@ describeForEachDevice({
             const trigger = screen.getByRole("combobox", { name: "Select a status" });
 
             /*
-             * Act — open, then move down twice and back up once. Whatever item Down first lands on
-             * (self-verified below, not assumed), Up must return to it — proving both keys move the
-             * active item rather than just one of them being a no-op. The raw DOM node is captured
-             * up front since the trigger's accessible name changes to the selected item's label once
-             * a selection commits, which would break a later name-scoped re-query for the same node.
+             * Act — open, move Down twice, Up once; Up must undo the second Down (self-verified,
+             * not assumed). The trigger's own name changes once a value commits, so its element is
+             * captured up front rather than re-queried by name later.
              */
             const triggerElement = trigger.element();
             triggerElement.focus();
@@ -117,6 +121,7 @@ describeForEachDevice({
             await expect.poll(() => document.activeElement).toBe(triggerElement);
         });
 
+        // Deep: Escape dismissal + focus restoration, real keyboard/focus behaviour.
         it("closes the list without selecting on Escape and returns focus to the trigger", async () => {
             // Arrange
             const onValueChange = vi.fn();
@@ -135,6 +140,7 @@ describeForEachDevice({
             await expect.element(trigger).toHaveFocus();
         });
 
+        // Deep: pointer-click selection, real interaction.
         it("fires onValueChange with the selected item's value exactly once per selection", async () => {
             // Arrange
             const onValueChange = vi.fn();
@@ -151,36 +157,31 @@ describeForEachDevice({
         });
 
         it("marks the currently selected item as selected to assistive technology", async () => {
-            // Arrange
-            const screen = await renderDropdown({ defaultValue: "doing" });
-            const trigger = screen.getByRole("combobox");
-
-            // Act
-            await trigger.click();
+            // Act — the OpenWithSelection story is already open with "doing" selected, no interaction needed.
+            await OpenWithSelection.run();
 
             // Assert
-            await expect
-                .element(screen.getByRole("option", { name: "Doing" }))
-                .toHaveAttribute("aria-selected", "true");
-            await expect
-                .element(screen.getByRole("option", { name: "Todo" }))
-                .toHaveAttribute("aria-selected", "false");
+            expect(screen.getByRole("option", { name: "Doing" })).toHaveAttribute("aria-selected", "true");
+            expect(screen.getByRole("option", { name: "Todo" })).toHaveAttribute("aria-selected", "false");
         });
 
-        it("cannot be opened by click or by keyboard, and shows a busy trigger with a spinner in place of the chevron, when isLoading", async () => {
-            /*
-             * Arrange — a real open attempt (click, then a keyboard activation) is required: a
-             * trigger that merely carries the disabled attribute could still be opened by some
-             * other path, which this assertion rules out directly.
-             */
+        it("shows a disabled, aria-busy trigger with a spinner in place of the chevron when isLoading", async () => {
+            // Act
+            await Loading.run();
+            const trigger = screen.getByRole("combobox", { name: "Select a status" });
+
+            // Assert
+            expect(trigger).toBeDisabled();
+            expect(trigger).toHaveAttribute("aria-busy", "true");
+            expect(trigger.querySelector("svg.animate-spin")).not.toBeNull();
+        });
+
+        // Deep: proves click/keyboard genuinely cannot open it, not just that the attribute is set.
+        it("cannot be opened by click or by keyboard when isLoading", async () => {
+            // Arrange
             const onValueChange = vi.fn();
             const screen = await renderDropdown({ isLoading: true, onValueChange });
             const trigger = screen.getByRole("combobox", { name: "Select a status" });
-
-            // Assert (rendered state)
-            await expect.element(trigger).toBeDisabled();
-            await expect.element(trigger).toHaveAttribute("aria-busy", "true");
-            expect(trigger.element().querySelector("svg.animate-spin")).not.toBeNull();
 
             // Act + Assert (click)
             await trigger.click({ force: true });
@@ -193,6 +194,7 @@ describeForEachDevice({
             expect(onValueChange).not.toHaveBeenCalled();
         });
 
+        // Deep: getComputedStyle against a Tailwind custom-property-driven token.
         it("renders the trigger with the danger border when hasError, matching TextField's token", async () => {
             // Arrange
             const screen = await renderDropdown({ hasError: true });
@@ -205,14 +207,8 @@ describeForEachDevice({
             expect(borderColor).toBe("rgb(201, 63, 60)");
         });
 
+        // Deep: depends on real scrollWidth/clientWidth layout measurement (useOverflowIndicator).
         it("shows a trailing-edge overflow indicator on the trigger only once the selected label overflows it", async () => {
-            /*
-             * Arrange — same "…" cue as TextField's (previously a gradient fade — replaced per human
-             * feedback that it wasn't obvious enough), over the trigger's rendered selected-value
-             * label. `Select.Value` falls back to the raw `value` string as its own label until a
-             * matching `Dropdown.Item` registers a different one, which is a convenient way to force a
-             * genuinely long rendered label without depending on that registration timing.
-             */
             const getIndicator = (container: HTMLElement) => container.querySelector("[data-overflow-indicator]");
             const longValue = "A very long board name that will definitely overflow the trigger width";
 
@@ -248,10 +244,9 @@ describeForEachDevice({
 
         it("rounds the first item's top corners and the last item's bottom corners when highlighted, keeping middle items square", async () => {
             /*
-             * Arrange — the popup's own `rounded-md` corner is large enough (measured plan 01-04
-             * token) that a square-cornered highlight on the item touching that corner visibly pokes
-             * past the popup's own rounded silhouette. Only the item actually adjacent to a rounded
-             * corner should round to match; a middle item has no rounded popup edge to clash with.
+             * Deep: computed-style corner-radius check. The popup's rounded-md corner is large
+             * enough that a square-cornered highlight on the touching item pokes past it (plan
+             * 01-04); only first/last items round to match.
              */
             const screen = await render(
                 <Dropdown.Root>
@@ -277,10 +272,7 @@ describeForEachDevice({
             await userEvent.keyboard("{ArrowDown}");
             const lastRadius = getComputedStyle(getActiveElement()).borderRadius;
 
-            /*
-             * Assert — top-left/top-right rounded on first, bottom-left/bottom-right rounded on last,
-             * and all four corners equal (square, un-rounded relative to the popup's curve) on middle.
-             */
+            // Assert — rounded top on first, rounded bottom on last, square (equal corners) on middle.
             expect(firstRadius).toBe("24px 24px 4px 4px");
             expect(lastRadius).toBe("4px 4px 24px 24px");
             const middleCorners = middleRadius.split(" ");
@@ -289,12 +281,9 @@ describeForEachDevice({
 
         it("keeps the popup within the viewport when the trigger sits near a narrow edge — does not let the popup overflow past either horizontal edge", async () => {
             /*
-             * Arrange — ADR tech/0010 mobile review: collisionPadding=16 (dropdown.tsx) exists
-             * specifically because a trigger near a viewport's edge is far more likely on a narrow
-             * mobile viewport than a wide desktop one. Pin the trigger near the right edge (a left
-             * margin computed from the live viewport width, so it's genuinely near the edge at both
-             * device sizes, not just a fixed pixel offset that only reaches the edge at one of them)
-             * to actually exercise Floating UI's collision handling.
+             * Deep: real collision-detection layout. ADR tech/0010's collisionPadding={16} exists
+             * for exactly this narrow-viewport case; the trigger is pinned near the right edge via
+             * the live window.innerWidth so the assertion genuinely exercises it at both device sizes.
              */
             const screen = await render(
                 <div style={{ marginLeft: `${String(window.innerWidth - 220)}px`, width: "200px" }}>
@@ -319,15 +308,9 @@ describeForEachDevice({
 
         it("clips the rounded/shadowed silhouette to its own bounds and scrolls the listbox itself, not the silhouette wrapper, once the item list overflows", async () => {
             /*
-             * Arrange — `rounded-md`/`shadow-md`/`overflow-hidden` live on a plain outer wrapper div;
-             * `role="listbox"` (Select.Popup) is the scrollable element itself. ARIA requires a
-             * listbox's children to be `option`s directly, so — unlike Modal, whose Dialog.Popup has
-             * no ARIA role of its own — the scroll wrapper can't sit *between* the listbox and its
-             * options; it has to wrap the listbox from the outside instead. Putting the scroll
-             * directly on the rounded/shadowed element (the original layout) let the scrollable
-             * region's edge — and an in-flow scrollbar, which Firefox reserves layout width for even
-             * though Chrome's overlay scrollbar mostly hides the same bug — render against/outside the
-             * rounded corner once the list actually needed to scroll.
+             * Deep: computed-style + real scroll layout. ARIA requires listbox children to be
+             * options directly, so the silhouette lives on an outer div and the listbox itself
+             * owns the scroll — see dropdown.tsx's Content comment for the regression this guards.
              */
             const screen = await render(
                 <Dropdown.Root defaultOpen>
@@ -355,11 +338,7 @@ describeForEachDevice({
             const wrapperStyle = getComputedStyle(silhouetteWrapper);
             const listboxStyle = getComputedStyle(listbox);
 
-            /*
-             * Assert — the outer wrapper carries the silhouette and clips to it; its own rendered
-             * height never exceeds the listbox's own `max-h-72` (288px) + 2px border, i.e. it never
-             * needs to scroll itself.
-             */
+            // Assert — the outer wrapper clips the silhouette and never itself needs to scroll.
             expect(wrapperStyle.overflow).toBe("hidden");
             expect(wrapperStyle.borderRadius).not.toBe("0px");
             expect(wrapperStyle.boxShadow).not.toBe("none");
@@ -369,6 +348,7 @@ describeForEachDevice({
             expect(listbox.scrollHeight).toBeGreaterThan(listbox.clientHeight);
         });
 
+        // Deep: arrow-navigation skip + click-guard, real keyboard/pointer interaction.
         it("makes an isDisabled item unselectable and skipped by arrow navigation", async () => {
             // Arrange
             const onValueChange = vi.fn();
@@ -389,10 +369,7 @@ describeForEachDevice({
             );
             const trigger = screen.getByRole("combobox", { name: "Select a status" });
 
-            /*
-             * Act — open, then move down twice; navigation must skip the disabled "Doing" item and
-             * land directly on "Done".
-             */
+            // Act — open, then move down twice; navigation must skip "Doing" and land on "Done".
             trigger.element().focus();
             await userEvent.keyboard("{Enter}");
             await userEvent.keyboard("{ArrowDown}");
@@ -404,12 +381,7 @@ describeForEachDevice({
                 .element(screen.getByRole("option", { name: "Doing" }))
                 .toHaveAttribute("aria-disabled", "true");
 
-            /*
-             * Act — a pointer click on the disabled item must not select it. `force: true` bypasses
-             * Playwright's own actionability guard (which itself refuses to click an
-             * `aria-disabled="true"` element) so the assertion exercises the primitive's own
-             * Base UI-driven guard, not Playwright's.
-             */
+            // Act — force: true bypasses Playwright's own actionability guard on a disabled item.
             await screen.getByRole("option", { name: "Doing" }).click({ force: true });
 
             // Assert

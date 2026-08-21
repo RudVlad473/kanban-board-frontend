@@ -5,11 +5,9 @@ import { Menu } from "./menu";
 import { IconButton } from "../icon-button/icon-button";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
- * (keyboard nav, activation, Escape, disabled item, no persisted selection) live exclusively in
- * menu.test.tsx. Per D-25, the open state is driven by `defaultOpen`, not a play function. The
- * kebab trigger composition mirrors the sidebar's real usage exactly (D-07): `IconButton` composed
- * in via `render`, this file never renders a bare unstyled `Menu.Trigger`.
+ * Visual-only CSF3 (D-25) — behavioural assertions live in menu.test.tsx; open state comes from
+ * `defaultOpen`, never a play function. The kebab composition (IconButton via `render`) mirrors
+ * the sidebar's real usage (D-07) — this file never renders a bare unstyled Menu.Trigger.
  */
 const meta: Meta<typeof Menu.Root> = {
     component: Menu.Root,
