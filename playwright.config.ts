@@ -5,13 +5,9 @@ import { E2E_CONFIG } from "./e2e/test-env";
 const PORT = 6007;
 
 /*
- * Playwright starts every `webServer` array entry regardless of which `--project` was requested
- * (there is no first-party per-project scoping) — so without this, running `--project e2e` would
- * also try to boot the `visual` project's storybook-static server (which doesn't exist unless
- * `build-storybook` already ran), and running `--project visual` would trigger a full `next
- * build`. Reading the requested project(s) straight out of `process.argv` keeps each project's
- * webServer scoped to only the tests that actually need it, without coupling the two servers —
- * the `visual` project itself (below) is otherwise completely unchanged.
+ * Playwright starts every `webServer` array entry regardless of `--project` — reading the
+ * requested project(s) out of `process.argv` scopes each webServer to only what it needs (e.g.
+ * `--project e2e` shouldn't need a storybook build first).
  */
 const requestedProjects = process.argv.flatMap((arg, index, argv) => {
     if (arg === "--project") {
@@ -41,10 +37,9 @@ const visualWebServer: NonNullable<PlaywrightTestConfig["webServer"]> = {
 };
 
 /*
- * Builds and starts the real application (not a mock/static server) on a fixed port —
- * SESSION_SECRET/EXTERNAL_API_BASE_URL come from `e2e/test-env.ts`, which resolves them from the
- * environment the same way `.github/workflows/ci.yml`'s `e2e` job supplies them, with a
- * test-only fallback matching `vitest.config.ts`'s for local runs.
+ * Builds and starts the real application (not a mock/static server) — `SESSION_SECRET`/
+ * `EXTERNAL_API_BASE_URL` come from `e2e/test-env.ts`, matching `.github/workflows/ci.yml`'s `e2e`
+ * job with a local test-only fallback.
  */
 const e2eWebServer: NonNullable<PlaywrightTestConfig["webServer"]> = {
     command: `pnpm build && pnpm exec next start -p ${String(E2E_CONFIG.PORT)}`,
@@ -59,10 +54,8 @@ const e2eWebServer: NonNullable<PlaywrightTestConfig["webServer"]> = {
 
 /*
  * ADR tech/0008: visual regression is Playwright-native `toHaveScreenshot`, scoped to Storybook
- * design-system stories only — the `visual` project's webServer serves the pre-built
- * `storybook-static` output, never a running application. The `e2e` project (plan 01-13) proves
- * AUTH-01/02/03 against the real, built application instead — a different server for a
- * different purpose, deliberately not merged into one.
+ * stories only — its webServer serves pre-built `storybook-static`, never a running application.
+ * `e2e` proves AUTH-01/02/03 against the real built app instead — deliberately separate servers.
  */
 export default defineConfig({
     testDir: "./visual",
@@ -74,17 +67,15 @@ export default defineConfig({
     },
     snapshotPathTemplate: "visual/__screenshots__/{testFilePath}/{arg}{ext}",
     /*
-     * D-22 / ADR tech/0008: baselines are only ever asserted-against (and written) in the CI
-     * environment. Off-CI, specs still navigate and render — they just don't assert or write
-     * screenshots — so a developer can smoke-run this suite locally without corrupting baselines
-     * with a Windows-rendered PNG.
+     * ADR tech/0008: baselines are only asserted-against/written in CI. Off-CI, specs still
+     * navigate/render but don't assert/write, so a developer can smoke-run locally without
+     * corrupting baselines with a Windows-rendered PNG.
      */
     ignoreSnapshots: !process.env.CI,
     /*
-     * The `e2e` project creates real accounts on the shared nonprod backend and refuses to run at
-     * all without a working reset capability (`e2e/global-setup.ts`, `SETUP.md`) — a hard
-     * precondition, not best-effort cleanup. Only wired in when this run actually includes `e2e`,
-     * so a `visual`-only invocation (which never touches nonprod) is unaffected.
+     * `e2e` creates real accounts on the shared nonprod backend and refuses to run at all without
+     * a working reset capability (`e2e/global-setup.ts`, `SETUP.md`) — a hard precondition, only
+     * wired in when this run actually includes `e2e`.
      */
     globalSetup: includesProject("e2e") ? "./e2e/global-setup.ts" : undefined,
     webServer: runsOnlyProject("visual")
@@ -99,12 +90,9 @@ export default defineConfig({
                 ...devices["Desktop Chrome"],
                 baseURL: `http://localhost:${String(PORT)}`,
                 /*
-                 * Desktop Chrome's default 1280x720 viewport is far larger than any current
-                 * primitive needs — a block/flex story wrapper without an explicit width
-                 * stretches to fill it (standard CSS, not a Storybook quirk), so most baselines
-                 * were mostly whitespace. 640x480 leaves headroom for a multi-button "Sizes"
-                 * story and future, larger primitives (Modal, Dropdown) without the previous
-                 * 1280px-wide waste on today's single-control stories.
+                 * Desktop Chrome's default 1280x720 is far larger than any primitive needs — an
+                 * unstretched story wrapper made most baselines mostly whitespace. 640x480 leaves
+                 * headroom for larger primitives without that waste.
                  */
                 viewport: { width: 640, height: 480 },
             },

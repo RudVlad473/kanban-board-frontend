@@ -63,6 +63,38 @@ Unwind trigger: commit-time lint/format speed becomes a measured,
 recurring pain point for the solo developer → re-evaluate the
 Biome-as-formatter-only hybrid (Option B).
 
+## ESLint 10 compatibility workarounds (added during D-22's comment sweep, plan `02.1-14`)
+
+`eslint.config.mjs` accumulated several ESLint 10-specific workarounds as the toolchain was
+upgraded past the version this record originally evaluated. Recorded here in full so the config
+file itself can carry a one-line pointer instead of the reproduction detail (CONVENTIONS.md PC-05).
+
+- **`eslint-plugin-react`'s version-probe crash.** `eslint-plugin-react@7.37.5` (bundled by
+  `eslint-config-next@16.3.0`) has no ESLint 10 support yet: its `"detect"` React-version
+  auto-probe calls the removed `context.getFilename()` method and crashes the linter outright.
+  This is an upstream gap, not a config bug — verified by reproducing the crash against
+  `eslint-config-next` alone, isolated from every other rule in the file. Pinning the version
+  explicitly (`settings.react.version`) skips the auto-probe entirely, which is itself the
+  plugin's documented alternative to `"detect"`, not a hack.
+- **`import-x` replacing `eslint-plugin-import`.** `eslint-plugin-import@2.32.0`'s `import/order`
+  fixer calls `sourceCode.getTokenOrCommentBefore`, a legacy `SourceCode` method ESLint 10 removed
+  outright — it crashes the linter on any out-of-order import, not just an edge case.
+  CONVENTIONS.md/D-26p names `eslint-plugin-import`/`import-x` as interchangeable for this rule;
+  `import-x` is the actively-maintained fork with a declared ESLint 10 peer range (verified:
+  `peerDependencies eslint "^8.57.0 || ^9.0.0 || ^10.0.0"`), so it is used instead.
+- **`allowDefaultProject` for root-level config/script files.** Root-level `*.config.{mjs,ts}`
+  files sit outside `tsconfig.json`'s `include` (they configure the tools that read `tsconfig`,
+  not application code) — `allowDefaultProject` lets the type-aware ESLint tier parse them via a
+  synthetic default project instead of erroring that they weren't found by the project service.
+  Only `*.mjs`/`*.js` config files need this; `*.ts` config files (`next.config.ts`) are already
+  covered by `tsconfig.json`'s own `**/*.ts` include, and listing them in both places conflicts
+  ("found in the project service" vs. "allowDefaultProject").
+- **`disableTypeChecked` for the same config/script files.** Files that only get a synthetic
+  "default project" (no real `tsconfig`) see Node ESM globals like `import.meta.dirname` come back
+  untyped/"error"-typed, which trips `strictTypeChecked`'s unsafe-assignment/misused-spread rules
+  on the config file itself. Type-aware linting adds no real value for tooling scripts anyway, so
+  it is turned off for just `*.config.mjs`/`*.config.js`/`scripts/*.mjs`.
+
 Sources:
 - https://biomejs.dev/linter/rules/use-sorted-classes/ — fetched
   2026-08-09 (primary-docs).

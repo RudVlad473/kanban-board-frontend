@@ -19,13 +19,11 @@ const eslintConfig = defineConfig([
     {
         languageOptions: {
             parserOptions: {
-                // Root-level *.config.{mjs,ts} files sit outside tsconfig.json's `include` (they
-                // configure the tools that read tsconfig, not application code) — allowDefaultProject
-                // lets the type-aware tier parse them via a synthetic default project instead of
-                // erroring that they weren't found by the project service.
-                // Only *.mjs/*.js config files need this — *.ts config files (next.config.ts) are
-                // already covered by tsconfig.json's own `**/*.ts` include and listing them here too
-                // conflicts ("found in the project service" vs "allowDefaultProject").
+                /*
+                 * Root-level `*.config.mjs`/`*.config.js` files sit outside tsconfig.json's
+                 * `include`; `allowDefaultProject` parses them via a synthetic default project
+                 * instead (see docs/adr/tech/0007).
+                 */
                 projectService: {
                     allowDefaultProject: ["*.config.mjs", "*.config.js", "scripts/*.mjs"],
                 },
@@ -34,11 +32,9 @@ const eslintConfig = defineConfig([
         },
     },
     /*
-     * *.config.mjs/*.config.js files (and scripts/*.mjs, standalone Node build scripts outside
-     * the app's TS project) only get a synthetic "default project" (no real tsconfig), so Node
-     * ESM globals like `import.meta.dirname` come back untyped/"error"-typed there and trip
-     * strictTypeChecked's unsafe-assignment/misused-spread rules on this very file. Type-aware
-     * linting adds no real value for tooling scripts anyway — turn it off for just these files.
+     * These files only get a synthetic "default project" (no real tsconfig), so Node ESM globals
+     * come back untyped and trip strictTypeChecked's rules — type-aware linting adds no value for
+     * tooling scripts, so it's turned off for just these (see docs/adr/tech/0007).
      */
     {
         files: ["*.config.mjs", "*.config.js", "scripts/*.mjs"],
@@ -48,13 +44,10 @@ const eslintConfig = defineConfig([
     // 2. Next.js recommended + core-web-vitals rules.
     ...nextVitals,
     ...nextTs,
-    // eslint-plugin-react@7.37.5 (bundled by eslint-config-next@16.3.0) has no ESLint 10 support
     /*
-     * yet: its "detect" React-version auto-probe calls the removed `context.getFilename()` method
-     * and crashes the linter outright (upstream gap, not a config bug — verified by reproducing
-     * the crash against eslint-config-next alone, isolated from every other rule in this file).
-     * Pinning the version explicitly skips that auto-probe entirely, which is itself the plugin's
-     * documented alternative to "detect", not a hack.
+     * eslint-plugin-react@7.37.5 has no ESLint 10 support yet — its "detect" version auto-probe
+     * crashes the linter (upstream gap, verified in isolation). Pinning the version explicitly
+     * skips the auto-probe entirely (see docs/adr/tech/0007).
      */
     { settings: { react: { version: "19.2.8" } } },
 
@@ -67,9 +60,8 @@ const eslintConfig = defineConfig([
 
     /*
      * 3a. `@next/next/no-img-element` escalated to error (ships as warn in core-web-vitals) — same
-     * "raw HTML element bypassing a Next-provided optimized equivalent" failure class as the raw
-     * `<a>` ban below (8f), and confirmed by a probe file this project has zero existing `<img>`
-     * usage to migrate, so there is nothing for this escalation to break.
+     * "raw HTML element bypassing a Next-provided optimized equivalent" class as the raw `<a>` ban
+     * below (8f); a probe confirmed zero existing `<img>` usage to migrate.
      */
     {
         rules: {
@@ -110,10 +102,9 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 4c. Ban inline `import("module").Type` type queries — no typescript-eslint rule targets
-     * this node type directly (consistent-type-imports only covers top-level ImportDeclaration),
-     * so a plain AST selector on TSImportType is the lightest way to enforce a top-level
-     * `import type { Type } from "module"` instead.
+     * 4c. Ban inline `import("module").Type` type queries — no typescript-eslint rule targets this
+     * node type directly, so a plain AST selector on TSImportType enforces a top-level
+     * `import type` instead.
      */
     {
         rules: {
@@ -129,13 +120,9 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 5. Import order/grouping (D-26p), with the TS path-alias resolver so internal aliases
-     * resolve correctly instead of reporting as unresolved. eslint-plugin-import@2.32.0's
-     * import/order fixer calls `sourceCode.getTokenOrCommentBefore`, a legacy SourceCode method
-     * ESLint 10 removed outright — it crashes the linter on ANY out-of-order import, not just an
-     * edge case. CONVENTIONS.md/D-26p names `eslint-plugin-import`/`import-x` as interchangeable
-     * for this rule; import-x is the actively-maintained fork with a declared ESLint 10 peer range
-     * (verified: peerDependencies eslint "^8.57.0 || ^9.0.0 || ^10.0.0"), so it's used here instead.
+     * 5. Import order/grouping (D-26p) — eslint-plugin-import's fixer crashes under ESLint 10
+     * (removed SourceCode method); import-x is the actively-maintained, ESLint-10-compatible fork
+     * used here instead (see docs/adr/tech/0007).
      */
     {
         plugins: {
@@ -204,19 +191,9 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 7. Feature-boundary enforcement (CONVENTIONS.md's no-cross-feature-import rule) plus the
-     * three-ring `lib/` split (GC-25/GC-28). `src/lib/` is now three disjoint rings — `lib-core`
-     * (pure, framework-agnostic), `lib-server` (server-only, every file opens `import "server-only"`),
-     * and `lib-client` (browser/React-runtime infra) — with no flat file left directly under
-     * `src/lib/`. Plans 01-36 and 01-37 moved every file into a ring a few at a time behind a
-     * transitional element scaffold that kept lint green while files were still flat; 01-37 Task 3
-     * removed that scaffold once the last flat file moved, leaving only the strict ring
-     * directionality below.
-     *
-     * Ring directionality (GC-25): `lib-core` never reaches `lib-server`/`lib-client`; `lib-server`/
-     * `lib-client` may each reach `lib-core` and themselves but never each other. This is the
-     * mechanical control that prevents a server-only, secret-holding module's dependency chain from
-     * reaching browser-bundled code (the class of bug that produced the 01-33 Storybook stub).
+     * 7. Feature-boundary enforcement plus the three-ring `lib/` split (GC-25/GC-28) — prevents a
+     * server-only module's dependency chain from reaching browser-bundled code, the defect class
+     * that produced the 01-33 Storybook stub (see CONVENTIONS.md, 01-37-SUMMARY.md).
      */
     {
         plugins: {
@@ -262,12 +239,9 @@ const eslintConfig = defineConfig([
                         },
                         {
                             /*
-                             * `layout -> feature` added this phase: CONVENTIONS.md's own placement
-                             * rule (step 4) already describes `components/layout/` as "domain-aware
-                             * layout/chrome" — Sidebar composing `features/boards`'s `useBoards()`
-                             * (02-RESEARCH.md's Recommended Project Structure) is exactly that, not
-                             * a new category of coupling. `feature -> layout` was already allowed
-                             * above; this is the read direction that composition actually needs.
+                             * `layout -> feature` added this phase — CONVENTIONS.md's placement rule
+                             * already treats `components/layout/` as domain-aware chrome (Sidebar
+                             * composing `useBoards()`); this is the read direction composition needs.
                              */
                             from: { element: { type: "layout" } },
                             allow: [
@@ -302,14 +276,9 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 7b. Storybook stories and behavioral tests are dev-only fixtures, never imported by
-     * production code (Storybook's own build entry point globs *.stories.tsx directly; *.test.tsx
-     * is only ever imported by the test runner) — a story or test composing a sibling primitive
-     * for a realistic fixture (e.g. Modal's footer stories/tests composing Button) is not the same
-     * "ui" primitives silently coupling to each other at runtime that policy 7 exists to prevent.
-     * Scoped to *.stories.tsx and *.test.tsx only; modal.tsx itself (and every other primitive's
-     * own implementation file) still cannot import a sibling primitive. Extended to *.test.tsx in
-     * plan 01-25 (Modal's isLoading-dismissal test composing Button, same rationale as stories).
+     * 7b. Storybook stories/behavioral tests are dev-only fixtures never imported by production
+     * code — a story/test composing a sibling primitive (e.g. Modal's stories composing Button)
+     * isn't the runtime coupling policy 7 exists to prevent. Scoped to *.stories.tsx/*.test.tsx only.
      */
     {
         files: ["src/components/ui/**/*.stories.tsx", "src/components/ui/**/*.test.tsx"],
@@ -343,14 +312,9 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 8c. Every function is a `const` bound to an arrow function expression, never a `function`
-     * declaration or function expression (ADR tech/0015) — except Next.js framework-forced
-     * default-export files, which declare the arrow-const normally and `export default` it on
-     * its own line. `allowObjectProperties: true` leaves class methods and object-literal method
-     * shorthand alone, per the ADR's own carve-out; every other option is the plugin's default
-     * (converts both declarations and expressions). `func-style` is a backstop against bare
-     * function declarations specifically, in case a future rule/plugin change ever narrows what
-     * `prefer-arrow-functions` itself catches.
+     * 8c. Every function is a `const` arrow function, never a `function` declaration/expression
+     * (ADR tech/0015), except Next.js framework-forced default-export files. `func-style` backstops
+     * `prefer-arrow-functions` in case a future rule change narrows what it catches.
      */
     {
         plugins: {
@@ -374,13 +338,9 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 8d. Multi-param functions take one destructured object parameter, not positional args
-     * (ADR tech/0016) — except a function/arrow expression sitting directly in a call/new
-     * argument list, whose arity is dictated by the API it's passed to (array-method callbacks,
-     * Promise executors, forwardRef, event handlers) and which this project cannot reshape.
-     * Each selector targets a *declaration* site (variable/class-method/object-method), which is
-     * exactly what excludes an inline callback argument — that arrow/function's parent is a
-     * CallExpression/NewExpression argument, never a VariableDeclarator/MethodDefinition/Property.
+     * 8d. Multi-param functions take one destructured object parameter, not positional args (ADR
+     * tech/0016), except a function/arrow expression whose arity is API-dictated (e.g. array-method
+     * callbacks, forwardRef) — each selector targets a declaration site, excluding those.
      */
     {
         rules: {
@@ -415,16 +375,8 @@ const eslintConfig = defineConfig([
                 },
                 /*
                  * 8f. Ban a raw `<a>` JSX element outright — `@next/next/no-html-link-for-pages`
-                 * (already active via `nextVitals` above) only fires on a static string-literal
-                 * `href`; it silently passes on `href={boardDetail(board.id)}` or any other
-                 * non-literal expression, because it can't statically evaluate arbitrary JS to know
-                 * the target is an internal route. That gap shipped a real bug this phase (02-08):
-                 * a `Sidebar` board row using a raw `<a>` instead of `next/link`'s `Link`, causing a
-                 * full page reload on every click instead of a client-side transition — passed type
-                 * -check and looked identical in a screenshot. This selector fires on every `<a>`
-                 * regardless of what its `href` expression is, forcing each one to be a conscious,
-                 * justified `// eslint-disable-next-line no-restricted-syntax` rather than an
-                 * unreviewed copy-paste.
+                 * only fires on a static string-literal `href`, missing a computed one; this gap
+                 * shipped a real full-page-reload bug in phase 02-08 (see 02-08-SUMMARY.md).
                  */
                 {
                     selector: "JSXOpeningElement[name.name='a']",
@@ -436,12 +388,9 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 8d-2. D-04/D-19: no vi.mock/vi.spyOn outside Storybook stories. Uses no-restricted-properties
-     * rather than no-restricted-syntax: flat config replaces (not merges) a rule's whole config
-     * per matching file, so a second no-restricted-syntax block here would have silently dropped
-     * section 8d's raw-<a>/positional-arg/TSImportType selectors for every .ts/.tsx file — a
-     * distinct rule ID keeps both independent. Kept at "warn" (13 existing offenders) — plan
-     * 02.1-15 raises this to "error" once the retrofit sweep lands; policy text: docs/adr/tech/0020.
+     * 8d-2. D-04/D-19: no vi.mock/vi.spyOn outside Storybook stories (docs/adr/tech/0020) — a
+     * distinct rule ID (not another no-restricted-syntax block, which would replace 8d's own) keeps
+     * both independent. "warn" for now; plan 02.1-15 raises this to "error" once the retrofit lands.
      */
     {
         files: ["**/*.{ts,tsx}"],
