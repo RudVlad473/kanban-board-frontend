@@ -1,33 +1,76 @@
-import { expect, it, vi } from "vitest";
+/*
+ * Composed from the plain React renderer package, not @storybook/nextjs-vite — the latter's main
+ * entry eagerly imports real Next.js internals this "browser" project deliberately does not load
+ * (vitest.setup.ts documents this in full; sidebar.test.tsx is the proven precedent).
+ */
+import { composeStories } from "@storybook/react";
+import { screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { Switch } from "./switch";
+import * as stories from "./switch.stories";
+
+const { Off, On, Disabled } = composeStories(stories);
 
 /*
- * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
- * blanket regression net rather than a hand-picked set of viewport-conditional assertions.
- * Switch has no viewport-conditional behavior of its own (confirmed in the ADR tech/0010 mobile
- * review — fixed-size tracks, no md:/lg: classes) — every test here runs identically at both
- * sizes, which is itself the point.
+ * composeStories' `.run()` and vitest-browser-react's `render()` don't clean up after each
+ * other — wipe the page body between tests so the two mechanisms never collide.
+ */
+afterEach(() => {
+    document.body.innerHTML = "";
+});
+
+/*
+ * ADR tech/0014: every primitive's suite runs at both viewports by default; Switch has no
+ * viewport-conditional behavior of its own (ADR tech/0010 mobile review).
  */
 describeForEachDevice({
     name: "Switch",
     body: () => {
+        /*
+         * Shallow: copy, prop-driven aria/disabled rendering — asserted through composed stories
+         * (D-08). Switch is a controlled component that does not self-toggle (see below), so only
+         * static rendered states belong here — any toggle transition is Deep interaction behaviour.
+         */
         it("is found by role switch with the label as its accessible name, and renders no visible text", async () => {
-            // Arrange
-            const screen = await render(<Switch label="Toggle dark mode" />);
-
             // Act
-            const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
+            await Off.run();
 
             // Assert
-            await expect.element(toggle).toBeVisible();
-            expect(toggle.element().textContent).toBe("");
+            const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
+            expect(toggle).toBeInTheDocument();
+            expect(toggle.textContent).toBe("");
         });
 
+        it("exposes an on/checked state to assistive technology when checked, and does not when unchecked", async () => {
+            // Act
+            await On.run();
+
+            // Assert
+            expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute("aria-checked", "true");
+        });
+
+        it("exposes an off/unchecked state to assistive technology when unchecked", async () => {
+            // Act
+            await Off.run();
+
+            // Assert
+            expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute("aria-checked", "false");
+        });
+
+        it("renders disabled and keeps its accessible name when isDisabled", async () => {
+            // Act
+            await Disabled.run();
+
+            // Assert
+            expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute("aria-disabled", "true");
+        });
+
+        // Deep: real pointer/keyboard interaction and layout measurement — stay direct renders.
         it("is reachable by keyboard tab order and toggles on Space", async () => {
             // Arrange
             const onCheckedChange = vi.fn();
@@ -72,26 +115,11 @@ describeForEachDevice({
             await toggle.click();
 
             /*
-             * Assert — the callback fires with the intended next value, but the rendered state stays
-             * unchecked because the parent never fed `isChecked` back in — this is the property plan
-             * 01-14 relies on to revert the toggle when persistence fails.
+             * Assert — the callback fires, but the render stays unchecked (a real controlled component;
+             * plan 01-14 relies on this to revert the toggle when persistence fails).
              */
             expect(onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
             await expect.element(toggle).toHaveAttribute("aria-checked", "false");
-        });
-
-        it("exposes an on/checked state to assistive technology when checked, and does not when unchecked", async () => {
-            // Arrange
-            const checkedScreen = await render(<Switch label="On" defaultChecked />);
-            const uncheckedScreen = await render(<Switch label="Off" />);
-
-            // Act
-            const checkedToggle = checkedScreen.getByRole("switch", { name: "On" });
-            const uncheckedToggle = uncheckedScreen.getByRole("switch", { name: "Off" });
-
-            // Assert
-            await expect.element(checkedToggle).toHaveAttribute("aria-checked", "true");
-            await expect.element(uncheckedToggle).toHaveAttribute("aria-checked", "false");
         });
 
         it("has an interactive area of at least 44 x 44 CSS pixels at every size, including sm", async () => {
