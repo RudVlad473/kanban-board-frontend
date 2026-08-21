@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
@@ -92,7 +93,7 @@ describe("updateThemeAction", () => {
 
         // Assert
         expect(result).toEqual({ status: "success", theme: THEME.DARK });
-        expect(mockedPut).toHaveBeenCalledExactlyOnceWith("/users/me/theme", {
+        expect(mockedPut).toHaveBeenCalledExactlyOnceWith(EXTERNAL_PATH.USER_THEME, {
             params: { query: { userId: validRecord.id } },
             body: { theme: THEME.DARK },
         });
@@ -167,7 +168,7 @@ describe("updateThemeAction", () => {
                 title: "Internal Server Error",
                 status: 500,
                 detail: "Something went wrong",
-                instance: "/users/me/theme",
+                instance: EXTERNAL_PATH.USER_THEME,
                 code: "INTERNAL_ERROR",
             },
         });

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { PROBLEM_CODE, type ProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { THEME } from "@/lib/core/theme/theme";
@@ -113,7 +114,7 @@ const buildProblemDetail = ({
     title: "Problem",
     status: 401,
     detail: "Rejected",
-    instance: "/signin",
+    instance: EXTERNAL_PATH.SIGN_IN,
     code,
     ...(errors ? { errors } : {}),
 });

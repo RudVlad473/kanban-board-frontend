@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { THEME } from "@/lib/core/theme/theme";
 import { externalApi } from "@/lib/server/server-client";
@@ -51,7 +52,7 @@ describe("server-client session bridge (real backend)", () => {
     it("bridges a signed-in user's session to an authenticated upstream call, and refuses the same call without one", async () => {
         // Arrange — create a randomised account against the real backend.
         const email = `integration-${randomUUID()}@example.com`;
-        const signUpResult = await externalApi.POST("/signup", {
+        const signUpResult = await externalApi.POST(EXTERNAL_PATH.SIGN_UP, {
             body: { email, password: TEST_PASSWORD, displayName: TEST_DISPLAY_NAME },
         });
 
@@ -75,7 +76,9 @@ describe("server-client session bridge (real backend)", () => {
         }
 
         // Act (before any session exists) — the identical read, with no bridged credential.
-        const refusedResult = await externalApi.GET("/users/me/theme", { params: { query: { userId: identity.id } } });
+        const refusedResult = await externalApi.GET(EXTERNAL_PATH.USER_THEME, {
+            params: { query: { userId: identity.id } },
+        });
 
         // Assert — refused specifically with the unauthenticated code, proving the call genuinely needs auth.
         const refusedProblem = parseProblemDetail(refusedResult.error);
@@ -84,7 +87,7 @@ describe("server-client session bridge (real backend)", () => {
 
         // Act — store the session, then repeat the identical call.
         await session.create({ ...identity, displayName: TEST_DISPLAY_NAME, jsessionId });
-        const authenticatedResult = await externalApi.GET("/users/me/theme", {
+        const authenticatedResult = await externalApi.GET(EXTERNAL_PATH.USER_THEME, {
             params: { query: { userId: identity.id } },
         });
 
@@ -105,7 +108,7 @@ describe("server-client session bridge (real backend)", () => {
         });
 
         // Act — the real backend refuses this credential; the response middleware clears the session and redirects.
-        const refusedCall = externalApi.GET("/users/me/theme", {
+        const refusedCall = externalApi.GET(EXTERNAL_PATH.USER_THEME, {
             params: { query: { userId: "00000000-0000-4000-8000-000000000000" } },
         });
 
@@ -117,7 +120,7 @@ describe("server-client session bridge (real backend)", () => {
     it("does not clear the session on a genuinely failed sign-in (wrong password)", async () => {
         // Arrange — a real account with a real, stored session for it.
         const email = `integration-badcred-${randomUUID()}@example.com`;
-        const signUpResult = await externalApi.POST("/signup", {
+        const signUpResult = await externalApi.POST(EXTERNAL_PATH.SIGN_UP, {
             body: { email, password: TEST_PASSWORD, displayName: TEST_DISPLAY_NAME },
         });
         const identity: unknown = signUpResult.data;
@@ -136,7 +139,7 @@ describe("server-client session bridge (real backend)", () => {
         await session.create(storedRecord);
 
         // Act — a genuinely wrong password against the real backend, for the same account.
-        const wrongPasswordResult = await externalApi.POST("/signin", {
+        const wrongPasswordResult = await externalApi.POST(EXTERNAL_PATH.SIGN_IN, {
             body: { email, password: "TotallyWrongPwd9!" },
         });
 

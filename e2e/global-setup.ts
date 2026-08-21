@@ -1,4 +1,5 @@
 import { E2E_EXTERNAL_API_BASE_URL } from "./test-env";
+import { EXTERNAL_PATH } from "../src/lib/core/api-contract/external-paths";
 
 /**
  * Playwright `globalSetup` for the `e2e` project — runs once before any e2e spec, and throwing
@@ -27,14 +28,14 @@ const globalSetup = async (): Promise<void> => {
         );
     }
 
-    const response = await fetch(`${E2E_EXTERNAL_API_BASE_URL}/admin/reset`, {
+    const response = await fetch(`${E2E_EXTERNAL_API_BASE_URL}${EXTERNAL_PATH.ADMIN_RESET}`, {
         method: "POST",
         headers: { "X-Reset-Token": token },
     });
 
     if (!response.ok) {
         throw new Error(
-            `Reset endpoint at ${E2E_EXTERNAL_API_BASE_URL}/admin/reset returned ` +
+            `Reset endpoint at ${E2E_EXTERNAL_API_BASE_URL}${EXTERNAL_PATH.ADMIN_RESET} returned ` +
                 `${String(response.status)} — the e2e suite refuses to run without a working reset ` +
                 "capability. Confirm NONPROD_RESET_TOKEN is correct (see SETUP.md).",
         );
