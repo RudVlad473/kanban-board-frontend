@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 02
 current_phase_name: Board Management
-status: executing
-stopped_at: Phase 02 UI-SPEC approved
-last_updated: "2026-08-20T11:37:43.208Z"
+status: paused
+stopped_at: 02-08 closed (approved as-is, code-review comments deferred to Phase 2.1); starting Phase 2.1 scoping
+last_updated: "2026-08-21T08:47:12.703Z"
 last_activity: 2026-08-20
 last_activity_desc: Phase 02 execution started
-state_head: a0b82f788805b4938af17c2b06a941a8dfec1df2
+state_head: 6847f187261c483b49b14c100585c97816567d50
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 51
-  completed_plans: 38
+  completed_plans: 46
 milestone_name: milestone
 ---
 
@@ -31,8 +31,8 @@ real backend.
 ## Current Position
 
 Phase: 02 (Board Management) — EXECUTING
-Plan: 1 of 13
-Status: Executing Phase 02
+Plan: 8 of 13 (paused — pivoting to Phase 2.1)
+Status: Phase 02 paused after 02-08; starting Phase 2.1 (test-policy overhaul) before resuming
 Last activity: 2026-08-20 — Phase 02 execution started
   to Phase 2. See Session Continuity below for full detail.
 
@@ -112,25 +112,23 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-20T09:37:56.222Z
-Stopped at: Phase 02 UI-SPEC approved
+Last session: 2026-08-21T08:47:12.459Z
+Stopped at: 02-08 closed (approved as-is, code-review comments deferred to Phase 2.1); starting Phase 2.1 scoping
 
-**This session:** Resumed with Phase 01 at 37/38, paused on 01-15 (Vercel deployment) pending
-user account setup. Installed and authenticated the Vercel CLI + MCP, created the
-`kanban-board-frontend` project (auto-linked to GitHub), and set distinct per-environment
-`SESSION_SECRET`/`EXTERNAL_API_BASE_URL` for Production/Preview/Development — unblocking 01-15
-without the manual dashboard walkthrough the plan originally called for. Ran `/gsd-execute-phase
-01`: 01-15 deployed to Preview + Production (both human-verified live against the real backend),
-merged. Ran the phase-closing gauntlet: code review (143 files, 0 critical/3 warning/2 info, no
-security issues), phase-goal verification (first pass: gaps_found — CI's `visual` job had been
-red since 2026-08-17 from 22 missing screenshot baselines). Fixed `visual-baselines.yml` (branch
-restriction + PR-based review, closing a previously-flagged unreviewed-overwrite risk; also fixed
-an unrelated pre-existing bug where it ran the wrong Playwright project), generated and merged
-the missing baselines, confirmed CI green on master, re-verified — passed 6/6. Marked Phase 01
-complete, evolved PROJECT.md (Auth/Theme requirements → Validated, ADR tech/0017 & 0018 decisions
-logged), filed 2 new todos for code-review findings (path traversal in the visual test server,
-theme cookie not cleared on sign-out — both non-blocking).
+**This session:** Resumed with Phase 02 paused mid-checkpoint on plan 02-08 (Task 3, awaiting the
+user's code-review comments). User gave a large batch of code-review feedback (App
+Router/Server-Components question, project-wide no-mocking testing policy, RTL vs Vitest Browser
+Mode for hooks, a typed reusable cookie client to replace `themeCookie`/`upstreamCookie`, an
+abstract mock-entity-creation class, enum'd test constants, `isBoard`/`isBoardArray` placement,
+OpenAPI-generated route constants, `boardDetail` naming) and explicitly deferred all of it to a
+new inserted phase 2.1, choosing to close 02-08 first ("as-is") rather than implement any of it
+now. Closed 02-08: wrote SUMMARY.md (capturing the deferred-2.1 scope in full), merged
+`worktree-agent-aff6e55fca144924a` into master, removed the worktree, updated ROADMAP/STATE
+tracking. Next: scope and insert Phase 2.1 (urgent decimal insertion) to carry this deferred
+work plus the broader test-strategy overhaul (no-mocking outside Storybook, curl-based seeding,
+Storybook-story-driven component tests, e2e limited to real happy-path business logic) applied
+retroactively across Phase 1 and Phase 2.
 
-Resume file: C:/Dev/Repos/kanban-board-frontend/.planning/phases/02-board-management/02-UI-SPEC.md
+Resume file: None
 Next step: `/gsd-discuss-phase 2` or `/gsd-plan-phase 2` to start Board Management (no CONTEXT.md
 exists yet for Phase 2).

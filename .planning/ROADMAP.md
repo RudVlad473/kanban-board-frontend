@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 7/13 plans executed
+**Plans**: 8/13 plans executed
 
 Plans:
 
@@ -254,7 +254,7 @@ narrow path before any breadth is added:
 
 **Wave 6** *(blocked on 02-06)*
 
-- [ ] 02-08-PLAN.md — TRACER: sidebar lists real boards end to end through a BFF Route Handler (BOARD-01)
+- [x] 02-08-PLAN.md — TRACER: sidebar lists real boards end to end through a BFF Route Handler (BOARD-01)
 
 **Wave 7** *(blocked on 02-08)*
 
@@ -331,6 +331,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 7/13 | In Progress|  |
+| 2. Board Management | 8/13 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
