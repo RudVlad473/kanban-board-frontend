@@ -8,19 +8,9 @@ import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 /*
- * D-18: 16/20/24px boxes for sm/md/lg, with the tick glyph inset 4px (`space-1`) on every side —
- * box size minus 2*4px gives the exact glyph sizes below. `peer` (on the root) lets the sibling
- * Field.Label react to the root's own `data-checked` attribute via `peer-data-[checked]:*`,
- * working for both controlled (`isChecked`) and uncontrolled (`defaultChecked`) usage since it
- * reads the live DOM attribute rather than React state.
- *
- * GC-14 (plan 01-23) finding: `Checkbox.Root` renders a `role="checkbox"` <span> (not a native
- * `<button>`/`<input>`), so it only ever receives `data-disabled`/`aria-disabled` when disabled —
- * never the real DOM `disabled` attribute a CSS `:disabled` pseudo-class needs to match. The base
- * classes below use `data-[disabled]:*` (the same presence-based convention as `data-[checked]:*`)
- * rather than `disabled:*`, which never matched on this element and silently no-opped the grayed-
- * out treatment for `isDisabled` — a pre-existing bug this plan's `isLoading` (composing into the
- * same disabled state) would otherwise have inherited.
+ * D-18: 16/20/24px boxes, glyph inset 4px on every side; `peer` lets the sibling Field.Label react
+ * to `data-checked`. Base classes use `data-[disabled]:*`, not `disabled:*` — GC-14 found the
+ * latter never matches this non-native `role="checkbox"` span (see 01-23-SUMMARY.md).
  */
 const checkboxVariants = cva(
     "peer inline-flex shrink-0 items-center justify-center rounded-sm border bg-bg-surface transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none data-[checked]:border-transparent data-[checked]:bg-bg-primary data-[checked]:text-text-on-primary data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 [&_svg]:shrink-0",
@@ -40,10 +30,9 @@ const checkboxVariants = cva(
                 error: "border-border-danger",
             },
             /*
-             * GC-14 (plan 01-23): mirrors `text-field.tsx`'s `isBusy` axis. The grayed-out opacity
-             * treatment itself is already delivered by the base `data-[disabled]:opacity-50` class
-             * the moment `Checkbox.Root` receives the composed disabled state — this axis only adds
-             * the cursor affordance.
+             * GC-14: mirrors `text-field.tsx`'s `isBusy` axis — the grayed-out look already comes
+             * from base `data-[disabled]:opacity-50`, this axis only adds the cursor affordance
+             * (see 01-23-SUMMARY.md).
              */
             isBusy: {
                 true: "cursor-progress",
@@ -66,12 +55,9 @@ type Props = Omit<ComponentProps<typeof BaseCheckbox.Root>, "className" | "disab
         isChecked?: boolean;
         isDisabled?: boolean;
         /**
-         * Transient "a request is in flight" state — distinct from `isDisabled`'s static
-         * availability statement. Composes with it (either makes the control non-activatable) via
-         * `Field.Root`'s single `disabled` propagation point, the same one `isDisabled` already
-         * uses — no second, parallel `disabled` prop on `Checkbox.Root`. No spinner glyph: the tick
-         * box has no room for one, and the grayed-out opacity `isDisabled` already produces is what
-         * a loading checkbox looks like too.
+         * Transient "a request is in flight" state; composes with `isDisabled` via `Field.Root`'s
+         * single `disabled` propagation point, no second parallel prop. No spinner glyph — the
+         * tick box has no room, and `isDisabled`'s grayed-out opacity already reads as loading too.
          */
         isLoading?: boolean;
         hasError?: boolean;
@@ -96,11 +82,9 @@ export const Checkbox = ({
 }: Props) => {
     return (
         /*
-         * Field.Root/Checkbox.Root/Field.Label wire up label association and invalid marking
-         * from the library rather than hand-rolled bookkeeping (D-15). `disabled` on Field.Root
-         * propagates to Checkbox.Root automatically, so `isDisabled` only needs to be set once —
-         * `isLoading` (GC-14, plan 01-23) composes into this same expression rather than adding a
-         * second, parallel `disabled` prop on `Checkbox.Root`.
+         * Field.Root/Checkbox.Root/Field.Label wire up label association and invalid marking from
+         * the library, not hand-rolled bookkeeping (D-15). `disabled` propagates to Checkbox.Root
+         * automatically; `isLoading` (GC-14) composes into that same expression (see 01-23-SUMMARY.md).
          */
         <Field.Root
             invalid={hasError}
