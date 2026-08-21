@@ -19,6 +19,8 @@ const signIn = async ({ page, account }: { page: Page; account: SeededAccount })
 
 test.describe("AUTH-03: route guard", () => {
     test("redirects an unauthenticated visitor away from the board list and never paints it", async ({ page }) => {
+        // Arrange — no setup: an unauthenticated visitor is this test's own starting state.
+
         // Act
         await page.goto(ROUTE.BOARDS);
 
@@ -34,6 +36,8 @@ test.describe("AUTH-03: route guard", () => {
     test("redirects an unauthenticated visitor away from a board detail path, covering the /boards prefix", async ({
         page,
     }) => {
+        // Arrange — no setup: an unauthenticated visitor is this test's own starting state.
+
         // Act
         await page.goto(`${ROUTE.BOARDS}/some-board-id`);
 

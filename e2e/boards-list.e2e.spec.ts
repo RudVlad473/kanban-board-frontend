@@ -28,9 +28,13 @@ test.describe("BOARD-01: sidebar board list", () => {
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
         // Assert
+        /*
+         * Structural: the sidebar lists exactly the two seeded boards, by link count, not by the
+         * caption's exact wording (that copy is covered by sidebar.test.tsx, D-05).
+         */
         const sidebar = page.getByRole("navigation", { name: "Boards" });
-        await expect(sidebar.getByText("ALL BOARDS (2)")).toBeVisible();
         await expect(sidebar.getByRole("link", { name: firstBoardName })).toBeVisible();
         await expect(sidebar.getByRole("link", { name: secondBoardName })).toBeVisible();
+        await expect(sidebar.getByRole("link")).toHaveCount(2);
     });
 });
