@@ -43,6 +43,15 @@ export const ErrorFallback = ({ title, description, digest, onRetry, homeHref }:
                     </Button>
 
                     {homeHref ? (
+                        /*
+                         * A plain anchor, not next/link's `Link` — this is a hard-crash recovery
+                         * surface (`app/(dashboard)/error.tsx`/`app/global-error.tsx`), where a full
+                         * page reload is the deliberately safer choice: it discards whatever
+                         * in-memory state (React tree, TanStack Query cache) triggered or was left
+                         * corrupted by the error, rather than carrying it forward via a client-side
+                         * transition.
+                         */
+                        // eslint-disable-next-line no-restricted-syntax -- see comment above
                         <a href={homeHref} className="text-bg-primary hover:text-bg-primary-hover">
                             Back to boards
                         </a>

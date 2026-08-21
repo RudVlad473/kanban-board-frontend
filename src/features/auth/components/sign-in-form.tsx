@@ -195,6 +195,7 @@ export const SignInForm = ({
                  */}
                 {"Don't have an account? "}
 
+                {/* eslint-disable-next-line no-restricted-syntax -- see comment above: intentional full navigation, next/link unusable in this project's test environment */}
                 <a href={ROUTE.SIGN_UP} className="text-bg-primary hover:text-bg-primary-hover">
                     Create Account
                 </a>

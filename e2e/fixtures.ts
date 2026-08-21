@@ -23,6 +23,29 @@ export type FixtureAccount = {
     email: string;
     password: string;
     displayName: string;
+    /**
+     * The backend's own session credential, bridged from the sign-up response's `Set-Cookie`
+     * header — lets `createFixtureBoard` seed data using this same sign-up session instead of
+     * spending the account's two-concurrent-session budget on a second sign-in of its own.
+     */
+    jsessionId: string;
+};
+
+/**
+ * Playwright's `response.headers()` collapses repeated headers (like `Set-Cookie`, which the
+ * backend may send more than once) into a single combined string — `headersArray()` is the one
+ * that preserves each occurrence as its own entry, which is what a raw `JSESSIONID=...` value
+ * needs to survive intact.
+ */
+const extractJsessionId = (headers: { name: string; value: string }[]): string => {
+    const setCookieHeaders = headers.filter((header) => header.name.toLowerCase() === "set-cookie");
+    const jsessionCookie = setCookieHeaders.find((header) => header.value.startsWith("JSESSIONID="));
+
+    if (!jsessionCookie) {
+        throw new Error("extractJsessionId: no JSESSIONID cookie found in the response's Set-Cookie headers.");
+    }
+
+    return jsessionCookie.value.split(";")[0]?.split("=")[1] ?? "";
 };
 
 /**
@@ -37,7 +60,10 @@ export type FixtureAccount = {
  * (`kanban-board-backend/docs/AUTH_FLOWS.md`, "What will break your E2E suite") and answers a
  * third sign-in attempt with the exact same `401` a wrong password produces, so a shared fixture
  * would fail under parallel workers as an indistinguishable, mysterious credentials error. Do not
- * "optimise" this into one shared demo account.
+ * "optimise" this into one shared demo account. Fixtures that seed data (`createFixtureBoard`) use
+ * this sign-up session's own credential rather than signing in a second time — a spec that also
+ * needs to sign in through the real form (e.g. `boards-list.e2e.spec.ts`) still has exactly one
+ * sign-in left after seeding.
  */
 export const createFixtureAccount = async (request: APIRequestContext): Promise<FixtureAccount> => {
     const email = `e2e-${randomUUID()}@example.com`;
@@ -54,6 +80,38 @@ export const createFixtureAccount = async (request: APIRequestContext): Promise<
     }
 
     const body = (await response.json()) as { id: string; email: string; displayName: string };
+    const jsessionId = extractJsessionId(response.headersArray());
 
-    return { id: body.id, email: body.email, displayName: body.displayName, password: FIXTURE_PASSWORD };
+    return { id: body.id, email: body.email, displayName: body.displayName, password: FIXTURE_PASSWORD, jsessionId };
+};
+
+/**
+ * Seeds one board directly against the real backend's own `/boards` route, using the fixture
+ * account's sign-up session (`jsessionId`) rather than a fresh sign-in — a fixture is setup, not
+ * the behaviour under test, and this keeps the account's two-concurrent-session budget untouched
+ * for whatever sign-in the spec itself still needs to perform.
+ */
+export const createFixtureBoard = async ({
+    request,
+    account,
+    name,
+}: {
+    request: APIRequestContext;
+    account: FixtureAccount;
+    name: string;
+}): Promise<{ id: string; name: string; version: number }> => {
+    const response = await request.post(`${E2E_EXTERNAL_API_BASE_URL}/boards`, {
+        params: { userId: account.id },
+        headers: { Cookie: `JSESSIONID=${account.jsessionId}` },
+        data: { name },
+    });
+
+    if (response.status() !== 201) {
+        const body = await response.text();
+        throw new Error(
+            `createFixtureBoard: expected 201 Created from POST /boards, received ${String(response.status())}: ${body}`,
+        );
+    }
+
+    return (await response.json()) as { id: string; name: string; version: number };
 };

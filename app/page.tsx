@@ -19,10 +19,21 @@ const Home = () => {
                 </p>
 
                 <div className="flex gap-4">
+                    {/*
+                     * Plain anchors, not next/link's `Link` — this landing route is a
+                     * one-time, low-frequency transition (a signed-in visitor never even
+                     * reaches it; `proxy.ts` redirects them to `/boards` first), with no
+                     * client-side state worth preserving across it, matching sign-in-form.tsx/
+                     * sign-up-form.tsx's identical rationale (next/link also relies on
+                     * `process.env`, undefined in this project's plain Vitest Browser Mode test
+                     * environment).
+                     */}
+                    {/* eslint-disable-next-line no-restricted-syntax -- see comment above */}
                     <a href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">
                         Sign In
                     </a>
 
+                    {/* eslint-disable-next-line no-restricted-syntax -- see comment above */}
                     <a href={ROUTE.SIGN_UP} className="text-bg-primary hover:text-bg-primary-hover">
                         Create Account
                     </a>
