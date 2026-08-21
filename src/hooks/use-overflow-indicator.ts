@@ -3,21 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Tracks whether an element's own content overflows its inline-axis box
- * (`scrollWidth > clientWidth`) — the signal a trailing-edge "there's more content" indicator
- * needs to decide whether to render itself at all. Two DOM-change sources are handled
- * automatically:
- * - the element's own box resizing (a `ResizeObserver` on the element), and
- * - its rendered content changing as real DOM nodes/text (a `MutationObserver` watching
- *   `childList`/`characterData`/`subtree`) — covers e.g. a `<span>` whose text content is
- *   replaced by a re-render (Dropdown's selected-value label changing on selection).
- *
- * A native form control's own `.value` property changing on keystroke is neither of those — it's
- * an internal property update, not a DOM mutation a `MutationObserver` observes, and the
- * control's own box doesn't resize as its value grows. Callers whose overflow source is an
- * input's value (TextField) must additionally call the returned `recheck()` from an `onInput`
- * handler (and/or a `value`-keyed effect, for controlled updates that never fire a native input
- * event at all).
+ * Tracks inline-axis content overflow (`scrollWidth > clientWidth`) via a `ResizeObserver` (box
+ * resize) plus a `MutationObserver` (DOM content changes) — the signal a trailing-edge "there's
+ * more content" indicator needs. Full contract, including the `recheck()` caveat below (ADR tech/0021).
  */
 export const useOverflowIndicator = <T extends HTMLElement>() => {
     const ref = useRef<T | null>(null);
@@ -51,5 +39,10 @@ export const useOverflowIndicator = <T extends HTMLElement>() => {
         };
     }, [recheck]);
 
+    /*
+     * A caller whose overflow source is an input's `.value` (TextField) must call `recheck()`
+     * itself, e.g. from `onInput` — a value change on keystroke is neither a resize nor a DOM
+     * mutation this hook observes automatically (ADR tech/0021).
+     */
     return { ref, isOverflowing, recheck };
 };
