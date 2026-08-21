@@ -5,14 +5,9 @@ import { THEME } from "@/lib/core/theme/theme";
 import { ThemeToggle } from "./theme-toggle";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
- * (optimistic ordering, revert-on-failure, keyboard operability) live exclusively in
- * theme-toggle.test.tsx. `appDirectory: true` mirrors sign-in-form.stories.tsx/
- * sign-up-form.stories.tsx's identical setup — this component imports `updateThemeAction`, a
- * `"use server"` Server Action, aliased to a no-op stub for this project only
- * (vitest.config.ts) since no story here ever invokes it for real. Per ADR tech/0011, this
- * component gets no `visual/theme.visual.spec.ts` entry or baseline — visual-regression coverage
- * stays scoped to `components/ui/` primitives for now.
+ * Visual-only CSF3 (D-25); behavioral assertions live in theme-toggle.test.tsx.
+ * `updateThemeAction` resolves through the shared Server Action stub alias (docs/adr/tech/0020),
+ * never invoked for real. Per ADR tech/0011, this component gets no visual-regression baseline.
  */
 const meta: Meta<typeof ThemeToggle> = {
     component: ThemeToggle,

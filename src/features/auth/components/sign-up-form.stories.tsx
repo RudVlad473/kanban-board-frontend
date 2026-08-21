@@ -4,22 +4,15 @@ import { AuthCard } from "./auth-card";
 import { SignUpForm } from "./sign-up-form";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
- * (typing, validation, submit, server error, password reveal) live exclusively in
- * sign-up-form.test.tsx. Every state below is reached through this file's own staging props
- * (`defaultValues`/`forceFieldErrors`/`forceServerError`/`forceSubmitting`/
- * `defaultPasswordRevealed`), the same non-interactive pattern Dropdown/Modal already use via
- * `defaultOpen`. There is no play function here to ever trigger a real submission, so
- * `signUpAction` (the `"use server"` Server Action `SignUpForm` wires through `useActionState`)
- * is referenced but never actually invoked by any story.
+ * Visual-only CSF3 (D-25); behavioral assertions live in sign-up-form.test.tsx. Every state below
+ * is reached through this file's own staging props, the same non-interactive pattern Dropdown/
+ * Modal already use via `defaultOpen` — `signUpAction` is referenced but never actually invoked.
  */
 const meta: Meta<typeof SignUpForm> = {
     component: SignUpForm,
     /*
-     * `@storybook/nextjs-vite` only mounts a working App Router context (rather than throwing
-     * "expected app router to be mounted") once `parameters.nextjs.appDirectory` is set — required
-     * here because the form imports `signUpAction` from a `"use server"` module, which Next.js's
-     * own tooling resolves through the same App Router machinery.
+     * `appDirectory` mounts a working App Router context — required since the form imports
+     * `signUpAction` from a `"use server"` module, resolved through that same machinery.
      */
     parameters: {
         nextjs: {
@@ -64,9 +57,8 @@ export const WithFieldErrors: Story = {
 
 /*
  * The Name-specific and password-complexity messages aren't reachable through `forceFieldErrors`
- * (that staging path only ever produces the required-field message) — staged here instead through
- * their own dedicated force props, the same non-interactive pattern `forceServerError` already
- * uses (D-25: no play function, a visual-only CSF3 story).
+ * (that path only ever produces the required-field message) — staged here through their own
+ * dedicated force props instead, the same non-interactive pattern `forceServerError` uses.
  */
 export const WithNameAndPasswordComplexityErrors: Story = {
     args: {
