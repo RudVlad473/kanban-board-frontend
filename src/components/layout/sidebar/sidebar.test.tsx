@@ -1,13 +1,15 @@
-import { composeStories } from "@storybook/react";
-import { screen } from "@testing-library/react";
-import type { ReactNode } from "react";
-import { expect, test, vi } from "vitest";
 /*
  * Composed from the plain React renderer package, not the Next.js-aware Storybook framework
  * package — the latter's main entry eagerly imports real Next.js internals (`process.env` read at
  * module-evaluation time) that only resolve under the Vite plugin the separate "storybook" Vitest
  * project loads; this "browser" project does not (vitest.setup.ts documents this in full).
  */
+import { composeStories } from "@storybook/react";
+import { screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { expect, test, vi } from "vitest";
+
+import { ROUTE } from "@/lib/core/routing/routes";
 
 import * as stories from "./sidebar.stories";
 
@@ -19,7 +21,7 @@ import * as stories from "./sidebar.stories";
 const mockRefresh = vi.fn();
 
 vi.mock("next/navigation", () => ({
-    usePathname: () => "/boards",
+    usePathname: () => ROUTE.BOARDS,
     useRouter: () => ({ refresh: mockRefresh }),
 }));
 
