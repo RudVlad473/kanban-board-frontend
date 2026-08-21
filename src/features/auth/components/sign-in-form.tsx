@@ -20,10 +20,8 @@ import { ROUTE } from "@/lib/core/routing/routes";
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 
 /**
- * `FormData.get()` returns `FormDataEntryValue | null` (`string | File | null`) — every field in
- * this form is a text input, so a non-string entry never legitimately occurs, but reading it
- * through `String(...)` regardless would silently stringify a `File` to `"[object File]"` rather
- * than surface the mismatch. Returns `""` for anything that isn't already a string.
+ * Narrows `FormData.get()`'s `string | File | null` to `""` on anything but a string — every
+ * field here is text, so a non-string value should surface, not silently stringify.
  */
 const readFormField = ({ formData, key }: { formData: FormData; key: string }): string => {
     const value = formData.get(key);
@@ -44,13 +42,9 @@ type Props = {
 };
 
 /**
- * React Hook Form + Zod sign-in form, mirroring sign-up-form.tsx's structure over `signInSchema` —
- * Email and Password fields, the "Sign In" primary CTA, and the same form-level live error
- * region. Submits through the form element's own `action` (`useActionState` + `signInAction`), so
- * it works before hydration — React Hook Form stays for display-time validation only (`mode:
- * "onTouched"`), never gating submission itself. A rejected sign-in clears the password field
- * (retyping a mistyped password is friction with no security benefit) while leaving the email in
- * place.
+ * React Hook Form + Zod sign-in form submitted via `useActionState` + `signInAction` so it works
+ * pre-hydration; React Hook Form is display-only validation, never gating submission (see
+ * 01-33-SUMMARY.md). A rejected sign-in clears the password field, not the email.
  */
 export const SignInForm = ({
     defaultValues,
@@ -73,12 +67,9 @@ export const SignInForm = ({
     });
 
     /*
-     * React resets every uncontrolled field inside a `<form action={fn}>` once the action settles
-     * — the same progressive-enhancement default a plain HTML form gets after a completed,
-     * non-navigating submission (React's own `requestFormReset`, fired unconditionally by the host
-     * `<form>` component around every action call, success or failure alike). Captured here so it
-     * can be undone selectively below: `null` until the first real submission, so the effect never
-     * fires on mount.
+     * React's `requestFormReset` clears every uncontrolled field once the action settles
+     * (progressive-enhancement default) — captured here so it can be selectively restored below;
+     * `null` until the first real submission so the effect never fires on mount.
      */
     const lastSubmittedRef = useRef<{ email: string; password: string } | null>(null);
     const formAction = (formData: FormData) => {
@@ -90,14 +81,9 @@ export const SignInForm = ({
     };
 
     /*
-     * Undoes React's own reset once the action settles, restoring the email in every case and the
-     * password only when there was no error — a rejected sign-in instead explicitly clears the
-     * password (retyping a mistyped password is friction with no security benefit, and retyping a
-     * correct address is friction with no benefit at all). Keyed on `isActionPending`, not `state`:
-     * a mocked/real resolution that happens to be reference-equal to the previous state (e.g. this
-     * component's own tests resolving back to the shared `AUTH_ACTION_IDLE` constant) would
-     * otherwise never re-run this effect at all, since `useActionState`'s `Object.is` bailout skips
-     * updating `state` for a value identical to what it already held.
+     * Restores email always, clears password on error instead — undoes React's own field reset
+     * once the action settles. Keyed on `isActionPending`, not `state`, since `useActionState`'s
+     * `Object.is` bailout can skip a reference-equal resolution (e.g. tests reusing `AUTH_ACTION_IDLE`).
      */
     useEffect(() => {
         if (isActionPending) {
@@ -121,11 +107,8 @@ export const SignInForm = ({
     const serverErrorMessage = forceServerError ?? (state.status === "error" ? state.message : undefined);
 
     /*
-     * Merge precedence: a client-side field error (React Hook Form's own `formState.errors`, from
-     * `mode: "onTouched"`) takes precedence over one the server function returned for the same
-     * field, because it is the more recent judgement of what the user currently has typed — the
-     * server's field errors reflect the values as of the last submission, which may already be
-     * stale by the time this renders.
+     * Client-side field errors (React Hook Form) take precedence over the server's, since they
+     * reflect the user's current typing rather than the last submission (which may be stale).
      */
     const emailErrorMessage =
         errors.email?.message ?? (state.status === "error" ? state.fieldErrors?.email : undefined);
@@ -155,11 +138,9 @@ export const SignInForm = ({
                         variant="ghost"
                         size="sm"
                         /*
-                         * Ghost's default hover (`hover:bg-bg-app`) fills a visibly-tinted circle
-                         * against the field's own white surface, reading as a jarring blob rather
-                         * than a quiet affordance once nested inside TextField's trailing slot —
-                         * overridden here (not on IconButton itself) since this is specific to icons
-                         * embedded inside an already-bordered input, not ghost buttons generally.
+                         * Ghost's default hover reads as a jarring blob against TextField's white surface —
+                         * overridden here, not on IconButton itself, since this is specific to an icon
+                         * nested in a bordered input.
                          */
                         className="hover:bg-transparent"
                         label={isPasswordRevealed ? "Hide password" : "Show password"}
@@ -189,9 +170,7 @@ export const SignInForm = ({
             <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
                 {/*
                  * A plain anchor, not next/link's `Link` — see sign-up-form.tsx's identical comment
-                 * for the rationale (no client-side router state worth preserving across this
-                 * transition, and next/link relies on `process.env`, undefined in this project's
-                 * plain Vitest Browser Mode test environment).
+                 * for the rationale.
                  */}
                 {"Don't have an account? "}
 
