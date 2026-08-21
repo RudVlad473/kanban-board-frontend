@@ -436,6 +436,36 @@ const eslintConfig = defineConfig([
     },
 
     /*
+     * 8d-2. D-04/D-19: no vi.mock/vi.spyOn outside Storybook stories. Uses no-restricted-properties
+     * rather than no-restricted-syntax: flat config replaces (not merges) a rule's whole config
+     * per matching file, so a second no-restricted-syntax block here would have silently dropped
+     * section 8d's raw-<a>/positional-arg/TSImportType selectors for every .ts/.tsx file — a
+     * distinct rule ID keeps both independent. Kept at "warn" (13 existing offenders) — plan
+     * 02.1-15 raises this to "error" once the retrofit sweep lands; policy text: docs/adr/tech/0020.
+     */
+    {
+        files: ["**/*.{ts,tsx}"],
+        ignores: ["**/*.stories.tsx", "**/*.stories.ts"],
+        rules: {
+            "no-restricted-properties": [
+                "warn",
+                {
+                    object: "vi",
+                    property: "mock",
+                    message:
+                        "Mocking is banned outside Storybook stories (docs/adr/tech/0020). Rewrite the test against the real deployed backend, or — if and only if this stands in for a genuine framework/environment limitation (e.g. next/headers' cookies() has no request scope in Vitest) — add an eslint-disable-next-line no-restricted-properties directive whose trailing reason names that specific limitation.",
+                },
+                {
+                    object: "vi",
+                    property: "spyOn",
+                    message:
+                        "Mocking is banned outside Storybook stories (docs/adr/tech/0020). Rewrite the test against the real deployed backend, or — if and only if this stands in for a genuine framework/environment limitation (e.g. next/headers' cookies() has no request scope in Vitest) — add an eslint-disable-next-line no-restricted-properties directive whose trailing reason names that specific limitation.",
+                },
+            ],
+        },
+    },
+
+    /*
      * 8e. Flag unsanitized DOM sinks (`innerHTML`/`outerHTML`/`insertAdjacentHTML`,
      * `dangerouslySetInnerHTML`, `document.write`, etc.) as errors — the realistic XSS vector in a
      * React app, with near-zero false positives since it only fires on the specific sink APIs.
