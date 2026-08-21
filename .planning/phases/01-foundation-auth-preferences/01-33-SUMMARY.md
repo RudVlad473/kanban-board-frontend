@@ -167,6 +167,22 @@ status: complete
 **Total deviations:** 1 auto-fixed (Rule 1, correctness bug), 1 accepted-not-fixed (explicit scope decision), 2 pre-existing/environmental blockers resolved to unblock verification.
 **Impact on plan:** The auto-fixed bug was necessary for the plan's own must-haves to work at all. The accepted gap is a real, documented shortfall against this plan's stated must-haves — a deliberate trade-off, not an oversight.
 
+## Testing Infrastructure Notes
+
+**jsdom's multi-realm `Uint8Array` gap, worked around in `vitest.setup.unit.ts`.** Writing
+`auth-actions.unit.test.ts` against the real, unmocked `session.ts` surfaced a jsdom quirk: jsdom
+runs test code inside its own `vm` realm, which has its own `Uint8Array` intrinsic — distinct from
+(though same-named as) the one every Node built-in, including `node:util`'s own `TextEncoder`,
+actually produces. `jose`'s `SignJWT.sign()` performs a strict `instanceof Uint8Array` check on the
+payload bytes it builds internally and throws `"payload must be an instance of Uint8Array"` once
+that payload comes from the wrong realm's constructor. Swapping `globalThis.TextEncoder`/
+`TextDecoder` for Node's own implementations is necessary but not sufficient on its own — those
+still construct bytes belonging to Node's *real* `Uint8Array`, which then fails `instanceof`
+against jsdom's *own* `globalThis.Uint8Array`. The fix repoints `globalThis.Uint8Array` at that
+same real class (captured directly off a real `TextEncoder` output, not assumed from any Node API
+surface), closing the gap at its source for every module in the "unit" project's dependency graph
+rather than working around it at each call site. See `vitest.setup.unit.ts` for the implementation.
+
 ## Issues Encountered
 
 The checkpoint's own "all automated checks green" claim (396 tests, build, lint, tsc) did not catch either code bug found here — both are runtime-only failure modes (a `"use server"` export violation, a DNS/path misconfiguration) invisible to static analysis and to a test suite that doesn't invoke the real Next.js dev server. This is exactly the class of gap `checkpoint:human-verify` exists to catch.

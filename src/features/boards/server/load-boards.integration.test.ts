@@ -7,9 +7,9 @@ import { isSessionPayload, session } from "@/lib/server/session";
 import { createSessionRecord } from "@/test-utils/factories/session-record";
 
 /*
- * `next/headers`' `cookies()` is mocked as an in-memory jar (D-19 environment shim, no real
- * Next.js request scope in Vitest) — every other call dials the real nonprod backend (ADR
- * tech/0018/D-04). Carries forward the deleted `app/api/boards/route.test.ts`'s coverage (D-21).
+ * No real Next.js request scope in a Vitest run, so `next/headers`' `cookies()` is mocked with the
+ * same in-memory jar `server-client.integration.test.ts` uses (D-19) — everything else here dials
+ * the real nonprod backend (ADR tech/0018/D-04). Carries forward the deleted route.test.ts's coverage (D-21).
  */
 type CookieRecord = { value: string; options?: Record<string, unknown> };
 const cookieStore = new Map<string, CookieRecord>();
@@ -136,8 +136,8 @@ describe("loadBoards (real backend)", () => {
 
     it("does not resolve to ok, and leaks no upstream response text, for a syntactically valid but nonexistent upstream session", async () => {
         /*
-         * `externalApi`'s middleware forces sign-out on a bridged 401 (server-client.ts, GC-18);
-         * `redirect()` throwing here IS the no-leak behaviour — nothing left to leak.
+         * `externalApi`'s response middleware (server-client.ts, GC-18) forces a sign-out on any
+         * 401 — `redirect()` throwing here IS the no-leak behaviour, nothing is returned to leak.
          */
         // Arrange
         await session.create(

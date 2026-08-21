@@ -38,12 +38,9 @@ const serverOnlyAlias = {
 const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 
 /*
- * Real stub modules (not Vitest mocks) for every Server Action a story or a composed-story test
- * imports — each `"use server"` module's import chain reaches `node:crypto` via
- * `@/lib/server/session`, which no browser test page can bundle (docs/adr/tech/0020). Shared by
- * the `browser` and `storybook` projects below so their alias lists can never drift apart. Every
- * entry is an exact specifier and must stay listed before the general `@` alias (Vite's `find` is
- * a prefix match).
+ * Real stub modules (not Vitest mocks) for every Server Action a story/composed-story test imports
+ * — their real import chain reaches `node:crypto`, unbundlable by a browser test page (docs/adr/
+ * tech/0020). Every entry is an exact specifier and must stay listed before the general `@` alias.
  */
 const serverActionStubAlias = [
     {
@@ -79,12 +76,9 @@ export default defineConfig({
                 resolve: { alias: aliasWithServerOnlyStub },
                 test: {
                     /*
-                     * Node-mode tests for the session module and, since plan 01-11, the BFF auth
-                     * Route Handlers — both mock `next/headers`' `cookies()` (no real Next.js
-                     * request scope exists outside an actual render). No mock server stands in for
-                     * the external API anymore (GC-22) — every call this project resolves dials the
-                     * deployed nonprod backend directly, the same path the deployed app uses, not a
-                     * browser environment.
+                     * Real-backend integration project (CONVENTIONS.md's test-location table) — no
+                     * mock server stands in for the external API (GC-22); every call dials the
+                     * deployed nonprod backend directly, the same path the deployed app uses.
                      */
                     name: "node",
                     environment: "node",
@@ -117,32 +111,24 @@ export default defineConfig({
             },
             {
                 /*
-                 * Aliased with the `server-only` stub too (not just plain `alias`) — a jsdom test
-                 * can import a module that starts with `import "server-only"` (e.g.
-                 * `session-cookie.ts`) the same way the `node` project already can, per this
-                 * repo's own `server-only-stub.ts` documentation, which states the stub applies
-                 * "for every test project."
+                 * Aliased with the `server-only` stub too — a jsdom test can import a module
+                 * starting `import "server-only"` the same way the `node` project already can.
                  */
                 resolve: { alias: aliasWithServerOnlyStub },
                 test: {
                     /*
-                     * jsdom, not real-browser: for pure logic/hook tests with no CSS layout or
-                     * paint dependency (e.g. React Testing Library + user-event). Component tests
-                     * that assert computed styles (variant/size CSS, axe-core) belong in the
-                     * "browser" project above instead — jsdom fakes computed styles from declared
-                     * rules rather than actually resolving Tailwind's custom-property-driven
-                     * values, so it can't stand in for real rendering there.
+                     * Hook/logic project (CONVENTIONS.md's test-location table) — jsdom fakes
+                     * computed styles from declared rules rather than resolving Tailwind's real
+                     * custom-property values, so component style assertions stay in "browser".
                      */
                     name: "unit",
                     environment: "jsdom",
                     include: ["src/**/*.unit.test.{ts,tsx}"],
                     setupFiles: ["./vitest.setup.unit.ts"],
                     /*
-                     * `actions.unit.test.ts` (plan 01-33) imports `@/features/auth/actions`, which
-                     * imports the real (unmocked) `@/lib/server/session` — that module throws at
-                     * import time when `SESSION_SECRET` is unset, the same guard the "node"
-                     * project's own `env` block above already works around for `session.test.ts`.
-                     * Mirrors that project's fallback exactly.
+                     * Mirrors the "node" project's own `env` fallback above — a real (unmocked)
+                     * `@/lib/server/session` import throws at import time when `SESSION_SECRET` is
+                     * unset (hit by `actions.unit.test.ts`, plan 01-33).
                      */
                     env: {
                         SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",
@@ -151,11 +137,9 @@ export default defineConfig({
             },
             {
                 /*
-                 * Stories render components that import real per-action Server Action modules —
-                 * `@storybook/nextjs-vite`'s Vitest-driven story rendering has no server/client
-                 * build split for `"use server"` modules, so it bundles that chain whole for the
-                 * browser. `serverActionStubAlias` (above) aliases them to real stub modules
-                 * instead — no story ever submits a form or triggers a real toggle (D-25).
+                 * Stories render components importing real Server Action modules, but Storybook's
+                 * Vitest-driven rendering has no server/client build split for them — the same
+                 * `serverActionStubAlias` used by "browser" above stands in here too.
                  */
                 resolve: {
                     alias: [...serverActionStubAlias, ...alias],

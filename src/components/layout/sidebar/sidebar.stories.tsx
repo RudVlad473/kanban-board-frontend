@@ -6,8 +6,8 @@ import { Sidebar } from "./sidebar";
 
 /*
  * Visual-only CSF3 (D-25), no play function — `Sidebar` is `components/layout/`, not a
- * `components/ui/` primitive, so it gets stories/axe coverage but no visual-spec entry (ADR
- * tech/0011). `appDirectory: true` is required for `useRouter()` (see 02.1-01-SUMMARY.md).
+ * `components/ui/` primitive, so per ADR tech/0011 it gets stories/axe coverage but no
+ * visual-spec entry. `appDirectory: true` is required for `useRouter()` (see 02.1-01-SUMMARY.md).
  */
 const meta: Meta<typeof Sidebar> = {
     component: Sidebar,

@@ -1,7 +1,7 @@
 /*
  * Composed from the plain React renderer package, not the Next.js-aware Storybook framework
- * package, which eagerly imports real Next.js internals this "browser" project can't resolve
- * (`vitest.setup.ts` documents this in full).
+ * package — the latter eagerly imports real Next.js internals this "browser" project doesn't
+ * load the Vite plugin for (see docs/adr/tech/0021).
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
@@ -25,9 +25,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 /*
- * `next/link`'s real implementation reads `process.env`, undefined in this Vitest Browser Mode
- * environment (throws unmocked) — mocked to a plain anchor so the test gap doesn't force
- * `sidebar.tsx` itself off real client-side routing (D-19, see 02.1-01-SUMMARY.md).
+ * `next/link`'s real implementation reads `process.env` internally, undefined in Vitest Browser
+ * Mode (confirmed: throws `ReferenceError: process is not defined`) — mocked to a plain anchor so
+ * this test-environment gap doesn't force `sidebar.tsx` itself off real routing (D-19, see 02.1-01-SUMMARY.md).
  */
 
 vi.mock("next/link", () => ({

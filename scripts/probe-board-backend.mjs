@@ -15,10 +15,9 @@ if (!baseUrl) {
 }
 
 /*
- * The backend caps an account at two concurrent sessions and answers a third sign-in with the
- * same 401 a wrong password produces (e2e/fixtures.ts:34-40). Route every sign-in through this
- * helper, which throws on a repeat sign-in for the same email instead of letting a stray retry
- * surface as a cryptic 401 three probe blocks later.
+ * The backend caps an account at two concurrent sessions, answering a third sign-in with the same
+ * 401 a wrong password produces — this helper throws on a repeat sign-in instead of letting that
+ * surface as a cryptic 401 later (see .planning/phases/02-board-management/02-BACKEND-FACTS.md).
  */
 const signInCounts = new Map();
 

@@ -1,16 +1,9 @@
 import StyleDictionary from "style-dictionary";
 
 /**
- * A minimal transform group: `name/kebab` gives every token a Tailwind-v4-friendly
- * custom-property suffix (`color.bg.app` -> `color-bg-app`). Deliberately does NOT include
- * Style Dictionary's built-in `css` transformGroup, because that group's
- * `typography/css/shorthand` and `shadow/css/shorthand` value transforms collapse a composite
- * token's sub-values into a single shorthand string before a format ever sees them — exactly
- * what RESEARCH.md Pitfall 4 warns can silently drop a sub-value. Skipping those transforms
- * keeps every composite `$value` as an object so the formats below can address each sub-value
- * individually. It also skips `color/css` (which would lowercase authored hex literals via
- * tinycolor2's `toHexString()`), preserving the exact-case hex values authored in the primitive
- * color tier.
+ * `name/kebab` gives every token a Tailwind-v4-friendly custom-property suffix. Skips Style
+ * Dictionary's built-in `css` transformGroup, whose shorthand transforms collapse a composite
+ * token's sub-values (RESEARCH.md Pitfall 4) and lowercase authored hex literals.
  */
 StyleDictionary.registerTransformGroup({
     name: "css-raw",
@@ -25,23 +18,16 @@ StyleDictionary.registerTransformGroup({
 const BREAKPOINT_ALIASES = { mobile: "sm", tablet: "md", desktop: "lg" };
 
 /**
- * A `fontFamily` DTCG value names a family (e.g. "Plus Jakarta Sans"); the actual font file is
- * loaded elsewhere via `next/font/google`, which exposes it under a CSS variable rather than the
- * literal family name (browsers resolve an unadorned family string against locally installed
- * fonts only — virtually no user has "Plus Jakarta Sans" installed, so a literal value silently
- * falls back to the system default everywhere the token is consumed). `next/font`'s own
- * convention names that variable `--font-<kebab-case-family>` (see the `variable:` option in
- * `app/layout.tsx`), so deriving the same slug here keeps the two files coupled by convention
- * without a shared constant.
+ * A `fontFamily` DTCG value names a family, but the font file loads elsewhere via
+ * `next/font/google` under a CSS variable — `next/font`'s own `--font-<kebab-case-family>`
+ * convention (`app/layout.tsx`'s `variable:` option) is re-derived here, not shared.
  */
 const fontFamilyVariableSlug = (fontFamily) => fontFamily.toLowerCase().replace(/\s+/g, "-");
 
 /**
  * Expands one composite `typography` token into Tailwind v4's separately-addressable custom
- * properties. Tailwind v4 has no composite type, so `font-heading-xl` becomes four (or five,
- * with letter-spacing) individual properties: `--font-<name>` (family), `--text-<name>` (size),
- * `--font-weight-<name>` (weight), `--leading-<name>` (line height), and `--tracking-<name>`
- * (letter-spacing, only when present).
+ * properties, since Tailwind v4 has no composite type — `font-heading-xl` becomes four or five
+ * individual `--font-`/`--text-`/`--font-weight-`/`--leading-`/`--tracking-<name>` properties.
  */
 const typographyDeclarations = (token) => {
     const value = token.$value ?? token.value;
@@ -120,13 +106,9 @@ const modeInvariantSources = [
 ];
 
 /**
- * Style Dictionary v5 has no per-platform `source` override (`_exportPlatform` clones the
- * INSTANCE-level `this.tokens`, built once from the top-level `source`) and no built-in
- * "append to an existing output file" option. Loading `color.light.tokens.json` and
- * `color.dark.tokens.json` into the same dictionary would collide on every identical semantic
- * path (`color.bg.app` etc.) and silently drop one mode's values. So light and dark are built
- * as two separate configs/instances with disjoint sources (see scripts/build-tokens.mjs, which
- * builds both and concatenates the CSS text itself — @theme block first, .dark block second).
+ * Style Dictionary v5 has no per-platform `source` override or "append to output" option —
+ * loading light/dark color tokens into one dictionary would collide on every shared semantic
+ * path. Built as two separate configs instead (scripts/build-tokens.mjs concatenates the CSS).
  */
 export const createConfig = (mode) => {
     if (mode === "dark") {
