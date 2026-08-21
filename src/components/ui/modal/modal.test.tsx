@@ -1,6 +1,9 @@
+// @storybook/react (not @storybook/nextjs-vite) — see dropdown.test.tsx / vitest.setup.ts for why.
+import { composeStories } from "@storybook/react";
+import { cleanup, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { useState } from "react";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -8,7 +11,13 @@ import { DEVICE_TYPE } from "@/lib/core/viewport/viewport-breakpoints";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import { Modal } from "./modal";
+import * as stories from "./modal.stories";
 import { Button } from "../button/button";
+
+const { Closed, Open, WithDescription } = composeStories(stories);
+
+// Composed stories mount via RTL's own render, which RTL never auto-unmounts between calls here.
+afterEach(cleanup);
 
 type RootProps = ComponentProps<typeof Modal.Root>;
 
@@ -53,47 +62,37 @@ const getBackdropElement = () => {
 };
 
 /*
- * ADR tech/0014: every primitive's whole behavioral suite runs at both viewports by default, a
- * blanket regression net rather than a hand-picked set of viewport-conditional assertions. Most
- * tests below run identically at both sizes; the padding test further down branches on `device`
- * because that assertion genuinely differs by viewport (the whole reason describeForEachDevice
- * exists in the first place).
+ * ADR tech/0014: every primitive's whole suite runs at both viewports; the padding test below
+ * branches on `device` since that assertion genuinely differs by viewport.
  */
 describeForEachDevice({
     name: "Modal",
     body: (device) => {
-        it("renders nothing into the accessibility tree while closed, leaving the page behind it reachable", async () => {
-            // Arrange
-            const screen = await renderModal();
-
+        it("renders nothing into the accessibility tree while closed, leaving its own trigger reachable", async () => {
             // Act
-            const outside = screen.getByRole("button", { name: "Outside link" });
+            await Closed.run();
 
             // Assert
-            await expect.element(screen.getByRole("dialog")).not.toBeInTheDocument();
-            await expect.element(outside).toBeVisible();
+            expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Open modal" })).toBeVisible();
         });
 
         it("renders a dialog whose accessible name is the Modal.Title text once open", async () => {
-            // Arrange
-            const screen = await renderModal({ defaultOpen: true });
-
             // Act
-            const dialog = screen.getByRole("dialog", { name: "Delete board" });
+            await Open.run();
 
             // Assert
-            await expect.element(dialog).toBeVisible();
+            expect(screen.getByRole("dialog", { name: "Delete this board?" })).toBeVisible();
         });
 
         it("exposes Modal.Description as the dialog's accessible description", async () => {
-            // Arrange
-            const screen = await renderModal({ defaultOpen: true });
-
             // Act
-            const dialog = screen.getByRole("dialog", { name: "Delete board" });
+            await WithDescription.run();
 
             // Assert
-            await expect.element(dialog).toHaveAccessibleDescription("This action cannot be undone.");
+            expect(screen.getByRole("dialog", { name: "Delete this board?" })).toHaveAccessibleDescription(
+                "This action cannot be undone. All columns and tasks inside it will be permanently deleted.",
+            );
         });
 
         it("traps Tab focus inside the dialog — tabbing past the last focusable element wraps to the first rather than escaping to the page behind it", async () => {
@@ -149,12 +148,9 @@ describeForEachDevice({
 
         it("clips the rounded/shadowed panel to its own bounds and scrolls an inner content region, not the panel itself, once content overflows", async () => {
             /*
-             * Arrange — `rounded-lg`/`shadow-lg`/`overflow-hidden` live on the dialog popup itself;
-             * the scrollable region is a separate inner wrapper. Putting `overflow-y-auto` directly on
-             * the rounded/shadowed element let the native scrollbar and the scrolled content's edge
-             * render outside the rounded corners once the body actually scrolled, breaking the panel's
-             * silhouette. This guards that regression by asserting the popup itself never grows past
-             * its cap (so it never needs to scroll) while its inner child does.
+             * Deep: computed-style + layout. The popup owns the silhouette and clips to it; a
+             * separate inner wrapper scrolls — putting overflow-y-auto directly on the popup let
+             * the scrollbar/content edge render outside the rounded corners once it scrolled.
              */
             const longContent = Array.from({ length: 40 }, (_, index) => {
                 const position = String(index);
@@ -188,12 +184,8 @@ describeForEachDevice({
 
         it("applies mobile-first internal padding — tighter on mobile, roomier at tablet/desktop: renders the padding this device's breakpoint resolves to", async () => {
             /*
-             * Arrange — ADR tech/0010: the panel's own width already scales down correctly at a
-             * narrow viewport (w-[min(90vw,28rem)]), but the padding did not — asserts the
-             * mobile-first p-4 md:p-6 utility pair actually resolves to different real computed
-             * padding at the two viewports (page.viewport already resized the test iframe to this
-             * device's size in describeForEachDevice's beforeEach), not just that both class names
-             * are present in the className string.
+             * Deep: computed-style, device-dependent. ADR tech/0010's mobile-first p-4 md:p-6 pair
+             * must resolve to different real padding per viewport, not just both class names present.
              */
             const screen = await render(
                 <Modal.Root defaultOpen>
@@ -229,12 +221,9 @@ describeForEachDevice({
 
         it("blocks both backdrop-click and Escape dismissal while a Modal.Footer action is loading, and restores both once loading ends — the isLoading-guards-dismissal convention documented on Modal.Root", async () => {
             /*
-             * Arrange — a controlled wrapper composing Modal.Root's existing public surface exactly
-             * as the doc comment on `Root` prescribes: `isDismissableOnBackdropClick={!isLoading}`
-             * plus an `onOpenChange` guard that ignores a close request while `isLoading` is true. No
-             * new Modal prop exists or is needed. "Reopen" is a plain wrapper-level control (not part
-             * of the convention) letting this single test exercise both dismissal paths after loading
-             * ends without a fresh mount.
+             * Deep: a controlled wrapper composing Modal.Root's documented isLoading-guards-
+             * dismissal convention (isDismissableOnBackdropClick={!isLoading} + an onOpenChange
+             * guard) — no new Modal prop; "Reopen" just re-exercises both paths post-loading.
              */
             const ControlledModal = () => {
                 const [isOpen, setIsOpen] = useState(true);

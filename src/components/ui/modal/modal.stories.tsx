@@ -98,11 +98,8 @@ export const Closed: Story = {
 };
 
 /*
- * Demonstrates the isLoading-guards-dismissal composition documented on Modal.Root (plan 01-25):
- * a Modal.Footer Button driving an in-flight action renders isLoading, per GC-01's existing
- * Button convention. Visual-only per D-25 — this story stages the loading Button's appearance; it
- * does not itself demonstrate the dismissal-blocking behavior, which is proven behaviorally in
- * modal.test.tsx.
+ * Stages the isLoading-guards-dismissal composition's appearance (Modal.Root doc, plan 01-25);
+ * the dismissal-blocking behaviour itself is proven behaviourally in modal.test.tsx, not here.
  */
 export const Submitting: Story = {
     render: (args) => (
