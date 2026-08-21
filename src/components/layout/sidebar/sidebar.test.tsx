@@ -17,7 +17,7 @@ import * as stories from "./sidebar.stories";
  * now (D-02/D-03), so there is no business-logic hook left to mock.
  */
 const mockRefresh = vi.fn();
- 
+
 vi.mock("next/navigation", () => ({
     usePathname: () => "/boards",
     useRouter: () => ({ refresh: mockRefresh }),
@@ -33,7 +33,7 @@ vi.mock("next/navigation", () => ({
  * interaction, unlike the one-time auth-page transition `sign-in-form.tsx`/`sign-up-form.tsx`
  * reasonably opted out of instead.
  */
- 
+
 vi.mock("next/link", () => ({
     __esModule: true,
     default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
