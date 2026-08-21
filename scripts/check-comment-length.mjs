@@ -33,6 +33,19 @@ const IGNORED_FILES = new Set(
 
 const IGNORED_DIR_PREFIXES = ["node_modules", ".next", "storybook-static"];
 
+/*
+ * Playwright's toHaveScreenshot() creates a same-named *directory* per spec file to hold baseline
+ * images (e.g. visual/__screenshots__/foo.visual.spec.ts/), which a naive "*.ts" glob still
+ * matches — this filters those out before a file read is ever attempted.
+ */
+const isRealFile = (relativePath) => {
+    try {
+        return statSync(path.resolve(repoRoot, relativePath)).isFile();
+    } catch {
+        return false;
+    }
+};
+
 const EXEMPT_MARKER = "comment-length-exempt:";
 
 const isIgnoredPath = (relativePath) =>
@@ -138,7 +151,7 @@ const runCli = () => {
     const files = new Set(globs.flatMap((pattern) => globSync(pattern, { cwd: repoRoot })));
 
     const violations = [...files]
-        .filter((relativePath) => !isIgnoredPath(relativePath))
+        .filter((relativePath) => !isIgnoredPath(relativePath) && isRealFile(relativePath))
         .flatMap(scanFile)
         .sort((a, b) => a.relativePath.localeCompare(b.relativePath) || a.startLine - b.startLine);
 
