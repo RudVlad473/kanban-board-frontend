@@ -6,4 +6,18 @@
 type AuthActionState =
     { status: "idle" } | { status: "error"; code: string; message: string; fieldErrors?: Record<string, string> };
 
-export const signOutAction = (): Promise<AuthActionState> => Promise.resolve({ status: "idle" });
+let callCount = 0;
+
+export const signOutAction = (): Promise<AuthActionState> => {
+    callCount += 1;
+    return Promise.resolve({ status: "idle" });
+};
+
+/**
+ * Test-only recorded-invocation accessors for sign-out-button.test.tsx — a real counter on this
+ * stub module, not a `vi.fn()` mock, so "the button called the action" stays provable under D-04.
+ */
+export const signOutActionCallCount = (): number => callCount;
+export const resetSignOutActionCallCount = (): void => {
+    callCount = 0;
+};
