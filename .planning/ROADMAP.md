@@ -287,7 +287,7 @@ rule CONVENTIONS.md has stated but never enforced — are written down as ADRs a
 blocking CI gates, so no future session reintroduces the patterns this phase removes.
 **Requirements**: D-01..D-22 (from 02.1-CONTEXT.md — decimal insertion, no REQUIREMENTS.md IDs)
 **Depends on:** Phase 2
-**Plans:** 8/15 plans executed
+**Plans:** 9/15 plans executed
 
 Plans:
 
@@ -310,7 +310,7 @@ Plans:
 
 **Wave 4** *(blocked on 02.1-06, 02.1-07)*
 
-- [ ] 02.1-09-PLAN.md — auth and theme component tests via Server Action stub aliases (D-04, D-08)
+- [x] 02.1-09-PLAN.md — auth and theme component tests via Server Action stub aliases (D-04, D-08)
 
 **Wave 5** *(blocked on 02.1-04, 02.1-09)*
 
@@ -384,6 +384,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 8/13 | In Progress|  |
-| 02.1. Testing strategy overhaul & code-quality retrofit | 8/15 | In Progress|  |
+| 02.1. Testing strategy overhaul & code-quality retrofit | 9/15 | In Progress|  |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
