@@ -69,6 +69,9 @@ jobs:
             - name: Route declaration check
               run: pnpm routes:check
 
+            - name: Route Handler ban check
+              run: pnpm handlers:check
+
             - name: Format check
               run: pnpm format:check
 
