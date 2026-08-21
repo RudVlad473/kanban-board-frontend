@@ -123,6 +123,7 @@ describe("findLongCommentRuns", () => {
          * D-22's sweep (02.1-11..14) drove the whole repo to zero violations by design — asserting
          * against live file content would make this test regress every time the retrofit works.
          */
+
         // Arrange
         const prose = Array.from({ length: 26 }, (_, index) => ` * line ${String(index)}`);
         const source = ["/**", ...prose, " */", "export const a = 1;"].join("\n");

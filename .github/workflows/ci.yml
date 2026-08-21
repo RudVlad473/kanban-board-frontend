@@ -75,11 +75,8 @@ jobs:
             - name: Format check
               run: pnpm format:check
 
-            # Non-blocking until plan 02.1-15 removes this flag once the comment sweep lands —
-            # 98 offender files exist in the repo at this moment (D-22).
             - name: Comment length check
               run: pnpm comments:check
-              continue-on-error: true
 
             - name: API types drift
               run: |

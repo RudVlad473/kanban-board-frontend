@@ -25,6 +25,7 @@ const fakeCookieJar = {
     },
 };
 
+// eslint-disable-next-line no-restricted-properties -- next/headers' cookies() has no real request scope in a Vitest run (D-19)
 vi.mock("next/headers", () => ({
     cookies: vi.fn(() => Promise.resolve(fakeCookieJar)),
 }));

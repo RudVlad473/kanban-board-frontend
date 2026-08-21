@@ -390,14 +390,14 @@ const eslintConfig = defineConfig([
     /*
      * 8d-2. D-04/D-19: no vi.mock/vi.spyOn outside Storybook stories (docs/adr/tech/0020) — a
      * distinct rule ID (not another no-restricted-syntax block, which would replace 8d's own) keeps
-     * both independent. "warn" for now; plan 02.1-15 raises this to "error" once the retrofit lands.
+     * both independent.
      */
     {
         files: ["**/*.{ts,tsx}"],
         ignores: ["**/*.stories.tsx", "**/*.stories.ts"],
         rules: {
             "no-restricted-properties": [
-                "warn",
+                "error",
                 {
                     object: "vi",
                     property: "mock",

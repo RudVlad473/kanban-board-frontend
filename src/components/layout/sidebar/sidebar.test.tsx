@@ -19,6 +19,7 @@ import * as stories from "./sidebar.stories";
  */
 const mockRefresh = vi.fn();
 
+// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
 vi.mock("next/navigation", () => ({
     usePathname: () => ROUTE.BOARDS,
     useRouter: () => ({ refresh: mockRefresh }),
@@ -30,6 +31,7 @@ vi.mock("next/navigation", () => ({
  * this test-environment gap doesn't force `sidebar.tsx` itself off real routing (D-19, see 02.1-01-SUMMARY.md).
  */
 
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
 vi.mock("next/link", () => ({
     __esModule: true,
     default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
