@@ -9,20 +9,16 @@ import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
 
 /**
- * `updateThemeAction`'s own result — no success member carries anything beyond the value that was
- * actually stored, and there is no distinct field-level error shape (unlike `AuthActionState`):
- * this call takes exactly one argument, already constrained to two values, so there is nothing
- * for a per-field error to describe.
+ * `updateThemeAction`'s own result — unlike `AuthActionState`, there's no per-field error shape
+ * since this call takes one value already constrained to two options.
  */
 export type UpdateThemeResult = { status: "success"; theme: Theme } | { status: "error" };
 
 const themeSchema = z.enum([THEME.LIGHT, THEME.DARK]);
 
 /**
- * The theme persistence server function (01-35 Task 3's option-b decision — see that plan's
- * summary). Takes only the new theme value; the user id forwarded upstream comes exclusively from
- * `verifySession()`, called first so an unauthenticated call is refused regardless of the value
- * supplied (T-01-05/T-01-06).
+ * Session-checked before use; `userId` comes only from `verifySession()`, never from the caller
+ * (T-01-05/T-01-06, see 01-35-SUMMARY.md).
  */
 export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult> => {
     const record = await verifySession();
@@ -31,9 +27,9 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
     }
 
     /*
-     * Validated after the session check, before calling upstream — a Server Action is invokable
-     * over the wire with an arbitrary request body regardless of what TypeScript claims about its
-     * caller, so this is real runtime defense, not a formality.
+     * Validated after the session check — a Server Action is callable over the wire with an
+     * arbitrary payload regardless of compile-time types, so this ordering is real runtime
+     * defense (see docs/adr/tech/0019).
      */
     const parsed = themeSchema.safeParse(theme);
     if (!parsed.success) {

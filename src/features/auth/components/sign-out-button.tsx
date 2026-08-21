@@ -7,11 +7,9 @@ import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signOutAction } from "@/features/auth/actions/sign-out";
 
 /**
- * Sign-out is non-destructive (UI-SPEC Copywriting Contract) — no confirmation modal. Submits
- * through the form element's own `action` (`useActionState` + `signOutAction`), so it works
- * before hydration, mirroring sign-in-form.tsx/sign-up-form.tsx's idiom. The redirect happens on
- * the server, so the layout re-renders without the cleared session cookie by itself — no router
- * push or refresh needed here.
+ * Sign-out is non-destructive (UI-SPEC), no confirmation modal — submits via `useActionState` +
+ * `signOutAction` so it works pre-hydration. The server-side redirect re-renders the layout with
+ * the cleared session cookie; no router push/refresh needed here.
  */
 export const SignOutButton = () => {
     const [, dispatch, isActionPending] = useActionState(signOutAction, AUTH_ACTION_IDLE);

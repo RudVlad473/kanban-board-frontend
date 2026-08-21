@@ -12,11 +12,9 @@ import { externalApi } from "@/lib/server/server-client";
 export type LoadBoardsResult = { status: "ok"; boards: Board[] } | { status: "unauthenticated" } | { status: "error" };
 
 /**
- * The server-only board-list read this phase's tracer rebuilds as an RSC data-fetch, replacing the
- * deleted `app/api/boards/route.ts` (D-01/D-02/D-03). Calls `verifySession()` itself rather than
- * trusting `DashboardLayout`'s own check already ran — the CVE-2025-29927 proxy-bypass class
- * `(dashboard)/layout.tsx`'s own comment already names (T-02.1-02). `userId` is read only from the
- * session record — this function takes no arguments at all, so no caller can supply one (T-02.1-01).
+ * RSC read replacing the deleted Route Handler (D-01/D-02/D-03) — calls `verifySession()` itself
+ * rather than trusting a caller's guard already ran (CVE-2025-29927 class, T-02.1-02); `userId`
+ * comes only from the session, this function takes no arguments (T-02.1-01) (see docs/adr/tech/0019).
  */
 export const loadBoards = async (): Promise<LoadBoardsResult> => {
     const record = await verifySession();
@@ -48,10 +46,8 @@ export const loadBoards = async (): Promise<LoadBoardsResult> => {
     }
 
     /*
-     * Newest-first ordering, carried over from the deleted `useBoards()`'s `newestFirst` — the
-     * backend returns creation order (oldest-first) with no timestamp to sort by instead, so a
-     * plain array reversal is the ordering-preserving equivalent (02-BACKEND-FACTS.md's
-     * ordering-developer-choice).
+     * Newest-first ordering carried over from the deleted `useBoards()` — the backend returns
+     * oldest-first with no timestamp, so a plain reversal is equivalent (02-BACKEND-FACTS.md).
      */
     return { status: "ok", boards: [...parsed.data].reverse() };
 };

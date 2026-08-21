@@ -17,12 +17,9 @@ type Props = {
 };
 
 /**
- * Composes the `Switch` primitive with sun/moon glyphs in its icon slots (D-13/D-25 icon library)
- * and a polite live-region message beside it, empty on success and carrying a short sentence when
- * the save fails — per this plan's Decisions block, replacing UI-SPEC's unconfirmed toast
- * recommendation, since no toast primitive exists in D-13's seven-primitive set. The Switch does
- * not self-toggle under parent control (`switch.tsx`), so `useThemePreference`'s revert is enough
- * to move it back on failure — no imperative reset is added here.
+ * Composes `Switch` with sun/moon glyphs (D-13/D-25) and a live-region status message — replaces
+ * UI-SPEC's unconfirmed toast recommendation since no toast primitive exists (D-13's set). Switch
+ * doesn't self-toggle, so `useThemePreference`'s revert alone moves it back on failure.
  */
 export const ThemeToggle = ({ initialTheme, isAuthenticated, forceErrorMessage }: Props) => {
     const { theme, toggleTheme, errorMessage } = useThemePreference({ initialTheme, isAuthenticated });

@@ -40,12 +40,9 @@ type UseThemePreferenceArgs = {
 };
 
 /**
- * The theme mutation hook: owns the optimistic toggle (document root class + local state applied
- * first), issues the persistence call second via `updateThemeAction` (Task 1) directly — no
- * fetch wrapper, since the mutation dials the domain's own server function, not an HTTP endpoint
- * of this app's own — and reverts both on failure. `retry: false` mirrors `QueryProvider`'s own
- * default (already set globally), restated here since this hook is that default's first real
- * mutation consumer.
+ * Optimistic-apply-then-rollback theme mutation hook — the named reference shape later plans copy
+ * (see docs/adr/tech/0019). Applies locally first, persists via `updateThemeAction` directly (no
+ * fetch wrapper), and reverts both on failure; `retry: false` mirrors `QueryProvider`'s default.
  */
 export const useThemePreference = ({ initialTheme, isAuthenticated }: UseThemePreferenceArgs) => {
     const [theme, setTheme] = useState<Theme>(initialTheme);

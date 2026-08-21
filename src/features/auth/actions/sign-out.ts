@@ -8,10 +8,8 @@ import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { session } from "@/lib/server/session";
 
 /*
- * The backend's own sign-out route is broken (500s, upstream session survives) — see
- * `.planning/phases/01-foundation-auth-preferences/deferred-items.md` ("Sign-out route is broken
- * on the real backend"). This app only destroys its own credential; the upstream session expires
- * on its own.
+ * The backend's sign-out route is broken (500s) — this app destroys only its own credential (see
+ * 01-foundation-auth-preferences/deferred-items.md).
  */
 // eslint-disable-next-line no-restricted-syntax -- React's useActionState calls this positionally (prevState, formData); the shape is dictated by that external API, not this project (ADR tech/0016 exemption, see sign-in.ts's identical comment)
 export const signOutAction = async (_previousState: AuthActionState, _formData: FormData): Promise<AuthActionState> => {

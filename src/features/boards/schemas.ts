@@ -1,11 +1,9 @@
 import { z } from "zod";
 
 /**
- * This domain's own runtime-verified shape — `BoardResponseDTO` (`generated-types.ts`) declares
- * every property optional because the contract's schema carries no `required` array, so casting an
- * upstream response straight to `Board` would be a lie the type checker can't catch. `BoardSchema`
- * exists to make that cast honest, replacing the hand-written `isBoard`/`isBoardArray` guards that
- * previously lived in `types.ts` (D-12).
+ * Runtime-verified shape replacing the deleted `isBoard`/`isBoardArray` guards (D-12) — the
+ * contract declares no `required` array, so a raw cast to `Board` can't be trusted (see
+ * docs/adr/tech/0024).
  */
 export const BoardSchema = z.object({
     id: z.string(),

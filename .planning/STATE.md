@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 02.1
 current_phase_name: "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)"
 status: executing
-stopped_at: Phase 02.1 Wave 5 complete (02.1-10), starting Wave 6
-last_updated: "2026-08-21T17:46:44.823Z"
+stopped_at: Completed 02.1-12-PLAN.md
+last_updated: "2026-08-21T18:32:52.268Z"
 last_activity: 2026-08-21
 last_activity_desc: Wave 5 (02.1-10 curl-based e2e seeding CLI) merged, gated, e2e-verified, tracked
-state_head: 0f55467cccfc1b260c395f7966768c7cf1c1c46c
+state_head: 8326175e040d52e73e0987d5a60eea8d7546a111
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 66
-  completed_plans: 46
+  completed_plans: 57
 milestone_name: milestone
 ---
 
@@ -31,8 +31,8 @@ real backend.
 ## Current Position
 
 Phase: 02.1 (Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)) — EXECUTING
-Plan: 10 of 15 (Waves 1-5 done; Wave 6 next)
-Status: Executing Phase 02.1
+Plan: 11 of 15 (Waves 1-5 done; Wave 6 next)
+Status: Ready to execute
 Last activity: 2026-08-21 — Wave 5 (02.1-10) merged, gated, e2e-verified, tracked
 
 Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 02.1: 10/15 plans
@@ -57,6 +57,11 @@ Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 0
 - Trend: n/a
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 02.1 P12 | 55min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -74,6 +79,8 @@ Recent decisions affecting current work:
 - Phase 1: `visual-baselines.yml` restricted to master-only dispatch and changed to open a PR
   (image-diff review) instead of committing screenshots directly, closing a previously-flagged
   unreviewed-overwrite risk.
+
+- [Phase 02.1]: update-theme.ts's session-check-then-validate comment compressed to one sentence + docs/adr/tech/0019 pointer; every T-01-NN/T-02.1-NN threat identifier preserved verbatim through compression (plan 02.1-12)
 
 ### Pending Todos
 
@@ -115,8 +122,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T17:46:44.823Z
-Stopped at: Phase 02.1 Wave 5 complete (02.1-10), starting Wave 6
+Last session: 2026-08-21T18:32:52.024Z
+Stopped at: Completed 02.1-12-PLAN.md
 
 **This session:** Resumed from a HANDOFF.json pause mid-Wave-5, with one open question: whether
 to set `NONPROD_RESET_TOKEN` (to unblock a real e2e Playwright run) or skip it. User resumed with
@@ -130,7 +137,7 @@ tracking: `roadmap.update-plan-progress 02.1 02.1-10 complete`, STATE.md updated
 commit + push, then Wave 6 (02.1-11..14, comment-length sweep, 4 parallel plans), then Wave 7
 (02.1-15, human-checkpoint plan), then phase close-out.
 
-Resume file: .planning/phases/02.1-testing-strategy-overhaul-and-code-quality-retrofit-no-mocki/.continue-here.md
+Resume file: None
 Next step: dispatch Wave 6 — 4 parallel `gsd-executor` agents in worktree isolation for
 02.1-11..14 (same pattern as Waves 1-5: capture HEAD, check intra-wave file overlap, dispatch,
 merge, full post-merge gate, track, push).
