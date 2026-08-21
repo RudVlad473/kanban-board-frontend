@@ -1,12 +1,25 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import type { PropsWithChildren } from "react";
 
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
+import { SidebarSkeleton } from "@/components/layout/sidebar/sidebar-skeleton";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { loadBoards } from "@/features/boards/server/load-boards";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
+
+/*
+ * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule) — awaits
+ * `loadBoards()` (D-02: an RSC read, no client-side query) and maps its discriminated-union result
+ * onto `Sidebar`'s plain `boards`/`loadFailed` props.
+ */
+const SidebarBoards = async () => {
+    const result = await loadBoards();
+    return <Sidebar boards={result.status === "ok" ? result.boards : []} loadFailed={result.status !== "ok"} />;
+};
 
 /*
  * The authoritative check (RESEARCH.md Security Domain, T-01-05) — `proxy.ts`'s guard is an
@@ -30,7 +43,9 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
 
     return (
         <div className="flex min-h-full bg-bg-app">
-            <Sidebar />
+            <Suspense fallback={<SidebarSkeleton />}>
+                <SidebarBoards />
+            </Suspense>
 
             <div className="flex min-w-0 flex-1 flex-col">
                 <header className="flex items-center justify-between border-b border-border-default bg-bg-surface px-6 py-4">

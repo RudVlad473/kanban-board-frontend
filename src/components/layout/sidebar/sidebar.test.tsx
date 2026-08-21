@@ -1,27 +1,17 @@
 import type { ReactNode } from "react";
 import { expect, it, vi } from "vitest";
 
-import { useBoards } from "@/features/boards/hooks/use-boards";
 import { boardDetail, ROUTE } from "@/lib/core/routing/routes";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
 import { Sidebar } from "./sidebar";
 
-/*
- * `useBoards` is this component's own data hook — stubbed directly so each test can stage the
- * pending/error/populated states without a real network call, mirroring
- * `theme-toggle.test.tsx`'s pattern of mocking the module boundary it consumes.
- */
-vi.mock("@/features/boards/hooks/use-boards", () => ({
-    useBoards: vi.fn(),
-}));
-
-const mockedUseBoards = vi.mocked(useBoards);
-
 let currentPathname: string = ROUTE.BOARDS;
+const mockRefresh = vi.fn();
 vi.mock("next/navigation", () => ({
     usePathname: () => currentPathname,
+    useRouter: () => ({ refresh: mockRefresh }),
 }));
 
 /*
@@ -49,78 +39,28 @@ const boards = [
     { id: "board-2", name: "Marketing Plan", version: 0 },
 ];
 
-/*
- * A partial `UseQueryResult`-shaped stub — only the fields Sidebar actually reads
- * (`data`/`isPending`/`isError`/`refetch`) are asserted or consumed, so a full mock is more
- * misleading than useful.
- */
-const stagePending = () => {
-    mockedUseBoards.mockReturnValue({
-        data: undefined,
-        isPending: true,
-        isError: false,
-        refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useBoards>);
-};
-
-const stageError = (refetch = vi.fn()) => {
-    mockedUseBoards.mockReturnValue({
-        data: undefined,
-        isPending: false,
-        isError: true,
-        refetch,
-    } as unknown as ReturnType<typeof useBoards>);
-};
-
-const stagePopulated = (data: typeof boards = boards) => {
-    mockedUseBoards.mockReturnValue({
-        data,
-        isPending: false,
-        isError: false,
-        refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useBoards>);
-};
-
 describeForEachDevice({
     name: "Sidebar",
     body: () => {
-        it("renders three skeleton rows while pending, matching a board row's height, and no board data", async () => {
-            // Arrange
-            stagePending();
-
-            // Act
-            const screen = await renderWithProviders(<Sidebar />);
-
-            // Assert
-            const skeletons = screen.container.querySelectorAll(".animate-pulse");
-            expect(skeletons).toHaveLength(3);
-            for (const skeleton of skeletons) {
-                expect(skeleton.className).toContain("h-11");
-            }
-            expect(screen.container.textContent).not.toContain("Platform Launch");
-        });
-
         it("renders the authored load-failure copy with a working retry control on error", async () => {
             // Arrange
-            const refetch = vi.fn();
-            stageError(refetch);
+            mockRefresh.mockClear();
 
             // Act
-            const screen = await renderWithProviders(<Sidebar />);
+            const screen = await renderWithProviders(<Sidebar boards={[]} loadFailed />);
             await expect.element(screen.getByText("Couldn't load your boards.")).toBeVisible();
             const retry = screen.getByRole("button", { name: "Try again." });
             await retry.click();
 
             // Assert
-            expect(refetch).toHaveBeenCalledOnce();
+            expect(mockRefresh).toHaveBeenCalledOnce();
         });
 
         it("renders one row per board and the ALL BOARDS caption with the matching count", async () => {
-            // Arrange
-            stagePopulated();
+            // Arrange — boards passed directly as a prop (RSC-fed, D-02).
 
             // Act
-            const screen = await renderWithProviders(<Sidebar />);
+            const screen = await renderWithProviders(<Sidebar boards={boards} />);
 
             // Assert
             await expect.element(screen.getByText("ALL BOARDS (2)")).toBeVisible();
@@ -129,11 +69,10 @@ describeForEachDevice({
         });
 
         it("renders a zero count and no rows when there are no boards", async () => {
-            // Arrange
-            stagePopulated([]);
+            // Arrange — no boards, no failure.
 
             // Act
-            const screen = await renderWithProviders(<Sidebar />);
+            const screen = await renderWithProviders(<Sidebar boards={[]} />);
 
             // Assert
             await expect.element(screen.getByText("ALL BOARDS (0)")).toBeVisible();
@@ -143,10 +82,9 @@ describeForEachDevice({
         it("gives the row whose id matches the current path the selected treatment", async () => {
             // Arrange
             currentPathname = boardDetail("board-2");
-            stagePopulated();
 
             // Act
-            const screen = await renderWithProviders(<Sidebar />);
+            const screen = await renderWithProviders(<Sidebar boards={boards} />);
 
             // Assert
             const selectedLink = screen.getByRole("link", { name: "Marketing Plan" });
@@ -161,10 +99,11 @@ describeForEachDevice({
         it("does not widen the sidebar panel beyond its declared width for a 200-character board name", async () => {
             // Arrange
             const longName = "A".repeat(200);
-            stagePopulated([{ id: "board-1", name: longName, version: 0 }]);
 
             // Act
-            const screen = await renderWithProviders(<Sidebar />);
+            const screen = await renderWithProviders(
+                <Sidebar boards={[{ id: "board-1", name: longName, version: 0 }]} />,
+            );
 
             // Assert
             const nav = screen.container.querySelector("nav");
