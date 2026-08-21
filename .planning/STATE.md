@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 02.1
 current_phase_name: "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)"
 status: executing
-stopped_at: Phase 02.1 context gathered
-last_updated: "2026-08-21T11:10:25.729Z"
+stopped_at: Phase 02.1 Wave 5 complete (02.1-10), starting Wave 6
+last_updated: "2026-08-21T17:46:44.823Z"
 last_activity: 2026-08-21
-last_activity_desc: Phase 02.1 execution started
+last_activity_desc: Wave 5 (02.1-10 curl-based e2e seeding CLI) merged, gated, e2e-verified, tracked
 state_head: 0f55467cccfc1b260c395f7966768c7cf1c1c46c
 progress:
   total_phases: 5
@@ -31,12 +31,11 @@ real backend.
 ## Current Position
 
 Phase: 02.1 (Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)) — EXECUTING
-Plan: 1 of 15
+Plan: 10 of 15 (Waves 1-5 done; Wave 6 next)
 Status: Executing Phase 02.1
-Last activity: 2026-08-21 — Phase 02.1 execution started
-  to Phase 2. See Session Continuity below for full detail.
+Last activity: 2026-08-21 — Wave 5 (02.1-10) merged, gated, e2e-verified, tracked
 
-Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans)
+Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 02.1: 10/15 plans
 
 ## Performance Metrics
 
@@ -116,23 +115,22 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T09:04:20.319Z
-Stopped at: Phase 02.1 context gathered
+Last session: 2026-08-21T17:46:44.823Z
+Stopped at: Phase 02.1 Wave 5 complete (02.1-10), starting Wave 6
 
-**This session:** Resumed with Phase 02 paused mid-checkpoint on plan 02-08 (Task 3, awaiting the
-user's code-review comments). User gave a large batch of code-review feedback (App
-Router/Server-Components question, project-wide no-mocking testing policy, RTL vs Vitest Browser
-Mode for hooks, a typed reusable cookie client to replace `themeCookie`/`upstreamCookie`, an
-abstract mock-entity-creation class, enum'd test constants, `isBoard`/`isBoardArray` placement,
-OpenAPI-generated route constants, `boardDetail` naming) and explicitly deferred all of it to a
-new inserted phase 2.1, choosing to close 02-08 first ("as-is") rather than implement any of it
-now. Closed 02-08: wrote SUMMARY.md (capturing the deferred-2.1 scope in full), merged
-`worktree-agent-aff6e55fca144924a` into master, removed the worktree, updated ROADMAP/STATE
-tracking. Next: scope and insert Phase 2.1 (urgent decimal insertion) to carry this deferred
-work plus the broader test-strategy overhaul (no-mocking outside Storybook, curl-based seeding,
-Storybook-story-driven component tests, e2e limited to real happy-path business logic) applied
-retroactively across Phase 1 and Phase 2.
+**This session:** Resumed from a HANDOFF.json pause mid-Wave-5, with one open question: whether
+to set `NONPROD_RESET_TOKEN` (to unblock a real e2e Playwright run) or skip it. User resumed with
+"NONPROD_RESET_TOKEN is set". Confirmed the token in `.env.local`, ran the full
+`pnpm exec playwright test --project e2e` suite against the real nonprod backend (10 tests; 2
+failed on the first full-suite pass, both confirmed flaky-under-parallel-load and passing cleanly
+on isolated re-run — not a regression). Also re-ran `server-client.integration.test.ts`'s 3
+real-backend tests directly (previously blocked by sandboxed-executor network egress) — all pass.
+Closed WINDOWS.md ledger items 14 and 15 (both unrun-verify gaps, now verified). Completed Wave 5
+tracking: `roadmap.update-plan-progress 02.1 02.1-10 complete`, STATE.md updated. Next: tracking
+commit + push, then Wave 6 (02.1-11..14, comment-length sweep, 4 parallel plans), then Wave 7
+(02.1-15, human-checkpoint plan), then phase close-out.
 
-Resume file: .planning/phases/02.1-testing-strategy-overhaul-and-code-quality-retrofit-no-mocki/02.1-CONTEXT.md
-Next step: `/gsd-discuss-phase 2` or `/gsd-plan-phase 2` to start Board Management (no CONTEXT.md
-exists yet for Phase 2).
+Resume file: .planning/phases/02.1-testing-strategy-overhaul-and-code-quality-retrofit-no-mocki/.continue-here.md
+Next step: dispatch Wave 6 — 4 parallel `gsd-executor` agents in worktree isolation for
+02.1-11..14 (same pattern as Waves 1-5: capture HEAD, check intra-wave file overlap, dispatch,
+merge, full post-merge gate, track, push).
