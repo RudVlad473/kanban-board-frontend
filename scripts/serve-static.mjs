@@ -1,9 +1,7 @@
 /*
- * Minimal static file server for the Playwright visual-regression webServer entry (Task 3, plan
- * 01-05). Serves only the built storybook-static directory over plain HTTP — no framework, no
- * new dependency, just node:http/node:fs — since the visual spec must read exclusively from the
- * pre-built static Storybook, never a running application (CONVENTIONS.md's visual-regression
- * scope).
+ * Minimal static file server for the Playwright visual-regression webServer entry — serves only
+ * the built storybook-static directory over plain HTTP, since the visual spec must read
+ * exclusively from pre-built static Storybook, never a running app (CONVENTIONS.md's scope rule).
  */
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -27,12 +25,9 @@ const MIME_TYPES = {
 };
 
 /*
- * Resolves a request pathname against `root` and refuses anything that escapes it — `../`, an
- * encoded `..`, an absolute path, or a sibling directory whose name merely starts with root's
- * name. `path.resolve(root, "." + pathname)` treats a leading `/` as relative to root instead of
- * discarding root outright, and the containment check compares against `root + path.sep` (not a
- * bare string prefix) so `<root>-other/secret.txt` is correctly refused. Returns `null` on any
- * failure, including a malformed percent-escape that makes `decodeURIComponent` throw.
+ * Resolves a request pathname against `root`, refusing anything that escapes it (`../`, an
+ * encoded `..`, an absolute path, a same-prefix sibling) — every path is resolved and confined
+ * beneath the served root (derivation: 02-02-SUMMARY.md); returns `null` on any failure.
  */
 export const resolveWithinRoot = ({ root: servedRoot, pathname }) => {
     let decodedPathname;

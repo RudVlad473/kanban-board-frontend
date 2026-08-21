@@ -1,8 +1,7 @@
 /*
  * Composed from the plain React renderer package, not the Next.js-aware Storybook framework
- * package — the latter's main entry eagerly imports real Next.js internals (`process.env` read at
- * module-evaluation time) that only resolve under the Vite plugin the separate "storybook" Vitest
- * project loads; this "browser" project does not (vitest.setup.ts documents this in full).
+ * package — the latter eagerly imports real Next.js internals this "browser" project doesn't
+ * load the Vite plugin for (see docs/adr/tech/0021).
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
@@ -26,14 +25,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 /*
- * `next/link`'s real implementation reads `process.env` internally — undefined in this
- * project's plain Vitest Browser Mode test environment (confirmed directly: importing it
- * unmocked throws `ReferenceError: process is not defined` from
- * `next/dist/client/has-base-path.js`). Mocked to a plain anchor so the test environment gap
- * doesn't force `Sidebar` itself off client-side routing — `sidebar.tsx` keeps the real
- * `next/link` for production navigation between boards, this project's single most frequent
- * interaction, unlike the one-time auth-page transition `sign-in-form.tsx`/`sign-up-form.tsx`
- * reasonably opted out of instead.
+ * `next/link`'s real implementation reads `process.env` internally, undefined in Vitest Browser
+ * Mode (confirmed: throws `ReferenceError: process is not defined`) — mocked to a plain anchor so
+ * this test-environment gap doesn't force `sidebar.tsx` itself off real client-side routing (D-19).
  */
 
 vi.mock("next/link", () => ({

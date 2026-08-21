@@ -7,11 +7,9 @@ import { isSessionPayload, session } from "@/lib/server/session";
 import { createSessionRecord } from "@/test-utils/factories/session-record";
 
 /*
- * There is no real Next.js request scope in a Vitest run, so `next/headers`' `cookies()` is
- * mocked with the same in-memory jar `server-client.integration.test.ts` uses (D-19 environment
- * shim). Nothing else is mocked — every other call in this file dials the real, deployed nonprod
- * backend (ADR tech/0018/D-04). This file carries forward the deleted `app/api/boards/route.test.ts`'s
- * behavioural coverage (D-21): unauthenticated, session-derived userId, upstream-failure/no-leak.
+ * No real Next.js request scope in a Vitest run, so `next/headers`' `cookies()` is mocked with the
+ * same in-memory jar `server-client.integration.test.ts` uses (D-19) — everything else here dials
+ * the real, deployed nonprod backend (ADR tech/0018/D-04).
  */
 type CookieRecord = { value: string; options?: Record<string, unknown> };
 const cookieStore = new Map<string, CookieRecord>();
@@ -138,12 +136,8 @@ describe("loadBoards (real backend)", () => {
 
     it("does not resolve to ok, and leaks no upstream response text, for a syntactically valid but nonexistent upstream session", async () => {
         /*
-         * `externalApi`'s own response middleware (server-client.ts, GC-18) forces a full sign-out
-         * on any 401 returned for a call it bridged a credential onto — proven directly against the
-         * real backend by `server-client.integration.test.ts`'s own equivalent test. `redirect()`
-         * throwing here (rather than `loadBoards()` returning a graceful `{status:"error"}`) IS the
-         * no-leak behaviour for this specific case: nothing is returned at all, so there is no
-         * value for any upstream response text to leak into.
+         * `externalApi`'s response middleware (server-client.ts, GC-18) forces a sign-out on any
+         * 401 — `redirect()` throwing here IS the no-leak behaviour, nothing is returned to leak.
          */
         // Arrange
         await session.create(
