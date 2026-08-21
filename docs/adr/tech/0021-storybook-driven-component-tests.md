@@ -78,6 +78,17 @@ is the stated exception and stays in the "browser" project — `useOverflowIndic
 reason: its behavior cannot be verified against jsdom's non-functional layout engine, so it needs
 the real browser Vitest Browser Mode provides.
 
+`useOverflowIndicator`'s own API contract: it tracks whether an element's content overflows its
+inline-axis box (`scrollWidth > clientWidth`) via a `ResizeObserver` (the element's own box
+resizing) plus a `MutationObserver` watching `childList`/`characterData`/`subtree` (rendered
+content replaced as real DOM nodes/text — e.g. Dropdown's selected-value label changing on
+selection). Neither observer sees a native form control's own `.value` changing on keystroke — an
+internal property update, not a DOM mutation, and the control's box doesn't resize as the value
+grows — so a caller whose overflow source is an input's value (TextField) must additionally call
+the returned `recheck()` itself, from an `onInput` handler and/or a `value`-keyed effect for
+controlled updates that never fire a native input event at all. The hook's own comment states this
+contract at the `recheck` member it describes; this record is its durable, fuller home.
+
 ## Consequences
 
 - Every new component ships its stories and test together from first authorship — a component

@@ -10,10 +10,8 @@ import { session, type SessionRecord } from "@/lib/server/session";
  */
 
 /**
- * The authoritative "who is this" check (RESEARCH.md Security Domain) — every Route Handler and
- * protected Server Component must call this for itself rather than trusting an upstream redirect
- * (the CVE-2025-29927 class of bypass). `proxy.ts`'s route guard (plan 01-13) is an optimistic
- * pre-render check only, never the authorisation decision. Wrapped in React's `cache` so repeated
- * calls within a single server render don't re-verify the cookie more than once.
+ * The authoritative "who is this" check (T-01-05) — every protected server entry point must call
+ * this for itself rather than trust `proxy.ts`'s guard, which is optimisation only, not the
+ * authoritative check (CVE-2025-29927; see docs/adr/tech/0019). `cache`-wrapped so one render calls it once.
  */
 export const verifySession = cache(async (): Promise<SessionRecord | null> => session.verify());

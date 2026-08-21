@@ -51,8 +51,13 @@ that shipped this pattern first:
 
 - **Read side:** `src/features/boards/server/load-boards.ts` is a server-only function (`import
   "server-only"`) that calls `verifySession()` itself — never trusting that an outer guard already
-  ran, the CVE-2025-29927 proxy-bypass class `app/(dashboard)/layout.tsx`'s own comment names —
-  reads `userId` only from the session record (never from a caller, even though the OpenAPI
+  ran. `proxy.ts`'s route guard (T-01-05) is an optimisation only, not the authorisation decision;
+  it exists to redirect early, before a page even starts rendering, but every protected server
+  entry point — `app/(dashboard)/layout.tsx` calling `verifySession()` before rendering the route
+  group, and `load-boards.ts` calling it again here — makes its own authoritative check and refuses
+  on its own authority. That is what keeps protected content closed even if the proxy guard were
+  disabled entirely, the CVE-2025-29927 proxy-bypass class. Reads `userId` only from the session
+  record (never from a caller, even though the OpenAPI
   contract declares it a client-suppliable query parameter), calls `externalApi.GET`, and returns
   a discriminated union (`LoadBoardsResult: {status:"ok"|"unauthenticated"|"error"}`) rather than
   throwing. It is composed as `<Suspense fallback={<SidebarSkeleton />}><SidebarBoards /></Suspense>`

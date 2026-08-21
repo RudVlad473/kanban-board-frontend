@@ -22,10 +22,9 @@ const SidebarBoards = async () => {
 };
 
 /*
- * The authoritative check (RESEARCH.md Security Domain, T-01-05) — `proxy.ts`'s guard is an
- * optimisation only, and this layout does not assume it already ran. Calling `verifySession()`
- * here itself is what keeps this route group closed even if the guard were disabled entirely
- * (the CVE-2025-29927 proxy-bypass class).
+ * The authoritative check (T-01-05) — `proxy.ts`'s guard is optimisation only, not the
+ * authoritative check, and this layout does not assume it already ran: calling `verifySession()`
+ * here is what keeps this route group closed even if the guard were disabled (CVE-2025-29927; see docs/adr/tech/0019).
  */
 const DashboardLayout = async ({ children }: PropsWithChildren) => {
     const identity = await verifySession();

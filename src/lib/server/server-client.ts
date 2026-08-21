@@ -30,27 +30,23 @@ const readExternalApiBaseUrl = () => {
 };
 
 /**
- * The two routes the backend serves without a session — sending a stale bridged credential on the
- * very request that is meant to mint a fresh one is both pointless and confusing to debug
- * (T-01-49). Matched against `schemaPath`, the original OpenAPI path template, not the resolved
- * URL.
+ * The two routes the backend serves without a session (T-01-49) — sending a stale bridged
+ * credential to a request that is meant to mint a fresh one is pointless and confusing to debug.
+ * Matched against `schemaPath`, the OpenAPI path template, not the resolved URL.
  */
 const UNAUTHENTICATED_SCHEMA_PATHS = new Set<string>([EXTERNAL_PATH.SIGN_IN, EXTERNAL_PATH.SIGN_UP]);
 
 /**
- * The only client instance that targets the external API contract (Pattern 1, 01-RESEARCH.md).
- * Importing `server-only` above makes any client component that imports this module fail the
- * build, mechanically enforcing CONVENTIONS.md's BFF-only auth rule instead of relying on code
- * review alone.
+ * The only client instance targeting the external API contract (Pattern 1, 01-RESEARCH.md) —
+ * `import "server-only"` above makes any Client Component that imports this fail the build,
+ * mechanically enforcing the BFF-only auth rule (CONVENTIONS.md) rather than relying on review.
  */
 export const externalApi = createClient<paths>({ baseUrl: readExternalApiBaseUrl() });
 
 /*
- * GC-18's general session-bridging mechanism (T-01-48/T-01-50/T-01-51/T-01-52 threat register) —
- * one module-scope registration covering every caller of `externalApi`, present and future,
- * rather than an auth-shaped special case. Reads the current session through the data access
- * layer's `verifySession()` — never a second direct `session.verify()` call — per this project's
- * established single-identity-source rule (DAL as the single source of identity).
+ * GC-18's general session-bridging middleware (T-01-48/T-01-50/T-01-51/T-01-52) — one
+ * module-scope registration covering every present and future `externalApi` caller. Reads the
+ * session via the DAL's `verifySession()`, never a second direct `session.verify()` call (see 01-32-SUMMARY.md).
  */
 externalApi.use({
     onRequest: async ({ request, schemaPath }) => {
@@ -67,21 +63,18 @@ externalApi.use({
     },
     onResponse: async ({ request, response }) => {
         /*
-         * Only a refusal on a call this middleware itself bridged a credential onto is a candidate
-         * for the forced sign-out (`01-32-PLAN.md`'s Task 2 behaviour: "on a call made with a
-         * bridged credential") — an anonymous call made with no session in the first place (the
-         * common case for an unauthenticated visitor) is expected to 401, and forcing a sign-out
-         * over it would be a no-op at best and a surprising redirect at worst.
+         * Only a refusal on a call this middleware itself bridged a credential onto is a
+         * forced-sign-out candidate — an anonymous 401 (no bridged credential) is expected and
+         * must not force one (see 01-32-SUMMARY.md).
          */
         if (response.status !== 401 || !request.headers.has("Cookie")) {
             return response;
         }
 
         /*
-         * Read a clone, not `response` itself — a consumed body would break every call site
-         * downstream of this middleware (T-01-53). `.json()` rejecting (an empty or non-JSON
-         * body) is caught and treated the same as a body that parsed but wasn't problem-shaped:
-         * `parseProblemDetail(null)` returns `null`.
+         * Read a clone, not `response` itself — a consumed body breaks every downstream call site
+         * (T-01-53). A rejecting `.json()` (empty/non-JSON body) is caught and treated like a
+         * non-problem-shaped body: `parseProblemDetail(null)` returns `null`.
          */
         const clonedBody: unknown = await response
             .clone()
@@ -90,12 +83,9 @@ externalApi.use({
         const problem = parseProblemDetail(clonedBody);
 
         /*
-         * A failed sign-in attempt (wrong password) is a `BAD_CREDENTIALS` 401 — a wrong password
-         * typed in one tab must never sign out a working session in another (T-01-51). Every other
-         * 401 on an already-bridged call, including one whose body didn't parse at all, is treated
-         * as the backend's own session having quietly expired (GC-18, T-01-52, `01-RESEARCH.md`
-         * Finding 3) and forces a full sign-out — the same destination the route guard already
-         * sends an unauthenticated visitor to.
+         * A wrong-password refusal is `BAD_CREDENTIALS` (T-01-51) and must never sign out a
+         * working session in another tab. Every other 401 here is the backend's own session
+         * quietly expiring (GC-18, T-01-52) and forces a full sign-out (see 01-32-SUMMARY.md).
          */
         if (problem?.code === PROBLEM_CODE.BAD_CREDENTIALS) {
             return response;
