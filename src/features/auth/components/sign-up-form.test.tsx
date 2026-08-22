@@ -1,13 +1,12 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { formDataToObject } from "@/test-utils/form-data-to-object";
-import { renderWithProviders } from "@/test-utils/render-with-providers";
 
-import { SignUpForm } from "./sign-up-form";
 import * as signUpStories from "./sign-up-form.stories";
 
 const {
@@ -24,7 +23,12 @@ const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const SIGN_UP_FAILURE_MESSAGE =
     "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
 
-const renderSignUpForm = () => renderWithProviders(<SignUpForm />);
+/*
+ * D-03: deep tests render the composed `Empty` story too, not a bare `<SignUpForm />` — this
+ * mounts through the real `AuthCard` decorator plus the global `QueryProvider`/theme decorators
+ * (docs/adr/tech/0025), closer to production usage than a hand-wrapped tree.
+ */
+const renderSignUpForm = () => render(<Empty />);
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The
@@ -34,19 +38,10 @@ const renderSignUpForm = () => renderWithProviders(<SignUpForm />);
 describeForEachDevice({
     name: "SignUpForm",
     body: () => {
-        /*
-         * composeStories' `.run()` and vitest-browser-react's `render()` (via renderWithProviders)
-         * don't clean up after each other — wipe the page body between tests so the two mechanisms
-         * never collide (the same DOM-leak fix plan 02.1-07 applied to the UI primitives).
-         */
-        afterEach(() => {
-            document.body.innerHTML = "";
-        });
-
         // Shallow: copy, staged validation/error/pending states — asserted through composed stories (D-08).
         it("renders three labelled fields, the primary submit control, and the cross-link to Sign In, each reachable by name", async () => {
             // Act
-            await Empty.run();
+            await render(<Empty />);
 
             // Assert
             expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
@@ -58,7 +53,7 @@ describeForEachDevice({
 
         it("marks the Name field optional through its accessible description, not its label", async () => {
             // Act
-            await Empty.run();
+            await render(<Empty />);
 
             // Assert
             expect(screen.getByLabelText("Name")).toHaveAccessibleDescription("Optional");
@@ -67,7 +62,7 @@ describeForEachDevice({
 
         it("submits through the form element's own action, not a submit handler, so it works before hydration", async () => {
             // Act
-            await Empty.run();
+            await render(<Empty />);
 
             /*
              * Assert — React renders a function-based `action` as a distinctive no-JS fallback,
@@ -79,7 +74,7 @@ describeForEachDevice({
 
         it("renders the staged field values from the Filled story", async () => {
             // Act
-            await Filled.run();
+            await render(<Filled />);
 
             // Assert
             expect(screen.getByRole("textbox", { name: "Email" })).toHaveValue("user@example.com");
@@ -89,7 +84,7 @@ describeForEachDevice({
 
         it("renders the required-field message on Email and Password (Name is optional) when staged with field errors", async () => {
             // Act
-            await WithFieldErrors.run();
+            await render(<WithFieldErrors />);
 
             // Assert
             expect(screen.getAllByText(REQUIRED_FIELD_MESSAGE)).toHaveLength(2);
@@ -97,7 +92,7 @@ describeForEachDevice({
 
         it("renders the Name-length and password-complexity messages when staged with those field errors", async () => {
             // Act
-            await WithNameAndPasswordComplexityErrors.run();
+            await render(<WithNameAndPasswordComplexityErrors />);
 
             // Assert
             expect(screen.getByText("Name must be between 3 and 32 characters.")).toBeInTheDocument();
@@ -114,7 +109,7 @@ describeForEachDevice({
              * sign-up.integration.test.ts) — this only proves the form renders `state.message`.
              */
             // Act
-            await WithServerError.run();
+            await render(<WithServerError />);
 
             // Assert
             expect(screen.getByRole("alert")).toHaveTextContent(SIGN_UP_FAILURE_MESSAGE);
@@ -122,7 +117,7 @@ describeForEachDevice({
 
         it("disables the submit control and all three fields, and refuses typed input, while staged as submitting", async () => {
             // Act
-            await Submitting.run();
+            await render(<Submitting />);
             const submitButton = screen.getByRole("button", { name: "Create Account" });
             const emailField = screen.getByRole<HTMLInputElement>("textbox", { name: "Email" });
 
@@ -141,7 +136,7 @@ describeForEachDevice({
 
         it("renders the password field revealed by default when staged that way", async () => {
             // Act
-            await PasswordRevealed.run();
+            await render(<PasswordRevealed />);
 
             // Assert
             expect(screen.getByLabelText("Password", { exact: true })).toHaveAttribute("type", "text");

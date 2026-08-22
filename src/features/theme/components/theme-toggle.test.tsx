@@ -2,18 +2,20 @@ import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { render } from "vitest-browser-react";
 
-import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
-import { renderWithProviders } from "@/test-utils/render-with-providers";
 
-import { ThemeToggle } from "./theme-toggle";
 import * as stories from "./theme-toggle.stories";
 
 const { Light, Dark, SaveFailed } = composeStories(stories);
 
-const renderToggle = (props: { initialTheme: Theme; isAuthenticated: boolean }) =>
-    renderWithProviders(<ThemeToggle {...props} />);
+/*
+ * D-03: deep tests render the composed `Light` story with `isAuthenticated` overridden as a JSX
+ * prop (props merge over the story's own args), so every mount inherits the real decorators
+ * (docs/adr/tech/0025) instead of a bare `<ThemeToggle />`.
+ */
+const renderToggle = (props: { isAuthenticated: boolean }) => render(<Light {...props} />);
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The theme
@@ -23,12 +25,10 @@ describeForEachDevice({
     name: "ThemeToggle",
     body: () => {
         /*
-         * composeStories' `.run()` and vitest-browser-react's `render()` (via renderWithProviders)
-         * don't clean up after each other — wipe the page body between tests so the two mechanisms
-         * never collide (the same DOM-leak fix plan 02.1-07 applied to the UI primitives).
+         * File-local: these two are real cross-test state this component writes, unlike the
+         * centralized body-wipe hook (D-04) which does not cover them.
          */
         afterEach(() => {
-            document.body.innerHTML = "";
             document.documentElement.classList.remove("dark");
             document.cookie = "theme=; path=/; max-age=0";
         });
@@ -36,7 +36,7 @@ describeForEachDevice({
         // Shallow: accessible name, checked state, failure copy — asserted through composed stories (D-08).
         it("is found by role switch with the accessible name", async () => {
             // Act
-            await Light.run();
+            await render(<Light />);
 
             // Assert
             expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toBeInTheDocument();
@@ -44,7 +44,7 @@ describeForEachDevice({
 
         it("renders unchecked for the light theme, driven by initialTheme", async () => {
             // Act
-            await Light.run();
+            await render(<Light />);
 
             // Assert
             expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute("aria-checked", "false");
@@ -52,7 +52,7 @@ describeForEachDevice({
 
         it("renders checked for the dark theme, driven by initialTheme", async () => {
             // Act
-            await Dark.run();
+            await render(<Dark />);
 
             // Assert
             expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute("aria-checked", "true");
@@ -60,7 +60,7 @@ describeForEachDevice({
 
         it("renders the authored failure copy when the save mutation is staged as failed", async () => {
             // Act
-            await SaveFailed.run();
+            await render(<SaveFailed />);
 
             // Assert
             expect(screen.getByRole("status")).toHaveTextContent("Couldn't save your theme. Try again.");
@@ -69,7 +69,7 @@ describeForEachDevice({
         // Deep: real interaction and the live region's own empty-state shape — direct renders.
         it("renders a live region even with no message, giving assistive tech a stable node to watch", async () => {
             // Arrange
-            const rendered = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
+            const rendered = await renderToggle({ isAuthenticated: true });
 
             // Assert
             await expect.element(rendered.getByRole("status")).toHaveTextContent("");
@@ -77,7 +77,7 @@ describeForEachDevice({
 
         it("toggles the interface on click and settles with no message on success", async () => {
             // Arrange
-            const rendered = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
+            const rendered = await renderToggle({ isAuthenticated: true });
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -91,7 +91,7 @@ describeForEachDevice({
 
         it("is reachable by keyboard tab order and toggles on Space", async () => {
             // Arrange
-            const rendered = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
+            const rendered = await renderToggle({ isAuthenticated: true });
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
 
             // Assert (reachable)
@@ -107,7 +107,7 @@ describeForEachDevice({
 
         it("returns the interface to where it began after toggling twice", async () => {
             // Arrange
-            const rendered = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: true });
+            const rendered = await renderToggle({ isAuthenticated: true });
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -122,7 +122,7 @@ describeForEachDevice({
 
         it("updates the cookie and the document scope directly when unauthenticated", async () => {
             // Arrange
-            const rendered = await renderToggle({ initialTheme: THEME.LIGHT, isAuthenticated: false });
+            const rendered = await renderToggle({ isAuthenticated: false });
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
