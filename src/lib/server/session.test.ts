@@ -7,7 +7,10 @@ import { createSessionRecord } from "@/test-utils/factories/session-record";
 /*
  * D-13: mock-free — the request-scoped cookies module is never imported here. `verifyToken` never
  * calls `cookies()`, so every JWT rejection path is driven directly through it with no jar.
- *
+ */
+
+// comment-length-exempt: enumerates all 5 relocated ledger rows per this file's own acceptance criteria — a required list, not compressible prose (docs/adr/tech/0023)
+/*
  * Relocated assertions (ledger rows 8, 9, 10, 17, 18 — see 02.2-08-SUMMARY.md for the full table):
  * - row 8 (cookie value is not the user id; three-segment JWT) -> plan 02.2-05's extended AUTH-01
  * - row 9 (httpOnly/Secure/SameSite flags) -> plan 02.2-07's e2e/cookie-policy.e2e.spec.ts

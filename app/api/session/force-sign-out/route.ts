@@ -12,10 +12,9 @@ const isKnownRoute = (value: string | null): value is Route =>
     value !== null && (Object.values(ROUTE) as string[]).includes(value);
 
 /*
- * ADR tech/0026: the one narrow, ADR-justified exception to docs/adr/tech/0019's Route-Handler
- * ban — a Suspense-streamed Server Component (server-client.ts's onResponse) cannot legally
- * mutate cookies itself, so it redirects here instead. `proxy.ts`'s matcher already excludes
- * `/api/**`, so this cannot recurse through the proxy's own gating.
+ * ADR tech/0026's one narrow exception to docs/adr/tech/0019's Route-Handler ban — a
+ * Suspense-streamed Server Component (server-client.ts's onResponse) cannot legally mutate
+ * cookies itself, so it redirects here instead (`/api/**` is outside `proxy.ts`'s own matcher).
  */
 export const GET = async (request: NextRequest): Promise<NextResponse> => {
     await session.destroy();
