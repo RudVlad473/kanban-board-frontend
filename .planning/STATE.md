@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 02.2
-current_phase_name: "Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED, PULLED FORWARD)"
-status: executing
-stopped_at: Phase 02.2 context gathered
-last_updated: "2026-08-22T16:43:43.033Z"
+current_phase: 2
+current_phase_name: Board Management
+status: planning
+stopped_at: Phase 02.2 complete, ready to plan Phase 2
+last_updated: "2026-08-22T21:35:33.539Z"
 last_activity: 2026-08-22
-last_activity_desc: Phase 02.2 execution started
-state_head: d3465d8fe70c407ab88a5027b8c669928828eee1
+last_activity_desc: Phase 02.2 complete, transitioned to Phase 2
+state_head: 60da2fdc0f85b759404337e268b94d3a55752c7b
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 75
-  completed_plans: 62
+  completed_plans: 71
 milestone_name: milestone
 ---
 
@@ -31,12 +31,12 @@ board create, board detail view, rename, delete — 02-09..13)
 
 ## Current Position
 
-Phase: 02.2 (Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED, PULLED FORWARD)) — EXECUTING
+Phase: 2 — Board Management
 Phase 02 (Board Management): PAUSED at Wave 8 (9 of 13 plans done; 02-10 not started)
-Status: Executing Phase 02.2
+Status: Ready to plan
 explicit user decision, to resolve 4 pending testing-pattern todos before 02-10/02-12/02-13 add
 more instances of the pattern under review (see `.continue-here.md` and `HANDOFF.json`)
-Last activity: 2026-08-22 — Phase 02.2 execution started
+Last activity: 2026-08-22 — Phase 02.2 complete, transitioned to Phase 2
 
 Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans; Phase 02.1: 15/15 plans);
 Phase 02: 9/13 plans (paused); Phase 02.2: 0 plans (not yet planned, next up)
@@ -45,7 +45,7 @@ Phase 02: 9/13 plans (paused); Phase 02.2: 0 plans (not yet planned, next up)
 
 **Velocity:**
 
-- Total plans completed: 53
+- Total plans completed: 62
 - Average duration: n/a
 - Total execution time: 0 hours
 
@@ -55,6 +55,7 @@ Phase 02: 9/13 plans (paused); Phase 02.2: 0 plans (not yet planned, next up)
 |-------|-------|-------|----------|
 | 01 | 38 | - | - |
 | 02.1 | 15 | - | - |
+| 02.2 | 9 | - | - |
 
 **Recent Trend:**
 
@@ -167,7 +168,7 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-08-22T15:42:37.108Z
-Stopped at: Phase 02.2 context gathered
+Stopped at: Phase 02.2 complete, ready to plan Phase 2
 
 **This session:** Resumed from a HANDOFF.json pause at the Wave 7 (02.1-15) Task 3 human
 checkpoint — user replied "approved". Ran the phase's post-execution gate in full:
