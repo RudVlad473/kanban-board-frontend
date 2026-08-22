@@ -126,6 +126,7 @@ Accent reserved for (explicit list — never "all interactive elements"):
 2. The "+ Create New Board" sidebar link — accent-colored icon + text on the transparent sidebar surface (not a filled button).
 3. Primary CTA buttons — "Create New Board" (Add Board modal submit), "Save Changes" (Edit Board modal submit), "Create your first board" (zero-boards empty-state CTA), "+ Add New Task" (header — inherited from Phase 3/4 scope but visually present per PDF).
 4. `Dropdown`'s active-item checkmark (`Select.ItemIndicator`, already `text-bg-primary`) and every primitive's `focus-visible` ring (`--color-ring-focus`, already global).
+5. The floating "Show Sidebar" control shown when the sidebar is collapsed (plan 02-09, Task 4/8b) — an accent-filled `IconButton` pinned to the viewport's bottom-left, matching the design PDF's collapsed-state treatment.
 
 Destructive reserved for:
 1. "Delete Board" text inside the sidebar row's kebab/overflow menu (D-07).
