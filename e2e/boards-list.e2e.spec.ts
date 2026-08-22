@@ -36,5 +36,19 @@ test.describe("BOARD-01: sidebar board list", () => {
         await expect(sidebar.getByRole("link", { name: firstBoardName })).toBeVisible();
         await expect(sidebar.getByRole("link", { name: secondBoardName })).toBeVisible();
         await expect(sidebar.getByRole("link")).toHaveCount(2);
+
+        // Act (BOARD-06: hide the sidebar)
+        await page.getByRole("button", { name: "Hide Sidebar" }).click();
+
+        // Assert
+        await expect(page.getByRole("navigation", { name: "Boards" })).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Show Sidebar" })).toBeVisible();
+
+        // Act (show it again)
+        await page.getByRole("button", { name: "Show Sidebar" }).click();
+
+        // Assert
+        await expect(page.getByRole("navigation", { name: "Boards" })).toBeVisible();
+        await expect(page.getByRole("link", { name: firstBoardName })).toBeVisible();
     });
 });

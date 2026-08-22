@@ -167,5 +167,28 @@ describeForEachDevice({
             await expect.element(rendered.getByText("kanban")).toBeInTheDocument();
             await expect.element(rendered.getByRole("button", { name: "Hide Sidebar" })).toBeInTheDocument();
         });
+
+        /*
+         * Task 1 decided Option B (overlay-later, see 02-09-SUMMARY.md) — below 768px the panel
+         * stays the same fixed column as desktop, never an overlay. Both bullets below hold
+         * identically at every viewport, which is itself the recorded difference from Option C.
+         */
+        it("keeps the expanded panel in normal document flow, never positioned over the content", async () => {
+            // Arrange
+            const rendered = await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div> });
+
+            // Assert
+            expect(getComputedStyle(rendered.getByRole("navigation", { name: "Boards" }).element()).position).not.toBe(
+                "fixed",
+            );
+        });
+
+        it("returns the full viewport width to the board view with no horizontal overflow once collapsed", async () => {
+            // Arrange
+            await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div>, defaultIsExpanded: false });
+
+            // Assert
+            expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
+        });
     },
 });
