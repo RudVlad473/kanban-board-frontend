@@ -132,6 +132,12 @@ Recent decisions affecting current work:
   the tooling landscape has better options now —
   `.planning/todos/pending/2026-08-22-reopen-local-pre-commit-gitleaks-investigation.md`.
 
+- Fold e2e seeding logic into a single service/module — `theme.e2e.spec.ts`'s
+  `signUpDirectCapturingTheme()` duplicates `seed.ts`'s `seedAccount()` because the seed script
+  doesn't return the `theme` field; also needs a design decision for seeding future entities
+  (columns, tasks) as Phase 2+ lands —
+  `.planning/todos/pending/2026-08-22-fold-e2e-seeding-logic-into-a-single-service-module.md`.
+
 ### Blockers/Concerns
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
