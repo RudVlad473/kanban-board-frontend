@@ -10,7 +10,9 @@ import { setProjectAnnotations } from "@storybook/react";
  * uses RTL's own tracked `render()` instead of an untracked fallback whose DOM leaks into later
  * tests (D-08 retrofit finding).
  */
-import { render } from "@testing-library/react";
+import { cleanup as cleanupTestingLibraryRender, render } from "@testing-library/react";
+import { afterEach } from "vitest";
+import { cleanup as cleanupVitestBrowserReactRender } from "vitest-browser-react";
 
 /*
  * Registers @testing-library/jest-dom's matchers (toBeDisabled, toHaveAccessibleName, etc.)
@@ -33,3 +35,19 @@ import "./src/styles/globals.css";
  * the call there by name and disables its own per-story provisioning (see docs/adr/tech/0021).
  */
 setProjectAnnotations([a11yAddonAnnotations, previewAnnotations, { testingLibraryRender: render }]);
+
+/*
+ * D-04: single centralized cleanup for the "browser" project, replacing the 11 per-file
+ * `document.body.innerHTML = ""` copies that existed while two rendering mechanisms coexisted
+ * (docs/adr/tech/0025). A raw `document.body.innerHTML = ""` wipe (RESEARCH.md Assumption A1's
+ * rejected alternative) rips DOM nodes out from under whichever render mechanism mounted them
+ * without telling it — `composeStories`' `.run()` (via `testingLibraryRender` above) then throws
+ * `NotFoundError: Failed to execute 'removeChild'` on its next call in the same file, because its
+ * internally tracked root no longer matches the live DOM. Each mechanism's own `cleanup()` calls
+ * `root.unmount()` first, so both can coexist safely for the remainder of this phase's file-by-file
+ * retrofit (plans 02.2-02, 03, 04, 06).
+ */
+afterEach(async () => {
+    cleanupTestingLibraryRender();
+    await cleanupVitestBrowserReactRender();
+});
