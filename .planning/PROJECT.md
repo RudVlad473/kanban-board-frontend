@@ -111,6 +111,12 @@ trust that every change is reliably persisted and reconciled against the real ba
 | Client-orchestrated multi-child creation; partial failures kept, not rolled back (ADR domain/0003) | No bulk-create/transactional endpoint exists; a rollback-delete was considered and rejected as unsafe | ◐ Proposed |
 | Auth mutations carved out to Server Actions; boards/columns/tasks stay on TanStack Query (ADR tech/0017) | `useActionState` gives auth forms progressive enhancement and simpler pending/error state than the client-mutation hooks tech/0002 chose for the rest of the app; core-domain mutations still need `useOptimistic` rollback, which Server Actions don't give for free | ✓ Locked |
 | No mock server anywhere — dev, every test layer, and CI all dial the real deployed nonprod backend (ADR tech/0018) | User's explicit Testing Trophy philosophy ("store.ts should die"); supersedes tech/0004's MSW choice | ✓ Locked |
+| Every server entry point is an RSC (reads) or a Server Action (writes) — Route Handlers banned entirely (ADR tech/0019, narrows tech/0002) | Closes the SSR route-guard gap Route Handlers reintroduced; blocking-CI-enforced via `check-no-route-handlers.mjs` | ✓ Locked |
+| No `vi.mock`/`vi.spyOn` outside `*.stories.tsx`, with a closed, ADR-documented exception set for `next/headers`/`next/navigation`/`next/link` shims (ADR tech/0020) | Formalizes the store.ts-should-die philosophy as a blocking ESLint rule, not just a norm | ✓ Locked |
+| Every component test renders its own composed Storybook stories via `composeStories`, not a hand-rendered `renderWithProviders` tree (ADR tech/0021) | One behavior-proving surface (the story) instead of two independently-maintained ones | ✓ Locked |
+| E2E data seeding is a curl-based CLI (`e2e/seed.sh`), not TypeScript fixtures (ADR tech/0022) | Reuses the sign-up response's own session cookie via a jar rather than a second sign-in (backend caps 2 concurrent sessions/account) | ✓ Locked |
+| Comment-length rule (max 3 prose lines) is mechanically enforced, blocking CI (ADR tech/0023) | Previously stated in CONVENTIONS.md but never checked; `check-comment-length.mjs` closes the gap | ✓ Locked |
+| Runtime boundary validation always via zod `.safeParse()`, schema as source of truth, type via `z.infer` (ADR tech/0024) | Prevents an unchecked cast from an `openapi-fetch` response into a domain type | ✓ Locked |
 
 *Legend: ✓ Locked = explicit Accepted status in the source ADR. ◐ Proposed = a clear chosen
 decision in prose ("Decision Outcome"), but no explicit Accepted/status marker in the
@@ -120,4 +126,4 @@ decision was genuinely made and later genuinely reversed by a later ADR — kept
 rather than deleted, since both halves of the history are worth keeping.*
 
 ---
-*Last updated: 2026-08-20 after Phase 1 (foundation-auth-preferences)*
+*Last updated: 2026-08-22 after Phase 02.1 (testing-strategy-overhaul-and-code-quality-retrofit)*

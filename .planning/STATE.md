@@ -21,12 +21,13 @@ milestone_name: milestone
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-20)
+See: .planning/PROJECT.md (updated 2026-08-22)
 
 **Core value:** A signed-in user can create boards, organize tasks across columns via
 drag-and-drop, and trust that every change is reliably persisted and reconciled against the
 real backend.
-**Current focus:** Phase 02.1 — Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)
+**Current focus:** Phase 2 — Board Management, waves 7-11 remaining (sidebar chrome/collapse,
+board create, board detail view, rename, delete — 02-09..13)
 
 ## Current Position
 
@@ -83,6 +84,14 @@ Recent decisions affecting current work:
 
 - [Phase 02.1]: update-theme.ts's session-check-then-validate comment compressed to one sentence + docs/adr/tech/0019 pointer; every T-01-NN/T-02.1-NN threat identifier preserved verbatim through compression (plan 02.1-12)
 
+- [Phase 02.1 close-out]: code review (02.1-REVIEW.md, 0 critical/2 warning/3 info) fixed rather
+  than deferred — theme cookie name/max-age promoted to `cookie-registry.ts`'s single source of
+  truth, `buildClientCookieString()` added as the `document.cookie` counterpart to
+  `createCookieClient()`, both reusing `createBaseCookieOptions()`'s secure/sameSite/path policy.
+  Generalized into a durable convention (CONVENTIONS.md): any structured delimiter-joined string
+  built from named fields goes through one named builder once a second call site needs the same
+  shape, never a repeated inline template literal.
+
 ### Pending Todos
 
 - Investigate stricter Prettier config for React/Next.js formatting (and whether the real gap is
@@ -90,11 +99,9 @@ Recent decisions affecting current work:
   `.planning/todos/pending/2026-08-19-investigate-stricter-prettier-config-for-react-and-next-js-f.md`.
   Not scoped to a phase yet.
 
-- Fix path traversal in `scripts/serve-static.mjs` (Playwright visual webServer, dev/CI-only,
-  low exposure) — `.planning/todos/pending/2026-08-20-fix-path-traversal-in-serve-static-visual-test-server.md`.
-
-- Clear the theme cookie on sign-out (narrow shared-browser cross-account edge case, no data
-  exposure) — `.planning/todos/pending/2026-08-20-clear-theme-cookie-on-sign-out.md`.
+- Trim `src/features/boards/schemas.unit.test.ts`'s rejection cases that just re-test zod's own
+  primitives —
+  `.planning/todos/pending/2026-08-21-trim-boards-schema-unit-tests-that-just-retest-zod.md`.
 
 ### Blockers/Concerns
 
@@ -111,8 +118,8 @@ Recent decisions affecting current work:
 
 ### Roadmap Evolution
 
-- Phase 02.1 inserted after Phase 2: Testing strategy overhaul and code-quality retrofit (no-mocking policy, curl-based e2e seeding, Storybook-driven component tests) plus deferred 02-08 code-review scope (URGENT)
-- Phase 02.2 inserted after Phase 2: Follow-up from 02.1's own retrospective: unify component tests fully onto Storybook stories (delete renderWithProviders, move all providers into Storybook decorators, render composed stories directly instead of .run(), no play functions) — closes a live QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx
+- Phase 02.1 inserted after Phase 2: Testing strategy overhaul and code-quality retrofit (no-mocking policy, curl-based e2e seeding, Storybook-driven component tests) plus deferred 02-08 code-review scope (URGENT) — **complete** 2026-08-22, 15/15 plans, verified 22/22 D-IDs
+- Phase 02.2 inserted after Phase 2: Follow-up from 02.1's own retrospective: unify component tests fully onto Storybook stories (delete renderWithProviders, move all providers into Storybook decorators, render composed stories directly instead of .run(), no play functions) — closes a live QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx — not yet planned
 
 ## Deferred Items
 
@@ -124,39 +131,39 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T22:00:00.000Z
-Stopped at: Phase 02.1 complete, ready to plan Phase 2
+Last session: 2026-08-22T09:00:00.000Z
+Stopped at: Phase 02.1 complete, ready to plan/execute Phase 2's remaining waves (7-11)
 
-**This session:** Resumed from a HANDOFF.json pause mid-Wave-5 (NONPROD_RESET_TOKEN question),
-closed out Wave 5's tracking, then dispatched Wave 6 — 4 parallel `gsd-executor` agents
-(02.1-11..14, the repo-wide comment-length sweep) in isolated worktrees. All 4 completed and
-merged; 3 of 4 conflicted on files touched by more than one plan (`sidebar.stories.tsx`,
-`sidebar.test.tsx`, `load-boards.integration.test.ts`, all resolved by combining both sides'
-improvements) — the same cross-plan-overlap pattern Wave 3 hit. The post-merge gate then surfaced
-two real gaps neither individual plan could have caught:
+**This session:** Resumed from a HANDOFF.json pause at the Wave 7 (02.1-15) Task 3 human
+checkpoint — user replied "approved". Ran the phase's post-execution gate in full:
 
-1. `scripts/check-comment-length.unit.test.mjs` asserted against `text-field.tsx`'s live 26-line
-   comment block as a fixture — Wave 6 compressed that block by design, so the test regressed
-   against its own retrofit's success. Fixed: replaced with a synthetic-source fixture.
+1. **Code review** (`gsd-code-reviewer`, standard depth, 141 files): 0 critical, 2 warning, 3
+   info (02.1-REVIEW.md, commit `9679a83`).
+2. **Phase-goal verification** (`gsd-verifier`): independently re-checked all 22 D-01..D-22
+   truths against the live codebase (not SUMMARY claims) — all verified. Routed to
+   `human_needed` only for two process items: confirm the approval (already given) and decide
+   fix-vs-defer on the 4 review findings.
+3. **User chose "fix now"** — fixed all 4: promoted `THEME_COOKIE_MAX_AGE_SECONDS` into
+   `cookie-registry.ts` alongside `COOKIE.THEME`; added `buildClientCookieString()` as the
+   `document.cookie` counterpart to the existing server-side `createCookieClient()`, both
+   sharing `createBaseCookieOptions()`'s secure/sameSite/path policy (closes WR-01/WR-02);
+   corrected two stale `CONVENTIONS.md` claims and moved their todos to `completed/`
+   (IN-01/IN-02). User separately asked for the fix to generalize into a durable convention —
+   added a CONVENTIONS.md rule: any structured delimiter-joined string built from named fields
+   goes through one named builder once a 2nd call site needs the same shape (commits `5f3b62b`,
+   `eca3b5d`).
+4. **VERIFICATION.md** updated to `status: passed` with a resolution note, then
+   `phase.complete` run — ROADMAP.md/STATE.md advanced, PROJECT.md's Key Decisions table gained
+   the 6 ADRs this phase produced (tech/0019-0024).
 
-2. `storybook-static/` was stale (built 2026-08-13, four days before the `isLoading` Button
-   feature it was supposed to represent) — visual regression hung indefinitely on Button/IconButton
-   "loading" stories waiting for a story root that didn't match the stale manifest. Not a Wave 6
-   regression; fixed by rebuilding (`pnpm build-storybook`) before re-running. All 260 visual
-   assertions and all 10 e2e tests then passed clean.
+All commits pushed as fast-forwards (`c701467..19ee0ca`). Phase 02.1 is fully closed: 15/15
+plans, 22/22 D-IDs verified, code review clean.
 
-Also found and killed a runaway 3.4GB `tsserver` process — the editor had been indexing every
-parallel worktree's full copy of the codebase (`.claude/worktrees/agent-*`) as a separate inferred
-project. Fixed durably by excluding `.claude/worktrees` from `tsconfig.json`'s `include` set (plus
-a local, gitignored `.vscode/settings.json` for the file watcher).
-
-Wave 6 tracking (`roadmap.update-plan-progress` ×3 — 02.1-12 was self-tracked by its executor)
-is done; this commit finishes it. Next: Wave 7 (02.1-15) — the phase's one `autonomous: false`
-checkpoint plan (flips both policy gates from advisory to blocking, finishes CONVENTIONS.md's
-Enforcement columns, full-suite sign-off) — requires human interaction, not a plain background
-dispatch. Then post-execution: aggregate_results → code_review_gate → verify_phase_goal (spawn
-`gsd-verifier`) → update_roadmap (phase.complete).
+**Next:** Phase 2 (Board Management) has 8/13 plans done; waves 7-11 (02-09..13 — sidebar
+chrome/collapse, board create, board detail view, rename, delete) remain planned but not
+executed. Their `PLAN.md` files predate 02.1's RSC rebuild of the board-list read path
+(`load-boards.ts`, `sidebar.tsx`) — worth a quick currency check before executing, since 02-09
+touches the same sidebar file 02.1 already rebuilt. Phase 02.2 (Storybook test unification) is
+inserted after Phase 2 but not yet planned (no CONTEXT.md).
 
 Resume file: None
-Next step: read `02.1-15-PLAN.md`, re-read `execute-phase.md`'s checkpoint_handling step, and
-dispatch Wave 7 as a human-interaction plan rather than a background `Agent()` call.
