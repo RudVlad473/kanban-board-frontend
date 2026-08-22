@@ -130,6 +130,7 @@ src/
 ## Auth (docs/adr/tech/0001)
 
 - All authenticated calls to the external API go through a Server Component or a Server Action — never a Route Handler BFF proxy, which no longer exists as a mechanism (docs/adr/tech/0019) — and every such module carries `import "server-only"`; no client component holds or reads the raw session cookie/token directly. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`); code review confirming no client-component `fetch()` targets the external API base URL directly.
+- One narrow exception: `app/api/session/force-sign-out/route.ts` is a Route Handler, allow-listed in `check-no-route-handlers.mjs`, because clearing the session cookie on a forced sign-out has no legal Server-Component/Server-Action home (docs/adr/tech/0026).
 - The session cookie is set httpOnly, Secure, and SameSite=Lax (or stricter) — never readable from client-side JavaScript. Enforcement: a test asserting the `Set-Cookie` header on sign-in carries all three flags.
 - A cookie is never written by hand-assembling its `document.cookie`/`Set-Cookie` string (see the general string-builder rule below). Server-side writes go through `createCookieClient()` (`lib/server/cookies/cookie-client.ts`); the rare client-side write a Server Action/RSC can't reach (e.g. an unauthenticated visitor's theme toggle) goes through `buildClientCookieString()` (`lib/core/cookies/cookie-registry.ts`), which reuses `createBaseCookieOptions()`'s secure/sameSite/path policy so the two write paths can't drift.
 
@@ -193,8 +194,9 @@ code review (no automated check exists yet).
 
 ## Server entry points (docs/adr/tech/0019)
 
-- Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism, project-wide. Every server entry point is a React Server Component (reads) or a Server Action (writes). Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
+- Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism, project-wide, with one narrow ADR-justified exception (`app/api/session/force-sign-out/route.ts`, docs/adr/tech/0026 — cookie mutation forced from a non-Server-Action server context). Every other server entry point is a React Server Component (reads) or a Server Action (writes). Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
 - Every board/column/task/subtask-mutating Server Action calls `refresh()` from `next/cache` after its write succeeds, since `app/(dashboard)/layout.tsx` does not re-render on ordinary navigation. Enforcement: code review.
+- An RSC-side read function is named `fetch<Noun>()`, in a file named `fetch-<kebab-noun>.ts` under the feature's `server/` directory (e.g. `src/features/boards/server/fetch-boards.ts`) — deliberately distinct from a Server Action's imperative-mutation-verb naming (`signIn`, `signUp`, `updateTheme`, `signOut`), so a reader can tell a read from a write by name alone, without opening the file. Enforcement: code review.
 
 ## No mocking (docs/adr/tech/0020, extends 0018)
 

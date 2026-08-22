@@ -9,7 +9,6 @@ import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/proble
 import { ROUTE } from "@/lib/core/routing/routes";
 import { upstreamCookie } from "@/lib/server/cookies/upstream-cookie";
 import { verifySession } from "@/lib/server/dal";
-import { session } from "@/lib/server/session";
 
 /*
  * ADR tech/0006 forbids a hardcoded API base URL — a fallback default value here would silently
@@ -91,7 +90,11 @@ externalApi.use({
             return response;
         }
 
-        await session.destroy();
-        redirect(ROUTE.SIGN_IN);
+        /*
+         * cookies() writes are illegal from this Suspense-streamed Server Component context
+         * (Next.js restricts them to Server Actions/Route Handlers) — redirect to the one Route
+         * Handler legally allowed to clear the cookie instead of destroying it here (ADR tech/0026).
+         */
+        redirect(ROUTE.FORCE_SIGN_OUT);
     },
 });
