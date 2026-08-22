@@ -1,7 +1,7 @@
-// @storybook/react (not @storybook/nextjs-vite) — see dropdown.test.tsx / vitest.setup.ts for why.
+// Import source: @storybook/react, not the Next.js-aware framework package — see vitest.setup.ts.
 import { composeStories } from "@storybook/react";
-import { cleanup, screen } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { screen } from "@testing-library/react";
+import { expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -11,9 +11,6 @@ import { ToastProvider, useToast } from "./toast";
 import * as stories from "./toast.stories";
 
 const { Default, Danger } = composeStories(stories);
-
-// Composed stories mount via RTL's own render, which RTL never auto-unmounts between calls here.
-afterEach(cleanup);
 
 type ToastConfig = Parameters<ReturnType<typeof useToast>["add"]>[0];
 
@@ -57,7 +54,7 @@ describeForEachDevice({
     body: () => {
         it("renders a toast with the seeded title and description", async () => {
             // Act — the Default story already seeds one toast with timeout: 0 (toast.stories.tsx).
-            await Default.run();
+            await render(<Default />);
 
             // Assert
             expect(screen.getByText("Rollback complete")).toBeVisible();
@@ -66,7 +63,7 @@ describeForEachDevice({
 
         it("exposes the viewport as an aria-live=polite region and the close control by its accessible name", async () => {
             // Act
-            await Default.run();
+            await render(<Default />);
 
             // Assert
             expect(screen.getByRole("region", { name: "Notifications" })).toHaveAttribute("aria-live", "polite");
@@ -77,7 +74,7 @@ describeForEachDevice({
 
         it("does not stamp the default variant with the danger data-type", async () => {
             // Act
-            await Default.run();
+            await render(<Default />);
 
             // Assert — Root reads toast.type and stamps it as data-type (toast.tsx's own comment).
             expect(screen.getByRole("dialog", { name: "Rollback complete" })).not.toHaveAttribute(
@@ -88,7 +85,7 @@ describeForEachDevice({
 
         it("stamps the danger variant's data-type", async () => {
             // Act
-            await Danger.run();
+            await render(<Danger />);
 
             // Assert
             expect(screen.getByRole("dialog", { name: "Couldn't delete board." })).toHaveAttribute(
