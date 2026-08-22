@@ -4,7 +4,7 @@ import { afterEach, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
-import { resetSignOutActionCallCount, signOutActionCallCount } from "@/test-utils/sign-out-action-storybook-stub";
+import { resetSignOutActionCallCount, signOutActionCallCount } from "@/test-utils/index";
 
 import * as stories from "./sign-out-button.stories";
 
@@ -51,10 +51,9 @@ describeForEachDevice({
         });
 
         /*
-         * D-09: this is a component-wiring claim ("the button's formAction invoked the aliased
-         * stub exactly once"), not a claim about the real sign-out's effect — the session cookie
-         * being cleared and the redirect to sign-in are proven in e2e/auth.e2e.spec.ts instead
-         * (docs/adr/tech/0025).
+         * D-09: a component-wiring claim ("formAction invoked the aliased stub once"), not a
+         * real-effect claim — the session cookie clearing and redirect are proven in
+         * e2e/auth.e2e.spec.ts instead (docs/adr/tech/0025).
          */
         it("calls signOutAction exactly once when clicked, asking the backend for nothing beyond that one call", async () => {
             // Arrange

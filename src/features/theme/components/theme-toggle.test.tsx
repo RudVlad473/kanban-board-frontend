@@ -11,10 +11,9 @@ import * as stories from "./theme-toggle.stories";
 const { Light, Dark, SaveFailed } = composeStories(stories);
 
 /*
- * D-03: deep tests render the composed `Light` story (every deep test here stages the light
- * theme) with `isAuthenticated` overridden as a JSX prop — JSX props merge over the story's own
- * args — rather than a bare `<ThemeToggle />`. This mounts through the global `QueryProvider`/
- * theme decorators (docs/adr/tech/0025).
+ * D-03: deep tests render the composed `Light` story with `isAuthenticated` overridden as a JSX
+ * prop (props merge over the story's own args), so every mount inherits the real decorators
+ * (docs/adr/tech/0025) instead of a bare `<ThemeToggle />`.
  */
 const renderToggle = (props: { isAuthenticated: boolean }) => render(<Light {...props} />);
 
