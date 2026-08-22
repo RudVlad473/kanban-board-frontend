@@ -288,7 +288,7 @@ eliminate `renderWithProviders`/hand-rendered tests in favor of Storybook-decora
 still under review.
 **Requirements**: Derived from `.planning/todos/pending/2026-08-22-reconcile-action-stub-aliasing-with-the-no-mock-policy.md`, `2026-08-22-investigate-a-shared-integration-testing-mocking-module-for-.md`, `2026-08-22-investigate-centralizing-vi-mock-declarations-for-next-heade.md`, `2026-08-22-research-e2e-coverage-for-cookie-writing-instead-of-next-hea.md` — see `/gsd-plan-phase 02.2`
 **Depends on:** Phase 1, Phase 02.1
-**Plans:** 1/9 plans executed
+**Plans:** 5/9 plans executed
 
 **Sequencing note (2026-08-22):** Pulled forward by explicit user decision — this phase now runs
 *before* Phase 2's remaining plans (02-10 through 02-13, waves 8-11: create/detail/rename/delete
@@ -300,10 +300,10 @@ phase decides on instead of propagating the one currently under review.
 Plans:
 
 - [x] 02.2-01-PLAN.md
-- [ ] 02.2-02-PLAN.md
-- [ ] 02.2-03-PLAN.md
-- [ ] 02.2-04-PLAN.md
-- [ ] 02.2-05-PLAN.md
+- [x] 02.2-02-PLAN.md
+- [x] 02.2-03-PLAN.md
+- [x] 02.2-04-PLAN.md
+- [x] 02.2-05-PLAN.md
 - [ ] 02.2-06-PLAN.md
 - [ ] 02.2-07-PLAN.md
 - [ ] 02.2-08-PLAN.md
