@@ -1,9 +1,9 @@
-// @storybook/react (not @storybook/nextjs-vite) — see dropdown.test.tsx / vitest.setup.ts for why.
+// Import source: @storybook/react, not the Next.js-aware framework package — see vitest.setup.ts.
 import { composeStories } from "@storybook/react";
-import { cleanup, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { useState } from "react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -15,9 +15,6 @@ import * as stories from "./modal.stories";
 import { Button } from "../button/button";
 
 const { Closed, Open, WithDescription } = composeStories(stories);
-
-// Composed stories mount via RTL's own render, which RTL never auto-unmounts between calls here.
-afterEach(cleanup);
 
 type RootProps = ComponentProps<typeof Modal.Root>;
 
@@ -70,7 +67,7 @@ describeForEachDevice({
     body: (device) => {
         it("renders nothing into the accessibility tree while closed, leaving its own trigger reachable", async () => {
             // Act
-            await Closed.run();
+            await render(<Closed />);
 
             // Assert
             expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -79,7 +76,7 @@ describeForEachDevice({
 
         it("renders a dialog whose accessible name is the Modal.Title text once open", async () => {
             // Act
-            await Open.run();
+            await render(<Open />);
 
             // Assert
             expect(screen.getByRole("dialog", { name: "Delete this board?" })).toBeVisible();
@@ -87,7 +84,7 @@ describeForEachDevice({
 
         it("exposes Modal.Description as the dialog's accessible description", async () => {
             // Act
-            await WithDescription.run();
+            await render(<WithDescription />);
 
             // Assert
             expect(screen.getByRole("dialog", { name: "Delete this board?" })).toHaveAccessibleDescription(

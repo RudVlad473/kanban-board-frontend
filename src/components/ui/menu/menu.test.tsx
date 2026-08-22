@@ -1,8 +1,8 @@
-// @storybook/react (not @storybook/nextjs-vite) — see dropdown.test.tsx / vitest.setup.ts for why.
+// Import source: @storybook/react, not the Next.js-aware framework package — see vitest.setup.ts.
 import { composeStories } from "@storybook/react";
-import { cleanup, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { EllipsisVertical } from "lucide-react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -13,9 +13,6 @@ import * as stories from "./menu.stories";
 import { IconButton } from "../icon-button/icon-button";
 
 const { Open, WithDisabledItem } = composeStories(stories);
-
-// Composed stories mount via RTL's own render, which RTL never auto-unmounts between calls here.
-afterEach(cleanup);
 
 /*
  * A single options object (ADR tech/0016) whose two callbacks default to fresh spies — every
@@ -67,7 +64,7 @@ describeForEachDevice({
 
         it("exposes a menu role containing menuitem-role items, not listbox/option", async () => {
             // Act — Open is already rendered open, no interaction needed for this rendered-state check.
-            await Open.run();
+            await render(<Open />);
 
             // Assert
             expect(screen.getByRole("menu")).toBeVisible();
@@ -168,7 +165,7 @@ describeForEachDevice({
 
         it("announces an isDisabled item as disabled to assistive technology", async () => {
             // Act — WithDisabledItem is already open, no interaction needed for this rendered check.
-            await WithDisabledItem.run();
+            await render(<WithDisabledItem />);
 
             // Assert
             expect(screen.getByRole("menuitem", { name: "Edit Board" })).toHaveAttribute("aria-disabled", "true");

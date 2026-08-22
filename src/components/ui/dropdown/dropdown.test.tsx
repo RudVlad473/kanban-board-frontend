@@ -1,12 +1,8 @@
-/*
- * @storybook/react (not @storybook/nextjs-vite) — the latter eagerly imports Next.js internals
- * that only resolve under the Storybook Vite plugin the "storybook" project loads, not this
- * "browser" project (vitest.setup.ts has the full reasoning).
- */
+// Import source: @storybook/react, not the Next.js-aware framework package — see vitest.setup.ts.
 import { composeStories } from "@storybook/react";
-import { cleanup, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -16,9 +12,6 @@ import { Dropdown } from "./dropdown";
 import * as stories from "./dropdown.stories";
 
 const { Closed, Loading, OpenWithSelection } = composeStories(stories);
-
-// Composed stories mount via RTL's own render, which RTL never auto-unmounts between calls here.
-afterEach(cleanup);
 
 type RootProps = ComponentProps<typeof Dropdown.Root>;
 
@@ -55,7 +48,7 @@ describeForEachDevice({
     body: () => {
         it("renders a collapsed trigger whose accessible name is its content, with the list not present in the accessibility tree while closed", async () => {
             // Act
-            await Closed.run();
+            await render(<Closed />);
 
             // Assert
             expect(screen.getByRole("combobox", { name: "Select a status" })).toBeVisible();
@@ -158,7 +151,7 @@ describeForEachDevice({
 
         it("marks the currently selected item as selected to assistive technology", async () => {
             // Act — the OpenWithSelection story is already open with "doing" selected, no interaction needed.
-            await OpenWithSelection.run();
+            await render(<OpenWithSelection />);
 
             // Assert
             expect(screen.getByRole("option", { name: "Doing" })).toHaveAttribute("aria-selected", "true");
@@ -167,7 +160,7 @@ describeForEachDevice({
 
         it("shows a disabled, aria-busy trigger with a spinner in place of the chevron when isLoading", async () => {
             // Act
-            await Loading.run();
+            await render(<Loading />);
             const trigger = screen.getByRole("combobox", { name: "Select a status" });
 
             // Assert
