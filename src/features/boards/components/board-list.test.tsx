@@ -5,11 +5,12 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { expect, it, vi } from "vitest";
+import { render } from "vitest-browser-react";
 
 import { ROUTE } from "@/lib/core/routing/routes";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
 
 import * as stories from "./board-list.stories";
 
@@ -18,29 +19,13 @@ import * as stories from "./board-list.stories";
  * every other seam this file used to stub (`useBoards`) is gone: `BoardList` is RSC-fed via props
  * now (D-02/D-03), so there is no business-logic hook left to mock.
  */
-const mockRefresh = vi.fn();
+const mockRefresh = vi.hoisted(() => vi.fn());
 
 // eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
-vi.mock("next/navigation", () => ({
-    usePathname: () => ROUTE.BOARDS,
-    useRouter: () => ({ refresh: mockRefresh }),
-}));
-
-/*
- * `next/link` reads `process.env`, undefined in Vitest Browser Mode (throws `ReferenceError`) —
- * mocked to a plain anchor so this env gap doesn't force `board-list.tsx` off real routing (D-19).
- */
+vi.mock("next/navigation", () => createNextNavigationShim({ pathname: ROUTE.BOARDS, refresh: mockRefresh }));
 
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
-vi.mock("next/link", () => ({
-    __esModule: true,
-    default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
-        // eslint-disable-next-line no-restricted-syntax -- this IS the next/link stand-in itself (see comment above), not a component opting out of it
-        <a href={href} className={className}>
-            {children}
-        </a>
-    ),
-}));
+vi.mock("next/link", () => createNextLinkShim());
 
 const { Populated, Empty, LoadFailed } = composeStories(stories);
 
@@ -53,7 +38,7 @@ describeForEachDevice({
     body: () => {
         it("renders one row per board and the matching ALL BOARDS caption when populated", async () => {
             // Act
-            await Populated.run();
+            await render(<Populated />);
 
             // Assert
             expect(screen.getByText("ALL BOARDS (3)")).toBeInTheDocument();
@@ -64,7 +49,7 @@ describeForEachDevice({
 
         it("renders a zero count and no rows when there are no boards", async () => {
             // Act
-            await Empty.run();
+            await render(<Empty />);
 
             // Assert
             expect(screen.getByText("ALL BOARDS (0)")).toBeInTheDocument();
@@ -73,7 +58,7 @@ describeForEachDevice({
 
         it("renders the authored load-failure copy and a retry control", async () => {
             // Act
-            await LoadFailed.run();
+            await render(<LoadFailed />);
 
             // Assert
             expect(screen.getByText("Couldn't load your boards.")).toBeInTheDocument();

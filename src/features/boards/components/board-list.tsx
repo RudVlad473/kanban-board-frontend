@@ -12,7 +12,9 @@ import { cn } from "@/lib/core/styling/cn";
  * out of the old combined `Sidebar` (plan 02-09) so the panel chrome paints immediately while
  * this streams in behind `Suspense`; renders only the caption and scroll region, never a `nav`.
  */
-export const BoardList = ({ boards, loadFailed = false }: { boards: Board[]; loadFailed?: boolean }) => {
+type Props = { boards: Board[]; loadFailed?: boolean };
+
+export const BoardList = ({ boards, loadFailed = false }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
 
