@@ -41,3 +41,10 @@ import line per stub file — ergonomics of "import from one place" without
 actually merging the mocks. Alternative raised but not explored: a shared
 MSW-style handler registry. Needs a decision on scope (barrel re-export vs.
 deeper consolidation vs. leave as-is) before any implementation.
+
+## Resolution
+
+Resolved by plan `02.2-04` (`src/test-utils/index.ts`, D-11's thin barrel re-export of the four
+per-action stub files) and plan `02.2-06` (`src/test-utils/next-router-shims.tsx`, centralizing the
+`next/navigation`/`next/link` shim factory bodies). Barrel re-export chosen over deeper
+consolidation, matching the option floated here.

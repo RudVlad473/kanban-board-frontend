@@ -36,3 +36,11 @@ to confirm this doesn't fight Vitest's mock-hoisting order across the 8 files
 before committing to the approach. Feeds Phase 02.2 (Storybook test-unification
 follow-up) — worth resolving as part of that phase's planning rather than in
 isolation.
+
+## Resolution
+
+Resolved by plan `02.2-06` for `next/navigation`/`next/link`
+(`src/test-utils/next-router-shims.tsx` centralizes the factory bodies only — `vi.mock` itself
+stays per-file since Vitest hoists per file, per this todo's own spike finding) and by obsolescence
+for `next/headers` (plan `02.2-08` removed its last consumers via the cookie-to-e2e migration;
+`docs/adr/tech/0020`'s D-12 paragraph, plan `02.2-09`, records the measured zero-consumer count).

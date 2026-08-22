@@ -38,9 +38,9 @@ const serverOnlyAlias = {
 const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 
 /*
- * Real stub modules (not Vitest mocks) for every Server Action a story/composed-story test imports
- * — their real import chain reaches `node:crypto`, unbundlable by a browser test page (docs/adr/
- * tech/0020). Every entry is an exact specifier and must stay listed before the general `@` alias.
+ * Real stub modules (not Vitest mocks; must stay before the general `@` alias) for every Server
+ * Action a story test imports — real import chains reach `node:crypto`, unbundlable in a browser
+ * test page. Formally carved out in docs/adr/tech/0020's "Server Action alias carve-out".
  */
 const serverActionStubAlias = [
     {

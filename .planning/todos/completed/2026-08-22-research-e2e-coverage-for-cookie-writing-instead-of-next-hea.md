@@ -37,3 +37,12 @@ TBD — needs research. Open questions to resolve:
   `cookies().set()`/`.get()` behavior into e2e.
 - Feeds Phase 02.2 (Storybook test-unification follow-up) — worth resolving as
   part of that phase's planning rather than in isolation.
+
+## Resolution
+
+Resolved by plans `02.2-05`, `02.2-07` and `02.2-08` (full scope, not the hybrid considered here —
+D-13 extended scope to cookie-reading too): every `next/headers`-mocked cookie read/write assertion
+migrated to real Playwright e2e (`e2e/session-bridge.e2e.spec.ts`, `e2e/cookie-policy.e2e.spec.ts`,
+`e2e/theme.e2e.spec.ts`, `e2e/auth.e2e.spec.ts`); edge cases use `context.addCookies()` per D-15;
+pure decode/encode logic that needed no `cookies()` shim was kept and rewritten mock-free
+(`session.test.ts` via `verifyToken` directly). Zero `next/headers` mocks remain.
