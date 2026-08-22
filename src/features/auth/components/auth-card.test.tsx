@@ -1,6 +1,7 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { expect, it } from "vitest";
+import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
@@ -15,14 +16,9 @@ const { Default, LongTitle } = composeStories(stories);
 describeForEachDevice({
     name: "AuthCard",
     body: () => {
-        // composeStories' `.run()` leaves its last mount in place — wipe the body between tests.
-        afterEach(() => {
-            document.body.innerHTML = "";
-        });
-
         it("renders the title as a level-1 heading", async () => {
             // Act
-            await Default.run();
+            await render(<Default />);
 
             // Assert
             expect(screen.getByRole("heading", { level: 1, name: "Sign In" })).toBeInTheDocument();
@@ -30,7 +26,7 @@ describeForEachDevice({
 
         it("renders its children inside the card", async () => {
             // Act
-            await Default.run();
+            await render(<Default />);
 
             // Assert
             expect(screen.getByText("Card body content.")).toBeInTheDocument();
@@ -38,7 +34,7 @@ describeForEachDevice({
 
         it("renders a long title in full, without dropping any of its text", async () => {
             // Act
-            await LongTitle.run();
+            await render(<LongTitle />);
 
             // Assert
             expect(
