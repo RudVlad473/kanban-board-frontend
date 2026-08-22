@@ -159,11 +159,12 @@ checkpoint — user replied "approved". Ran the phase's post-execution gate in f
 All commits pushed as fast-forwards (`c701467..19ee0ca`). Phase 02.1 is fully closed: 15/15
 plans, 22/22 D-IDs verified, code review clean.
 
-**Next:** Phase 2 (Board Management) has 8/13 plans done; waves 7-11 (02-09..13 — sidebar
-chrome/collapse, board create, board detail view, rename, delete) remain planned but not
-executed. Their `PLAN.md` files predate 02.1's RSC rebuild of the board-list read path
-(`load-boards.ts`, `sidebar.tsx`) — worth a quick currency check before executing, since 02-09
-touches the same sidebar file 02.1 already rebuilt. Phase 02.2 (Storybook test unification) is
-inserted after Phase 2 but not yet planned (no CONTEXT.md).
+**Next:** Phase 2 (Board Management) has 8/13 plans done. Waves 7-11 (02-09..13) were flagged
+stale (predated 02.1's RSC rebuild) and have now been fully replanned against the current
+codebase — `gsd-planner` regenerated all 5, `gsd-plan-checker` verified them clean (BOARD-01..06
+covered, dependency chain intact, all 02-REVIEWS.md findings incorporated). Ready to execute:
+`/gsd-execute-phase 2`. Two documentation-hygiene items (stale `02-VALIDATION.md`,
+`02-RESEARCH.md`'s unmarked open questions) filed as a pending todo, non-blocking. Phase 02.2
+(Storybook test unification) is inserted after Phase 2 but not yet planned (no CONTEXT.md).
 
 Resume file: None
