@@ -1,71 +1,79 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { Eye, EyeOff, Kanban } from "lucide-react";
+import { useState, type ReactNode } from "react";
 
-import type { Board } from "@/features/boards/schemas";
-import { buildBoardDetailPath } from "@/lib/core/routing/routes";
-import { cn } from "@/lib/core/styling/cn";
+import { IconButton } from "@/components/ui/icon-button/icon-button";
+import { ThemeToggle } from "@/features/theme/components/theme-toggle";
+import type { Theme } from "@/lib/core/theme/theme";
+
+type Props = {
+    initialTheme: Theme;
+    /** The streamed board-list slot — `BoardList` wrapped in `Suspense` by `app/(dashboard)/layout.tsx`. */
+    children: ReactNode;
+    /** Storybook-only staging for the collapsed visual — no real caller passes this (see ThemeToggle's `forceErrorMessage`). */
+    defaultIsExpanded?: boolean;
+};
 
 /*
- * Renders the sidebar's board list, RSC-fed via props (not `useBoards()`) — the server-entry-point
- * architecture docs/adr/tech/0019 describes (see also 02.1-01-SUMMARY.md's RSC rebuild).
+ * The sidebar's panel chrome — brand mark, the streamed `BoardList` slot, pinned foot controls
+ * (plan 02-09's split off the pre-retrofit combined component). Owns collapse state OUTSIDE the
+ * Suspense boundary wrapping `children`, so toggling it never depends on the board-list fetch.
  */
+export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Props) => {
+    /*
+     * Ephemeral client UI state (DEFAULTS.md C-009) — no persistence mechanism reached from this
+     * file; a fresh mount always starts expanded.
+     */
+    const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
 
-export const Sidebar = ({ boards, loadFailed = false }: { boards: Board[]; loadFailed?: boolean }) => {
-    const pathname = usePathname();
-    const router = useRouter();
+    if (!isExpanded) {
+        return (
+            <IconButton
+                variant="primary"
+                label="Show Sidebar"
+                icon={<Eye />}
+                onClick={() => {
+                    setIsExpanded(true);
+                }}
+                /*
+                 * A fifth entry on UI-SPEC's accent-reservation list — the collapsed-state trigger,
+                 * added deliberately for design-PDF fidelity, not an unreviewed accent use.
+                 */
+                className="fixed bottom-8 left-0 rounded-l-none"
+            />
+        );
+    }
 
     return (
         <nav
             aria-label="Boards"
             className="flex h-full w-75 shrink-0 flex-col border-r border-border-default bg-bg-surface"
         >
-            <p className="p-6 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase">
-                {`ALL BOARDS (${String(boards.length)})`}
-            </p>
+            <div className="flex items-center gap-2 p-6">
+                <Kanban aria-hidden="true" className="size-6 text-text-primary" />
 
-            {/* The board-list region is the panel's only scrolling part (UI-SPEC overflow rule). */}
-            <div className="flex-1 overflow-y-auto">
-                {loadFailed ? (
-                    <div className="flex flex-col items-start gap-2 px-6 py-4">
-                        <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
-                            Couldn&apos;t load your boards.
-                        </p>
+                <span className="font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
+                    kanban
+                </span>
+            </div>
 
-                        <button
-                            type="button"
-                            onClick={() => {
-                                router.refresh();
-                            }}
-                            className="rounded-sm font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary underline decoration-1 underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2"
-                        >
-                            Try again.
-                        </button>
-                    </div>
-                ) : (
-                    <ul className="flex flex-col gap-2 px-4">
-                        {boards.map((board) => {
-                            const isSelected = pathname === buildBoardDetailPath(board.id);
+            {/* Absorbs the panel's spare height and is allowed to shrink below its content (min-h-0). */}
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
 
-                            return (
-                                <li key={board.id} className="min-w-0">
-                                    <Link
-                                        href={buildBoardDetailPath(board.id)}
-                                        className={cn(
-                                            "flex h-11 min-w-0 items-center rounded-r-lg px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
-                                            isSelected
-                                                ? "bg-bg-primary text-text-on-primary"
-                                                : "text-text-muted hover:text-text-primary",
-                                        )}
-                                    >
-                                        <span className="truncate">{board.name}</span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                )}
+            <div className="flex flex-col gap-4 p-6">
+                <ThemeToggle initialTheme={initialTheme} isAuthenticated />
+
+                <button
+                    type="button"
+                    onClick={() => {
+                        setIsExpanded(false);
+                    }}
+                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted hover:bg-bg-app hover:text-text-primary"
+                >
+                    <EyeOff aria-hidden="true" className="size-5 shrink-0" />
+                    Hide Sidebar
+                </button>
             </div>
         </nav>
     );
