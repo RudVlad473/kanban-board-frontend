@@ -132,6 +132,16 @@ table's prior generation) while phase 02.2's cookie-to-e2e migration (`docs/adr/
 removed nine `next/headers` rows and three `next/navigation` rows (the four deleted
 `*.integration.test.ts` files) from the table above.
 
+**D-12 outcome (measured, plan `02.2-09`):** re-running the three consumer-count checks against
+the repository as it now stands gives `next/headers`: 0 files, `next/navigation`: 2 files
+(`sidebar.test.tsx`, `board-list.test.tsx`), `next/link`: 2 files (same two). The `next/headers`
+centralization (D-10b) is closed as **resolved-by-obsolescence** — zero remaining consumers after
+the e2e migration, nothing left to centralize. `next/navigation` and `next/link` kept two
+consumers each and were centralized into `src/test-utils/next-router-shims.tsx`
+(`createNextNavigationShim`/`createNextLinkShim`) — each consumer still declares its own
+`vi.mock` call, since Vitest hoists mocks per file and never shares registrations across files, so
+only the factory bodies were de-duplicated, not the `vi.mock` registration itself.
+
 - Real-backend tests are honestly slower than mocked ones, and every test layer now needs the
   nonprod backend reachable to run at all — the same cost `tech/0018` already accepted for the
   network layer, now extended to every module boundary a test previously faked.
