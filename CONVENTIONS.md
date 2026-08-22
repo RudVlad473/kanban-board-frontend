@@ -196,6 +196,7 @@ code review (no automated check exists yet).
 
 - Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism, project-wide, with one narrow ADR-justified exception (`app/api/session/force-sign-out/route.ts`, docs/adr/tech/0026 — cookie mutation forced from a non-Server-Action server context). Every other server entry point is a React Server Component (reads) or a Server Action (writes). Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
 - Every board/column/task/subtask-mutating Server Action calls `refresh()` from `next/cache` after its write succeeds, since `app/(dashboard)/layout.tsx` does not re-render on ordinary navigation. Enforcement: code review.
+- An RSC-side read function is named `fetch<Noun>()`, in a file named `fetch-<kebab-noun>.ts` under the feature's `server/` directory (e.g. `src/features/boards/server/fetch-boards.ts`) — deliberately distinct from a Server Action's imperative-mutation-verb naming (`signIn`, `signUp`, `updateTheme`, `signOut`), so a reader can tell a read from a write by name alone, without opening the file. Enforcement: code review.
 
 ## No mocking (docs/adr/tech/0020, extends 0018)
 

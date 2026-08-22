@@ -6,18 +6,18 @@ import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { BoardList } from "@/features/boards/components/board-list";
 import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton";
-import { loadBoards } from "@/features/boards/server/load-boards";
+import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
 
 /*
  * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule) — awaits
- * `loadBoards()` (D-02: an RSC read, no client-side query) and maps its discriminated-union result
+ * `fetchBoards()` (D-02: an RSC read, no client-side query) and maps its discriminated-union result
  * onto `BoardList`'s plain `boards`/`loadFailed` props.
  */
 const SidebarBoards = async () => {
-    const result = await loadBoards();
+    const result = await fetchBoards();
     return <BoardList boards={result.status === "ok" ? result.boards : []} loadFailed={result.status !== "ok"} />;
 };
 

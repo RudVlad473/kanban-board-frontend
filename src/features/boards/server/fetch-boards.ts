@@ -6,17 +6,17 @@ import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
 
 /**
- * `loadBoards()`'s own result — a bare discriminant on the error branches, never an upstream
+ * `fetchBoards()`'s own result — a bare discriminant on the error branches, never an upstream
  * message, so no caller can accidentally leak upstream response text to the client (D-21, T-02.1-04).
  */
-export type LoadBoardsResult = { status: "ok"; boards: Board[] } | { status: "unauthenticated" } | { status: "error" };
+export type FetchBoardsResult = { status: "ok"; boards: Board[] } | { status: "unauthenticated" } | { status: "error" };
 
 /**
  * RSC read replacing the deleted Route Handler (D-01/D-02/D-03) — calls `verifySession()` itself
  * rather than trusting a caller's guard already ran (CVE-2025-29927 class, T-02.1-02); `userId`
  * comes only from the session, this function takes no arguments (T-02.1-01) (see docs/adr/tech/0019).
  */
-export const loadBoards = async (): Promise<LoadBoardsResult> => {
+export const fetchBoards = async (): Promise<FetchBoardsResult> => {
     const record = await verifySession();
     if (!record) {
         return { status: "unauthenticated" };
