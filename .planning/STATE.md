@@ -108,6 +108,22 @@ Recent decisions affecting current work:
   ground. Needs discussion with the user before deciding —
   `.planning/todos/pending/2026-08-22-investigate-a-shared-integration-testing-mocking-module-for-.md`.
 
+- Regenerate stale `02-VALIDATION.md` and mark `02-RESEARCH.md`'s open questions resolved —
+  `.planning/todos/pending/2026-08-22-regenerate-stale-02-validation-and-research-open-questions.md`.
+
+- Reconcile the `*-action-storybook-stub.ts` whole-module aliasing with ADR tech/0020's no-mock
+  policy — currently unenforced/undocumented as an exception, flagged by the user as a likely
+  policy gap. Feeds Phase 02.2 —
+  `.planning/todos/pending/2026-08-22-reconcile-action-stub-aliasing-with-the-no-mock-policy.md`.
+
+- Research e2e coverage for cookie-writing behavior as an alternative to the `next/headers` mock
+  shim (ADR tech/0020 D-19) used across 8 test files. Feeds Phase 02.2 —
+  `.planning/todos/pending/2026-08-22-research-e2e-coverage-for-cookie-writing-instead-of-next-hea.md`.
+
+- Investigate centralizing the repeated `vi.mock("next/headers"/"next/navigation")` declarations
+  across the 8-file surviving-mock register into one shared module. Feeds Phase 02.2 —
+  `.planning/todos/pending/2026-08-22-investigate-centralizing-vi-mock-declarations-for-next-heade.md`.
+
 ### Blockers/Concerns
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
