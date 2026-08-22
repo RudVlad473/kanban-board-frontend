@@ -72,6 +72,9 @@ jobs:
             - name: Route Handler ban check
               run: pnpm handlers:check
 
+            - name: Story interaction-function ban check
+              run: pnpm stories:check
+
             - name: Format check
               run: pnpm format:check
 

@@ -9,6 +9,7 @@
         "lint": "eslint .",
         "routes:check": "node scripts/check-routes.mjs",
         "handlers:check": "node scripts/check-no-route-handlers.mjs",
+        "stories:check": "node scripts/check-no-play-functions.mjs",
         "comments:check": "node scripts/check-comment-length.mjs",
         "format": "prettier --write .",
         "format:check": "prettier --check .",

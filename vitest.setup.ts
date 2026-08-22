@@ -10,7 +10,9 @@ import { setProjectAnnotations } from "@storybook/react";
  * uses RTL's own tracked `render()` instead of an untracked fallback whose DOM leaks into later
  * tests (D-08 retrofit finding).
  */
-import { render } from "@testing-library/react";
+import { cleanup as cleanupTestingLibraryRender, render } from "@testing-library/react";
+import { afterEach } from "vitest";
+import { cleanup as cleanupVitestBrowserReactRender } from "vitest-browser-react";
 
 /*
  * Registers @testing-library/jest-dom's matchers (toBeDisabled, toHaveAccessibleName, etc.)
@@ -33,3 +35,13 @@ import "./src/styles/globals.css";
  * the call there by name and disables its own per-story provisioning (see docs/adr/tech/0021).
  */
 setProjectAnnotations([a11yAddonAnnotations, previewAnnotations, { testingLibraryRender: render }]);
+
+/*
+ * D-04: single centralized cleanup for the "browser" project, replacing the 11 per-file
+ * `document.body.innerHTML = ""` copies. Calls each render mechanism's own `cleanup()` rather
+ * than a raw DOM wipe, which broke `.run()`'s next call in the same file (docs/adr/tech/0025).
+ */
+afterEach(async () => {
+    cleanupTestingLibraryRender();
+    await cleanupVitestBrowserReactRender();
+});

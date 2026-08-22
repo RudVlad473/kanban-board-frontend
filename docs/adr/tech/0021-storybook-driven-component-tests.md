@@ -1,5 +1,9 @@
 # 0021 — Component tests driven through composed Storybook stories
 
+> **⊘ Superseded by [`docs/adr/tech/0025`](./0025-direct-composed-story-rendering.md)** — every
+> component test now renders composed stories directly as JSX instead of calling `.run()`. This
+> record's body is left unmodified below as history.
+
 ## Decision Drivers
 
 - `tech/0020` retires the last thing shallow component coverage had been leaning on
