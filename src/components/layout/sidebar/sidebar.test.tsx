@@ -6,16 +6,15 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { render } from "vitest-browser-react";
 
 import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton";
 import { ROUTE } from "@/lib/core/routing/routes";
-import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
-import { renderWithProviders } from "@/test-utils/render-with-providers";
+import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
 
-import { Sidebar } from "./sidebar";
 import * as stories from "./sidebar.stories";
 
 /*
@@ -23,41 +22,38 @@ import * as stories from "./sidebar.stories";
  * `Expanded`/`Overflowing` stories' children compose a real `BoardList` (identical justification
  * to board-list.test.tsx).
  */
-const mockRefresh = vi.fn();
+const mockRefresh = vi.hoisted(() => vi.fn());
 
 // eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
-vi.mock("next/navigation", () => ({
-    usePathname: () => ROUTE.BOARDS,
-    useRouter: () => ({ refresh: mockRefresh }),
-}));
+vi.mock("next/navigation", () => createNextNavigationShim({ pathname: ROUTE.BOARDS, refresh: mockRefresh }));
 
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see board-list.test.tsx)
-vi.mock("next/link", () => ({
-    __esModule: true,
-    default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
-        // eslint-disable-next-line no-restricted-syntax -- this IS the next/link stand-in itself (see comment above), not a component opting out of it
-        <a href={href} className={className}>
-            {children}
-        </a>
-    ),
-}));
+vi.mock("next/link", () => createNextLinkShim());
 
 const { Expanded, Collapsed, Overflowing } = composeStories(stories);
 
-const renderSidebar = (props: { initialTheme: Theme; children: ReactNode; defaultIsExpanded?: boolean }) =>
-    renderWithProviders(<Sidebar {...props} />);
+/*
+ * D-03: deep tests render a composed story too, not a bare `<Sidebar />`, so they mount through
+ * its real decorators (docs/adr/tech/0025). `story` picks whichever composed story stages the
+ * closest baseline per test; only `children`/`defaultIsExpanded` vary from it.
+ */
+const renderSidebar = ({
+    story: Story = Expanded,
+    children,
+    defaultIsExpanded,
+}: {
+    story?: typeof Expanded;
+    children: ReactNode;
+    defaultIsExpanded?: boolean;
+}) => render(<Story defaultIsExpanded={defaultIsExpanded}>{children}</Story>);
 
 describeForEachDevice({
     name: "Sidebar",
     body: () => {
-        afterEach(() => {
-            document.body.innerHTML = "";
-        });
-
         // Shallow: composed structural states (D-08).
         it("renders the brand mark, the Boards landmark and Hide Sidebar when expanded", async () => {
             // Act
-            await Expanded.run();
+            await render(<Expanded />);
 
             // Assert
             expect(screen.getByText("kanban")).toBeInTheDocument();
@@ -67,7 +63,7 @@ describeForEachDevice({
 
         it("renders only Show Sidebar, with no Boards landmark, when collapsed", async () => {
             // Act
-            await Collapsed.run();
+            await render(<Collapsed />);
 
             // Assert
             expect(screen.queryByRole("navigation", { name: "Boards" })).not.toBeInTheDocument();
@@ -77,7 +73,7 @@ describeForEachDevice({
 
         it("keeps the brand mark and Hide Sidebar reachable once the board list overflows its region", async () => {
             // Act
-            await Overflowing.run();
+            await render(<Overflowing />);
 
             // Assert
             expect(screen.getByText("kanban")).toBeInTheDocument();
@@ -88,7 +84,7 @@ describeForEachDevice({
         // Deep: real toggling, keyboard reachability, remount and the C-009 no-persistence guarantee.
         it("collapses on activating Hide Sidebar, hiding the Boards landmark and showing Show Sidebar instead", async () => {
             // Arrange
-            const rendered = await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div> });
+            const rendered = await renderSidebar({ children: <div>List</div> });
 
             // Act
             await rendered.getByRole("button", { name: "Hide Sidebar" }).click();
@@ -101,7 +97,7 @@ describeForEachDevice({
 
         it("restores the panel on activating Show Sidebar", async () => {
             // Arrange
-            const rendered = await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div> });
+            const rendered = await renderSidebar({ children: <div>List</div> });
             await rendered.getByRole("button", { name: "Hide Sidebar" }).click();
 
             // Act
@@ -114,7 +110,7 @@ describeForEachDevice({
 
         it("activates Hide Sidebar and Show Sidebar on both Enter and Space", async () => {
             // Arrange
-            const rendered = await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div> });
+            const rendered = await renderSidebar({ children: <div>List</div> });
 
             // Act
             rendered.getByRole("button", { name: "Hide Sidebar" }).element().focus();
@@ -133,13 +129,13 @@ describeForEachDevice({
 
         it("renders expanded on a fresh mount, even after a prior instance was collapsed", async () => {
             // Arrange
-            const first = await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div> });
+            const first = await renderSidebar({ children: <div>List</div> });
             await first.getByRole("button", { name: "Hide Sidebar" }).click();
             await expect.element(first.getByRole("button", { name: "Show Sidebar" })).toBeInTheDocument();
             document.body.innerHTML = "";
 
             // Act
-            const second = await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div> });
+            const second = await renderSidebar({ children: <div>List</div> });
 
             // Assert
             await expect.element(second.getByRole("button", { name: "Hide Sidebar" })).toBeInTheDocument();
@@ -147,7 +143,7 @@ describeForEachDevice({
 
         it("leaves document.cookie byte-identical and writes nothing to storage when toggled", async () => {
             // Arrange
-            const rendered = await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div> });
+            const rendered = await renderSidebar({ children: <div>List</div> });
             const cookieBefore = document.cookie;
 
             // Act
@@ -161,7 +157,7 @@ describeForEachDevice({
 
         it("renders the brand mark and Hide Sidebar alongside a not-yet-resolved board list", async () => {
             // Act
-            const rendered = await renderSidebar({ initialTheme: THEME.LIGHT, children: <BoardListSkeleton /> });
+            const rendered = await renderSidebar({ children: <BoardListSkeleton /> });
 
             // Assert
             await expect.element(rendered.getByText("kanban")).toBeInTheDocument();
@@ -175,7 +171,7 @@ describeForEachDevice({
          */
         it("keeps the expanded panel in normal document flow, never positioned over the content", async () => {
             // Arrange
-            const rendered = await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div> });
+            const rendered = await renderSidebar({ children: <div>List</div> });
 
             // Assert
             expect(getComputedStyle(rendered.getByRole("navigation", { name: "Boards" }).element()).position).not.toBe(
@@ -185,7 +181,7 @@ describeForEachDevice({
 
         it("returns the full viewport width to the board view with no horizontal overflow once collapsed", async () => {
             // Arrange
-            await renderSidebar({ initialTheme: THEME.LIGHT, children: <div>List</div>, defaultIsExpanded: false });
+            await renderSidebar({ story: Collapsed, children: <div>List</div> });
 
             // Assert
             expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);

@@ -165,6 +165,15 @@ src/
 - A function whose primary job is to construct and return a new object/value (a factory) is named `create<Thing>` — never a bare noun phrase (`baseCookieOptions`) that reads like a property rather than an action. Applies whether the factory is a plain function (`createBaseCookieOptions`) or one of D-11's `Partial<T>`-override fixture factories (`createBoard`/`createBoards`). Does not apply to a function whose return value is incidental to its main effect (a query/read, a predicate, a handler) — only to one whose entire purpose is producing the returned value. Enforcement: code review.
 - A structured, delimiter-joined string built from multiple named fields (a cookie string, a query string, a header value, a CSV row — any format with a real syntax, not free-form prose) is assembled by one named `build<Thing>String`-style function, never by an inline template literal repeated at each call site. One call site is fine; the moment a second one needs the same shape, the join belongs in a function so the two can't silently drift apart (as `use-theme-preference.ts` and `theme-cookie.ts` once did over the theme cookie's name and max-age). Enforcement: code review.
 
+## Component props
+
+A component accepting props declares a named top-level type for them — conventionally `Props`
+for a single-export component file (`type Props = { ... };` declared immediately above the
+component, destructured as `({ ... }: Props) => ...`), or a `<Name>Props` suffix for a
+compound-export file (e.g. `dropdown.tsx`/`menu.tsx`/`modal.tsx`, matching `toast.tsx`'s
+`ToastProviderProps`) — never an inline object type on the destructured parameter. Enforcement:
+code review (no automated check exists yet).
+
 ## Responsive strategy (docs/adr/tech/0010, docs/adr/tech/0014)
 
 - All component styling is mobile-first: unprefixed Tailwind utilities target the mobile breakpoint (`breakpoint.mobile`, 375px); `md:`/`lg:` prefixes progressively enhance for tablet (768px) and desktop (1440px), per the `breakpoint.*` tokens. Enforcement: code review.
