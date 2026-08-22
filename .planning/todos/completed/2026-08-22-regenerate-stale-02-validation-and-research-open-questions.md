@@ -27,3 +27,11 @@ Flagged by `gsd-plan-checker` while verifying the 02-09..13 replan (2026-08-22, 
 Regenerate `02-VALIDATION.md` against the current codebase (or run `/gsd-validate-phase 2`
 once Phase 2 executes) and mark `02-RESEARCH.md`'s three open questions `(RESOLVED)` with a
 one-line pointer to where each was actually answered.
+
+## Resolution
+
+Resolved by plan `02.2-09`, Task 4: `02-VALIDATION.md`'s stale rows replaced (`fetchBoards()` +
+`e2e/boards-list.e2e.spec.ts` for the deleted read hook and fixtures file; TBD Server-Action rows
+for the deleted rename hook, pending Phase 2's remaining waves). `02-RESEARCH.md`'s three Open
+Questions all carry `(RESOLVED)` with pointers to `02-BACKEND-FACTS.md` P1/P2/P3 and ADR
+tech/0019.

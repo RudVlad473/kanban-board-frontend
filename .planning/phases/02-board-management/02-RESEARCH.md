@@ -672,7 +672,12 @@ to observe.
 
 ## Open Questions
 
-1. **D-13's newest-first ordering — server order and `id` format**
+1. **D-13's newest-first ordering — server order and `id` format (RESOLVED)**
+
+   **Resolved:** `02-BACKEND-FACTS.md` P1/P2 — `GET /boards` returns creation order (oldest
+   first); reversing the array client-side (equivalent to descending-`id`-string sort) gives
+   newest-first. Developer decision (P1/Decisions this resolves): reverse the array client-side.
+
    - What we know: `BoardResponseDTO` has no timestamp; `id` is declared only as `"type": "string"`.
    - What's unclear: whether `GET /boards`'s array order is creation-order, and whether `id` is a
      chronologically-sortable format (ULID/UUIDv7-style) or an opaque/random UUID/auto-increment
@@ -683,7 +688,12 @@ to observe.
      writing `model.ts`'s sort logic. Regardless of the answer, also implement Pitfall 2's
      cache-prepend strategy so newly-created boards are always visibly newest-first within a session.
 
-2. **Board/column/task error-response shape**
+2. **Board/column/task error-response shape (RESOLVED)**
+
+   **Resolved:** `02-BACKEND-FACTS.md` P3 — a real 409 version conflict returns the same
+   RFC 7807-flavoured `ProblemDetail` shape auth endpoints use, with a new `code` value
+   (`OPTIMISTIC_LOCK_CONFLICT`) that `PROBLEM_CODE` must be extended to recognize.
+
    - What we know: the OpenAPI contract declares no error schema for any board/column/task
      operation — the same documented gap `problem-detail.ts` already names for auth endpoints
      (`[VERIFIED: src/lib/core/api-contract/problem-detail.ts:1-8]`).
@@ -695,7 +705,17 @@ to observe.
      Handler's error-mapping can reuse `parseProblemDetail`/`PROBLEM_CODE` if the shape matches, or
      define a board-specific fallback if it doesn't.
 
-3. **Server Component vs. client-side redirect for D-08/D-10/D-11's auto-select/empty-state logic**
+3. **Server Component vs. client-side redirect for D-08/D-10/D-11's auto-select/empty-state logic (RESOLVED)**
+
+   **Resolved:** ADR tech/0019 (the 02.1 RSC rebuild) settles the mechanism question — Route
+   Handlers are banned as a data-access mechanism project-wide and the client-side hook this
+   question's second option depended on was deleted, leaving Server Component `redirect()` as
+   the only viable path. `app/(dashboard)/layout.tsx`'s current `fetchBoards()`-then-`redirect()`
+   pattern is the precedent the auto-select/empty-state logic will follow. The concrete
+   auto-select-first-board and invalid-`boardId` redirects themselves are not yet implemented —
+   `app/(dashboard)/boards/page.tsx` and `.../boards/[boardId]/page.tsx` remain placeholders,
+   still pending Phase 2's remaining waves — only the implementation *mechanism* is settled.
+
    - What we know: `app/(dashboard)/boards/page.tsx` and `.../boards/[boardId]/page.tsx` are today
      placeholder Client-agnostic components with no board data fetch at all.
    - What's unclear: whether the auto-select-first-board redirect (bare `/boards` → first board) and

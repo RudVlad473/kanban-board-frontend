@@ -24,3 +24,14 @@ Next.js-specific conventions. Note: some of what "React formatting rules" might 
 ESLint's domain (e.g. `eslint-plugin-react`, `eslint-config-next` rules) rather than Prettier's —
 worth clarifying during investigation whether the gap is really in Prettier config, ESLint rules,
 or both, before proposing a specific change.
+
+## Resolution
+
+Resolved by plan `02.2-09`, Task 4: recorded as a dated addendum under
+`docs/adr/tech/0007-linter-formatter-toolchain.md`. Conclusion: no Prettier config change —
+Prettier's own JSX-specific options (`jsxSingleQuote`, `bracketSameLine`, `singleAttributePerLine`)
+either already match this project's output or would be a net readability loss, and
+`prettier-plugin-organize-imports` would duplicate the stronger `import-x`/`import-order` rule
+already enforced. Confirmed the actual gap ("React formatting rules") is ESLint's domain
+(`eslint-plugin-react`'s `jsx-sort-props`/`jsx-max-props-per-line`, currently unused) — a distinct,
+un-adopted linting-policy decision, not a Prettier gap.

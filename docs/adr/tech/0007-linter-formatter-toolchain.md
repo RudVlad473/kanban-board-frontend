@@ -95,6 +95,36 @@ file itself can carry a one-line pointer instead of the reproduction detail (CON
   on the config file itself. Type-aware linting adds no real value for tooling scripts anyway, so
   it is turned off for just `*.config.mjs`/`*.config.js`/`scripts/*.mjs`.
 
+## Addendum: React/Next.js-specific Prettier formatting investigation (plan `02.2-09`, 2026-08-22)
+
+Investigated whether a Prettier plugin or explicit config option materially improves JSX/React
+formatting beyond `.prettierrc.json`'s current explicit settings (`semi`, `singleQuote: false`,
+`trailingComma: "all"`, `printWidth: 120`, `tabWidth: 4`, plus `prettier-plugin-tailwindcss`).
+
+**Finding: no change.** Two candidate categories were evaluated and rejected:
+
+- **JSX-specific Prettier options** (`jsxSingleQuote`, `bracketSameLine`, `singleAttributePerLine`):
+  `jsxSingleQuote`'s default (`false`) already matches this project's `singleQuote: false`, so
+  setting it explicitly would be a no-op; `bracketSameLine`'s default (closing `>` on its own line)
+  is already this project's current output and the more common convention; `singleAttributePerLine`
+  would force every JSX element with exactly one attribute onto two lines regardless of length —
+  a net readability loss for this codebase's many single-prop components, not a genuine gap.
+- **`prettier-plugin-organize-imports`** (import-statement sorting): this project already owns
+  import ordering/grouping via `eslint-plugin-import-x`'s `import/order` rule (grouping, path-group
+  patterns, alphabetize) — a strictly more configurable mechanism than the plugin's thin wrapper
+  around TypeScript's own `organizeImports` language-service command, which supports no custom
+  grouping. Adopting the plugin would duplicate, and could conflict with, an already-stronger rule.
+
+**The gap the originating todo asked to clarify is real, but it's ESLint's domain, not
+Prettier's.** What "React-specific formatting rules" most plausibly means — JSX attribute
+ordering/wrapping conventions — is exactly what `eslint-plugin-react`'s `jsx-sort-props` (prop
+order) and `jsx-max-props-per-line` (wrapping) rules exist to enforce; Prettier deliberately keeps
+its own JSX opinions minimal (the three options above are its entire JSX-specific surface) rather
+than offering a configurable prop-sort/wrap policy. This project currently enables no such
+ESLint rule (only `react/jsx-newline`, a blank-line rule, is active per section 3b). Whether to
+adopt `jsx-sort-props`/`jsx-max-props-per-line` is a new linting-policy decision, not a Prettier
+config change — out of this addendum's scope; capture as a fresh todo if the user wants to pursue it.
+
 Sources:
 - https://biomejs.dev/linter/rules/use-sorted-classes/ — fetched
   2026-08-09 (primary-docs).
