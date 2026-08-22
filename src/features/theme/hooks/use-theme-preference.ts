@@ -4,15 +4,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { updateThemeAction } from "@/features/theme/actions/update-theme";
+import { buildClientCookieString, COOKIE, THEME_COOKIE_MAX_AGE_SECONDS } from "@/lib/core/cookies/cookie-registry";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
-
-/*
- * The literal `COOKIE.THEME` (`@/lib/core/cookies/cookie-registry.ts`) also names, duplicated
- * here for the unauthenticated path below, which writes the cookie itself with no session to
- * persist against yet.
- */
-const THEME_COOKIE_NAME = "theme";
-const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 const FAILURE_MESSAGE = "Couldn't save your theme. Try again.";
 
@@ -21,7 +14,11 @@ const applyDocumentThemeClass = (theme: Theme): void => {
 };
 
 const writeThemeCookieClientSide = (theme: Theme): void => {
-    document.cookie = `${THEME_COOKIE_NAME}=${theme}; path=/; max-age=${String(THEME_COOKIE_MAX_AGE_SECONDS)}; samesite=lax`;
+    document.cookie = buildClientCookieString({
+        name: COOKIE.THEME,
+        value: theme,
+        maxAgeSeconds: THEME_COOKIE_MAX_AGE_SECONDS,
+    });
 };
 
 type UseThemePreferenceArgs = {

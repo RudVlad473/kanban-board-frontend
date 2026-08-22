@@ -1,11 +1,9 @@
 import "server-only";
 
-import { COOKIE } from "@/lib/core/cookies/cookie-registry";
+import { COOKIE, THEME_COOKIE_MAX_AGE_SECONDS } from "@/lib/core/cookies/cookie-registry";
 import { isTheme, type Theme } from "@/lib/core/theme/theme";
 
 import { createCookieClient } from "./cookie-client";
-
-const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // outlives the session cookie's 7-day expiry
 
 /**
  * The flash-avoidance mechanism the root layout relies on (`app/layout.tsx`). Client-writable by

@@ -131,6 +131,7 @@ src/
 
 - All authenticated calls to the external API go through a Server Component or a Server Action — never a Route Handler BFF proxy, which no longer exists as a mechanism (docs/adr/tech/0019) — and every such module carries `import "server-only"`; no client component holds or reads the raw session cookie/token directly. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`); code review confirming no client-component `fetch()` targets the external API base URL directly.
 - The session cookie is set httpOnly, Secure, and SameSite=Lax (or stricter) — never readable from client-side JavaScript. Enforcement: a test asserting the `Set-Cookie` header on sign-in carries all three flags.
+- A cookie is never written by hand-assembling its `document.cookie`/`Set-Cookie` string (see the general string-builder rule below). Server-side writes go through `createCookieClient()` (`lib/server/cookies/cookie-client.ts`); the rare client-side write a Server Action/RSC can't reach (e.g. an unauthenticated visitor's theme toggle) goes through `buildClientCookieString()` (`lib/core/cookies/cookie-registry.ts`), which reuses `createBaseCookieOptions()`'s secure/sameSite/path policy so the two write paths can't drift.
 
 ## Data fetching & mutations (docs/adr/tech/0019, narrows docs/adr/tech/0002)
 
@@ -162,6 +163,7 @@ src/
 - Every function is a `const` bound to an arrow function expression, never a `function` declaration or function expression (docs/adr/tech/0015) — except Next.js framework-forced default-export files (`page.tsx`, `layout.tsx`, `route.ts`, etc.), which declare the arrow-const normally and `export default` it on its own line, since `export default const foo = () => {}` isn't valid syntax. Class methods and object-literal method shorthand are unaffected. Enforcement: `eslint-plugin-prefer-arrow-functions` (autofix) plus core `func-style: ["error", "expression"]` as a backstop.
 - A comment explaining WHY is at most 1-3 lines (roughly one sentence) (PC-05). If the rationale needs more — a threat-model citation, a multi-step decision history — that belongs in the relevant ADR, `CONTEXT.md`, or `SUMMARY.md`, referenced by a short pointer (e.g. "see ADR tech/0018") rather than restated in full inline. Enforcement: `pnpm comments:check` (`scripts/check-comment-length.mjs`); an over-limit block can be marked exempt with a `comment-length-exempt:` marker line carrying a stated reason (docs/adr/tech/0023).
 - A function whose primary job is to construct and return a new object/value (a factory) is named `create<Thing>` — never a bare noun phrase (`baseCookieOptions`) that reads like a property rather than an action. Applies whether the factory is a plain function (`createBaseCookieOptions`) or one of D-11's `Partial<T>`-override fixture factories (`createBoard`/`createBoards`). Does not apply to a function whose return value is incidental to its main effect (a query/read, a predicate, a handler) — only to one whose entire purpose is producing the returned value. Enforcement: code review.
+- A structured, delimiter-joined string built from multiple named fields (a cookie string, a query string, a header value, a CSV row — any format with a real syntax, not free-form prose) is assembled by one named `build<Thing>String`-style function, never by an inline template literal repeated at each call site. One call site is fine; the moment a second one needs the same shape, the join belongs in a function so the two can't silently drift apart (as `use-theme-preference.ts` and `theme-cookie.ts` once did over the theme cookie's name and max-age). Enforcement: code review.
 
 ## Responsive strategy (docs/adr/tech/0010, docs/adr/tech/0014)
 
@@ -211,11 +213,11 @@ src/
 
 ## Out of scope for 02.1
 
-Two loosely-matched pending todos were deliberately reviewed and kept out of this phase's retrofit
-scope (D-17) — their absence from this phase's changes is not an oversight:
-
-- Theme cookie not cleared on sign-out — `.planning/todos/pending/2026-08-20-clear-theme-cookie-on-sign-out.md`.
-- Path traversal in `scripts/serve-static.mjs` (Playwright visual webServer, dev/CI-only) — `.planning/todos/pending/2026-08-20-fix-path-traversal-in-serve-static-visual-test-server.md`.
+Two loosely-matched pending todos were reviewed against D-17 and found already resolved by prior
+phases, not left open by this one: the theme cookie is cleared on sign-out (`themeCookie.clear()`
+in `sign-out.ts`, landed in Phase 2's `9012dfa`) and `scripts/serve-static.mjs` contains resolved
+paths within its served root (`resolveWithinRoot`, landed in Phase 2's `0a7620b`) — both before
+02.1 began. Their todo files are closed accordingly.
 
 ## Prerequisites
 
