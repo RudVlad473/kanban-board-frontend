@@ -5,7 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -17,14 +17,6 @@ import * as stories from "./text-field.stories";
 const { Idle, Error, Disabled, Loading, Password } = composeStories(stories);
 
 /*
- * composeStories' `.run()` and vitest-browser-react's `render()` don't clean up after each
- * other — wipe the page body between tests so the two mechanisms never collide.
- */
-afterEach(() => {
-    document.body.innerHTML = "";
-});
-
-/*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; the width test below
  * genuinely differs per viewport already (reads live window.innerWidth), needing no branching.
  */
@@ -34,7 +26,7 @@ describeForEachDevice({
         // Shallow: copy, prop-driven aria wiring, disabled/busy rendering — through composed stories (D-08).
         it("associates the visible label with the input as its accessible name", async () => {
             // Act
-            await Idle.run();
+            await render(<Idle />);
 
             // Assert
             expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
@@ -42,7 +34,7 @@ describeForEachDevice({
 
         it("renders the error message, marks the input invalid, and exposes the message as its accessible description when hasError", async () => {
             // Act
-            await Error.run();
+            await render(<Error />);
 
             // Assert
             const input = screen.getByRole("textbox", { name: "Password" });
@@ -54,7 +46,7 @@ describeForEachDevice({
 
         it("renders disabled when isDisabled", async () => {
             // Act
-            await Disabled.run();
+            await render(<Disabled />);
 
             // Assert
             expect(screen.getByRole("textbox", { name: "Email" })).toBeDisabled();
@@ -62,7 +54,7 @@ describeForEachDevice({
 
         it("renders disabled and reports itself busy when isLoading", async () => {
             // Act
-            await Loading.run();
+            await render(<Loading />);
 
             // Assert
             const input = screen.getByRole("textbox", { name: "Email" });
@@ -72,7 +64,7 @@ describeForEachDevice({
 
         it("renders a masked password input with its trailing node inside the field rather than beside it", async () => {
             // Act
-            await Password.run();
+            await render(<Password />);
 
             // Assert
             const input = document.body.querySelector("input[type='password']");

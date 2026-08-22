@@ -6,7 +6,7 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
 import { Eye } from "lucide-react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -18,14 +18,6 @@ import * as stories from "./icon-button.stories";
 const { Default, Disabled, Loading } = composeStories(stories);
 
 /*
- * composeStories' `.run()` and vitest-browser-react's `render()` don't clean up after each
- * other — wipe the page body between tests so the two mechanisms never collide.
- */
-afterEach(() => {
-    document.body.innerHTML = "";
-});
-
-/*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; IconButton has no
  * viewport-conditional behavior of its own (ADR tech/0010 mobile review).
  */
@@ -35,7 +27,7 @@ describeForEachDevice({
         // Shallow: copy, prop-driven aria/disabled/loading state — asserted through composed stories (D-08).
         it("exposes the label prop as its accessible name even though it renders no visible text", async () => {
             // Act
-            await Default.run();
+            await render(<Default />);
 
             // Assert
             const button = screen.getByRole("button", { name: "Show password" });
@@ -45,7 +37,7 @@ describeForEachDevice({
 
         it("reports itself not busy — the attribute reads the string false, not absent — when isLoading is unset", async () => {
             // Act
-            await Default.run();
+            await render(<Default />);
 
             // Assert
             expect(screen.getByRole("button", { name: "Show password" })).toHaveAttribute("aria-busy", "false");
@@ -53,7 +45,7 @@ describeForEachDevice({
 
         it("renders disabled and keeps its accessible name when isDisabled", async () => {
             // Act
-            await Disabled.run();
+            await render(<Disabled />);
 
             // Assert
             expect(screen.getByRole("button", { name: "Show password" })).toBeDisabled();
@@ -61,7 +53,7 @@ describeForEachDevice({
 
         it("renders busy, renders a spinner in place of the icon, and keeps its accessible name when isLoading", async () => {
             // Act
-            await Loading.run();
+            await render(<Loading />);
 
             // Assert
             const button = screen.getByRole("button", { name: "Show password" });
