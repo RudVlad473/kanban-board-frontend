@@ -1,16 +1,17 @@
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
+import { decodeJwt } from "jose";
 
 import { seedAccount } from "./seed";
+import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
 
-const SESSION_COOKIE_NAME = "session";
 const FRESH_PASSWORD = "E2eFreshPassword123!";
 const PROTECTED_HEADING = "Boards";
 
 test.describe("AUTH-01: sign up", () => {
-    test("creates an account, lands on the board list, and sets an httpOnly session cookie", async ({
+    test("creates an account, lands on the board list, and sets an httpOnly session cookie whose value is an opaque JWT", async ({
         page,
         context,
     }) => {
@@ -33,10 +34,30 @@ test.describe("AUTH-01: sign up", () => {
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
         const cookies = await context.cookies();
-        const sessionCookie = cookies.find((cookie) => cookie.name === SESSION_COOKIE_NAME);
+        const sessionCookie = cookies.find((cookie) => cookie.name === COOKIE.SESSION);
 
         expect(sessionCookie).toBeDefined();
         expect(sessionCookie?.httpOnly).toBe(true);
+        if (!sessionCookie) {
+            throw new Error("expected a session cookie to exist after sign-up");
+        }
+
+        /*
+         * T-02.2-17: the session cookie must be an opaque JWT, never readable identity — three
+         * dot-separated segments, and neither the account's email nor its backend id present as a
+         * plaintext substring of the raw cookie value.
+         */
+        expect(sessionCookie.value.split(".")).toHaveLength(3);
+        expect(sessionCookie.value).not.toContain(freshEmail);
+        const payload = decodeJwt(sessionCookie.value);
+        const accountId = payload.id;
+        if (typeof accountId !== "string" || accountId.length === 0) {
+            throw new Error("expected the decoded session payload to carry a string id");
+        }
+        expect(sessionCookie.value).not.toContain(accountId);
+
+        const themeCookie = cookies.find((cookie) => cookie.name === COOKIE.THEME);
+        expect(themeCookie).toBeDefined();
     });
 });
 
@@ -61,6 +82,128 @@ test.describe("AUTH-02: sign in", () => {
         // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
         await expect(page.getByRole("heading", { name: "Boards" })).toBeVisible();
+    });
+});
+
+test.describe("AUTH-04: sign-in rejects a wrong password", () => {
+    test("shows the anti-enumeration message and sets no session cookie", async ({ page, context }) => {
+        // Arrange
+        const account = seedAccount();
+
+        // Act
+        await page.goto(ROUTE.SIGN_IN);
+        await page.getByLabel("Email", { exact: true }).fill(account.email);
+        await page.getByLabel("Password", { exact: true }).fill("TotallyWrongPwd9!");
+        await page.getByRole("button", { name: "Sign In" }).click();
+
+        // Assert
+        /*
+         * INVALID_CREDENTIALS_MESSAGE is a module-private constant in
+         * src/features/auth/actions/sign-in.ts — literal copy here, not an import. `getByText`,
+         * not `getByRole("alert")` — Next.js's own route-announcer also carries role="alert".
+         */
+        await expect(page.getByText("Invalid email or password.", { exact: true })).toBeVisible();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
+        const cookies = await context.cookies();
+        expect(cookies.find((cookie) => cookie.name === COOKIE.SESSION)).toBeUndefined();
+    });
+});
+
+test.describe("AUTH-05: sign-in rejects a payload failing the shared schema", () => {
+    test("shows field-level errors and sets no session cookie", async ({ page, context }) => {
+        // Act — a malformed email and an empty password (untouched field).
+        await page.goto(ROUTE.SIGN_IN);
+        await page.getByLabel("Email", { exact: true }).fill("not-an-email");
+        await page.getByRole("button", { name: "Sign In" }).click();
+
+        // Assert
+        /*
+         * EMAIL_FORMAT_MESSAGE / REQUIRED_FIELD_MESSAGE are module-private constants in
+         * src/features/auth/schemas.ts — literal copies here, not imports.
+         */
+        await expect(page.getByText("Enter a valid email address.")).toBeVisible();
+        await expect(page.getByText("Can't be empty")).toBeVisible();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
+        const cookies = await context.cookies();
+        expect(cookies.find((cookie) => cookie.name === COOKIE.SESSION)).toBeUndefined();
+    });
+});
+
+test.describe("AUTH-06: sign-up rejects a payload failing the shared schema", () => {
+    test("shows field-level errors and sets no session cookie", async ({ page, context }) => {
+        // Arrange
+        const email = `e2e-signup-invalid-${randomUUID()}@example.com`;
+
+        // Act
+        /*
+         * A digit-bearing name (charset) and an 8-char-under password (length, chained before
+         * complexity per schemas.ts's own comment, so "short" reports length only).
+         */
+        await page.goto(ROUTE.SIGN_UP);
+        await page.getByLabel("Email", { exact: true }).fill(email);
+        await page.getByLabel("Name", { exact: true }).fill("User123");
+        await page.getByLabel("Password", { exact: true }).fill("short");
+        await page.getByRole("button", { name: "Create Account" }).click();
+
+        // Assert
+        /*
+         * DISPLAY_NAME_CHARSET_MESSAGE / PASSWORD_LENGTH_MESSAGE are module-private constants in
+         * src/features/auth/schemas.ts — literal copies here, not imports.
+         */
+        await expect(page.getByText("Name can only contain letters and spaces.")).toBeVisible();
+        await expect(page.getByText("Password must be between 8 and 64 characters.")).toBeVisible();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_UP}$`));
+        const cookies = await context.cookies();
+        expect(cookies.find((cookie) => cookie.name === COOKIE.SESSION)).toBeUndefined();
+    });
+});
+
+test.describe("AUTH-07: sign-up rejects a duplicate email", () => {
+    test("shows the duplicate-account message on a second sign-up with the same email and sets no session cookie", async ({
+        page,
+        context,
+    }) => {
+        // Arrange
+        const email = `e2e-signup-dup-${randomUUID()}@example.com`;
+
+        // Act — first sign-up succeeds and signs the account in.
+        await page.goto(ROUTE.SIGN_UP);
+        await page.getByLabel("Email", { exact: true }).fill(email);
+        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
+        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
+        await page.getByRole("button", { name: "Create Account" }).click();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+
+        /*
+         * Sign out first — proxy.ts redirects a signed-in visitor away from /register entirely, so
+         * the second attempt below could never reach the form otherwise. This app's own sign-out
+         * never calls the backend (SETUP.md), so it doesn't touch the account's session budget.
+         */
+        await page.getByRole("button", { name: "Sign Out" }).click();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
+
+        // Act — second sign-up, same email.
+        await page.goto(ROUTE.SIGN_UP);
+        await page.getByLabel("Email", { exact: true }).fill(email);
+        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
+        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
+        await page.getByRole("button", { name: "Create Account" }).click();
+
+        // Assert
+        /*
+         * SIGN_UP_FAILURE_MESSAGE is a module-private constant in
+         * src/features/auth/actions/sign-up.ts — literal copy here, not an import. `getByText`,
+         * not `getByRole("alert")` — Next.js's own route-announcer also carries role="alert".
+         */
+        await expect(
+            page.getByText(
+                "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.",
+                { exact: true },
+            ),
+        ).toBeVisible();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_UP}$`));
+        const cookies = await context.cookies();
+        expect(cookies.find((cookie) => cookie.name === COOKIE.SESSION)).toBeUndefined();
     });
 });
 
