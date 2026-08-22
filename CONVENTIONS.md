@@ -197,6 +197,19 @@ src/
 - Every component carries a co-located `*.stories.tsx` and a co-located `*.test.tsx` that imports those stories through `composeStories` (from `@storybook/react`, never `@storybook/nextjs-vite`) and drives them with `.run()`. `app/**/error.tsx`/`app/**/layout.tsx`-style thin route wrappers are exempt. Enforcement: `pnpm test:browser`; a component without a stories/test pair is a review-blocking gap.
 - Non-visual hooks are tested with React Testing Library's `renderHook` in the `unit` project, not Vitest Browser Mode — except a hook whose behavior depends on real layout measurement (`useOverflowIndicator` is the example), which stays in the `browser` project. Enforcement: code review.
 
+## Test setup: prefer `beforeEach`/nested `describe` over helper functions
+
+Purpose-built reusable functions for test setup (e.g. a `signUpDirectCapturingTheme`-style helper
+that performs several steps and returns captured state) are a bad pattern — they hide what a test
+actually does behind an opaque call, and they proliferate: a new one per combination of setup steps
+a test needs. Before writing one, first ask whether a nested `describe` block with its own
+`beforeEach` covers the same reuse instead. `beforeEach` keeps the arrange step visible in the test
+body's containing scope, composes naturally (nested `describe`s stack), and never needs a name that
+grows in scope as it grows in responsibility. Reach for a standalone helper function only when the
+same imperative *action* (not shared state) is invoked mid-test across genuinely unrelated
+`describe` blocks — never as the default reach for "avoid repeating a few lines." Enforcement: code
+review.
+
 ## End-to-end scope & seeding (docs/adr/tech/0022)
 
 - Playwright E2E specs cover only real business-logic happy paths (create, view, switch, edit, drag/move, delete including cascade, sign-in/out, theme switching) and must NOT assert on validation error copy, microcopy, or edge-case error-state rendering — that coverage lives in composed-story tests (docs/adr/tech/0021). Enforcement: code review.
