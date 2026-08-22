@@ -78,12 +78,26 @@ known, user-facing redirect-loop bug when a same-effort fix (Option 1) was avail
 
 Chosen: **Option 1.** `externalApi`'s `onResponse` middleware (`src/lib/server/server-client.ts`)
 no longer calls `session.destroy()` itself; on a forced-sign-out-eligible 401 it instead
-`redirect()`s to a new Route Handler, `app/api/session/force-sign-out/route.ts`, passing the
-intended post-clear destination. That Route Handler:
+`redirect()`s to a new Route Handler, `app/api/session/force-sign-out/route.ts`. That Route
+Handler:
 
-1. Calls `session.destroy()` (legal here — Route Handlers are an explicitly permitted cookie-write
+1. Checks the `Sec-Fetch-Site` request header and rejects (403, session left intact) anything
+   other than `same-origin` — this route is otherwise a plain, unauthenticated `GET` that any
+   page can navigate a signed-in visitor to, and the session cookie is `SameSite=Lax`, so without
+   this check a cross-site page could force a real user's session to be destroyed (logout CSRF).
+   `Sec-Fetch-Site` is set by the browser itself and cannot be spoofed by the requesting page; only
+   the internal same-origin redirect this handler exists for produces `same-origin`. This is what
+   actually enforces "reachable only via the genuine originating 401 condition" — the property this
+   record's "one narrow, justified exception" framing (Consequences, below) depends on but did not
+   originally mechanize.
+2. Calls `session.destroy()` (legal here — Route Handlers are an explicitly permitted cookie-write
    context).
-2. Redirects to `ROUTE.SIGN_IN` (or the passed destination) via `NextResponse.redirect`.
+3. Redirects to `ROUTE.SIGN_IN` via `NextResponse.redirect`. There is no caller-supplied
+   destination — the handler always redirects to `ROUTE.SIGN_IN`. An earlier version of the
+   handler (and this record's original text) described a `redirect` query-param/allowlist
+   mechanism for a caller-chosen destination, but `onResponse`'s one production call site never
+   actually passed one, so that branch was unreachable dead code; it has been removed rather than
+   wired up for a caller that doesn't exist.
 
 `proxy.ts`'s existing matcher already excludes `/api/**` from its own gating (see its own comment:
 "Excludes the BFF's own API routes — they authenticate themselves"), so this new handler does not
@@ -107,6 +121,10 @@ legally allowed to happen, not who is allowed to decide one is needed.
 - `server-client.ts`'s `onResponse` gets one hop simpler in one sense (no longer calls
   `session.destroy()` itself) and one hop more complex in another (redirects to an intermediary
   instead of the final destination directly).
+- The `Sec-Fetch-Site` guard is covered by `e2e/session-bridge.e2e.spec.ts`'s `SESSION-03` cases:
+  a cross-site header and an absent header both leave the session cookie intact (403, no
+  destroy), while `same-origin` still destroys it and redirects to `ROUTE.SIGN_IN` exactly as
+  before the guard was added.
 
 Unwind trigger: if Next.js ever allows cookie mutation from Server Component render context (no
 such change is currently planned or proposed upstream), this Route Handler indirection becomes

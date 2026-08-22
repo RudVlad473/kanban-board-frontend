@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { SignJWT } from "jose";
 
 import { seedAccount } from "./seed";
@@ -109,5 +109,83 @@ test.describe("SESSION-02: session rotation across two real sign-ins", () => {
         // Assert
         expect(secondSessionCookie).toBeDefined();
         expect(secondSessionCookie?.value).not.toBe(firstSessionCookie.value);
+    });
+});
+
+test.describe("SESSION-03: force-sign-out route rejects non-same-origin requests (WR-01 CSRF guard)", () => {
+    /*
+     * The session cookie is `SameSite=Lax` (e2e/cookie-policy.e2e.spec.ts's COOKIE-03), so it
+     * still attaches to a top-level cross-site GET navigation — without the `Sec-Fetch-Site`
+     * check these cases prove, a third-party page linking straight to this route could force any
+     * signed-in visitor's session to be destroyed (logout CSRF).
+     */
+    const signInViaUi = async ({ page, email, password }: { page: Page; email: string; password: string }) => {
+        await page.goto(ROUTE.SIGN_IN);
+        await page.getByLabel("Email", { exact: true }).fill(email);
+        await page.getByLabel("Password", { exact: true }).fill(password);
+        await page.getByRole("button", { name: "Sign In" }).click();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+    };
+
+    test("a cross-site Sec-Fetch-Site header is rejected and leaves the session cookie intact", async ({
+        page,
+        context,
+    }) => {
+        // Arrange
+        const account = seedAccount();
+        await signInViaUi({ page, email: account.email, password: account.password });
+
+        /*
+         * Act — a real cross-site top-level navigation carries `Sec-Fetch-Site: cross-site`, a
+         * value the browser sets itself and no page can spoof.
+         */
+        const response = await context.request.get(`${E2E_CONFIG.BASE_URL}${ROUTE.FORCE_SIGN_OUT}`, {
+            headers: { "sec-fetch-site": "cross-site" },
+        });
+
+        // Assert
+        expect(response.status()).toBe(403);
+        const cookiesAfter = await context.cookies();
+        expect(cookiesAfter.some((cookie) => cookie.name === COOKIE.SESSION)).toBe(true);
+    });
+
+    test("a request with no Sec-Fetch-Site header at all fails closed and leaves the session cookie intact", async ({
+        page,
+        context,
+    }) => {
+        // Arrange
+        const account = seedAccount();
+        await signInViaUi({ page, email: account.email, password: account.password });
+
+        /*
+         * Act — Playwright's APIRequestContext sends no browser-navigation headers unless told
+         * to, exercising the same "header absent" path an older/non-navigation client would hit.
+         */
+        const response = await context.request.get(`${E2E_CONFIG.BASE_URL}${ROUTE.FORCE_SIGN_OUT}`);
+
+        // Assert
+        expect(response.status()).toBe(403);
+        const cookiesAfter = await context.cookies();
+        expect(cookiesAfter.some((cookie) => cookie.name === COOKIE.SESSION)).toBe(true);
+    });
+
+    test("a same-origin Sec-Fetch-Site header still destroys the session cookie and redirects to sign-in", async ({
+        page,
+        context,
+    }) => {
+        // Arrange
+        const account = seedAccount();
+        await signInViaUi({ page, email: account.email, password: account.password });
+
+        // Act — mirrors the browser navigation produced by server-client.ts's internal redirect().
+        const response = await context.request.get(`${E2E_CONFIG.BASE_URL}${ROUTE.FORCE_SIGN_OUT}`, {
+            headers: { "sec-fetch-site": "same-origin" },
+        });
+
+        // Assert
+        expect(response.ok()).toBe(true);
+        expect(new URL(response.url()).pathname).toBe(ROUTE.SIGN_IN);
+        const cookiesAfter = await context.cookies();
+        expect(cookiesAfter.some((cookie) => cookie.name === COOKIE.SESSION)).toBe(false);
     });
 });
