@@ -5,7 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -17,14 +17,6 @@ import * as stories from "./checkbox.stories";
 const { Unchecked, Error, Disabled, Loading } = composeStories(stories);
 
 /*
- * composeStories' `.run()` and vitest-browser-react's `render()` don't clean up after each
- * other — wipe the page body between tests so the two mechanisms never collide.
- */
-afterEach(() => {
-    document.body.innerHTML = "";
-});
-
-/*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; Checkbox has no
  * viewport-conditional behavior of its own (ADR tech/0010 mobile review).
  */
@@ -34,7 +26,7 @@ describeForEachDevice({
         // Shallow: copy, prop-driven aria state — asserted through composed stories (D-08).
         it("is found by role checkbox with the label as its accessible name", async () => {
             // Act
-            await Unchecked.run();
+            await render(<Unchecked />);
 
             // Assert
             expect(screen.getByRole("checkbox", { name: "Remember me" })).toBeInTheDocument();
@@ -42,7 +34,7 @@ describeForEachDevice({
 
         it("reports aria-busy=false (not absent) when not loading", async () => {
             // Act
-            await Unchecked.run();
+            await render(<Unchecked />);
 
             // Assert
             expect(screen.getByRole("checkbox", { name: "Remember me" })).toHaveAttribute("aria-busy", "false");
@@ -50,7 +42,7 @@ describeForEachDevice({
 
         it("marks the control invalid when hasError", async () => {
             // Act
-            await Error.run();
+            await render(<Error />);
 
             // Assert
             expect(screen.getByRole("checkbox", { name: "Remember me" })).toHaveAttribute("aria-invalid", "true");
@@ -58,7 +50,7 @@ describeForEachDevice({
 
         it("renders disabled and keeps its accessible name when isDisabled", async () => {
             // Act
-            await Disabled.run();
+            await render(<Disabled />);
 
             // Assert
             expect(screen.getByRole("checkbox", { name: "Remember me" })).toHaveAttribute("aria-disabled", "true");
@@ -66,7 +58,7 @@ describeForEachDevice({
 
         it("renders busy and keeps its accessible name when isLoading", async () => {
             // Act
-            await Loading.run();
+            await render(<Loading />);
 
             // Assert
             const checkbox = screen.getByRole("checkbox", { name: "Remember me" });

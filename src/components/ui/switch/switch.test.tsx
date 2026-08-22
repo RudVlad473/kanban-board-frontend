@@ -5,7 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -15,14 +15,6 @@ import { Switch } from "./switch";
 import * as stories from "./switch.stories";
 
 const { Off, On, Disabled } = composeStories(stories);
-
-/*
- * composeStories' `.run()` and vitest-browser-react's `render()` don't clean up after each
- * other — wipe the page body between tests so the two mechanisms never collide.
- */
-afterEach(() => {
-    document.body.innerHTML = "";
-});
 
 /*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; Switch has no
@@ -38,7 +30,7 @@ describeForEachDevice({
          */
         it("is found by role switch with the label as its accessible name, and renders no visible text", async () => {
             // Act
-            await Off.run();
+            await render(<Off />);
 
             // Assert
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
@@ -48,7 +40,7 @@ describeForEachDevice({
 
         it("exposes an on/checked state to assistive technology when checked, and does not when unchecked", async () => {
             // Act
-            await On.run();
+            await render(<On />);
 
             // Assert
             expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute("aria-checked", "true");
@@ -56,7 +48,7 @@ describeForEachDevice({
 
         it("exposes an off/unchecked state to assistive technology when unchecked", async () => {
             // Act
-            await Off.run();
+            await render(<Off />);
 
             // Assert
             expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute("aria-checked", "false");
@@ -64,7 +56,7 @@ describeForEachDevice({
 
         it("renders disabled and keeps its accessible name when isDisabled", async () => {
             // Act
-            await Disabled.run();
+            await render(<Disabled />);
 
             // Assert
             expect(screen.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute("aria-disabled", "true");
