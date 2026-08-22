@@ -98,9 +98,8 @@ test.describe("AUTH-04: sign-in rejects a wrong password", () => {
 
         // Assert
         /*
-         * INVALID_CREDENTIALS_MESSAGE is a module-private constant in
-         * src/features/auth/actions/sign-in.ts — literal copy here, not an import. `getByText`,
-         * not `getByRole("alert")` — Next.js's own route-announcer also carries role="alert".
+         * INVALID_CREDENTIALS_MESSAGE (sign-in.ts) copied literally, not imported — module-private.
+         * `getByText`, not `getByRole("alert")`: Next's own route-announcer also carries that role.
          */
         await expect(page.getByText("Invalid email or password.", { exact: true })).toBeVisible();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
@@ -191,9 +190,8 @@ test.describe("AUTH-07: sign-up rejects a duplicate email", () => {
 
         // Assert
         /*
-         * SIGN_UP_FAILURE_MESSAGE is a module-private constant in
-         * src/features/auth/actions/sign-up.ts — literal copy here, not an import. `getByText`,
-         * not `getByRole("alert")` — Next.js's own route-announcer also carries role="alert".
+         * SIGN_UP_FAILURE_MESSAGE (sign-up.ts) copied literally, not imported — module-private.
+         * `getByText`, not `getByRole("alert")`: Next's own route-announcer also carries that role.
          */
         await expect(
             page.getByText(
@@ -208,7 +206,7 @@ test.describe("AUTH-07: sign-up rejects a duplicate email", () => {
 });
 
 test.describe("sign-out", () => {
-    test("signs out and the board list redirects back to sign-in afterward", async ({ page }) => {
+    test("signs out and the board list redirects back to sign-in afterward", async ({ page, context }) => {
         // Arrange
         const account = seedAccount();
 
@@ -224,6 +222,9 @@ test.describe("sign-out", () => {
         // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
 
+        const cookies = await context.cookies();
+        expect(cookies.find((cookie) => cookie.name === COOKIE.SESSION)).toBeUndefined();
+
         /*
          * After a sign-out, a direct request for the board list must be refused exactly as it is
          * for a visitor who never signed in (route-guard.e2e.spec.ts's own assertion) — the
@@ -233,4 +234,10 @@ test.describe("sign-out", () => {
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
         await expect(page.getByRole("heading", { name: PROTECTED_HEADING })).toHaveCount(0);
     });
+
+    /*
+     * "Sign out with no session" (ledger row 11) is NOT REACHABLE via the real browser — see
+     * 02.2-05-SUMMARY.md's coverage ledger for the reason (a proxy.ts/Server Action interaction),
+     * restated in 02.2-09's ADR amendment.
+     */
 });
