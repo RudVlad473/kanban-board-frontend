@@ -73,7 +73,7 @@ describeForEachDevice({
         it("renders the anti-enumeration failure message at form level when staged with a server error", async () => {
             /*
              * sign-in.ts collapses every real cause into this message (T-02.1-29, proven in
-             * sign-in.integration.test.ts) — this only proves the form renders `state.message`.
+             * e2e/auth.e2e.spec.ts's AUTH-04 test) — this only proves the form renders `state.message`.
              */
             // Act
             await render(<WithServerError />);
