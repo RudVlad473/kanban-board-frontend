@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 /*
  * D-05: fails the build if any `*.stories.tsx` declares a story property named `play` —
- * interaction functions belong in the component's co-located `*.test.tsx` (docs/adr/tech/0025),
- * never inside the story. Mirrors scripts/check-no-route-handlers.mjs's shape, scanning file
- * contents the way scripts/check-comment-length.mjs does.
+ * interaction functions belong in the component's co-located `*.test.tsx` (docs/adr/tech/0025).
+ * Shape mirrors scripts/check-no-route-handlers.mjs / scripts/check-comment-length.mjs.
  */
 import { globSync, readFileSync } from "node:fs";
 import path from "node:path";
