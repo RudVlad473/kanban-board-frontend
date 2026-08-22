@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 02.2
-current_phase_name: Unify component tests fully onto Storybook stories
+current_phase_name: unify-component-tests-fully-onto-storybook-stories-eliminate
 status: paused
 stopped_at: Phase 02.2 context gathered
-last_updated: "2026-08-22T15:42:37.346Z"
+last_updated: "2026-08-22T16:39:53.956Z"
 last_activity: 2026-08-22
 last_activity_desc: Phase 02.2 pulled forward ahead of Phase 02's remaining plans (user decision); Phase 02 paused
-state_head: ace4e03bd1d1a6045b16d0a9550cd12e5e28108e
+state_head: 00c86bb1e1a3f8796ac0d6ed22b2890defe7e5bc
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 66
+  total_plans: 75
   completed_plans: 62
 milestone_name: milestone
 ---
@@ -31,7 +31,7 @@ board create, board detail view, rename, delete — 02-09..13)
 
 ## Current Position
 
-Phase: 02.2 (Unify component tests onto Storybook stories) — PULLED FORWARD, not yet planned
+Phase: 02.2 (unify-component-tests-fully-onto-storybook-stories-eliminate) — READY TO EXECUTE
 Phase 02 (Board Management): PAUSED at Wave 8 (9 of 13 plans done; 02-10 not started)
 Status: Paused — Phase 02.2 pulled forward ahead of Phase 02's remaining plans (02-10..13) by
 explicit user decision, to resolve 4 pending testing-pattern todos before 02-10/02-12/02-13 add
