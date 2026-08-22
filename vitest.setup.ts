@@ -38,14 +38,8 @@ setProjectAnnotations([a11yAddonAnnotations, previewAnnotations, { testingLibrar
 
 /*
  * D-04: single centralized cleanup for the "browser" project, replacing the 11 per-file
- * `document.body.innerHTML = ""` copies that existed while two rendering mechanisms coexisted
- * (docs/adr/tech/0025). A raw `document.body.innerHTML = ""` wipe (RESEARCH.md Assumption A1's
- * rejected alternative) rips DOM nodes out from under whichever render mechanism mounted them
- * without telling it — `composeStories`' `.run()` (via `testingLibraryRender` above) then throws
- * `NotFoundError: Failed to execute 'removeChild'` on its next call in the same file, because its
- * internally tracked root no longer matches the live DOM. Each mechanism's own `cleanup()` calls
- * `root.unmount()` first, so both can coexist safely for the remainder of this phase's file-by-file
- * retrofit (plans 02.2-02, 03, 04, 06).
+ * `document.body.innerHTML = ""` copies. Calls each render mechanism's own `cleanup()` rather
+ * than a raw DOM wipe, which broke `.run()`'s next call in the same file (docs/adr/tech/0025).
  */
 afterEach(async () => {
     cleanupTestingLibraryRender();
