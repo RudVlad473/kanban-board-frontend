@@ -8,6 +8,11 @@ export const ROUTE = {
     SIGN_IN: "/login",
     SIGN_UP: "/register",
     BOARDS: "/boards",
+    /*
+     * The one narrow Route Handler exception to docs/adr/tech/0019's ban (ADR tech/0026) — not a
+     * page, so it is deliberately absent from PUBLIC_PATHS/PROTECTED_PREFIXES below.
+     */
+    FORCE_SIGN_OUT: "/api/session/force-sign-out",
 } as const;
 
 export type Route = (typeof ROUTE)[keyof typeof ROUTE];

@@ -11,7 +11,16 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
-const violations = globSync("app/**/route.{ts,tsx,js,mjs}", { cwd: repoRoot });
+/*
+ * ADR tech/0026's one narrow, justified exception: cookie mutation forced from a non-Server-Action
+ * server context has no legal answer under docs/adr/tech/0019's RSC-read/Server-Action-write
+ * split, so this single Route Handler is allow-listed rather than reopening the ban itself.
+ */
+const ALLOWED_ROUTE_HANDLERS = new Set(["app/api/session/force-sign-out/route.ts"]);
+
+const violations = globSync("app/**/route.{ts,tsx,js,mjs}", { cwd: repoRoot }).filter(
+    (relativePath) => !ALLOWED_ROUTE_HANDLERS.has(relativePath.replaceAll("\\", "/")),
+);
 
 if (violations.length > 0) {
     console.error(
