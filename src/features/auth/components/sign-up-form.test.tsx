@@ -4,6 +4,7 @@ import { afterEach, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { formDataToObject } from "@/test-utils/form-data-to-object";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
 import { SignUpForm } from "./sign-up-form";
@@ -24,16 +25,6 @@ const SIGN_UP_FAILURE_MESSAGE =
     "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
 
 const renderSignUpForm = () => renderWithProviders(<SignUpForm />);
-
-const formDataToObject = (formData: FormData | null): Record<string, string> => {
-    const result: Record<string, string> = {};
-    for (const [key, value] of formData?.entries() ?? []) {
-        if (typeof value === "string" && value !== "") {
-            result[key] = value;
-        }
-    }
-    return result;
-};
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The

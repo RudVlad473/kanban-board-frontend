@@ -4,6 +4,7 @@ import { afterEach, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { formDataToObject } from "@/test-utils/form-data-to-object";
 import { renderWithProviders } from "@/test-utils/render-with-providers";
 
 import { SignInForm } from "./sign-in-form";
@@ -15,16 +16,6 @@ const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
 
 const renderSignInForm = () => renderWithProviders(<SignInForm />);
-
-const formDataToObject = (formData: FormData | null): Record<string, string> => {
-    const result: Record<string, string> = {};
-    for (const [key, value] of formData?.entries() ?? []) {
-        if (typeof value === "string") {
-            result[key] = value;
-        }
-    }
-    return result;
-};
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The
