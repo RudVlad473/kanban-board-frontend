@@ -27,10 +27,8 @@ const waitForThemeCookie = ({ page, theme }: { page: Page; theme: Theme }) =>
     expect.poll(() => page.evaluate(() => document.cookie)).toContain(`theme=${theme}`);
 
 /**
- * Signs up directly against the real backend (bypassing the UI), capturing the freshly-created
- * account's own assigned theme — the one value `seedAccount()`'s curl-based script (D-07) doesn't
- * return. Used only for COOKIE-cross-account isolation, where a pre-mutation baseline for the
- * untouched account is required without spending a second UI sign-in on it.
+ * Signs up directly against the real backend, capturing the assigned theme `seedAccount()`'s
+ * script (D-07) doesn't return — a pre-mutation baseline for THEME-03's untouched account.
  */
 const signUpDirectCapturingTheme = async (): Promise<{ email: string; password: string; theme: Theme }> => {
     const email = `e2e-theme-cross-${randomUUID()}@example.com`;
