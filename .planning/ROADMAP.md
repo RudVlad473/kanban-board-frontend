@@ -278,6 +278,17 @@ narrow path before any breadth is added:
 
 **UI hint**: yes
 
+### Phase 02.2: Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 2
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 02.2 to break down)
+
 ### Phase 02.1: Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)
 
 **Goal:** Every server entry point in the codebase is a React Server Component or a Server Action
@@ -287,7 +298,7 @@ rule CONVENTIONS.md has stated but never enforced — are written down as ADRs a
 blocking CI gates, so no future session reintroduces the patterns this phase removes.
 **Requirements**: D-01..D-22 (from 02.1-CONTEXT.md — decimal insertion, no REQUIREMENTS.md IDs)
 **Depends on:** Phase 2
-**Plans:** 14/15 plans executed
+**Plans:** 15/15 plans complete
 
 Plans:
 
@@ -325,7 +336,7 @@ Plans:
 
 **Wave 7** *(blocked on 02.1-11 through 02.1-14)*
 
-- [ ] 02.1-15-PLAN.md — gates flipped to blocking, Enforcement columns finished, full-suite sign-off
+- [x] 02.1-15-PLAN.md — gates flipped to blocking, Enforcement columns finished, full-suite sign-off
 
 Out of scope by explicit user decision (D-17): the theme-cookie-on-sign-out todo and the
 `scripts/serve-static.mjs` path-traversal todo stay in `.planning/todos/pending/`.
@@ -384,6 +395,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 8/13 | In Progress|  |
-| 02.1. Testing strategy overhaul & code-quality retrofit | 14/15 | In Progress|  |
+| 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |

@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 02.1
-current_phase_name: "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)"
-status: executing
-stopped_at: Wave 6 complete (02.1-11..14), starting Wave 7
-last_updated: "2026-08-21T22:00:00.000Z"
-last_activity: 2026-08-21
-last_activity_desc: Wave 6 (02.1-11..14 comment-length sweep) merged, gated, e2e+visual-verified, tracked
-state_head: dcc0c40
+current_phase: 2
+current_phase_name: Board Management
+status: planning
+stopped_at: Phase 02.1 complete, ready to plan Phase 2
+last_updated: "2026-08-22T08:53:27.081Z"
+last_activity: 2026-08-22
+last_activity_desc: Phase 02.1 complete, transitioned to Phase 2
+state_head: eca3b5da13ba561d1d4b11162067faebfc6e35a0
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 1
   total_plans: 66
-  completed_plans: 60
+  completed_plans: 61
 milestone_name: milestone
 ---
 
@@ -30,10 +30,10 @@ real backend.
 
 ## Current Position
 
-Phase: 02.1 (Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08 (INSERTED)) — EXECUTING
-Plan: 14 of 15 (Waves 1-6 done; Wave 7 next — human checkpoint)
-Status: Ready to execute
-Last activity: 2026-08-21 — Wave 6 (02.1-11..14) merged, gated, e2e+visual-verified, tracked
+Phase: 2 — Board Management
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-08-22 — Phase 02.1 complete, transitioned to Phase 2
 
 Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 02.1: 14/15 plans
 
@@ -41,7 +41,7 @@ Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 0
 
 **Velocity:**
 
-- Total plans completed: 38
+- Total plans completed: 53
 - Average duration: n/a
 - Total execution time: 0 hours
 
@@ -50,6 +50,7 @@ Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 0
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 38 | - | - |
+| 02.1 | 15 | - | - |
 
 **Recent Trend:**
 
@@ -111,6 +112,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 02.1 inserted after Phase 2: Testing strategy overhaul and code-quality retrofit (no-mocking policy, curl-based e2e seeding, Storybook-driven component tests) plus deferred 02-08 code-review scope (URGENT)
+- Phase 02.2 inserted after Phase 2: Follow-up from 02.1's own retrospective: unify component tests fully onto Storybook stories (delete renderWithProviders, move all providers into Storybook decorators, render composed stories directly instead of .run(), no play functions) — closes a live QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx
 
 ## Deferred Items
 
@@ -123,7 +125,7 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-08-21T22:00:00.000Z
-Stopped at: Wave 6 complete (02.1-11..14), starting Wave 7
+Stopped at: Phase 02.1 complete, ready to plan Phase 2
 
 **This session:** Resumed from a HANDOFF.json pause mid-Wave-5 (NONPROD_RESET_TOKEN question),
 closed out Wave 5's tracking, then dispatched Wave 6 — 4 parallel `gsd-executor` agents
@@ -136,6 +138,7 @@ two real gaps neither individual plan could have caught:
 1. `scripts/check-comment-length.unit.test.mjs` asserted against `text-field.tsx`'s live 26-line
    comment block as a fixture — Wave 6 compressed that block by design, so the test regressed
    against its own retrofit's success. Fixed: replaced with a synthetic-source fixture.
+
 2. `storybook-static/` was stale (built 2026-08-13, four days before the `isLoading` Button
    feature it was supposed to represent) — visual regression hung indefinitely on Button/IconButton
    "loading" stories waiting for a story root that didn't match the stale manifest. Not a Wave 6
