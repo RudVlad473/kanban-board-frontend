@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 02
-current_phase_name: Board Management
-status: executing
-stopped_at: Plan 02-09 complete (wave 7 of 11), ready to execute wave 8 (plan 02-10)
-last_updated: "2026-08-22T14:51:00.000Z"
+current_phase: 02.2
+current_phase_name: Unify component tests fully onto Storybook stories
+status: paused
+stopped_at: Phase 02 paused at Wave 8 (02-10 not started); Phase 02.2 pulled forward, needs /gsd-discuss-phase 02.2
+last_updated: "2026-08-22T15:14:17.765Z"
 last_activity: 2026-08-22
-last_activity_desc: Plan 02-09 Task 4 checkpoint approved, merged to main
-state_head: 19e0b63
+last_activity_desc: Phase 02.2 pulled forward ahead of Phase 02's remaining plans (user decision); Phase 02 paused
+state_head: 107d2f70a015667490be35623ccf6291bf76a0aa
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,13 +31,15 @@ board create, board detail view, rename, delete — 02-09..13)
 
 ## Current Position
 
-Phase: 02 (Board Management) — EXECUTING
-Plan: 9 of 13 (02-09 complete; wave 8, plan 02-10, up next)
-Status: Executing Phase 02
-Last activity: 2026-08-22 — Plan 02-09 Task 4 checkpoint approved and merged to main
+Phase: 02.2 (Unify component tests onto Storybook stories) — PULLED FORWARD, not yet planned
+Phase 02 (Board Management): PAUSED at Wave 8 (9 of 13 plans done; 02-10 not started)
+Status: Paused — Phase 02.2 pulled forward ahead of Phase 02's remaining plans (02-10..13) by
+explicit user decision, to resolve 4 pending testing-pattern todos before 02-10/02-12/02-13 add
+more instances of the pattern under review (see `.continue-here.md` and `HANDOFF.json`)
+Last activity: 2026-08-22 — Phase 02.2 pulled forward; Phase 02 paused
 
 Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans; Phase 02.1: 15/15 plans);
-Phase 02: 9/13 plans
+Phase 02: 9/13 plans (paused); Phase 02.2: 0 plans (not yet planned, next up)
 
 ## Performance Metrics
 
@@ -141,7 +143,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 02.1 inserted after Phase 2: Testing strategy overhaul and code-quality retrofit (no-mocking policy, curl-based e2e seeding, Storybook-driven component tests) plus deferred 02-08 code-review scope (URGENT) — **complete** 2026-08-22, 15/15 plans, verified 22/22 D-IDs
-- Phase 02.2 inserted after Phase 2: Follow-up from 02.1's own retrospective: unify component tests fully onto Storybook stories (delete renderWithProviders, move all providers into Storybook decorators, render composed stories directly instead of .run(), no play functions) — closes a live QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx — not yet planned
+- Phase 02.2 inserted after Phase 2: Follow-up from 02.1's own retrospective: unify component tests fully onto Storybook stories (delete renderWithProviders, move all providers into Storybook decorators, render composed stories directly instead of .run(), no play functions) — closes a live QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx — **pulled forward 2026-08-22**: `depends_on` changed from "Phase 2" to "Phase 1, Phase 02.1" so it now runs before Phase 2's remaining plans (02-10..13) instead of after full Phase 2 completion; still not yet planned
 
 ## Deferred Items
 
@@ -216,4 +218,20 @@ reference file — over GitHub's 100MB limit, so never committed.
 
 `HANDOFF.json` and both phase `.continue-here.md` checkpoint files removed as resolved/stale.
 
-Resume file: None
+**This session:** Began dispatching Phase 02 Wave 8 (plan 02-10) — ISOLATION resolved to
+`harness-worktree`, no worktree/agent actually spawned yet. User interrupted to ask about
+alternatives to the action-stub and `renderWithProviders` test patterns; investigating surfaced
+that this exact ground was already captured in the prior session as 4 dated pending todos plus
+the Phase 02.2 ROADMAP insertion — nothing new needed researching from scratch. User then decided
+(offered 3 scopes: resolve stub-aliasing only / resolve all 4 testing todos / pull full Phase
+02.2 forward) to pull Phase 02.2 forward in full, ahead of Phase 02's remaining plans, rather
+than let 02-10/02-12/02-13 add three more instances of the stub pattern under review.
+
+Edited `.planning/ROADMAP.md`'s Phase 02.2 section: `depends_on` "Phase 2" → "Phase 1, Phase
+02.1"; title marked "(INSERTED, PULLED FORWARD)"; Goal/Requirements rewritten to name the driving
+todos; added a sequencing note. Verified via `roadmap milestone-scope` that the phase set is
+unchanged (no accidental milestone-scope break). Wrote `.planning/HANDOFF.json` and
+`.planning/phases/02-board-management/.continue-here.md` to record the pause.
+
+Resume file: `.planning/HANDOFF.json` / `.planning/phases/02-board-management/.continue-here.md`
+Next: `/gsd-discuss-phase 02.2` (no CONTEXT.md exists yet for 02.2).

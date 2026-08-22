@@ -278,12 +278,24 @@ narrow path before any breadth is added:
 
 **UI hint**: yes
 
-### Phase 02.2: Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED)
+### Phase 02.2: Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED, PULLED FORWARD)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 2
+**Goal:** Resolve the four pending testing-pattern todos surfaced during Phase 2 execution
+(stub-aliasing's undocumented exception to ADR tech/0020, the per-action stub boilerplate,
+centralizing the next/headers `vi.mock` shims, and e2e-vs-mock coverage for cookie writing), and
+eliminate `renderWithProviders`/hand-rendered tests in favor of Storybook-decorator-driven
+`composeStories()` output — so plans 02-10 through 02-13 do not add further instances of a pattern
+still under review.
+**Requirements**: Derived from `.planning/todos/pending/2026-08-22-reconcile-action-stub-aliasing-with-the-no-mock-policy.md`, `2026-08-22-investigate-a-shared-integration-testing-mocking-module-for-.md`, `2026-08-22-investigate-centralizing-vi-mock-declarations-for-next-heade.md`, `2026-08-22-research-e2e-coverage-for-cookie-writing-instead-of-next-hea.md` — see `/gsd-plan-phase 02.2`
+**Depends on:** Phase 1, Phase 02.1
 **Plans:** 0 plans
+
+**Sequencing note (2026-08-22):** Pulled forward by explicit user decision — this phase now runs
+*before* Phase 2's remaining plans (02-10 through 02-13, waves 8-11: create/detail/rename/delete
+board), not after full Phase 2 completion as originally inserted. Phase 2 execution is paused at
+Wave 8 (02-10 not yet started) until this phase ships, so the create/rename/delete plans — three
+of which each add one more `*-action-storybook-stub.ts` instance — pick up whatever pattern this
+phase decides on instead of propagating the one currently under review.
 
 Plans:
 

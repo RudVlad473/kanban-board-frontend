@@ -1,6 +1,7 @@
 {
   "workflow": {
     "human_verify_mode": "mid-flight",
-    "auto_advance": false
+    "auto_advance": false,
+    "_auto_chain_active": false
   }
 }
