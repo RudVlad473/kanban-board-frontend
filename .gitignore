@@ -23,6 +23,8 @@ dist-ssr
 
 # Local-only reference assets (not committed — large binaries / external specs)
 .planning/local-assets/
+# Figma design-mock export, 110MB+ — over GitHub's 100MB hard limit
+docs/kanban-task-management-web-app.pdf
 
 # Test/build artifacts (harness — plan 01-05)
 test-results/
