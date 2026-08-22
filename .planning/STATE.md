@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 02.2
-current_phase_name: unify-component-tests-fully-onto-storybook-stories-eliminate
-status: paused
+current_phase_name: "Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED, PULLED FORWARD)"
+status: executing
 stopped_at: Phase 02.2 context gathered
-last_updated: "2026-08-22T16:39:53.956Z"
+last_updated: "2026-08-22T16:43:43.033Z"
 last_activity: 2026-08-22
-last_activity_desc: Phase 02.2 pulled forward ahead of Phase 02's remaining plans (user decision); Phase 02 paused
-state_head: 00c86bb1e1a3f8796ac0d6ed22b2890defe7e5bc
+last_activity_desc: Phase 02.2 execution started
+state_head: d3465d8fe70c407ab88a5027b8c669928828eee1
 progress:
   total_phases: 6
   completed_phases: 1
@@ -26,17 +26,17 @@ See: .planning/PROJECT.md (updated 2026-08-22)
 **Core value:** A signed-in user can create boards, organize tasks across columns via
 drag-and-drop, and trust that every change is reliably persisted and reconciled against the
 real backend.
-**Current focus:** Phase 02 — Board Management
+**Current focus:** Phase 02.2 — Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED, PULLED FORWARD)
 board create, board detail view, rename, delete — 02-09..13)
 
 ## Current Position
 
-Phase: 02.2 (unify-component-tests-fully-onto-storybook-stories-eliminate) — READY TO EXECUTE
+Phase: 02.2 (Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED, PULLED FORWARD)) — EXECUTING
 Phase 02 (Board Management): PAUSED at Wave 8 (9 of 13 plans done; 02-10 not started)
-Status: Paused — Phase 02.2 pulled forward ahead of Phase 02's remaining plans (02-10..13) by
+Status: Executing Phase 02.2
 explicit user decision, to resolve 4 pending testing-pattern todos before 02-10/02-12/02-13 add
 more instances of the pattern under review (see `.continue-here.md` and `HANDOFF.json`)
-Last activity: 2026-08-22 — Phase 02.2 pulled forward; Phase 02 paused
+Last activity: 2026-08-22 — Phase 02.2 execution started
 
 Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans; Phase 02.1: 15/15 plans);
 Phase 02: 9/13 plans (paused); Phase 02.2: 0 plans (not yet planned, next up)
