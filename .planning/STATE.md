@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 2
+current_phase: 02
 current_phase_name: Board Management
-status: planning
+status: executing
 stopped_at: Phase 02.1 complete, ready to plan Phase 2
-last_updated: "2026-08-22T08:53:27.081Z"
+last_updated: "2026-08-22T10:18:54.750Z"
 last_activity: 2026-08-22
-last_activity_desc: Phase 02.1 complete, transitioned to Phase 2
-state_head: eca3b5da13ba561d1d4b11162067faebfc6e35a0
+last_activity_desc: Phase 02 execution started
+state_head: 8752584f7fa71c905fbee489dd8ad9e64e651bcf
 progress:
   total_phases: 6
   completed_phases: 1
@@ -26,15 +26,15 @@ See: .planning/PROJECT.md (updated 2026-08-22)
 **Core value:** A signed-in user can create boards, organize tasks across columns via
 drag-and-drop, and trust that every change is reliably persisted and reconciled against the
 real backend.
-**Current focus:** Phase 2 — Board Management, waves 7-11 remaining (sidebar chrome/collapse,
+**Current focus:** Phase 02 — Board Management
 board create, board detail view, rename, delete — 02-09..13)
 
 ## Current Position
 
-Phase: 2 — Board Management
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-08-22 — Phase 02.1 complete, transitioned to Phase 2
+Phase: 02 (Board Management) — EXECUTING
+Plan: 1 of 13
+Status: Executing Phase 02
+Last activity: 2026-08-22 — Phase 02 execution started
 
 Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans); Phase 02.1: 14/15 plans
 
@@ -103,6 +103,11 @@ Recent decisions affecting current work:
   primitives —
   `.planning/todos/pending/2026-08-21-trim-boards-schema-unit-tests-that-just-retest-zod.md`.
 
+- Investigate a shared integration-testing/mocking module vs. the current per-action Storybook
+  stub files in `src/test-utils/` — a barrel re-export was floated as a lighter-weight middle
+  ground. Needs discussion with the user before deciding —
+  `.planning/todos/pending/2026-08-22-investigate-a-shared-integration-testing-mocking-module-for-.md`.
+
 ### Blockers/Concerns
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
@@ -139,10 +144,12 @@ checkpoint — user replied "approved". Ran the phase's post-execution gate in f
 
 1. **Code review** (`gsd-code-reviewer`, standard depth, 141 files): 0 critical, 2 warning, 3
    info (02.1-REVIEW.md, commit `9679a83`).
+
 2. **Phase-goal verification** (`gsd-verifier`): independently re-checked all 22 D-01..D-22
    truths against the live codebase (not SUMMARY claims) — all verified. Routed to
    `human_needed` only for two process items: confirm the approval (already given) and decide
    fix-vs-defer on the 4 review findings.
+
 3. **User chose "fix now"** — fixed all 4: promoted `THEME_COOKIE_MAX_AGE_SECONDS` into
    `cookie-registry.ts` alongside `COOKIE.THEME`; added `buildClientCookieString()` as the
    `document.cookie` counterpart to the existing server-side `createCookieClient()`, both
@@ -152,6 +159,7 @@ checkpoint — user replied "approved". Ran the phase's post-execution gate in f
    added a CONVENTIONS.md rule: any structured delimiter-joined string built from named fields
    goes through one named builder once a 2nd call site needs the same shape (commits `5f3b62b`,
    `eca3b5d`).
+
 4. **VERIFICATION.md** updated to `status: passed` with a resolution note, then
    `phase.complete` run — ROADMAP.md/STATE.md advanced, PROJECT.md's Key Decisions table gained
    the 6 ADRs this phase produced (tech/0019-0024).
