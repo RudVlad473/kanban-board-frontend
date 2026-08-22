@@ -5,7 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -17,14 +17,6 @@ import * as stories from "./button.stories";
 const { Primary, Disabled, Loading } = composeStories(stories);
 
 /*
- * composeStories' `.run()` and vitest-browser-react's `render()` don't clean up after each
- * other — wipe the page body between tests so the two mechanisms never collide.
- */
-afterEach(() => {
-    document.body.innerHTML = "";
-});
-
-/*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; Button has no
  * viewport-conditional behavior of its own (ADR tech/0010 mobile review).
  */
@@ -34,7 +26,7 @@ describeForEachDevice({
         // Shallow: copy, prop-driven aria/disabled state — asserted through composed stories (D-08).
         it("renders the accessible name from its copy", async () => {
             // Act
-            await Primary.run();
+            await render(<Primary />);
 
             // Assert
             expect(screen.getByRole("button", { name: "Create Account" })).toBeInTheDocument();
@@ -42,7 +34,7 @@ describeForEachDevice({
 
         it("renders disabled and keeps its accessible name when isDisabled", async () => {
             // Act
-            await Disabled.run();
+            await render(<Disabled />);
 
             // Assert
             expect(screen.getByRole("button", { name: "Create Account" })).toBeDisabled();
@@ -50,7 +42,7 @@ describeForEachDevice({
 
         it("renders busy and keeps its label visible when isLoading", async () => {
             // Act
-            await Loading.run();
+            await render(<Loading />);
 
             // Assert
             const button = screen.getByRole("button", { name: "Create Account" });
@@ -61,7 +53,7 @@ describeForEachDevice({
 
         it("reports itself not busy — the attribute reads the string false, not absent — when isLoading is unset", async () => {
             // Act
-            await Primary.run();
+            await render(<Primary />);
 
             // Assert
             expect(screen.getByRole("button", { name: "Create Account" })).toHaveAttribute("aria-busy", "false");
