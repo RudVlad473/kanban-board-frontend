@@ -39,6 +39,9 @@ storybook-static/
 .gsd/
 .claude/worktrees/
 
+# Browser-automation MCP scratch output (console logs, screenshots)
+.playwright-mcp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
