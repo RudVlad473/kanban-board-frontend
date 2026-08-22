@@ -46,9 +46,14 @@ export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Pr
     }
 
     return (
+        /*
+         * `h-dvh` pins the panel to the viewport instead of `h-full`, which resolved against an
+         * ancestor chain that grows to fit content (`body`'s `min-h-full`) and never gave the
+         * panel a bound to scroll within, letting the foot controls slide off-screen (BUG A).
+         */
         <nav
             aria-label="Boards"
-            className="flex h-full w-75 shrink-0 flex-col border-r border-border-default bg-bg-surface"
+            className="flex h-dvh w-75 shrink-0 flex-col border-r border-border-default bg-bg-surface"
         >
             <div className="flex items-center gap-2 p-6">
                 <Kanban aria-hidden="true" className="size-6 text-text-primary" />
