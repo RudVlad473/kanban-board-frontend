@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 10
+open_count: 11
 waived_count: 0
 fixed_count: 6
-total_count: 16
-last_updated: 2026-08-21T18:38:07.036Z
+total_count: 17
+last_updated: 2026-08-22T18:16:22.976Z
 ---
 
 # Broken Windows Ledger
@@ -31,6 +31,7 @@ last_updated: 2026-08-21T18:38:07.036Z
 | 14 | 02.1 | unrun-verify | src/lib/server/server-client.integration.test.ts |  | 3 real-backend tests could not be run in this sandbox (network egress blocked, .env.local denied); needs a human/CI run with real network access | fixed |  | 2026-08-21T13:45:23.244Z | 2026-08-21T17:46:44.065Z |
 | 15 | 02.1 | unrun-verify | e2e/boards-list.e2e.spec.ts |  | BOARD-01 e2e spec (and the full pnpm exec playwright test --project e2e suite) could not be run in this sandbox — e2e/global-setup.ts hard-requires NONPROD_RESET_TOKEN (a GitHub Actions secret unavailable here). seed.sh/seed.ts's underlying HTTP behavior was independently verified directly against the real backend. | fixed |  | 2026-08-21T16:38:36.596Z | 2026-08-21T17:46:44.823Z |
 | 16 | 02.1 | unrun-verify | e2e/boards-list.e2e.spec.ts |  | BOARD-01 e2e not run in this worktree: NONPROD_RESET_TOKEN unset, matching the prior session's open question (see 02.1-11-SUMMARY.md coverage D5) | open |  | 2026-08-21T18:38:07.036Z |  |
+| 17 | 02.2 | deviation | scripts/check-no-play-functions.mjs |  | Rule 3 auto-fix: trimmed a pre-existing 4-line doc comment (from plan 02.2-01) to 3 lines to unblock this plan's own comments:check batch gate | open |  | 2026-08-22T18:16:22.976Z |  |
 
 ````json
 [
@@ -224,6 +225,18 @@ last_updated: 2026-08-21T18:38:07.036Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-21T18:38:07.036Z",
+    "resolved_at": null
+  },
+  {
+    "id": 17,
+    "kind": "deviation",
+    "phase": "02.2",
+    "file": "scripts/check-no-play-functions.mjs",
+    "line": null,
+    "description": "Rule 3 auto-fix: trimmed a pre-existing 4-line doc comment (from plan 02.2-01) to 3 lines to unblock this plan's own comments:check batch gate",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-22T18:16:22.976Z",
     "resolved_at": null
   }
 ]
