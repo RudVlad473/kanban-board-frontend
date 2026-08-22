@@ -41,3 +41,10 @@ TBD — needs research. Open questions to resolve:
   paths hitting the nonprod backend) rather than a no-op stand-in?
 - Feeds Phase 02.2 (Storybook test-unification follow-up) — worth resolving as
   part of that phase's planning rather than in isolation.
+
+## Resolution
+
+Resolved by plan `02.2-09`, Task 2: formally recorded as `docs/adr/tech/0020-no-mocking-policy.md`'s
+new "Server Action alias carve-out" section (mechanism, justification, D-09 scope limit, register,
+unwind trigger) — the alias stays (D-08's research found real-call replacement infeasible), and the
+carve-out is now documented and enforceable-by-review rather than an undocumented exception.
