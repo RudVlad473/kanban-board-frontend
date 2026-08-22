@@ -127,6 +127,11 @@ Recent decisions affecting current work:
   across the 8-file surviving-mock register into one shared module. Feeds Phase 02.2 —
   `.planning/todos/pending/2026-08-22-investigate-centralizing-vi-mock-declarations-for-next-heade.md`.
 
+- Reopen the local pre-commit gitleaks investigation — CI-only secret scanning was a deliberate
+  Phase 1 call (npm gitleaks wrappers rejected on supply-chain grounds); worth re-checking whether
+  the tooling landscape has better options now —
+  `.planning/todos/pending/2026-08-22-reopen-local-pre-commit-gitleaks-investigation.md`.
+
 ### Blockers/Concerns
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
