@@ -118,6 +118,7 @@ trust that every change is reliably persisted and reconciled against the real ba
 | Comment-length rule (max 3 prose lines) is mechanically enforced, blocking CI (ADR tech/0023) | Previously stated in CONVENTIONS.md but never checked; `check-comment-length.mjs` closes the gap | ✓ Locked |
 | Runtime boundary validation always via zod `.safeParse()`, schema as source of truth, type via `z.infer` (ADR tech/0024) | Prevents an unchecked cast from an `openapi-fetch` response into a domain type | ✓ Locked |
 | Component tests render composed Storybook stories directly as JSX via `vitest-browser-react`'s `render()`, not `composeStories`' `.run()` (ADR tech/0025, supersedes tech/0021) | `.run()` hides the rendered React tree from deep interaction assertions (e.g. the real-`FormData`-on-submit test); direct rendering is a still-current, documented Storybook API, not a rejected pattern | ✓ Locked |
+| Forced sign-out (dead upstream credential) clears the session cookie via a new Route Handler, not inline from `server-client.ts`'s `onResponse` (ADR tech/0026) | Cookie mutation is illegal during any Server Component render (confirmed against real Next.js behavior + official docs); the prior inline `session.destroy()` silently failed, leaving a `/boards`⇄`/login` redirect loop until JWT expiry | ✓ Locked |
 
 *Legend: ✓ Locked = explicit Accepted status in the source ADR. ◐ Proposed = a clear chosen
 decision in prose ("Decision Outcome"), but no explicit Accepted/status marker in the
