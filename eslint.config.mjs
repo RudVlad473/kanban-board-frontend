@@ -102,22 +102,10 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 4c. Ban inline `import("module").Type` type queries — no typescript-eslint rule targets this
-     * node type directly, so a plain AST selector on TSImportType enforces a top-level
-     * `import type` instead.
+     * 4c. Ban inline `import("module").Type` type queries — selector lives in 8d's array, not
+     * here: a second `no-restricted-syntax` block matching the same files would be silently
+     * replaced by 8d's later one (flat config replaces per-file, never merges).
      */
-    {
-        rules: {
-            "no-restricted-syntax": [
-                "error",
-                {
-                    selector: "TSImportType",
-                    message:
-                        'Use a top-level `import type { X } from "module"` instead of an inline `import("module").X` type query.',
-                },
-            ],
-        },
-    },
 
     /*
      * 5. Import order/grouping (D-26p) — eslint-plugin-import's fixer crashes under ESLint 10
@@ -382,6 +370,16 @@ const eslintConfig = defineConfig([
                     selector: "JSXOpeningElement[name.name='a']",
                     message:
                         "Use next/link's Link for internal navigation, not a raw <a> — @next/next/no-html-link-for-pages only catches a static string-literal href, not a computed one. If this is a genuinely deliberate full-page-reload/external link, add a `// eslint-disable-next-line no-restricted-syntax` with a one-line reason.",
+                },
+                /*
+                 * 8g. D-06: ban composeStories' `.run()` repo-wide, incl. *.stories.tsx
+                 * (docs/adr/tech/0025, supersedes tech/0021) — no-restricted-properties can't
+                 * express this since .run() is called on a differently-named object per file.
+                 */
+                {
+                    selector: "CallExpression[callee.type='MemberExpression'][callee.property.name='run']",
+                    message:
+                        "composeStories' story-runner .run() is banned repo-wide (docs/adr/tech/0025-direct-composed-story-rendering.md, supersedes tech/0021) — render the composed story directly instead, e.g. `render(<Primary />)`. If this is a genuinely deliberate exception, add a `// eslint-disable-next-line no-restricted-syntax` with a one-line reason.",
                 },
             ],
         },
