@@ -245,5 +245,16 @@ todos; added a sequencing note. Verified via `roadmap milestone-scope` that the 
 unchanged (no accidental milestone-scope break). Wrote `.planning/HANDOFF.json` and
 `.planning/phases/02-board-management/.continue-here.md` to record the pause.
 
-Resume file: .planning/phases/02.2-unify-component-tests-fully-onto-storybook-stories-eliminate/02.2-CONTEXT.md
-Next: `/gsd-discuss-phase 02.2` (no CONTEXT.md exists yet for 02.2).
+**This session (resumed via `/gsd-resume-work`):** Discovered `HANDOFF.json` and
+`.planning/phases/02-board-management/.continue-here.md` were stale — both timestamped
+`2026-08-22T15:14:17Z`, predating Phase 02.2's actual planning/execution/verification, and their
+`uncommitted_files` list no longer matched a clean `git status`. Phase 02.2 had since shipped in
+full (9/9 plans, `02.2-VERIFICATION.md` 15/15 truths verified, commit `df10cb1`), including
+formally documenting the `*-action-storybook-stub.ts` pattern as a sanctioned ADR tech/0020
+carve-out rather than replacing it. Deleted both stale artifacts rather than following their
+outdated "run `/gsd-discuss-phase 02.2`" instruction.
+
+Resume file: none (stale checkpoint removed)
+Next: Resume Phase 02 at Wave 8 — plan `02-10` (BOARD-02 create board + initial columns) via
+`/gsd-execute-phase 2`. Since 02.2 kept the stub pattern rather than replacing it, 02-10/02-12/02-13
+likely need no rework, just a quick sanity check against the now-documented carve-out.
