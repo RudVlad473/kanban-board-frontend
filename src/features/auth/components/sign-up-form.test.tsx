@@ -5,7 +5,7 @@ import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
-import { formDataToObject } from "@/test-utils/form-data-to-object";
+import { flattenFormData } from "@/test-utils/flatten-form-data";
 
 import * as signUpStories from "./sign-up-form.stories";
 
@@ -258,7 +258,7 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(() => submitted.formData !== null).toBe(true);
-            expect(formDataToObject(submitted.formData)).toEqual({
+            expect(flattenFormData(submitted.formData)).toEqual({
                 email: "new@example.com",
                 password: "CorrectPassword1!",
             });
@@ -280,7 +280,7 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(() => submitted.formData !== null).toBe(true);
-            expect(formDataToObject(submitted.formData)).toEqual({
+            expect(flattenFormData(submitted.formData)).toEqual({
                 email: "new@example.com",
                 displayName: "Jamie Rivera",
                 password: "CorrectPassword1!",

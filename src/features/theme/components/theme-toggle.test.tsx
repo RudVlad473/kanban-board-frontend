@@ -8,14 +8,7 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import * as stories from "./theme-toggle.stories";
 
-const { Light, Dark, SaveFailed } = composeStories(stories);
-
-/*
- * D-03: deep tests render the composed `Light` story with `isAuthenticated` overridden as a JSX
- * prop (props merge over the story's own args), so every mount inherits the real decorators
- * (docs/adr/tech/0025) instead of a bare `<ThemeToggle />`.
- */
-const renderToggle = (props: { isAuthenticated: boolean }) => render(<Light {...props} />);
+const { Light, Dark, SaveFailed, Unauthenticated } = composeStories(stories);
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. The theme
@@ -69,7 +62,7 @@ describeForEachDevice({
         // Deep: real interaction and the live region's own empty-state shape — direct renders.
         it("renders a live region even with no message, giving assistive tech a stable node to watch", async () => {
             // Arrange
-            const rendered = await renderToggle({ isAuthenticated: true });
+            const rendered = await render(<Light />);
 
             // Assert
             await expect.element(rendered.getByRole("status")).toHaveTextContent("");
@@ -77,7 +70,7 @@ describeForEachDevice({
 
         it("toggles the interface on click and settles with no message on success", async () => {
             // Arrange
-            const rendered = await renderToggle({ isAuthenticated: true });
+            const rendered = await render(<Light />);
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -91,7 +84,7 @@ describeForEachDevice({
 
         it("is reachable by keyboard tab order and toggles on Space", async () => {
             // Arrange
-            const rendered = await renderToggle({ isAuthenticated: true });
+            const rendered = await render(<Light />);
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
 
             // Assert (reachable)
@@ -107,7 +100,7 @@ describeForEachDevice({
 
         it("returns the interface to where it began after toggling twice", async () => {
             // Arrange
-            const rendered = await renderToggle({ isAuthenticated: true });
+            const rendered = await render(<Light />);
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act
@@ -122,7 +115,7 @@ describeForEachDevice({
 
         it("updates the cookie and the document scope directly when unauthenticated", async () => {
             // Arrange
-            const rendered = await renderToggle({ isAuthenticated: false });
+            const rendered = await render(<Unauthenticated />);
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
 
             // Act

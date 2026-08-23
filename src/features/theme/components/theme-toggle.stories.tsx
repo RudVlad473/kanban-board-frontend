@@ -60,3 +60,10 @@ export const SaveFailed: Story = {
         forceErrorMessage: "Couldn't save your theme. Try again.",
     },
 };
+
+export const Unauthenticated: Story = {
+    args: {
+        initialTheme: THEME.LIGHT,
+        isAuthenticated: false,
+    },
+};

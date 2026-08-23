@@ -43,5 +43,15 @@ export const buildClientCookieString = ({
     maxAgeSeconds: number;
 }): string => {
     const { secure, sameSite, path } = createBaseCookieOptions();
-    return `${name}=${value}; path=${path}; max-age=${String(maxAgeSeconds)}; samesite=${sameSite}${secure ? "; secure" : ""}`;
+    const attributes: [string, string | undefined][] = [
+        [name, value],
+        ["path", path],
+        ["max-age", String(maxAgeSeconds)],
+        ["samesite", sameSite],
+        ["secure", secure ? "" : undefined],
+    ];
+    return attributes
+        .filter((attribute): attribute is [string, string] => attribute[1] !== undefined)
+        .map(([key, attributeValue]) => (attributeValue === "" ? key : `${key}=${attributeValue}`))
+        .join("; ");
 };
