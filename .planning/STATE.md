@@ -98,35 +98,13 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Investigate stricter Prettier config for React/Next.js formatting (and whether the real gap is
-  ESLint rules instead) —
-  `.planning/todos/pending/2026-08-19-investigate-stricter-prettier-config-for-react-and-next-js-f.md`.
-  Not scoped to a phase yet.
+Refreshed 2026-08-23 — 6 of the previously-listed todos here had already moved to
+`.planning/todos/completed/` (Phase 02.2 closed them out); this list now matches
+`.planning/todos/pending/` exactly.
 
 - Trim `src/features/boards/schemas.unit.test.ts`'s rejection cases that just re-test zod's own
   primitives —
   `.planning/todos/pending/2026-08-21-trim-boards-schema-unit-tests-that-just-retest-zod.md`.
-
-- Investigate a shared integration-testing/mocking module vs. the current per-action Storybook
-  stub files in `src/test-utils/` — a barrel re-export was floated as a lighter-weight middle
-  ground. Needs discussion with the user before deciding —
-  `.planning/todos/pending/2026-08-22-investigate-a-shared-integration-testing-mocking-module-for-.md`.
-
-- Regenerate stale `02-VALIDATION.md` and mark `02-RESEARCH.md`'s open questions resolved —
-  `.planning/todos/pending/2026-08-22-regenerate-stale-02-validation-and-research-open-questions.md`.
-
-- Reconcile the `*-action-storybook-stub.ts` whole-module aliasing with ADR tech/0020's no-mock
-  policy — currently unenforced/undocumented as an exception, flagged by the user as a likely
-  policy gap. Feeds Phase 02.2 —
-  `.planning/todos/pending/2026-08-22-reconcile-action-stub-aliasing-with-the-no-mock-policy.md`.
-
-- Research e2e coverage for cookie-writing behavior as an alternative to the `next/headers` mock
-  shim (ADR tech/0020 D-19) used across 8 test files. Feeds Phase 02.2 —
-  `.planning/todos/pending/2026-08-22-research-e2e-coverage-for-cookie-writing-instead-of-next-hea.md`.
-
-- Investigate centralizing the repeated `vi.mock("next/headers"/"next/navigation")` declarations
-  across the 8-file surviving-mock register into one shared module. Feeds Phase 02.2 —
-  `.planning/todos/pending/2026-08-22-investigate-centralizing-vi-mock-declarations-for-next-heade.md`.
 
 - Reopen the local pre-commit gitleaks investigation — CI-only secret scanning was a deliberate
   Phase 1 call (npm gitleaks wrappers rejected on supply-chain grounds); worth re-checking whether
@@ -138,6 +116,18 @@ Recent decisions affecting current work:
   doesn't return the `theme` field; also needs a design decision for seeding future entities
   (columns, tasks) as Phase 2+ lands —
   `.planning/todos/pending/2026-08-22-fold-e2e-seeding-logic-into-a-single-service-module.md`.
+
+- Spike whether `@storybook/nextjs-vite/navigation.mock`'s subpath export avoids the eager
+  Next.js-internals import problem (ADR tech/0021's pitfall) that keeps the framework's main entry
+  out of the "browser" Vitest project; if safe, it could replace the hand-written
+  `vi.mock("next/navigation")` shims in `sidebar.test.tsx`/`board-list.test.tsx` —
+  `.planning/todos/pending/2026-08-23-spike-whether-storybook-nextjs-vite-navigation-mock-avoids-t.md`.
+
+- Spike closing the untested `router.refresh()` Server-Action convention (currently code-review-only,
+  zero automated coverage) using `@storybook/nextjs-vite`'s router mock — blocked by the repo-wide
+  play-function ban (ADR tech/0025's D-25), needs a scoping decision, not just an implementation.
+  Depends on the sibling `navigation.mock` spike above —
+  `.planning/todos/pending/2026-08-23-spike-closing-the-untested-router-refresh-convention-with-st.md`.
 
 ### Blockers/Concerns
 
