@@ -26,12 +26,20 @@ export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = 
     const pathname = usePathname();
     const router = useRouter();
     const [isAddBoardOpen, setIsAddBoardOpen] = useState(defaultIsAddBoardOpen);
+    /*
+     * Bumped on every fresh open and used as the modal's `key`, so each open starts from empty
+     * fields — a failed create keeps its values because the modal never closed (D-05), not because
+     * the form is retained across opens.
+     */
+    const [openCount, setOpenCount] = useState(0);
     const { createBoard, isPending, errorMessage, clearError } = useCreateBoard();
 
     const handleOpenChange = (nextIsOpen: boolean): void => {
         setIsAddBoardOpen(nextIsOpen);
-        if (!nextIsOpen) {
-            clearError();
+        clearError();
+
+        if (nextIsOpen) {
+            setOpenCount((count) => count + 1);
         }
     };
 
@@ -105,6 +113,7 @@ export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = 
             </button>
 
             <AddBoardModal
+                key={openCount}
                 isOpen={isAddBoardOpen}
                 onOpenChange={handleOpenChange}
                 onSubmit={handleSubmit}

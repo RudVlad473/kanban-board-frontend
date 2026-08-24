@@ -4,7 +4,8 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: seed.sh account | seed.sh board --jsession <id> --user <id> --name <name>" >&2
+    echo "usage: seed.sh account | seed.sh board --jsession <id> --user <id> --name <name> |" >&2
+    echo "       seed.sh board-full --jsession <id> --user <id> --board <id>" >&2
     exit 2
 }
 
@@ -102,6 +103,37 @@ cmd_board() {
     echo "$body_out"
 }
 
+# Reads a board back through the real backend so a spec can assert what actually persisted —
+# the board-detail UI is Phase 3 scope, so there is nothing to read it from on screen yet.
+cmd_board_full() {
+    local jsession="" user="" board=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --jsession) jsession="$2"; shift 2 ;;
+            --user) user="$2"; shift 2 ;;
+            --board) board="$2"; shift 2 ;;
+            *) usage ;;
+        esac
+    done
+
+    if [ -z "$jsession" ] || [ -z "$user" ] || [ -z "$board" ]; then
+        usage
+    fi
+
+    local raw status body_out
+    raw=$(curl -sS -w '\n%{http_code}' "$EXTERNAL_API_BASE_URL/boards/$board/full?userId=$user" \
+        -H "Cookie: JSESSIONID=$jsession")
+    status="${raw##*$'\n'}"
+    body_out="${raw%$'\n'*}"
+
+    if [[ "$status" != 2* ]]; then
+        echo "seed.sh board-full: read returned $status: $body_out" >&2
+        exit 1
+    fi
+
+    echo "$body_out"
+}
+
 case "${1:-}" in
     account)
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
@@ -112,6 +144,11 @@ case "${1:-}" in
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
         shift
         cmd_board "$@"
+        ;;
+    board-full)
+        : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
+        shift
+        cmd_board_full "$@"
         ;;
     *)
         usage

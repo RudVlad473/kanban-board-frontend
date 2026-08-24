@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useToast } from "@/components/ui/toast/toast";
 import { createBoardAction } from "@/features/boards/actions/create-board";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns";
 import { toCreatableColumnNames } from "@/features/boards/model";
@@ -11,9 +12,19 @@ import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /*
  * Authored copy only — the actions return bare discriminants, so nothing the backend said can
- * reach this string (D-05's inline-error treatment, UI-SPEC Copywriting Contract).
+ * reach these strings (UI-SPEC Copywriting Contract).
  */
 const CREATE_FAILURE_MESSAGE = "Couldn't create board. Try again.";
+const RETRY_ACTION_LABEL = "Retry";
+
+const buildColumnFailureTitle = (failedCount: number): string => `Couldn't create ${String(failedCount)} column(s).`;
+
+/**
+ * A stable, board-scoped toast id. Load-bearing, not an incidental argument: Base UI's manager
+ * upserts on an existing id, which is what makes a retry narrow one toast instead of stacking a
+ * second beside a stale first.
+ */
+export const buildColumnFailureToastId = (boardId: string): string => `board-columns-failed:${boardId}`;
 
 export type CreateBoardOutcome =
     /** The board itself was created; `failedNames` is empty when every column landed too. */
@@ -28,6 +39,7 @@ export type CreateBoardOutcome =
  */
 export const useCreateBoard = () => {
     const router = useRouter();
+    const toast = useToast();
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const createBoardMutation = useMutation({ mutationFn: createBoardAction, retry: false });
@@ -50,6 +62,38 @@ export const useCreateBoard = () => {
         return result.status === "success" ? result.failedNames : names;
     };
 
+    /**
+     * Re-runs the column phase for exactly the still-failing names. A retry that itself partially
+     * fails upserts the SAME toast id with the smaller set; one that fully succeeds closes it,
+     * because a toast still naming created columns would misreport what persisted (D-04).
+     */
+    const retryColumns = async ({ boardId, names }: { boardId: string; names: string[] }): Promise<void> => {
+        const stillFailingNames = await createColumns({ boardId, names });
+
+        if (stillFailingNames.length === 0) {
+            toast.close(buildColumnFailureToastId(boardId));
+            return;
+        }
+
+        raiseColumnFailureToast({ boardId, failedNames: stillFailingNames });
+    };
+
+    const raiseColumnFailureToast = ({ boardId, failedNames }: { boardId: string; failedNames: string[] }): void => {
+        toast.add({
+            id: buildColumnFailureToastId(boardId),
+            type: "danger",
+            title: buildColumnFailureTitle(failedNames.length),
+            // No auto-dismiss: a kept-but-incomplete create must stay visible until acted on.
+            timeout: 0,
+            actionProps: {
+                children: RETRY_ACTION_LABEL,
+                onClick: () => {
+                    void retryColumns({ boardId, names: failedNames });
+                },
+            },
+        });
+    };
+
     const createBoard = async ({
         name,
         columnRows,
@@ -70,7 +114,15 @@ export const useCreateBoard = () => {
         const names = toCreatableColumnNames(columnRows);
         const failedNames = names.length > 0 ? await createColumns({ boardId, names }) : [];
 
+        /*
+         * Navigate before raising the notice, so the toast appears over the board it is talking
+         * about rather than over the modal that is closing (D-04).
+         */
         router.push(buildBoardDetailPath(boardId));
+
+        if (failedNames.length > 0) {
+            raiseColumnFailureToast({ boardId, failedNames });
+        }
 
         return { didCreate: true, boardId, failedNames };
     };
@@ -78,6 +130,7 @@ export const useCreateBoard = () => {
     return {
         createBoard,
         createColumns,
+        retryColumns,
         isPending: createBoardMutation.isPending || createColumnsMutation.isPending,
         errorMessage,
         clearError,
