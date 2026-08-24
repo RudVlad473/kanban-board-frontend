@@ -33,3 +33,31 @@ export const boardNameSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).
 export const createBoardInputSchema = z.object({ name: boardNameSchema });
 
 export type CreateBoardInput = z.infer<typeof createBoardInputSchema>;
+
+const COLUMN_NAME_LENGTH_MESSAGE = "Column name must be between 3 and 32 characters.";
+
+/** The backend's own enforced bounds, mirrored verbatim (02-BACKEND-FACTS.md P6). */
+export const columnNameSchema = z
+    .string()
+    .trim()
+    .min(3, COLUMN_NAME_LENGTH_MESSAGE)
+    .max(32, COLUMN_NAME_LENGTH_MESSAGE);
+
+/*
+ * Deliberately separate from `columnNameSchema`, not a relaxation of it: a form row may be blank
+ * (D-02) but a name that actually gets sent may not, so collapsing the two re-blocks blank rows.
+ */
+export const columnNameRowSchema = z
+    .string()
+    .refine((value) => value.trim() === "" || columnNameSchema.safeParse(value).success, COLUMN_NAME_LENGTH_MESSAGE);
+
+/*
+ * The array is length-capped so a forged wire payload cannot drive an unbounded upstream loop
+ * (T-02-46); 50 is far above any plausible starter-column count.
+ */
+export const createBoardColumnsInputSchema = z.object({
+    boardId: z.string().min(1),
+    names: z.array(z.string()).max(50),
+});
+
+export type CreateBoardColumnsInput = z.infer<typeof createBoardColumnsInputSchema>;

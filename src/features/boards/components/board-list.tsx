@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { AddBoardModal, type AddBoardFormValues } from "@/features/boards/components/add-board-modal";
+import { AddBoardModal, type AddBoardSubmitValues } from "@/features/boards/components/add-board-modal";
 import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
 import type { Board } from "@/features/boards/schemas";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
@@ -35,9 +35,9 @@ export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = 
         }
     };
 
-    const handleSubmit = (values: AddBoardFormValues): void => {
-        void createBoard({ name: values.name }).then((didCreate) => {
-            if (didCreate) {
+    const handleSubmit = (values: AddBoardSubmitValues): void => {
+        void createBoard({ name: values.name, columnRows: values.columns }).then((outcome) => {
+            if (outcome.didCreate) {
                 setIsAddBoardOpen(false);
             }
         });

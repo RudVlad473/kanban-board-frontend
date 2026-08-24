@@ -14,16 +14,19 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { AddBoardModal } from "./add-board-modal";
 import * as stories from "./add-board-modal.stories";
 
-const { Default, Filled, Submitting, NameError, CreateFailed } = composeStories(stories);
+const { Default, Filled, Submitting, NameError, CreateFailed, ManyColumns, NoColumns, ColumnNameError } =
+    composeStories(stories);
 
 /*
  * Base UI renders the backdrop as a sibling of the popup with no role of its own, so it is reached
  * by attribute rather than by role — the same lookup `modal.test.tsx` uses for its dismissal cases.
  */
 const getBackdropElement = (): HTMLElement => {
-    const backdrop = document.querySelector<HTMLElement>("[data-base-ui-dialog-backdrop], [role='presentation']");
+    const backdrop = Array.from(document.querySelectorAll<HTMLElement>("[data-open]")).find(
+        (element) => element.getAttribute("role") !== "dialog",
+    );
     if (!backdrop) {
-        throw new Error("no dialog backdrop rendered");
+        throw new Error("Modal backdrop element not found — is the dialog open?");
     }
     return backdrop;
 };
@@ -105,6 +108,135 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: "Launch" }));
             });
+        });
+
+        // D-01: the classic Todo/Doing/Done starter shape, as three empty rows.
+        it("opens with exactly three empty column rows", async () => {
+            // Act
+            const screen = await render(<Default />);
+
+            // Assert
+            await expect.element(screen.getByLabelText("Column 3", { exact: true })).toHaveValue("");
+            await expect.element(screen.getByLabelText("Column 4", { exact: true })).not.toBeInTheDocument();
+        });
+
+        it("appends a further empty row when the add-row control is activated", async () => {
+            // Arrange
+            const screen = await render(<Default />);
+
+            // Act
+            await screen.getByRole("button", { name: "+ Add New Column" }).click();
+
+            // Assert
+            await expect.element(screen.getByLabelText("Column 4", { exact: true })).toHaveValue("");
+        });
+
+        it("removes rows one at a time, down to none at all", async () => {
+            // Arrange
+            const screen = await render(<Default />);
+
+            // Act
+            await screen.getByRole("button", { name: "Remove Column 3" }).click();
+            await screen.getByRole("button", { name: "Remove Column 2" }).click();
+            await screen.getByRole("button", { name: "Remove Column 1" }).click();
+
+            // Assert
+            await expect.element(screen.getByLabelText("Column 1", { exact: true })).not.toBeInTheDocument();
+            await expect.element(screen.getByRole("button", { name: "+ Add New Column" })).toBeVisible();
+        });
+
+        it("renders every staged column row in the order supplied", async () => {
+            // Act
+            const screen = await render(<ManyColumns />);
+
+            // Assert
+            await expect.element(screen.getByLabelText("Column 1", { exact: true })).toHaveValue("Todo");
+            await expect.element(screen.getByLabelText("Column 5", { exact: true })).toHaveValue("Done");
+        });
+
+        // D-02: zero named columns is a valid submission — the board is simply created with none.
+        it("submits with an empty column set when there are no rows", async () => {
+            // Arrange
+            const onSubmit = vi.fn();
+            const screen = await render(
+                <AddBoardModal
+                    isOpen
+                    onOpenChange={() => undefined}
+                    onSubmit={onSubmit}
+                    isPending={false}
+                    defaultColumns={[]}
+                />,
+            );
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
+            await screen.getByRole("button", { name: "Create New Board" }).click();
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [] });
+            });
+        });
+
+        it("blocks submission on a two-character column entry and shows that row's own error", async () => {
+            // Arrange
+            const onSubmit = vi.fn();
+            const screen = await render(
+                <AddBoardModal
+                    isOpen
+                    onOpenChange={() => undefined}
+                    onSubmit={onSubmit}
+                    isPending={false}
+                    defaultColumns={["To"]}
+                />,
+            );
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
+            await screen.getByRole("button", { name: "Create New Board" }).click();
+
+            // Assert
+            await expect.element(screen.getByText("Column name must be between 3 and 32 characters.")).toBeVisible();
+            expect(onSubmit).not.toHaveBeenCalled();
+        });
+
+        it("renders a staged column-row error", async () => {
+            // Act
+            const screen = await render(<ColumnNameError />);
+
+            // Assert
+            await expect.element(screen.getByText("Column name must be between 3 and 32 characters.")).toBeVisible();
+        });
+
+        it("lets a blank row sit alongside a filled one without blocking submission", async () => {
+            // Arrange
+            const onSubmit = vi.fn();
+            const screen = await render(
+                <AddBoardModal
+                    isOpen
+                    onOpenChange={() => undefined}
+                    onSubmit={onSubmit}
+                    isPending={false}
+                    defaultColumns={["Todo", ""]}
+                />,
+            );
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
+            await screen.getByRole("button", { name: "Create New Board" }).click();
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: ["Todo", ""] });
+            });
+        });
+
+        it("renders no column rows when staged with none", async () => {
+            // Act
+            const screen = await render(<NoColumns />);
+
+            // Assert
+            await expect.element(screen.getByLabelText("Column 1", { exact: true })).not.toBeInTheDocument();
         });
 
         /*
