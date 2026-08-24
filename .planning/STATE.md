@@ -125,10 +125,17 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
   `visual` 2m54s, `e2e` 1m41s) — the first fully passing run since 2026-08-22, and the first time
   `visual`/`e2e` have executed at all in that window.
 
-- `text-field.test.tsx` flakes under full-suite parallel load — 1 failure in 3 `pnpm test` runs,
-  `Matcher did not succeed in time`, passes 32/32 in isolation. Newly *visible* rather than newly
-  broken: CI never reached the Test step while comments:check was red. Captured as
-  `.planning/todos/pending/2026-08-24-text-field-browser-test-flakes-under-full-suite-load.md`.
+- **RESOLVED 2026-08-24** — the `text-field.test.tsx` flake was root-caused: it typed 200 chars at
+  one driver round-trip each, overran the 15s `testTimeout` under contention, and Vitest could not
+  cancel the in-flight keystrokes, which then typed into a *later* test (that test failed with
+  `onValueChange` receiving `"x"` instead of `"a"`). Count cut to 60 against a measured 41-char
+  overflow threshold; 0 failures in 8 full runs, from 2-in-6 before.
+
+- `toast.test.tsx` races Base UI's 5s auto-dismiss — 1 failure in 8 `pnpm test` runs.
+  `renderToastHarness` renders a bare `<ToastProvider>` while the `Default` story sets `timeout: 0`,
+  so harness toasts vanish mid-test under load. Diagnosed but **not yet fixed** — one-line change
+  plus a verification loop. See
+  `.planning/todos/pending/2026-08-24-toast-harness-races-the-5s-auto-dismiss-under-load.md`.
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
   `formAction` wraps `useActionState`'s `dispatch` in a plain client closure, so React can't
@@ -284,6 +291,23 @@ guarded against exactly this but the other three checkers did not, so the guard 
 `scripts/glob-real-files.mjs` (with unit tests) and all four now glob through it. CI never hit this
 — it has no such directory — but it blocked running the gate locally. And `text-field.test.tsx`
 flakes once in ~3 full-suite runs; captured as a todo, not fixed.
+
+**This session (flake fix):** Root-caused the `text-field.test.tsx` flake via `/gsd-resume-work` →
+systematic debugging. It was never a timeout margin or a cleanup race: the MOBILE truncation case
+types 200 characters, each its own driver round-trip (~731ms unloaded, ~20x under full-suite
+contention), which overran the 15s `testTimeout`; Vitest aborts the test but cannot cancel the
+in-flight keystroke stream, so the remaining presses drained into whichever input a later test had
+focused. The DESKTOP typing case was the victim — its `onValueChange` received `"x"`, not `"a"`.
+Measured the box's real overflow threshold (41 chars at both viewports) and cut 200 → 60, keeping a
+46% margin at 3x fewer round-trips. Verified 0 failures in 8 full `pnpm test` runs (2-in-6 before).
+
+Added `.planning/LEARNINGS.md` — a project-level, cross-phase learnings file that did not exist
+(GSD's own `{NN}-LEARNINGS.md` files are per-phase and are overwritten wholesale by
+`/gsd-extract-learnings`, so hand-written knowledge cannot live there). Seeded with the two CI
+lessons and this flake's surprise. Also added a `userEvent.type()` sizing rule to CONVENTIONS.md.
+
+One unrelated flake surfaced during verification and is diagnosed but unfixed: `toast.test.tsx`
+races Base UI's 5s auto-dismiss (see Blockers).
 
 Resume file: none (stale checkpoint removed)
 Next: Resume Phase 02 at Wave 8 — plan `02-10` (BOARD-02 create board + initial columns) via

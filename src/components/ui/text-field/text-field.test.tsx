@@ -208,8 +208,12 @@ describeForEachDevice({
             const input = typing.getByRole("textbox", { name: "Typed value" });
             expect(isTruncating(input.element() as HTMLElement)).toBe(false);
 
-            // Act
-            await userEvent.type(input.element(), "x".repeat(200));
+            /*
+             * Act — 60 chars, not 200: this 320px box truncates at a measured 41, and each character
+             * is its own keystroke round-trip. At 200 this overran the 15s test timeout under a
+             * loaded `pnpm test`, and the orphaned keystrokes then typed into later tests.
+             */
+            await userEvent.type(input.element(), "x".repeat(60));
 
             // Assert — native truncation needs no explicit recheck wiring.
             await expect.poll(() => isTruncating(input.element() as HTMLElement)).toBe(true);
