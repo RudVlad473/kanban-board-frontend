@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/toast/toast";
 import { createBoardAction } from "@/features/boards/actions/create-board";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns";
-import { toCreatableColumnNames } from "@/features/boards/model";
+import { toSubmittedColumnNames } from "@/features/boards/model";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /*
@@ -111,7 +111,7 @@ export const useCreateBoard = () => {
         }
 
         const boardId = result.board.id;
-        const names = toCreatableColumnNames(columnRows);
+        const names = toSubmittedColumnNames(columnRows);
         const failedNames = names.length > 0 ? await createColumns({ boardId, names }) : [];
 
         /*

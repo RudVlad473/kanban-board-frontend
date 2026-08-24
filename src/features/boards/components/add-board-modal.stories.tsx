@@ -33,8 +33,8 @@ export const CreateFailed: Story = {
     args: { defaultValues: { name: "Platform Launch" }, errorMessage: "Couldn't create board. Try again." },
 };
 
-/** D-01: the form's own default — three empty rows, no staging needed beyond naming the state. */
-export const ThreeEmptyRows: Story = {};
+/** D-01a: the form's own default — one empty row, no staging needed beyond naming the state. */
+export const OneEmptyRow: Story = {};
 
 export const ManyColumns: Story = {
     args: {
@@ -43,11 +43,16 @@ export const ManyColumns: Story = {
     },
 };
 
-/** D-02: zero named columns is a valid submission, so zero rows is a real state to render. */
+/** D-02a keeps zero rows valid, so a form with every row removed is a real state to render. */
 export const NoColumns: Story = { args: { defaultValues: { name: "Platform Launch" }, defaultColumns: [] } };
 
 export const ColumnNameError: Story = {
-    args: { defaultColumns: ["To", "", ""], forceColumnError: "Column name must be between 3 and 32 characters." },
+    args: { defaultColumns: ["To"], forceColumnError: "Column name must be between 3 and 32 characters." },
+};
+
+/** D-02a's own state: a row left blank now reports the required-field copy instead of being dropped. */
+export const ColumnRequiredError: Story = {
+    args: { defaultValues: { name: "Platform Launch" }, defaultColumns: [""], forceColumnError: "Can't be empty" },
 };
 
 /*

@@ -12,8 +12,8 @@ import { TextField } from "@/components/ui/text-field/text-field";
 import { boardNameSchema, columnNameRowSchema } from "@/features/boards/schemas";
 
 /*
- * Rows are validated with `columnNameRowSchema`, not `columnNameSchema` — a blank row is valid and
- * simply never reaches the create sequence (D-02).
+ * Rows are validated with `columnNameRowSchema`, not `columnNameSchema` — a blank row blocks
+ * submission with the required-field copy rather than the length copy (D-02a).
  */
 const addBoardFormSchema = z.object({
     name: boardNameSchema,
@@ -22,11 +22,11 @@ const addBoardFormSchema = z.object({
 
 type AddBoardFormValues = z.infer<typeof addBoardFormSchema>;
 
-/** What the submit handler receives — the raw rows, trimmed and dropped later by `toCreatableColumnNames`. */
+/** What the submit handler receives — the validated rows, trimmed later by `toSubmittedColumnNames`. */
 export type AddBoardSubmitValues = { name: string; columns: string[] };
 
-/** D-01: the classic Todo/Doing/Done starter shape, as three empty rows. */
-const DEFAULT_COLUMN_ROW_COUNT = 3;
+/** D-01a: one row, so the user is never made to clear rows they did not ask for. */
+const DEFAULT_COLUMN_ROW_COUNT = 1;
 
 const createEmptyColumnRows = (count: number): { value: string }[] =>
     Array.from({ length: count }, () => ({ value: "" }));
@@ -46,7 +46,7 @@ type Props = {
     errorMessage?: string | null;
     /** Pre-fills the board name (a plain React Hook Form `defaultValues` passthrough) — Storybook-only staging, mirroring `sign-up-form.tsx`. */
     defaultValues?: { name?: string };
-    /** Storybook-only staging — seeds the column rows with these values instead of three empty ones. */
+    /** Storybook-only staging — seeds the column rows with these values instead of one empty one. */
     defaultColumns?: string[];
     /** Storybook-only staging — renders the board-name field's error state without a real submit. */
     forceNameError?: string;

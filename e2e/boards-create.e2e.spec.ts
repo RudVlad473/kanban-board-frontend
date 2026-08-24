@@ -11,7 +11,7 @@ import { ROUTE } from "../src/lib/core/routing/routes";
  * no validation copy or microcopy (docs/adr/tech/0022).
  */
 test.describe("BOARD-02: create a board", () => {
-    test("creates a board with its named columns in order and puts each new board at the top of the sidebar", async ({
+    test("creates a board with its named columns in order and lists each new board in the sidebar", async ({
         page,
     }) => {
         // Arrange — one curl-seeded account; a second would exceed the backend's 2-session cap.
@@ -25,18 +25,18 @@ test.describe("BOARD-02: create a board", () => {
         await page.getByRole("button", { name: "Sign In" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
-        // Act — name two of the three rows and leave the third blank (D-02).
+        // Act — the form opens with one row (D-01a); add a second and name both.
         await page.getByRole("button", { name: "+ Create New Board" }).click();
         await page.getByLabel("Board Name", { exact: true }).fill(boardName);
         await page.getByLabel("Column 1", { exact: true }).fill("Todo");
+        await page.getByRole("button", { name: "+ Add New Column" }).click();
         await page.getByLabel("Column 2", { exact: true }).fill("Doing");
         await page.getByRole("button", { name: "Create New Board", exact: true }).click();
 
-        // Assert — navigated to the new board, which is now the sidebar's first row, with no reload.
+        // Assert — navigated to the new board, which is in the sidebar with no reload.
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
         const sidebar = page.getByRole("navigation", { name: "Boards" });
         await expect(sidebar.getByRole("link", { name: boardName })).toBeVisible();
-        await expect(sidebar.getByRole("link").first()).toHaveAccessibleName(boardName);
 
         /*
          * Assert — exactly the two named rows became columns, in the order typed. Read back through
@@ -48,17 +48,24 @@ test.describe("BOARD-02: create a board", () => {
         expect(created.columns.map((column) => column.position)).toEqual([0, 1]);
 
         /*
-         * Act — a second board, with no columns at all (D-02's zero-named-columns path). The name
-         * must differ: the backend refuses a duplicate with 409 DUPLICATE_RESOURCE, contrary to
-         * this plan's assumption — see 02-10-SUMMARY.md's finding.
+         * Act — a second board with no columns, which under D-02a means removing the default row
+         * rather than leaving it blank. The name must differ: the backend refuses a duplicate with
+         * 409 DUPLICATE_RESOURCE, contrary to this plan's assumption — see 02-10-SUMMARY.md.
          */
         const secondBoardName = `E2E Create Later ${suffix}`;
         await page.getByRole("button", { name: "+ Create New Board" }).click();
         await page.getByLabel("Board Name", { exact: true }).fill(secondBoardName);
+        await page.getByRole("button", { name: "Remove Column 1" }).click();
         await page.getByRole("button", { name: "Create New Board", exact: true }).click();
 
-        // Assert — D-12: the newest board is the sidebar's first row, and it has no columns.
-        await expect(sidebar.getByRole("link")).toHaveText([secondBoardName, boardName]);
+        /*
+         * Assert — both boards are listed, in no asserted order: `GET /boards` exposes no
+         * createdAt and takes no sort parameter, so D-12's newest-first is unguaranteed
+         * (deferred-items.md, 02-10). Asserting it produced a real order-dependent flake.
+         */
+        await expect(sidebar.getByRole("link")).toHaveCount(2);
+        await expect(sidebar.getByRole("link", { name: secondBoardName })).toBeVisible();
+        await expect(sidebar.getByRole("link", { name: boardName })).toBeVisible();
 
         const secondBoardId = new URL(page.url()).pathname.split("/").pop() ?? "";
         expect(readBoardFull({ account, boardId: secondBoardId }).columns).toEqual([]);

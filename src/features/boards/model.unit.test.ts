@@ -1,39 +1,32 @@
 import { describe, expect, it } from "vitest";
 
-import { toCreatableColumnNames } from "@/features/boards/model";
+import { toSubmittedColumnNames } from "@/features/boards/model";
 
-describe("toCreatableColumnNames", () => {
-    it("returns the trimmed non-empty rows in the order given", () => {
+describe("toSubmittedColumnNames", () => {
+    it("returns the trimmed rows in the order given", () => {
         // Act
-        const names = toCreatableColumnNames(["  Todo ", "Doing", " Done"]);
+        const names = toSubmittedColumnNames(["  Todo ", "Doing", " Done"]);
 
         // Assert
         expect(names).toEqual(["Todo", "Doing", "Done"]);
     });
 
     /*
-     * D-02: a blank row is omitted from the create sequence rather than validation-blocked, so
-     * three untouched rows are a valid submission that creates a board with no columns.
+     * D-02a: a blank row is blocked at validation, so one reaching here is a real name the user
+     * can see on screen — dropping it would understate what the create attempted.
      */
-    it("returns an empty array for three blank rows", () => {
+    it("keeps a blank row rather than dropping it", () => {
         // Act
-        const names = toCreatableColumnNames(["", "   ", ""]);
+        const names = toSubmittedColumnNames(["Todo", "  ", "Done"]);
 
         // Assert
-        expect(names).toEqual([]);
+        expect(names).toEqual(["Todo", "", "Done"]);
     });
 
-    it("drops blank rows sitting between filled ones without reordering the rest", () => {
-        // Act
-        const names = toCreatableColumnNames(["Todo", "  ", "Done"]);
-
-        // Assert
-        expect(names).toEqual(["Todo", "Done"]);
-    });
-
+    /* D-02a keeps 0 rows valid: removing every row still creates a board with no columns. */
     it("returns an empty array when there are no rows at all", () => {
         // Act
-        const names = toCreatableColumnNames([]);
+        const names = toSubmittedColumnNames([]);
 
         // Assert
         expect(names).toEqual([]);
