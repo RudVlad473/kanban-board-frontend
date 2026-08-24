@@ -177,6 +177,21 @@ compound-export file (e.g. `dropdown.tsx`/`menu.tsx`/`modal.tsx`, matching `toas
 `ToastProviderProps`) — never an inline object type on the destructured parameter. Enforcement:
 code review (no automated check exists yet).
 
+## What may live in a `.tsx` file
+
+A `.tsx` file contains its components and their prop types, and nothing else. Zod schemas, derived
+value types, magic numbers, factory/helper functions, path-template types and constants all move
+out — a schema to the feature's `schemas.ts`, a pure transform to its `model.ts`, a shared
+constant to the nearest non-`.tsx` module. The point is not tidiness: a schema declared beside a
+component cannot be unit-tested without rendering that component, cannot be reused by the Server
+Action that validates the same shape, and quietly becomes a second source of truth next to the
+feature's real schema module.
+
+As of 2026-08-24 `add-board-modal.tsx` was the live counter-example, declaring `addBoardFormSchema`
+(zod), `AddBoardFormValues`, `DEFAULT_COLUMN_ROW_COUNT`, `createEmptyColumnRows()` and
+`ColumnRowPath` alongside its `Props` and component. Enforcement: code review today; a lint rule
+restricting top-level declarations in `.tsx` is the intended endpoint.
+
 ## Responsive strategy (docs/adr/tech/0010, docs/adr/tech/0014)
 
 - All component styling is mobile-first: unprefixed Tailwind utilities target the mobile breakpoint (`breakpoint.mobile`, 375px); `md:`/`lg:` prefixes progressively enhance for tablet (768px) and desktop (1440px), per the `breakpoint.*` tokens. Enforcement: code review.
@@ -193,6 +208,16 @@ code review (no automated check exists yet).
 ## Enum-like constants (docs/adr/tech/0012)
 
 - Declare enum-like sets of string values as a `const` object literal with `as const`, keys mirroring their own string values (e.g. `export const DEVICE_TYPE = { MOBILE: "MOBILE", DESKTOP: "DESKTOP" } as const;`), never TypeScript's `enum` keyword. Derive the corresponding type from the object (`(typeof X)[keyof typeof X]`) rather than declaring it separately. Enforcement: code review. Does not apply retroactively to existing component prop string-literal unions (e.g. Button's `variant`/`size`) — only to standalone enum-like constants meant to be iterated or referenced by a shared runtime value.
+- **Result/status discriminants are a shared enum-like constant, never inline string literals.** A
+  discriminated-union result type (`{ status: "ok" } | { status: "error" } | { status: "unauthenticated" }`)
+  declares its discriminant values once, as a `RESULT_STATUS`-style `as const` object in a shared
+  module, and every producer and consumer references that constant rather than retyping the literal.
+  This is the "referenced by a shared runtime value" case the bullet above already carves in, not an
+  exception to it: as of 2026-08-24 the three values were retyped as bare literals across 18 files
+  (every Server Action, every RSC read function, every storybook action stub, plus
+  `app/(dashboard)/layout.tsx`), so a renamed or added state has 18 independent edit sites and a
+  typo in any one of them is a silent unmatched branch rather than a type error. Enforcement: code
+  review today; a lint rule is the intended endpoint.
 
 ## Server entry points (docs/adr/tech/0019)
 
