@@ -52,6 +52,33 @@ Retired: `next/headers`'s `cookies()` shim was a standing example through phase 
 02.2 moved every cookie read/write assertion that needed it to real Playwright e2e coverage
 (`docs/adr/tech/0025`) — zero files register this shim anymore (see "Surviving mock register").
 
+**Evaluated and rejected: `@storybook/nextjs-vite/navigation.mock` (spiked 2026-08-24).** The
+framework package this project already depends on ships an officially-maintained router mock whose
+`getRouter()` exposes `push`/`replace`/`refresh` as inspectable spies — the obvious candidate to
+replace the hand-written `next/navigation` shim above. It does not work in the "browser" Vitest
+project, and the failures compound rather than resolve:
+
+1. The *subpath* export carries the same eager-import pitfall as the main entry
+   (`docs/adr/tech/0021`) — it statically imports `next/dist/client/components/navigation.js`,
+   which reads `process.env` at module-evaluation time: `ReferenceError: process is not defined`.
+   Workable around with `define: { "process.env": "{}" }` on the project.
+2. Past that, the mock only *spies*; it does not substitute. Its `useRouter` is
+   `fn(actual.useRouter)`, delegating to the real Next.js implementation, which throws `invariant
+   expected app router to be mounted` with no router context. Storybook makes this work by
+   wrapping every story in `AppRouterContext.Provider value={getRouter()}` from its own framework
+   preview — annotations the "browser" project deliberately does not load.
+3. Supplying that provider by hand still fails: Vite's dependency optimizer pre-bundles its own
+   copy of the context module into the mock, so the `AppRouterContext` imported from
+   `next/dist/shared/lib/app-router-context.shared-runtime` is a different React context instance
+   than the one the mock reads. Excluding it via `optimizeDeps.exclude` then breaks unrelated CJS
+   interop (`aria-query` stops providing `elementRoles`), taking the whole project's test files
+   down with it.
+
+Four stacked Vite-config workarounds, one of which cascades into unrelated breakage, to replace a
+six-line shim in `src/test-utils/next-router-shims.tsx`. The hand-written shim stays. Re-evaluate
+only if `@storybook/nextjs-vite` ships a context-provider decorator consumable outside its own
+framework preview.
+
 Every such shim MUST carry an inline comment naming the specific limitation, AND (where the
 underlying ESLint rule targets the call shape in question — see Enforcement) an
 `eslint-disable-next-line no-restricted-syntax` directive whose trailing reason states that

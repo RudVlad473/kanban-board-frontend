@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 2
 current_phase_name: Board Management
-status: planning
-stopped_at: Phase 02.2 complete, ready to plan Phase 2
-last_updated: "2026-08-22T21:35:33.539Z"
+status: executing
+stopped_at: Phase 02 Wave 8 — plan 02-10 ready to execute
+last_updated: "2026-08-24T14:13:20.129Z"
 last_activity: 2026-08-22
 last_activity_desc: Phase 02.2 complete, transitioned to Phase 2
 state_head: 60da2fdc0f85b759404337e268b94d3a55752c7b
@@ -26,26 +26,26 @@ See: .planning/PROJECT.md (updated 2026-08-22)
 **Core value:** A signed-in user can create boards, organize tasks across columns via
 drag-and-drop, and trust that every change is reliably persisted and reconciled against the
 real backend.
-**Current focus:** Phase 02.2 — Unify component tests fully onto Storybook stories: eliminate renderWithProviders and hand-rendered tests, move every provider into Storybook decorators (closing the QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx), render every component test directly from composeStories() output instead of .run(), no play functions in stories (INSERTED, PULLED FORWARD)
-board create, board detail view, rename, delete — 02-09..13)
+**Current focus:** Phase 02 (Board Management) — resume at Wave 8. Remaining plans 02-10..02-13
+cover board create + initial columns (BOARD-02), board detail view, rename, and delete.
 
 ## Current Position
 
 Phase: 2 — Board Management
-Phase 02 (Board Management): PAUSED at Wave 8 (9 of 13 plans done; 02-10 not started)
-Status: Ready to plan
-explicit user decision, to resolve 4 pending testing-pattern todos before 02-10/02-12/02-13 add
-more instances of the pattern under review (see `.continue-here.md` and `HANDOFF.json`)
-Last activity: 2026-08-22 — Phase 02.2 complete, transitioned to Phase 2
+Phase 02 (Board Management): 9 of 13 plans done; ready to execute Wave 8 (plan 02-10).
+Status: Ready to execute — all four remaining plans (02-10..02-13) are written and
+plan-checker-verified; the pause that blocked them (pull Phase 02.2 forward) is resolved, since
+02.2 shipped in full on 2026-08-22.
+Last activity: 2026-08-24 — resumed via /gsd-resume-work, clean tree, no checkpoints outstanding
 
-Progress: Milestone v1.0 — 1/4 phases complete (Phase 1: 38/38 plans; Phase 02.1: 15/15 plans);
-Phase 02: 9/13 plans (paused); Phase 02.2: 0 plans (not yet planned, next up)
+Progress: Milestone v1.0 — Phase 1: 38/38 plans; Phase 02.1: 15/15 plans; Phase 02.2: 9/9 plans;
+Phase 02: 9/13 plans (in progress)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 62
+- Total plans completed: 71
 - Average duration: n/a
 - Total execution time: 0 hours
 
@@ -98,9 +98,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-Refreshed 2026-08-23 — 6 of the previously-listed todos here had already moved to
-`.planning/todos/completed/` (Phase 02.2 closed them out); this list now matches
-`.planning/todos/pending/` exactly.
+Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this session and moved to
+`.planning/todos/completed/`; this list now matches `.planning/todos/pending/` exactly (3 items).
 
 - Trim `src/features/boards/schemas.unit.test.ts`'s rejection cases that just re-test zod's own
   primitives —
@@ -117,19 +116,13 @@ Refreshed 2026-08-23 — 6 of the previously-listed todos here had already moved
   (columns, tasks) as Phase 2+ lands —
   `.planning/todos/pending/2026-08-22-fold-e2e-seeding-logic-into-a-single-service-module.md`.
 
-- Spike whether `@storybook/nextjs-vite/navigation.mock`'s subpath export avoids the eager
-  Next.js-internals import problem (ADR tech/0021's pitfall) that keeps the framework's main entry
-  out of the "browser" Vitest project; if safe, it could replace the hand-written
-  `vi.mock("next/navigation")` shims in `sidebar.test.tsx`/`board-list.test.tsx` —
-  `.planning/todos/pending/2026-08-23-spike-whether-storybook-nextjs-vite-navigation-mock-avoids-t.md`.
-
-- Spike closing the untested `router.refresh()` Server-Action convention (currently code-review-only,
-  zero automated coverage) using `@storybook/nextjs-vite`'s router mock — blocked by the repo-wide
-  play-function ban (ADR tech/0025's D-25), needs a scoping decision, not just an implementation.
-  Depends on the sibling `navigation.mock` spike above —
-  `.planning/todos/pending/2026-08-23-spike-closing-the-untested-router-refresh-convention-with-st.md`.
-
 ### Blockers/Concerns
+
+- `pnpm comments:check` is **red on `main`** independently of any current work — 2 pre-existing
+  violations (`app/api/session/force-sign-out/route.ts:6` at 10 prose lines,
+  `e2e/session-bridge.e2e.spec.ts:116` at 4). Found 2026-08-24; not introduced by the spike work
+  and left unfixed as out of scope. Worth confirming whether CI's quality job actually runs this
+  script, since a red local gate that CI ignores will keep going unnoticed.
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
   `formAction` wraps `useActionState`'s `dispatch` in a plain client closure, so React can't
@@ -243,6 +236,30 @@ full (9/9 plans, `02.2-VERIFICATION.md` 15/15 truths verified, commit `df10cb1`)
 formally documenting the `*-action-storybook-stub.ts` pattern as a sanctioned ADR tech/0020
 carve-out rather than replacing it. Deleted both stale artifacts rather than following their
 outdated "run `/gsd-discuss-phase 02.2`" instruction.
+
+**This session (2026-08-24, resumed via `/gsd-resume-work`):** Clean resume — no HANDOFF.json, no
+`.continue-here` checkpoint, no interrupted agent, no async jobs; working tree clean and `main`
+in sync with `origin/main` at `87c9994`. Confirmed the 4 PLAN-without-SUMMARY files
+(02-10..02-13) are simply unexecuted plans (Waves 8-11), not partial executions. Corrected the
+stale frontmatter `status`/`stopped_at`, which still read "ready to plan Phase 2" from the 02.2
+close-out.
+
+**This session (spikes):** Resolved both Storybook-mock todos. `@storybook/nextjs-vite/navigation.mock`
+**rejected** — its subpath carries ADR tech/0021's `process is not defined` pitfall, and past that it
+only spies (`useRouter` delegates to real Next.js, needing an `AppRouterContext.Provider` the "browser"
+project never loads); hand-providing it fails on Vite dep-optimizer context duplication, and
+`optimizeDeps.exclude` cascades into unrelated `aria-query` CJS breakage. Recorded as an
+"Evaluated and rejected" section in `docs/adr/tech/0020`; the six-line hand-written shim stays.
+
+That killed the second todo's premise, so **ADR tech/0025's D-25 play-function ban was left
+untouched** — no exception needed. Closed the coverage gap the cheap way instead: `board-list.test.tsx`
+now asserts the D-19 shim's `refresh` spy after a real click. Also corrected CONVENTIONS.md, which
+misattributed the call to `refresh()` from `next/cache` (it is `router.refresh()` from
+`next/navigation`) in both places the rule appears, and upgraded its Enforcement line.
+
+Open scope note for 02-10: the convention's real subject — a *mutating Server Action's* refresh —
+still has zero call sites. `board-list.tsx:38`'s retry button is the repo's only `router.refresh()`
+and is not a mutation; 02-10 (create board) introduces the first real one.
 
 Resume file: none (stale checkpoint removed)
 Next: Resume Phase 02 at Wave 8 — plan `02-10` (BOARD-02 create board + initial columns) via

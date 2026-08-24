@@ -6,6 +6,7 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { ROUTE } from "@/lib/core/routing/routes";
@@ -63,6 +64,23 @@ describeForEachDevice({
             // Assert
             expect(screen.getByText("Couldn't load your boards.")).toBeInTheDocument();
             expect(screen.getByRole("button", { name: "Try again." })).toBeInTheDocument();
+        });
+
+        /*
+         * First automated assertion that a `router.refresh()` call site fires (CONVENTIONS.md's
+         * refresh rule was code-review-only) — via the D-19 shim's spy from an ordinary test, not
+         * a story `play()`, so docs/adr/tech/0025's D-25 ban needs no exception.
+         */
+        it("refreshes the route when retry is pressed after a load failure", async () => {
+            // Arrange
+            mockRefresh.mockClear();
+            await render(<LoadFailed />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Try again." }));
+
+            // Assert
+            expect(mockRefresh).toHaveBeenCalledOnce();
         });
     },
 });

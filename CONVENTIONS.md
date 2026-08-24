@@ -137,7 +137,7 @@ src/
 ## Data fetching & mutations (docs/adr/tech/0019, narrows docs/adr/tech/0002)
 
 - Every server entry point is either a React Server Component for reads (server-side fetch, zod-validated per docs/adr/tech/0024, passed to a Client Component as plain props — no client-side query for list/detail data) or a Server Action for writes (create/rename/delete/move/reorder), invoked directly by an RSC/form or wrapped as a TanStack Query `mutationFn` when client-side optimistic `onMutate`/`onError` rollback is needed. Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
-- Every mutating Server Action calls `refresh()` from `next/cache` after its write succeeds — `app/(dashboard)/layout.tsx` is a persistent layout that does not re-render on ordinary navigation, so a mutation invoked deeper in the tree never reaches the sidebar's board list without it. Enforcement: code review; docs/adr/tech/0019's Consequences names the anti-pattern this bullet exists to prevent.
+- Every mutating Server Action's client caller invokes `router.refresh()` (from `next/navigation`'s `useRouter()`) once the write succeeds — `app/(dashboard)/layout.tsx` is a persistent layout that does not re-render on ordinary navigation, so a mutation invoked deeper in the tree never reaches the sidebar's board list without it. Enforcement: code review, plus a per-call-site assertion on the D-19 `next/navigation` shim's `refresh` spy from an ordinary `.test.tsx` (pattern: `board-list.test.tsx`'s "refreshes the route when retry is pressed"); docs/adr/tech/0019's Consequences names the anti-pattern this bullet exists to prevent.
 
 ## Drag-and-drop (docs/adr/tech/0003)
 
@@ -197,7 +197,7 @@ code review (no automated check exists yet).
 ## Server entry points (docs/adr/tech/0019)
 
 - Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism, project-wide, with one narrow ADR-justified exception (`app/api/session/force-sign-out/route.ts`, docs/adr/tech/0026 — cookie mutation forced from a non-Server-Action server context). Every other server entry point is a React Server Component (reads) or a Server Action (writes). Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
-- Every board/column/task/subtask-mutating Server Action calls `refresh()` from `next/cache` after its write succeeds, since `app/(dashboard)/layout.tsx` does not re-render on ordinary navigation. Enforcement: code review.
+- Every board/column/task/subtask-mutating Server Action's client caller invokes `router.refresh()` (from `next/navigation`'s `useRouter()`) once the write succeeds, since `app/(dashboard)/layout.tsx` does not re-render on ordinary navigation. Enforcement: code review, plus an assertion on the D-19 shim's `refresh` spy per call site (see the Data-fetching section).
 - An RSC-side read function is named `fetch<Noun>()`, in a file named `fetch-<kebab-noun>.ts` under the feature's `server/` directory (e.g. `src/features/boards/server/fetch-boards.ts`) — deliberately distinct from a Server Action's imperative-mutation-verb naming (`signIn`, `signUp`, `updateTheme`, `signOut`), so a reader can tell a read from a write by name alone, without opening the file. Enforcement: code review.
 
 ## No mocking (docs/adr/tech/0020, extends 0018)
