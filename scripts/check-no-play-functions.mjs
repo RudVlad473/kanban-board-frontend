@@ -4,9 +4,11 @@
  * interaction functions belong in the component's co-located `*.test.tsx` (docs/adr/tech/0025).
  * Mirrors scripts/check-no-route-handlers.mjs/check-comment-length.mjs's file-scanning shape.
  */
-import { globSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { globRealFiles } from "./glob-real-files.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -38,12 +40,12 @@ const scanFile = (relativePath) => {
 };
 
 const runCli = () => {
-    const files = new Set([
-        ...globSync("src/**/*.stories.{ts,tsx}", { cwd: repoRoot }),
-        ...globSync("app/**/*.stories.{ts,tsx}", { cwd: repoRoot }),
-    ]);
+    const files = globRealFiles({
+        patterns: ["src/**/*.stories.{ts,tsx}", "app/**/*.stories.{ts,tsx}"],
+        cwd: repoRoot,
+    });
 
-    const violations = [...files]
+    const violations = files
         .flatMap(scanFile)
         .sort((a, b) => a.relativePath.localeCompare(b.relativePath) || a.line - b.line);
 

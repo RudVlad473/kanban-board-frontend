@@ -114,10 +114,9 @@ test.describe("SESSION-02: session rotation across two real sign-ins", () => {
 
 test.describe("SESSION-03: force-sign-out route rejects non-same-origin requests (WR-01 CSRF guard)", () => {
     /*
-     * The session cookie is `SameSite=Lax` (e2e/cookie-policy.e2e.spec.ts's COOKIE-03), so it
-     * still attaches to a top-level cross-site GET navigation — without the `Sec-Fetch-Site`
-     * check these cases prove, a third-party page linking straight to this route could force any
-     * signed-in visitor's session to be destroyed (logout CSRF).
+     * `SameSite=Lax` (e2e/cookie-policy.e2e.spec.ts's COOKIE-03) still attaches the session cookie
+     * to a top-level cross-site GET, so without the `Sec-Fetch-Site` check these cases prove, a
+     * third-party link to this route could destroy any signed-in visitor's session (logout CSRF).
      */
     const signInViaUi = async ({ page, email, password }: { page: Page; email: string; password: string }) => {
         await page.goto(ROUTE.SIGN_IN);

@@ -4,9 +4,10 @@
  * Handlers are banned project-wide as a data-access mechanism (docs/adr/tech/0019). Mirrors
  * `scripts/check-routes.mjs`'s own structure.
  */
-import { globSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { globRealFiles } from "./glob-real-files.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -18,7 +19,7 @@ const repoRoot = path.resolve(__dirname, "..");
  */
 const ALLOWED_ROUTE_HANDLERS = new Set(["app/api/session/force-sign-out/route.ts"]);
 
-const violations = globSync("app/**/route.{ts,tsx,js,mjs}", { cwd: repoRoot }).filter(
+const violations = globRealFiles({ patterns: "app/**/route.{ts,tsx,js,mjs}", cwd: repoRoot }).filter(
     (relativePath) => !ALLOWED_ROUTE_HANDLERS.has(relativePath.replaceAll("\\", "/")),
 );
 

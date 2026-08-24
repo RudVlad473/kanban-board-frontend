@@ -118,11 +118,15 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
 
 ### Blockers/Concerns
 
-- `pnpm comments:check` is **red on `main`** independently of any current work — 2 pre-existing
-  violations (`app/api/session/force-sign-out/route.ts:6` at 10 prose lines,
-  `e2e/session-bridge.e2e.spec.ts:116` at 4). Found 2026-08-24; not introduced by the spike work
-  and left unfixed as out of scope. Worth confirming whether CI's quality job actually runs this
-  script, since a red local gate that CI ignores will keep going unnoticed.
+- **RESOLVED 2026-08-24** — `pnpm comments:check` was red on `main` and CI *does* gate on it, so
+  the `quality` job had been failing since 2026-08-22 (4+ consecutive runs), short-circuiting every
+  step after it: API-types drift, Build, Test, and the whole `visual` and `e2e` jobs. Both comment
+  violations compressed; full gate now green locally, including build and 566/566 tests.
+
+- `text-field.test.tsx` flakes under full-suite parallel load — 1 failure in 3 `pnpm test` runs,
+  `Matcher did not succeed in time`, passes 32/32 in isolation. Newly *visible* rather than newly
+  broken: CI never reached the Test step while comments:check was red. Captured as
+  `.planning/todos/pending/2026-08-24-text-field-browser-test-flakes-under-full-suite-load.md`.
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
   `formAction` wraps `useActionState`'s `dispatch` in a plain client closure, so React can't
@@ -260,6 +264,24 @@ misattributed the call to `refresh()` from `next/cache` (it is `router.refresh()
 Open scope note for 02-10: the convention's real subject — a *mutating Server Action's* refresh —
 still has zero call sites. `board-list.tsx:38`'s retry button is the repo's only `router.refresh()`
 and is not a mutation; 02-10 (create board) introduces the first real one.
+
+**This session (pipeline fix):** CI's `quality` job had been red since 2026-08-22 on the "Comment
+length check" step, which sits before API-types drift, Build and Test — so those three, plus the
+dependent `visual` and `e2e` jobs, had not run at all for four consecutive pushes. Compressed both
+over-long comment blocks (`force-sign-out/route.ts` 10 prose lines → split into a 3-line ADR
+pointer above the handler and a 3-line guard note at the check itself, since ADR tech/0026 step 1
+already carried the full rationale verbatim; `session-bridge.e2e.spec.ts` 4 → 3).
+
+Verified everything the gate had been hiding: lint, all four check scripts, format, API-types
+drift, `pnpm build` (with a generated `SESSION_SECRET`, matching CI's own step) and `pnpm test` —
+566/566 across all five Vitest projects.
+
+Two further finds along the way. `pnpm routes:check` crashed locally (`EISDIR`) on a gitignored
+Vitest failure-screenshot *directory* named like a `.tsx` file; `check-comment-length.mjs` already
+guarded against exactly this but the other three checkers did not, so the guard was extracted to
+`scripts/glob-real-files.mjs` (with unit tests) and all four now glob through it. CI never hit this
+— it has no such directory — but it blocked running the gate locally. And `text-field.test.tsx`
+flakes once in ~3 full-suite runs; captured as a todo, not fixed.
 
 Resume file: none (stale checkpoint removed)
 Next: Resume Phase 02 at Wave 8 — plan `02-10` (BOARD-02 create board + initial columns) via

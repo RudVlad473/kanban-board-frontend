@@ -4,9 +4,11 @@
  * outside its one declaration file (`ROUTE` / `EXTERNAL_PATH`). See docs/adr/tech/0005 (typed
  * OpenAPI client) and docs/adr/tech/0012 (const-object-as-const declaration pattern) for the why.
  */
-import { globSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { globRealFiles } from "./glob-real-files.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -24,7 +26,7 @@ const EXCLUDED_FILES = new Set(
 
 const SEARCH_GLOBS = ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}", "e2e/**/*.{ts,tsx}"];
 
-const files = new Set(SEARCH_GLOBS.flatMap((pattern) => globSync(pattern, { cwd: repoRoot })));
+const files = new Set(globRealFiles({ patterns: SEARCH_GLOBS, cwd: repoRoot }));
 files.add("proxy.ts");
 
 const violations = [];

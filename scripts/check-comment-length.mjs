@@ -3,9 +3,11 @@
  * D-22: mechanises CONVENTIONS.md PC-05's "at most 1-3 lines" comment-prose rule, previously
  * enforced only by code review. See docs/adr/tech/0023 for the full rationale.
  */
-import { globSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { globRealFiles } from "./glob-real-files.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -32,19 +34,6 @@ const IGNORED_FILES = new Set(
 );
 
 const IGNORED_DIR_PREFIXES = ["node_modules", ".next", "storybook-static"];
-
-/*
- * Playwright's toHaveScreenshot() creates a same-named *directory* per spec file to hold baseline
- * images (e.g. visual/__screenshots__/foo.visual.spec.ts/), which a naive "*.ts" glob still
- * matches — this filters those out before a file read is ever attempted.
- */
-const isRealFile = (relativePath) => {
-    try {
-        return statSync(path.resolve(repoRoot, relativePath)).isFile();
-    } catch {
-        return false;
-    }
-};
 
 const EXEMPT_MARKER = "comment-length-exempt:";
 
@@ -148,10 +137,10 @@ const scanFile = (relativePath) => {
 const runCli = () => {
     const cliArgs = process.argv.slice(2);
     const globs = resolveGlobs(cliArgs);
-    const files = new Set(globs.flatMap((pattern) => globSync(pattern, { cwd: repoRoot })));
+    const files = globRealFiles({ patterns: globs, cwd: repoRoot });
 
-    const violations = [...files]
-        .filter((relativePath) => !isIgnoredPath(relativePath) && isRealFile(relativePath))
+    const violations = files
+        .filter((relativePath) => !isIgnoredPath(relativePath))
         .flatMap(scanFile)
         .sort((a, b) => a.relativePath.localeCompare(b.relativePath) || a.startLine - b.startLine);
 
