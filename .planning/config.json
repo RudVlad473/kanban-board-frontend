@@ -16,5 +16,12 @@
   "context_window": 1000000,
   "graphify": {
     "build_timeout": 600
+  },
+  "agent_skills": {
+    "gsd-executor": "global:lsp-first-navigation",
+    "gsd-code-fixer": "global:lsp-first-navigation",
+    "gsd-code-reviewer": "global:lsp-first-navigation",
+    "gsd-debugger": "global:lsp-first-navigation",
+    "gsd-verifier": "global:lsp-first-navigation"
   }
 }
