@@ -21,10 +21,22 @@ naming initial columns" at board-creation time.
 
 ### Create-board flow
 
-- **D-01:** The create-board form shows 3 empty column-name input rows by default (matches the
-  classic Todo/Doing/Done Kanban starter shape).
-- **D-02:** Rows can be freely added beyond 3 and removed down to 0 — 0 named columns is a valid
-  submission (the board is simply created with no columns yet, added later in Phase 3).
+- **D-01:** ~~The create-board form shows 3 empty column-name input rows by default.~~
+  **SUPERSEDED 2026-08-24 by D-01a** during 02-10 checkpoint review.
+- **D-01a:** The create-board form shows **exactly 1** empty column-name input row by default, so
+  the user is not made to clear rows they did not ask for. Rows can still be added freely.
+- **D-02:** ~~Rows can be freely added beyond 3 and removed down to 0 — 0 named columns is a valid
+  submission, and a blank row is omitted rather than blocked.~~
+  **SUPERSEDED 2026-08-24 by D-02a** during 02-10 checkpoint review.
+- **D-02a:** A blank or whitespace-only column row **blocks submission** with a validation error
+  rather than being silently dropped. Removing a row down to 0 rows remains valid — 0 named
+  columns still creates a board with no columns. The distinction is that an *empty row left on
+  screen* is now a user error to correct, not input to silently discard.
+
+  *Why the reversal:* silently dropping a row the user had typed into and then cleared makes the
+  created board differ from what is on screen at submit time, with no feedback. Rejected on
+  review of the built flow. The original D-02 rationale (do not block on rows the user never
+  filled) is preserved by D-01a instead: defaulting to 1 row means there is nothing to clear.
 - **D-03:** Board creation is client-orchestrated (no bulk-create endpoint —
   `SaveBoardRequestDTO` only accepts `name`; ADR domain/0003): `POST /boards` first, then a
   sequential `POST /boards/{boardId}/columns` per named column. Per ADR domain/0003, a partial
