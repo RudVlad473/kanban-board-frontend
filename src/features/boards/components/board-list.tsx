@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
+import { AddBoardModal, type AddBoardFormValues } from "@/features/boards/components/add-board-modal";
+import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
 import type { Board } from "@/features/boards/schemas";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 import { cn } from "@/lib/core/styling/cn";
@@ -12,11 +15,33 @@ import { cn } from "@/lib/core/styling/cn";
  * out of the old combined `Sidebar` (plan 02-09) so the panel chrome paints immediately while
  * this streams in behind `Suspense`; renders only the caption and scroll region, never a `nav`.
  */
-type Props = { boards: Board[]; loadFailed?: boolean };
+type Props = {
+    boards: Board[];
+    loadFailed?: boolean;
+    /** Storybook-only staging for the create modal's open state — no real caller passes this (see Sidebar's `defaultIsExpanded`). */
+    defaultIsAddBoardOpen?: boolean;
+};
 
-export const BoardList = ({ boards, loadFailed = false }: Props) => {
+export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = false }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
+    const [isAddBoardOpen, setIsAddBoardOpen] = useState(defaultIsAddBoardOpen);
+    const { createBoard, isPending, errorMessage, clearError } = useCreateBoard();
+
+    const handleOpenChange = (nextIsOpen: boolean): void => {
+        setIsAddBoardOpen(nextIsOpen);
+        if (!nextIsOpen) {
+            clearError();
+        }
+    };
+
+    const handleSubmit = (values: AddBoardFormValues): void => {
+        void createBoard({ name: values.name }).then((didCreate) => {
+            if (didCreate) {
+                setIsAddBoardOpen(false);
+            }
+        });
+    };
 
     return (
         <>
@@ -66,6 +91,26 @@ export const BoardList = ({ boards, loadFailed = false }: Props) => {
                     </ul>
                 )}
             </div>
+
+            {/* Below the scroll region and above the panel's pinned controls (UI-SPEC overflow row);
+                an accent inline link, not a filled button (accent-reservation list item 2). */}
+            <button
+                type="button"
+                onClick={() => {
+                    handleOpenChange(true);
+                }}
+                className="flex min-h-11 w-full items-center px-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-bg-primary outline-none hover:text-bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-inset"
+            >
+                + Create New Board
+            </button>
+
+            <AddBoardModal
+                isOpen={isAddBoardOpen}
+                onOpenChange={handleOpenChange}
+                onSubmit={handleSubmit}
+                isPending={isPending}
+                errorMessage={errorMessage}
+            />
         </>
     );
 };

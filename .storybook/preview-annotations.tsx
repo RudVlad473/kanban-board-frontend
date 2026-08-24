@@ -1,5 +1,6 @@
 import type { Decorator } from "@storybook/react";
 
+import { ToastProvider } from "@/components/ui/toast/toast";
 import { QueryProvider } from "@/lib/client/query-client";
 import { DEVICE_TYPE, VIEWPORT_SIZES } from "@/lib/core/viewport/viewport-breakpoints";
 
@@ -80,11 +81,24 @@ export const previewAnnotations = {
     },
     decorators: [
         /*
-         * Every dependency a story needs for real hooks/mutations (TanStack Query's provider
-         * today) belongs here, not copy-pasted per stories file — a per-file wrapper broke
-         * Storybook's static CSF indexing, which requires a literal default export.
+         * Every provider a story's real hooks/mutations need belongs here, mirroring
+         * `app/layout.tsx`'s own nesting — `useToast()` throws outside a Toast provider, and a
+         * per-file wrapper broke Storybook's CSF indexing, which requires a literal default export.
          */
-        (Story: DecoratorParams[0]) => <QueryProvider>{Story()}</QueryProvider>,
+        (Story: DecoratorParams[0], context: DecoratorParams[1]) => {
+            /*
+             * `toast.stories.tsx` mounts its own provider to inject a pre-seeded manager; a second
+             * one here would render a second `Toast.Viewport` live region beside it.
+             */
+            const toastParameters = context.parameters.toast as { hasOwnProvider?: boolean } | undefined;
+            const hasOwnToastProvider = toastParameters?.hasOwnProvider === true;
+
+            return (
+                <QueryProvider>
+                    {hasOwnToastProvider ? Story() : <ToastProvider>{Story()}</ToastProvider>}
+                </QueryProvider>
+            );
+        },
         (Story: DecoratorParams[0], context: DecoratorParams[1]) => {
             document.documentElement.classList.toggle("dark", context.globals.theme === "dark");
             /*

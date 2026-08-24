@@ -28,7 +28,7 @@ vi.mock("next/navigation", () => createNextNavigationShim({ pathname: ROUTE.BOAR
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
-const { Populated, Empty, LoadFailed } = composeStories(stories);
+const { Populated, Empty, LoadFailed, AddBoardOpen } = composeStories(stories);
 
 /*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. BoardList
@@ -81,6 +81,50 @@ describeForEachDevice({
 
             // Assert
             expect(mockRefresh).toHaveBeenCalledOnce();
+        });
+
+        it("renders the sidebar create control with the Copywriting Contract's copy", async () => {
+            // Act
+            await render(<Populated />);
+
+            // Assert
+            expect(screen.getByRole("button", { name: "+ Create New Board" })).toBeInTheDocument();
+        });
+
+        it("renders the create control even when the board list failed to load", async () => {
+            // Act
+            await render(<LoadFailed />);
+
+            // Assert
+            expect(screen.getByRole("button", { name: "+ Create New Board" })).toBeInTheDocument();
+        });
+
+        it("keeps the add-board modal closed on first render", async () => {
+            // Act
+            await render(<Empty />);
+
+            // Assert
+            expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        });
+
+        it("opens the add-board modal when the create control is activated", async () => {
+            // Arrange
+            await render(<Empty />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "+ Create New Board" }));
+
+            // Assert
+            expect(await screen.findByRole("dialog")).toBeInTheDocument();
+            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+        });
+
+        it("renders the add-board modal when staged open", async () => {
+            // Act
+            await render(<AddBoardOpen />);
+
+            // Assert
+            expect(await screen.findByRole("dialog")).toBeInTheDocument();
         });
     },
 });

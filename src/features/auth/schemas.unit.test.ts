@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { signInSchema, signUpSchema, zodErrorToFieldErrors } from "./schemas";
+import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
+
+import { signInSchema, signUpSchema } from "./schemas";
 
 const VALID_EMAIL = "user@example.com";
 const VALID_PASSWORD = "Correct1Password!";

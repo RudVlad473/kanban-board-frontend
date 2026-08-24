@@ -8,7 +8,7 @@ import { screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { render } from "vitest-browser-react";
+import { cleanup, render } from "vitest-browser-react";
 
 import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton";
 import { ROUTE } from "@/lib/core/routing/routes";
@@ -132,7 +132,12 @@ describeForEachDevice({
             const first = await renderSidebar({ children: <div>List</div> });
             await first.getByRole("button", { name: "Hide Sidebar" }).click();
             await expect.element(first.getByRole("button", { name: "Show Sidebar" })).toBeInTheDocument();
-            document.body.innerHTML = "";
+            /*
+             * The render mechanism's own `cleanup()`, never a raw `innerHTML` wipe — the wipe
+             * orphans portalled nodes (the ToastProvider decorator's viewport) and the next unmount
+             * throws `NotFoundError: removeChild` (docs/adr/tech/0025).
+             */
+            await cleanup();
 
             // Act
             const second = await renderSidebar({ children: <div>List</div> });

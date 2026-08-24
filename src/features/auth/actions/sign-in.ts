@@ -4,9 +4,10 @@ import { redirect } from "next/navigation";
 
 import { type AuthActionState } from "@/features/auth/action-state";
 import { resolveDisplayName } from "@/features/auth/model";
-import { signInSchema, zodErrorToFieldErrors } from "@/features/auth/schemas";
+import { signInSchema } from "@/features/auth/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
+import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { upstreamCookie } from "@/lib/server/cookies/upstream-cookie";

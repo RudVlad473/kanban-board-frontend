@@ -5,9 +5,17 @@
  */
 import type { ReactNode } from "react";
 
-export const createNextNavigationShim = ({ pathname, refresh }: { pathname: string; refresh: () => void }) => ({
+export const createNextNavigationShim = ({
+    pathname,
+    refresh,
+    push = () => undefined,
+}: {
+    pathname: string;
+    refresh: () => void;
+    push?: (href: string) => void;
+}) => ({
     usePathname: () => pathname,
-    useRouter: () => ({ refresh }),
+    useRouter: () => ({ refresh, push }),
 });
 
 export const createNextLinkShim = () => ({

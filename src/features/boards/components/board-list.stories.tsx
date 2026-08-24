@@ -30,3 +30,9 @@ export const Populated: Story = { args: { boards: createBoards(3) } };
 export const Empty: Story = { args: { boards: [] } };
 
 export const LoadFailed: Story = { args: { boards: [], loadFailed: true } };
+
+/*
+ * Stages the create modal's open state through a prop, the same non-interactive pattern Modal's
+ * own `defaultOpen` and Sidebar's `defaultIsExpanded` already use (D-25 — no play function).
+ */
+export const AddBoardOpen: Story = { args: { boards: createBoards(3), defaultIsAddBoardOpen: true } };
