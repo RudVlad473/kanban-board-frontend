@@ -237,6 +237,24 @@ restricting top-level declarations in `.tsx` is the intended endpoint.
 - In Browser Mode every typed character is its own driver round-trip, so `userEvent.type()` is sized to the shortest input that proves the assertion, never a round number picked for headroom. Bulk text a test merely needs *present* goes in a `defaultValue`/prop; only the characters whose typing is itself under test get typed. An oversized string spends the 15s `testTimeout`, and a test aborted mid-type leaks its remaining keystrokes into whichever input the *next* test focuses — a cross-test corruption that reads as an unrelated flake (`text-field.test.tsx`'s truncation case, 2026-08-24). Enforcement: code review.
 - Non-visual hooks are tested with React Testing Library's `renderHook` in the `unit` project, not Vitest Browser Mode — except a hook whose behavior depends on real layout measurement (`useOverflowIndicator` is the example), which stays in the `browser` project. Enforcement: code review.
 
+## Test runner concurrency
+
+- The `browser` and `storybook` Vitest projects each set `maxWorkers: 2`. Both drive headless
+  Playwright Chromium, and `pnpm test` runs every project together, so Vitest's default of scaling
+  workers to the CPU count produces two browser fleets competing for the same machine. Measured
+  2026-08-24 on an 8-CPU box with ~3GB RAM free: four `pnpm test` runs over byte-identical code
+  failed 15, 5, 12 and 5 tests, a different set each run, every failure a timeout and not one an
+  assertion failure, while each project run alone was green every time. Chromium memory is the
+  binding constraint. Each Chromium project also takes its own `sequence.groupOrder` (1 and 2, with
+  every non-browser project on 0) so the two fleets never run at once — Vitest additionally refuses
+  to start when projects sharing a `groupOrder` declare different `maxWorkers`.
+- Measured after that change: full-suite failures dropped from 15/5/12/5 to 0-2 per run. The
+  residue is not contention — `dropdown.stories.tsx > Disabled` hangs for ~405s in a full run and
+  passes in 22s when the `storybook` project runs alone, so it is a real defect that the old noise
+  was hiding. Tracked as a todo; do not "fix" it by raising `testTimeout`, which would hide
+  contention from CI and delay genuine hangs rather than remove the cause. Enforcement: code
+  review; re-measure with repeated full-suite runs before changing either number.
+
 ## Test setup: prefer `beforeEach`/nested `describe` over helper functions
 
 Purpose-built reusable functions for test setup (e.g. a `signUpDirectCapturingTheme`-style helper

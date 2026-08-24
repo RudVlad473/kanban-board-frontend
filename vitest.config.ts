@@ -80,6 +80,7 @@ export default defineConfig({
                 resolve: { alias },
                 test: {
                     name: "tokens",
+                    sequence: { groupOrder: 0 },
                     environment: "node",
                     include: ["tokens/**/*.test.ts"],
                 },
@@ -93,6 +94,7 @@ export default defineConfig({
                      * deployed nonprod backend directly, the same path the deployed app uses.
                      */
                     name: "node",
+                    sequence: { groupOrder: 0 },
                     environment: "node",
                     include: [
                         "src/lib/server/session.test.ts",
@@ -110,6 +112,12 @@ export default defineConfig({
                 resolve: { alias: [...serverActionStubAlias, ...alias] },
                 test: {
                     name: "browser",
+                    sequence: { groupOrder: 1 },
+                    /*
+                     * Capped so the two Chromium projects cannot starve each other under `pnpm test`
+                     * (CONVENTIONS.md, "Test runner concurrency").
+                     */
+                    maxWorkers: 2,
                     include: ["src/**/*.test.tsx", "app/**/*.test.tsx"],
                     exclude: ["src/**/*.unit.test.tsx", "app/**/*.unit.test.tsx"],
                     setupFiles: ["./vitest.setup.ts"],
@@ -134,6 +142,7 @@ export default defineConfig({
                      * custom-property values, so component style assertions stay in "browser".
                      */
                     name: "unit",
+                    sequence: { groupOrder: 0 },
                     environment: "jsdom",
                     include: ["src/**/*.unit.test.{ts,tsx}"],
                     setupFiles: ["./vitest.setup.unit.ts"],
@@ -159,6 +168,9 @@ export default defineConfig({
                 plugins: [storybookTest({ configDir: path.join(rootDir, ".storybook") })],
                 test: {
                     name: "storybook",
+                    sequence: { groupOrder: 2 },
+                    // Capped for the same contention reason as the "browser" project above.
+                    maxWorkers: 2,
                     setupFiles: ["./.storybook/vitest.setup.ts"],
                     browser: {
                         enabled: true,
