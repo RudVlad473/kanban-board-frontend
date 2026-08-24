@@ -44,12 +44,11 @@ export const columnNameSchema = z
     .max(32, COLUMN_NAME_LENGTH_MESSAGE);
 
 /*
- * Deliberately separate from `columnNameSchema`, not a relaxation of it: a form row may be blank
- * (D-02) but a name that actually gets sent may not, so collapsing the two re-blocks blank rows.
+ * Deliberately separate from `columnNameSchema`, not a relaxation of it: a blank row is now a user
+ * error to correct rather than input to drop (D-02a), and it earns the required-field copy, not the
+ * length copy. `.pipe` rather than stacked `.min`s so the blank case can never report length.
  */
-export const columnNameRowSchema = z
-    .string()
-    .refine((value) => value.trim() === "" || columnNameSchema.safeParse(value).success, COLUMN_NAME_LENGTH_MESSAGE);
+export const columnNameRowSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).pipe(columnNameSchema);
 
 /*
  * The array is length-capped so a forged wire payload cannot drive an unbounded upstream loop

@@ -79,10 +79,16 @@ describeForEachDevice({
         });
 
         it("blocks submission and shows the empty-name message when the board name is blank", async () => {
-            // Arrange
+            // Arrange — no column rows, so the only required-field message on screen is the name's.
             const onSubmit = vi.fn();
             const screen = await render(
-                <AddBoardModal isOpen onOpenChange={() => undefined} onSubmit={onSubmit} isPending={false} />,
+                <AddBoardModal
+                    isOpen
+                    onOpenChange={() => undefined}
+                    onSubmit={onSubmit}
+                    isPending={false}
+                    defaultColumns={[]}
+                />,
             );
 
             // Act
@@ -97,7 +103,13 @@ describeForEachDevice({
             // Arrange
             const onSubmit = vi.fn();
             const screen = await render(
-                <AddBoardModal isOpen onOpenChange={() => undefined} onSubmit={onSubmit} isPending={false} />,
+                <AddBoardModal
+                    isOpen
+                    onOpenChange={() => undefined}
+                    onSubmit={onSubmit}
+                    isPending={false}
+                    defaultColumns={["Todo"]}
+                />,
             );
 
             // Act
@@ -110,14 +122,14 @@ describeForEachDevice({
             });
         });
 
-        // D-01: the classic Todo/Doing/Done starter shape, as three empty rows.
-        it("opens with exactly three empty column rows", async () => {
+        // D-01a: exactly one row, so nothing has to be cleared that the user did not ask for.
+        it("opens with exactly one empty column row", async () => {
             // Act
             const screen = await render(<Default />);
 
             // Assert
-            await expect.element(screen.getByLabelText("Column 3", { exact: true })).toHaveValue("");
-            await expect.element(screen.getByLabelText("Column 4", { exact: true })).not.toBeInTheDocument();
+            await expect.element(screen.getByLabelText("Column 1", { exact: true })).toHaveValue("");
+            await expect.element(screen.getByLabelText("Column 2", { exact: true })).not.toBeInTheDocument();
         });
 
         it("appends a further empty row when the add-row control is activated", async () => {
@@ -128,12 +140,14 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "+ Add New Column" }).click();
 
             // Assert
-            await expect.element(screen.getByLabelText("Column 4", { exact: true })).toHaveValue("");
+            await expect.element(screen.getByLabelText("Column 2", { exact: true })).toHaveValue("");
         });
 
         it("removes rows one at a time, down to none at all", async () => {
-            // Arrange
+            // Arrange — two added rows on top of the default one, so removal has something to walk.
             const screen = await render(<Default />);
+            await screen.getByRole("button", { name: "+ Add New Column" }).click();
+            await screen.getByRole("button", { name: "+ Add New Column" }).click();
 
             // Act
             await screen.getByRole("button", { name: "Remove Column 3" }).click();
@@ -154,7 +168,7 @@ describeForEachDevice({
             await expect.element(screen.getByLabelText("Column 5", { exact: true })).toHaveValue("Done");
         });
 
-        // D-02: zero named columns is a valid submission — the board is simply created with none.
+        // D-02a keeps this: zero rows is a valid submission — the board is simply created with none.
         it("submits with an empty column set when there are no rows", async () => {
             // Arrange
             const onSubmit = vi.fn();
@@ -208,7 +222,11 @@ describeForEachDevice({
             await expect.element(screen.getByText("Column name must be between 3 and 32 characters.")).toBeVisible();
         });
 
-        it("lets a blank row sit alongside a filled one without blocking submission", async () => {
+        /*
+         * D-02a: a blank row left on screen blocks submission rather than being silently dropped,
+         * so what gets created can never differ from what the user is looking at.
+         */
+        it("blocks submission on a blank row sitting alongside a filled one", async () => {
             // Arrange
             const onSubmit = vi.fn();
             const screen = await render(
@@ -225,9 +243,44 @@ describeForEachDevice({
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
+            // Assert — the board name is filled, so this required-field message is the row's own.
+            await expect.element(screen.getByText("Can't be empty")).toBeVisible();
+            expect(onSubmit).not.toHaveBeenCalled();
+        });
+
+        /* The default state itself: one untouched row must be named or removed, never ignored. */
+        it("blocks submission on the single default row when it is left untouched", async () => {
+            // Arrange
+            const onSubmit = vi.fn();
+            const screen = await render(
+                <AddBoardModal isOpen onOpenChange={() => undefined} onSubmit={onSubmit} isPending={false} />,
+            );
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
+            await screen.getByRole("button", { name: "Create New Board" }).click();
+
+            // Assert
+            await expect.element(screen.getByText("Can't be empty")).toBeVisible();
+            expect(onSubmit).not.toHaveBeenCalled();
+        });
+
+        /* Removing that row instead of naming it is the sanctioned way to create with no columns. */
+        it("submits with no columns once the single default row is removed", async () => {
+            // Arrange
+            const onSubmit = vi.fn();
+            const screen = await render(
+                <AddBoardModal isOpen onOpenChange={() => undefined} onSubmit={onSubmit} isPending={false} />,
+            );
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
+            await screen.getByRole("button", { name: "Remove Column 1" }).click();
+            await screen.getByRole("button", { name: "Create New Board" }).click();
+
             // Assert
             await vi.waitFor(() => {
-                expect(onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: ["Todo", ""] });
+                expect(onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [] });
             });
         });
 
@@ -276,6 +329,7 @@ describeForEachDevice({
                         onOpenChange={setIsOpen}
                         isPending={false}
                         errorMessage={errorMessage}
+                        defaultColumns={["Todo"]}
                         onSubmit={() => {
                             setErrorMessage("Couldn't create board. Try again.");
                         }}
@@ -288,10 +342,11 @@ describeForEachDevice({
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
-            // Assert
+            // Assert — both the name and the column rows survive the failure (D-05).
             await expect.element(screen.getByRole("alert")).toHaveTextContent("Couldn't create board. Try again.");
             await expect.element(screen.getByRole("dialog")).toBeVisible();
             await expect.element(screen.getByLabelText("Board Name")).toHaveValue("Launch");
+            await expect.element(screen.getByLabelText("Column 1", { exact: true })).toHaveValue("Todo");
         });
     },
 });

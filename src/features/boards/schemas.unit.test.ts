@@ -171,19 +171,28 @@ describe("columnNameSchema", () => {
 });
 
 /*
- * Deliberately a separate export from `columnNameSchema`, not a relaxation of it: a form row may be
- * blank (D-02), but a name that actually gets sent may not. Collapsing the two re-blocks blank rows.
+ * Deliberately a separate export from `columnNameSchema`, not a relaxation of it: a blank row is a
+ * user error to correct (D-02a) and earns the required-field copy, not the length copy.
  */
 describe("columnNameRowSchema", () => {
-    it("accepts an empty and a whitespace-only row", () => {
-        // Act & Assert
-        expect(columnNameRowSchema.safeParse("").success).toBe(true);
-        expect(columnNameRowSchema.safeParse("   ").success).toBe(true);
+    it("rejects an empty and a whitespace-only row with the required-field copy", () => {
+        // Act
+        const empty = columnNameRowSchema.safeParse("");
+        const whitespace = columnNameRowSchema.safeParse("   ");
+
+        // Assert
+        expect(empty.success).toBe(false);
+        expect(empty.error?.issues[0]?.message).toBe("Can't be empty");
+        expect(whitespace.error?.issues[0]?.message).toBe("Can't be empty");
     });
 
-    it("still rejects a two-character row and accepts a three-character one", () => {
-        // Act & Assert
-        expect(columnNameRowSchema.safeParse("To").success).toBe(false);
+    it("reports the length copy, not the required copy, for a two-character row", () => {
+        // Act
+        const tooShort = columnNameRowSchema.safeParse("To");
+
+        // Assert
+        expect(tooShort.success).toBe(false);
+        expect(tooShort.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
         expect(columnNameRowSchema.safeParse("Fix").success).toBe(true);
     });
 

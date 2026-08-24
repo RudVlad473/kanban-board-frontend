@@ -61,16 +61,31 @@ const getRaisedToastTexts = (): string[] => {
         .map((toast) => toast.textContent);
 };
 
-/** Opens the create modal, fills the board name and every column row, then submits. */
+/*
+ * Opens the create modal, fills the board name, then adds and fills a row per requested column.
+ * The form opens with one row (D-01a), so row 1 is filled in place and the rest are appended.
+ */
 const submitNewBoard = async ({ name, columns }: { name: string; columns: string[] }): Promise<void> => {
     await userEvent.click(screen.getByRole("button", { name: "+ Create New Board" }));
-    await userEvent.type(await screen.findByLabelText("Board Name"), name);
+    /*
+     * `fill` rather than `type`: this suite drives up to four fields, and per-keystroke typing is
+     * what pushes it past the 15s budget when all five Vitest projects run concurrently.
+     */
+    await userEvent.fill(await screen.findByLabelText("Board Name"), name);
 
     for (const [index, columnName] of columns.entries()) {
-        // A row left as "" is the blank-row case — typing nothing into it is the point.
-        if (columnName !== "") {
-            await userEvent.type(screen.getByLabelText(`Column ${String(index + 1)}`), columnName);
+        if (index > 0) {
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Column" }));
         }
+        // A row left as "" is the blank-row case — filling nothing into it is the point.
+        if (columnName !== "") {
+            await userEvent.fill(screen.getByLabelText(`Column ${String(index + 1)}`), columnName);
+        }
+    }
+
+    // Zero requested columns means the default row has to go — a blank row would block (D-02a).
+    if (columns.length === 0) {
+        await userEvent.click(screen.getByRole("button", { name: "Remove Column 1" }));
     }
 
     await userEvent.click(screen.getByRole("button", { name: "Create New Board" }));
@@ -208,18 +223,38 @@ describeForEachDevice({
             expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
         });
 
-        it("omits blank column rows from the create sequence rather than sending them", async () => {
+        /*
+         * D-02a reversed D-02: a blank row is no longer dropped on the way to the create sequence,
+         * it stops the submit outright, so the create never starts at all.
+         */
+        it("starts no create at all when a blank column row is left on screen", async () => {
             // Arrange
             await render(<Empty />);
 
             // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo", "", "Done"] });
 
+            // Assert — the modal is still open, reporting the row, and nothing was sent.
+            expect(await screen.findByText("Can't be empty")).toBeInTheDocument();
+            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+            expect(createBoardColumnsActionCalls).toHaveLength(0);
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        /* The other half of D-02a: removing every row is still a valid, column-less create. */
+        it("creates a board with no columns when every row is removed", async () => {
+            // Arrange
+            await render(<Empty />);
+
+            // Act
+            await submitNewBoard({ name: "Launch", columns: [] });
+
             // Assert
             await vi.waitFor(() => {
-                expect(createBoardColumnsActionCalls).toHaveLength(1);
+                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
             });
-            expect(createBoardColumnsActionCalls[0]?.names).toEqual(["Todo", "Done"]);
+            expect(createBoardColumnsActionCalls).toHaveLength(0);
+            expect(getRaisedToastTexts()).toHaveLength(0);
         });
 
         /*
