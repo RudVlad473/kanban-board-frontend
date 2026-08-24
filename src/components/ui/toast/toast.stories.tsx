@@ -34,8 +34,13 @@ const SeededToastCanvas = ({ configs }: { configs: ToastConfig[] }) => {
     );
 };
 
+/*
+ * Opts out of the global `ToastProvider` decorator (`.storybook/preview-annotations.tsx`) — this
+ * file mounts its own so it can inject a pre-seeded manager, and two would render two viewports.
+ */
 const meta: Meta<typeof SeededToastCanvas> = {
     component: SeededToastCanvas,
+    parameters: { toast: { hasOwnProvider: true } },
 };
 
 export default meta;

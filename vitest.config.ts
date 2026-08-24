@@ -59,6 +59,18 @@ const serverActionStubAlias = [
         find: "@/features/theme/actions/update-theme",
         replacement: path.resolve(rootDir, "src/test-utils/update-theme-action-storybook-stub.ts"),
     },
+    /*
+     * The columns entry must precede the board one — Vite matches a string `find` by prefix, so
+     * `create-board` would otherwise swallow `create-board-columns` too.
+     */
+    {
+        find: "@/features/boards/actions/create-board-columns",
+        replacement: path.resolve(rootDir, "src/test-utils/create-board-columns-action-storybook-stub.ts"),
+    },
+    {
+        find: "@/features/boards/actions/create-board",
+        replacement: path.resolve(rootDir, "src/test-utils/create-board-action-storybook-stub.ts"),
+    },
 ];
 
 export default defineConfig({

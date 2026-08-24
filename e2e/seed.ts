@@ -35,3 +35,14 @@ export const seedBoard = ({ account, name }: { account: SeededAccount; name: str
     JSON.parse(
         runSeedScript(["board", "--jsession", account.jsessionId, "--user", account.id, "--name", name]),
     ) as SeededBoard;
+
+export type SeededBoardFull = SeededBoard & { columns: { id: string; name: string; position: number }[] };
+
+/**
+ * Reads a board back through the real backend — the board-detail UI is Phase 3 scope, so a spec
+ * asserting what a create actually persisted has nothing on screen to read it from yet.
+ */
+export const readBoardFull = ({ account, boardId }: { account: SeededAccount; boardId: string }): SeededBoardFull =>
+    JSON.parse(
+        runSeedScript(["board-full", "--jsession", account.jsessionId, "--user", account.id, "--board", boardId]),
+    ) as SeededBoardFull;
