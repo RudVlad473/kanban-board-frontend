@@ -121,7 +121,9 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
 - **RESOLVED 2026-08-24** — `pnpm comments:check` was red on `main` and CI *does* gate on it, so
   the `quality` job had been failing since 2026-08-22 (4+ consecutive runs), short-circuiting every
   step after it: API-types drift, Build, Test, and the whole `visual` and `e2e` jobs. Both comment
-  violations compressed; full gate now green locally, including build and 566/566 tests.
+  violations compressed; confirmed green on CI in run 32740030630 (`quality` 2m8s, `secrets`,
+  `visual` 2m54s, `e2e` 1m41s) — the first fully passing run since 2026-08-22, and the first time
+  `visual`/`e2e` have executed at all in that window.
 
 - `text-field.test.tsx` flakes under full-suite parallel load — 1 failure in 3 `pnpm test` runs,
   `Matcher did not succeed in time`, passes 32/32 in isolation. Newly *visible* rather than newly
