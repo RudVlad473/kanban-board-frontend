@@ -6,10 +6,15 @@
     "use_worktrees": true,
     "plan_check": true,
     "verifier": true,
-    "research": true
+    "research": true,
+    "subagent_timeout": 900000
   },
   "model_profile": "quality",
   "git": {
     "branching_strategy": "phase"
+  },
+  "context_window": 1000000,
+  "graphify": {
+    "build_timeout": 600
   }
 }
