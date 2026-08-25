@@ -1,5 +1,6 @@
 "use client";
 
+import { PanelLeft } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -89,12 +90,14 @@ export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = 
                                     <Link
                                         href={buildBoardDetailPath(board.id)}
                                         className={cn(
-                                            "mr-6 flex h-11 min-w-0 items-center rounded-r-full px-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
+                                            "mr-6 flex h-11 min-w-0 items-center gap-2 rounded-r-full px-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
                                             isSelected
                                                 ? "bg-bg-primary text-text-on-primary"
                                                 : "text-text-muted hover:text-text-primary",
                                         )}
                                     >
+                                        <PanelLeft aria-hidden="true" className="size-5 shrink-0" />
+
                                         <span className="truncate">{board.name}</span>
                                     </Link>
                                 </li>
@@ -111,9 +114,9 @@ export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = 
                 onClick={() => {
                     handleOpenChange(true);
                 }}
-                className="flex min-h-11 w-full items-center px-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-bg-primary outline-none hover:text-bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-inset"
+                className="flex min-h-11 w-full items-center gap-2 px-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-bg-primary outline-none hover:text-bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-inset"
             >
-                + Create New Board
+                <PanelLeft aria-hidden="true" className="size-5 shrink-0" />+ Create New Board
             </button>
 
             <AddBoardModal
