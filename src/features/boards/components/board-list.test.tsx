@@ -16,6 +16,7 @@ import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
  * aliases onto it — the alias only exists at runtime, so TypeScript would resolve the real module
  * and never see these programmable exports. Both paths are the same module instance here.
  */
+import { queueCreateBoardFailure, resetCreateBoardStub } from "@/test-utils/create-board-action-storybook-stub";
 import {
     createBoardColumnsActionCalls,
     queueCreateBoardColumnsFailure,
@@ -147,6 +148,7 @@ describeForEachDevice({
     name: "BoardList",
     body: () => {
         beforeEach(() => {
+            resetCreateBoardStub();
             resetCreateBoardColumnsStub();
             resetRenameBoardStub();
             resetDeleteBoardStub();
@@ -307,6 +309,42 @@ describeForEachDevice({
             });
             expect(createBoardColumnsActionCalls).toHaveLength(0);
             expect(getRaisedToastTexts()).toHaveLength(0);
+        });
+
+        /*
+         * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE (probed 2026-08-25)
+         * — the same refusal rename already explains, now recognised on create too (D-01).
+         */
+        it("names the clash inline and keeps the modal open when the board name is already taken", async () => {
+            // Arrange
+            await render(<Empty />);
+            queueCreateBoardFailure(RESULT_STATUS.DUPLICATE);
+
+            // Act
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+
+            // Assert — told why, in the still-open modal, with nothing created to navigate to (D-05).
+            expect(await screen.findByRole("alert")).toHaveTextContent(
+                "A board with that name already exists. Choose a different name.",
+            );
+            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+            expect(createBoardColumnsActionCalls).toHaveLength(0);
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        /* Every other refusal keeps the generic copy — only the name clash has more to say. */
+        it("keeps the generic create-failure copy for a refusal with nothing distinct to say", async () => {
+            // Arrange
+            await render(<Empty />);
+            queueCreateBoardFailure(RESULT_STATUS.ERROR);
+
+            // Act
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+
+            // Assert
+            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create board. Try again.");
+            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+            expect(mockPush).not.toHaveBeenCalled();
         });
 
         /*
