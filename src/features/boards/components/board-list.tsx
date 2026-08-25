@@ -86,12 +86,14 @@ export const BoardList = ({
         });
     };
 
+    /*
+     * D-02: closed on submit, not on settle — `renameBoard` applied the optimistic override
+     * synchronously before this line runs, so the sidebar already shows the new name underneath. A
+     * later failure still reverts it and raises the hook's own toast, modal or no modal.
+     */
     const handleRenameSubmit = (values: RenameBoardArgs): void => {
-        void renameBoard(values).then((outcome) => {
-            if (outcome.didRename) {
-                setBoardBeingRenamed(null);
-            }
-        });
+        void renameBoard(values);
+        setBoardBeingRenamed(null);
     };
 
     /* D-09: the modal closes either way — a failure is announced by the hook's toast, not in here. */
