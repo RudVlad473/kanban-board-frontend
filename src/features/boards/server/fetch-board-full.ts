@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { boardFullSchema, type BoardFull } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
@@ -25,12 +27,12 @@ export type FetchBoardFullResult =
     | { status: typeof RESULT_STATUS.NOT_FOUND }
     | { status: typeof RESULT_STATUS.ERROR };
 
-/**
- * BOARD-03's RSC read. Calls `verifySession()` itself rather than trusting an outer guard already
- * ran (CVE-2025-29927 class, T-02-50); `userId` comes only from the session record, never from the
- * caller, so a forged one cannot reach the upstream call (see docs/adr/tech/0019).
+/*
+ * Keyed on the bare id, not the caller's `{ boardId }` object: React compares cache arguments with
+ * `Object.is`, so wrapping the object-parameter function would allocate a fresh literal per call
+ * and miss every time, mirroring `fetchBoards`'s dedup in name only.
  */
-export const fetchBoardFull = async ({ boardId }: { boardId: string }): Promise<FetchBoardFullResult> => {
+const fetchBoardFullById = cache(async (boardId: string): Promise<FetchBoardFullResult> => {
     const record = await verifySession();
     if (!record) {
         return { status: RESULT_STATUS.UNAUTHENTICATED };
@@ -62,4 +64,12 @@ export const fetchBoardFull = async ({ boardId }: { boardId: string }): Promise<
     }
 
     return { status: RESULT_STATUS.SUCCESS, board: parsed.data };
-};
+});
+
+/**
+ * BOARD-03's RSC read. Calls `verifySession()` itself rather than trusting an outer guard already
+ * ran (CVE-2025-29927 class, T-02-50); `userId` comes only from the session record, never from the
+ * caller, so a forged one cannot reach the upstream call (see docs/adr/tech/0019).
+ */
+export const fetchBoardFull = ({ boardId }: { boardId: string }): Promise<FetchBoardFullResult> =>
+    fetchBoardFullById(boardId);
