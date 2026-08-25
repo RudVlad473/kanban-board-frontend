@@ -13,7 +13,7 @@ import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
 import { useDeleteBoard } from "@/features/boards/hooks/use-delete-board";
 import { useRenameBoard, type RenameBoardArgs } from "@/features/boards/hooks/use-rename-board";
 import type { AddBoardSubmitValues, Board } from "@/features/boards/schemas";
-import { buildBoardDetailPath } from "@/lib/core/routing/routes";
+import { buildBoardDetailPath, toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /*
  * The sidebar's board list, RSC-fed via props (not `useBoards()`, per docs/adr/tech/0019). Split
@@ -56,7 +56,11 @@ export const BoardList = ({
      * title updates when the refreshed server render lands (raised at plan 02-12's checkpoint).
      */
     const { renameBoard, isPending: isRenamePending, boards: renderedBoards } = useRenameBoard({ boards });
-    const { deleteBoard, isPending: isDeletePending } = useDeleteBoard();
+    /* The same path the selected-row treatment already reads, so both agree on "the open board". */
+    const { deleteBoard, isPending: isDeletePending } = useDeleteBoard({
+        boards,
+        currentBoardId: toBoardIdFromPath(pathname),
+    });
     /*
      * Bumped on every fresh open and used as the modal's `key`, so each open starts from empty
      * fields — a failed create keeps its values because the modal never closed (D-05), not because

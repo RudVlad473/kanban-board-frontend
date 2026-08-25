@@ -21,7 +21,11 @@ import {
     queueCreateBoardColumnsFailure,
     resetCreateBoardColumnsStub,
 } from "@/test-utils/create-board-columns-action-storybook-stub";
-import { deleteBoardActionCalls, resetDeleteBoardStub } from "@/test-utils/delete-board-action-storybook-stub";
+import {
+    deleteBoardActionCalls,
+    queueDeleteBoardFailure,
+    resetDeleteBoardStub,
+} from "@/test-utils/delete-board-action-storybook-stub";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
 import {
@@ -41,16 +45,24 @@ import * as stories from "./board-list.stories";
  */
 const mockRefresh = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
+const mockReplace = vi.hoisted(() => vi.fn());
+/* A getter-backed holder, so one suite can drive the board-detail paths D-08's branches turn on. */
+const currentPathname = vi.hoisted(() => ({ value: "" }));
 
 // eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
 vi.mock("next/navigation", () =>
-    createNextNavigationShim({ pathname: ROUTE.BOARDS, refresh: mockRefresh, push: mockPush }),
+    createNextNavigationShim({
+        pathname: () => currentPathname.value,
+        refresh: mockRefresh,
+        push: mockPush,
+        replace: mockReplace,
+    }),
 );
 
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
-const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, DeleteOpen, ServerPropsAdvance } =
+const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, DeleteOpen, SingleBoard, ServerPropsAdvance } =
     composeStories(stories);
 
 /* Duplicated verbatim from `board-list.stories.tsx`'s own host — see the comment beside them there. */
@@ -112,6 +124,13 @@ const submitNewBoard = async ({ name, columns }: { name: string; columns: string
 const getRenderedBoardNames = (): (string | null)[] =>
     Array.from(document.querySelectorAll("ul > li > a")).map((link) => link.textContent);
 
+/** Opens a row's overflow menu, activates its delete entry, and confirms in the modal that opens. */
+const deleteBoardFromRow = async (rowName: string): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: `Board actions for ${rowName}` }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete Board" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Delete Board" }));
+};
+
 /** Opens a row's overflow menu, activates its edit entry, retypes the name and submits. */
 const renameBoardFromRow = async ({ rowName, nextName }: { rowName: string; nextName: string }): Promise<void> => {
     await userEvent.click(screen.getByRole("button", { name: `Board actions for ${rowName}` }));
@@ -132,6 +151,8 @@ describeForEachDevice({
             resetRenameBoardStub();
             resetDeleteBoardStub();
             mockPush.mockClear();
+            mockReplace.mockClear();
+            currentPathname.value = ROUTE.BOARDS;
         });
 
         it("renders one row per board and the matching ALL BOARDS caption when populated", async () => {
@@ -534,6 +555,96 @@ describeForEachDevice({
             // Assert
             expect(await screen.findByRole("heading", { name: "Delete this board?" })).toBeInTheDocument();
             expect(screen.getByText(/'Fixture Board 1' board\?/)).toBeInTheDocument();
+        });
+
+        it("sends the row's own id with the delete and moves nobody when it was not the open board", async () => {
+            // Arrange — the board list route, so no board is open at all.
+            await render(<Populated />);
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 2");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(deleteBoardActionCalls).toEqual([{ boardId: Populated.args.boards?.[1]?.id }]);
+            });
+            expect(mockReplace).not.toHaveBeenCalled();
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        /*
+         * D-08: `replace`, not `push` — the deleted board's address must not sit in the back history
+         * for a user to walk into (T-02-70), and the URL has to show where they actually landed.
+         */
+        it("moves to the first remaining board, replacing the history entry, when the open board is deleted", async () => {
+            // Arrange — the first board is the one being viewed.
+            const boards = Populated.args.boards ?? [];
+            currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
+            await render(<Populated />);
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 1");
+
+            // Assert — the top of the sidebar's own newest-first order, via replace.
+            await vi.waitFor(() => {
+                expect(mockReplace).toHaveBeenCalledWith(buildBoardDetailPath(boards[1]?.id ?? ""));
+            });
+            expect(mockReplace).toHaveBeenCalledTimes(1);
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        it("lands on the board-list route when the open board was the last one", async () => {
+            // Arrange
+            const boards = SingleBoard.args.boards ?? [];
+            currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
+            await render(<SingleBoard />);
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 1");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(mockReplace).toHaveBeenCalledWith(ROUTE.BOARDS);
+            });
+        });
+
+        /*
+         * D-09's whole point: nothing was removed, so there is nowhere to move the user to — and a
+         * navigation here would be the app acting as though the delete had landed.
+         */
+        it("navigates nowhere and announces the failure when the delete fails", async () => {
+            // Arrange
+            const boards = Populated.args.boards ?? [];
+            currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
+            queueDeleteBoardFailure(RESULT_STATUS.ERROR);
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 1");
+
+            // Assert — the row is exactly where it was, the toast says so, and nobody moved.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("Couldn't delete board.Try again.");
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+            expect(mockReplace).not.toHaveBeenCalled();
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        it("closes the confirmation once the delete settles, whichever way it went", async () => {
+            // Arrange
+            queueDeleteBoardFailure(RESULT_STATUS.ERROR);
+            await render(<Populated />);
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 1");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Delete this board?" })).not.toBeInTheDocument();
+            });
         });
 
         /*

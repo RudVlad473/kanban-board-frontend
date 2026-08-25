@@ -1,9 +1,12 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { deleteBoardAction } from "@/features/boards/actions/delete-board";
+import { removeBoard, resolveDestinationAfterDelete } from "@/features/boards/model";
+import type { Board } from "@/features/boards/schemas";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 
 /*
@@ -18,7 +21,8 @@ const DELETE_FAILURE_COPY = { title: "Couldn't delete board.", description: "Try
  * stay in the sidebar until the delete succeeds, or a failed delete would make a board look gone
  * for as long as the request took, with no undo behind it (ADR domain/0002, T-02-66).
  */
-export const useDeleteBoard = () => {
+export const useDeleteBoard = ({ boards, currentBoardId }: { boards: Board[]; currentBoardId: string | null }) => {
+    const router = useRouter();
     const toast = useToast();
     const mutation = useMutation({ mutationFn: deleteBoardAction, retry: false });
 
@@ -33,9 +37,20 @@ export const useDeleteBoard = () => {
         }
 
         /*
-         * No cache work on success either: `refresh()` inside the action is what removes the row
-         * from the persistent sidebar layout (docs/adr/tech/0019).
+         * No cache work on success: `refresh()` inside the action is what removes the row from the
+         * persistent sidebar layout (docs/adr/tech/0019). Moving the user is the only client job.
          */
+        const destination = resolveDestinationAfterDelete({
+            remainingBoards: removeBoard({ boards, boardId }),
+            deletedBoardId: boardId,
+            currentBoardId,
+        });
+
+        if (destination !== null) {
+            // `replace`, so the deleted board's address does not sit in the back history (T-02-70).
+            router.replace(destination);
+        }
+
         return { didDelete: true };
     };
 
