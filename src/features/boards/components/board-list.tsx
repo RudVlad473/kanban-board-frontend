@@ -76,16 +76,20 @@ export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = 
                         </button>
                     </div>
                 ) : (
-                    <ul className="flex flex-col gap-2 px-4">
+                    <ul className="flex flex-col gap-2">
                         {boards.map((board) => {
                             const isSelected = pathname === buildBoardDetailPath(board.id);
 
                             return (
                                 <li key={board.id} className="min-w-0">
+                                    {/*
+                                     * Full-bleed pill (UAT finding 1): row spans full width, so
+                                     * `mr-6` + `rounded-r-full` match the header's 24px inset.
+                                     */}
                                     <Link
                                         href={buildBoardDetailPath(board.id)}
                                         className={cn(
-                                            "flex h-11 min-w-0 items-center rounded-r-lg px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
+                                            "mr-6 flex h-11 min-w-0 items-center rounded-r-full px-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
                                             isSelected
                                                 ? "bg-bg-primary text-text-on-primary"
                                                 : "text-text-muted hover:text-text-primary",
