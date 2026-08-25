@@ -17,6 +17,7 @@ import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-
 import {
     holdNextRenameBoard,
     queueRenameBoardFailure,
+    renameBoardActionCalls,
     resetRenameBoardStub,
     settleRenameBoard,
 } from "@/test-utils/rename-board-action-storybook-stub";
@@ -83,14 +84,15 @@ describeForEachDevice({
                 expect(getHeaderTitle()).toBe("Platform Relaunch");
             });
             expect(getSidebarRowNames()[0]).toBe("Platform Relaunch");
-            expect(screen.getByRole("button", { name: "Save Changes" })).toHaveAttribute("aria-busy", "true");
+            // D-02: the modal is dismissed on submit, so it is already gone with the write still open.
+            expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
 
             // Act — let the write land.
             settleRenameBoard();
 
             // Assert — both still carry it once the write settles.
             await vi.waitFor(() => {
-                expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
+                expect(renameBoardActionCalls).toHaveLength(1);
             });
             expect(getHeaderTitle()).toBe("Platform Relaunch");
             expect(getSidebarRowNames()[0]).toBe("Platform Relaunch");
