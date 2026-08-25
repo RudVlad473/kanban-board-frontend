@@ -454,18 +454,24 @@ describeForEachDevice({
             expect(getRenderedBoardNames()).toEqual(namesBefore);
         });
 
-        it("renames a board to a name another board already uses", async () => {
+        /*
+         * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE, which is NOT the
+         * optimistic-lock code, so it lands on the generic branch (probed 2026-08-25, see SUMMARY).
+         */
+        it("rolls a duplicate-name rename back down the generic failure path", async () => {
             // Arrange
             await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            queueRenameBoardFailure(RESULT_STATUS.ERROR);
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Fixture Board 2" });
 
-            // Assert — allowed by design; boards are identified by id, not name.
+            // Assert
             await vi.waitFor(() => {
-                expect(getRenderedBoardNames()).toEqual(["Fixture Board 2", "Fixture Board 2", "Fixture Board 3"]);
+                expect(getRaisedToastTexts()).toHaveLength(1);
             });
-            expect(getRaisedToastTexts()).toHaveLength(0);
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
         });
 
         /*

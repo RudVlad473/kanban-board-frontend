@@ -197,6 +197,31 @@ describe("the board rename against the real backend", () => {
         expect(await readBoardNames(owner)).toContain(`Owned ${suffix}`);
     }, 60_000);
 
+    /*
+     * The plan assumed a duplicate rename succeeds. It does not — and the code it is refused with
+     * is not the optimistic-lock one, so the action's conflict branch stays narrow (see SUMMARY).
+     */
+    it("refuses a rename to a name another board already uses, with a code outside the conflict branch", async () => {
+        // Arrange
+        const suffix = randomUUID().slice(0, 8);
+        const first = await createBoardUpstream({ account: owner, name: `Dup First ${suffix}` });
+        const second = await createBoardUpstream({ account: owner, name: `Dup Second ${suffix}` });
+
+        // Act
+        const { status, body } = await renameUpstream({
+            account: owner,
+            boardId: first?.id ?? "",
+            name: second?.name ?? "",
+            version: first?.version ?? 0,
+        });
+
+        // Assert
+        expect(status).toBe(409);
+        expect(parseProblemDetail(body)?.code).toBe(PROBLEM_CODE.DUPLICATE_RESOURCE);
+        expect(parseProblemDetail(body)?.code).not.toBe(PROBLEM_CODE.OPTIMISTIC_LOCK_CONFLICT);
+        expect(await readBoardNames(owner)).toContain(`Dup First ${suffix}`);
+    }, 60_000);
+
     /* The schema is the gate an invalid argument hits before any upstream call is made. */
     it("gates an argument missing the required version before it can reach the backend", () => {
         // Act & Assert
