@@ -9,6 +9,7 @@ import {
     columnNameSchema,
     createBoardColumnsInputSchema,
     createBoardInputSchema,
+    deleteBoardInputSchema,
     renameBoardInputSchema,
     taskFullSchema,
 } from "@/features/boards/schemas";
@@ -345,6 +346,37 @@ describe("renameBoardInputSchema", () => {
         expect(
             renameBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "a".repeat(65), version: 0 }).success,
         ).toBe(false);
+    });
+});
+
+describe("deleteBoardInputSchema", () => {
+    it("accepts a non-empty board id", () => {
+        // Act
+        const result = deleteBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o" });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.boardId).toBe("8okxhwo6oq2o");
+    });
+
+    /*
+     * There is no request body to validate for a delete, so the id is the whole untrusted surface —
+     * an empty one must fail here rather than resolve to a path the backend then interprets.
+     */
+    it("rejects an input with an empty board id", () => {
+        // Act & Assert
+        expect(deleteBoardInputSchema.safeParse({ boardId: "" }).success).toBe(false);
+        expect(deleteBoardInputSchema.safeParse({}).success).toBe(false);
+    });
+
+    /* T-02-64: an unrelated `userId` is not part of the parsed output, so it can never be forwarded. */
+    it("drops an unrelated userId supplied alongside the board id", () => {
+        // Act
+        const result = deleteBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o", userId: "someone-else" });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual({ boardId: "8okxhwo6oq2o" });
     });
 });
 

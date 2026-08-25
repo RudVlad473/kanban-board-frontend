@@ -21,6 +21,7 @@ import {
     queueCreateBoardColumnsFailure,
     resetCreateBoardColumnsStub,
 } from "@/test-utils/create-board-columns-action-storybook-stub";
+import { deleteBoardActionCalls, resetDeleteBoardStub } from "@/test-utils/delete-board-action-storybook-stub";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
 import {
@@ -49,7 +50,8 @@ vi.mock("next/navigation", () =>
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
-const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, ServerPropsAdvance } = composeStories(stories);
+const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, DeleteOpen, ServerPropsAdvance } =
+    composeStories(stories);
 
 /* Duplicated verbatim from `board-list.stories.tsx`'s own host — see the comment beside them there. */
 const SERVER_RENAMED_NAME = "Renamed On The Server";
@@ -128,6 +130,7 @@ describeForEachDevice({
         beforeEach(() => {
             resetCreateBoardColumnsStub();
             resetRenameBoardStub();
+            resetDeleteBoardStub();
             mockPush.mockClear();
         });
 
@@ -508,6 +511,29 @@ describeForEachDevice({
             expect(getRaisedToastTexts()[0]).toBe(
                 "That board is no longer available.Refresh to see your current boards.",
             );
+        });
+
+        it("opens the confirm modal naming that row's own board when its delete entry is activated", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Board actions for Fixture Board 2" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Delete Board" }));
+
+            // Assert — that board is named, and nothing has been deleted yet.
+            expect(await screen.findByRole("heading", { name: "Delete this board?" })).toBeInTheDocument();
+            expect(screen.getByText(/'Fixture Board 2' board\?/)).toBeInTheDocument();
+            expect(deleteBoardActionCalls).toHaveLength(0);
+        });
+
+        it("renders the delete confirmation when staged open", async () => {
+            // Act
+            await render(<DeleteOpen />);
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Delete this board?" })).toBeInTheDocument();
+            expect(screen.getByText(/'Fixture Board 1' board\?/)).toBeInTheDocument();
         });
 
         /*

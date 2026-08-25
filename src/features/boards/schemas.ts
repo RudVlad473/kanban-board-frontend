@@ -93,6 +93,14 @@ export const renameBoardInputSchema = z.object({
 export type RenameBoardInput = z.infer<typeof renameBoardInputSchema>;
 
 /*
+ * A delete has no request body, so the board id is the entire untrusted surface — and it selects
+ * the target of the one operation in this app that cannot be undone (ADR domain/0002).
+ */
+export const deleteBoardInputSchema = z.object({ boardId: z.string().min(1) });
+
+export type DeleteBoardInput = z.infer<typeof deleteBoardInputSchema>;
+
+/*
  * The rename form's own shape — only the name is editable, since the board's id and version come
  * from the RSC-supplied row rather than from anything the user can type.
  */
