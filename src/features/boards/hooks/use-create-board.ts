@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast/toast";
 import { createBoardAction } from "@/features/boards/actions/create-board";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns";
 import { toSubmittedColumnNames } from "@/features/boards/model";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /*
@@ -56,10 +57,10 @@ export const useCreateBoard = () => {
     const createColumns = async ({ boardId, names }: { boardId: string; names: string[] }): Promise<string[]> => {
         const result = await createColumnsMutation
             .mutateAsync({ boardId, names })
-            .catch(() => ({ status: "error" }) as const);
+            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
         // A wholesale failure leaves the set unchanged rather than reporting fewer failures than there are.
-        return result.status === "success" ? result.failedNames : names;
+        return result.status === RESULT_STATUS.SUCCESS ? result.failedNames : names;
     };
 
     /**
@@ -103,9 +104,11 @@ export const useCreateBoard = () => {
     }): Promise<CreateBoardOutcome> => {
         setErrorMessage(null);
 
-        const result = await createBoardMutation.mutateAsync({ name }).catch(() => ({ status: "error" }) as const);
+        const result = await createBoardMutation
+            .mutateAsync({ name })
+            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
-        if (result.status !== "success") {
+        if (result.status !== RESULT_STATUS.SUCCESS) {
             setErrorMessage(CREATE_FAILURE_MESSAGE);
             return { didCreate: false };
         }

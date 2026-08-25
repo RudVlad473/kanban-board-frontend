@@ -2,8 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { useBoolean } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
@@ -11,6 +12,7 @@ import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signInAction } from "@/features/auth/actions/sign-in";
 import { signInSchema, type SignInInput } from "@/features/auth/schemas";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
 
 /*
@@ -53,7 +55,7 @@ export const SignInForm = ({
     forceSubmitting = false,
     defaultPasswordRevealed = false,
 }: Props) => {
-    const [isPasswordRevealed, setIsPasswordRevealed] = useState(defaultPasswordRevealed);
+    const { value: isPasswordRevealed, toggle: togglePasswordRevealed } = useBoolean(defaultPasswordRevealed);
     const [state, dispatch, isActionPending] = useActionState(signInAction, AUTH_ACTION_IDLE);
     const {
         register,
@@ -96,7 +98,7 @@ export const SignInForm = ({
         }
 
         setValue("email", submitted.email);
-        if (state.status === "error") {
+        if (state.status === RESULT_STATUS.ERROR) {
             resetField("password");
         } else {
             setValue("password", submitted.password);
@@ -104,16 +106,16 @@ export const SignInForm = ({
     }, [isActionPending, state, resetField, setValue]);
 
     const isPending = forceSubmitting || isActionPending;
-    const serverErrorMessage = forceServerError ?? (state.status === "error" ? state.message : undefined);
+    const serverErrorMessage = forceServerError ?? (state.status === RESULT_STATUS.ERROR ? state.message : undefined);
 
     /*
      * Client-side field errors (React Hook Form) take precedence over the server's, since they
      * reflect the user's current typing rather than the last submission (which may be stale).
      */
     const emailErrorMessage =
-        errors.email?.message ?? (state.status === "error" ? state.fieldErrors?.email : undefined);
+        errors.email?.message ?? (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.email : undefined);
     const passwordErrorMessage =
-        errors.password?.message ?? (state.status === "error" ? state.fieldErrors?.password : undefined);
+        errors.password?.message ?? (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.password : undefined);
 
     return (
         <form noValidate action={formAction} className="flex flex-col gap-4">
@@ -146,9 +148,7 @@ export const SignInForm = ({
                         label={isPasswordRevealed ? "Hide password" : "Show password"}
                         icon={isPasswordRevealed ? <EyeOff /> : <Eye />}
                         isLoading={isPending}
-                        onClick={() => {
-                            setIsPasswordRevealed((revealed) => !revealed);
-                        }}
+                        onClick={togglePasswordRevealed}
                     />
                 }
                 {...register("password")}

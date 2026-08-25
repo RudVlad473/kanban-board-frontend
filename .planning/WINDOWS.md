@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 11
+open_count: 13
 waived_count: 0
 fixed_count: 6
-total_count: 17
-last_updated: 2026-08-22T18:16:22.976Z
+total_count: 19
+last_updated: 2026-08-25T10:26:50.167Z
 ---
 
 # Broken Windows Ledger
@@ -32,6 +32,8 @@ last_updated: 2026-08-22T18:16:22.976Z
 | 15 | 02.1 | unrun-verify | e2e/boards-list.e2e.spec.ts |  | BOARD-01 e2e spec (and the full pnpm exec playwright test --project e2e suite) could not be run in this sandbox — e2e/global-setup.ts hard-requires NONPROD_RESET_TOKEN (a GitHub Actions secret unavailable here). seed.sh/seed.ts's underlying HTTP behavior was independently verified directly against the real backend. | fixed |  | 2026-08-21T16:38:36.596Z | 2026-08-21T17:46:44.823Z |
 | 16 | 02.1 | unrun-verify | e2e/boards-list.e2e.spec.ts |  | BOARD-01 e2e not run in this worktree: NONPROD_RESET_TOKEN unset, matching the prior session's open question (see 02.1-11-SUMMARY.md coverage D5) | open |  | 2026-08-21T18:38:07.036Z |  |
 | 17 | 02.2 | deviation | scripts/check-no-play-functions.mjs |  | Rule 3 auto-fix: trimmed a pre-existing 4-line doc comment (from plan 02.2-01) to 3 lines to unblock this plan's own comments:check batch gate | open |  | 2026-08-22T18:16:22.976Z |  |
+| 18 | 02 | deviation | e2e/global-setup.ts |  | e2e cannot be launched via pnpm test:e2e from a GSD worktree: global-setup.ts reads process.env.NONPROD_RESET_TOKEN directly and playwright.config.ts loads no dotenv, so a copied-in .env.local never reaches the Playwright node process. Worked around this session with: node --env-file=.env.local ./node_modules/@playwright/test/cli.js test --project=e2e (30/30 pass). Real fix is loading .env.local from playwright.config.ts; out of plan 02-14's scope. | open |  | 2026-08-25T10:26:44.208Z |  |
+| 19 | 02 | unmet-truth | CONVENTIONS.md |  | Plan 02-14's two prohibitions remain enforcement-by-code-review only (both flagged-unverified in the plan): nothing mechanically prevents a status discriminant being reintroduced as a bare inline string outside result-status.ts, and nothing prevents a boolean toggle being hand-rolled as a useState pair instead of useBoolean. A lint rule is the intended endpoint for both; plan 02-15 already carries D-29's enforcement-mechanism work and is the natural home. | open |  | 2026-08-25T10:26:50.167Z |  |
 
 ````json
 [
@@ -237,6 +239,30 @@ last_updated: 2026-08-22T18:16:22.976Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-22T18:16:22.976Z",
+    "resolved_at": null
+  },
+  {
+    "id": 18,
+    "kind": "deviation",
+    "phase": "02",
+    "file": "e2e/global-setup.ts",
+    "line": null,
+    "description": "e2e cannot be launched via pnpm test:e2e from a GSD worktree: global-setup.ts reads process.env.NONPROD_RESET_TOKEN directly and playwright.config.ts loads no dotenv, so a copied-in .env.local never reaches the Playwright node process. Worked around this session with: node --env-file=.env.local ./node_modules/@playwright/test/cli.js test --project=e2e (30/30 pass). Real fix is loading .env.local from playwright.config.ts; out of plan 02-14's scope.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-25T10:26:44.208Z",
+    "resolved_at": null
+  },
+  {
+    "id": 19,
+    "kind": "unmet-truth",
+    "phase": "02",
+    "file": "CONVENTIONS.md",
+    "line": null,
+    "description": "Plan 02-14's two prohibitions remain enforcement-by-code-review only (both flagged-unverified in the plan): nothing mechanically prevents a status discriminant being reintroduced as a bare inline string outside result-status.ts, and nothing prevents a boolean toggle being hand-rolled as a useState pair instead of useBoolean. A lint rule is the intended endpoint for both; plan 02-15 already carries D-29's enforcement-mechanism work and is the natural home.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-25T10:26:50.167Z",
     "resolved_at": null
   }
 ]

@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
@@ -12,7 +13,8 @@ import { externalApi } from "@/lib/server/server-client";
  * `updateThemeAction`'s own result — unlike `AuthActionState`, there's no per-field error shape
  * since this call takes one value already constrained to two options.
  */
-export type UpdateThemeResult = { status: "success"; theme: Theme } | { status: "error" };
+export type UpdateThemeResult =
+    { status: typeof RESULT_STATUS.SUCCESS; theme: Theme } | { status: typeof RESULT_STATUS.ERROR };
 
 const themeSchema = z.enum([THEME.LIGHT, THEME.DARK]);
 
@@ -23,7 +25,7 @@ const themeSchema = z.enum([THEME.LIGHT, THEME.DARK]);
 export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult> => {
     const record = await verifySession();
     if (!record) {
-        return { status: "error" };
+        return { status: RESULT_STATUS.ERROR };
     }
 
     /*
@@ -33,7 +35,7 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
      */
     const parsed = themeSchema.safeParse(theme);
     if (!parsed.success) {
-        return { status: "error" };
+        return { status: RESULT_STATUS.ERROR };
     }
 
     const { error } = await externalApi.PUT(EXTERNAL_PATH.USER_THEME, {
@@ -47,7 +49,7 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
      */
     const upstreamError: unknown = error;
     if (upstreamError !== undefined) {
-        return { status: "error" };
+        return { status: RESULT_STATUS.ERROR };
     }
 
     /*
@@ -56,5 +58,5 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
      */
     await themeCookie.write(parsed.data);
 
-    return { status: "success", theme: parsed.data };
+    return { status: RESULT_STATUS.SUCCESS, theme: parsed.data };
 };

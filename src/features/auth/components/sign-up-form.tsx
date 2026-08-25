@@ -2,8 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { useBoolean } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
@@ -11,6 +12,7 @@ import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signUpAction } from "@/features/auth/actions/sign-up";
 import { signUpSchema, type SignUpInput } from "@/features/auth/schemas";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
 
 /*
@@ -59,7 +61,7 @@ export const SignUpForm = ({
     forceSubmitting = false,
     defaultPasswordRevealed = false,
 }: Props) => {
-    const [isPasswordRevealed, setIsPasswordRevealed] = useState(defaultPasswordRevealed);
+    const { value: isPasswordRevealed, toggle: togglePasswordRevealed } = useBoolean(defaultPasswordRevealed);
     const [state, dispatch, isActionPending] = useActionState(signUpAction, AUTH_ACTION_IDLE);
     const {
         register,
@@ -106,22 +108,22 @@ export const SignUpForm = ({
     }, [isActionPending, setValue]);
 
     const isPending = forceSubmitting || isActionPending;
-    const serverErrorMessage = forceServerError ?? (state.status === "error" ? state.message : undefined);
+    const serverErrorMessage = forceServerError ?? (state.status === RESULT_STATUS.ERROR ? state.message : undefined);
 
     /*
      * Client-side field errors (React Hook Form) take precedence over the server's, since they
      * reflect the user's current typing rather than the last submission (which may be stale).
      */
     const emailErrorMessage =
-        errors.email?.message ?? (state.status === "error" ? state.fieldErrors?.email : undefined);
+        errors.email?.message ?? (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.email : undefined);
     const nameErrorMessage =
         forceNameError ??
         errors.displayName?.message ??
-        (state.status === "error" ? state.fieldErrors?.displayName : undefined);
+        (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.displayName : undefined);
     const passwordErrorMessage =
         forcePasswordError ??
         errors.password?.message ??
-        (state.status === "error" ? state.fieldErrors?.password : undefined);
+        (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.password : undefined);
 
     return (
         <form noValidate action={formAction} className="flex flex-col gap-4">
@@ -164,9 +166,7 @@ export const SignUpForm = ({
                         label={isPasswordRevealed ? "Hide password" : "Show password"}
                         icon={isPasswordRevealed ? <EyeOff /> : <Eye />}
                         isLoading={isPending}
-                        onClick={() => {
-                            setIsPasswordRevealed((revealed) => !revealed);
-                        }}
+                        onClick={togglePasswordRevealed}
                     />
                 }
                 {...register("password")}

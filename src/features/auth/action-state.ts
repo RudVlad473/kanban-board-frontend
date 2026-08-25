@@ -1,4 +1,5 @@
 import type { ProblemCode } from "@/lib/core/api-contract/problem-detail";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 
 /**
  * The state both auth forms render via `useActionState` — no success member (success redirects).
@@ -6,7 +7,13 @@ import type { ProblemCode } from "@/lib/core/api-contract/problem-detail";
  * (see 01-33-SUMMARY.md).
  */
 export type AuthActionState =
-    { status: "idle" } | { status: "error"; code: ProblemCode; message: string; fieldErrors?: Record<string, string> };
+    | { status: typeof RESULT_STATUS.IDLE }
+    | {
+          status: typeof RESULT_STATUS.ERROR;
+          code: ProblemCode;
+          message: string;
+          fieldErrors?: Record<string, string>;
+      };
 
 /** The initial value both forms and every story seed `useActionState` with. */
-export const AUTH_ACTION_IDLE: AuthActionState = { status: "idle" };
+export const AUTH_ACTION_IDLE: AuthActionState = { status: RESULT_STATUS.IDLE };

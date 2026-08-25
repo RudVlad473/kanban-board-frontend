@@ -4,19 +4,20 @@ import { refresh } from "next/cache";
 
 import { columnNameSchema, createBoardColumnsInputSchema } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
 import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
 
 /**
- * `createBoardColumnsAction`'s own result — `success` carries the names that did NOT land, empty
+ * `createBoardColumnsAction`'s own result — `SUCCESS` carries the names that did NOT land, empty
  * when everything did. A partial result is kept, never rolled back (ADR domain/0003).
  */
 export type CreateBoardColumnsResult =
-    | { status: "success"; failedNames: string[] }
-    | { status: "unauthenticated" }
-    | { status: "invalid"; fieldErrors: Record<string, string> }
-    | { status: "error" };
+    | { status: typeof RESULT_STATUS.SUCCESS; failedNames: string[] }
+    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
+    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
+    | { status: typeof RESULT_STATUS.ERROR };
 
 /**
  * Creates one column per name, in order. `userId` comes only from the verified session record,
@@ -32,12 +33,12 @@ export const createBoardColumnsAction = async ({
 }): Promise<CreateBoardColumnsResult> => {
     const record = await verifySession();
     if (!record) {
-        return { status: "unauthenticated" };
+        return { status: RESULT_STATUS.UNAUTHENTICATED };
     }
 
     const parsed = createBoardColumnsInputSchema.safeParse({ boardId, names });
     if (!parsed.success) {
-        return { status: "invalid", fieldErrors: zodErrorToFieldErrors(parsed.error) };
+        return { status: RESULT_STATUS.INVALID, fieldErrors: zodErrorToFieldErrors(parsed.error) };
     }
 
     const failedNames: string[] = [];
@@ -75,5 +76,5 @@ export const createBoardColumnsAction = async ({
      */
     refresh();
 
-    return { status: "success", failedNames };
+    return { status: RESULT_STATUS.SUCCESS, failedNames };
 };

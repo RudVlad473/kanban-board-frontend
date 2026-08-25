@@ -4,6 +4,7 @@ import { PanelLeft } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useBoolean } from "usehooks-ts";
 
 import { AddBoardModal, type AddBoardSubmitValues } from "@/features/boards/components/add-board-modal";
 import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
@@ -26,7 +27,11 @@ type Props = {
 export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = false }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
-    const [isAddBoardOpen, setIsAddBoardOpen] = useState(defaultIsAddBoardOpen);
+    const {
+        value: isAddBoardOpen,
+        setValue: setIsAddBoardOpen,
+        setFalse: closeAddBoard,
+    } = useBoolean(defaultIsAddBoardOpen);
     /*
      * Bumped on every fresh open and used as the modal's `key`, so each open starts from empty
      * fields — a failed create keeps its values because the modal never closed (D-05), not because
@@ -47,7 +52,7 @@ export const BoardList = ({ boards, loadFailed = false, defaultIsAddBoardOpen = 
     const handleSubmit = (values: AddBoardSubmitValues): void => {
         void createBoard({ name: values.name, columnRows: values.columns }).then((outcome) => {
             if (outcome.didCreate) {
-                setIsAddBoardOpen(false);
+                closeAddBoard();
             }
         });
     };

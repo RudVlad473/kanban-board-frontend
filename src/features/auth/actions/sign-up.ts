@@ -7,6 +7,7 @@ import { resolveDisplayName } from "@/features/auth/model";
 import { signUpSchema } from "@/features/auth/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { PROBLEM_CODE, parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
@@ -32,7 +33,7 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
 
     if (!parsed.success) {
         return {
-            status: "error",
+            status: RESULT_STATUS.ERROR,
             code: PROBLEM_CODE.VALIDATION_FAILED,
             message: SIGN_UP_FAILURE_MESSAGE,
             fieldErrors: zodErrorToFieldErrors(parsed.error),
@@ -57,7 +58,7 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
     if (upstreamError !== undefined || !isSessionPayload(identity) || !jsessionId) {
         const problem = parseProblemDetail(upstreamError);
         return {
-            status: "error",
+            status: RESULT_STATUS.ERROR,
             code: problem?.code ?? PROBLEM_CODE.INTERNAL_ERROR,
             message: SIGN_UP_FAILURE_MESSAGE,
         };

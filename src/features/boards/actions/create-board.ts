@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 
 import { BoardSchema, createBoardInputSchema, type Board } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
 import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
@@ -13,10 +14,10 @@ import { externalApi } from "@/lib/server/server-client";
  * nothing else, so no upstream response text can reach the modal (T-02-47, D-21).
  */
 export type CreateBoardResult =
-    | { status: "success"; board: Board }
-    | { status: "unauthenticated" }
-    | { status: "invalid"; fieldErrors: Record<string, string> }
-    | { status: "error" };
+    | { status: typeof RESULT_STATUS.SUCCESS; board: Board }
+    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
+    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
+    | { status: typeof RESULT_STATUS.ERROR };
 
 /**
  * BOARD-02's first write path, ordered exactly as `updateThemeAction` orders its own: session,
@@ -26,7 +27,7 @@ export type CreateBoardResult =
 export const createBoardAction = async ({ name }: { name: string }): Promise<CreateBoardResult> => {
     const record = await verifySession();
     if (!record) {
-        return { status: "unauthenticated" };
+        return { status: RESULT_STATUS.UNAUTHENTICATED };
     }
 
     /*
@@ -36,7 +37,7 @@ export const createBoardAction = async ({ name }: { name: string }): Promise<Cre
      */
     const parsed = createBoardInputSchema.safeParse({ name });
     if (!parsed.success) {
-        return { status: "invalid", fieldErrors: zodErrorToFieldErrors(parsed.error) };
+        return { status: RESULT_STATUS.INVALID, fieldErrors: zodErrorToFieldErrors(parsed.error) };
     }
 
     const { data, error } = await externalApi.POST(EXTERNAL_PATH.BOARDS, {
@@ -50,7 +51,7 @@ export const createBoardAction = async ({ name }: { name: string }): Promise<Cre
      */
     const upstreamError: unknown = error;
     if (upstreamError !== undefined) {
-        return { status: "error" };
+        return { status: RESULT_STATUS.ERROR };
     }
 
     /*
@@ -59,7 +60,7 @@ export const createBoardAction = async ({ name }: { name: string }): Promise<Cre
      */
     const board = BoardSchema.safeParse(data);
     if (!board.success) {
-        return { status: "error" };
+        return { status: RESULT_STATUS.ERROR };
     }
 
     /*
@@ -68,5 +69,5 @@ export const createBoardAction = async ({ name }: { name: string }): Promise<Cre
      */
     refresh();
 
-    return { status: "success", board: board.data };
+    return { status: RESULT_STATUS.SUCCESS, board: board.data };
 };

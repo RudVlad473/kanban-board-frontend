@@ -7,6 +7,7 @@ import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { BoardList } from "@/features/boards/components/board-list";
 import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
@@ -18,7 +19,12 @@ import { verifySession } from "@/lib/server/dal";
  */
 const SidebarBoards = async () => {
     const result = await fetchBoards();
-    return <BoardList boards={result.status === "ok" ? result.boards : []} loadFailed={result.status !== "ok"} />;
+    return (
+        <BoardList
+            boards={result.status === RESULT_STATUS.SUCCESS ? result.boards : []}
+            loadFailed={result.status !== RESULT_STATUS.SUCCESS}
+        />
+    );
 };
 
 /*
