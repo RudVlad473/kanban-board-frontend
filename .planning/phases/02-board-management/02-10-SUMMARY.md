@@ -401,6 +401,59 @@ Once signed off, plans 02-11 through 02-13 can build on the two Server Actions, 
 - Per-project suites re-run green at `83916fa`: browser 422, unit 91, a11y 110, tokens+node 35 (658 total); `pnpm test:e2e` 30/30
 - `pnpm test` (all projects concurrently) is NOT green — disclosed above as an environment-level timeout flake, with per-run evidence
 
+## UAT fix-up (post-checkpoint)
+
+**2026-08-25.** The Task 4 checkpoint (`02-10-UAT.md`) came back `issues-found` with four
+visual/presentation defects against `02-UI-SPEC.md`, all in `board-list.tsx` and
+`theme-toggle.tsx`. The create-Board logic itself was not reported as broken. Fixed as three
+atomic commits on top of the merged plan, in an isolated worktree, with the canonical PDF design
+source (light + dark theme crops) read directly for reference rather than re-derived:
+
+1. **Finding 1 — selected row not full-bleed** (`69f642a`). Horizontal spacing moved off the
+   `<ul>`/`<li>` (which had inset every row via `px-4`) onto the row's own `Link`: the coloured
+   background now starts flush at the sidebar's left edge and rounds fully on the right
+   (`rounded-r-full` replacing `rounded-r-lg`), with `mr-6` giving the pill's right end the same
+   24px inset the header's own `p-6` establishes.
+2. **Findings 2 and 3 — no icon before a board name / no icon on "+ Create New Board"**
+   (`a1a9ccb`). Added `lucide-react`'s `PanelLeft` before every board row's name and before the
+   create-board label — confirmed against the design PDF's icon source as the off-center-divider
+   glyph (`Columns2`'s divider is centered, `PanelLeft`'s sits at 1/3, matching the mock). Both
+   icons inherit their row/button's own text colour via `currentColor`, so the selected row's icon
+   is already white without any extra styling.
+3. **Finding 4 — theme toggle doesn't match the mocks** (`b703923`). Root cause: `ThemeToggle`
+   passed `iconOn`/`iconOff` into `Switch`, which renders an icon only inside the moving thumb —
+   the reference design has two static, always-visible icons (sun, moon) flanking a plain track,
+   all three centered inside a padded `bg-bg-app rounded-lg` container matching the sidebar's other
+   footer chrome. Stopped supplying `iconOn`/`iconOff` from `theme-toggle.tsx` and restructured its
+   markup into that container; `switch.tsx`'s own `iconOn`/`iconOff` capability was left untouched,
+   since other call sites may still use it. Verified against both the light and dark theme
+   reference crops — the sun/moon icons and the container fill both use existing theme-aware
+   tokens (`text-text-muted`, `bg-bg-app`), not hardcoded light-mode colours.
+
+No Storybook stories, tests, or other files needed changes — all three components' existing
+`*.test.tsx`/`*.stories.tsx` suites cover accessible name and role, not the specific classnames or
+DOM structure this fix-up changed, so nothing broke.
+
+**Gate results (full re-run after all three commits):**
+
+| Gate | Result |
+|------|--------|
+| `pnpm lint` | exit 0 |
+| `pnpm exec tsc --noEmit` | zero errors |
+| `pnpm format:check` | exit 0 |
+| `pnpm comments:check` | exit 0 |
+| `pnpm handlers:check` / `pnpm routes:check` / `pnpm stories:check` | exit 0 |
+| `pnpm build` | clean |
+| `pnpm test:browser` | 21 files, 422 tests passed |
+| `pnpm test:a11y` (storybook project) | 18 files, 110 tests passed, zero axe violations |
+| `pnpm test:unit` | 10 files, 91 tests passed |
+
+**Not re-run this pass:** `pnpm test:e2e` (no UI markup this fix-up touched is asserted by the
+e2e suite per `docs/adr/tech/0022`'s "no microcopy/validation-copy assertions" scope) and a live
+browser pixel check — the orchestrator's own live-browser confirmation is the intended final
+verification step for this fix-up, per the dispatching prompt.
+
 ---
 *Phase: 02-board-management*
 *Halted at Task 4 checkpoint: 2026-08-24 (re-halted after the D-01a/D-02a reversal)*
+*UAT fix-up applied 2026-08-25 — commits `69f642a`, `a1a9ccb`, `b703923` — awaiting orchestrator's live-browser re-verification.*
