@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-08-25T12:57:50.046Z",
+  "phase": "02",
+  "phase_name": "Board Management",
+  "phase_dir": ".planning/phases/02-board-management",
+  "plan": 11,
+  "task": 0,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": "02-01", "name": "lib/core theme + cookie-registry modules", "status": "done"},
+    {"id": "02-02", "name": "close serve-static.mjs path-traversal hole", "status": "done"},
+    {"id": "02-03", "name": "relocate cookie I/O into lib/server/cookies/", "status": "done"},
+    {"id": "02-04", "name": "one Server Action per file", "status": "done"},
+    {"id": "02-05", "name": "clear theme cookie on sign-out (FT-01)", "status": "done"},
+    {"id": "02-06", "name": "probe + record backend-runtime facts", "status": "done"},
+    {"id": "02-07", "name": "Toast + Menu design-system primitives", "status": "done"},
+    {"id": "02-08", "name": "boards list tracer slice (BOARD-01)", "status": "done"},
+    {"id": "02-09", "name": "sidebar collapse/expand (BOARD-06)", "status": "done"},
+    {"id": "02-10", "name": "create board (BOARD-02)", "status": "done"},
+    {"id": "02-14", "name": "shared RESULT_STATUS + useBoolean adoption", "status": "done", "commit": "f572983"},
+    {"id": "02-15", "name": "mechanize .tsx-declaration-scope + story-only-render gates", "status": "done", "commit": "4e27333"}
+  ],
+  "remaining_tasks": [
+    {"id": "02-11", "name": "board detail view (BOARD-03) — landing + full contents", "status": "not_started", "wave": 11, "depends_on": "02-15"},
+    {"id": "02-12", "name": "optimistic board rename (BOARD-04)", "status": "not_started", "wave": 12, "depends_on": "02-11"},
+    {"id": "02-13", "name": "cascading board delete (BOARD-05)", "status": "not_started", "wave": 13, "depends_on": "02-12"}
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "RESULT_STATUS constant: asvs-aligned shape (SCREAMING_SNAKE keys AND values, ok folded into SUCCESS)", "rationale": "Matches ADR tech/0012's key-equals-value rule verbatim and existing THEME/PROBLEM_CODE precedent", "phase": "02"},
+    {"decision": "usehooks-ts@3.1.1 installed exact-pinned (--save-exact) after independent supply-chain re-verification", "rationale": "User approved after registry facts confirmed (sole maintainer, MIT, no provenance attestation noted but accepted)", "phase": "02"},
+    {"decision": "02-15 Task 1: own-checkers mechanism (no new npm package), extract-seven-exempt-cva scope corrected to 9 cva calls across 7 files, 5th permitted .tsx declaration kind for compound-component namespace objects (Toast/Dropdown/Menu/Modal), test floor confirmed at 20 not 19", "rationale": "own-checkers avoids a package-legitimacy gate; structural 5th-kind check auto-covers future compound components instead of a hand-maintained path list", "phase": "02"},
+    {"decision": "02-15 Task 4: story-only-render gate shipped as blocking with a ratcheting, visible, tracked exemption for 10 pre-existing component-test files (~116/121 violations), not a silent allowlist and not a full rewrite in this plan", "rationale": "Checker found real violations 13x the scope the plan assumed; Option B chosen over rewriting all 10 files (too large for this plan) or hiding the gap (plan's own threat T-02-54). Ratchet fails on regression AND on a stale zero-entry, so it can't quietly go stale. Follow-up migration tracked in deferred-items.md.", "phase": "02"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "Run /gsd-execute-phase 2 to resume wave 11 (plan 02-11: board detail view). All prior waves (1-10) are complete and merged on gsd/phase-02-board-management; working tree is clean.",
+  "context_notes": "User asked to pause specifically after 02-15 finished, to resume in a separate session. Nothing is broken or blocked — this is a deliberate stop between waves, not a stuck state. Session had one real interruption (API usage-limit hit mid-Task-3 on 02-15); recovery pattern used was: commit the in-progress worktree diff as a WIP commit (orchestrator-level, since orchestrator owns worktree lifecycle), push it, tear down the stale local worktree, then spawn a fresh continuation agent that fast-forwards onto the pushed branch and RE-VERIFIES rather than trusts the WIP (this caught a real pnpm comments:check failure the original session never reached). Same pattern is safe to reuse if this happens again on 02-11/12/13."
+}
