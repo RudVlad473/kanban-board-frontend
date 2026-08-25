@@ -1,35 +1,38 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-25T18:49:36.045Z",
+  "timestamp": "2026-08-25T21:47:42.474Z",
   "phase": "02",
   "phase_name": "Board Management",
   "phase_dir": ".planning/phases/02-board-management",
   "plan": 16,
-  "task": 0,
-  "total_tasks": null,
+  "task": 4,
+  "total_tasks": 4,
   "status": "paused",
   "completed_tasks": [
-    { "id": "02-11", "name": "Board detail view, landing, auto-select (BOARD-03)", "status": "done", "commit": "f93183d" },
-    { "id": "02-12", "name": "Optimistic board rename + overflow menu (BOARD-04)", "status": "done", "commit": "e153a1a" },
-    { "id": "02-13", "name": "Cascading board delete (BOARD-05)", "status": "done", "commit": "b84d08b" },
-    { "id": "tracking-fix", "name": "BOARD-06 marked complete in REQUIREMENTS.md (built in 02-09, tracking never caught up)", "status": "done", "commit": "7652999" }
+    {"id": 1, "name": "Extract shared error-code mapping + create's duplicate-name branch (D-01)", "status": "done", "commit": "6bcbf0a"},
+    {"id": 2, "name": "Close the rename modal on submit, not on settle (D-02)", "status": "done", "commit": "36a13e7"},
+    {"id": 3, "name": "Instant pending feedback via loading.tsx (D-03)", "status": "done", "commit": "beb0a81"},
+    {"id": "fix-1", "name": "Key the board-detail Suspense boundary on boardId (fixes D-03 regression found at first checkpoint)", "status": "done", "commit": "56ada39"},
+    {"id": "fix-2", "name": "Dedupe the board-detail fetch with React cache(), matching fetch-boards.ts's pattern", "status": "done", "commit": "937a40d"},
+    {"id": "fix-3", "name": "Fix a stale rename-modal assertion Task 2 left red in a sibling test file", "status": "done", "commit": "46b3d75"},
+    {"id": 4, "name": "checkpoint:human-verify — sign off duplicate-name copy, instant rename close, instant-pending board switching", "status": "in_progress", "progress": "Presented twice. Round 1 (pre-fixes) surfaced a real regression (skeleton not showing on board switch) plus 5 other findings. Round 1's fixes (56ada39/937a40d/46b3d75) are committed and the checkpoint was re-presented. Awaiting the user's live re-verification, specifically step 4 (board-switching skeleton) which cannot be proven on localhost's fast round-trip — both the broken and fixed versions look instant locally."}
   ],
-  "remaining_tasks": [
-    { "id": "02-16-author", "name": "Author .planning/phases/02-board-management/02-16-PLAN.md (shared optimistic-update pattern + 3 fixes)", "status": "not_started" },
-    { "id": "02-16-execute", "name": "Execute plan 02-16 as wave 14 (gsd-executor, isolation=worktree, expect a human-verify checkpoint)", "status": "not_started" },
-    { "id": "phase-verify", "name": "Run phase 02 verification/close-out once 02-16 lands", "status": "not_started" },
-    { "id": "schema-regen", "name": "Regenerate OpenAPI schema from ../kanban-board-backend (createdAt field added, expanded error coverage) and plan the previously-delayed work it unblocks — explicitly queued by the user for AFTER phase 02 closes", "status": "not_started" }
+  "remaining_tasks": [],
+  "blockers": [
+    {"description": "Task 4 is a checkpoint:human-verify with gate=\"blocking-human\" — cannot be auto-approved in any mode, must wait for the user's actual response.", "type": "human_action", "workaround": "none — this is by design"}
   ],
-  "blockers": [],
   "async_jobs": [],
-  "human_actions_pending": [],
+  "human_actions_pending": [
+    {"action": "Re-verify plan 02-16's Task 4 checkpoint live against the running dev server, especially step 4 (click between the two seeded boards — skeleton should show every time now, no lingering previous board) and step 3 (block the rename request in DevTools, confirm rollback still fires after the modal has already closed).", "context": "gate=\"blocking-human\"; the orchestrator already ran Playwright verification itself for everything reproducible on localhost (D-01 duplicate-name copy confirmed working both ways, D-02 rename-close-timing confirmed working) but step 4's timing genuinely cannot be distinguished fixed-vs-broken on a fast local network.", "blocking": true}
+  ],
   "decisions": [
-    { "decision": "02-13 checkpoint: keep the plain delete-confirm modal as built (D-06), no type-the-name-to-confirm strengthening", "rationale": "User's explicit call — do it naively, log a 2-week soft-delete recovery window as possible future scope (superseding ADR domain/0002) rather than committed work", "phase": "02" },
-    { "decision": "Build a shared optimistic-update pattern now, before closing phase 02, rather than deferring or ad-hoc patching the 3 UX gaps", "rationale": "User approved after I framed the tradeoff — 02-12's rename shape is explicitly the reference pattern Phase 3/4 mutations were going to copy; better to fix the template once than retrofit 4+ copies later", "phase": "02" },
-    { "decision": "02-16 scope: (1) extract rename-board.ts's local PROBLEM_CODE->RESULT_STATUS table into a shared module, reuse it in create-board.ts for a DUPLICATE-name-specific error instead of one generic message; (2) decouple the rename modal's close timing from the mutation settling in board-list.tsx (close on submit, not on promise resolution) since the optimistic override already applies synchronously; (3) add app/(dashboard)/boards/[boardId]/loading.tsx (and likely app/(dashboard)/boards/loading.tsx) rendering the existing BoardViewSkeleton, since there is currently NO loading.tsx anywhere under app/ and BoardDetailPage's own blocking await (page.tsx, before its Suspense boundary) is why a board-switch click shows nothing until fetchBoards() resolves", "rationale": "Landed on this scope after a code survey (Explore agent) of all 4 user-reported gaps; delete's perceived-slowness complaint (item 4) was confirmed as already-correct per D-09 and needs no code change", "phase": "02" },
-    { "decision": "02-16 will declare requirements: [BOARD-02, BOARD-03, BOARD-04] rather than a new REQ ID", "rationale": "Matches the 02-14 precedent (a refactor/consolidation plan that reused existing REQ IDs it touched rather than inventing a new one) — this plan refines UX on already-delivered requirements, it doesn't add a new one", "phase": "02" }
+    {"decision": "Authored 02-16-PLAN.md via the gsd-planner agent (not hand-authored, despite the prior session's handoff recommending hand-authoring against the 02-12 template).", "rationale": "User's explicit choice when asked; wanted the planner's own rigor (fresh acceptance criteria, threat model) over the faster hand-authored path.", "phase": "02"},
+    {"decision": "Kept optimistic board-creation and delete-adjacent work deferred (re-confirmed, not reopened) when the user re-raised it during 02-16's checkpoint.", "rationale": "No new information changed the prior sessions' analysis (backend/ADR-0002 constraints for delete; create still needs the general optimistic pattern extended, already tracked under 02-11). User's explicit choice.", "phase": "02"},
+    {"decision": "Continued using the headed (globally-installed plugin) Playwright integration for this session rather than restarting to load the project's own headless .mcp.json-scoped server.", "rationale": "User's explicit choice, to avoid losing session context mid-checkpoint; a visible browser window is the accepted tradeoff for this session only.", "phase": "02"},
+    {"decision": "Declined to add experimental.staleTimes.dynamic to next.config.ts (would stop the board-detail fetch refetching on every navigation).", "rationale": "Confirmed real gap, but a genuine architectural addition needing an ADR-0019 amendment, not a quick fix. User chose to log it and revisit later rather than implement now.", "phase": "02"},
+    {"decision": "Declined to fix two new UX findings now (missing close-X on create/edit-board modals; column-remove-X vertically misaligned 4px against its input).", "rationale": "Both confirmed real via live testing but outside 02-16's declared scope (D-01/02/03). User chose to leave them logged as backlog rather than expand this plan.", "phase": "02"}
   ],
   "uncommitted_files": [],
-  "next_action": "Author .planning/phases/02-board-management/02-16-PLAN.md using 02-12-PLAN.md as the structural template (frontmatter with wave:14, depends_on:[\"02-13\"]; objective; execution_context/context refs; tasks with read_first/behavior/action/verify/acceptance_criteria/reversibility/done; a right-sized threat_model; verification; success_criteria; an 'Artifacts this phase produces' table). All the exact current-file facts needed (line numbers, current code shape) are already gathered in this session's Explore-agent survey and my own direct reads — see context_notes below and the .continue-here.md for the specifics. Do not re-run the survey.",
-  "context_notes": "Phase 02's original 15-plan scope is fully done and pushed (origin/gsd/phase-02-board-management @ 7652999). This pause is purely to let the user continue in a separate session, not a stuck state. The remaining work (02-16) was scoped in detail this session but zero files were written for it — no PLAN.md, no code changes. I have exact current-state facts for all 4 touched files (rename-board.ts's UPSTREAM_CODE_TO_STATUS table, create-board.ts's flat CreateBoardResult union, board-list.tsx's handleRenameSubmit, BoardDetailPage's page.tsx structure) gathered via a targeted Explore-agent survey plus direct Reads — see .continue-here.md for the full brief so the resuming session doesn't have to re-derive it."
+  "next_action": "Wait for the user's live re-verification of Task 4 (see human_actions_pending). On \"approved\": dispatch a continuation gsd-executor (isolation=\"worktree\", forking from phase branch tip 1357144 — the open worktree at .claude/worktrees/agent-ac3f899bca0a918da can be discarded, its 3 fix commits already sit on the phase branch) to stop the dev server, write and commit 02-16-SUMMARY.md (requirements-completed: [BOARD-02, BOARD-03, BOARD-04]), then resume execute-phase.md's orchestrator steps: merge/cleanup (nothing to merge if the executor commits directly — verify), post-merge build/test gate, update STATE.md/ROADMAP.md tracking, aggregate_results, code_review_gate, regression_gate, verify_phase_goal, update_roadmap to close out phase 02. If the user reports issues instead: dispatch another fix-and-recheckpoint continuation the same way the two prior rounds worked.",
+  "context_notes": "This is the tail end of phase 02 (Board Management) — all of BOARD-01 through BOARD-06 have been delivered across 15 prior plans; 02-16 is a supplemental plan for UX/quality follow-ups the user approved mid-phase (shared error-code mapping, rename-modal close timing, instant-pending navigation skeletons) rather than deferring them. The checkpoint round has been unusually long because the FIRST live-verification pass surfaced a genuine regression (the loading skeleton not showing) plus several tangential findings (missing modal close buttons, a cookie/httpOnly question, a refetch-caching gap) that all needed real investigation rather than guesswork. Two executor dispatches this session also hit transient API connection drops mid-task (not real failures — see Critical Anti-Patterns below); both recovered cleanly with no lost work because commits are atomic per-task. The remaining work is purely the human checkpoint sign-off plus the mechanical phase-close-out steps once it lands."
 }
