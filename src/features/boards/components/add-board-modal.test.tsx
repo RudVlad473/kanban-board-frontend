@@ -4,18 +4,29 @@
  * load the Vite plugin for (see docs/adr/tech/0025).
  */
 import { composeStories } from "@storybook/react";
-import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
-import { AddBoardModal } from "./add-board-modal";
 import * as stories from "./add-board-modal.stories";
 
-const { Default, Filled, Submitting, NameError, CreateFailed, ManyColumns, NoColumns, ColumnNameError } =
-    composeStories(stories);
+const {
+    Default,
+    Filled,
+    Submitting,
+    NameError,
+    CreateFailed,
+    ManyColumns,
+    NoColumns,
+    ColumnNameError,
+    BlankNameNoColumnRows,
+    BlankNameOneNamedColumn,
+    ShortColumnRow,
+    BlankRowBesideFilledRow,
+    SubmitFails,
+} = composeStories(stories);
 
 /*
  * Base UI renders the backdrop as a sibling of the popup with no role of its own, so it is reached
@@ -32,7 +43,7 @@ const getBackdropElement = (): HTMLElement => {
 };
 
 describeForEachDevice({
-    name: "AddBoardModal",
+    name: "AddBoard modal",
     body: () => {
         it("renders the Copywriting Contract's title, board-name field and submit label", async () => {
             // Act
@@ -80,37 +91,19 @@ describeForEachDevice({
 
         it("blocks submission and shows the empty-name message when the board name is blank", async () => {
             // Arrange — no column rows, so the only required-field message on screen is the name's.
-            const onSubmit = vi.fn();
-            const screen = await render(
-                <AddBoardModal
-                    isOpen
-                    onOpenChange={() => undefined}
-                    onSubmit={onSubmit}
-                    isPending={false}
-                    defaultColumns={[]}
-                />,
-            );
+            const screen = await render(<BlankNameNoColumnRows />);
 
             // Act
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
             // Assert
             await expect.element(screen.getByText("Can't be empty")).toBeVisible();
-            expect(onSubmit).not.toHaveBeenCalled();
+            expect(BlankNameNoColumnRows.args.onSubmit).not.toHaveBeenCalled();
         });
 
         it("hands the typed board name to the submit handler", async () => {
             // Arrange
-            const onSubmit = vi.fn();
-            const screen = await render(
-                <AddBoardModal
-                    isOpen
-                    onOpenChange={() => undefined}
-                    onSubmit={onSubmit}
-                    isPending={false}
-                    defaultColumns={["Todo"]}
-                />,
-            );
+            const screen = await render(<BlankNameOneNamedColumn />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
@@ -118,7 +111,9 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: "Launch" }));
+                expect(BlankNameOneNamedColumn.args.onSubmit).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: "Launch" }),
+                );
             });
         });
 
@@ -171,16 +166,7 @@ describeForEachDevice({
         // D-02a keeps this: zero rows is a valid submission — the board is simply created with none.
         it("submits with an empty column set when there are no rows", async () => {
             // Arrange
-            const onSubmit = vi.fn();
-            const screen = await render(
-                <AddBoardModal
-                    isOpen
-                    onOpenChange={() => undefined}
-                    onSubmit={onSubmit}
-                    isPending={false}
-                    defaultColumns={[]}
-                />,
-            );
+            const screen = await render(<BlankNameNoColumnRows />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
@@ -188,22 +174,13 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [] });
+                expect(BlankNameNoColumnRows.args.onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [] });
             });
         });
 
         it("blocks submission on a two-character column entry and shows that row's own error", async () => {
             // Arrange
-            const onSubmit = vi.fn();
-            const screen = await render(
-                <AddBoardModal
-                    isOpen
-                    onOpenChange={() => undefined}
-                    onSubmit={onSubmit}
-                    isPending={false}
-                    defaultColumns={["To"]}
-                />,
-            );
+            const screen = await render(<ShortColumnRow />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
@@ -211,7 +188,7 @@ describeForEachDevice({
 
             // Assert
             await expect.element(screen.getByText("Column name must be between 3 and 32 characters.")).toBeVisible();
-            expect(onSubmit).not.toHaveBeenCalled();
+            expect(ShortColumnRow.args.onSubmit).not.toHaveBeenCalled();
         });
 
         it("renders a staged column-row error", async () => {
@@ -228,16 +205,7 @@ describeForEachDevice({
          */
         it("blocks submission on a blank row sitting alongside a filled one", async () => {
             // Arrange
-            const onSubmit = vi.fn();
-            const screen = await render(
-                <AddBoardModal
-                    isOpen
-                    onOpenChange={() => undefined}
-                    onSubmit={onSubmit}
-                    isPending={false}
-                    defaultColumns={["Todo", ""]}
-                />,
-            );
+            const screen = await render(<BlankRowBesideFilledRow />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
@@ -245,16 +213,13 @@ describeForEachDevice({
 
             // Assert — the board name is filled, so this required-field message is the row's own.
             await expect.element(screen.getByText("Can't be empty")).toBeVisible();
-            expect(onSubmit).not.toHaveBeenCalled();
+            expect(BlankRowBesideFilledRow.args.onSubmit).not.toHaveBeenCalled();
         });
 
         /* The default state itself: one untouched row must be named or removed, never ignored. */
         it("blocks submission on the single default row when it is left untouched", async () => {
             // Arrange
-            const onSubmit = vi.fn();
-            const screen = await render(
-                <AddBoardModal isOpen onOpenChange={() => undefined} onSubmit={onSubmit} isPending={false} />,
-            );
+            const screen = await render(<Default />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
@@ -262,16 +227,13 @@ describeForEachDevice({
 
             // Assert
             await expect.element(screen.getByText("Can't be empty")).toBeVisible();
-            expect(onSubmit).not.toHaveBeenCalled();
+            expect(Default.args.onSubmit).not.toHaveBeenCalled();
         });
 
         /* Removing that row instead of naming it is the sanctioned way to create with no columns. */
         it("submits with no columns once the single default row is removed", async () => {
             // Arrange
-            const onSubmit = vi.fn();
-            const screen = await render(
-                <AddBoardModal isOpen onOpenChange={() => undefined} onSubmit={onSubmit} isPending={false} />,
-            );
+            const screen = await render(<Default />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
@@ -280,7 +242,7 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [] });
+                expect(Default.args.onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [] });
             });
         });
 
@@ -298,10 +260,7 @@ describeForEachDevice({
          */
         it("keeps the modal open on a backdrop click and on Escape while pending", async () => {
             // Arrange
-            const onOpenChange = vi.fn();
-            const screen = await render(
-                <AddBoardModal isOpen onOpenChange={onOpenChange} onSubmit={() => undefined} isPending />,
-            );
+            const screen = await render(<Submitting />);
             await expect.element(screen.getByRole("dialog")).toBeVisible();
 
             // Act
@@ -310,7 +269,7 @@ describeForEachDevice({
 
             // Assert
             await expect.element(screen.getByRole("dialog")).toBeVisible();
-            expect(onOpenChange).not.toHaveBeenCalled();
+            expect(Submitting.args.onOpenChange).not.toHaveBeenCalled();
         });
 
         /*
@@ -319,24 +278,7 @@ describeForEachDevice({
          */
         it("keeps the typed name and shows an inline error when the submit handler reports failure", async () => {
             // Arrange
-            const FailingHost = () => {
-                const [errorMessage, setErrorMessage] = useState<string | null>(null);
-                const [isOpen, setIsOpen] = useState(true);
-
-                return (
-                    <AddBoardModal
-                        isOpen={isOpen}
-                        onOpenChange={setIsOpen}
-                        isPending={false}
-                        errorMessage={errorMessage}
-                        defaultColumns={["Todo"]}
-                        onSubmit={() => {
-                            setErrorMessage("Couldn't create board. Try again.");
-                        }}
-                    />
-                );
-            };
-            const screen = await render(<FailingHost />);
+            const screen = await render(<SubmitFails />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
@@ -347,6 +289,27 @@ describeForEachDevice({
             await expect.element(screen.getByRole("dialog")).toBeVisible();
             await expect.element(screen.getByLabelText("Board Name")).toHaveValue("Launch");
             await expect.element(screen.getByLabelText("Column 1", { exact: true })).toHaveValue("Todo");
+        });
+
+        /*
+         * Story args are shared across every case that renders the same story, so a leaked call
+         * count would make a later negative assertion pass for the wrong reason. Proven, not assumed.
+         */
+        it("starts every case from a zero call count on a story rendered by an earlier case", async () => {
+            // Arrange
+            const screen = await render(<BlankNameOneNamedColumn />);
+
+            // Assert — the preceding cases already submitted through this same story's spy.
+            expect(BlankNameOneNamedColumn.args.onSubmit).not.toHaveBeenCalled();
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
+            await screen.getByRole("button", { name: "Create New Board" }).click();
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(BlankNameOneNamedColumn.args.onSubmit).toHaveBeenCalledTimes(1);
+            });
         });
     },
 });

@@ -1,10 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { useState, type ComponentProps } from "react";
+import { fn } from "storybook/test";
 
 import { AddBoardModal } from "./add-board-modal";
 
 /*
  * Visual-only CSF3 (D-25) — every state below is staged through props, never a play function.
  * `appDirectory` mounts a working App Router context, matching `sign-up-form.stories.tsx`.
+ * The two handlers are `fn()` spies so a test can assert on them by reading a composed story's own
+ * args, instead of spreading props onto that story — the pattern docs/adr/tech/0025 bans.
  */
 const meta: Meta<typeof AddBoardModal> = {
     component: AddBoardModal,
@@ -12,8 +16,8 @@ const meta: Meta<typeof AddBoardModal> = {
     args: {
         isOpen: true,
         isPending: false,
-        onOpenChange: () => undefined,
-        onSubmit: () => undefined,
+        onOpenChange: fn(),
+        onSubmit: fn(),
     },
 };
 
@@ -61,4 +65,47 @@ export const ColumnRequiredError: Story = {
  */
 export const LongValues: Story = {
     args: { defaultValues: { name: `Board ${"a".repeat(120)}` }, defaultColumns: ["A".repeat(32)] },
+};
+
+/** An untouched form with every row already removed — the only state where the name is the sole required field. */
+export const BlankNameNoColumnRows: Story = { args: { defaultColumns: [] } };
+
+/** One valid row waiting on a board name, so naming the board is all that stands between it and a submit. */
+export const BlankNameOneNamedColumn: Story = { args: { defaultColumns: ["Todo"] } };
+
+/*
+ * The under-length row as the user would actually produce it — no force prop, so the message comes
+ * from real validation rather than from staging (distinct from `ColumnNameError`, which stages it).
+ */
+export const ShortColumnRow: Story = { args: { defaultColumns: ["To"] } };
+
+/** D-02a's blocking case: a row left blank beside a filled one, neither of them staged as an error. */
+export const BlankRowBesideFilledRow: Story = { args: { defaultColumns: ["Todo", ""] } };
+
+/*
+ * Holds the open/error state the modal itself does not own, so the failed-submit path is staged by
+ * the story file rather than by a host component declared in the test (docs/adr/tech/0025).
+ */
+const FailingSubmitHost = (props: ComponentProps<typeof AddBoardModal>) => {
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(true);
+
+    return (
+        <AddBoardModal
+            {...props}
+            isOpen={isOpen}
+            onOpenChange={setIsOpen}
+            errorMessage={errorMessage}
+            onSubmit={(values) => {
+                props.onSubmit(values);
+                setErrorMessage("Couldn't create board. Try again.");
+            }}
+        />
+    );
+};
+
+/** D-05: the submit handler reports failure, so the modal stays open with everything typed intact. */
+export const SubmitFails: Story = {
+    args: { defaultColumns: ["Todo"] },
+    render: (args) => <FailingSubmitHost {...args} />,
 };
