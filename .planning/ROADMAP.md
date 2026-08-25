@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 12/15 plans executed
+**Plans**: 13/15 plans executed
 
 Plans:
 
@@ -280,7 +280,7 @@ IDs and shift to waves 11/12/13:
 
 **Wave 11** *(blocked on 02-15)*
 
-- [ ] 02-11-PLAN.md — board detail view, empty state and auto-select routing (BOARD-03)
+- [x] 02-11-PLAN.md — board detail view, empty state and auto-select routing (BOARD-03)
 
 **Wave 12** *(blocked on 02-11)*
 
@@ -430,7 +430,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 12/15 | In Progress|  |
+| 2. Board Management | 13/15 | In Progress|  |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
