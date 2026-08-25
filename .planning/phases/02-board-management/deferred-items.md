@@ -196,3 +196,44 @@ plan that surfaced them.
   (create and sign-out), which that same review would cover. **Do not make delete optimistic as a
   local fix:** the entire point of D-09's ordering is that a board must never appear deleted
   before it actually is.
+
+## 02-16
+
+- **Board creation and delete-adjacent optimism (02-11/02-13 above) re-raised at 02-16's Task 4
+  checkpoint, re-confirmed deferred (2026-08-25).** The user flagged both again during live
+  verification of this plan. Asked explicitly whether to reopen and build them now as part of
+  closing phase 02, or keep them deferred as originally decided: user chose to keep deferred.
+  No new information changes the prior analysis (backend/ADR constraints for delete's D-09
+  ordering; create still needs the general optimistic-update pattern extended to it, tracked
+  under 02-11). Still backlog for a future phase, not this one.
+
+- **Create-board modal has no explicit close ("X") control.** Raised at 02-16's Task 4 checkpoint
+  (2026-08-25): the "Add New Board" modal can only be dismissed via Escape or clicking outside —
+  no visible close affordance, which the user flagged as a UX gap independent of the escape-hatch
+  behaviors technically working. Confirmed via live accessibility snapshot: the dialog's only
+  interactive elements are the Board Name field, per-column name/remove inputs, "+ Add New
+  Column", and "Create New Board" — no close button anywhere in the header. Out of scope for
+  02-16 (which touched this modal's error-copy and column-remove-button code, not its chrome);
+  a small, low-risk addition for a future pass.
+
+- **Column-remove ("X") button is vertically misaligned against its input, by 4px.** Raised at
+  02-16's Task 4 checkpoint (2026-08-25), confirmed via live `getBoundingClientRect()` measurement
+  in the create-board modal: the column name input is 40px tall (center Y offset from its own top
+  = 20px), the remove button is 44px tall, and the button's rendered center sits 4px below the
+  input's center (521.5 vs 525.5 in one measured instance). Small, cosmetic, unrelated to 02-16's
+  own scope (D-01/02/03) — a candidate for the same future UI-polish pass as the missing close
+  button above.
+
+- **Board-detail data refetches on every navigation with no cross-navigation caching.** Confirmed
+  during 02-16 checkpoint investigation (2026-08-25): `fetch-boards.ts` wraps the board-list read
+  in React's `cache()` (same-render dedup only); the board-detail read had none at all before this
+  plan's Fix 2 (`937a40d`), which added the same `cache()` dedup — but with exactly one call site
+  today, that only prevents a *future* double-fetch within one render, not repeat fetches across
+  separate navigations. Next 15+'s default `staleTimes.dynamic` of `0` means every board click is
+  still a fresh server round trip. `docs/adr/tech/0019-server-entry-points.md` documents the
+  RSC-first/no-client-query-library architecture but is silent on refetch-on-navigation as an
+  accepted tradeoff — this is a real gap, not a documented decision. A `next.config.ts`
+  `experimental.staleTimes.dynamic` value (a few seconds) would let router-cache reuse kick in for
+  rapid re-clicks/back-forward without adding a client-query library, but is a wider architectural
+  call than a single plan's fix — needs a decision and probably an ADR-0019 amendment before
+  implementing, not a silent addition inside 02-16.
