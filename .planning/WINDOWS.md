@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 16
+open_count: 17
 waived_count: 0
 fixed_count: 6
-total_count: 22
-last_updated: 2026-08-25T14:26:45.483Z
+total_count: 23
+last_updated: 2026-08-25T16:26:55.940Z
 ---
 
 # Broken Windows Ledger
@@ -37,6 +37,7 @@ last_updated: 2026-08-25T14:26:45.483Z
 | 20 | 02 | deviation | src/components/ui/dropdown/dropdown.test.tsx |  | Plan 02-15 Option B: the story-only-render gate (pnpm renders:check) is blocking in CI but carries an explicit exemption for 10 pre-existing component-test suites -- 121 direct renders across ~116 cases (dropdown 34, modal 17, text-field 15, button 15, checkbox 12, menu 11, icon-button 8, switch 6, error-fallback 2, toast 1). Each count is a ratchet ceiling in MIGRATION_EXEMPTIONS and is printed on every run; ADR tech/0025's Enforcement section and CONVENTIONS.md both state the gate is NOT repo-wide. Outstanding work: migrate all ten onto named per-prop-combination stories. Tracked in .planning/phases/02-board-management/deferred-items.md under 02-15; relates to plan 02-15 threat T-02-54 (false coverage claims are a real defect class here). | open |  | 2026-08-25T12:50:40.028Z |  |
 | 21 | 02 | unrun-verify | src/features/boards/server/fetch-boards.ts |  | Plan 02-11 wrapped fetchBoards in React's cache so the sidebar, the dashboard header and a board page's membership check share one upstream call per render, but no test asserts the call count. The plan's own behavior bullet ('loadBoards called twice within one server render performs exactly one upstream call') is therefore unproven: the e2e suite shows the app works, not that it issues one call rather than three. Needs either an instrumented integration test or a server-side call counter. | open |  | 2026-08-25T14:26:38.598Z |  |
 | 22 | 02 | deviation | app/api/session/force-sign-out/route.ts |  | Plan 02-11 widened the WR-01 logout-CSRF guard from Sec-Fetch-Site === 'same-origin' to an allow-list of {same-origin, none}. Making /boards a Server Component that calls the external API in its own render turned the forced-sign-out redirect into a real HTTP 307 on the document request, and Chromium carries the initiating navigation's Sec-Fetch-Site across that same-origin hop, so a visitor opening /boards directly arrived with 'none' and was 403'd out of the flow the handler exists to serve (measured 2026-08-25). 'none' is unforgeable by an attacker page and cross-site/same-site/absent are still rejected; SESSION-03's three cases still pass. Recorded as a dated amendment in docs/adr/tech/0026. Open because it is a security-control change made outside plan 02-11's own threat register and deserves a reviewer's explicit sign-off. | open |  | 2026-08-25T14:26:45.483Z |  |
+| 23 | 02 | stub | src/features/boards/components/board-list.tsx |  | BoardCard onDelete is a no-op; plan 02-13 supplies D-06's confirm modal | open |  | 2026-08-25T16:26:55.940Z |  |
 
 ````json
 [
@@ -302,6 +303,18 @@ last_updated: 2026-08-25T14:26:45.483Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-25T14:26:45.483Z",
+    "resolved_at": null
+  },
+  {
+    "id": 23,
+    "kind": "stub",
+    "phase": "02",
+    "file": "src/features/boards/components/board-list.tsx",
+    "line": null,
+    "description": "BoardCard onDelete is a no-op; plan 02-13 supplies D-06's confirm modal",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-25T16:26:55.940Z",
     "resolved_at": null
   }
 ]
