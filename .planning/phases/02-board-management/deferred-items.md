@@ -58,3 +58,51 @@ plan that surfaced them.
   and lists anything else as Anti-pattern 1. 02-10 followed the ADR. One of the two documents
   needs correcting; left alone deliberately rather than silently picking a winner in a plan that
   was not about documentation.
+
+## 02-15
+
+- **MIGRATION OWED — ten pre-existing test suites are exempted from the story-only-render gate.**
+  Turning `scripts/check-story-only-renders.mjs` on repository-wide reported **121 direct renders
+  across 10 files (~116 test cases)**, not the single file with nine call sites plan 02-15 assumed —
+  roughly 13x the scale it budgeted for. The gate is not over-firing: every one is a genuine
+  violation of ADR tech/0025's Decision Outcome and of `CONVENTIONS.md`'s "Component tests from
+  stories" second bullet. All ten are *mixed* suites — they compose stories for shallow cases and
+  direct-render the raw component for deep-interaction ones, several under an explicit in-file
+  comment reading "Deep: real pointer/keyboard interaction and computed style — stay direct
+  renders."
+
+  | Suite | Direct renders | Cases |
+  |---|---:|---:|
+  | `src/components/ui/dropdown/dropdown.test.tsx` | 34 | 14 |
+  | `src/components/ui/modal/modal.test.tsx` | 17 | 10 |
+  | `src/components/ui/text-field/text-field.test.tsx` | 15 | 16 |
+  | `src/components/ui/button/button.test.tsx` | 15 | 14 |
+  | `src/components/ui/checkbox/checkbox.test.tsx` | 12 | 15 |
+  | `src/components/ui/menu/menu.test.tsx` | 11 | 9 |
+  | `src/components/ui/icon-button/icon-button.test.tsx` | 8 | 10 |
+  | `src/components/ui/switch/switch.test.tsx` | 6 | 8 |
+  | `src/components/layout/error-fallback/error-fallback.test.tsx` | 2 | 7 |
+  | `src/components/ui/toast/toast.test.tsx` | 1 | 13 |
+
+  **User decision (2026-08-25, Option B):** do not rewrite them in plan 02-15; exempt them
+  explicitly, publish the carve-out honestly, and track the migration here. What that migration
+  costs, so a future planner does not under-scope it the way 02-15 did: a named exported story per
+  prop combination in ten `.stories.tsx` files, `fn()` spies in ten `meta.args` blocks, and every
+  new story additionally rendered by the `storybook` (a11y) and `visual` projects — nine of the ten
+  are `components/ui/` primitives with visual-regression baselines. `add-board-modal.test.tsx` alone
+  (21 cases, 9 call sites) consumed plan 02-15's entire Task 3 budget. Do this as its own phase or
+  as one plan per suite, not as a task inside a feature plan.
+
+  **Why this is logged rather than considered settled — threat T-02-54 of 02-15's own register**
+  ("a false coverage claim is a real defect class here, not a documentation nicety"). This plan's
+  whole thesis is that review-only enforcement fails, and it was confirmed at 13x the assumed scale.
+  Publishing Enforcement lines that read as mechanical coverage while quietly carving out most of
+  the primitives library would be the same defect one level up. Mitigations actually applied:
+  ADR tech/0025's Enforcement section and `CONVENTIONS.md`'s bullet both state plainly that the gate
+  is **not** repository-wide and name all ten suites; the checker prints the whole carve-out on every
+  run, pass or fail; and each count is a ratchet ceiling in `MIGRATION_EXEMPTIONS` — an exempt suite
+  that grows fails CI, and one that reaches zero also fails, so the ledger cannot rot into a claim
+  nobody re-reads.
+
+  The `.tsx`-declaration gate (`pnpm tsx:check`) is **not** affected: it is green repository-wide
+  with no baseline and no carve-out beyond ADR tech/0027's two exemptions.

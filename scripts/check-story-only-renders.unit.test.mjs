@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { findStoryOnlyRenderViolations } from "./check-story-only-renders.mjs";
+import {
+    classifyViolations,
+    findStoryOnlyRenderViolations,
+    MIGRATION_EXEMPTIONS,
+} from "./check-story-only-renders.mjs";
 
 const relativePath = "src/features/boards/components/add-board-modal.test.tsx";
 
@@ -193,5 +197,86 @@ describe("findStoryOnlyRenderViolations", () => {
 
         // Assert
         expect(violations).toEqual([]);
+    });
+});
+
+const exemptPath = "src/components/ui/dropdown/dropdown.test.tsx";
+const exemptions = new Map([[exemptPath, 2]]);
+const violationAt = ({ file, line }) => ({ relativePath: file, line, name: "Dropdown" });
+
+describe("classifyViolations", () => {
+    it("blocks a violation in a file the exemption ledger does not list, alongside one it does", () => {
+        // Arrange
+        const unlisted = violationAt({ file: relativePath, line: 6 });
+        const violations = [
+            unlisted,
+            violationAt({ file: exemptPath, line: 6 }),
+            violationAt({ file: exemptPath, line: 9 }),
+        ];
+
+        // Act
+        const { blocking, tracked, regressions, stale } = classifyViolations({ violations, exemptions });
+
+        // Assert
+        expect(blocking).toEqual([unlisted]);
+        expect(tracked).toEqual([{ relativePath: exemptPath, count: 2, ceiling: 2 }]);
+        expect([regressions, stale]).toEqual([[], []]);
+    });
+
+    it("tracks without blocking a listed file sitting exactly at its ceiling", () => {
+        // Arrange
+        const violations = [violationAt({ file: exemptPath, line: 6 }), violationAt({ file: exemptPath, line: 9 })];
+
+        // Act
+        const { blocking, tracked, regressions, stale } = classifyViolations({ violations, exemptions });
+
+        // Assert
+        expect(blocking).toEqual([]);
+        expect(tracked).toEqual([{ relativePath: exemptPath, count: 2, ceiling: 2 }]);
+        expect([regressions, stale]).toEqual([[], []]);
+    });
+
+    it("tracks without blocking a listed file that has improved below its ceiling", () => {
+        // Arrange
+        const violations = [violationAt({ file: exemptPath, line: 6 })];
+
+        // Act
+        const { blocking, tracked, regressions } = classifyViolations({ violations, exemptions });
+
+        // Assert
+        expect(blocking).toEqual([]);
+        expect(tracked).toEqual([{ relativePath: exemptPath, count: 1, ceiling: 2 }]);
+        expect(regressions).toEqual([]);
+    });
+
+    it("blocks a listed file that added direct renders above its ceiling", () => {
+        // Arrange
+        const violations = [
+            violationAt({ file: exemptPath, line: 6 }),
+            violationAt({ file: exemptPath, line: 9 }),
+            violationAt({ file: exemptPath, line: 12 }),
+        ];
+
+        // Act
+        const { blocking, tracked, regressions } = classifyViolations({ violations, exemptions });
+
+        // Assert
+        expect(regressions).toEqual([{ relativePath: exemptPath, count: 3, ceiling: 2 }]);
+        expect([blocking, tracked]).toEqual([[], []]);
+    });
+
+    it("blocks a listed file whose migration is finished, so the dead entry cannot linger", () => {
+        // Act
+        const { blocking, tracked, stale } = classifyViolations({ violations: [], exemptions });
+
+        // Assert
+        expect(stale).toEqual([{ relativePath: exemptPath, count: 0, ceiling: 2 }]);
+        expect([blocking, tracked]).toEqual([[], []]);
+    });
+
+    it("ships a non-empty ledger, so the carve-out is never an invisible no-op", () => {
+        // Assert
+        expect(MIGRATION_EXEMPTIONS.size).toBeGreaterThan(0);
+        expect([...MIGRATION_EXEMPTIONS.values()].every((ceiling) => ceiling > 0)).toBe(true);
     });
 });
