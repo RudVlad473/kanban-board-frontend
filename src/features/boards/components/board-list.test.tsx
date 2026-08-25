@@ -416,10 +416,10 @@ describeForEachDevice({
         });
 
         /*
-         * D-15's whole point: the row asserts the new name while the write is still in flight, and
-         * no other row is touched by the override that does it.
+         * D-15's whole point, plus D-02's timing: the row asserts the new name and the modal is
+         * already gone while the write is still in flight, and no other row is touched by it.
          */
-        it("shows the new name in that row before the rename resolves, leaving every other row alone", async () => {
+        it("closes the modal and shows the new name in that row before the rename resolves", async () => {
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
@@ -428,20 +428,21 @@ describeForEachDevice({
             // Act — submit, then observe while the action is still unresolved.
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
 
-            // Assert — applied optimistically, with the write demonstrably still open.
+            // Assert — applied optimistically and already dismissed, with the write demonstrably still open.
             await vi.waitFor(() => {
                 expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
             });
-            expect(screen.getByRole("button", { name: "Save Changes" })).toHaveAttribute("aria-busy", "true");
+            expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
 
             // Act — let the write land.
             settleRenameBoard();
 
-            // Assert — the modal closes and the name stays.
+            // Assert — the name stays and nothing was announced, the modal having closed long before.
             await vi.waitFor(() => {
-                expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
+                expect(renameBoardActionCalls).toHaveLength(1);
             });
             expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
+            expect(getRaisedToastTexts()).toHaveLength(0);
         });
 
         it("sends the row's own id and current version with the rename", async () => {
