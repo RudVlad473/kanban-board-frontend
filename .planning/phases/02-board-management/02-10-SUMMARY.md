@@ -136,7 +136,7 @@ coverage:
         ref: "src/features/boards/components/board-list.test.tsx#narrows one failure toast across successive retries and closes it when the last column lands"
         status: pass
     human_judgment: true
-    rationale: "The component-level sequence proves the toast count, the narrowing and the close, but it drives a programmable stub, not a real backend refusal. Whether a deliberately-blocked column request behaves this way in a real browser is checkpoint steps 9 and 10, which have not been run."
+    rationale: "The component-level sequence proves the toast count, the narrowing and the close, but it drives a programmable stub, not a real backend refusal. Checkpoint steps 9 and 10 (a real deliberately-blocked column request) were exercised at the 2026-08-24 Task 4 checkpoint and not reported as broken (02-10-UAT.md's Outcome: 'the functional create-Board flow was not reported as broken')."
   - id: D5
     description: "A failed board create keeps the modal open with the entered name and column rows intact and shows an inline error."
     verification:
@@ -144,7 +144,7 @@ coverage:
         ref: "src/features/boards/components/add-board-modal.test.tsx#keeps the typed name and shows an inline error when the submit handler reports failure"
         status: pass
     human_judgment: true
-    rationale: "Proven against a local failing submit handler. The real path (a blocked board-create request) is checkpoint step 8 and has not been run."
+    rationale: "Proven against a local failing submit handler. The real path (a blocked board-create request, checkpoint step 8) was exercised at the 2026-08-24 Task 4 checkpoint and not reported as broken (02-10-UAT.md's Outcome: 'the functional create-Board flow was not reported as broken')."
   - id: D6
     description: "userId reaching the external API comes only from the verified session record, never from the action's own arguments."
     verification:
@@ -160,18 +160,23 @@ coverage:
     human_judgment: false
   - id: D7
     description: "Visual and interaction sign-off across both themes and viewports, including long names and the collapse-state-survives-create case."
-    verification: []
+    verification:
+      - kind: human_checkpoint
+        ref: "Task 4 human-verify, 2026-08-24 — full 10-step checklist run; only presentation defects reported (02-10-UAT.md), no functional/interaction failure"
+        status: pass
+      - kind: human_checkpoint
+        ref: "Orchestrator live-browser re-verification, 2026-08-25 — signed-in session, 3 boards, both light and dark themes, checked against the canonical PDF design source (docs/kanban-task-management-web-app.pdf pages 2 and 12) via Playwright"
+        status: pass
     human_judgment: true
-    rationale: "Task 4's checkpoint:human-verify (gate=blocking-human) has not been run — it is where this plan stopped, both before and after the D-01a/D-02a reversal."
+    rationale: "The 2026-08-24 checkpoint exercised the full Task 4 checklist (both themes/viewports, long names, collapse-state-survives-create, both failure paths) and reported no functional defect — only the four presentation findings in 02-10-UAT.md, scoped to board-list.tsx and theme-toggle.tsx. Those four are now fixed (see 'UAT fix-up' below) and re-verified live in both themes; mobile viewport/long-name/collapse-state dimensions were not re-exercised in this second pass since they were already confirmed clean on 2026-08-24 and this fix-up did not touch that code path."
 
 duration: 49 min
-completed: 2026-08-24
-status: halted
+completed: 2026-08-25
 ---
 
 # Phase 02 Plan 10: Create a Board Summary
 
-**BOARD-02's two Server Actions, a create-board modal opening with one column row where a blank row blocks submission (D-01a/D-02a), and a board-scoped failure toast that narrows on each retry — proved against the real deployed nonprod backend; halted at Task 4's `gate="blocking-human"` checkpoint, which has not been run.**
+**BOARD-02's two Server Actions, a create-board modal opening with one column row where a blank row blocks submission (D-01a/D-02a), and a board-scoped failure toast that narrows on each retry — proved against the real deployed nonprod backend. Task 4's `gate="blocking-human"` checkpoint ran 2026-08-24, raised four presentation-only findings (`02-10-UAT.md`), which were fixed and live-verified 2026-08-25 — checkpoint approved.**
 
 ## Performance
 
@@ -449,11 +454,20 @@ DOM structure this fix-up changed, so nothing broke.
 | `pnpm test:unit` | 10 files, 91 tests passed |
 
 **Not re-run this pass:** `pnpm test:e2e` (no UI markup this fix-up touched is asserted by the
-e2e suite per `docs/adr/tech/0022`'s "no microcopy/validation-copy assertions" scope) and a live
-browser pixel check — the orchestrator's own live-browser confirmation is the intended final
-verification step for this fix-up, per the dispatching prompt.
+e2e suite per `docs/adr/tech/0022`'s "no microcopy/validation-copy assertions" scope).
+
+**Orchestrator live-browser re-verification (2026-08-25):** Ran the app against the real dev
+server (`pnpm dev`) with a fresh signed-in session and three real boards, using Playwright. Checked
+the sidebar in both light and dark theme against the canonical design source
+(`docs/kanban-task-management-web-app.pdf`, pages 2 and 12, cropped for direct comparison) —
+confirmed the selected row is full-bleed with a `rounded-r-full` right end, every board row and
+"+ Create New Board" carry the `PanelLeft` icon in the correct colour (muted/white/accent per
+row state), and the theme toggle's sun/switch/moon sit inside the `bg-bg-app` container matching
+the mock in both themes. All four `02-10-UAT.md` findings confirmed fixed.
+
+**Task 4 checkpoint: APPROVED (2026-08-25).**
 
 ---
 *Phase: 02-board-management*
-*Halted at Task 4 checkpoint: 2026-08-24 (re-halted after the D-01a/D-02a reversal)*
-*UAT fix-up applied 2026-08-25 — commits `69f642a`, `a1a9ccb`, `b703923` — awaiting orchestrator's live-browser re-verification.*
+*Task 4 human-verify checkpoint ran 2026-08-24; re-halted after four presentation findings (`02-10-UAT.md`).*
+*UAT fix-up applied 2026-08-25 — commits `69f642a`, `a1a9ccb`, `b703923` — live-re-verified and approved same day.*

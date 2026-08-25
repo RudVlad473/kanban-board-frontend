@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 8/15 plans executed
+**Plans**: 10/15 plans executed
 
 Plans:
 
@@ -258,11 +258,11 @@ narrow path before any breadth is added:
 
 **Wave 7** *(blocked on 02-08)*
 
-- [ ] 02-09-PLAN.md — sidebar chrome, pinned controls, collapse and expand (BOARD-06)
+- [x] 02-09-PLAN.md — sidebar chrome, pinned controls, collapse and expand (BOARD-06)
 
 **Wave 8** *(blocked on 02-09, 02-07)*
 
-- [ ] 02-10-PLAN.md — client-orchestrated board creation with optional initial columns (BOARD-02)
+- [x] 02-10-PLAN.md — client-orchestrated board creation with optional initial columns (BOARD-02)
 
 Refactor insertion (added 2026-08-25 from `.continue-here.md`'s "Wave 9 content" decision, recorded
 as 02-CONTEXT.md items D-27..D-30). Inserted between Wave 8 and the remaining feature plans by

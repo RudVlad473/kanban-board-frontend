@@ -8,7 +8,7 @@ note: >-
   overwrites wholesale — never hand-edit those; add durable, cross-cutting knowledge here.
 counts:
   decisions: 0
-  lessons: 2
+  lessons: 3
   patterns: 0
   surprises: 1
 ---
@@ -47,6 +47,23 @@ problem with an `isRealFile` guard; the other three checkers had each been writt
 through it. When one script in a family solves an environmental footgun, check whether its siblings
 copied the structure but not the fix.
 **Source:** `scripts/glob-real-files.mjs`, commit 9181f85
+
+### A written-down backend rule is an assumption until it's probed
+
+02-10's plan asserted "duplicate Board names are allowed" as a stated design fact. The real
+deployed backend rejects them: `409 DUPLICATE_RESOURCE`, "Board with that name already exists" —
+confirmed by probing twice against the real nonprod backend. The OpenAPI contract this project
+generates its client from documents only `200` for every operation, so there was no spec to catch
+the mismatch against; the wrong assumption would have shipped silently as a plan `must_haves` truth
+if 02-10's own executor hadn't probed instead of trusting the plan text.
+
+**Context:** Found 2026-08-24 during 02-10 execution. Any plan or task whose behavior depends on
+backend semantics not exercised by an existing test must probe the real backend before treating
+the behavior as fact — never assume from a plan/doc description, and never trust the OpenAPI spec's
+absence of a documented error as proof the error can't happen. Flagged as a blocking anti-pattern
+in `02-board-management/.continue-here.md` for 02-12 (board rename, another uniqueness-adjacent
+operation) — record it here too since the underlying lesson outlives that one plan.
+**Source:** `02-10-SUMMARY.md` key-decisions; `.planning/phases/02-board-management/.continue-here.md`
 
 ## Surprises
 

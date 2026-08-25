@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 02
 current_phase_name: Board Management
-status: paused
-stopped_at: Phase 02 Wave 8 — 02-10 merged; Task 4 checkpoint UNAPPROVED (4 UI findings)
-last_updated: "2026-08-24T23:45:00.000Z"
-last_activity: 2026-08-24
-last_activity_desc: Paused mid-checkpoint; wave 9 refactor plans not yet created
-state_head: 51861443e618cd46c1b9e051012e5f39efa8c451
+status: active
+stopped_at: null
+last_updated: "2026-08-25T00:00:00.000Z"
+last_activity: 2026-08-25
+last_activity_desc: 02-10 UAT findings fixed and checkpoint approved; Wave 9/10 refactor plans (02-14, 02-15) created; ready to resume execution at Wave 9
+state_head: 203b0c23cdaf0790ebaa1baf53e89bd13f484f64
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 75
-  completed_plans: 71
+  total_plans: 77
+  completed_plans: 72
 milestone_name: milestone
 ---
 
@@ -32,14 +32,16 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 ## Current Position
 
 Phase: 02 (Board Management) — EXECUTING
-Phase 02 (Board Management): 10 of 13 plans have code merged; 02-10 awaits UI fixes and sign-off.
-Status: Executing Phase 02
+Phase 02 (Board Management): 10 of 15 plans complete. 02-10's Task 4 checkpoint is APPROVED
+(2026-08-25) after fixing 4 UI findings against the canonical design PDF. Wave 9 refactor plans
+(02-14, 02-15) were inserted per user decision, and 02-11/12/13 shifted to waves 11/12/13.
+Status: Executing Phase 02 — ready to resume at Wave 9 (02-14-PLAN.md)
 plan-checker-verified; the pause that blocked them (pull Phase 02.2 forward) is resolved, since
 02.2 shipped in full on 2026-08-22.
-Last activity: 2026-08-24 — Phase 02 execution started
+Last activity: 2026-08-25 — 02-10 UAT fix-up, Wave 9/10 planning, checkpoint approved
 
 Progress: Milestone v1.0 — Phase 1: 38/38 plans; Phase 02.1: 15/15 plans; Phase 02.2: 9/9 plans;
-Phase 02: 9/13 plans (in progress)
+Phase 02: 10/15 plans (in progress)
 
 ## Performance Metrics
 
@@ -152,6 +154,12 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
 
 - Phase 02.1 inserted after Phase 2: Testing strategy overhaul and code-quality retrofit (no-mocking policy, curl-based e2e seeding, Storybook-driven component tests) plus deferred 02-08 code-review scope (URGENT) — **complete** 2026-08-22, 15/15 plans, verified 22/22 D-IDs
 - Phase 02.2 inserted after Phase 2: Follow-up from 02.1's own retrospective: unify component tests fully onto Storybook stories (delete renderWithProviders, move all providers into Storybook decorators, render composed stories directly instead of .run(), no play functions) — closes a live QueryProvider duplication between .storybook/preview-annotations.tsx and src/test-utils/render-with-providers.tsx — **pulled forward 2026-08-22**: `depends_on` changed from "Phase 2" to "Phase 1, Phase 02.1" so it now runs before Phase 2's remaining plans (02-10..13) instead of after full Phase 2 completion; still not yet planned
+- Wave 9/10 inserted into Phase 02 after Wave 8 (2026-08-25, user decision recorded in
+  `.continue-here.md` and `02-CONTEXT.md` D-27..D-30): `02-14-PLAN.md` (shared `RESULT_STATUS`
+  enum across 18 files, `usehooks-ts` for boolean toggle state) and `02-15-PLAN.md` (`.tsx`
+  declaration hygiene + composed-story test enforcement) — inserted so board detail/rename/delete
+  (02-11/12/13, shifted to waves 11/12/13) are written against the replacement patterns, not
+  three more instances of the ones being replaced. Phase 02 total: 13 → 15 plans.
 
 ## Deferred Items
 
@@ -310,6 +318,30 @@ One unrelated flake surfaced during verification and is diagnosed but unfixed: `
 races Base UI's 5s auto-dismiss (see Blockers).
 
 Resume file: none (stale checkpoint removed)
-Next: Resume Phase 02 at Wave 8 — plan `02-10` (BOARD-02 create board + initial columns) via
-`/gsd-execute-phase 2`. Since 02.2 kept the stub pattern rather than replacing it, 02-10/02-12/02-13
-likely need no rework, just a quick sanity check against the now-documented carve-out.
+
+**This session (02-10 checkpoint close-out + Wave 9 planning):** Resumed `/gsd-execute-phase 2`
+with 02-10 halted on its unapproved Task 4 checkpoint (`02-10-UAT.md`, 4 UI findings). Per user
+decision: fixed the findings as commits on 02-10 (not a separate plan), and planned the Wave 9
+refactor insertion now (not deferred).
+
+Dispatched a worktree executor to fix all 4 findings — read the canonical design source
+(`docs/kanban-task-management-web-app.pdf`, extracted via `pdftoppm`/poppler-utils since the file
+exceeds the Read tool's 100MB PDF limit) for exact reference: full-bleed selected sidebar row
+(`rounded-r-full`, padding moved from `<ul>` onto the row), `lucide-react`'s `PanelLeft` icon on
+every board row and "+ Create New Board", and a rebuilt theme toggle (static Sun/Moon icons
+flanking a plain `Switch`, inside a `bg-bg-app` container) — commits `69f642a`, `a1a9ccb`,
+`b703923`, `e5d85ae`, merged clean (`--ff-only`) and pushed. In parallel, dispatched `gsd-planner`
+to create `02-14`/`02-15` (Wave 9/10) and renumber `02-11/12/13` to waves 11/12/13 — committed as
+`203b0c2`, pushed.
+
+Live-re-verified the fix in a real browser (Playwright, signed-in session, 3 boards, both themes)
+against the same PDF reference — all 4 findings confirmed fixed. **Task 4 checkpoint: APPROVED.**
+Fixed a Chrome-binary gap for Playwright/chrome-devtools-mcp along the way (`@playwright/mcp` and
+chrome-devtools-mcp both expect `/opt/google/chrome/chrome`; symlinked to the already-installed
+Chrome-for-Testing binary at `~/.cache/puppeteer/chrome/...` rather than adding a new apt repo).
+Added `.mcp.json` (`--headless` on the Playwright server — it is headed by default) and a
+CLAUDE.md note explaining the enforcement mechanism, since the prose-only instruction wasn't
+sufficient on its own.
+
+Next: Resume Phase 02 at Wave 9 — plan `02-14-PLAN.md` (shared `RESULT_STATUS` enum, `usehooks-ts`
+boolean state) via `/gsd-execute-phase 2`.
