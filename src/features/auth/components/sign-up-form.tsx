@@ -2,8 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { useBoolean } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
@@ -60,7 +61,7 @@ export const SignUpForm = ({
     forceSubmitting = false,
     defaultPasswordRevealed = false,
 }: Props) => {
-    const [isPasswordRevealed, setIsPasswordRevealed] = useState(defaultPasswordRevealed);
+    const { value: isPasswordRevealed, toggle: togglePasswordRevealed } = useBoolean(defaultPasswordRevealed);
     const [state, dispatch, isActionPending] = useActionState(signUpAction, AUTH_ACTION_IDLE);
     const {
         register,
@@ -165,9 +166,7 @@ export const SignUpForm = ({
                         label={isPasswordRevealed ? "Hide password" : "Show password"}
                         icon={isPasswordRevealed ? <EyeOff /> : <Eye />}
                         isLoading={isPending}
-                        onClick={() => {
-                            setIsPasswordRevealed((revealed) => !revealed);
-                        }}
+                        onClick={togglePasswordRevealed}
                     />
                 }
                 {...register("password")}

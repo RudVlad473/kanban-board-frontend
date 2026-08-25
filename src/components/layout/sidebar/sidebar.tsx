@@ -1,7 +1,8 @@
 "use client";
 
 import { Eye, EyeOff, Kanban } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { useBoolean } from "usehooks-ts";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
@@ -25,7 +26,7 @@ export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Pr
      * Ephemeral client UI state (DEFAULTS.md C-009) — no persistence mechanism reached from this
      * file; a fresh mount always starts expanded.
      */
-    const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
+    const { value: isExpanded, setTrue: expandSidebar, setFalse: collapseSidebar } = useBoolean(defaultIsExpanded);
 
     if (!isExpanded) {
         return (
@@ -33,9 +34,7 @@ export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Pr
                 variant="primary"
                 label="Show Sidebar"
                 icon={<Eye />}
-                onClick={() => {
-                    setIsExpanded(true);
-                }}
+                onClick={expandSidebar}
                 /*
                  * A fifth entry on UI-SPEC's accent-reservation list — the collapsed-state trigger,
                  * added deliberately for design-PDF fidelity, not an unreviewed accent use.
@@ -71,9 +70,7 @@ export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Pr
 
                 <button
                     type="button"
-                    onClick={() => {
-                        setIsExpanded(false);
-                    }}
+                    onClick={collapseSidebar}
                     className="flex min-h-11 w-full items-center gap-2 rounded-lg px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted hover:bg-bg-app hover:text-text-primary"
                 >
                     <EyeOff aria-hidden="true" className="size-5 shrink-0" />

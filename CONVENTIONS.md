@@ -177,6 +177,24 @@ compound-export file (e.g. `dropdown.tsx`/`menu.tsx`/`modal.tsx`, matching `toas
 `ToastProviderProps`) — never an inline object type on the destructured parameter. Enforcement:
 code review (no automated check exists yet).
 
+## Boolean UI state (docs/adr/tech/0012's sibling case; 02-CONTEXT.md D-30)
+
+- **Boolean UI state that is toggled is held by `usehooks-ts`'s `useBoolean`, not a hand-rolled
+  `useState` pair.** `useBoolean` returns an object — `{ value, setValue, setTrue, setFalse, toggle }` —
+  so a call site takes only the setters it actually uses and names them for the action they perform
+  (`setTrue: expandSidebar`). Its sibling `useToggle` returns a *tuple*, not an object; the two are
+  not interchangeable, so read the return shape before destructuring. Enforcement: code review.
+- The four worked examples, all migrated by plan 02-14:
+  `src/components/layout/sidebar/sidebar.tsx` takes the two fixed-value setters for its collapse
+  state; `src/features/boards/components/board-list.tsx` takes `setValue` for the caller-supplied
+  boolean in `handleOpenChange` plus `setFalse` for the post-create close; and
+  `src/features/auth/components/sign-in-form.tsx` and `sign-up-form.tsx` each take `toggle`,
+  replacing a functional updater that inverted its own previous value.
+- A boolean *derived* from a measurement or a computation is not toggle state and stays on plain
+  `useState`. The counter-example is `src/hooks/use-overflow-indicator.ts`'s `isOverflowing`, which
+  is assigned from `scrollWidth > clientWidth` and never toggled, so `useBoolean` would only rename
+  its setter and hand it four members no caller can meaningfully use.
+
 ## What may live in a `.tsx` file
 
 A `.tsx` file contains its components and their prop types, and nothing else. Zod schemas, derived
