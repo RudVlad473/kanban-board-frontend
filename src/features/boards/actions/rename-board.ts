@@ -4,7 +4,8 @@ import { refresh } from "next/cache";
 
 import { BoardSchema, renameBoardInputSchema, type Board } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
-import { parseProblemDetail, PROBLEM_CODE, type ProblemCode } from "@/lib/core/api-contract/problem-detail";
+import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
+import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
 import { verifySession } from "@/lib/server/dal";
@@ -22,26 +23,6 @@ export type RenameBoardResult =
     | { status: typeof RESULT_STATUS.DUPLICATE }
     | { status: typeof RESULT_STATUS.NOT_FOUND }
     | { status: typeof RESULT_STATUS.ERROR };
-
-/** The refusal branches that carry no payload beyond their own name — the whole point (T-02-61). */
-type RenameFailureStatus =
-    | typeof RESULT_STATUS.UNAUTHENTICATED
-    | typeof RESULT_STATUS.CONFLICT
-    | typeof RESULT_STATUS.DUPLICATE
-    | typeof RESULT_STATUS.NOT_FOUND
-    | typeof RESULT_STATUS.ERROR;
-
-/**
- * The backend codes a rename can be refused with that have something distinct to tell the user.
- * Every other code falls through to `ERROR`, because "try again" is genuinely all there is to say.
- */
-const UPSTREAM_CODE_TO_STATUS: Partial<Record<ProblemCode, RenameFailureStatus>> = {
-    [PROBLEM_CODE.OPTIMISTIC_LOCK_CONFLICT]: RESULT_STATUS.CONFLICT,
-    [PROBLEM_CODE.DUPLICATE_RESOURCE]: RESULT_STATUS.DUPLICATE,
-    [PROBLEM_CODE.UNAUTHENTICATED]: RESULT_STATUS.UNAUTHENTICATED,
-    /* One branch for both 403 and 404, so a caller cannot probe which ids exist (see result-status.ts). */
-    [PROBLEM_CODE.ACCESS_DENIED]: RESULT_STATUS.NOT_FOUND,
-};
 
 /**
  * BOARD-04's write path, ordered exactly as `createBoardAction` orders its own: session, then
@@ -84,13 +65,11 @@ export const renameBoardAction = async ({
     const upstreamError: unknown = error;
     if (upstreamError !== undefined) {
         /*
-         * Named branches, never upstream text: the code selects one of this project's own
+         * Named branches, never upstream text: the shared mapping selects one of this project's own
          * discriminants and the caller authors the copy (T-02-61). `CONFLICT` is what SYNC-01
          * (Phase 4) will hang reconciliation from; no reconciliation behaviour is built now.
          */
-        const code = parseProblemDetail(upstreamError)?.code;
-
-        return { status: (code === undefined ? undefined : UPSTREAM_CODE_TO_STATUS[code]) ?? RESULT_STATUS.ERROR };
+        return { status: mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code) };
     }
 
     /*

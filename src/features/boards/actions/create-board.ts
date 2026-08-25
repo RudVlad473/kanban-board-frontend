@@ -4,6 +4,8 @@ import { refresh } from "next/cache";
 
 import { BoardSchema, createBoardInputSchema, type Board } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
+import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
+import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
 import { verifySession } from "@/lib/server/dal";
@@ -17,6 +19,14 @@ export type CreateBoardResult =
     | { status: typeof RESULT_STATUS.SUCCESS; board: Board }
     | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
     | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
+    /*
+     * `CONFLICT`/`NOT_FOUND` are here for parity with `mapProblemCodeToStatus`'s return type, not
+     * because a create can reach them today — it carries no version and targets no existing id. Kept
+     * rather than narrowed away, so a future create contract cannot fall through a too-narrow type.
+     */
+    | { status: typeof RESULT_STATUS.CONFLICT }
+    | { status: typeof RESULT_STATUS.DUPLICATE }
+    | { status: typeof RESULT_STATUS.NOT_FOUND }
     | { status: typeof RESULT_STATUS.ERROR };
 
 /**
@@ -51,7 +61,12 @@ export const createBoardAction = async ({ name }: { name: string }): Promise<Cre
      */
     const upstreamError: unknown = error;
     if (upstreamError !== undefined) {
-        return { status: RESULT_STATUS.ERROR };
+        /*
+         * Named branches, never upstream text: the shared mapping selects one of this project's own
+         * discriminants and the caller authors the copy (T-02-64), the same call `renameBoardAction`
+         * makes — a duplicate board name is refused with 409 DUPLICATE_RESOURCE here too.
+         */
+        return { status: mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code) };
     }
 
     /*
