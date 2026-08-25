@@ -9,7 +9,8 @@ import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
 import { THEME } from "../src/lib/core/theme/theme";
 
-const PROTECTED_HEADING = "Boards";
+/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
+const PROTECTED_LANDMARK = "Boards";
 const FRESH_PASSWORD = "SessionRotationPwd1!";
 
 /*
@@ -52,7 +53,7 @@ test.describe("SESSION-01: forced sign-out on a dead upstream credential", () =>
 
         // Assert — destination, content absence, cookie clearance and no leaked upstream error text.
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
-        await expect(page.getByRole("heading", { name: PROTECTED_HEADING })).toHaveCount(0);
+        await expect(page.getByRole("navigation", { name: PROTECTED_LANDMARK })).toHaveCount(0);
 
         const bodyText = await page.textContent("body");
         expect(bodyText).not.toContain("UNAUTHENTICATED");

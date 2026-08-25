@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { boardsSchema, type Board } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
@@ -16,11 +18,11 @@ export type FetchBoardsResult =
     | { status: typeof RESULT_STATUS.ERROR };
 
 /**
- * RSC read replacing the deleted Route Handler (D-01/D-02/D-03) — calls `verifySession()` itself
- * rather than trusting a caller's guard already ran (CVE-2025-29927 class, T-02.1-02); `userId`
- * comes only from the session, this function takes no arguments (T-02.1-01) (see docs/adr/tech/0019).
+ * RSC read replacing the deleted Route Handler (D-01/D-02/D-03, docs/adr/tech/0019) — verifies its
+ * own session (CVE-2025-29927 class, T-02.1-02), takes no arguments so `userId` comes only from
+ * that record (T-02.1-01), and is `cache`-wrapped so one server render costs one upstream call.
  */
-export const fetchBoards = async (): Promise<FetchBoardsResult> => {
+export const fetchBoards = cache(async (): Promise<FetchBoardsResult> => {
     const record = await verifySession();
     if (!record) {
         return { status: RESULT_STATUS.UNAUTHENTICATED };
@@ -54,4 +56,4 @@ export const fetchBoards = async (): Promise<FetchBoardsResult> => {
      * oldest-first with no timestamp, so a plain reversal is equivalent (02-BACKEND-FACTS.md).
      */
     return { status: RESULT_STATUS.SUCCESS, boards: [...parsed.data].reverse() };
-};
+});

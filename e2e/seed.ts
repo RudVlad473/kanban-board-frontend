@@ -36,6 +36,35 @@ export const seedBoard = ({ account, name }: { account: SeededAccount; name: str
         runSeedScript(["board", "--jsession", account.jsessionId, "--user", account.id, "--name", name]),
     ) as SeededBoard;
 
+export type SeededColumn = { id: string; name: string; version: number; position: number };
+
+/**
+ * Creates one column on an already-seeded board, in call order — the backend derives `position`
+ * from that order, so two columns are seeded with two calls, never one parallel pair (P5).
+ */
+export const seedColumn = ({
+    account,
+    boardId,
+    name,
+}: {
+    account: SeededAccount;
+    boardId: string;
+    name: string;
+}): SeededColumn =>
+    JSON.parse(
+        runSeedScript([
+            "column",
+            "--jsession",
+            account.jsessionId,
+            "--user",
+            account.id,
+            "--board",
+            boardId,
+            "--name",
+            name,
+        ]),
+    ) as SeededColumn;
+
 export type SeededBoardFull = SeededBoard & { columns: { id: string; name: string; position: number }[] };
 
 /**

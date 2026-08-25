@@ -14,6 +14,12 @@ export const RESULT_STATUS = {
     UNAUTHENTICATED: "UNAUTHENTICATED",
     INVALID: "INVALID",
     IDLE: "IDLE",
+    /*
+     * "The caller may not see this resource" — deliberately one branch for both 404 and the 403
+     * the backend actually answers a foreign board with (02-BACKEND-FACTS.md P7), so a caller
+     * cannot use the distinction to probe which ids exist.
+     */
+    NOT_FOUND: "NOT_FOUND",
 } as const;
 
 export type ResultStatus = (typeof RESULT_STATUS)[keyof typeof RESULT_STATUS];

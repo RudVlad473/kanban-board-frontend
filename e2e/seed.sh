@@ -5,6 +5,7 @@ set -euo pipefail
 
 usage() {
     echo "usage: seed.sh account | seed.sh board --jsession <id> --user <id> --name <name> |" >&2
+    echo "       seed.sh column --jsession <id> --user <id> --board <id> --name <name> |" >&2
     echo "       seed.sh board-full --jsession <id> --user <id> --board <id>" >&2
     exit 2
 }
@@ -103,6 +104,39 @@ cmd_board() {
     echo "$body_out"
 }
 
+cmd_column() {
+    local jsession="" user="" board="" name=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --jsession) jsession="$2"; shift 2 ;;
+            --user) user="$2"; shift 2 ;;
+            --board) board="$2"; shift 2 ;;
+            --name) name="$2"; shift 2 ;;
+            *) usage ;;
+        esac
+    done
+
+    if [ -z "$jsession" ] || [ -z "$user" ] || [ -z "$board" ] || [ -z "$name" ]; then
+        usage
+    fi
+
+    # Reuses the sign-up session's own credential exactly as cmd_board does — never a second
+    # sign-in, which would spend the account's other slot against the two-session cap.
+    local column_body raw status body_out
+    column_body=$(build_json name "$name")
+    raw=$(curl -sS -w '\n%{http_code}' -X POST "$EXTERNAL_API_BASE_URL/boards/$board/columns?userId=$user" \
+        -H "Cookie: JSESSIONID=$jsession" -H "Content-Type: application/json" -d "$column_body")
+    status="${raw##*$'\n'}"
+    body_out="${raw%$'\n'*}"
+
+    if [[ "$status" != 2* ]]; then
+        echo "seed.sh column: column creation returned $status: $body_out" >&2
+        exit 1
+    fi
+
+    echo "$body_out"
+}
+
 # Reads a board back through the real backend so a spec can assert what actually persisted —
 # the board-detail UI is Phase 3 scope, so there is nothing to read it from on screen yet.
 cmd_board_full() {
@@ -144,6 +178,11 @@ case "${1:-}" in
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
         shift
         cmd_board "$@"
+        ;;
+    column)
+        : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
+        shift
+        cmd_column "$@"
         ;;
     board-full)
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"

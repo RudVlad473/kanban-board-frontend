@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    boardFullSchema,
     boardNameSchema,
     boardsSchema,
+    columnFullSchema,
     columnNameRowSchema,
     columnNameSchema,
     createBoardColumnsInputSchema,
     createBoardInputSchema,
+    taskFullSchema,
 } from "@/features/boards/schemas";
 import { createBoard, createBoards } from "@/test-utils/factories/board";
+import { createBoardFull, createColumnFull, createTaskFull } from "@/test-utils/factories/board-full";
 
 describe("boardsSchema", () => {
     it("accepts a well-formed board array and yields typed data", () => {
@@ -66,6 +70,91 @@ describe("boardsSchema", () => {
 
         // Assert
         expect(result.success).toBe(false);
+    });
+});
+
+/*
+ * The containment hierarchy is composed level by level precisely so a malformed nested payload is
+ * rejected outright rather than partially rendered (T-02-52) — each case drives one level.
+ */
+describe("boardFullSchema", () => {
+    it("accepts a well-formed full board and yields typed data", () => {
+        // Arrange
+        const board = createBoardFull();
+
+        // Act
+        const result = boardFullSchema.safeParse(board);
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual(board);
+    });
+
+    it("accepts a board with no columns", () => {
+        // Act & Assert
+        expect(boardFullSchema.safeParse(createBoardFull({ columns: [] })).success).toBe(true);
+    });
+
+    it("rejects a board whose columns field is absent", () => {
+        // Arrange
+        const { columns: _columns, ...withoutColumns } = createBoardFull();
+
+        // Act & Assert
+        expect(boardFullSchema.safeParse(withoutColumns).success).toBe(false);
+    });
+
+    it("rejects a board whose columns field is not an array", () => {
+        // Act & Assert
+        expect(boardFullSchema.safeParse({ ...createBoardFull(), columns: createColumnFull() }).success).toBe(false);
+    });
+
+    it("rejects a board holding a malformed column", () => {
+        // Arrange
+        const { name: _name, ...columnWithoutName } = createColumnFull();
+
+        // Act & Assert
+        expect(boardFullSchema.safeParse({ ...createBoardFull(), columns: [columnWithoutName] }).success).toBe(false);
+    });
+});
+
+describe("columnFullSchema", () => {
+    it("rejects a column holding a malformed task", () => {
+        // Arrange
+        const { title: _title, ...taskWithoutTitle } = createTaskFull();
+
+        // Act & Assert
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), tasks: [taskWithoutTitle] }).success).toBe(false);
+    });
+
+    it("rejects a column whose tasks field is absent", () => {
+        // Arrange
+        const { tasks: _tasks, ...withoutTasks } = createColumnFull();
+
+        // Act & Assert
+        expect(columnFullSchema.safeParse(withoutTasks).success).toBe(false);
+    });
+});
+
+describe("taskFullSchema", () => {
+    it("rejects a task holding a malformed subtask", () => {
+        // Act & Assert
+        expect(
+            taskFullSchema.safeParse({ ...createTaskFull(), subtasks: [{ id: "s1", title: "Subtask", version: 0 }] })
+                .success,
+        ).toBe(false);
+    });
+
+    /* The contract declares `description` optional, so its absence is well-formed, not malformed. */
+    it("accepts a task with no description", () => {
+        // Arrange
+        const { description: _description, ...withoutDescription } = createTaskFull();
+
+        // Act
+        const result = taskFullSchema.safeParse(withoutDescription);
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.description).toBeUndefined();
     });
 });
 

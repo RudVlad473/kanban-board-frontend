@@ -82,14 +82,29 @@ no longer calls `session.destroy()` itself; on a forced-sign-out-eligible 401 it
 Handler:
 
 1. Checks the `Sec-Fetch-Site` request header and rejects (403, session left intact) anything
-   other than `same-origin` — this route is otherwise a plain, unauthenticated `GET` that any
-   page can navigate a signed-in visitor to, and the session cookie is `SameSite=Lax`, so without
-   this check a cross-site page could force a real user's session to be destroyed (logout CSRF).
-   `Sec-Fetch-Site` is set by the browser itself and cannot be spoofed by the requesting page; only
-   the internal same-origin redirect this handler exists for produces `same-origin`. This is what
-   actually enforces "reachable only via the genuine originating 401 condition" — the property this
-   record's "one narrow, justified exception" framing (Consequences, below) depends on but did not
-   originally mechanize.
+   outside the allow-list `{same-origin, none}` — this route is otherwise a plain, unauthenticated
+   `GET` that any page can navigate a signed-in visitor to, and the session cookie is
+   `SameSite=Lax`, so without this check a cross-site page could force a real user's session to be
+   destroyed (logout CSRF). `Sec-Fetch-Site` is set by the browser itself and cannot be spoofed by
+   the requesting page. This is what actually enforces "reachable only via the genuine originating
+   401 condition" — the property this record's "one narrow, justified exception" framing
+   (Consequences, below) depends on but did not originally mechanize.
+
+   **Amended 2026-08-25 (plan 02-11).** The original text said "only the internal same-origin
+   redirect this handler exists for produces `same-origin`", and allowed that value alone. That was
+   observed to be incomplete once `app/(dashboard)/boards/page.tsx` became a Server Component that
+   calls the external API in its own render rather than only inside a `Suspense` boundary: the
+   forced-sign-out `redirect()` is then issued as a real HTTP 307 on the document request, and
+   Chromium carries the *initiating* navigation's `Sec-Fetch-Site` across that same-origin hop.
+   A visitor typing/opening `/boards` directly therefore arrives at this handler with `none`, and
+   the guard rejected the very flow it exists to serve (measured against the built app,
+   2026-08-25: `sec-fetch-site: none`, `sec-fetch-mode: navigate`, `redirectedFrom` `/boards`).
+
+   `none` is safe to allow and does not weaken WR-01: browsers emit it only for a navigation with
+   no initiator — address bar, bookmark, or a redirect chain descending from one. Every navigation
+   an attacker's page can initiate is `cross-site` (or `same-site`), both of which are still
+   rejected, as is an absent header. What would falsify this: a browser emitting `none` for a
+   page-initiated navigation.
 2. Calls `session.destroy()` (legal here — Route Handlers are an explicitly permitted cookie-write
    context).
 3. Redirects to `ROUTE.SIGN_IN` via `NextResponse.redirect`. There is no caller-supplied
@@ -123,8 +138,9 @@ legally allowed to happen, not who is allowed to decide one is needed.
   instead of the final destination directly).
 - The `Sec-Fetch-Site` guard is covered by `e2e/session-bridge.e2e.spec.ts`'s `SESSION-03` cases:
   a cross-site header and an absent header both leave the session cookie intact (403, no
-  destroy), while `same-origin` still destroys it and redirects to `ROUTE.SIGN_IN` exactly as
-  before the guard was added.
+  destroy), while an allow-listed value still destroys it and redirects to `ROUTE.SIGN_IN` exactly
+  as before the guard was added. `SESSION-01` is the `none` case's own coverage — it drives the
+  real server-redirect path end to end and fails if that value is rejected.
 
 Unwind trigger: if Next.js ever allows cookie mutation from Server Component render context (no
 such change is currently planned or proposed upstream), this Route Handler indirection becomes

@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import type { PropsWithChildren } from "react";
 
+import { DashboardHeader } from "@/components/layout/dashboard-header/dashboard-header";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { BoardList } from "@/features/boards/components/board-list";
 import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
@@ -23,6 +23,20 @@ const SidebarBoards = async () => {
         <BoardList
             boards={result.status === RESULT_STATUS.SUCCESS ? result.boards : []}
             loadFailed={result.status !== RESULT_STATUS.SUCCESS}
+        />
+    );
+};
+
+/*
+ * A second boundary beside `SidebarBoards`, so the header and the sidebar stream independently —
+ * `fetchBoards`'s `cache` wrapper means both awaits share one upstream call rather than costing two.
+ */
+const HeaderBoards = async ({ displayName }: { displayName: string }) => {
+    const result = await fetchBoards();
+    return (
+        <DashboardHeader
+            displayName={displayName}
+            boards={result.status === RESULT_STATUS.SUCCESS ? result.boards : []}
         />
     );
 };
@@ -54,18 +68,16 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
                 </Suspense>
             </Sidebar>
 
-            <div className="flex min-w-0 flex-1 flex-col">
-                <header className="flex items-center justify-between border-b border-border-default bg-bg-surface px-6 py-4">
-                    <span className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
-                        {identity.displayName}
-                    </span>
+            {/* `h-dvh` (not `flex-1`) is what bounds the board area, so a column scrolls
+                internally instead of growing the page (mirrors the sidebar's own pinning). */}
+            <div className="flex h-dvh min-w-0 flex-1 flex-col">
+                {/* The fallback is the same header with an empty list — chrome and controls paint
+                    immediately, only the board title waits on the read. */}
+                <Suspense fallback={<DashboardHeader displayName={identity.displayName} boards={[]} />}>
+                    <HeaderBoards displayName={identity.displayName} />
+                </Suspense>
 
-                    <div className="flex items-center gap-4">
-                        <SignOutButton />
-                    </div>
-                </header>
-
-                <main className="flex flex-1 flex-col">{children}</main>
+                <main className="flex min-h-0 flex-1 flex-col">{children}</main>
             </div>
         </div>
     );

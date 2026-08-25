@@ -9,7 +9,8 @@ import { ROUTE } from "../src/lib/core/routing/routes";
 import { isTheme, THEME, type Theme } from "../src/lib/core/theme/theme";
 
 const TOGGLE_NAME = "Toggle dark mode";
-const PROTECTED_HEADING = "Boards";
+/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
+const PROTECTED_LANDMARK = "Boards";
 
 // Matches the backend's password/display-name rules (e2e/seed.sh's SEED_PASSWORD comment).
 const ACCOUNT_PASSWORD = "E2eThemePwd1!";
@@ -106,7 +107,7 @@ test.describe("THEME-01: theme persistence", () => {
 
         // Assert — the toggled theme is still the one stored against the account, not reset.
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
-        await expect(page.getByRole("heading", { name: PROTECTED_HEADING })).toBeVisible();
+        await expect(page.getByRole("navigation", { name: PROTECTED_LANDMARK })).toBeVisible();
         const toggleAfterSignIn = page.getByRole("switch", { name: TOGGLE_NAME });
         await expect(toggleAfterSignIn).toHaveAttribute("aria-checked", initialChecked === "true" ? "false" : "true");
         await waitForThemeCookie({ page, theme: toggledTheme });

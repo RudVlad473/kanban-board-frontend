@@ -1,19 +1,43 @@
-/*
- * This phase's protected surface — COVERAGE.md scopes every board operation to Phase 2, so this
- * route makes no board API call, only proves the route guard's prefix rule against a real path.
- */
-const BoardsPage = () => {
-    return (
-        <div className="flex flex-col gap-2 p-6">
-            <h1 className="font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
-                Boards
-            </h1>
+import { redirect } from "next/navigation";
 
-            <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
-                Board content arrives in phase 2.
-            </p>
-        </div>
-    );
+import { BoardsEmptyState } from "@/features/boards/components/boards-empty-state";
+import { fetchBoards } from "@/features/boards/server/fetch-boards";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
+
+/*
+ * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule). D-11's
+ * auto-select resolves here on the server, before any board markup reaches the browser, so a user
+ * never sees a flash of the wrong screen — the only option still consistent with docs/adr/tech/0019.
+ */
+const BoardsPage = async () => {
+    const result = await fetchBoards();
+
+    if (result.status === RESULT_STATUS.UNAUTHENTICATED) {
+        redirect(ROUTE.SIGN_IN);
+    }
+
+    if (result.status !== RESULT_STATUS.SUCCESS) {
+        return (
+            <div className="flex min-h-0 flex-1 items-center justify-center bg-bg-app p-6">
+                <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
+                    Couldn&apos;t load your boards. Try again.
+                </p>
+            </div>
+        );
+    }
+
+    /*
+     * The same entry the sidebar renders at the top, because both read `fetchBoards()`'s own
+     * already-reversed array — sorting or reversing again here would land the redirect somewhere
+     * other than the top of the panel (D-11, D-12).
+     */
+    if (result.boards.length === 0) {
+        return <BoardsEmptyState />;
+    }
+
+    const [firstBoard] = result.boards;
+    redirect(buildBoardDetailPath(firstBoard.id));
 };
 
 export default BoardsPage;

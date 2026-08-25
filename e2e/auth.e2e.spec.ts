@@ -8,7 +8,8 @@ import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
 
 const FRESH_PASSWORD = "E2eFreshPassword123!";
-const PROTECTED_HEADING = "Boards";
+/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
+const PROTECTED_LANDMARK = "Boards";
 
 test.describe("AUTH-01: sign up", () => {
     test("creates an account, lands on the board list, and sets an httpOnly session cookie whose value is an opaque JWT", async ({
@@ -81,7 +82,7 @@ test.describe("AUTH-02: sign in", () => {
 
         // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
-        await expect(page.getByRole("heading", { name: "Boards" })).toBeVisible();
+        await expect(page.getByRole("navigation", { name: PROTECTED_LANDMARK })).toBeVisible();
     });
 });
 
@@ -232,7 +233,7 @@ test.describe("sign-out", () => {
          */
         await page.goto(ROUTE.BOARDS);
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
-        await expect(page.getByRole("heading", { name: PROTECTED_HEADING })).toHaveCount(0);
+        await expect(page.getByRole("navigation", { name: PROTECTED_LANDMARK })).toHaveCount(0);
     });
 
     /*
