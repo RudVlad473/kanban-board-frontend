@@ -59,6 +59,29 @@ plan that surfaced them.
   needs correcting; left alone deliberately rather than silently picking a winner in a plan that
   was not about documentation.
 
+## 02-11
+
+- **Board creation and sign-out are not optimistic — the user waits on a round trip before any UI
+  feedback.** Raised during 02-11's Task 4 checkpoint review (2026-08-25). Creating a board keeps
+  the modal in its pending state until `POST /boards` and every column POST have returned before
+  the sidebar and the new board's route update; signing out shows nothing until the Server Action's
+  redirect lands. In both cases the user sees a delay where an instant update followed by
+  reconciliation would read as immediate.
+
+  Both behaviours predate this plan: board creation is 02-10's `useCreateBoard`
+  (`src/features/boards/hooks/use-create-board.ts`) driving
+  `src/features/boards/actions/create-board.ts`; sign-out is 02-01/02-04's
+  `src/features/auth/actions/sign-out.ts` behind `sign-out-button.tsx`'s `useActionState`. Plan
+  02-11 adds only the read-only board-detail view and touches neither mutation path, so this is
+  out of scope for it — user confirmed at the checkpoint, do not fix here.
+
+  Worth noting the pattern already has a home in this phase: D-15 makes board *rename* optimistic
+  via TanStack Query's `onMutate`/`onError` rollback, and 02-CONTEXT calls that "the general
+  optimistic-update pattern board/column/task mutations follow project-wide". Creation and
+  sign-out are the two mutations that pattern has not yet reached. Sign-out additionally has a
+  constraint create does not: it must keep working pre-hydration, which is why it is a plain
+  `useActionState` form today — any optimistic treatment has to preserve that.
+
 ## 02-15
 
 - **MIGRATION OWED — ten pre-existing test suites are exempted from the story-only-render gate.**
