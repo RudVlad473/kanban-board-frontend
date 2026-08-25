@@ -29,10 +29,22 @@ export const BoardView = ({ board }: Props) => {
         // The column row scrolls horizontally; columns keep their width rather than wrapping.
         <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto bg-bg-app p-6">
             {board.columns.map((column) => (
-                // Each column is its own vertical scroll region, so one long column never moves the rest.
-                <section key={column.id} className="flex w-70 shrink-0 flex-col overflow-y-auto">
+                /*
+                 * Its own vertical scroll region, so one long column never moves the rest — and
+                 * focusable, because this phase's cards are display-only and a scroll region with
+                 * no focusable content is unreachable by keyboard (axe scrollable-region-focusable).
+                 */
+                <section
+                    key={column.id}
+                    tabIndex={0}
+                    aria-labelledby={`board-column-${column.id}`}
+                    className="flex w-70 shrink-0 flex-col overflow-y-auto rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring-focus"
+                >
                     {/* Pinned inside that scroll region, with the canvas colour behind it so rows pass under. */}
-                    <h2 className="sticky top-0 bg-bg-app pb-6 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase">
+                    <h2
+                        id={`board-column-${column.id}`}
+                        className="sticky top-0 bg-bg-app pb-6 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase"
+                    >
                         {toColumnCaption({ name: column.name, taskCount: column.tasks.length })}
                     </h2>
 

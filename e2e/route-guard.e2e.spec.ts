@@ -7,7 +7,11 @@ import { ROUTE } from "../src/lib/core/routing/routes";
 import { THEME } from "../src/lib/core/theme/theme";
 
 const SESSION_COOKIE_NAME = "session";
-const PROTECTED_HEADING = "Boards";
+/*
+ * The sidebar landmark. Was the `/boards` placeholder heading until plan 02-11 replaced that page
+ * with D-10's empty state, which left the old assertion passing for the wrong reason.
+ */
+const PROTECTED_LANDMARK = "Boards";
 
 const signIn = async ({ page, account }: { page: Page; account: SeededAccount }): Promise<void> => {
     await page.goto(ROUTE.SIGN_IN);
@@ -30,7 +34,7 @@ test.describe("AUTH-03: route guard", () => {
          * Assert on the absence of the content, not only the destination — the destination alone
          * does not prove nothing was painted first.
          */
-        await expect(page.getByRole("heading", { name: PROTECTED_HEADING })).toHaveCount(0);
+        await expect(page.getByRole("navigation", { name: PROTECTED_LANDMARK })).toHaveCount(0);
     });
 
     test("redirects an unauthenticated visitor away from a board detail path, covering the /boards prefix", async ({
@@ -43,8 +47,9 @@ test.describe("AUTH-03: route guard", () => {
 
         // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
-        await expect(page.getByRole("heading", { name: PROTECTED_HEADING })).toHaveCount(0);
-        await expect(page.getByRole("heading", { name: "Board", exact: true })).toHaveCount(0);
+        await expect(page.getByRole("navigation", { name: PROTECTED_LANDMARK })).toHaveCount(0);
+        // Nor the board view itself — its columns are the only `region`s this app renders.
+        await expect(page.getByRole("region")).toHaveCount(0);
     });
 
     test("redirects a signed-in visitor away from the sign-in route to the board list", async ({ page }) => {

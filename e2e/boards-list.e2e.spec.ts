@@ -25,7 +25,8 @@ test.describe("BOARD-01: sidebar board list", () => {
         await page.getByLabel("Email", { exact: true }).fill(account.email);
         await page.getByLabel("Password", { exact: true }).fill(account.password);
         await page.getByRole("button", { name: "Sign In" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        // D-11 auto-selects the first board, so an account WITH boards never rests on bare /boards.
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
 
         // Assert
         /*
@@ -74,7 +75,8 @@ test.describe("BOARD-02: cross-account board isolation", () => {
         await page.getByLabel("Email", { exact: true }).fill(ownAccount.email);
         await page.getByLabel("Password", { exact: true }).fill(ownAccount.password);
         await page.getByRole("button", { name: "Sign In" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        // D-11 auto-selects this account's own only board, so the landing URL is a detail path.
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
 
         // Assert
         const sidebar = page.getByRole("navigation", { name: "Boards" });

@@ -20,6 +20,16 @@ export type Route = (typeof ROUTE)[keyof typeof ROUTE];
 // Not a ROUTE member — would pull a function into Route's derived union type (ADR tech/0012).
 export const buildBoardDetailPath = (boardId: string): string => `${ROUTE.BOARDS}/${boardId}`;
 
+/** Exactly one segment below the board-list route, so a deeper path never reads as a board id. */
+const BOARD_DETAIL_PATH_PATTERN = new RegExp(`^${ROUTE.BOARDS}/([^/]+)$`);
+
+/** `buildBoardDetailPath`'s inverse — the board id a path names, or null when it names none. */
+export const toBoardIdFromPath = (pathname: string): string | null => {
+    const match = BOARD_DETAIL_PATH_PATTERN.exec(pathname);
+
+    return match === null ? null : match[1];
+};
+
 /**
  * Prefix-matched (AUTH-03: the board list and every board-detail path share one protection rule),
  * built from `ROUTE` members rather than fresh literals so the policy can't drift from the paths
