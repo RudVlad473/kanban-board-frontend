@@ -15,6 +15,17 @@ import { globRealFiles } from "./glob-real-files.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
+/*
+ * Thin route wrappers under `app/` are exempt from the stories requirement, so their tests render
+ * the wrapper itself — docs/adr/tech/0025's route-file scope carve-out, carried from tech/0021.
+ */
+const ROUTE_WRAPPER_BASENAMES = new Set(["error.test.tsx", "global-error.test.tsx", "layout.test.tsx"]);
+
+const isExemptRouteWrapper = (relativePath) => {
+    const normalized = relativePath.replaceAll("\\", "/");
+    return normalized.startsWith("app/") && ROUTE_WRAPPER_BASENAMES.has(path.basename(normalized));
+};
+
 const isRelativeSpecifier = (specifier) => specifier.startsWith("./") || specifier.startsWith("../");
 
 const isStoriesSpecifier = (specifier) => specifier.replace(/\.[jt]sx?$/, "").endsWith(".stories");
@@ -87,6 +98,10 @@ const readTagRootName = (tagName) => {
 };
 
 export const findStoryOnlyRenderViolations = ({ source, relativePath }) => {
+    if (isExemptRouteWrapper(relativePath)) {
+        return [];
+    }
+
     const sourceFile = ts.createSourceFile(relativePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     const siblingImports = collectSiblingComponentImports(sourceFile);
     const violations = [];

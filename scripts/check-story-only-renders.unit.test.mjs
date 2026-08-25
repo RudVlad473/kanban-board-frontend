@@ -140,6 +140,50 @@ describe("findStoryOnlyRenderViolations", () => {
         ]);
     });
 
+    it("reports none for an app/ route error boundary, exempt per docs/adr/tech/0025's carve-out", () => {
+        // Arrange
+        const source = [
+            'import { render } from "vitest-browser-react";',
+            "",
+            'import DashboardError from "./error";',
+            "",
+            'it("renders", async () => {',
+            "    await render(<DashboardError error={new Error('boom')} reset={() => undefined} />);",
+            "});",
+        ].join("\n");
+
+        // Act
+        const violations = findStoryOnlyRenderViolations({
+            source,
+            relativePath: "app/(dashboard)/error.test.tsx",
+        });
+
+        // Assert
+        expect(violations).toEqual([]);
+    });
+
+    it("still flags a non-wrapper route test under app/, which the carve-out does not reach", () => {
+        // Arrange
+        const source = [
+            'import { render } from "vitest-browser-react";',
+            "",
+            'import BoardsPage from "./page";',
+            "",
+            'it("renders", async () => {',
+            "    await render(<BoardsPage />);",
+            "});",
+        ].join("\n");
+
+        // Act
+        const violations = findStoryOnlyRenderViolations({
+            source,
+            relativePath: "app/(dashboard)/boards/page.test.tsx",
+        });
+
+        // Assert
+        expect(violations).toEqual([{ line: 6, name: "BoardsPage" }]);
+    });
+
     it("reports none for a default import from a .stories module", () => {
         // Arrange
         const source = ['import meta from "./add-board-modal.stories";', "", "export default meta;"].join("\n");

@@ -5,10 +5,9 @@ import { fn } from "storybook/test";
 import { AddBoardModal } from "./add-board-modal";
 
 /*
- * Visual-only CSF3 (D-25) — every state below is staged through props, never a play function.
- * `appDirectory` mounts a working App Router context, matching `sign-up-form.stories.tsx`.
- * The two handlers are `fn()` spies so a test can assert on them by reading a composed story's own
- * args, instead of spreading props onto that story — the pattern docs/adr/tech/0025 bans.
+ * Visual-only CSF3 (D-25), `appDirectory` matching `sign-up-form.stories.tsx`. Both handlers are
+ * `fn()` spies so a test asserts by reading these args, never by spreading props onto a composed
+ * story (docs/adr/tech/0025).
  */
 const meta: Meta<typeof AddBoardModal> = {
     component: AddBoardModal,
