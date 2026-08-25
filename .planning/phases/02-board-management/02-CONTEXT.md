@@ -174,6 +174,47 @@ Existing plans 02-11/02-12/02-13 keep their IDs and shift to waves 11/12/13. The
   `isExpanded`. Scoped to genuinely boolean toggle state matching that call site's shape — not every
   `useState` in the codebase. Plan 02-14, Tasks 3-4.
 
+### Wave 10 enforcement mechanisms (2026-08-25, D-28a through D-28c and D-29a)
+
+Settled by the user at plan 02-15's Task 1 `checkpoint:decision`, which asked three linked
+questions: what mechanism enforces D-28, which of D-28's live declaration sites are extracted
+versus exempted, and what mechanism enforces D-29. The answers below are what plan 02-15 Tasks 2-4
+build, and they are the reason ADR tech/0027 exists.
+
+- **D-28a (mechanism — option `own-checkers`):** Both rules are enforced by hand-written,
+  dependency-free checker scripts under `scripts/`, parsing with the already-installed TypeScript
+  compiler API, each with a co-located `*.unit.test.mjs` and each wired into CI's `quality` job.
+  This follows the four checkers already there (`check-comment-length.mjs`,
+  `check-no-play-functions.mjs`, `check-no-route-handlers.mjs`, `check-routes.mjs`) and reuses
+  `scripts/glob-real-files.mjs`. It adds **no npm package**, so the phase's Package Legitimacy Audit
+  claim that this phase installs nothing new still holds and no legitimacy gate is triggered.
+  `no-restricted-syntax` was rejected outright: a `files`-scoped block replaces rather than merges
+  with `eslint.config.mjs` section 8d's array. `dependency-cruiser`, `ts-arch` and
+  `eslint-plugin-boundaries` were rejected as module-graph-only (they see the import, never the
+  render or the declaration) and, for the first two, as new supply-chain surface.
+- **D-28b (exemption surface):** Every live declaration site is **extracted**, including all
+  `cva(...)` variant constants — which the Task 1 inventory undercounted as eight across seven
+  files. The real count is **nine across seven files**: `switch.tsx` declares three (`rootVariants`,
+  `trackVariants`, `thumbVariants`), not one. Each moves to a sibling non-`.tsx` module beside its
+  component. Only two exemptions remain, both recorded in ADR tech/0027 and nowhere else: Next.js's
+  framework-forced route-segment exports in `app/` route files, and `src/test-utils/`, which is test
+  infrastructure never imported by application code.
+- **D-28c (compound-component namespace objects):** The `export const Toast = { Root, Content, ... }`
+  object that `toast.tsx`, `dropdown.tsx`, `menu.tsx` and `modal.tsx` each close with is neither a
+  component nor a prop type, but it is not a defect either — it is this project's compound-component
+  pattern. It becomes a **fifth permitted declaration kind** in the checker, recognised
+  structurally: a top-level `export const` whose initializer is an object literal every one of whose
+  property values is an identifier referencing a component declared earlier in the same file.
+  Deliberately *not* a hardcoded list of exempt file paths, so a future compound component is
+  covered automatically without editing either the checker or the ADR.
+- **D-29a (story-rule mechanism):** Same `own-checkers` answer —
+  `scripts/check-story-only-renders.mjs`. The rule is about the render, not the import graph, which
+  is precisely what no module-graph tool can express.
+
+One further correction to plan 02-15's own prose: it describes `add-board-modal.test.tsx` as
+carrying **nineteen** cases. The file carries **twenty**. Twenty is the floor the rewrite may not
+fall below.
+
 ### Claude's Discretion
 
 None — every gray area discussed had a concrete decision made; no "you decide" selections in
