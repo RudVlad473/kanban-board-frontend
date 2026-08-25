@@ -10,39 +10,13 @@ import type {
     ToastRootProps as BaseToastRootProps,
     ToastTitleProps,
 } from "@base-ui/react/toast";
-import { cva } from "class-variance-authority";
 import { X } from "lucide-react";
 import type { PropsWithChildren } from "react";
 
+import { rootVariants } from "@/components/ui/toast/toast-variants";
+import { useToast } from "@/components/ui/toast/use-toast";
 import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
-
-/*
- * D-04/D-09/D-15: raise a toast via `useToast().add(...)` from anywhere in the tree — no portal,
- * timer or ARIA-live wiring of its own; reads `Toast.Provider`'s per-render-tree store, avoiding
- * the module-scope-manager cross-SSR-request leak `query-client.tsx` documents (see 02-07-SUMMARY.md).
- */
-export const useToast = BaseToast.useToastManager;
-
-/*
- * Danger accent reads `toast.type` (not a separate `variant` prop) — Base UI's own `ToastObject`
- * already carries `type` for styling. `rounded-sm` matches TextField/Dropdown's radius per human
- * review, not Modal's `rounded-lg`; surface color/shadow still match Modal (see 02-07-SUMMARY.md).
- */
-const rootVariants = cva(
-    "pointer-events-auto relative w-[min(90vw,24rem)] overflow-hidden rounded-sm border-l-4 bg-bg-surface shadow-lg",
-    {
-        variants: {
-            variant: {
-                default: "border-l-transparent",
-                danger: "border-l-border-danger",
-            },
-        },
-        defaultVariants: {
-            variant: "default",
-        },
-    },
-);
 
 type RootProps = Omit<BaseToastRootProps, "className"> & ClassNameProp;
 

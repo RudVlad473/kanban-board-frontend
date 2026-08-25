@@ -75,6 +75,14 @@ jobs:
             - name: Story interaction-function ban check
               run: pnpm stories:check
 
+            - name: TSX declaration scope check
+              run: pnpm tsx:check
+
+            # Prints its tracked docs/adr/tech/0025 exemptions on every run, pass or fail — the
+            # carve-out is meant to be read in the log, not discovered by grepping the script.
+            - name: Story-only render check
+              run: pnpm renders:check
+
             - name: Format check
               run: pnpm format:check
 

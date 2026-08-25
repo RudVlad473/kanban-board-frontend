@@ -98,6 +98,14 @@ the deep-interaction tests it was expected to also serve. The pre-10.x direct-re
   `setProjectAnnotations` once every test renders through it.
 - A component's `.stories.tsx` file remains load-bearing for test coverage exactly as `tech/0021`
   established — this record changes how a story is consumed by a test, not whether one is required.
+- `add-board-modal.test.tsx` violated this record — direct-rendering the component at eight call
+  sites and declaring a stateful host component at a ninth — while the story-per-prop-combination
+  rule's enforcement was review-only. Found 2026-08-24, fixed by plan 02-15. Recorded so a later
+  reader does not assume review was ever sufficient for this rule; it demonstrably was not.
+- Turning the mechanical gate on (plan 02-15) surfaced **121 further direct renders across ten
+  pre-existing suites**, roughly thirteen times the single violating file that plan assumed — the
+  same finding at scale. Those ten carry a tracked, dated exemption rather than a rewrite; see the
+  Enforcement section below.
 
 Unwind trigger: none anticipated — this activates a still-current, still-documented Storybook API
 path (`render(<Primary />)`) in place of an opaque helper that proved to block this project's own
@@ -108,6 +116,46 @@ its own rendered tree/container.
 `browser` Vitest project. `pnpm stories:check` (`scripts/check-no-play-functions.mjs`) blocks any
 `*.stories.tsx` declaring `play:`. The `no-restricted-syntax` `.run()` ban (plan 02.2-09) blocks any
 remaining `.run()` call at lint time, project-wide.
+
+`pnpm renders:check` (`scripts/check-story-only-renders.mjs`, plan 02-15, D-29a) blocks the
+story-per-prop-combination rule that the three mechanisms above never covered: it fails the build on
+any `*.test.tsx` that renders a component it imported from a relative sibling module instead of a
+composed story, and names the correct fix — a named exported story per prop combination — because
+the wrong fix (one composed story fed varying props) is banned by this same record. It runs as the
+"Story-only render check" step of CI's `quality` job. The rule is about the render, not the import
+graph: a type-only import is never flagged, and a sibling component rendered inside a host component
+the test file declares is.
+
+**This gate is not yet repository-wide, and the scope of what it does not cover is deliberately
+stated rather than implied.** It is fully enforced for new and touched files and for
+`add-board-modal.test.tsx`. Ten pre-existing suites carry a dated exemption, recorded as
+`MIGRATION_EXEMPTIONS` in the checker itself and printed by the checker on every run, pass or fail:
+
+| Exempt suite (as of 2026-08-25) | Direct renders | Cases |
+|---|---:|---:|
+| `src/components/ui/dropdown/dropdown.test.tsx` | 34 | 14 |
+| `src/components/ui/modal/modal.test.tsx` | 17 | 10 |
+| `src/components/ui/text-field/text-field.test.tsx` | 15 | 16 |
+| `src/components/ui/button/button.test.tsx` | 15 | 14 |
+| `src/components/ui/checkbox/checkbox.test.tsx` | 12 | 15 |
+| `src/components/ui/menu/menu.test.tsx` | 11 | 9 |
+| `src/components/ui/icon-button/icon-button.test.tsx` | 8 | 10 |
+| `src/components/ui/switch/switch.test.tsx` | 6 | 8 |
+| `src/components/layout/error-fallback/error-fallback.test.tsx` | 2 | 7 |
+| `src/components/ui/toast/toast.test.tsx` | 1 | 13 |
+
+Each number is a **ratchet ceiling, not a licence**: an exempt suite that adds a direct render fails
+the build, and one that reaches zero also fails, so a finished migration cannot leave a dead entry
+overstating the carve-out. The exemption exists because these suites were written and code-reviewed
+on the understanding that direct rendering is acceptable for deep-interaction cases — several say so
+in an in-file comment — and rewriting ~116 cases was not in the scope of the plan that discovered
+them. The migration is tracked in
+`.planning/phases/02-board-management/deferred-items.md` (plan 02-15) and in `.planning/WINDOWS.md`.
+
+Unwind trigger for the exemption specifically: it is removed entry by entry as each suite migrates,
+and this table is wrong the moment it disagrees with `MIGRATION_EXEMPTIONS` — the checker is the
+source of truth, this table is the published claim, and CI failing on a stale entry is what keeps
+the two honest.
 
 Sources:
 

@@ -205,10 +205,14 @@ component cannot be unit-tested without rendering that component, cannot be reus
 Action that validates the same shape, and quietly becomes a second source of truth next to the
 feature's real schema module.
 
-As of 2026-08-24 `add-board-modal.tsx` was the live counter-example, declaring `addBoardFormSchema`
-(zod), `AddBoardFormValues`, `DEFAULT_COLUMN_ROW_COUNT`, `createEmptyColumnRows()` and
-`ColumnRowPath` alongside its `Props` and component. Enforcement: code review today; a lint rule
-restricting top-level declarations in `.tsx` is the intended endpoint.
+Five top-level declaration kinds are permitted — a component, a prop type (`Props` or `*Props`), an
+`import`/`export` statement, a compound-component namespace object (`export const Toast = { Root,
+… }`, recognised structurally), and Next.js's framework-forced route exports in `app/` files.
+`add-board-modal.tsx` was the live counter-example as of 2026-08-24; it and twenty-two other
+declarations across twelve `.tsx` files were extracted by plan 02-15. Exemptions live in
+`docs/adr/tech/0027-tsx-declaration-scope.md` and nowhere else — never an inline suppression
+comment. Enforcement: `pnpm tsx:check` (`scripts/check-tsx-declarations.mjs`), blocking in CI's
+`quality` job, green repository-wide with no per-file baseline.
 
 ## Responsive strategy (docs/adr/tech/0010, docs/adr/tech/0014)
 
@@ -252,7 +256,7 @@ restricting top-level declarations in `.tsx` is the intended endpoint.
 ## Component tests from stories (docs/adr/tech/0025, supersedes docs/adr/tech/0021)
 
 - Every component carries a co-located `*.stories.tsx` and a co-located `*.test.tsx` that imports those stories through `composeStories` (from `@storybook/react`, never `@storybook/nextjs-vite`) and renders the composed story directly as JSX via `vitest-browser-react`'s `render()` — never `.run()`, which `.run()`'s opaque rendered-tree access made unable to serve this project's deep-interaction tests. `app/**/error.tsx`/`app/**/layout.tsx`-style thin route wrappers are exempt. Enforcement: `pnpm test:browser`; a component without a stories/test pair is a review-blocking gap; `.run()` itself is blocking-ESLint-banned repo-wide (`no-restricted-syntax`, `eslint.config.mjs` section 8d).
-- Every prop combination a test needs is its own named, exported story in the `.stories.tsx` file (e.g. `Unauthenticated`, `SaveFailed`) — a `*.test.tsx` file never overrides a composed story's args by spreading manual JSX props onto it (`render(<Light {...{ isAuthenticated: false } } />)`) or via a same-file `render<Component>(props)` helper that does the same thing. All visual/state configuration lives in the stories file; the test file only chooses which already-configured story to render and what to assert on it. Enforcement: code review.
+- Every prop combination a test needs is its own named, exported story in the `.stories.tsx` file (e.g. `Unauthenticated`, `SaveFailed`) — a `*.test.tsx` file never overrides a composed story's args by spreading manual JSX props onto it (`render(<Light {...{ isAuthenticated: false } } />)`) or via a same-file `render<Component>(props)` helper that does the same thing. All visual/state configuration lives in the stories file; the test file only chooses which already-configured story to render and what to assert on it. Enforcement: `pnpm renders:check` (`scripts/check-story-only-renders.mjs`), blocking in CI's `quality` job — **with a scoped, tracked exemption, not repository-wide coverage**. It is enforced for new and touched files and for `add-board-modal.test.tsx`; ten pre-existing suites (dropdown, modal, text-field, button, checkbox, menu, icon-button, switch, error-fallback, toast — 121 direct renders across ~116 cases) carry a dated exemption pending a follow-up migration, listed in `docs/adr/tech/0025`'s Enforcement section and printed by the checker on every run. Each exempt suite's count is a ratchet ceiling: adding a direct render to one fails the build, and so does leaving a dead entry behind after migrating it.
 - In Browser Mode every typed character is its own driver round-trip, so `userEvent.type()` is sized to the shortest input that proves the assertion, never a round number picked for headroom. Bulk text a test merely needs *present* goes in a `defaultValue`/prop; only the characters whose typing is itself under test get typed. An oversized string spends the 15s `testTimeout`, and a test aborted mid-type leaks its remaining keystrokes into whichever input the *next* test focuses — a cross-test corruption that reads as an unrelated flake (`text-field.test.tsx`'s truncation case, 2026-08-24). Enforcement: code review.
 - Non-visual hooks are tested with React Testing Library's `renderHook` in the `unit` project, not Vitest Browser Mode — except a hook whose behavior depends on real layout measurement (`useOverflowIndicator` is the example), which stays in the `browser` project. Enforcement: code review.
 

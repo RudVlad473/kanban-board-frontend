@@ -11,6 +11,8 @@
         "handlers:check": "node scripts/check-no-route-handlers.mjs",
         "stories:check": "node scripts/check-no-play-functions.mjs",
         "comments:check": "node scripts/check-comment-length.mjs",
+        "tsx:check": "node scripts/check-tsx-declarations.mjs",
+        "renders:check": "node scripts/check-story-only-renders.mjs",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "prepare": "husky",

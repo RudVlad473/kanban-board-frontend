@@ -3,39 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Modal } from "@/components/ui/modal/modal";
 import { TextField } from "@/components/ui/text-field/text-field";
-import { boardNameSchema, columnNameRowSchema } from "@/features/boards/schemas";
-
-/*
- * Rows are validated with `columnNameRowSchema`, not `columnNameSchema` — a blank row blocks
- * submission with the required-field copy rather than the length copy (D-02a).
- */
-const addBoardFormSchema = z.object({
-    name: boardNameSchema,
-    columns: z.array(z.object({ value: columnNameRowSchema })),
-});
-
-type AddBoardFormValues = z.infer<typeof addBoardFormSchema>;
-
-/** What the submit handler receives — the validated rows, trimmed later by `toSubmittedColumnNames`. */
-export type AddBoardSubmitValues = { name: string; columns: string[] };
-
-/** D-01a: one row, so the user is never made to clear rows they did not ask for. */
-const DEFAULT_COLUMN_ROW_COUNT = 1;
-
-const createEmptyColumnRows = (count: number): { value: string }[] =>
-    Array.from({ length: count }, () => ({ value: "" }));
-
-/*
- * React Hook Form's `register` needs this exact template type, but a bare numeric interpolation
- * trips `restrict-template-expressions` — the stringified index is asserted back onto it.
- */
-type ColumnRowPath = `columns.${number}.value`;
+import { buildColumnRowPath, createEmptyColumnRows, DEFAULT_COLUMN_ROW_COUNT } from "@/features/boards/model";
+import { addBoardFormSchema, type AddBoardFormValues, type AddBoardSubmitValues } from "@/features/boards/schemas";
 
 type Props = {
     isOpen: boolean;
@@ -143,7 +117,7 @@ export const AddBoardModal = ({
                                         placeholder="e.g. Todo"
                                         hasError={Boolean(rowErrorMessage)}
                                         errorMessage={rowErrorMessage}
-                                        {...register(`columns.${String(index)}.value` as ColumnRowPath)}
+                                        {...register(buildColumnRowPath(index))}
                                     />
 
                                     <IconButton

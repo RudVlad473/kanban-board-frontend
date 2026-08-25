@@ -19,7 +19,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 ### Boards
 
 - [ ] **BOARD-01**: User can view a sidebar list of their own boards
-- [ ] **BOARD-02**: User can create a new board, optionally naming its initial columns
+- [x] **BOARD-02**: User can create a new board, optionally naming its initial columns
 - [ ] **BOARD-03**: User can select a board to view its full contents (columns, tasks, subtasks)
 - [ ] **BOARD-04**: User can rename an existing board
 - [ ] **BOARD-05**: User can delete a board (cascades to its columns, tasks, and subtasks)
@@ -99,7 +99,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-03 | Phase 1 | Complete |
 | THEME-01 | Phase 1 | Complete |
 | BOARD-01 | Phase 2 | Pending |
-| BOARD-02 | Phase 2 | Pending |
+| BOARD-02 | Phase 2 | Complete |
 | BOARD-03 | Phase 2 | Pending |
 | BOARD-04 | Phase 2 | Pending |
 | BOARD-05 | Phase 2 | Pending |

@@ -1,9 +1,10 @@
 import { Select } from "@base-ui/react/select";
 import type { SelectItemProps, SelectPopupProps, SelectRootProps, SelectTriggerProps } from "@base-ui/react/select";
-import { cva } from "class-variance-authority";
 import { Check, ChevronDown, LoaderCircle } from "lucide-react";
-import { createContext, useContext, useId, type PropsWithChildren } from "react";
+import { useContext, useId, type PropsWithChildren } from "react";
 
+import { DropdownContext } from "@/components/ui/dropdown/dropdown-context";
+import { triggerVariants } from "@/components/ui/dropdown/dropdown-variants";
 import { useOverflowIndicator } from "@/hooks/use-overflow-indicator";
 import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
@@ -13,16 +14,6 @@ import type { ClassNameProp } from "@/types/props";
  * Item), not a list-of-options prop; focus trapping, roving tabindex, outside-click dismissal and
  * typeahead all come from Select itself (D-15, see 01-CONTEXT.md).
  */
-
-/*
- * `hasError`/`isLoading` live on Root but must style Trigger — a sibling compound sub-component
- * the consumer instantiates as Root's child, not a prop Root can pass directly. Threaded via
- * context rather than cloning/inspecting Root's children.
- */
-const DropdownContext = createContext<{ hasError: boolean; isLoading: boolean }>({
-    hasError: false,
-    isLoading: false,
-});
 
 type DropdownRootProps = PropsWithChildren<
     Omit<SelectRootProps<string>, "disabled" | "children"> &
@@ -56,26 +47,6 @@ const Root = ({
         </DropdownContext.Provider>
     );
 };
-
-/*
- * D-17: same danger-border token as TextField/Checkbox, same 12px/`h-10` box shape as TextField's
- * trigger. `rounded-sm` is the measured "Text Field / Dropdown corner radius" token; the popup
- * below keeps its own `rounded-md`, which covers only that surface (see 01-CONTEXT.md).
- */
-const triggerVariants = cva(
-    "flex h-10 w-full items-center justify-between gap-2 rounded-sm border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none data-[disabled]:cursor-not-allowed data-[disabled]:text-text-muted data-[disabled]:opacity-50",
-    {
-        variants: {
-            state: {
-                default: "border-border-default",
-                error: "border-border-danger",
-            },
-        },
-        defaultVariants: {
-            state: "default",
-        },
-    },
-);
 
 type DropdownTriggerProps = Omit<SelectTriggerProps, "className" | "children" | "disabled"> &
     ClassNameProp & {

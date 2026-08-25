@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { useToast } from "@/components/ui/toast/toast";
+import { useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns";
 import { toSubmittedColumnNames } from "@/features/boards/model";

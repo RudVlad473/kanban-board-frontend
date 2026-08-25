@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 13
+open_count: 14
 waived_count: 0
 fixed_count: 6
-total_count: 19
-last_updated: 2026-08-25T10:26:50.167Z
+total_count: 20
+last_updated: 2026-08-25T12:50:40.028Z
 ---
 
 # Broken Windows Ledger
@@ -34,6 +34,7 @@ last_updated: 2026-08-25T10:26:50.167Z
 | 17 | 02.2 | deviation | scripts/check-no-play-functions.mjs |  | Rule 3 auto-fix: trimmed a pre-existing 4-line doc comment (from plan 02.2-01) to 3 lines to unblock this plan's own comments:check batch gate | open |  | 2026-08-22T18:16:22.976Z |  |
 | 18 | 02 | deviation | e2e/global-setup.ts |  | e2e cannot be launched via pnpm test:e2e from a GSD worktree: global-setup.ts reads process.env.NONPROD_RESET_TOKEN directly and playwright.config.ts loads no dotenv, so a copied-in .env.local never reaches the Playwright node process. Worked around this session with: node --env-file=.env.local ./node_modules/@playwright/test/cli.js test --project=e2e (30/30 pass). Real fix is loading .env.local from playwright.config.ts; out of plan 02-14's scope. | open |  | 2026-08-25T10:26:44.208Z |  |
 | 19 | 02 | unmet-truth | CONVENTIONS.md |  | Plan 02-14's two prohibitions remain enforcement-by-code-review only (both flagged-unverified in the plan): nothing mechanically prevents a status discriminant being reintroduced as a bare inline string outside result-status.ts, and nothing prevents a boolean toggle being hand-rolled as a useState pair instead of useBoolean. A lint rule is the intended endpoint for both; plan 02-15 already carries D-29's enforcement-mechanism work and is the natural home. | open |  | 2026-08-25T10:26:50.167Z |  |
+| 20 | 02 | deviation | src/components/ui/dropdown/dropdown.test.tsx |  | Plan 02-15 Option B: the story-only-render gate (pnpm renders:check) is blocking in CI but carries an explicit exemption for 10 pre-existing component-test suites -- 121 direct renders across ~116 cases (dropdown 34, modal 17, text-field 15, button 15, checkbox 12, menu 11, icon-button 8, switch 6, error-fallback 2, toast 1). Each count is a ratchet ceiling in MIGRATION_EXEMPTIONS and is printed on every run; ADR tech/0025's Enforcement section and CONVENTIONS.md both state the gate is NOT repo-wide. Outstanding work: migrate all ten onto named per-prop-combination stories. Tracked in .planning/phases/02-board-management/deferred-items.md under 02-15; relates to plan 02-15 threat T-02-54 (false coverage claims are a real defect class here). | open |  | 2026-08-25T12:50:40.028Z |  |
 
 ````json
 [
@@ -263,6 +264,18 @@ last_updated: 2026-08-25T10:26:50.167Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-25T10:26:50.167Z",
+    "resolved_at": null
+  },
+  {
+    "id": 20,
+    "kind": "deviation",
+    "phase": "02",
+    "file": "src/components/ui/dropdown/dropdown.test.tsx",
+    "line": null,
+    "description": "Plan 02-15 Option B: the story-only-render gate (pnpm renders:check) is blocking in CI but carries an explicit exemption for 10 pre-existing component-test suites -- 121 direct renders across ~116 cases (dropdown 34, modal 17, text-field 15, button 15, checkbox 12, menu 11, icon-button 8, switch 6, error-fallback 2, toast 1). Each count is a ratchet ceiling in MIGRATION_EXEMPTIONS and is printed on every run; ADR tech/0025's Enforcement section and CONVENTIONS.md both state the gate is NOT repo-wide. Outstanding work: migrate all ten onto named per-prop-combination stories. Tracked in .planning/phases/02-board-management/deferred-items.md under 02-15; relates to plan 02-15 threat T-02-54 (false coverage claims are a real defect class here).",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-25T12:50:40.028Z",
     "resolved_at": null
   }
 ]

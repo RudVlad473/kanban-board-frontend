@@ -11,6 +11,11 @@ import { setProjectAnnotations } from "@storybook/react";
  * tests (D-08 retrofit finding).
  */
 import { cleanup as cleanupTestingLibraryRender, render } from "@testing-library/react";
+/*
+ * Clears (never resets) `fn()` story-arg spies: Storybook's own per-render reset does not reach a
+ * composed story rendered directly, so call counts otherwise accumulate across cases sharing a story.
+ */
+import { clearAllMocks } from "storybook/test";
 import { afterEach } from "vitest";
 import { cleanup as cleanupVitestBrowserReactRender } from "vitest-browser-react";
 
@@ -44,4 +49,5 @@ setProjectAnnotations([a11yAddonAnnotations, previewAnnotations, { testingLibrar
 afterEach(async () => {
     cleanupTestingLibraryRender();
     await cleanupVitestBrowserReactRender();
+    clearAllMocks();
 });

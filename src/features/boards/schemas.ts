@@ -51,6 +51,24 @@ export const columnNameSchema = z
 export const columnNameRowSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).pipe(columnNameSchema);
 
 /*
+ * Rows are validated with `columnNameRowSchema`, not `columnNameSchema` — a blank row blocks
+ * submission with the required-field copy rather than the length copy (D-02a).
+ */
+export const addBoardFormSchema = z.object({
+    name: boardNameSchema,
+    columns: z.array(z.object({ value: columnNameRowSchema })),
+});
+
+export type AddBoardFormValues = z.infer<typeof addBoardFormSchema>;
+
+/**
+ * What the create-board submit handler receives — the validated rows, trimmed later by
+ * `toSubmittedColumnNames`. Lives here rather than beside the modal because it is the contract
+ * between that modal and `board-list.tsx`, and neither should import the other's component module.
+ */
+export type AddBoardSubmitValues = { name: string; columns: string[] };
+
+/*
  * The array is length-capped so a forged wire payload cannot drive an unbounded upstream loop
  * (T-02-46); 50 is far above any plausible starter-column count.
  */

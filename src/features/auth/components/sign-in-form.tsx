@@ -11,24 +11,10 @@ import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signInAction } from "@/features/auth/actions/sign-in";
-import { signInSchema, type SignInInput } from "@/features/auth/schemas";
+import { readFormField } from "@/features/auth/model";
+import { REQUIRED_FIELD_MESSAGE, signInSchema, type SignInInput } from "@/features/auth/schemas";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
-
-/*
- * Duplicated verbatim from src/features/auth/schemas.ts's own (unexported)
- * REQUIRED_FIELD_MESSAGE — see sign-up-form.tsx's identical comment for the rationale.
- */
-const REQUIRED_FIELD_MESSAGE = "Can't be empty";
-
-/**
- * Narrows `FormData.get()`'s `string | File | null` to `""` on anything but a string — every
- * field here is text, so a non-string value should surface, not silently stringify.
- */
-const readFormField = ({ formData, key }: { formData: FormData; key: string }): string => {
-    const value = formData.get(key);
-    return typeof value === "string" ? value : "";
-};
 
 type Props = {
     /** Pre-fills field values (a plain React Hook Form `defaultValues` passthrough) — used by the "Filled" story, mirroring Dropdown's `defaultOpen`/TextField's `defaultValue` staging pattern (D-25's non-interactive alternative to a play function). */

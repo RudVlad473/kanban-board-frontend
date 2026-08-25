@@ -7,8 +7,9 @@ import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
-import { ToastProvider, useToast } from "./toast";
+import { ToastProvider } from "./toast";
 import * as stories from "./toast.stories";
+import { useToast } from "./use-toast";
 
 const { Default, Danger } = composeStories(stories);
 
