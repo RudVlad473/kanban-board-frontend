@@ -17,23 +17,23 @@ type Props = {
 };
 
 /**
- * Composes `Switch` with sun/moon glyphs (D-13/D-25) and a live-region status message — replaces
- * UI-SPEC's unconfirmed toast recommendation since no toast primitive exists (D-13's set). Switch
- * doesn't self-toggle, so `useThemePreference`'s revert alone moves it back on failure.
+ * Composes `Switch` with static sun/moon glyphs flanking it (UAT finding 4 — the reference design
+ * flanks the track, it does not nest an icon in the moving thumb) and a live-region status message,
+ * replacing UI-SPEC's unconfirmed toast recommendation since no toast primitive exists (D-13's set).
  */
 export const ThemeToggle = ({ initialTheme, isAuthenticated, forceErrorMessage }: Props) => {
     const { theme, toggleTheme, errorMessage } = useThemePreference({ initialTheme, isAuthenticated });
     const displayedErrorMessage = forceErrorMessage ?? errorMessage;
 
     return (
-        <div className="flex flex-col items-end gap-1">
-            <Switch
-                label={TOGGLE_LABEL}
-                isChecked={theme === THEME.DARK}
-                onCheckedChange={toggleTheme}
-                iconOn={<Moon />}
-                iconOff={<Sun />}
-            />
+        <div className="flex flex-col gap-1">
+            <div className="flex w-full items-center justify-center gap-4 rounded-lg bg-bg-app p-4">
+                <Sun aria-hidden="true" className="size-5 shrink-0 text-text-muted" />
+
+                <Switch label={TOGGLE_LABEL} isChecked={theme === THEME.DARK} onCheckedChange={toggleTheme} />
+
+                <Moon aria-hidden="true" className="size-5 shrink-0 text-text-muted" />
+            </div>
 
             {/* Always rendered (even empty) so assistive technology has a stable live region to watch, per Task 2's action text. */}
             <p
