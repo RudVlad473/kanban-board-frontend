@@ -340,6 +340,10 @@ None — no external service configuration required.
 - **SYNC-01 (Phase 4)** has `RESULT_STATUS.CONFLICT` already distinguished at the action layer, with no reconciliation behaviour built ahead of it.
 - **One thing left for the human:** the Task 4 checkpoint's visual observations (both themes, both viewports, the truncation of the long name, and an eyeball on the fixed contrast) were not performed by this agent — no MCP browser tooling was available to it, and CLAUDE.md forbids substituting a throwaway script. Everything falsifiable was automated instead.
 
+## Self-Check: PASSED
+
+All eight files claimed as created exist on disk, and all six commit hashes resolve in `git log`.
+
 ---
 *Phase: 02-board-management*
 *Completed: 2026-08-25*
