@@ -20,6 +20,12 @@ export const RESULT_STATUS = {
      * cannot use the distinction to probe which ids exist.
      */
     NOT_FOUND: "NOT_FOUND",
+    /*
+     * "The resource moved under you" — this app's own branch for the backend's
+     * `PROBLEM_CODE.OPTIMISTIC_LOCK_CONFLICT`, kept distinct from `ERROR` so SYNC-01 (Phase 4) has
+     * something to hang reconciliation from without re-deriving it from an upstream code.
+     */
+    CONFLICT: "CONFLICT",
 } as const;
 
 export type ResultStatus = (typeof RESULT_STATUS)[keyof typeof RESULT_STATUS];

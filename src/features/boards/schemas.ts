@@ -79,6 +79,27 @@ export const createBoardInputSchema = z.object({ name: boardNameSchema });
 
 export type CreateBoardInput = z.infer<typeof createBoardInputSchema>;
 
+/*
+ * `version` is required here because the board *update* body requires it while the create body has
+ * no such field — a rename built by analogy to create is rejected on every attempt
+ * (02-RESEARCH.md Pitfall 1). Requiring it at this app's own boundary fails loudly instead.
+ */
+export const renameBoardInputSchema = z.object({
+    boardId: z.string().min(1),
+    name: boardNameSchema,
+    version: z.number().int(),
+});
+
+export type RenameBoardInput = z.infer<typeof renameBoardInputSchema>;
+
+/*
+ * The rename form's own shape — only the name is editable, since the board's id and version come
+ * from the RSC-supplied row rather than from anything the user can type.
+ */
+export const editBoardFormSchema = z.object({ name: boardNameSchema });
+
+export type EditBoardFormValues = z.infer<typeof editBoardFormSchema>;
+
 const COLUMN_NAME_LENGTH_MESSAGE = "Column name must be between 3 and 32 characters.";
 
 /** The backend's own enforced bounds, mirrored verbatim (02-BACKEND-FACTS.md P6). */

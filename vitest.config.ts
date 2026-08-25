@@ -71,6 +71,10 @@ const serverActionStubAlias = [
         find: "@/features/boards/actions/create-board",
         replacement: path.resolve(rootDir, "src/test-utils/create-board-action-storybook-stub.ts"),
     },
+    {
+        find: "@/features/boards/actions/rename-board",
+        replacement: path.resolve(rootDir, "src/test-utils/rename-board-action-storybook-stub.ts"),
+    },
 ];
 
 export default defineConfig({

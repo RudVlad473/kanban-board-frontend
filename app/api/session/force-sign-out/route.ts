@@ -8,6 +8,7 @@ import { session } from "@/lib/server/session";
  * Suspense-streamed Server Component (server-client.ts's onResponse) cannot legally mutate
  * cookies itself, so it redirects here instead (`/api/**` is outside `proxy.ts`'s own matcher).
  */
+
 /**
  * WR-01's allow-list. `same-origin` is the streamed-RSC redirect; `none` is a server-issued
  * redirect descending from an address-bar navigation, which no attacker page can produce — every
