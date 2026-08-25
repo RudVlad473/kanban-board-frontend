@@ -159,3 +159,40 @@ plan that surfaced them.
   around here by invoking Playwright through `node --env-file=.env.local`. A one-line
   `import "node:process"`-side dotenv load in `playwright.config.ts`, or an `--env-file` flag in the
   `test:e2e` script, would remove the footgun; not this plan's file to change.
+
+  *Still true as of 02-13* — the same workaround was needed again to run `boards-delete.e2e.spec.ts`.
+
+## 02-13
+
+- **FUTURE SCOPE (not a defect) — a soft-delete recovery window for deleted boards.** Raised by the
+  user at plan 02-13's Task 4 checkpoint, in answer to its step-10 question on confirmation
+  strength. **D-06's plain confirm modal is confirmed correct as built** — no
+  type-the-name-to-confirm step, no change wanted, and the delete flow was approved as shipped.
+  What the user floated instead, in their own words: "let's just do it naively and add it as
+  possible future scope to add soft delete with a timer for like 2 weeks that removes the data if
+  you haven't recovered it yet."
+
+  A possible future enhancement **to consider, not committed work**. Worth recording that it would
+  be a genuine reversal of an existing decision rather than an addition on top of one:
+  `docs/adr/domain/0002-hard-cascade-delete.md` states plainly that the cascade is hard, with no
+  undo and no soft delete, and this phase's whole delete design — the confirm modal as the sole
+  safety mechanism (D-06), the deliberately non-optimistic ordering (D-09) — rests on that ADR.
+  Adopting a recovery window would need that ADR superseded first, plus backend support the
+  contract does not currently expose: `DELETE /boards/{boardId}` has no soft-delete or restore
+  counterpart in `docs/api/kanban-board-openapi.json`, and `BoardResponseDTO` carries no
+  deleted-at field. Frontend-only work cannot deliver it.
+
+- **Delete's perceived responsiveness — folded into a broader optimistic-update review, not fixed
+  here.** Also raised at 02-13's Task 4 checkpoint: the user observed that delete "isn't instant,
+  it feels like you're still waiting for the board to be deleted on the backend." That is the
+  designed behaviour, not a bug — D-09 requires the board to stay in the sidebar until the write
+  succeeds, precisely so a failed delete never makes a board look gone when it is not, and the
+  confirm button's loading treatment during the in-flight window is a `must_haves` truth of plan
+  02-13 that was built and is asserted by `delete-board-confirm.test.tsx`.
+
+  The user decided at the checkpoint to address perceived responsiveness across the app as one
+  piece of work — board switching, rename, create-board and delete together — rather than by
+  loosening D-09 in isolation. This compounds the two mutations already logged under 02-11 above
+  (create and sign-out), which that same review would cover. **Do not make delete optimistic as a
+  local fix:** the entire point of D-09's ordering is that a board must never appear deleted
+  before it actually is.

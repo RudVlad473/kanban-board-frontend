@@ -42,6 +42,12 @@ export const AddBoardOpen: Story = { args: { boards: createBoards(3), defaultIsA
 /** Stages the rename modal open on the first row, the same prop-driven way as the create modal. */
 export const RenameOpen: Story = { args: { boards: createBoards(3), defaultRenameTargetIndex: 0 } };
 
+/** Stages D-06's delete confirmation open on the first row, the same prop-driven way. */
+export const DeleteOpen: Story = { args: { boards: createBoards(3), defaultDeleteTargetIndex: 0 } };
+
+/** The last-board case: deleting this one leaves none, which is D-08's empty-state branch. */
+export const SingleBoard: Story = { args: { boards: createBoards(1) } };
+
 /* Duplicated verbatim in `board-list.test.tsx` — a non-story export here would break `composeStories`. */
 const SERVER_RENAMED_NAME = "Renamed On The Server";
 const SERVER_CHANGED_NAME = "Changed Somewhere Else";

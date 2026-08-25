@@ -13,7 +13,7 @@ type Props = {
     board: Board;
     isSelected: boolean;
     onEdit: (board: Board) => void;
-    /** Plan 02-13 supplies D-06's confirm modal behind this; the entry itself is real, not inert. */
+    /** Opens D-06's confirm modal for this row's board — the delete itself never happens from here. */
     onDelete: (board: Board) => void;
     /** Storybook-only staging for the overflow menu's open state (see BoardList's `defaultIsAddBoardOpen`). */
     defaultIsMenuOpen?: boolean;

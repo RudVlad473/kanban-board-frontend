@@ -7,11 +7,13 @@ import { useBoolean } from "usehooks-ts";
 
 import { AddBoardModal } from "@/features/boards/components/add-board-modal";
 import { BoardCard } from "@/features/boards/components/board-card";
+import { DeleteBoardConfirm } from "@/features/boards/components/delete-board-confirm";
 import { EditBoardModal } from "@/features/boards/components/edit-board-modal";
 import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
+import { useDeleteBoard } from "@/features/boards/hooks/use-delete-board";
 import { useRenameBoard, type RenameBoardArgs } from "@/features/boards/hooks/use-rename-board";
 import type { AddBoardSubmitValues, Board } from "@/features/boards/schemas";
-import { buildBoardDetailPath } from "@/lib/core/routing/routes";
+import { buildBoardDetailPath, toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /*
  * The sidebar's board list, RSC-fed via props (not `useBoards()`, per docs/adr/tech/0019). Split
@@ -25,6 +27,8 @@ type Props = {
     defaultIsAddBoardOpen?: boolean;
     /** Storybook-only staging — seeds the rename modal open on the board at this index. */
     defaultRenameTargetIndex?: number;
+    /** Storybook-only staging — seeds the delete confirmation open on the board at this index. */
+    defaultDeleteTargetIndex?: number;
 };
 
 export const BoardList = ({
@@ -32,6 +36,7 @@ export const BoardList = ({
     loadFailed = false,
     defaultIsAddBoardOpen = false,
     defaultRenameTargetIndex,
+    defaultDeleteTargetIndex,
 }: Props) => {
     const pathname = usePathname();
     const router = useRouter();
@@ -43,11 +48,19 @@ export const BoardList = ({
     const [boardBeingRenamed, setBoardBeingRenamed] = useState<Board | null>(
         defaultRenameTargetIndex === undefined ? null : (boards[defaultRenameTargetIndex] ?? null),
     );
+    const [boardBeingDeleted, setBoardBeingDeleted] = useState<Board | null>(
+        defaultDeleteTargetIndex === undefined ? null : (boards[defaultDeleteTargetIndex] ?? null),
+    );
     /*
      * Scoped to the sidebar deliberately: D-15 names the sidebar, and the dashboard header's board
      * title updates when the refreshed server render lands (raised at plan 02-12's checkpoint).
      */
     const { renameBoard, isPending: isRenamePending, boards: renderedBoards } = useRenameBoard({ boards });
+    /* The same path the selected-row treatment already reads, so both agree on "the open board". */
+    const { deleteBoard, isPending: isDeletePending } = useDeleteBoard({
+        boards,
+        currentBoardId: toBoardIdFromPath(pathname),
+    });
     /*
      * Bumped on every fresh open and used as the modal's `key`, so each open starts from empty
      * fields — a failed create keeps its values because the modal never closed (D-05), not because
@@ -78,6 +91,13 @@ export const BoardList = ({
             if (outcome.didRename) {
                 setBoardBeingRenamed(null);
             }
+        });
+    };
+
+    /* D-09: the modal closes either way — a failure is announced by the hook's toast, not in here. */
+    const handleDeleteSubmit = (values: { boardId: string }): void => {
+        void deleteBoard(values).finally(() => {
+            setBoardBeingDeleted(null);
         });
     };
 
@@ -113,8 +133,7 @@ export const BoardList = ({
                                 board={board}
                                 isSelected={pathname === buildBoardDetailPath(board.id)}
                                 onEdit={setBoardBeingRenamed}
-                                /* Plan 02-13 replaces this with D-06's confirm modal in the very next wave. */
-                                onDelete={() => undefined}
+                                onDelete={setBoardBeingDeleted}
                             />
                         ))}
                     </ul>
@@ -155,6 +174,22 @@ export const BoardList = ({
                     }}
                     onSubmit={handleRenameSubmit}
                     isPending={isRenamePending}
+                />
+            )}
+
+            {boardBeingDeleted === null ? null : (
+                <DeleteBoardConfirm
+                    /* Keyed on the target board, so reopening on another row names that row's own board. */
+                    key={boardBeingDeleted.id}
+                    board={boardBeingDeleted}
+                    isOpen
+                    onOpenChange={(nextIsOpen) => {
+                        if (!nextIsOpen) {
+                            setBoardBeingDeleted(null);
+                        }
+                    }}
+                    onSubmit={handleDeleteSubmit}
+                    isPending={isDeletePending}
                 />
             )}
         </>
