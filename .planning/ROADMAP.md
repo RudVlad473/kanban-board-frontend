@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 15/15 plans executed
+**Plans**: 15/16 plans executed
 
 Plans:
 
@@ -289,6 +289,16 @@ IDs and shift to waves 11/12/13:
 **Wave 13** *(blocked on 02-12)*
 
 - [x] 02-13-PLAN.md — confirmed board delete, cascade and post-delete redirect (BOARD-05)
+
+Supplemental scope (added 2026-08-25 from approved post-checkpoint follow-ups, not a formal
+CONTEXT.md — decisions D-01..D-03 recorded directly in 02-16-PLAN.md): shared upstream-error
+mapping plus a duplicate-name branch on board creation, an immediate rename-modal close, and
+instant-pending board-switching via Next's loading.tsx convention. Reuses BOARD-02/03/04 rather
+than a new requirement id, same pattern 02-14 used:
+
+**Wave 14** *(blocked on 02-13)*
+
+- [ ] 02-16-PLAN.md — shared error-code mapping with a duplicate-name branch on create, instant rename-modal close, and loading.tsx skeletons for board navigation (BOARD-02, BOARD-03, BOARD-04)
 
 **UI hint**: yes
 
