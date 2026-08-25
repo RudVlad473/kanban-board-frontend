@@ -53,7 +53,12 @@ const BoardDetailPage = async ({ params }: PageProps<"/boards/[boardId]">) => {
     }
 
     return (
-        <Suspense fallback={<BoardViewSkeleton />}>
+        /*
+         * Keyed so /boards/A -> /boards/B remounts this boundary rather than reusing the already
+         * resolved one: both routes render the same element, so without a key React keeps the
+         * previous board on screen while the next streams and the fallback never shows again.
+         */
+        <Suspense key={boardId} fallback={<BoardViewSkeleton />}>
             <BoardContents boardId={boardId} />
         </Suspense>
     );
