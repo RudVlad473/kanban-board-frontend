@@ -54,7 +54,9 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
                 </Suspense>
             </Sidebar>
 
-            <div className="flex min-w-0 flex-1 flex-col">
+            {/* `h-dvh` (not `flex-1`) is what bounds the board area, so a column scrolls
+                internally instead of growing the page (mirrors the sidebar's own pinning). */}
+            <div className="flex h-dvh min-w-0 flex-1 flex-col">
                 <header className="flex items-center justify-between border-b border-border-default bg-bg-surface px-6 py-4">
                     <span className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
                         {identity.displayName}
@@ -65,7 +67,7 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
                     </div>
                 </header>
 
-                <main className="flex flex-1 flex-col">{children}</main>
+                <main className="flex min-h-0 flex-1 flex-col">{children}</main>
             </div>
         </div>
     );

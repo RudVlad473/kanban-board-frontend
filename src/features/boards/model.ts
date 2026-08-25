@@ -11,6 +11,17 @@ export const DEFAULT_COLUMN_ROW_COUNT = 1;
 export const createEmptyColumnRows = (count: number): { value: string }[] =>
     Array.from({ length: count }, () => ({ value: "" }));
 
+/** The task card's meta line in the design's own "X of Y subtasks" wording (02-UI-SPEC Typography). */
+export const toSubtaskSummary = (subtasks: { isCompleted: boolean }[]): string => {
+    const completedCount = subtasks.filter((subtask) => subtask.isCompleted).length;
+
+    return `${String(completedCount)} of ${String(subtasks.length)} subtasks`;
+};
+
+/** The ALL-CAPS column caption with its task count, as the PDF renders it ("TODO (4)"). */
+export const toColumnCaption = ({ name, taskCount }: { name: string; taskCount: number }): string =>
+    `${name} (${String(taskCount)})`;
+
 /** The exact template type React Hook Form's `register` needs for a column row's field path. */
 export type ColumnRowPath = `columns.${number}.value`;
 
