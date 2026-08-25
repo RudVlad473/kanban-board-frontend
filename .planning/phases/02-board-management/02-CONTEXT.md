@@ -141,6 +141,39 @@ through D-15 are affected.
   is code review (no automated prose-length linter). Applied retroactively only in files PC-01
   through PC-04 already touch — not swept project-wide.
 
+### Wave 9 refactor insertion (2026-08-25, D-27 through D-30)
+
+Recorded from `.continue-here.md`'s "Open decisions → 2. Wave 9 content". The user chose to insert
+this refactor work immediately after Wave 8 (plan 02-10) and *before* the remaining feature plans, so
+board detail (02-11), rename (02-12) and delete (02-13) are written against the replacement patterns
+rather than adding three more instances of the ones being replaced. The CONVENTIONS.md text for D-27
+and D-28 already landed in commit `dc63dc5`; the enforcement and the refactor had not been planned.
+
+Existing plans 02-11/02-12/02-13 keep their IDs and shift to waves 11/12/13. The new work is plans
+02-14 (wave 9) and 02-15 (wave 10).
+
+- **D-27 (shared status enum):** The result/status discriminant retyped as a bare inline literal
+  across 18 files becomes one shared enum-like constant following ADR tech/0012, and all 18 call
+  sites migrate onto it. Scope covers every Server Action, every RSC read function, every Storybook
+  action stub, both auth forms, both client mutation hooks and `app/(dashboard)/layout.tsx`. Plan
+  02-14, Tasks 1-2.
+- **D-28 (`.tsx` holds only components and prop types):** Non-component declarations move out of
+  `.tsx` files, and the rule gains a real mechanical gate rather than a convention note.
+  `add-board-modal.tsx` is the named live example; the gate has to be green repository-wide, so every
+  other declaration site is either extracted or carried in a written exemption list. Plan 02-15,
+  Tasks 1-2 and 4.
+- **D-29 (story-only test rendering, enforced):** `add-board-modal.test.tsx` renders the component
+  directly instead of going through named exported stories, violating the *existing* ADR tech/0025 —
+  whose Enforcement line says "code review", which is exactly why it was missed. Both halves are in
+  scope: the test is rewritten as a named exported story per prop combination (**not** one composed
+  story fed varying props, which the same ADR bans), and a real enforcement mechanism is researched,
+  selected and wired, with ADR tech/0025's Enforcement line updated to match reality. Plan 02-15,
+  Tasks 1, 3 and 4.
+- **D-30 (`usehooks-ts` for boolean state):** `usehooks-ts` is adopted as a dependency and its
+  boolean-state hook replaces the hand-rolled `useState` pair, starting from `sidebar.tsx`'s
+  `isExpanded`. Scoped to genuinely boolean toggle state matching that call site's shape — not every
+  `useState` in the codebase. Plan 02-14, Tasks 3-4.
+
 ### Claude's Discretion
 
 None — every gray area discussed had a concrete decision made; no "you decide" selections in

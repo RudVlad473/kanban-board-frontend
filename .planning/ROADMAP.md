@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 8/13 plans executed
+**Plans**: 8/15 plans executed
 
 Plans:
 
@@ -264,15 +264,29 @@ narrow path before any breadth is added:
 
 - [ ] 02-10-PLAN.md — client-orchestrated board creation with optional initial columns (BOARD-02)
 
+Refactor insertion (added 2026-08-25 from `.continue-here.md`'s "Wave 9 content" decision, recorded
+as 02-CONTEXT.md items D-27..D-30). Inserted between Wave 8 and the remaining feature plans by
+explicit user decision, so board detail, rename and delete are written against the replacement
+patterns rather than adding three more instances of the ones being replaced. 02-11/12/13 keep their
+IDs and shift to waves 11/12/13:
+
 **Wave 9** *(blocked on 02-10)*
+
+- [ ] 02-14-PLAN.md — shared `RESULT_STATUS` enum across 18 call sites, and `usehooks-ts`'s `useBoolean` for boolean toggle state (D-27, D-30)
+
+**Wave 10** *(blocked on 02-14)*
+
+- [ ] 02-15-PLAN.md — `.tsx` holds only components and prop types, and a test renders only composed stories — both made mechanical, both live violations fixed (D-28, D-29)
+
+**Wave 11** *(blocked on 02-15)*
 
 - [ ] 02-11-PLAN.md — board detail view, empty state and auto-select routing (BOARD-03)
 
-**Wave 10** *(blocked on 02-11)*
+**Wave 12** *(blocked on 02-11)*
 
 - [ ] 02-12-PLAN.md — per-board overflow menu and optimistic rename with rollback (BOARD-04)
 
-**Wave 11** *(blocked on 02-12)*
+**Wave 13** *(blocked on 02-12)*
 
 - [ ] 02-13-PLAN.md — confirmed board delete, cascade and post-delete redirect (BOARD-05)
 
@@ -416,7 +430,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 8/13 | In Progress|  |
+| 2. Board Management | 8/15 | In Progress|  |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
