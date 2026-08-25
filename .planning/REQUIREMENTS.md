@@ -23,7 +23,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 - [x] **BOARD-03**: User can select a board to view its full contents (columns, tasks, subtasks)
 - [x] **BOARD-04**: User can rename an existing board
 - [x] **BOARD-05**: User can delete a board (cascades to its columns, tasks, and subtasks)
-- [ ] **BOARD-06**: User can collapse/expand the sidebar
+- [x] **BOARD-06**: User can collapse/expand the sidebar
 
 ### Columns
 
@@ -103,7 +103,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOARD-03 | Phase 2 | Complete |
 | BOARD-04 | Phase 2 | Complete |
 | BOARD-05 | Phase 2 | Complete |
-| BOARD-06 | Phase 2 | Pending |
+| BOARD-06 | Phase 2 | Complete |
 | COLUMN-01 | Phase 3 | Pending |
 | COLUMN-02 | Phase 3 | Pending |
 | COLUMN-03 | Phase 3 | Pending |

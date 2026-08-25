@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 14/15 plans executed
+**Plans**: 15/15 plans executed
 
 Plans:
 
@@ -288,7 +288,7 @@ IDs and shift to waves 11/12/13:
 
 **Wave 13** *(blocked on 02-12)*
 
-- [ ] 02-13-PLAN.md — confirmed board delete, cascade and post-delete redirect (BOARD-05)
+- [x] 02-13-PLAN.md — confirmed board delete, cascade and post-delete redirect (BOARD-05)
 
 **UI hint**: yes
 
@@ -430,7 +430,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 14/15 | In Progress|  |
+| 2. Board Management | 15/15 | In Progress|  |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
