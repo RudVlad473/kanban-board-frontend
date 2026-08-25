@@ -238,6 +238,12 @@ None — no external service configuration required. `usehooks-ts@3.1.1` install
 - **BOARD-01 and BOARD-02 are not yet marked complete.** `requirements.ready-ids` reports both as blocked — plans 02-11/12/13 still carry them — so `REQUIREMENTS.md` was intentionally left unchanged.
 - **Open follow-up, unclaimed by any plan:** both new CONVENTIONS.md rules state "Enforcement: code review". A lint rule banning bare status-discriminant literals is the intended endpoint for the first; the second has no mechanical gate either. Plan 02-15 already carries D-29's enforcement-mechanism work and would be the natural home for both.
 
+## Self-Check: PASSED
+
+- `src/lib/core/api-contract/result-status.ts` — FOUND
+- `.planning/phases/02-board-management/02-14-SUMMARY.md` — FOUND
+- `f9a1880` (Task 2), `e8fecc3` (Task 3), `ae515ac` (Task 4), `3c24095` (this summary) — all FOUND in `git log`
+
 ---
 *Phase: 02-board-management*
 *Completed: 2026-08-25*
