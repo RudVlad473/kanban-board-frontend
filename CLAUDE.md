@@ -23,6 +23,19 @@ not change the server's actual default. If Playwright's MCP tools ever pop up a 
 again, check `.mcp.json` is still present and picked up (Claude Code needs a session restart to
 pick up a new/changed `.mcp.json`) before assuming this instruction was ignored.
 
+This project's own server is named exactly `playwright` (tools resolve as `mcp__playwright__*`).
+A separate, globally-installed Playwright integration may also resolve (tools named
+`mcp__plugin_playwright_playwright__*`) and has no headless override — before driving any browser
+tool, confirm the resolved names start with `mcp__playwright__`. If only the `plugin_` variant
+resolves, this project's own headless server isn't loaded this session (needs the restart above);
+do not fall back to the other one.
+
+**Verify a fix live before re-presenting a checkpoint.** When an executor reports it could not
+visually confirm a UI fix itself (no browser tool access in that subagent) and the same behavior
+is what a `checkpoint:human-verify` is about to ask the user to check, drive it through Playwright
+yourself first, especially for a regression that already failed once — don't hand the same
+unverified claim back to the user a second time.
+
 ## Copy `.env.local` into every worktree
 
 `.env.local` is gitignored, so `git worktree add` never copies it — a plan executed in an
