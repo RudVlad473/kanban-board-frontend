@@ -8,14 +8,25 @@ import { useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns";
 import { toSubmittedColumnNames } from "@/features/boards/model";
-import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /*
  * Authored copy only — the actions return bare discriminants, so nothing the backend said can
  * reach these strings (UI-SPEC Copywriting Contract).
  */
-const CREATE_FAILURE_MESSAGE = "Couldn't create board. Try again.";
+const GENERIC_CREATE_FAILURE_MESSAGE = "Couldn't create board. Try again.";
+
+/*
+ * Only the branches with something distinct to tell the user, mirroring `use-rename-board.ts`'s
+ * own table — collapsed to one sentence each, because this modal renders a single alert paragraph
+ * rather than the toast's title/description pair.
+ */
+const CREATE_FAILURE_MESSAGE: Partial<Record<ResultStatus, string>> = {
+    [RESULT_STATUS.DUPLICATE]: "A board with that name already exists. Choose a different name.",
+    [RESULT_STATUS.UNAUTHENTICATED]: "Your session has expired. Sign in again to create a board.",
+};
+
 const RETRY_ACTION_LABEL = "Retry";
 
 const buildColumnFailureTitle = (failedCount: number): string => `Couldn't create ${String(failedCount)} column(s).`;
@@ -109,7 +120,7 @@ export const useCreateBoard = () => {
             .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
         if (result.status !== RESULT_STATUS.SUCCESS) {
-            setErrorMessage(CREATE_FAILURE_MESSAGE);
+            setErrorMessage(CREATE_FAILURE_MESSAGE[result.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
             return { didCreate: false };
         }
 

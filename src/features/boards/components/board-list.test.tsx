@@ -16,6 +16,7 @@ import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
  * aliases onto it — the alias only exists at runtime, so TypeScript would resolve the real module
  * and never see these programmable exports. Both paths are the same module instance here.
  */
+import { queueCreateBoardFailure, resetCreateBoardStub } from "@/test-utils/create-board-action-storybook-stub";
 import {
     createBoardColumnsActionCalls,
     queueCreateBoardColumnsFailure,
@@ -147,6 +148,7 @@ describeForEachDevice({
     name: "BoardList",
     body: () => {
         beforeEach(() => {
+            resetCreateBoardStub();
             resetCreateBoardColumnsStub();
             resetRenameBoardStub();
             resetDeleteBoardStub();
@@ -310,6 +312,42 @@ describeForEachDevice({
         });
 
         /*
+         * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE (probed 2026-08-25)
+         * — the same refusal rename already explains, now recognised on create too (D-01).
+         */
+        it("names the clash inline and keeps the modal open when the board name is already taken", async () => {
+            // Arrange
+            await render(<Empty />);
+            queueCreateBoardFailure(RESULT_STATUS.DUPLICATE);
+
+            // Act
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+
+            // Assert — told why, in the still-open modal, with nothing created to navigate to (D-05).
+            expect(await screen.findByRole("alert")).toHaveTextContent(
+                "A board with that name already exists. Choose a different name.",
+            );
+            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+            expect(createBoardColumnsActionCalls).toHaveLength(0);
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        /* Every other refusal keeps the generic copy — only the name clash has more to say. */
+        it("keeps the generic create-failure copy for a refusal with nothing distinct to say", async () => {
+            // Arrange
+            await render(<Empty />);
+            queueCreateBoardFailure(RESULT_STATUS.ERROR);
+
+            // Act
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+
+            // Assert
+            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create board. Try again.");
+            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        /*
          * The load-bearing case: asserting only that "a toast was raised" would pass whether the
          * second replaced the first or piled on top of it, which is the ambiguity this removes.
          */
@@ -378,10 +416,10 @@ describeForEachDevice({
         });
 
         /*
-         * D-15's whole point: the row asserts the new name while the write is still in flight, and
-         * no other row is touched by the override that does it.
+         * D-15's whole point, plus D-02's timing: the row asserts the new name and the modal is
+         * already gone while the write is still in flight, and no other row is touched by it.
          */
-        it("shows the new name in that row before the rename resolves, leaving every other row alone", async () => {
+        it("closes the modal and shows the new name in that row before the rename resolves", async () => {
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
@@ -390,20 +428,21 @@ describeForEachDevice({
             // Act — submit, then observe while the action is still unresolved.
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
 
-            // Assert — applied optimistically, with the write demonstrably still open.
+            // Assert — applied optimistically and already dismissed, with the write demonstrably still open.
             await vi.waitFor(() => {
                 expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
             });
-            expect(screen.getByRole("button", { name: "Save Changes" })).toHaveAttribute("aria-busy", "true");
+            expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
 
             // Act — let the write land.
             settleRenameBoard();
 
-            // Assert — the modal closes and the name stays.
+            // Assert — the name stays and nothing was announced, the modal having closed long before.
             await vi.waitFor(() => {
-                expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
+                expect(renameBoardActionCalls).toHaveLength(1);
             });
             expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
+            expect(getRaisedToastTexts()).toHaveLength(0);
         });
 
         it("sends the row's own id and current version with the rename", async () => {
