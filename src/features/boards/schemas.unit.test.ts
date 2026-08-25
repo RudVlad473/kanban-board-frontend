@@ -188,15 +188,14 @@ describe("boardNameSchema", () => {
     });
 
     /*
-     * 02-BACKEND-FACTS.md P4 proved the backend rejects a 1000-character name; the client bound is
-     * deliberately conservative, so this stays a rejection either way.
+     * The backend's own boundary, binary-searched against it on 2026-08-25 (see schemas.ts) —
+     * pinned here so the client can never again let through a name the backend will refuse.
      */
-    it("rejects a 1000-character name", () => {
-        // Act
-        const result = boardNameSchema.safeParse("a".repeat(1000));
-
-        // Assert
-        expect(result.success).toBe(false);
+    it("accepts a name at the backend's ceiling and rejects the first character past it", () => {
+        // Act & Assert
+        expect(boardNameSchema.safeParse("a".repeat(64)).success).toBe(true);
+        expect(boardNameSchema.safeParse("a".repeat(65)).success).toBe(false);
+        expect(boardNameSchema.safeParse("a".repeat(1000)).success).toBe(false);
     });
 });
 
@@ -344,7 +343,7 @@ describe("renameBoardInputSchema", () => {
     it("rejects a name past the board-name ceiling", () => {
         // Act & Assert
         expect(
-            renameBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "a".repeat(101), version: 0 }).success,
+            renameBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "a".repeat(65), version: 0 }).success,
         ).toBe(false);
     });
 });
