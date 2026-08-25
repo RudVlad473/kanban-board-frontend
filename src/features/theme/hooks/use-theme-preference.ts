@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { updateThemeAction } from "@/features/theme/actions/update-theme";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildClientCookieString, COOKIE, THEME_COOKIE_MAX_AGE_SECONDS } from "@/lib/core/cookies/cookie-registry";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
 
@@ -70,7 +71,7 @@ export const useThemePreference = ({ initialTheme, isAuthenticated }: UseThemePr
 
         mutation.mutate(nextTheme, {
             onSuccess: (result) => {
-                if (result.status === "error") {
+                if (result.status === RESULT_STATUS.ERROR) {
                     setTheme(previousTheme);
                     applyDocumentThemeClass(previousTheme);
                     setErrorMessage(FAILURE_MESSAGE);

@@ -209,15 +209,16 @@ restricting top-level declarations in `.tsx` is the intended endpoint.
 
 - Declare enum-like sets of string values as a `const` object literal with `as const`, keys mirroring their own string values (e.g. `export const DEVICE_TYPE = { MOBILE: "MOBILE", DESKTOP: "DESKTOP" } as const;`), never TypeScript's `enum` keyword. Derive the corresponding type from the object (`(typeof X)[keyof typeof X]`) rather than declaring it separately. Enforcement: code review. Does not apply retroactively to existing component prop string-literal unions (e.g. Button's `variant`/`size`) — only to standalone enum-like constants meant to be iterated or referenced by a shared runtime value.
 - **Result/status discriminants are a shared enum-like constant, never inline string literals.** A
-  discriminated-union result type (`{ status: "ok" } | { status: "error" } | { status: "unauthenticated" }`)
-  declares its discriminant values once, as a `RESULT_STATUS`-style `as const` object in a shared
-  module, and every producer and consumer references that constant rather than retyping the literal.
-  This is the "referenced by a shared runtime value" case the bullet above already carves in, not an
-  exception to it: as of 2026-08-24 the three values were retyped as bare literals across 18 files
-  (every Server Action, every RSC read function, every storybook action stub, plus
-  `app/(dashboard)/layout.tsx`), so a renamed or added state has 18 independent edit sites and a
-  typo in any one of them is a silent unmatched branch rather than a type error. Enforcement: code
-  review today; a lint rule is the intended endpoint.
+  discriminated-union result type declares its discriminant values once and every producer and
+  consumer references that declaration rather than retyping the literal. This is the "referenced by
+  a shared runtime value" case the bullet above already carves in, not an exception to it. The
+  single declaration is `RESULT_STATUS` in `src/lib/core/api-contract/result-status.ts`
+  (`SUCCESS`/`ERROR`/`UNAUTHENTICATED`/`INVALID`/`IDLE`, SCREAMING_SNAKE keys and values per
+  docs/adr/tech/0012); a type-position discriminant is written `typeof RESULT_STATUS.SUCCESS`, a
+  value-position one `RESULT_STATUS.SUCCESS`. The retyped-literal state this rule was written
+  against — the same values duplicated across 18 files, with `ok` and `success` as two spellings of
+  one concept — was closed by plan 02-14, which folded both into `SUCCESS`. Enforcement: code review
+  today; a lint rule is the intended endpoint.
 
 ## Server entry points (docs/adr/tech/0019)
 

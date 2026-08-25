@@ -11,6 +11,7 @@ import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signInAction } from "@/features/auth/actions/sign-in";
 import { signInSchema, type SignInInput } from "@/features/auth/schemas";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
 
 /*
@@ -96,7 +97,7 @@ export const SignInForm = ({
         }
 
         setValue("email", submitted.email);
-        if (state.status === "error") {
+        if (state.status === RESULT_STATUS.ERROR) {
             resetField("password");
         } else {
             setValue("password", submitted.password);
@@ -104,16 +105,16 @@ export const SignInForm = ({
     }, [isActionPending, state, resetField, setValue]);
 
     const isPending = forceSubmitting || isActionPending;
-    const serverErrorMessage = forceServerError ?? (state.status === "error" ? state.message : undefined);
+    const serverErrorMessage = forceServerError ?? (state.status === RESULT_STATUS.ERROR ? state.message : undefined);
 
     /*
      * Client-side field errors (React Hook Form) take precedence over the server's, since they
      * reflect the user's current typing rather than the last submission (which may be stale).
      */
     const emailErrorMessage =
-        errors.email?.message ?? (state.status === "error" ? state.fieldErrors?.email : undefined);
+        errors.email?.message ?? (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.email : undefined);
     const passwordErrorMessage =
-        errors.password?.message ?? (state.status === "error" ? state.fieldErrors?.password : undefined);
+        errors.password?.message ?? (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.password : undefined);
 
     return (
         <form noValidate action={formAction} className="flex flex-col gap-4">

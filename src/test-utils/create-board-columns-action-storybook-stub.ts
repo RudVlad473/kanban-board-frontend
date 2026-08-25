@@ -1,13 +1,15 @@
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+
 /**
  * A stand-in for the real `"use server"` create-board-columns action, aliased for the "browser" and
  * "storybook" Vitest projects only — the real module's import chain reaches Node-only crypto
  * through the session layer (docs/adr/tech/0025).
  */
 type CreateBoardColumnsResult =
-    | { status: "success"; failedNames: string[] }
-    | { status: "unauthenticated" }
-    | { status: "invalid"; fieldErrors: Record<string, string> }
-    | { status: "error" };
+    | { status: typeof RESULT_STATUS.SUCCESS; failedNames: string[] }
+    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
+    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
+    | { status: typeof RESULT_STATUS.ERROR };
 
 export type CreateBoardColumnsCall = { boardId: string; names: string[] };
 
@@ -35,5 +37,5 @@ export const createBoardColumnsAction = ({
 }: CreateBoardColumnsCall): Promise<CreateBoardColumnsResult> => {
     createBoardColumnsActionCalls.push({ boardId, names });
 
-    return Promise.resolve({ status: "success", failedNames: queuedFailedNames.shift() ?? [] });
+    return Promise.resolve({ status: RESULT_STATUS.SUCCESS, failedNames: queuedFailedNames.shift() ?? [] });
 };
