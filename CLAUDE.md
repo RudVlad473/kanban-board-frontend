@@ -17,6 +17,11 @@ scripts to poke at the DOM or simulate behavior out-of-browser. Scratch scripts 
 the app actually does and get left behind as untracked cruft.
 
 Run the browser headless — no visible window should pop up during automated verification.
+`@playwright/mcp` is headed by default (its own `--help` says so), so this is enforced via a
+project-level `.mcp.json` that adds `--headless` to its launch args — a prose reminder alone does
+not change the server's actual default. If Playwright's MCP tools ever pop up a visible window
+again, check `.mcp.json` is still present and picked up (Claude Code needs a session restart to
+pick up a new/changed `.mcp.json`) before assuming this instruction was ignored.
 
 ## Copy `.env.local` into every worktree
 
