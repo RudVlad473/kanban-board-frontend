@@ -1,17 +1,18 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { BoardView } from "@/features/boards/components/board-view";
+import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton";
 import { fetchBoardFull } from "@/features/boards/server/fetch-board-full";
+import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
-import { ROUTE } from "@/lib/core/routing/routes";
+import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 
 /*
- * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule) — awaits
- * `fetchBoardFull()` (an RSC read, no client-side query per docs/adr/tech/0019) and hands its ok
- * branch to the view as plain props.
+ * Streamed behind its own `Suspense` boundary so the skeleton stands in for the board area while
+ * the full-board read is in flight (02-UI-SPEC's loading backstop row).
  */
-const BoardDetailPage = async ({ params }: PageProps<"/boards/[boardId]">) => {
-    const { boardId } = await params;
+const BoardContents = async ({ boardId }: { boardId: string }) => {
     const result = await fetchBoardFull({ boardId });
 
     if (result.status === RESULT_STATUS.UNAUTHENTICATED) {
@@ -29,6 +30,33 @@ const BoardDetailPage = async ({ params }: PageProps<"/boards/[boardId]">) => {
     }
 
     return <BoardView board={result.board} />;
+};
+
+/*
+ * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule). Membership is
+ * tested against the already-fetched, request-deduplicated list rather than inferred from the
+ * full-board read's failure, so this page's redirect rule and the sibling page's read one source (T-02-51).
+ */
+const BoardDetailPage = async ({ params }: PageProps<"/boards/[boardId]">) => {
+    const { boardId } = await params;
+    const boardsResult = await fetchBoards();
+
+    if (boardsResult.status === RESULT_STATUS.UNAUTHENTICATED) {
+        redirect(ROUTE.SIGN_IN);
+    }
+
+    if (boardsResult.status === RESULT_STATUS.SUCCESS && !boardsResult.boards.some((board) => board.id === boardId)) {
+        const [firstBoard] = boardsResult.boards;
+
+        // D-11: change the URL rather than silently render a substitute at the requested one (T-02-54).
+        redirect(boardsResult.boards.length === 0 ? ROUTE.BOARDS : buildBoardDetailPath(firstBoard.id));
+    }
+
+    return (
+        <Suspense fallback={<BoardViewSkeleton />}>
+            <BoardContents boardId={boardId} />
+        </Suspense>
+    );
 };
 
 export default BoardDetailPage;
