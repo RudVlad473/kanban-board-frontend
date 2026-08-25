@@ -21,6 +21,10 @@ export type RenameBoardCall = { boardId: string; name: string; version: number }
  */
 const queuedOutcomes: (typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.ERROR)[] = [];
 
+let shouldHoldNextCall = false;
+
+let settleHeldCall: (() => void) | null = null;
+
 export const renameBoardActionCalls: RenameBoardCall[] = [];
 
 /** Queues the failure branch the next call resolves with; an unqueued call succeeds outright. */
@@ -28,18 +32,41 @@ export const queueRenameBoardFailure = (status: typeof RESULT_STATUS.CONFLICT | 
     queuedOutcomes.push(status);
 };
 
+/** Leaves the next call unresolved, so a test can observe the in-flight window an optimistic apply opens. */
+export const holdNextRenameBoard = (): void => {
+    shouldHoldNextCall = true;
+};
+
+export const settleRenameBoard = (): void => {
+    settleHeldCall?.();
+    settleHeldCall = null;
+};
+
 export const resetRenameBoardStub = (): void => {
     queuedOutcomes.length = 0;
     renameBoardActionCalls.length = 0;
+    shouldHoldNextCall = false;
+    settleHeldCall = null;
 };
 
 export const renameBoardAction = ({ boardId, name, version }: RenameBoardCall): Promise<RenameBoardResult> => {
     renameBoardActionCalls.push({ boardId, name, version });
 
     const queued = queuedOutcomes.shift();
-    if (queued !== undefined) {
-        return Promise.resolve({ status: queued });
+    const result: RenameBoardResult =
+        queued === undefined
+            ? { status: RESULT_STATUS.SUCCESS, board: { id: boardId, name, version: version + 1 } }
+            : { status: queued };
+
+    if (!shouldHoldNextCall) {
+        return Promise.resolve(result);
     }
 
-    return Promise.resolve({ status: RESULT_STATUS.SUCCESS, board: { id: boardId, name, version: version + 1 } });
+    shouldHoldNextCall = false;
+
+    return new Promise((resolve) => {
+        settleHeldCall = () => {
+            resolve(result);
+        };
+    });
 };

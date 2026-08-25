@@ -43,7 +43,11 @@ export const BoardList = ({
     const [boardBeingRenamed, setBoardBeingRenamed] = useState<Board | null>(
         defaultRenameTargetIndex === undefined ? null : (boards[defaultRenameTargetIndex] ?? null),
     );
-    const { renameBoard, isPending: isRenamePending } = useRenameBoard();
+    /*
+     * Scoped to the sidebar deliberately: D-15 names the sidebar, and the dashboard header's board
+     * title updates when the refreshed server render lands (raised at plan 02-12's checkpoint).
+     */
+    const { renameBoard, isPending: isRenamePending, boards: renderedBoards } = useRenameBoard({ boards });
     /*
      * Bumped on every fresh open and used as the modal's `key`, so each open starts from empty
      * fields — a failed create keeps its values because the modal never closed (D-05), not because
@@ -103,7 +107,7 @@ export const BoardList = ({
                     </div>
                 ) : (
                     <ul className="flex flex-col gap-2">
-                        {boards.map((board) => (
+                        {renderedBoards.map((board) => (
                             <BoardCard
                                 key={board.id}
                                 board={board}
