@@ -20,6 +20,18 @@ export const RESULT_STATUS = {
      * cannot use the distinction to probe which ids exist.
      */
     NOT_FOUND: "NOT_FOUND",
+    /*
+     * "The resource moved under you" — this app's own branch for the backend's
+     * `PROBLEM_CODE.OPTIMISTIC_LOCK_CONFLICT`, kept distinct from `ERROR` so SYNC-01 (Phase 4) has
+     * something to hang reconciliation from without re-deriving it from an upstream code.
+     */
+    CONFLICT: "CONFLICT",
+    /*
+     * "That name is already taken" — the backend's `PROBLEM_CODE.DUPLICATE_RESOURCE`. Deliberately
+     * NOT folded into `CONFLICT`: both arrive as a 409, but one is a stale version and the other is
+     * a name clash, and only the second has anything actionable to tell the user.
+     */
+    DUPLICATE: "DUPLICATE",
 } as const;
 
 export type ResultStatus = (typeof RESULT_STATUS)[keyof typeof RESULT_STATUS];

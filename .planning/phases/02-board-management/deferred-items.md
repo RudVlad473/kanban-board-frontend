@@ -129,3 +129,33 @@ plan that surfaced them.
 
   The `.tsx`-declaration gate (`pnpm tsx:check`) is **not** affected: it is green repository-wide
   with no baseline and no carve-out beyond ADR tech/0027's two exemptions.
+
+## 02-12
+
+- **`route-guard.e2e.spec.ts` asserts zero `region` roles on the sign-in page, which has been
+  false since plan 02-07.** `ToastProvider` (`app/layout.tsx`) mounts `BaseToast.Viewport`
+  unconditionally at the root layout, and Base UI exposes that viewport as
+  `region "Notifications"` on every page — including the unauthenticated sign-in page the guard
+  redirects to. The assertion's own comment ("its columns are the only `region`s this app
+  renders") was written in Phase 1, before toasts existed, and the spec was last touched by 02-11
+  without revisiting it. Reproduced at this plan's base commit `ed1c6a7` with the spec run alone;
+  nothing in 02-12's diff touches the sign-in path, the root layout, or that spec. Out of scope
+  here per the executor scope boundary. The fix is one line — narrow the assertion to the board
+  view's own regions (e.g. exclude the notifications region by name, or assert the column
+  headings' absence instead) — but it belongs to whoever owns AUTH-03's spec, not to BOARD-04.
+
+- **A duplicate-name rename has no dedicated user-facing copy.** Probed against the real backend
+  on 2026-08-25: `PUT /boards/{id}` with a name another board already holds is refused with
+  `409 DUPLICATE_RESOURCE` ("Board with that name already exists") — the same refusal 02-10
+  recorded for create. `renameBoardAction` maps it to the generic error branch, so the user gets
+  the optimistic revert plus "Couldn't rename board. / Try again." That is correct and safe, but
+  it does not tell the user *why*. Adding a duplicate-name branch and its copy needs a
+  Copywriting Contract entry, which 02-UI-SPEC.md does not have; out of scope for this plan.
+
+- **`pnpm test:e2e` cannot read `.env.local` on its own.** `e2e/global-setup.ts` requires
+  `NONPROD_RESET_TOKEN` from `process.env`, and neither `playwright.config.ts` nor `e2e/test-env.ts`
+  loads `.env.local`, so the documented `pnpm test:e2e` invocation fails outright in any shell that
+  has not exported the variable — which is every freshly created worktree (see CLAUDE.md). Worked
+  around here by invoking Playwright through `node --env-file=.env.local`. A one-line
+  `import "node:process"`-side dotenv load in `playwright.config.ts`, or an `--env-file` flag in the
+  `test:e2e` script, would remove the footgun; not this plan's file to change.

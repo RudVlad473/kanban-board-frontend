@@ -1,7 +1,7 @@
 /**
  * The backend's problem-response shape (RFC 7807-flavoured) and its named error codes — hand-
  * authored because the generated OpenAPI contract declares no error schema at all (Finding 4,
- * 01-RESEARCH.md round-3 addendum). The seven codes are the exact set the backend emits (see 01-30-SUMMARY.md).
+ * 01-RESEARCH.md round-3 addendum). The codes are the exact set the backend emits (see 01-30-SUMMARY.md).
  */
 export const PROBLEM_CODE = {
     VALIDATION_FAILED: "VALIDATION_FAILED",
@@ -11,6 +11,8 @@ export const PROBLEM_CODE = {
     UNAUTHENTICATED: "UNAUTHENTICATED",
     ACCESS_DENIED: "ACCESS_DENIED",
     INTERNAL_ERROR: "INTERNAL_ERROR",
+    /* The 409 a stale-version update is refused with, observed verbatim in 02-BACKEND-FACTS.md P3. */
+    OPTIMISTIC_LOCK_CONFLICT: "OPTIMISTIC_LOCK_CONFLICT",
 } as const;
 
 export type ProblemCode = (typeof PROBLEM_CODE)[keyof typeof PROBLEM_CODE];

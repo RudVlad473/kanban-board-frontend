@@ -9,6 +9,7 @@ import {
     columnNameSchema,
     createBoardColumnsInputSchema,
     createBoardInputSchema,
+    renameBoardInputSchema,
     taskFullSchema,
 } from "@/features/boards/schemas";
 import { createBoard, createBoards } from "@/test-utils/factories/board";
@@ -187,15 +188,14 @@ describe("boardNameSchema", () => {
     });
 
     /*
-     * 02-BACKEND-FACTS.md P4 proved the backend rejects a 1000-character name; the client bound is
-     * deliberately conservative, so this stays a rejection either way.
+     * The backend's own boundary, binary-searched against it on 2026-08-25 (see schemas.ts) —
+     * pinned here so the client can never again let through a name the backend will refuse.
      */
-    it("rejects a 1000-character name", () => {
-        // Act
-        const result = boardNameSchema.safeParse("a".repeat(1000));
-
-        // Assert
-        expect(result.success).toBe(false);
+    it("accepts a name at the backend's ceiling and rejects the first character past it", () => {
+        // Act & Assert
+        expect(boardNameSchema.safeParse("a".repeat(64)).success).toBe(true);
+        expect(boardNameSchema.safeParse("a".repeat(65)).success).toBe(false);
+        expect(boardNameSchema.safeParse("a".repeat(1000)).success).toBe(false);
     });
 });
 
@@ -288,6 +288,63 @@ describe("columnNameRowSchema", () => {
     it("rejects a thirty-three-character row", () => {
         // Act & Assert
         expect(columnNameRowSchema.safeParse("a".repeat(33)).success).toBe(false);
+    });
+});
+
+describe("renameBoardInputSchema", () => {
+    it("accepts a board id, an integer version and a valid name", () => {
+        // Act
+        const result = renameBoardInputSchema.safeParse({
+            boardId: "8okxhwo6oq2o",
+            name: "Platform Launch",
+            version: 3,
+        });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.version).toBe(3);
+    });
+
+    /*
+     * The update body declares `version` required while the create body has no such field, so an
+     * input missing it must fail here rather than upstream (02-RESEARCH.md Pitfall 1).
+     */
+    it("rejects an input with no version at all", () => {
+        // Act & Assert
+        expect(renameBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Platform Launch" }).success).toBe(
+            false,
+        );
+    });
+
+    it("rejects a non-integer version", () => {
+        // Act & Assert
+        expect(
+            renameBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Platform Launch", version: 1.5 })
+                .success,
+        ).toBe(false);
+    });
+
+    it("rejects an empty board id", () => {
+        // Act & Assert
+        expect(renameBoardInputSchema.safeParse({ boardId: "", name: "Platform Launch", version: 0 }).success).toBe(
+            false,
+        );
+    });
+
+    it("reports the required-field copy for a blank name", () => {
+        // Act
+        const result = renameBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "   ", version: 0 });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.error?.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("rejects a name past the board-name ceiling", () => {
+        // Act & Assert
+        expect(
+            renameBoardInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "a".repeat(65), version: 0 }).success,
+        ).toBe(false);
     });
 });
 

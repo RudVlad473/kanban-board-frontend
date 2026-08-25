@@ -9,6 +9,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 /*
  * Imported from the stub module directly, not through the action specifier `vitest.config.ts`
@@ -22,6 +23,13 @@ import {
 } from "@/test-utils/create-board-columns-action-storybook-stub";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
+import {
+    holdNextRenameBoard,
+    queueRenameBoardFailure,
+    renameBoardActionCalls,
+    resetRenameBoardStub,
+    settleRenameBoard,
+} from "@/test-utils/rename-board-action-storybook-stub";
 
 import * as stories from "./board-list.stories";
 
@@ -41,7 +49,11 @@ vi.mock("next/navigation", () =>
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
-const { Populated, Empty, LoadFailed, AddBoardOpen } = composeStories(stories);
+const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, ServerPropsAdvance } = composeStories(stories);
+
+/* Duplicated verbatim from `board-list.stories.tsx`'s own host — see the comment beside them there. */
+const SERVER_RENAMED_NAME = "Renamed On The Server";
+const SERVER_CHANGED_NAME = "Changed Somewhere Else";
 
 /** The id `create-board-action-storybook-stub.ts` always resolves with. */
 const STUB_BOARD_ID = "stub-board-id";
@@ -92,6 +104,21 @@ const submitNewBoard = async ({ name, columns }: { name: string; columns: string
 };
 
 /*
+ * Read off the DOM rather than by role: Base UI marks the tree outside an open dialog `aria-hidden`,
+ * so a role query would report zero rows exactly when a failed rename's rollback needs reading.
+ */
+const getRenderedBoardNames = (): (string | null)[] =>
+    Array.from(document.querySelectorAll("ul > li > a")).map((link) => link.textContent);
+
+/** Opens a row's overflow menu, activates its edit entry, retypes the name and submits. */
+const renameBoardFromRow = async ({ rowName, nextName }: { rowName: string; nextName: string }): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: `Board actions for ${rowName}` }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Board" }));
+    await userEvent.fill(await screen.findByLabelText("Board Name"), nextName);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+};
+
+/*
  * ADR tech/0014: every component's behavioral suite runs at both viewports by default. BoardList
  * has no viewport-conditional behavior of its own (carried over from `sidebar.test.tsx`, plan 02-09).
  */
@@ -100,6 +127,7 @@ describeForEachDevice({
     body: () => {
         beforeEach(() => {
             resetCreateBoardColumnsStub();
+            resetRenameBoardStub();
             mockPush.mockClear();
         });
 
@@ -302,6 +330,208 @@ describeForEachDevice({
                 ["Doing", "Done"],
                 ["Done"],
             ]);
+        });
+
+        it("opens the rename modal seeded with that row's current name", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Board actions for Fixture Board 2" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Board" }));
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Edit Board" })).toBeInTheDocument();
+            expect(await screen.findByLabelText("Board Name")).toHaveValue("Fixture Board 2");
+        });
+
+        it("renders the rename modal when staged open", async () => {
+            // Act
+            await render(<RenameOpen />);
+
+            // Assert
+            expect(await screen.findByLabelText("Board Name")).toHaveValue("Fixture Board 1");
+        });
+
+        /*
+         * D-15's whole point: the row asserts the new name while the write is still in flight, and
+         * no other row is touched by the override that does it.
+         */
+        it("shows the new name in that row before the rename resolves, leaving every other row alone", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            holdNextRenameBoard();
+
+            // Act — submit, then observe while the action is still unresolved.
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert — applied optimistically, with the write demonstrably still open.
+            await vi.waitFor(() => {
+                expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
+            });
+            expect(screen.getByRole("button", { name: "Save Changes" })).toHaveAttribute("aria-busy", "true");
+
+            // Act — let the write land.
+            settleRenameBoard();
+
+            // Assert — the modal closes and the name stays.
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
+            });
+            expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
+        });
+
+        it("sends the row's own id and current version with the rename", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(renameBoardActionCalls).toHaveLength(1);
+            });
+            expect(renameBoardActionCalls[0]).toEqual({
+                boardId: Populated.args.boards?.[0]?.id,
+                name: "Platform Relaunch",
+                version: Populated.args.boards?.[0]?.version,
+            });
+        });
+
+        /*
+         * The load-bearing rollback case: asserting only that the renamed row reverted would pass
+         * whether or not the override had leaked into a neighbouring row on the way back out.
+         */
+        it("restores the whole rendered name set and announces the reason when a rename fails", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            queueRenameBoardFailure(RESULT_STATUS.ERROR);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert — identical to the pre-submit set, not merely "the renamed row reverted".
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+        });
+
+        /* T-02-61: the toast carries this project's own copy and nothing taken from the response. */
+        it("raises the authored rename-failure copy, with no text from the rejection", async () => {
+            // Arrange
+            await render(<Populated />);
+            queueRenameBoardFailure(RESULT_STATUS.ERROR);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("Couldn't rename board.Try again.");
+        });
+
+        /*
+         * SYNC-01's reconciliation experience is Phase 4 scope, so a stale version deliberately
+         * keeps the GENERIC copy — explaining it properly is that phase's job, not a half-built one.
+         */
+        it("keeps the generic copy for a stale-version conflict", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            queueRenameBoardFailure(RESULT_STATUS.CONFLICT);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("Couldn't rename board.Try again.");
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+        });
+
+        /*
+         * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE (probed
+         * 2026-08-25) — a distinct outcome from a stale version, so it earns its own copy.
+         */
+        it("names the clash when a rename is refused for a duplicate board name", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            queueRenameBoardFailure(RESULT_STATUS.DUPLICATE);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Fixture Board 2" });
+
+            // Assert — rolled back, and told why, rather than a bare "try again".
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("A board with that name already exists.Choose a different name.");
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+        });
+
+        it("tells the user to sign in again when the rename is refused as unauthenticated", async () => {
+            // Arrange
+            await render(<Populated />);
+            queueRenameBoardFailure(RESULT_STATUS.UNAUTHENTICATED);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("Your session has expired.Sign in again to rename this board.");
+        });
+
+        it("says the board is gone when the rename is refused as not visible to this account", async () => {
+            // Arrange
+            await render(<Populated />);
+            queueRenameBoardFailure(RESULT_STATUS.NOT_FOUND);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe(
+                "That board is no longer available.Refresh to see your current boards.",
+            );
+        });
+
+        /*
+         * T-02-63: the override must not outlive the value it stands in for, or a change made in
+         * another tab would sit behind a stale local name indefinitely.
+         */
+        it("clears the override once the refreshed props carry it, so a later server change is rendered", async () => {
+            // Arrange
+            await render(<ServerPropsAdvance />);
+
+            // Act — rename optimistically, then land the refreshed server render carrying that name.
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: SERVER_RENAMED_NAME });
+            await vi.waitFor(() => {
+                expect(getRenderedBoardNames()[0]).toBe(SERVER_RENAMED_NAME);
+            });
+            await userEvent.click(screen.getByRole("button", { name: "Land the refreshed server render" }));
+
+            // Act — a later server-side change to that same row.
+            await userEvent.click(screen.getByRole("button", { name: "Land a later server change" }));
+
+            // Assert — rendered, not masked by the override that stood in for the earlier value.
+            await vi.waitFor(() => {
+                expect(getRenderedBoardNames()[0]).toBe(SERVER_CHANGED_NAME);
+            });
         });
     },
 });

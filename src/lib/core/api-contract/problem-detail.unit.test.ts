@@ -40,6 +40,30 @@ describe("parseProblemDetail", () => {
     });
 
     /*
+     * The literal 409 body the real backend answered a stale-version board update with
+     * (02-BACKEND-FACTS.md P3) — quoted verbatim so the enum entry is pinned to an observation.
+     */
+    it("parses the optimistic-lock conflict body the backend returns for a stale version", () => {
+        // Arrange
+        const body: unknown = {
+            type: "about:blank",
+            title: "Conflict",
+            status: 409,
+            detail: "Board was modified by another request, please refetch.",
+            instance: "/api/boards/8okxhwo6oq2o",
+            code: "OPTIMISTIC_LOCK_CONFLICT",
+        };
+
+        // Act
+        const result = parseProblemDetail(body);
+
+        // Assert
+        expect(result).not.toBeNull();
+        expect(result?.code).toBe(PROBLEM_CODE.OPTIMISTIC_LOCK_CONFLICT);
+        expect(result?.status).toBe(409);
+    });
+
+    /*
      * Parametrised over the rejection-case families (D-26y) rather than a near-identical `it()`
      * per shape — each case isolates exactly one reason a value is not a well-formed problem
      * response.

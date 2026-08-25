@@ -65,19 +65,40 @@ export type BoardFull = z.infer<typeof boardFullSchema>;
  * import another feature (CONVENTIONS.md), and this is the UI-SPEC Copywriting Contract's wording.
  */
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
-const BOARD_NAME_LENGTH_MESSAGE = "Board name must be 100 characters or fewer.";
+const BOARD_NAME_LENGTH_MESSAGE = "Board name must be 64 characters or fewer.";
 
 /*
- * 100 is a deliberately conservative bound, not a measured one: 02-BACKEND-FACTS.md P4 proved a
- * ceiling exists between 1 and 1000 characters but never pinned it, and under-restricting is safe
- * because the backend rejects whatever the client lets through.
+ * 64 is the backend's own measured ceiling, binary-searched against the real nonprod backend on
+ * 2026-08-25 — 64 accepted, 65 rejected — closing 02-BACKEND-FACTS.md P4's Escalate item, which
+ * only knew the limit lay between 1 and 1000 and left a conservative 100 in its place.
  */
-export const boardNameSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).max(100, BOARD_NAME_LENGTH_MESSAGE);
+export const boardNameSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).max(64, BOARD_NAME_LENGTH_MESSAGE);
 
 /** The object shape `createBoardAction` parses — never the raw argument it was handed. */
 export const createBoardInputSchema = z.object({ name: boardNameSchema });
 
 export type CreateBoardInput = z.infer<typeof createBoardInputSchema>;
+
+/*
+ * `version` is required here because the board *update* body requires it while the create body has
+ * no such field — a rename built by analogy to create is rejected on every attempt
+ * (02-RESEARCH.md Pitfall 1). Requiring it at this app's own boundary fails loudly instead.
+ */
+export const renameBoardInputSchema = z.object({
+    boardId: z.string().min(1),
+    name: boardNameSchema,
+    version: z.number().int(),
+});
+
+export type RenameBoardInput = z.infer<typeof renameBoardInputSchema>;
+
+/*
+ * The rename form's own shape — only the name is editable, since the board's id and version come
+ * from the RSC-supplied row rather than from anything the user can type.
+ */
+export const editBoardFormSchema = z.object({ name: boardNameSchema });
+
+export type EditBoardFormValues = z.infer<typeof editBoardFormSchema>;
 
 const COLUMN_NAME_LENGTH_MESSAGE = "Column name must be between 3 and 32 characters.";
 

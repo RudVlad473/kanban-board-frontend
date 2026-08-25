@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { applyRenameOverride, useRenameOverride } from "@/features/boards/hooks/use-rename-board";
 import type { Board } from "@/features/boards/schemas";
 import { toBoardIdFromPath } from "@/lib/core/routing/routes";
 
@@ -18,8 +19,14 @@ type Props = {
 export const DashboardHeader = ({ displayName, boards }: Props) => {
     const pathname = usePathname();
     const openBoardId = toBoardIdFromPath(pathname);
-    // A path naming no board, or one absent from this list, renders no title rather than a stale one.
-    const openBoard = boards.find((board) => board.id === openBoardId);
+    /*
+     * The same override the sidebar row applies (D-15), read from the provider the dashboard layout
+     * wraps both in — so the title changes on submit, not a beat later on the refreshed render.
+     */
+    const openBoard = applyRenameOverride({ boards, override: useRenameOverride() }).find(
+        // A path naming no board, or one absent from this list, renders no title rather than a stale one.
+        (board) => board.id === openBoardId,
+    );
 
     return (
         <header className="flex shrink-0 items-center gap-4 border-b border-border-default bg-bg-surface px-6 py-4">

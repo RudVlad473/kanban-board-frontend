@@ -6,6 +6,7 @@ import { DashboardHeader } from "@/components/layout/dashboard-header/dashboard-
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { BoardList } from "@/features/boards/components/board-list";
 import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton";
+import { RenameOverrideProvider } from "@/features/boards/components/rename-override-provider";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
@@ -60,26 +61,32 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
     const cookieTheme = await themeCookie.read();
     const initialTheme = cookieTheme ?? identity.theme;
 
+    /*
+     * The provider wraps both Suspense boundaries, so D-15's optimistic rename reaches the sidebar
+     * row and the header title in the same instant instead of the header trailing the server render.
+     */
     return (
-        <div className="flex min-h-full bg-bg-app">
-            <Sidebar initialTheme={initialTheme}>
-                <Suspense fallback={<BoardListSkeleton />}>
-                    <SidebarBoards />
-                </Suspense>
-            </Sidebar>
+        <RenameOverrideProvider>
+            <div className="flex min-h-full bg-bg-app">
+                <Sidebar initialTheme={initialTheme}>
+                    <Suspense fallback={<BoardListSkeleton />}>
+                        <SidebarBoards />
+                    </Suspense>
+                </Sidebar>
 
-            {/* `h-dvh` (not `flex-1`) is what bounds the board area, so a column scrolls
-                internally instead of growing the page (mirrors the sidebar's own pinning). */}
-            <div className="flex h-dvh min-w-0 flex-1 flex-col">
-                {/* The fallback is the same header with an empty list — chrome and controls paint
-                    immediately, only the board title waits on the read. */}
-                <Suspense fallback={<DashboardHeader displayName={identity.displayName} boards={[]} />}>
-                    <HeaderBoards displayName={identity.displayName} />
-                </Suspense>
+                {/* `h-dvh` (not `flex-1`) is what bounds the board area, so a column scrolls
+                    internally instead of growing the page (mirrors the sidebar's own pinning). */}
+                <div className="flex h-dvh min-w-0 flex-1 flex-col">
+                    {/* The fallback is the same header with an empty list — chrome and controls paint
+                        immediately, only the board title waits on the read. */}
+                    <Suspense fallback={<DashboardHeader displayName={identity.displayName} boards={[]} />}>
+                        <HeaderBoards displayName={identity.displayName} />
+                    </Suspense>
 
-                <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+                    <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+                </div>
             </div>
-        </div>
+        </RenameOverrideProvider>
     );
 };
 
