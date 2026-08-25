@@ -4,7 +4,7 @@ import { z } from "zod";
  * Every rule below mirrors the real backend's own Bean Validation rules (GC-02) — not this app's
  * invention, and not to be relaxed unilaterally (see 01-19-SUMMARY.md).
  */
-const REQUIRED_FIELD_MESSAGE = "Can't be empty";
+export const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const EMAIL_FORMAT_MESSAGE = "Enter a valid email address.";
 const PASSWORD_LENGTH_MESSAGE = "Password must be between 8 and 64 characters.";
 const PASSWORD_COMPLEXITY_MESSAGE =

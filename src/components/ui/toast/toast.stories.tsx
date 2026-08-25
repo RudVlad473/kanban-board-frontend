@@ -2,7 +2,8 @@ import { Toast as BaseToast } from "@base-ui/react/toast";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useEffect, useState } from "react";
 
-import { ToastProvider, useToast } from "./toast";
+import { ToastProvider } from "./toast";
+import { useToast } from "./use-toast";
 
 type ToastConfig = Parameters<ReturnType<typeof useToast>["add"]>[0];
 

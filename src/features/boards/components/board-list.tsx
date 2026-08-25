@@ -6,9 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useBoolean } from "usehooks-ts";
 
-import { AddBoardModal, type AddBoardSubmitValues } from "@/features/boards/components/add-board-modal";
+import { AddBoardModal } from "@/features/boards/components/add-board-modal";
 import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
-import type { Board } from "@/features/boards/schemas";
+import type { AddBoardSubmitValues, Board } from "@/features/boards/schemas";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 import { cn } from "@/lib/core/styling/cn";
 

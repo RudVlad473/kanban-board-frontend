@@ -4,10 +4,8 @@ import { Moon, Sun } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch/switch";
 import { useThemePreference } from "@/features/theme/hooks/use-theme-preference";
+import { TOGGLE_LABEL } from "@/features/theme/model";
 import { THEME, type Theme } from "@/lib/core/theme/theme";
-
-/** UI-SPEC's Copywriting Contract row for the theme toggle — no visible text, only this label. */
-const TOGGLE_LABEL = "Toggle dark mode";
 
 type Props = {
     initialTheme: Theme;
