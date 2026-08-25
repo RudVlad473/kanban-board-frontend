@@ -436,8 +436,11 @@ describeForEachDevice({
             expect(getRaisedToastTexts()[0]).toBe("Couldn't rename board.Try again.");
         });
 
-        /* SYNC-01's reconciliation experience is Phase 4 scope — a conflict takes the same path here. */
-        it("takes the same restore-and-announce path for a stale-version conflict", async () => {
+        /*
+         * SYNC-01's reconciliation experience is Phase 4 scope, so a stale version deliberately
+         * keeps the GENERIC copy — explaining it properly is that phase's job, not a half-built one.
+         */
+        it("keeps the generic copy for a stale-version conflict", async () => {
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
@@ -455,23 +458,56 @@ describeForEachDevice({
         });
 
         /*
-         * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE, which is NOT the
-         * optimistic-lock code, so it lands on the generic branch (probed 2026-08-25, see SUMMARY).
+         * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE (probed
+         * 2026-08-25) — a distinct outcome from a stale version, so it earns its own copy.
          */
-        it("rolls a duplicate-name rename back down the generic failure path", async () => {
+        it("names the clash when a rename is refused for a duplicate board name", async () => {
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
-            queueRenameBoardFailure(RESULT_STATUS.ERROR);
+            queueRenameBoardFailure(RESULT_STATUS.DUPLICATE);
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Fixture Board 2" });
+
+            // Assert — rolled back, and told why, rather than a bare "try again".
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("A board with that name already exists.Choose a different name.");
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+        });
+
+        it("tells the user to sign in again when the rename is refused as unauthenticated", async () => {
+            // Arrange
+            await render(<Populated />);
+            queueRenameBoardFailure(RESULT_STATUS.UNAUTHENTICATED);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
 
             // Assert
             await vi.waitFor(() => {
                 expect(getRaisedToastTexts()).toHaveLength(1);
             });
-            expect(getRenderedBoardNames()).toEqual(namesBefore);
+            expect(getRaisedToastTexts()[0]).toBe("Your session has expired.Sign in again to rename this board.");
+        });
+
+        it("says the board is gone when the rename is refused as not visible to this account", async () => {
+            // Arrange
+            await render(<Populated />);
+            queueRenameBoardFailure(RESULT_STATUS.NOT_FOUND);
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe(
+                "That board is no longer available.Refresh to see your current boards.",
+            );
         });
 
         /*

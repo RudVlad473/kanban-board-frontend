@@ -72,6 +72,30 @@ describeForEachDevice({
             expect(link).toHaveClass("text-text-muted");
         });
 
+        /*
+         * The ghost variant's `text-text-muted` on the selected row's `bg-bg-primary` measured
+         * 1.05:1 in light mode — invisible, and invisible to axe too, since the glyph is
+         * `aria-hidden` and the name comes from `aria-label`, so no text node is evaluated.
+         */
+        it("keeps the overflow trigger legible against the selected row's own background", async () => {
+            // Act
+            await render(<Selected />);
+
+            // Assert — the row's own on-primary token, which is what restores the ratio to 5.26:1.
+            const trigger = screen.getByRole("button", { name: TRIGGER_NAME });
+            const link = screen.getByRole("link", { name: "Platform Launch" });
+            expect(getComputedStyle(trigger).color).toBe(getComputedStyle(link).color);
+        });
+
+        it("leaves the unselected row's trigger on the muted token it already reads well against", async () => {
+            // Act
+            await render(<Default />);
+
+            // Assert
+            const trigger = screen.getByRole("button", { name: TRIGGER_NAME });
+            expect(trigger).not.toHaveClass("text-text-on-primary");
+        });
+
         it("exposes exactly the two authored menu items when the overflow menu is opened", async () => {
             // Arrange
             await render(<Default />);

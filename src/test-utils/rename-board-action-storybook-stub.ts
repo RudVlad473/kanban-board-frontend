@@ -11,15 +11,25 @@ type RenameBoardResult =
     | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
     | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
     | { status: typeof RESULT_STATUS.CONFLICT }
+    | { status: typeof RESULT_STATUS.DUPLICATE }
+    | { status: typeof RESULT_STATUS.NOT_FOUND }
     | { status: typeof RESULT_STATUS.ERROR };
 
 export type RenameBoardCall = { boardId: string; name: string; version: number };
+
+/** The failure branches a test can queue — every one of them carries no payload beyond its own name. */
+export type RenameBoardFailureStatus =
+    | typeof RESULT_STATUS.CONFLICT
+    | typeof RESULT_STATUS.DUPLICATE
+    | typeof RESULT_STATUS.NOT_FOUND
+    | typeof RESULT_STATUS.UNAUTHENTICATED
+    | typeof RESULT_STATUS.ERROR;
 
 /*
  * Programmable outcomes, following `create-board-columns-action-storybook-stub.ts`'s precedent —
  * a real module a test configures, never a `vi.mock` (docs/adr/tech/0020).
  */
-const queuedOutcomes: (typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.ERROR)[] = [];
+const queuedOutcomes: RenameBoardFailureStatus[] = [];
 
 let shouldHoldNextCall = false;
 
@@ -28,7 +38,7 @@ let settleHeldCall: (() => void) | null = null;
 export const renameBoardActionCalls: RenameBoardCall[] = [];
 
 /** Queues the failure branch the next call resolves with; an unqueued call succeeds outright. */
-export const queueRenameBoardFailure = (status: typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.ERROR): void => {
+export const queueRenameBoardFailure = (status: RenameBoardFailureStatus): void => {
     queuedOutcomes.push(status);
 };
 

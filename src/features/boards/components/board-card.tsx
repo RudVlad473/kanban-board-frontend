@@ -48,12 +48,20 @@ export const BoardCard = ({ board, isSelected, onEdit, onDelete, defaultIsMenuOp
                  * The IconButton goes through the trigger's render prop, so the trigger's glyph is
                  * fixed by this composition and can never come to reflect a chosen item.
                  */}
+                {/*
+                 * The ghost variant's muted glyph on the selected row's own background measures
+                 * 1.05:1 in light mode — invisible; the on-primary token restores it (02-12-SUMMARY.md).
+                 */}
                 <Menu.Trigger
                     render={
                         <IconButton
                             label={`Board actions for ${board.name}`}
                             icon={<EllipsisVertical />}
-                            className="absolute top-1/2 right-6 -translate-y-1/2"
+                            className={cn(
+                                "absolute top-1/2 right-6 -translate-y-1/2",
+                                isSelected &&
+                                    "text-text-on-primary hover:bg-bg-primary-hover hover:text-text-on-primary",
+                            )}
                         />
                     }
                 />

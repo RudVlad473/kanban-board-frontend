@@ -39,15 +39,17 @@ test.describe("BOARD-04: rename a board", () => {
         await page.getByLabel("Board Name", { exact: true }).fill(renamedName);
         await page.getByRole("button", { name: "Save Changes" }).click();
 
-        // Assert — the sidebar row carries the new name and the modal is gone.
+        // Assert — the sidebar row AND the header title carry the new name, and the modal is gone.
         await expect(sidebar.getByRole("link", { name: renamedName })).toBeVisible();
+        await expect(page.getByRole("heading", { level: 1, name: renamedName })).toBeVisible();
         await expect(page.getByRole("heading", { name: "Edit Board" })).toBeHidden();
 
         // Act — reload, so nothing on screen can be standing in for the server's own value.
         await page.reload();
 
-        // Assert — the rename persisted, and the other board is untouched.
+        // Assert — the rename persisted in both places, and the other board is untouched.
         await expect(sidebar.getByRole("link", { name: renamedName })).toBeVisible();
+        await expect(page.getByRole("heading", { level: 1, name: renamedName })).toBeVisible();
         await expect(sidebar.getByRole("link", { name: originalName })).toBeHidden();
         await expect(sidebar.getByRole("link", { name: `E2E Other ${suffix}` })).toBeVisible();
     });
