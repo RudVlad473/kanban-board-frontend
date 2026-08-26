@@ -217,7 +217,7 @@ personal sidebar.
 
   6. User can collapse and expand the sidebar.
 
-**Plans**: 15/16 plans executed
+**Plans**: 16/16 plans executed
 
 Plans:
 
@@ -298,7 +298,7 @@ than a new requirement id, same pattern 02-14 used:
 
 **Wave 14** *(blocked on 02-13)*
 
-- [ ] 02-16-PLAN.md — shared error-code mapping with a duplicate-name branch on create, instant rename-modal close, and loading.tsx skeletons for board navigation (BOARD-02, BOARD-03, BOARD-04)
+- [x] 02-16-PLAN.md — shared error-code mapping with a duplicate-name branch on create, instant rename-modal close, and loading.tsx skeletons for board navigation (BOARD-02, BOARD-03, BOARD-04)
 
 **UI hint**: yes
 
@@ -440,7 +440,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 15/15 | In Progress|  |
+| 2. Board Management | 16/16 | In Progress|  |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
