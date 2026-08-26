@@ -44,6 +44,21 @@ re-litigate U-01..U-05.
   at the end and the `+ New Column`/`+ Add New Column` CTA can be off-screen on a wide board,
   without this the user gets no visual confirmation anything happened.
 
+### Nudge threshold (resolved during planning, 2026-08-26)
+- **D-05:** D-03's "first crosses 8 columns" means **exceeds** 8 — the toast fires on the add
+  that makes the board's column count **9**, not 8. A board sitting at exactly 8 columns stays
+  silent. Still fires once only, and still never blocks creation. — **Reversibility:**
+  reversible — a single client-side threshold constant.
+
+### Keyboard drag activation (resolved during planning, 2026-08-26)
+- **D-06:** The keyboard lift accepts **both `Space` and `Enter`** — dnd-kit's `KeyboardSensor`
+  default `keyboardCodes` is kept rather than narrowed to the `Space` the UI-SPEC names. The
+  UI-SPEC's `Space` remains correct and documented; `Enter` is an additional accepted key, not a
+  replacement. Consequence the planner must honour: the drag handle must not itself be an
+  `Enter`-activated button, or `Enter` becomes ambiguous between "lift" and "activate" — the
+  column kebab menu must be a separate control from the drag handle. — **Reversibility:**
+  reversible — one `keyboardCodes` override away from the Space-only behaviour.
+
 ### Claude's Discretion
 - Exact auto-scroll mechanics (smooth vs instant, `motion-reduce` handling) — follow the same
   `motion-reduce:` discipline the UI-SPEC already establishes for drag/rollback animations
