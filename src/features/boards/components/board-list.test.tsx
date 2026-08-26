@@ -445,6 +445,58 @@ describeForEachDevice({
             expect(getRaisedToastTexts()).toHaveLength(0);
         });
 
+        /*
+         * WR-01 (02-REVIEW.md): the rename hook's `isPending` is a single flag shared by every row's
+         * mutation, so it must be scoped to the board actually being renamed before it reaches an
+         * unrelated row's modal — otherwise opening board 2 while board 1's rename is in flight would
+         * incorrectly show board 2's own modal as pending.
+         */
+        it("does not show an unrelated board's edit modal as pending while another row's rename is in flight", async () => {
+            // Arrange
+            await render(<Populated />);
+            holdNextRenameBoard();
+
+            // Act — start a rename on row 1; the modal closes instantly (D-02) while its write is held.
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Act — open Edit Board on an unrelated row while row 1's rename is still unresolved.
+            await userEvent.click(screen.getByRole("button", { name: "Board actions for Fixture Board 2" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Board" }));
+
+            // Assert — board 2's own modal is not pending, even though board 1's rename hasn't settled.
+            expect(await screen.findByRole("heading", { name: "Edit Board" })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Save Changes" })).toBeEnabled();
+
+            settleRenameBoard();
+        });
+
+        /*
+         * WR-02 (02-REVIEW.md): nothing previously gated a second submit on the SAME row before the
+         * first settled, which could send a stale version and roll back to a name older than what the
+         * server actually holds. Disabling the row's own Edit Board entry while its rename is in
+         * flight closes that window.
+         */
+        it("keeps the same row's Edit Board entry inert while its own rename is in flight", async () => {
+            // Arrange
+            await render(<Populated />);
+            holdNextRenameBoard();
+
+            // Act — submit a rename on row 1; the modal closes instantly while the write is held.
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Act — reopen the row's overflow menu before its rename has settled.
+            await userEvent.click(screen.getByRole("button", { name: "Board actions for Platform Relaunch" }));
+
+            // Assert — the entry is disabled outright, so it can never be activated while pending.
+            expect(await screen.findByRole("menuitem", { name: "Edit Board" })).toHaveAttribute(
+                "aria-disabled",
+                "true",
+            );
+            expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
+
+            settleRenameBoard();
+        });
+
         it("sends the row's own id and current version with the rename", async () => {
             // Arrange
             await render(<Populated />);
