@@ -10,12 +10,13 @@ requires:
     provides: the board-view/Storybook/Vitest surfaces the spike's scratch story was to be modelled on
 provides:
   - "`@dnd-kit/core@6.3.1`, `@dnd-kit/sortable@10.0.0`, `@dnd-kit/utilities@3.2.2` as exactly-pinned runtime dependencies"
-  - "Evidence that installing the stable dnd-kit line regresses nothing in the existing suite (919 passing tests, all 6 static gates, tsc clean)"
+  - "Evidence that installing the stable dnd-kit line regresses nothing in the existing suite (936 passing tests, all 6 static gates, tsc clean)"
+  - "`.planning/phases/03-column-management/03-SPIKE-DNDKIT.md` — observed React 19 runtime findings confirming A6 and resolving Open Question 4"
 affects: [03-10 column reorder, phase-04 task drag-to-move]
 
 actuals:
   tokens: 887
-  tasks: 1
+  tasks: 2
   commits: 2
 
 tech-stack:
@@ -57,27 +58,33 @@ coverage:
   - id: D2
     description: "Observed proof that the legacy dnd-kit line mounts and drags (pointer + keyboard) under this repo's React 19.2 / Next 16.3, with auto-scroll behaviour in nested scroll containers recorded for plan 03-10"
     requirement: "COLUMN-03"
-    verification: []
+    verification:
+      - kind: other
+        ref: "mcp__playwright__* driven against a scratch Storybook story, headless, main session (see 03-SPIKE-DNDKIT.md): mount clean (0 errors), keyboard lift/move/drop/cancel confirmed for both Space and Enter, sibling-control safety confirmed, keyboard auto-scroll-into-view confirmed in nested scroll containers"
+        status: pass
+      - kind: other
+        ref: "Pointer path: Playwright's dragTo() could not reliably trigger a dnd-kit drag (single intermediate mousemove, matches 03-RESEARCH.md Pitfall 4/A7) — recorded as a tooling limitation, not a library defect; the keyboard path is the verified automated surface"
+        status: partial
     human_judgment: true
-    rationale: "NOT DELIVERED. Task 2's precondition (Playwright MCP resolving as `mcp__playwright__*`) is unmet in this execution context, so nothing was driven in a browser. `03-SPIKE-DNDKIT.md` does not exist. 03-RESEARCH.md assumption A6 and Open Question 4 remain open, exactly as before this plan ran."
+    rationale: "DELIVERED for the keyboard path (dnd-kit's required interaction surface per D-06/U-02), NOT independently observed for the pointer path — no low-level multi-step mouse API was available in this session's tool surface. 03-SPIKE-DNDKIT.md records both outcomes plainly, resolves A6 (CONFIRMED) and Open Question 4 (restrictToFirstScrollableAncestor NOT needed), and flags a one-version Chromium discrepancy (152 vs the project's pinned 151) against the backstop truth rather than silently claiming exact parity."
 
 # Metrics
-duration: 26 min
+duration: 26 min (Task 1) + resumed same day, main session (Task 2)
 completed: 2026-08-26
-status: halted
+status: complete
 ---
 
 # Phase 03 Plan 03: dnd-kit Install + React 19 Runtime Spike Summary
 
-**The three ADR-locked dnd-kit packages are installed and exactly pinned with zero regression across the existing suite — but the React 19 runtime spike that was the other half of this plan did not run, because its Playwright-MCP precondition is unmet in a worktree subagent.**
+**The three ADR-locked dnd-kit packages are installed and exactly pinned with zero regression, and the React 19 runtime spike is now complete: a scratch Storybook story, driven headless through this project's own `mcp__playwright__*` server in the main session, confirms dnd-kit's full keyboard interaction contract and nested-container auto-scroll behavior with no runtime error.**
 
 ## Performance
 
-- **Duration:** 26 min
+- **Duration:** 26 min (Task 1, original session) + resumed same day in the main session (Task 2, after the `.mcp.json` `mcpServers`-wrapper fix landed in commit `f7ae5f3`)
 - **Started:** 2026-08-26T13:09:00Z (approx — worktree base commit time)
-- **Completed:** 2026-08-26T13:35:37Z
-- **Tasks:** 1 of 2 completed
-- **Files modified:** 2
+- **Completed:** 2026-08-26 (Task 2 resumed and completed same day)
+- **Tasks:** 2 of 2 completed
+- **Files modified:** 3 (package.json, pnpm-lock.yaml, 03-SPIKE-DNDKIT.md)
 
 ## Accomplishments
 
@@ -91,13 +98,17 @@ status: halted
   package.
 - The install regressed nothing: `tsc --noEmit` clean, `lint` clean, `format:check` clean, and all
   six repo static gates (`stories:check`, `renders:check`, `tsx:check`, `comments:check`,
-  `handlers:check`, `routes:check`) pass. `pnpm test` runs 919 passing tests; every failure is
-  environmental and is analysed under "Issues Encountered" below.
+  `handlers:check`, `routes:check`) pass. `pnpm test` runs 936 passing tests (re-run to rule out a
+  cold-start flake, see "Task 2 Resumption" below).
+- **Task 2 (resumed):** a scratch, uncommitted Storybook story mounted a 5-item horizontal sortable
+  list built from all three packages and was driven headless via `mcp__playwright__*` in the main
+  session. Full findings in `.planning/phases/03-column-management/03-SPIKE-DNDKIT.md`.
 
 ## Task Commits
 
 1. **Task 1: Install the three ADR-locked dnd-kit packages** — `2a38a75` (chore)
-2. **Task 2: Prove the legacy dnd-kit line works under React 19** — NOT EXECUTED (precondition unmet)
+2. **Task 2: Prove the legacy dnd-kit line works under React 19** — resumed and completed in the
+   main session; findings recorded in `03-SPIKE-DNDKIT.md`, committed with this summary (docs)
 
 **Plan metadata:** committed with this summary (docs).
 
@@ -106,8 +117,8 @@ status: halted
 - `package.json` — three `@dnd-kit/*` entries added to `dependencies`, exact versions.
 - `pnpm-lock.yaml` — resolves the three packages plus `@dnd-kit/accessibility@3.1.1` (a transitive
   dependency of `@dnd-kit/core`); 4 packages added in total.
-
-**Not created:** `.planning/phases/03-column-management/03-SPIKE-DNDKIT.md` — see below.
+- `.planning/phases/03-column-management/03-SPIKE-DNDKIT.md` — Task 2's observed findings (created
+  in the resumed session; see below).
 
 ## Decisions Made
 
@@ -186,6 +197,45 @@ Consequences, stated plainly so plan 03-10 is not written against a false belief
    Confirming check, in the main session: run `/mcp` and see whether `playwright` is listed. If it
    is not, cause 2 is real and the wrapper key is the fix. If it is listed, only cause 1 applies.
 
+**Resolved — Task 2 Resumption (same day, main session).** Between this plan halting and this
+resumption, an unrelated commit (`f7ae5f3`, "fix(mcp): wrap .mcp.json servers in the mcpServers key
+so the headless playwright server actually loads") landed on this branch — exactly cause 2 above,
+confirmed real. In the main session (not a dispatched subagent), `ToolSearch` resolved
+`mcp__playwright__browser_navigate` and friends, and driving them against `http://localhost:6006`
+worked cleanly — this project's own headless server, cause 1 (subagent MCP visibility) is real
+but moot once execution happens in the main session as the plan's own recovery path 1 recommended.
+
+Findings (full detail in `03-SPIKE-DNDKIT.md`):
+
+- **Mount (§1):** clean, 0 console errors, 0 dnd-kit-related warnings, in both the Storybook
+  manager view and the raw `iframe.html` preview.
+- **Keyboard path (§2):** lift (`Space` **and** `Enter`, per D-06) → arrow-move → drop all reorder
+  the list correctly; `Escape` mid-lift reverts to the pre-lift index. Live-region announcements
+  confirmed at every step.
+- **Pointer path (§3):** Playwright's `dragTo()` (the only drag primitive this session's MCP tool
+  surface exposes — no low-level multi-step `page.mouse` API is available) could **not** reliably
+  trigger a dnd-kit drag across targets, exactly as Pitfall 4/A7 predicted. Recorded as a tooling
+  limitation of this automation surface, not a dnd-kit defect — the keyboard path is the verified
+  automated surface, and e2e (plan 03-12) has direct `page.mouse` access this session's tools do not.
+- **Sibling-control safety (§4):** confirmed — a plain click on a non-handle sibling button fires
+  its own click and starts no drag.
+- **Auto-scroll (§5):** confirmed working for the keyboard path with no extra configuration;
+  `@dnd-kit/modifiers` is **not needed**.
+- **Pitfall 3 / hydration (§6):** not reproducible in Storybook (it never server-renders, as the
+  plan itself anticipated) — recorded as verified-by-source only, per the existing `dist` reading
+  in `03-RESEARCH.md`.
+- **Environment discrepancy, stated plainly:** the spike ran under `HeadlessChrome/152.0.0.0`
+  (`@playwright/mcp@0.0.79` → `playwright-core@1.63.0-alpha`), one Chromium major version ahead of
+  this repo's own pinned `@playwright/test@1.62.1` (Chromium `151.0.7922.34`, what Vitest
+  browser-mode/Storybook-interaction tests and e2e actually run under). The plan's backstop truth
+  asking for "the same Chromium build" is therefore not exactly met — recorded honestly as a
+  one-version-adjacent gap rather than claimed as satisfied.
+
+`03-SPIKE-DNDKIT.md`'s `## Supersedes` section resolves **A6 → CONFIRMED** and **Open Question 4 →
+`@dnd-kit/modifiers` NOT needed**. The scratch story
+(`src/features/boards/components/dnd-kit-spike.stories.tsx`) was deleted immediately after —
+`git status --porcelain src/` is empty.
+
 **2. The deployed nonprod backend is unreachable — pre-existing, out of scope.**
 
 `pnpm test` reports 4 failed test files. Three are the real-backend integration suites
@@ -224,55 +274,51 @@ sensitivity in a fresh worktree, not something this plan introduced.
 | `pnpm comments:check` | PASS |
 | `pnpm handlers:check` | PASS |
 | `pnpm routes:check` | PASS |
-| `pnpm test` | PARTIAL — 919 passed, 14 skipped; 3 integration suites fail on backend outage, 1 storybook flake passes on warm re-run |
-| `git status --porcelain src/` empty | PASS (no spike scaffolding — none was created) |
-| `03-SPIKE-DNDKIT.md` answers A6 / Open Question 4 | **FAIL — file not created, Task 2 halted** |
+| `pnpm test` | PASS — 936/936 (re-run after Task 2's resumption, nonprod having since recovered; one `sidebar.stories.tsx` cold-start flake on the first run passed clean on re-run, same class as Task 1's original flake) |
+| `git status --porcelain src/` empty | PASS (Task 2's scratch story was deleted after use) |
+| `03-SPIKE-DNDKIT.md` answers A6 / Open Question 4 | **PASS — A6 CONFIRMED, Open Question 4 resolved (modifiers not needed)** |
 
 ## Known Stubs
 
-None. No spike scaffolding was created, so none leaked: `git status --porcelain src/` is empty and
-no untracked `*.stories.tsx` or scratch script exists anywhere in the tree.
+None. Task 2's scratch story (`dnd-kit-spike.stories.tsx`) was deleted immediately after use;
+`git status --porcelain src/` is empty and no untracked `*.stories.tsx` or scratch script exists
+anywhere in the tree.
 
 ## User Setup Required
 
-None — no external service configuration required by the work that landed. The unreachable nonprod
-backend is an availability problem, not a setup task.
+None — no external service configuration required. The nonprod backend outage noted during Task 1
+has since resolved (confirmed via `scripts/probe-column-backend.mjs` in the same resumed session;
+see `03-01-SUMMARY.md`/`03-BACKEND-FACTS.md`).
 
 ## Next Phase Readiness
 
-**Plan 03-10 (column reorder) is NOT ready to be written against observed behaviour.** Its stated
-input — this plan's success criterion — was "plan 03-10 can be written against observed dnd-kit
-runtime behaviour instead of a static reading of the library's dist", and that input does not
-exist. Anything downstream that consumes `03-SPIKE-DNDKIT.md` is blocked.
+**Plan 03-10 (column reorder) can now be written against observed dnd-kit runtime behaviour.**
+`03-SPIKE-DNDKIT.md` confirms A6 and resolves Open Question 4 (`@dnd-kit/modifiers` not needed).
+The one open item for 03-10 to carry forward: the pointer-path activation distance/step-count
+remains unmeasured (this session's tooling could not drive it), so 03-10/03-12 should verify the
+pointer path independently via a real low-level `page.mouse` sequence (e2e, per Pitfall 4's
+own recommendation) rather than assume this spike covered it.
 
-What *is* ready: the dependency is in place and proven not to break the existing build or suite, so
-Task 2 can be resumed on top of this commit with no rework.
-
-Two viable recovery paths, in preference order:
-
-1. **Re-run Task 2 in the main session**, where the project's `.mcp.json` playwright server is in
-   scope (subject to the `/mcp` check above). Nothing from Task 1 needs redoing.
-2. **Re-plan Task 2** via `/gsd-plan-phase` to target a driver a dispatched agent can actually
-   reach. Worth noting for that decision: this worktree *does* run headless Chromium successfully —
-   the `storybook (chromium)` Vitest project executed 143 tests here — so the browser itself is
-   available; only the MCP-driven dev-server path is not. That path would still need to satisfy the
-   plan's `must_haves` requirement that findings hold under the same Chromium the `browser`/
-   `storybook` Vitest projects use, which it would do by construction.
-
-Note also that `requirements-completed` is deliberately empty: **COLUMN-03 is not complete.** This
-plan installed its library and nothing more. Marking it complete here would flip a requirement green
-on the strength of a `pnpm add`.
+`requirements-completed` stays empty: **COLUMN-03 is still not complete.** This plan installs the
+library and proves its runtime behaviour; COLUMN-03 itself (the reorder feature) ships in plan
+03-10. Marking it complete here would flip a requirement green on the strength of a dependency
+install and a spike.
 
 ## Self-Check: PASSED
 
 - `package.json` / `pnpm-lock.yaml` modifications present on disk and committed.
 - `.planning/phases/03-column-management/03-03-SUMMARY.md` exists on disk.
+- `.planning/phases/03-column-management/03-SPIKE-DNDKIT.md` exists on disk, contains
+  `## Supersedes` naming A6 with a CONFIRMED verdict.
 - Commit `2a38a75` (Task 1) resolves in `git log`.
-- Commit `16721c1` (this summary) resolves in `git log`.
-- `git status --porcelain` is empty — no uncommitted or untracked residue.
-- Claims checked against actual command output, not inference. The one claim this summary
-  explicitly marks unverified is the `.mcp.json` wrapper-key hypothesis, which is labelled as such.
+- `git status --porcelain src/` is empty — no scratch-story residue.
+- `pnpm lint`, `format:check` (repo-code files), `stories:check`, `renders:check`, `tsx:check`,
+  `comments:check`, `handlers:check`, `routes:check`, `tsc --noEmit` all exit 0; `pnpm test` is
+  936/936 on a clean re-run.
+- Claims checked against actual command output, not inference. The `.mcp.json` wrapper-key
+  hypothesis this summary previously marked unverified is now confirmed: commit `f7ae5f3` fixed it,
+  and the project's own `mcp__playwright__*` server resolved and worked in this session.
 
 ---
 *Phase: 03-column-management*
-*Completed: 2026-08-26 (halted at Task 2)*
+*Completed: 2026-08-26 (Task 1 halted at Task 2; resumed and completed same day in the main session)*
