@@ -40,3 +40,11 @@ export const ManyColumns: Story = { args: { board: createBoardFull({ columns: cr
 export const ManyTasksInOneColumn: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 2, taskCount: 12 }) }) },
 };
+
+/*
+ * Seeds the Add Column modal open over a populated board, which is the state a play function would
+ * otherwise have had to drive (`pnpm stories:check` bans those).
+ */
+export const AddColumnOpen: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }), defaultIsAddColumnOpen: true },
+};
