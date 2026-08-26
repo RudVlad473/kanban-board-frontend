@@ -233,7 +233,13 @@ PDF's `#828FA3`.
 
 ## UI Considerations
 
-Applicable state considerations resolved: **16 covered, 3 backstop, 0 unresolved.**
+Applicable state considerations resolved: **19 covered, 3 backstop, 0 unresolved** (22 rows).
+
+<!-- Corrected 2026-08-26 during /gsd-plan-phase 3: this line previously read "16 covered",
+     undercounting its own table by 3. The plan-checker caught it. Planning lifted all 22 rows
+     into plan must_haves, so the plans are unaffected — but a later reader trusting the header
+     over the table would silently drop three considerations. Count the table, not this line. -->
+
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|

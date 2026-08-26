@@ -809,29 +809,51 @@ Model it on `scripts/probe-board-backend.mjs` (same account/cookie helpers, same
 
 ---
 
-## Open Questions
+## Open Questions (ALL RESOLVED during /gsd-plan-phase 3, 2026-08-26)
+
+> Every question below was answered before planning closed. Each carries a **`RESOLVED:`** line
+> naming where the answer now lives. Where a resolution **contradicts** the recommendation written
+> underneath it, the resolution wins — the original recommendation text is kept for its reasoning,
+> not as an instruction. Q3 is the one that inverted; read its RESOLVED line before implementing.
 
 1. **What exactly does `targetPosition` mean, and what does a reorder do to other columns' `version`?**
+   - **RESOLVED:** still unobserved (the nonprod DB was down). Converted into a gated probe rather
+     than an assumption — plan `03-01` runs R1–R7 and writes `03-BACKEND-FACTS.md`; plan `03-10`
+     (reorder) carries a `<precondition>` on it and marks its dependent truths `verification: backstop`.
    - *What we know:* it is a required 0-based integer with `minimum: 0`; the response is only the moved column; positions are otherwise assigned by creation order (P5).
    - *What's unclear:* final-index vs insert-before semantics; whether shifted columns' versions bump; the no-op and out-of-range behaviours.
    - *Recommendation:* **Wave 0 probe task (R1–R4 above), gate every reorder plan behind it.** Write the probe as `scripts/probe-column-backend.mjs` modelled on `scripts/probe-board-backend.mjs` and record the answers as `.planning/phases/03-column-management/03-BACKEND-FACTS.md`, exactly as Phase 2 did. Until it runs, the backend DB outage means it cannot even be attempted.
 
 2. **Does D-03's "first crosses 8 columns" fire at 9, or at 8?**
+   - **RESOLVED → fires at 9.** Confirmed by the user during planning and recorded as **D-05** in
+     `03-CONTEXT.md`. Matches the recommendation below. Implemented in plans `03-04` and `03-07`.
    - *What we know:* the nudge is informational, never blocks, and must not repeat.
    - *What's unclear:* the exact trigger count.
    - *Recommendation:* implement as "the successful create whose resulting count is exactly 9" — that is the literal reading of *crosses* 8, needs no persistence, and cannot repeat by construction. Surface it as a one-line confirmation at the phase's first human checkpoint rather than a separate discussion round.
 
 3. **Should `Enter` on the drag handle start a drag?**
+   - **RESOLVED → YES, keep BOTH `Space` and `Enter`.** Confirmed by the user during planning and
+     recorded as **D-06** in `03-CONTEXT.md`. ⚠ **This OVERRIDES the recommendation below** — do NOT
+     narrow `keyboardCodes`. dnd-kit's default `start: [Space, Enter]` is kept as shipped. The
+     consequence D-06 adds: the drag handle must not itself be an `Enter`-activated button, so the
+     column kebab menu is a separate sibling control, never a descendant of the handle. Enforced by
+     plans `03-08` and `03-10`; plan `03-03` also records the non-narrowing explicitly.
    - *What we know:* dnd-kit's default `start` codes are `[Space, Enter]`; UI-SPEC's contract names only `Space`.
    - *What's unclear:* whether the divergence matters to the user.
    - *Recommendation:* narrow `keyboardCodes` to `{ start: ["Space"], cancel: ["Escape"], end: ["Space", "Tab"] }`. The handle has no click action of its own, so `Enter` doing nothing is not a lost affordance, and it keeps the implementation matching the announced instructions verbatim.
 
 4. **Does the horizontal scroll row auto-scroll during a keyboard reorder past the fold?**
+   - **RESOLVED:** deferred to measurement, not to assumption. Plan `03-03`'s React 19 runtime spike
+     answers it and records the finding in `03-SPIKE-DNDKIT.md`; plan `03-10` reads that file to
+     decide whether `@dnd-kit/modifiers`' `restrictToFirstScrollableAncestor` is needed.
    - *What we know:* dnd-kit's `autoScroll` is on by default and `KeyboardSensor` takes a `scrollBehavior` option (default `"smooth"`); `sortableKeyboardCoordinates` resolves against measured droppable rects, and columns beyond the fold have rects.
    - *What's unclear:* how it behaves with the **nested** scroll containers this layout has (a horizontal row whose children are each vertically scrollable).
    - *Recommendation:* verify empirically in the same Storybook spike that resolves A6, using the shipped `ManyColumns` story shape. If it misbehaves, `restrictToFirstScrollableAncestor` from `@dnd-kit/modifiers` is the escape hatch — that is the only reason to add that package.
 
 5. **`CONVENTIONS.md` drift (Pitfall 7 and Pitfall 1).**
+   - **RESOLVED:** owned by plan `03-13` Task 1, which corrects the **document** (the stale
+     `features/columns/` tree entry and the `router.refresh()` rule) and whose acceptance criteria
+     require `git diff --name-only` to list only `CONVENTIONS.md`. Matches the recommendation below.
    - *Recommendation:* raise both as a documentation-hygiene item at the end of the phase, not as a Phase 3 code change. Follow the shipped code; do not "fix" the code to match the doc.
 
 ---
