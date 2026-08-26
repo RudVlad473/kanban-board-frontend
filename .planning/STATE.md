@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 02
-current_phase_name: Board Management
-status: executing
-stopped_at: null
-last_updated: "2026-08-25T08:58:54.675Z"
-last_activity: 2026-08-25
-last_activity_desc: Phase 02 execution resumed (wave continue)
-state_head: d25f3e4efb2b943d11136131faa3fa0265c56ac5
+current_phase: 02.1
+current_phase_name: "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08"
+status: planning
+stopped_at: Phase 02 complete, ready to plan Phase 02.1
+last_updated: "2026-08-26T09:14:41.079Z"
+last_activity: 2026-08-26
+last_activity_desc: Phase 02 complete, transitioned to Phase 02.1
+state_head: 71e92e3968096b4db60da7bae62a94791fa0a5d5
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 77
-  completed_plans: 72
+  completed_phases: 3
+  total_plans: 78
+  completed_plans: 78
 milestone_name: milestone
 ---
 
@@ -31,14 +31,14 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 
 ## Current Position
 
-Phase: 02 (Board Management) — EXECUTING
+Phase: 02.1 — Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08
 Phase 02 (Board Management): 10 of 15 plans complete. 02-10's Task 4 checkpoint is APPROVED
 (2026-08-25) after fixing 4 UI findings against the canonical design PDF. Wave 9 refactor plans
 (02-14, 02-15) were inserted per user decision, and 02-11/12/13 shifted to waves 11/12/13.
-Status: Executing Phase 02
+Status: Ready to plan
 plan-checker-verified; the pause that blocked them (pull Phase 02.2 forward) is resolved, since
 02.2 shipped in full on 2026-08-22.
-Last activity: 2026-08-25 — Phase 02 execution resumed (wave continue)
+Last activity: 2026-08-26 — Phase 02 complete, transitioned to Phase 02.1
 
 Progress: Milestone v1.0 — Phase 1: 38/38 plans; Phase 02.1: 15/15 plans; Phase 02.2: 9/9 plans;
 Phase 02: 10/15 plans (in progress)
@@ -47,7 +47,7 @@ Phase 02: 10/15 plans (in progress)
 
 **Velocity:**
 
-- Total plans completed: 71
+- Total plans completed: 78
 - Average duration: n/a
 - Total execution time: 0 hours
 
@@ -58,6 +58,7 @@ Phase 02: 10/15 plans (in progress)
 | 01 | 38 | - | - |
 | 02.1 | 15 | - | - |
 | 02.2 | 9 | - | - |
+| 02 | 16 | - | - |
 
 **Recent Trend:**
 
@@ -172,7 +173,7 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-08-22T15:42:37.108Z
-Stopped at: Phase 02.2 complete, ready to plan Phase 2
+Stopped at: Phase 02 complete, ready to plan Phase 02.1
 
 **This session:** Resumed from a HANDOFF.json pause at the Wave 7 (02.1-15) Task 3 human
 checkpoint — user replied "approved". Ran the phase's post-execution gate in full:

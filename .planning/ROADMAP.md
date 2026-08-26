@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   BFF-proxied auth let a user sign up, sign in, stay in a route-guarded session, and set a
   persisted theme
 
-- [ ] **Phase 2: Board Management** - Signed-in users create, view, rename, delete, and
+- [x] **Phase 2: Board Management** - Signed-in users create, view, rename, delete, and (completed 2026-08-26)
   browse their boards from a collapsible sidebar
 
 - [ ] **Phase 3: Column Management** - Users shape a board's workflow by adding, naming,
@@ -440,7 +440,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
-| 2. Board Management | 16/16 | In Progress|  |
+| 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 0/TBD | Not started | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
