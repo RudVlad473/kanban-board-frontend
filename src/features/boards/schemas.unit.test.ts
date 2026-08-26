@@ -7,10 +7,14 @@ import {
     columnFullSchema,
     columnNameRowSchema,
     columnNameSchema,
+    columnSchema,
     createBoardColumnsInputSchema,
     createBoardInputSchema,
+    createColumnInputSchema,
     deleteBoardInputSchema,
     renameBoardInputSchema,
+    renameColumnInputSchema,
+    reorderColumnInputSchema,
     taskFullSchema,
 } from "@/features/boards/schemas";
 import { createBoard, createBoards } from "@/test-utils/factories/board";
@@ -405,5 +409,94 @@ describe("createBoardColumnsInputSchema", () => {
 
         // Act & Assert
         expect(createBoardColumnsInputSchema.safeParse({ boardId: "board-id", names: tooMany }).success).toBe(false);
+    });
+});
+
+/*
+ * `ColumnResponseDTO` returns no `tasks`, so parsing a create/rename/reorder response with
+ * `columnFullSchema` would fail on every successful call.
+ */
+describe("columnSchema", () => {
+    it("accepts a response-shaped column with no tasks key, which columnFullSchema refuses", () => {
+        // Arrange
+        const { tasks: _tasks, ...columnResponse } = createColumnFull();
+
+        // Act
+        const result = columnSchema.safeParse(columnResponse);
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual(columnResponse);
+        expect(columnFullSchema.safeParse(columnResponse).success).toBe(false);
+    });
+});
+
+describe("createColumnInputSchema", () => {
+    it("accepts a board id with a valid column name", () => {
+        // Act
+        const result = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Todo" });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual({ boardId: "8okxhwo6oq2o", name: "Todo" });
+    });
+
+    /* The Copywriting Contract splits the two refusals: a blank name earns the required copy, never the length copy. */
+    it("reports the required-field copy for a blank name rather than the length copy", () => {
+        // Act
+        const result = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "   " });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.error?.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("reports the length copy on either side of the backend's own 3-to-32 bound", () => {
+        // Act
+        const oneCharacter = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "A" });
+        const twoCharacters = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "To" });
+        const thirtyThree = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "a".repeat(33) });
+
+        // Assert
+        expect(oneCharacter.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
+        expect(twoCharacters.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
+        expect(thirtyThree.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
+    });
+
+    /* T-03-01: the board id selects the parent resource, so an empty one must fail before it resolves a path. */
+    it("rejects an empty board id", () => {
+        // Act & Assert
+        expect(createColumnInputSchema.safeParse({ boardId: "", name: "Todo" }).success).toBe(false);
+    });
+});
+
+/*
+ * T-03-04: the column *update* body requires `version` while the create body has no such field, so a
+ * rename built by analogy to create is rejected on every attempt unless this boundary refuses first.
+ */
+describe("renameColumnInputSchema", () => {
+    it("rejects an input carrying both ids and a name but no version", () => {
+        // Arrange
+        const withoutVersion = { boardId: "8okxhwo6oq2o", columnId: "column-1", name: "In Progress" };
+
+        // Act & Assert
+        expect(renameColumnInputSchema.safeParse(withoutVersion).success).toBe(false);
+        expect(renameColumnInputSchema.safeParse({ ...withoutVersion, version: 3 }).success).toBe(true);
+    });
+});
+
+/*
+ * T-03-06: `minimum: 0` is the contract's own floor, so a forged negative or fractional wire payload
+ * is refused at this app's boundary before it ever reaches the backend.
+ */
+describe("reorderColumnInputSchema", () => {
+    it("accepts a zero target position and rejects a negative or fractional one", () => {
+        // Arrange
+        const base = { boardId: "8okxhwo6oq2o", columnId: "column-1", version: 3 };
+
+        // Act & Assert
+        expect(reorderColumnInputSchema.safeParse({ ...base, targetPosition: 0 }).success).toBe(true);
+        expect(reorderColumnInputSchema.safeParse({ ...base, targetPosition: -1 }).success).toBe(false);
+        expect(reorderColumnInputSchema.safeParse({ ...base, targetPosition: 1.5 }).success).toBe(false);
     });
 });

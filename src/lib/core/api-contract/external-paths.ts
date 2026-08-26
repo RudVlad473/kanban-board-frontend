@@ -8,6 +8,8 @@ export const EXTERNAL_PATH = {
     BOARD_DETAIL: "/boards/{boardId}",
     BOARD_FULL: "/boards/{boardId}/full",
     BOARD_COLUMNS: "/boards/{boardId}/columns",
+    COLUMN_DETAIL: "/boards/{boardId}/columns/{columnId}",
+    COLUMN_REORDER: "/boards/{boardId}/columns/{columnId}/reorder",
     SIGN_IN: "/signin",
     SIGN_UP: "/signup",
     USER_THEME: "/users/me/theme",

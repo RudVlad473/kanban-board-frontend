@@ -61,6 +61,14 @@ export type ColumnFull = z.infer<typeof columnFullSchema>;
 export type BoardFull = z.infer<typeof boardFullSchema>;
 
 /*
+ * What a column mutation's own response parses as. Derived rather than restated so the two can never
+ * drift: `ColumnResponseDTO` returns no tasks, so `columnFullSchema` would fail every successful call.
+ */
+export const columnSchema = columnFullSchema.omit({ tasks: true });
+
+export type Column = z.infer<typeof columnSchema>;
+
+/*
  * Duplicated verbatim from auth's own unexported constant rather than imported — a feature may not
  * import another feature (CONVENTIONS.md), and this is the UI-SPEC Copywriting Contract's wording.
  */
@@ -152,3 +160,61 @@ export const createBoardColumnsInputSchema = z.object({
 });
 
 export type CreateBoardColumnsInput = z.infer<typeof createBoardColumnsInputSchema>;
+
+/*
+ * `columnNameRowSchema` rather than bare `columnNameSchema`: 03-UI-SPEC's Copywriting Contract gives
+ * a blank column name the required-field copy and only an out-of-bounds one the length copy, and
+ * that split is exactly what the row schema already pipes (it reuses the 3-32 bound, never restates it).
+ */
+export const createColumnInputSchema = z.object({ boardId: z.string().min(1), name: columnNameRowSchema });
+
+export type CreateColumnInput = z.infer<typeof createColumnInputSchema>;
+
+/*
+ * `version` is required here for the same reason `renameBoardInputSchema` requires it one level up:
+ * the column *update* body requires it while the create body has no such field.
+ */
+export const renameColumnInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+    name: columnNameRowSchema,
+    version: z.number().int(),
+});
+
+export type RenameColumnInput = z.infer<typeof renameColumnInputSchema>;
+
+/*
+ * `min(0)` mirrors `ReorderColumnRequestDTO`'s own `minimum: 0` — the floor that stops a forged
+ * negative or fractional wire payload at this app's boundary rather than upstream (T-03-06).
+ */
+export const reorderColumnInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+    version: z.number().int(),
+    targetPosition: z.number().int().min(0),
+});
+
+export type ReorderColumnInput = z.infer<typeof reorderColumnInputSchema>;
+
+/*
+ * A delete has no request body, so the two ids are the entire untrusted surface — and they select the
+ * target of a hard cascade that takes every task with it (ADR domain/0002).
+ */
+export const deleteColumnInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+});
+
+export type DeleteColumnInput = z.infer<typeof deleteColumnInputSchema>;
+
+/*
+ * Both column forms carry only the name, since the board id, column id and version come from the
+ * RSC-supplied column rather than from anything the user can type (mirrors `editBoardFormSchema`).
+ */
+export const addColumnFormSchema = z.object({ name: columnNameRowSchema });
+
+export type AddColumnFormValues = z.infer<typeof addColumnFormSchema>;
+
+export const renameColumnFormSchema = z.object({ name: columnNameRowSchema });
+
+export type RenameColumnFormValues = z.infer<typeof renameColumnFormSchema>;
