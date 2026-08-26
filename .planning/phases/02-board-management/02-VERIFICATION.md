@@ -1,20 +1,31 @@
 ---
 phase: 02-board-management
 verified: 2026-08-26T11:05:00Z
-status: human_needed
+status: passed
 score: 6/6 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
+
   - test: "Sign out of an account that has boards, then sign in as a different account on the same browser — confirm no board name, board list, or board-detail content from the first account is ever visible, even for a frame, before the second account's own boards load."
     expected: "No cross-account board data ever renders. The sidebar and board view show only the newly signed-in account's own data (or an empty/loading state), never a flash of the previous account's boards."
     why_human: "Plan must_haves (02-01, 02-05, 02-08) flag this exact scenario as a judgment-tier prohibition ('flagged-unverified') that only a live cross-session browser check can confirm — grep/static analysis can show boards are RSC-fetched with no client cache (a strong structural argument this holds), but cannot observe an actual paint sequence across a real sign-out/sign-in transition."
+
   - test: "Trigger a create-board duplicate-name refusal, a rename refusal, and a board-detail 403/404, and read every character of the resulting banner/toast/error text."
     expected: "Every message is this app's own authored copy (e.g. 'A board with that name already exists. Choose a different name.') — never a raw backend string, error code, or stack trace fragment."
     why_human: "Multiple plans (02-07, 02-08, 02-10, 02-11, 02-12, 02-13, 02-16) carry this as a 'flagged-unverified' prohibition. Code inspection confirms every error path routes through bare RESULT_STATUS discriminants and this project's own copy tables (map-problem-code.ts, RENAME_FAILURE_COPY, CREATE_FAILURE_MESSAGE) with no interpolation of upstream text — strong static evidence — but a live check against the real backend's actual problem-detail bodies is what the plans themselves ask for before calling it resolved."
+
   - test: "Delete a board and confirm the confirmation modal cannot be bypassed (no auto-confirm, no one-click destroy), and that a rolled-back rename shows a visible danger toast rather than silently reverting."
     expected: "Delete always requires an explicit affirmative click on 'Delete Board' with initial focus on 'Keep Board'; a failed rename always raises a visible toast at the moment of rollback."
     why_human: "02-12 and 02-13 flag these as judgment-tier prohibitions. Code and component tests both confirm the mechanism (initialFocus={keepBoardRef}, toast.add(...) on non-SUCCESS), which is strong evidence, but the plans classify the *user-perceptible* guarantee as needing a live-eyes check, not just a passing assertion."
+---
+
+## Resolution
+
+All three human-verification items confirmed clean via live browser testing (orchestrator-driven,
+Chrome DevTools MCP) — see `02-UAT.md` for the full detail of each check. No gaps found; status
+updated from `human_needed` to `passed`.
+
 ---
 
 # Phase 2: Board Management Verification Report
