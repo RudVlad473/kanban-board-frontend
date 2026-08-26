@@ -1,3 +1,4 @@
+import type { Announcements, UniqueIdentifier } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 
 import type { Board, ColumnFull } from "@/features/boards/schemas";
@@ -130,3 +131,55 @@ export const COLUMN_COUNT_NUDGE_THRESHOLD = 8;
  */
 export const shouldNudgeOnColumnCount = ({ nextCount }: { nextCount: number }): boolean =>
     nextCount === COLUMN_COUNT_NUDGE_THRESHOLD + 1;
+
+/**
+ * dnd-kit's four reorder announcements in 03-UI-SPEC's own wording — a factory because the strings
+ * need the live column list, and because `pnpm tsx:check` forbids declaring it in the consuming
+ * `.tsx` (03-RESEARCH Pitfall 8). dnd-kit renders the live region itself; this supplies strings only.
+ */
+export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnFull[] }): Announcements => {
+    const total = String(columns.length);
+
+    /* Speech is 1-based while the wire's `targetPosition` is 0-based, so the conversion is encoded once here. */
+    const resolveColumn = (id: UniqueIdentifier): { name: string; position: string } | null => {
+        const index = columns.findIndex((column) => column.id === id);
+
+        return index === -1 ? null : { name: columns[index].name, position: String(index + 1) };
+    };
+
+    return {
+        onDragStart: ({ active }) => {
+            const column = resolveColumn(active.id);
+
+            return column === null
+                ? undefined
+                : `Picked up ${column.name}, position ${column.position} of ${total}. Use left and right arrow keys to move, space to drop, escape to cancel.`;
+        },
+
+        onDragOver: ({ active, over }) => {
+            const column = resolveColumn(active.id);
+            const target = over === null ? null : resolveColumn(over.id);
+
+            return column === null || target === null
+                ? undefined
+                : `${column.name} moved to position ${target.position} of ${total}.`;
+        },
+
+        onDragEnd: ({ active, over }) => {
+            const column = resolveColumn(active.id);
+            const target = over === null ? null : resolveColumn(over.id);
+
+            return column === null || target === null
+                ? undefined
+                : `${column.name} dropped at position ${target.position} of ${total}.`;
+        },
+
+        onDragCancel: ({ active }) => {
+            const column = resolveColumn(active.id);
+
+            return column === null
+                ? undefined
+                : `Move cancelled. ${column.name} returned to position ${column.position} of ${total}.`;
+        },
+    };
+};

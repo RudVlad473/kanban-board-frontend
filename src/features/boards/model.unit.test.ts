@@ -1,7 +1,9 @@
+import type { Active, Over } from "@dnd-kit/core";
 import { describe, expect, it } from "vitest";
 
 import {
     applyColumnOrderOverride,
+    createColumnReorderAnnouncements,
     buildColumnRowPath,
     COLUMN_COUNT_NUDGE_THRESHOLD,
     COLUMN_DOT_TOKENS,
@@ -292,5 +294,80 @@ describe("shouldNudgeOnColumnCount", () => {
         expect(shouldNudgeOnColumnCount({ nextCount: COLUMN_COUNT_NUDGE_THRESHOLD })).toBe(false);
         expect(shouldNudgeOnColumnCount({ nextCount: COLUMN_COUNT_NUDGE_THRESHOLD + 2 })).toBe(false);
         expect(shouldNudgeOnColumnCount({ nextCount: 2 })).toBe(false);
+    });
+});
+
+/* dnd-kit's own event shapes, reduced to the id each announcement actually reads. */
+const createActive = (id: string): Active => ({
+    id,
+    data: { current: undefined },
+    rect: { current: { initial: null, translated: null } },
+});
+
+const createOver = (id: string): Over => ({
+    id,
+    rect: { width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 },
+    disabled: false,
+    data: { current: undefined },
+});
+
+/*
+ * The four strings are asserted in full, not by substring, so an edit to 03-UI-SPEC's Copywriting
+ * Contract fails here rather than shipping silently.
+ */
+describe("createColumnReorderAnnouncements", () => {
+    it("names the column, its 1-based position and the three keys when a column is picked up", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act
+        const announcement = announcements.onDragStart({ active: createActive(columns[0].id) });
+
+        // Assert
+        expect(announcement).toBe(
+            "Picked up Fixture Column 1, position 1 of 3. Use left and right arrow keys to move, space to drop, escape to cancel.",
+        );
+    });
+
+    it("reports the column's new 1-based position while it is being moved", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act
+        const announcement = announcements.onDragOver({
+            active: createActive(columns[0].id),
+            over: createOver(columns[2].id),
+        });
+
+        // Assert
+        expect(announcement).toBe("Fixture Column 1 moved to position 3 of 3.");
+    });
+
+    it("reports the dropped position on drop and the original position on cancel", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+        const active = createActive(columns[0].id);
+
+        // Act
+        const dropped = announcements.onDragEnd({ active, over: createOver(columns[1].id) });
+        const cancelled = announcements.onDragCancel({ active, over: null });
+
+        // Assert
+        expect(dropped).toBe("Fixture Column 1 dropped at position 2 of 3.");
+        expect(cancelled).toBe("Move cancelled. Fixture Column 1 returned to position 1 of 3.");
+    });
+
+    /* dnd-kit reads an undefined announcement as "say nothing" — the right outcome for a drag that reached no target. */
+    it("says nothing when the drag reached no target or names a column that is not on the board", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act & Assert
+        expect(announcements.onDragOver({ active: createActive(columns[0].id), over: null })).toBeUndefined();
+        expect(announcements.onDragStart({ active: createActive("no-such-column") })).toBeUndefined();
     });
 });
