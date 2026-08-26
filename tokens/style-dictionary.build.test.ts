@@ -101,6 +101,40 @@ describe("style dictionary token pipeline (D-12)", () => {
         expect(darkBlock).toContain("--color-bg-app: #20212C;");
     });
 
+    it("gives all three column-dot accents the identical hex in the @theme block and the .dark block (U-03)", async () => {
+        // Arrange
+        const dots = [
+            ["--color-accent-column-1", "#49C4E5"],
+            ["--color-accent-column-2", "#8471F2"],
+            ["--color-accent-column-3", "#67E2AE"],
+        ] as const;
+
+        // Act
+        const css = await buildFullCss();
+        const themeBlock = css.slice(css.indexOf("@theme"), css.indexOf(".dark"));
+        const darkBlock = css.slice(css.indexOf(".dark"));
+
+        // Assert
+        for (const [property, hex] of dots) {
+            expect(themeBlock).toContain(`${property}: ${hex};`);
+            expect(darkBlock).toContain(`${property}: ${hex};`);
+        }
+    });
+
+    it("resolves the two ghost-column gradient stops to a different hex per theme, unlike the column dots", async () => {
+        // Act
+        const [light, dark] = await Promise.all([
+            buildModeCss({ mode: "light", platform: "css" }),
+            buildModeCss({ mode: "dark", platform: "css-dark" }),
+        ]);
+
+        // Assert
+        expect(light).toContain("--color-bg-column-add-from: #E9EFFA;");
+        expect(light).toContain("--color-bg-column-add-to: #EEF3FC;");
+        expect(dark).toContain("--color-bg-column-add-from: #23242F;");
+        expect(dark).toContain("--color-bg-column-add-to: #21222D;");
+    });
+
     it("rebuilds with a changed token value rather than silently serving a stale artefact", async () => {
         // Arrange
         const tmpRoot = await copyTempTokens();
