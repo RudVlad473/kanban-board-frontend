@@ -79,6 +79,14 @@ const serverActionStubAlias = [
         find: "@/features/boards/actions/delete-board",
         replacement: path.resolve(rootDir, "src/test-utils/delete-board-action-storybook-stub.ts"),
     },
+    /*
+     * Checked against the prefix rule above before appending: `create-column` neither starts with
+     * nor is started by any entry here, so its position in this list carries no meaning.
+     */
+    {
+        find: "@/features/boards/actions/create-column",
+        replacement: path.resolve(rootDir, "src/test-utils/create-column-action-storybook-stub.ts"),
+    },
 ];
 
 export default defineConfig({

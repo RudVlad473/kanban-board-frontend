@@ -1,0 +1,55 @@
+"use client";
+
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+
+import { createColumnAction } from "@/features/boards/actions/create-column";
+import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+
+/*
+ * Authored copy only — the action returns bare discriminants, so nothing the backend said can
+ * reach these strings (03-UI-SPEC Copywriting Contract, T-03-03).
+ */
+const GENERIC_CREATE_FAILURE_MESSAGE = "Couldn't create column. Try again.";
+
+/*
+ * Only the branches with something distinct to tell the user, mirroring `use-create-board.ts`'s
+ * own table. `DUPLICATE`'s copy is plan 03-07's, which is what makes its column-name guidance a
+ * change to one entry here rather than a change to this hook's shape.
+ */
+const CREATE_FAILURE_MESSAGE: Partial<Record<ResultStatus, string>> = {
+    [RESULT_STATUS.UNAUTHENTICATED]: "Your session has expired. Sign in again to create a column.",
+};
+
+export type CreateColumnArgs = { boardId: string; name: string };
+
+/**
+ * COLUMN-01's create orchestration. A failure is reported inline rather than as a toast: nothing
+ * was created, so there is nothing to reconcile and the modal stays open holding the typed name
+ * (03-UI-SPEC error/Add-Column-generic). The refresh is the action's own, not this hook's.
+ */
+export const useCreateColumn = () => {
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const mutation = useMutation({ mutationFn: createColumnAction, retry: false });
+
+    const clearError = (): void => {
+        setErrorMessage(null);
+    };
+
+    const createColumn = async ({ boardId, name }: CreateColumnArgs): Promise<{ didCreate: boolean }> => {
+        setErrorMessage(null);
+
+        const result = await mutation
+            .mutateAsync({ boardId, name })
+            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
+
+        if (result.status !== RESULT_STATUS.SUCCESS) {
+            setErrorMessage(CREATE_FAILURE_MESSAGE[result.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
+            return { didCreate: false };
+        }
+
+        return { didCreate: true };
+    };
+
+    return { createColumn, isPending: mutation.isPending, errorMessage, clearError };
+};
