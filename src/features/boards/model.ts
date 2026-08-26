@@ -1,4 +1,6 @@
-import type { Board } from "@/features/boards/schemas";
+import { arrayMove } from "@dnd-kit/sortable";
+
+import type { Board, ColumnFull } from "@/features/boards/schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 
 /**
@@ -64,3 +66,67 @@ export const resolveDestinationAfterDelete = ({
 
     return remainingBoards.length === 0 ? ROUTE.BOARDS : buildBoardDetailPath(firstRemaining.id);
 };
+
+/*
+ * Whole literal class names, never assembled by interpolation — Tailwind v4's source scanner only
+ * emits a utility it can see spelled out in full.
+ */
+export const COLUMN_DOT_TOKENS = ["bg-accent-column-1", "bg-accent-column-2", "bg-accent-column-3"] as const;
+
+/** U-03: the contract has no colour field, so the decorative header dot derives its hue from position. */
+export const toColumnDotToken = ({ position }: { position: number }): (typeof COLUMN_DOT_TOKENS)[number] =>
+    COLUMN_DOT_TOKENS[position % COLUMN_DOT_TOKENS.length];
+
+export type ColumnOrderOverride = { previousOrder: string[]; order: string[] };
+
+/**
+ * The optimistic reorder as rendered, retiring itself the moment the server's own order stops
+ * matching `previousOrder` — nothing ever clears it (03-RESEARCH Pattern 2).
+ */
+export const applyColumnOrderOverride = ({
+    columns,
+    override,
+}: {
+    columns: ColumnFull[];
+    override: ColumnOrderOverride | null;
+}): ColumnFull[] => {
+    if (override === null) {
+        return columns;
+    }
+
+    const serverOrder = columns.map((column) => column.id);
+    const isStale =
+        serverOrder.length !== override.previousOrder.length ||
+        serverOrder.some((id, index) => id !== override.previousOrder[index]);
+
+    if (isStale) {
+        return columns;
+    }
+
+    /* `flatMap` with an empty-array fallback, so an id the server no longer has drops out rather than becoming `undefined`. */
+    return override.order.flatMap((id) => columns.find((column) => column.id === id) ?? []);
+};
+
+/**
+ * The rendered order after one column moves, so no call site does its own `splice`. `toIndex` is the
+ * item's *final* index here; whether the wire's `targetPosition` means the same is plan 03-01's R1.
+ */
+export const reorderColumns = ({
+    columns,
+    fromIndex,
+    toIndex,
+}: {
+    columns: ColumnFull[];
+    fromIndex: number;
+    toIndex: number;
+}): ColumnFull[] => arrayMove(columns, fromIndex, toIndex);
+
+/** D-03's stated threshold. D-02 keeps the count itself uncapped — nothing here refuses a create. */
+export const COLUMN_COUNT_NUDGE_THRESHOLD = 8;
+
+/**
+ * D-05 reads D-03's "first crosses 8" as *exceeds* 8, so testing one exact transition is what makes
+ * the nudge fire once by construction rather than by remembering it already did.
+ */
+export const shouldNudgeOnColumnCount = ({ nextCount }: { nextCount: number }): boolean =>
+    nextCount === COLUMN_COUNT_NUDGE_THRESHOLD + 1;

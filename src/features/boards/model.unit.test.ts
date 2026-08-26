@@ -1,15 +1,22 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    applyColumnOrderOverride,
     buildColumnRowPath,
+    COLUMN_COUNT_NUDGE_THRESHOLD,
+    COLUMN_DOT_TOKENS,
     createEmptyColumnRows,
     DEFAULT_COLUMN_ROW_COUNT,
     removeBoard,
+    reorderColumns,
     resolveDestinationAfterDelete,
+    shouldNudgeOnColumnCount,
+    toColumnDotToken,
     toSubmittedColumnNames,
 } from "@/features/boards/model";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 import { createBoards } from "@/test-utils/factories/board";
+import { createColumnsFull } from "@/test-utils/factories/board-full";
 
 describe("toSubmittedColumnNames", () => {
     it("returns the trimmed rows in the order given", () => {
@@ -175,5 +182,115 @@ describe("resolveDestinationAfterDelete", () => {
                 currentBoardId: null,
             }),
         ).toBeNull();
+    });
+});
+
+/* U-03: the contract carries no colour field, so the dot's hue cycles from `position` alone. */
+describe("toColumnDotToken", () => {
+    it("cycles the three accents by position and repeats every third column", () => {
+        // Act & Assert
+        expect([0, 3, 6].map((position) => toColumnDotToken({ position }))).toEqual([
+            COLUMN_DOT_TOKENS[0],
+            COLUMN_DOT_TOKENS[0],
+            COLUMN_DOT_TOKENS[0],
+        ]);
+        expect([1, 4].map((position) => toColumnDotToken({ position }))).toEqual([
+            COLUMN_DOT_TOKENS[1],
+            COLUMN_DOT_TOKENS[1],
+        ]);
+        expect([2, 5].map((position) => toColumnDotToken({ position }))).toEqual([
+            COLUMN_DOT_TOKENS[2],
+            COLUMN_DOT_TOKENS[2],
+        ]);
+    });
+});
+
+/*
+ * 03-RESEARCH Pattern 2: the override retires itself by derivation once the server's own order moves,
+ * so nothing ever clears state during render.
+ */
+describe("applyColumnOrderOverride", () => {
+    it("returns the columns untouched when there is no override", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+
+        // Act & Assert
+        expect(applyColumnOrderOverride({ columns, override: null })).toEqual(columns);
+    });
+
+    it("applies the override's order while the server order still matches previousOrder", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const previousOrder = columns.map((column) => column.id);
+
+        // Act
+        const rendered = applyColumnOrderOverride({
+            columns,
+            override: { previousOrder, order: [previousOrder[2], previousOrder[0], previousOrder[1]] },
+        });
+
+        // Assert
+        expect(rendered).toEqual([columns[2], columns[0], columns[1]]);
+    });
+
+    it("returns the server's own columns once the server order no longer matches previousOrder", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const previousOrder = columns.map((column) => column.id);
+        const settledColumns = [columns[2], columns[0], columns[1]];
+
+        // Act
+        const rendered = applyColumnOrderOverride({
+            columns: settledColumns,
+            override: { previousOrder, order: [previousOrder[2], previousOrder[0], previousOrder[1]] },
+        });
+
+        // Assert
+        expect(rendered).toEqual(settledColumns);
+    });
+
+    /* T-03-20: a column added or deleted underneath the override can never be synthesised or dropped. */
+    it("returns the server's own columns when a column was added or deleted underneath", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const previousOrder = columns.map((column) => column.id);
+        const remaining = [columns[0], columns[1]];
+
+        // Act
+        const rendered = applyColumnOrderOverride({
+            columns: remaining,
+            override: { previousOrder, order: [previousOrder[2], previousOrder[0], previousOrder[1]] },
+        });
+
+        // Assert
+        expect(rendered).toEqual(remaining);
+    });
+});
+
+describe("reorderColumns", () => {
+    it("moves one column to its new index and leaves every other column's relative order intact", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act
+        const reordered = reorderColumns({ columns, fromIndex: 0, toIndex: 2 });
+
+        // Assert
+        expect(reordered).toEqual([columns[1], columns[2], columns[0], columns[3]]);
+        expect(columns.map((column) => column.id)).toEqual(createColumnsFull({ count: 4 }).map((column) => column.id));
+    });
+});
+
+/*
+ * D-05 resolves D-03's "first crosses 8" as *exceeds* 8, and testing one exact transition is what
+ * makes "once only" true by construction rather than by remembering.
+ */
+describe("shouldNudgeOnColumnCount", () => {
+    it("fires only on the create whose resulting count is exactly one past the threshold", () => {
+        // Act & Assert
+        expect(shouldNudgeOnColumnCount({ nextCount: COLUMN_COUNT_NUDGE_THRESHOLD + 1 })).toBe(true);
+        expect(shouldNudgeOnColumnCount({ nextCount: COLUMN_COUNT_NUDGE_THRESHOLD })).toBe(false);
+        expect(shouldNudgeOnColumnCount({ nextCount: COLUMN_COUNT_NUDGE_THRESHOLD + 2 })).toBe(false);
+        expect(shouldNudgeOnColumnCount({ nextCount: 2 })).toBe(false);
     });
 });
