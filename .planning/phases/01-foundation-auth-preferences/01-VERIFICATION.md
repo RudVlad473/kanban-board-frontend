@@ -1,6 +1,6 @@
 ---
 phase: 01-foundation-auth-preferences
-verified: 2026-08-20T00:45:00Z
+verified: 2026-08-26T09:44:00Z
 status: passed
 score: 6/6 must-haves verified
 behavior_unverified: 0
@@ -13,6 +13,11 @@ re_verification:
     - "SC6 — Every primitive story (including the 22 newer Loading/Error/Submitting states across Button, IconButton, TextField, Checkbox, Dropdown, Modal) has a committed Playwright visual-regression baseline."
   gaps_remaining: []
   regressions: []
+stale_recheck:
+  triggered_by: "4 summaries (01-06, 01-09, 01-17, 01-33) committed 2026-08-21, a day after this report's 2026-08-20 commit — the staleness check compares git commit times"
+  root_cause_confirmed: "doc-only backfill commit 507707e ('compress oversized comments to PC-05'), explicitly 'No behavior change' per its own message; verified via git show — every touched line in the 4 summaries is an added Addendum/backfilled-rationale section, no code changed"
+  new_evidence: "01-UAT.md (2026-08-26): 162 tracked deliverables re-checked — 155 passed (135 auto via coverage classification, 10 pre-verified by Claude via gh CLI/git ls-files, 10 live-browser-verified by Claude via Playwright against localhost, Storybook, and both deployed Vercel URLs), 0 issues, 7 skipped-with-reason (informational/superseded/already-accepted-deferred)"
+  conclusion: "no regression found; gaps remain closed; status stands at passed"
 deferred: []
 ---
 
@@ -197,7 +202,59 @@ No gaps remain. Phase 1's goal — sign-up, sign-in, route-guarding, theme persi
 deployed technical foundation with a verifiably-green CI pipeline and a complete primitives
 library — is fully achieved.
 
+## Re-Verification — 2026-08-26 (Staleness Re-Check via `/gsd-verify-work`)
+
+**Trigger:** `/gsd-progress` flagged this report `stale` — the staleness check compares each
+summary's effective (git-commit) time against this report's own commit time, and 4 summaries
+(`01-06`, `01-09`, `01-17`, `01-33`) were committed 2026-08-21T20:3x, a day after this report's
+2026-08-20T00:38:50 commit.
+
+**Root cause, confirmed via `git show`:** all 4 touches are a single commit (`507707e`,
+"compress oversized comments to PC-05"), whose own message states "No behavioral change:
+verified every diff line is a comment line (grep assertion), 110 component tests pass across the
+four files, and comments:check exits 0." Inspecting the actual diff on `01-06-SUMMARY.md`
+confirms it: a 12-line "Addendum" section appended to the end of the file, backfilling
+previously-undocumented rationale for a decision already implemented in an earlier plan — not a
+new claim about behavior, and not a rewrite of anything this report already verified.
+
+**Independent re-verification performed (not taken on faith):** ran a full conversational UAT
+session (`/gsd-verify-work 01`), producing `01-UAT.md` — all 162 tracked deliverables across the
+phase's 38 plans classified and re-checked:
+
+- 135 auto-passed via coverage-aware classification (backed by committed unit/integration/e2e
+  tests already in the suite).
+- 10 pre-verified independently by Claude: `gh run view` against the latest `main` CI run
+  (32745086262, 2026-08-24) confirmed `quality`/`secrets`/`visual`/`e2e` all green, including the
+  `Route declaration check` and `Reset nonprod state` steps; `git ls-files` confirmed every
+  visual-regression baseline PNG (Button/IconButton/TextField/Checkbox/Switch/Dropdown, all
+  Loading states, Modal Submitting) is committed.
+- 10 live-browser-verified by Claude via Playwright — not deferred to the user: landing page,
+  sign-up/sign-in landing on `/boards`, generic (non-enumerable) error messages on both
+  duplicate-email and wrong-password/unknown-email, field-level validation-on-blur and
+  password-field clearing, Modal Tab-trap + Escape + focus-return (Storybook, since no in-app
+  modal exists on `main` — see note below), dark-mode instant re-resolve + reload persistence,
+  and — against the real deployed app (Production + Preview URLs, sourced from
+  `gh api repos/.../deployments`, not guessed) — reachability, styled sign-in page, a real
+  sign-up + sign-out + sign-in round trip against the live backend, session-cookie
+  Secure/HttpOnly/SameSite=Lax (confirmed via `src/lib/core/cookies/cookie-registry.ts`'s
+  `createBaseCookieOptions()`, since browser tooling cannot read httpOnly cookie attributes) with
+  no password in any client-side storage, and theme-toggle persistence.
+- 0 issues found. 7 items skipped with reason (recorded architectural decisions, a GitHub-plan
+  platform limitation, defensive code unreachable against the live backend, and the already
+  user-accepted no-JS-hydration gap from 01-33).
+
+**Side note (out of this phase's scope, flagged for the user separately):** this re-check ran on
+`main`, which GSD's phase-branching config auto-checked out for phase 01. `main` is a strict
+ancestor of the unmerged `gsd/phase-02-board-management` branch — phases 02/02.1/02.2 are marked
+complete in STATE.md/ROADMAP.md but that code has not been merged to `main`. This does not affect
+phase 1: `main` contains all of phase 1's code, consistent with the CI run and deployments checked
+above.
+
+**Conclusion:** no regression from the triggering commits or from anything else observed in this
+pass. All 6 must-have truths and both required-artifact gaps closed in the 2026-08-20 pass remain
+verified. Status stands at **passed**.
+
 ---
 
-_Verified: 2026-08-20T00:45:00Z_
-_Verifier: Claude (gsd-verifier)_
+_Verified: 2026-08-20T00:45:00Z (initial); re-verified 2026-08-26T09:44:00Z (staleness re-check)_
+_Verifier: Claude (gsd-verifier, 2026-08-20); Claude via `/gsd-verify-work` (staleness re-check, 2026-08-26)_
