@@ -1,5 +1,22 @@
 {
     "color": {
+        "accent": {
+            "column-1": {
+                "$type": "color",
+                "$value": "{color.cyan.400}",
+                "$description": "Decorative column-header dot, board position 0 (U-03)"
+            },
+            "column-2": {
+                "$type": "color",
+                "$value": "{color.violet.400}",
+                "$description": "Decorative column-header dot, board position 1 (U-03)"
+            },
+            "column-3": {
+                "$type": "color",
+                "$value": "{color.mint.400}",
+                "$description": "Decorative column-header dot, board position 2 (U-03)"
+            }
+        },
         "bg": {
             "app": { "$type": "color", "$value": "{color.grey.100}", "$description": "App background (light theme)" },
             "surface": {
@@ -22,6 +39,16 @@
                 "$type": "color",
                 "$value": "{color.red.300}",
                 "$description": "Destructive button hover state"
+            },
+            "column-add-from": {
+                "$type": "color",
+                "$value": "{color.blue.75}",
+                "$description": "Ghost `+ New Column` placeholder gradient, top stop (light theme)"
+            },
+            "column-add-to": {
+                "$type": "color",
+                "$value": "{color.blue.50}",
+                "$description": "Ghost `+ New Column` placeholder gradient, bottom stop (light theme)"
             }
         },
         "border": {
