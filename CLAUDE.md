@@ -30,11 +30,16 @@ tool, confirm the resolved names start with `mcp__playwright__`. If only the `pl
 resolves, this project's own headless server isn't loaded this session (needs the restart above);
 do not fall back to the other one.
 
-**Verify a fix live before re-presenting a checkpoint.** When an executor reports it could not
-visually confirm a UI fix itself (no browser tool access in that subagent) and the same behavior
-is what a `checkpoint:human-verify` is about to ask the user to check, drive it through Playwright
-yourself first, especially for a regression that already failed once — don't hand the same
-unverified claim back to the user a second time.
+**Verify before presenting to the user, always.** Before reporting a fix, a finding, or a check as
+done — a `checkpoint:human-verify`, a verifier's `human_needed` routing, a code-review item marked
+fixed, anything — drive it through the running app yourself first (Playwright/Chrome DevTools MCP,
+headless) and report what you actually observed. A subagent's "could not confirm," a verifier's
+"static evidence is strong," or your own read of the code are all still unverified claims until
+something has actually clicked through the app. This applies even when the thing being checked was
+only ever _flagged_ as needing a human look (not reported broken) — verify it yourself first
+regardless, then hand the user only what still genuinely needs their own eyes. Only skip this when
+doing so is truly impossible (the check needs the user's own machine/network) — say so explicitly
+rather than silently handing over an unverified claim.
 
 ## Copy `.env.local` into every worktree
 
