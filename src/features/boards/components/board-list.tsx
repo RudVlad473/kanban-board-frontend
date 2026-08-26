@@ -49,10 +49,9 @@ export const BoardList = ({
         defaultRenameTargetIndex === undefined ? null : (boards[defaultRenameTargetIndex] ?? null),
     );
     /*
-     * WR-01/WR-02 (02-REVIEW.md): `useRenameBoard`'s `isPending` is one flag shared by every row's
-     * mutation, not scoped per board. Tracking the in-flight board's own id here lets this component
-     * (a) show pending only on that board's own modal and (b) disable that row's Edit Board entry so
-     * a second submit on the same row cannot race the first before it settles.
+     * WR-01/WR-02 (02-REVIEW.md): scopes `useRenameBoard`'s shared `isPending` flag to the
+     * in-flight board's own id, so only that board's modal shows pending and only that row's
+     * Edit Board entry disables — full rationale in 02-REVIEW.md.
      */
     const [pendingRenameBoardId, setPendingRenameBoardId] = useState<string | null>(null);
     const [boardBeingDeleted, setBoardBeingDeleted] = useState<Board | null>(

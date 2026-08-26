@@ -446,10 +446,9 @@ describeForEachDevice({
         });
 
         /*
-         * WR-01 (02-REVIEW.md): the rename hook's `isPending` is a single flag shared by every row's
-         * mutation, so it must be scoped to the board actually being renamed before it reaches an
-         * unrelated row's modal — otherwise opening board 2 while board 1's rename is in flight would
-         * incorrectly show board 2's own modal as pending.
+         * WR-01 (02-REVIEW.md): the rename hook's shared `isPending` flag must be scoped to the
+         * board actually being renamed, or opening board 2 while board 1's rename is in flight
+         * would incorrectly show board 2's own modal as pending — full rationale in 02-REVIEW.md.
          */
         it("does not show an unrelated board's edit modal as pending while another row's rename is in flight", async () => {
             // Arrange
@@ -471,10 +470,9 @@ describeForEachDevice({
         });
 
         /*
-         * WR-02 (02-REVIEW.md): nothing previously gated a second submit on the SAME row before the
-         * first settled, which could send a stale version and roll back to a name older than what the
-         * server actually holds. Disabling the row's own Edit Board entry while its rename is in
-         * flight closes that window.
+         * WR-02 (02-REVIEW.md): a second submit on the same row before the first settled could
+         * roll back to a stale name/version. Disabling that row's Edit Board entry while its
+         * rename is in flight closes that window — full rationale in 02-REVIEW.md.
          */
         it("keeps the same row's Edit Board entry inert while its own rename is in flight", async () => {
             // Arrange

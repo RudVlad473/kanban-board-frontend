@@ -63,6 +63,16 @@ jobs:
             - name: Install Playwright browsers
               run: pnpm exec playwright install --with-deps chromium
 
+            # `app/(dashboard)/boards/[boardId]/page.tsx` types its params against Next.js's
+            # generated `PageProps<"/boards/[boardId]">`, which only exists after typegen runs
+            # (normally a `next build`/`next dev` side effect). Lint runs before Build in this
+            # job, so without this step that type resolves as `any`, and
+            # `@typescript-eslint/no-unsafe-assignment` fails on every value derived from it —
+            # confirmed by reproducing locally with `.next/types` removed (same 3 errors, same
+            # lines) and confirming this step + a bare `pnpm lint` passes clean.
+            - name: Generate Next.js route types
+              run: pnpm exec next typegen
+
             - name: Lint
               run: pnpm lint
 
