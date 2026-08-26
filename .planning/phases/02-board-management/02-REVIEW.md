@@ -152,6 +152,21 @@ reads are ever brought onto the same problem-code mapping as writes.
 
 ---
 
+## Resolution
+
+Both warnings (WR-01, WR-02) fixed rather than deferred — user's explicit choice, matching this
+phase's own 02.1 close-out precedent. `board-list.tsx` now tracks the in-flight rename's board id
+(`pendingRenameBoardId`) separately from the hook's single `isPending` flag: it is only threaded
+into `EditBoardModal` when the currently-open board matches the pending one (WR-01), and each row's
+"Edit Board" menu entry is disabled while that row's own rename is in flight (WR-02), closing the
+stale-version/stale-rollback window entirely rather than narrowing it. Two new regression tests
+cover both cases in `board-list.test.tsx`. Commits: `c17c09f` (test), `5fa1a2c` (fix).
+
+The two Info findings (IN-01, IN-02) were left as-is — IN-02 explicitly recommended no change for
+this phase, and IN-01 was out of the user's fix-now scope; both remain candidates for a future pass.
+
+---
+
 _Reviewed: 2026-08-26T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_

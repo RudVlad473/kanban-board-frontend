@@ -46,6 +46,7 @@ key-decisions:
   - "Reconfirmed deferral of optimistic board-creation and delete-adjacent work when re-raised at this plan's checkpoint — no new information changed the prior sessions' analysis."
   - "Declined experimental.staleTimes.dynamic (would stop the board-detail fetch refetching on every navigation) — a genuine architectural addition needing an ADR-0019 amendment, logged as backlog instead."
   - "Declined fixing two new UX findings (missing close-X on create/edit-board modals; column-remove-X 4px misalignment) — confirmed real but outside this plan's declared scope, logged as backlog."
+  - "Fixed both code-review warnings (WR-01, WR-02 — rename pending state leaking across rows, and a same-row overlapping-rename stale-rollback window) as follow-up commits on this plan rather than deferring — user's explicit choice, matching the phase's own 02.1 close-out precedent."
 
 patterns-established:
   - "Any upstream-error-to-result-status mapping a new Server Action needs goes through map-problem-code.ts, not a local table — closes the drift risk that motivated extracting rename-board.ts's original table."
@@ -180,8 +181,19 @@ status: complete
 ## User Setup Required
 None - no external service configuration required.
 
+## Code Review Follow-up
+
+`gsd-code-reviewer` (standard depth, 13 files scoped to this plan's own changes) found 0 critical,
+2 warning, 2 info findings (`02-REVIEW.md`, commit `3f96763`). Both warnings — WR-01 (rename
+`isPending` leaking across unrelated rows) and WR-02 (an overlapping same-row rename could roll
+back to a stale name) — were fixed as follow-up commits rather than deferred: `board-list.tsx` now
+tracks the in-flight rename's board id separately from the hook's single `isPending` flag, gating
+both the modal's pending state and the row's own "Edit Board" menu entry. Two new regression tests
+added. Commits: `c17c09f` (test), `5fa1a2c` (fix). The two Info findings were left as-is (see
+`02-REVIEW.md`'s Resolution section).
+
 ## Next Phase Readiness
-Phase 02 (Board Management) is now fully complete: all 16 plans across BOARD-01 through BOARD-06 delivered and verified. Ready for phase-goal verification and roadmap close-out.
+Phase 02 (Board Management) is now fully complete: all 16 plans across BOARD-01 through BOARD-06 delivered and verified, code review findings resolved. Ready for phase-goal verification and roadmap close-out.
 
 ---
 *Phase: 02-board-management*
