@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 03
 current_phase_name: Column Management
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-08-26T22:41:00.000Z"
+stopped_at: Phase 3 execution paused after wave 4 (03-06) of 10
+last_updated: "2026-08-26T23:06:00.000Z"
 last_activity: 2026-08-26
-last_activity_desc: Phase 03 execution resumed (wave 3 complete)
-state_head: 8f436065495a588463f09573d3ece2974c9bac36
+last_activity_desc: Phase 03 execution paused after wave 4 (user requested pause)
+state_head: b74d7f8a9f354faa28f300a009c8aa4babf457ac
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 91
-  completed_plans: 82
+  completed_plans: 83
 milestone_name: milestone
 ---
 
@@ -31,17 +31,14 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 
 ## Current Position
 
-Phase: 03 (Column Management) — EXECUTING
-Phase 02 (Board Management): 10 of 15 plans complete. 02-10's Task 4 checkpoint is APPROVED
-(2026-08-25) after fixing 4 UI findings against the canonical design PDF. Wave 9 refactor plans
-(02-14, 02-15) were inserted per user decision, and 02-11/12/13 shifted to waves 11/12/13.
-Status: Executing Phase 03
-plan-checker-verified; the pause that blocked them (pull Phase 02.2 forward) is resolved, since
-02.2 shipped in full on 2026-08-22.
-Last activity: 2026-08-26 — Phase 03 execution resumed (wave continue)
+Phase: 03 (Column Management) — EXECUTING, PAUSED after Wave 4 of 10 (4/13 plans complete:
+03-01/02/03 in wave 1, 03-04 in wave 2, 03-05 in wave 3, 03-06 in wave 4)
+Phase 02 (Board Management): COMPLETE — 15/15 plans, verified (02-VERIFICATION.md status: passed).
+Status: Executing Phase 03 (paused)
+Last activity: 2026-08-26 — Phase 03 execution paused after wave 4 (user requested pause)
 
 Progress: Milestone v1.0 — Phase 1: 38/38 plans; Phase 02.1: 15/15 plans; Phase 02.2: 9/9 plans;
-Phase 02: 10/15 plans (in progress)
+Phase 02: 15/15 plans (complete); Phase 03: 4/13 plans (in progress)
 
 ## Performance Metrics
 
@@ -103,6 +100,11 @@ Recent decisions affecting current work:
 
 Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this session and moved to
 `.planning/todos/completed/`; this list now matches `.planning/todos/pending/` exactly (3 items).
+**Not re-audited since** — `.planning/todos/pending/` now holds 7 items total (this prose lists a
+subset); check the directory directly for the full, current list. Newest addition (2026-08-26):
+`pnpm storybook`'s dev server crashes on any story reaching `session.ts` (pre-existing, found while
+verifying phase 03 wave 4) —
+`.planning/todos/pending/2026-08-26-storybook-dev-server-crashes-on-any-story-reaching-session-ts.md`.
 
 - Trim `src/features/boards/schemas.unit.test.ts`'s rejection cases that just re-test zod's own
   primitives —
@@ -346,3 +348,60 @@ sufficient on its own.
 
 Next: Resume Phase 02 at Wave 9 — plan `02-14-PLAN.md` (shared `RESULT_STATUS` enum, `usehooks-ts`
 boolean state) via `/gsd-execute-phase 2`.
+
+**This session (2026-08-26, "nonprod is alive now" resume):** Re-ran `scripts/probe-column-backend.mjs`
+now that nonprod recovered from the outage recorded in the prior session — got real R1-R7 answers,
+recorded in `03-BACKEND-FACTS.md` (commit `28b748f`). Two of the five original assumptions were
+**refuted**, not confirmed: A3 (duplicate column names are accepted, not rejected — no server-side
+uniqueness enforcement) and A5 (an out-of-range `targetPosition` is clamped, not refused). Flags
+plan 03-07 (duplicate-name branch is client-only UX with no backend backstop) and 03-10 (no
+client-side clamping needed). Cleaned up two stale phase-02 handoff artifacts (`HANDOFF.json`,
+`.continue-here.md`) predating phase 02's actual completion.
+
+Discovered wave 1 (03-01/02/03) was not actually fully done: plan 03-03's Task 2 (React 19 dnd-kit
+runtime spike) had halted in a prior session because Playwright MCP tools were unreachable from a
+worktree-isolated executor — exactly the `.mcp.json` wrapper-key bug fixed in commit `f7ae5f3`.
+Resumed and completed Task 2 directly in the main session: drove a scratch Storybook story headless
+via `mcp__playwright__*`, confirmed dnd-kit's full keyboard contract (lift via Space/Enter, arrow-move,
+escape-cancel, sibling-control safety, nested-container auto-scroll) with no runtime error. Wrote
+`03-SPIKE-DNDKIT.md` (commit `27e4421`) — A6 CONFIRMED, Open Question 4 resolved (`@dnd-kit/modifiers`
+not needed). This unblocked every remaining plan in the phase (03-04 through 03-13 had all shown
+`blocked_by: ["03-03"]`).
+
+Then ran `/gsd-execute-phase 3` and completed waves 2-4 via the normal executor→merge→verify loop,
+each isolated in its own worktree, fast-forward merged, then re-verified on the main checkout
+(`tsc`, `lint`, full `pnpm test`, and a `pnpm build` after wave 3):
+
+- **Wave 2 — 03-04** (`f833c17`): column path templates, the four action input schemas, response
+  schema, and every pure model function (dot-colour mapping, order-preserving reorder/remove, the
+  9-column nudge predicate), all unit-tested. Surfaced a repo-structural finding, now in project
+  memory (`tdd-red-commit-blocked-by-precommit-hook.md`): the pre-commit hook's type-aware ESLint
+  refuses a RED-only TDD commit when the new test imports a not-yet-existing export, so `tdd: true`
+  tasks land as one combined commit here, not two — expected, not a compliance gap.
+- **Wave 3 — 03-05** (`8f43606`): the create-column tracer — COLUMN-01 wired end to end (ghost
+  column → modal → hook → Server Action → upstream call → `refresh()`). `pnpm build` confirmed all
+  8 routes still prerender.
+- **Wave 4 — 03-06** (`5ccbb04`): extracted presentational `ColumnHeader` (decorative
+  position-cycled dot + name + count) out of `board-view.tsx`. Live-verified visually via
+  `column-header.stories.tsx` in both themes (Playwright MCP, headless) since the executor's own
+  environment had no Playwright MCP tools — confirmed all three dot hues render distinctly and
+  long-name truncation keeps the count non-shrinking, in both light and dark.
+
+**Found and filed as a todo, not fixed:** `pnpm storybook`'s manual dev server crashes any story
+whose import chain reaches `src/lib/server/session.ts` (`node:crypto` externalization error) —
+reproduces on the pre-existing `board-view.stories.tsx > Populated` story too, so it predates this
+phase. `vitest.config.ts`'s `serverActionStubAlias` isn't applied by `.storybook/main.ts`'s own Vite
+config. Worked around by verifying `column-header.stories.tsx` directly instead (see
+`.planning/todos/pending/2026-08-26-storybook-dev-server-crashes-on-any-story-reaching-session-ts.md`).
+
+Every wave's worktree was merged `--ff-only` and removed immediately after — no worktrees or
+branches left open. All state pushed to `origin/gsd/phase-03-column-management` through commit
+`b74d7f8`.
+
+User then invoked `/gsd-pause-work` while wave 5's dispatch had not yet started (a prior wave-4
+executor was still finishing at that moment; waited for it to complete, merged, and verified before
+writing this pause rather than leaving an orphaned background agent/worktree).
+
+Next: resume Phase 3 at Wave 5 — plan `03-07-PLAN.md` (COLUMN-01 completed: empty-state CTA,
+post-create auto-scroll, the 9-column nudge, and the duplicate-name inline branch — now known to be
+client-only UX per the R5 refutation above) via `/gsd-execute-phase 3`.
