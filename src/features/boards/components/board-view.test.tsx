@@ -21,7 +21,8 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import * as stories from "./board-view.stories";
 
-const { Populated, EmptyBoard, ColumnsWithNoTasks, ManyColumns, AddColumnOpen } = composeStories(stories);
+const { Populated, EmptyBoard, ColumnsWithNoTasks, EvenlyCycledColumns, ManyColumns, AddColumnOpen } =
+    composeStories(stories);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
@@ -195,6 +196,45 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
             });
+        });
+
+        it("cycles the column header dots across the three accents and repeats on the fourth", async () => {
+            // Act
+            await render(<EvenlyCycledColumns />);
+
+            // Assert
+            const dots = Array.from(document.querySelectorAll('h2 [aria-hidden="true"]'));
+            expect(
+                dots.map((dot) => dot.className.split(" ").find((name) => name.startsWith("bg-accent-column-"))),
+            ).toEqual(["bg-accent-column-1", "bg-accent-column-2", "bg-accent-column-3", "bg-accent-column-1"]);
+        });
+
+        /* Moving the heading into its own component must not change what names each column's region. */
+        it("keeps every column section labelled by its own header", async () => {
+            // Act
+            await render(<EvenlyCycledColumns />);
+
+            // Assert
+            const sections = Array.from(document.querySelectorAll("section[aria-labelledby]"));
+            expect(
+                sections.map(
+                    (section) => document.getElementById(section.getAttribute("aria-labelledby") ?? "")?.textContent,
+                ),
+            ).toEqual(["Fixture Column 1 (2)", "Fixture Column 2 (2)", "Fixture Column 3 (2)", "Fixture Column 4 (2)"]);
+        });
+
+        it("keeps the ghost column last in the scroll row, after every column header", async () => {
+            // Act
+            await render(<EvenlyCycledColumns />);
+
+            // Assert
+            const ghostColumn = screen.getByRole("button", { name: "+ New Column" });
+            const rowChildren = Array.from(ghostColumn.parentElement?.children ?? []);
+            expect(rowChildren.at(-1)).toBe(ghostColumn);
+            expect(rowChildren.slice(0, -1).map((child) => child.firstElementChild?.tagName)).toEqual(
+                Array(4).fill("H2"),
+            );
+            expect(document.querySelectorAll('section h2 [aria-hidden="true"]')).toHaveLength(4);
         });
 
         /*

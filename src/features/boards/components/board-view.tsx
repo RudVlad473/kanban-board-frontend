@@ -5,8 +5,9 @@ import { useBoolean } from "usehooks-ts";
 
 import { AddColumnModal } from "@/features/boards/components/add-column-modal";
 import { AddColumnPlaceholder } from "@/features/boards/components/add-column-placeholder";
+import { ColumnHeader } from "@/features/boards/components/column-header";
 import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
-import { toColumnCaption, toSubtaskSummary } from "@/features/boards/model";
+import { toSubtaskSummary } from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
 
 /*
@@ -74,8 +75,8 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
                 {board.columns.map((column) => (
                     /*
                      * Its own vertical scroll region, so one long column never moves the rest — and
-                     * focusable, because this phase's cards are display-only and a scroll region with
-                     * no focusable content is unreachable by keyboard (axe scrollable-region-focusable).
+                     * focusable only because nothing inside it is yet (axe scrollable-region-focusable);
+                     * plan 03-08's header kebab ends that condition and takes this attribute with it.
                      */
                     <section
                         key={column.id}
@@ -83,13 +84,7 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
                         aria-labelledby={`board-column-${column.id}`}
                         className="flex w-70 shrink-0 flex-col overflow-y-auto rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring-focus"
                     >
-                        {/* Pinned inside that scroll region, with the canvas colour behind it so rows pass under. */}
-                        <h2
-                            id={`board-column-${column.id}`}
-                            className="sticky top-0 bg-bg-app pb-6 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase"
-                        >
-                            {toColumnCaption({ name: column.name, taskCount: column.tasks.length })}
-                        </h2>
+                        <ColumnHeader column={column} />
 
                         <ul className="flex flex-col gap-4">
                             {column.tasks.map((task) => (

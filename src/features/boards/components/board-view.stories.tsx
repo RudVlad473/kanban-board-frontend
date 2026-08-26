@@ -36,6 +36,11 @@ export const ColumnsWithNoTasks: Story = {
 /** Stages the horizontal-overflow behaviour — more columns than any viewport fits. */
 export const ManyColumns: Story = { args: { board: createBoardFull({ columns: createColumnsFull({ count: 8 }) }) } };
 
+/** More columns than U-03's three accents, so the dot cycle is visible wrapping at position 3. */
+export const EvenlyCycledColumns: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 4 }) }) },
+};
+
 /** Stages the per-column vertical-overflow behaviour — one column taller than the board area. */
 export const ManyTasksInOneColumn: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 2, taskCount: 12 }) }) },
