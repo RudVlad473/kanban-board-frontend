@@ -48,6 +48,13 @@ export const BoardList = ({
     const [boardBeingRenamed, setBoardBeingRenamed] = useState<Board | null>(
         defaultRenameTargetIndex === undefined ? null : (boards[defaultRenameTargetIndex] ?? null),
     );
+    /*
+     * WR-01/WR-02 (02-REVIEW.md): `useRenameBoard`'s `isPending` is one flag shared by every row's
+     * mutation, not scoped per board. Tracking the in-flight board's own id here lets this component
+     * (a) show pending only on that board's own modal and (b) disable that row's Edit Board entry so
+     * a second submit on the same row cannot race the first before it settles.
+     */
+    const [pendingRenameBoardId, setPendingRenameBoardId] = useState<string | null>(null);
     const [boardBeingDeleted, setBoardBeingDeleted] = useState<Board | null>(
         defaultDeleteTargetIndex === undefined ? null : (boards[defaultDeleteTargetIndex] ?? null),
     );
@@ -92,7 +99,10 @@ export const BoardList = ({
      * later failure still reverts it and raises the hook's own toast, modal or no modal.
      */
     const handleRenameSubmit = (values: RenameBoardArgs): void => {
-        void renameBoard(values);
+        setPendingRenameBoardId(values.boardId);
+        void renameBoard(values).finally(() => {
+            setPendingRenameBoardId(null);
+        });
         setBoardBeingRenamed(null);
     };
 
@@ -136,6 +146,7 @@ export const BoardList = ({
                                 isSelected={pathname === buildBoardDetailPath(board.id)}
                                 onEdit={setBoardBeingRenamed}
                                 onDelete={setBoardBeingDeleted}
+                                isEditDisabled={board.id === pendingRenameBoardId}
                             />
                         ))}
                     </ul>
@@ -175,7 +186,7 @@ export const BoardList = ({
                         }
                     }}
                     onSubmit={handleRenameSubmit}
-                    isPending={isRenamePending}
+                    isPending={isRenamePending && pendingRenameBoardId === boardBeingRenamed.id}
                 />
             )}
 

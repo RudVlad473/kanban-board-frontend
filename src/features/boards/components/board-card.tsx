@@ -15,6 +15,8 @@ type Props = {
     onEdit: (board: Board) => void;
     /** Opens D-06's confirm modal for this row's board — the delete itself never happens from here. */
     onDelete: (board: Board) => void;
+    /** WR-02 (02-REVIEW.md): disables Edit Board while THIS row has a rename already in flight. */
+    isEditDisabled?: boolean;
     /** Storybook-only staging for the overflow menu's open state (see BoardList's `defaultIsAddBoardOpen`). */
     defaultIsMenuOpen?: boolean;
 };
@@ -24,7 +26,14 @@ type Props = {
  * action-menu primitive 02-07 shipped — never the value-picker one, which would leave the
  * activated entry marked and rewrite the trigger (02-RESEARCH.md Pitfall 3).
  */
-export const BoardCard = ({ board, isSelected, onEdit, onDelete, defaultIsMenuOpen = false }: Props) => {
+export const BoardCard = ({
+    board,
+    isSelected,
+    onEdit,
+    onDelete,
+    isEditDisabled = false,
+    defaultIsMenuOpen = false,
+}: Props) => {
     return (
         <li className="relative min-w-0">
             {/*
@@ -68,6 +77,7 @@ export const BoardCard = ({ board, isSelected, onEdit, onDelete, defaultIsMenuOp
 
                 <Menu.Content>
                     <Menu.Item
+                        isDisabled={isEditDisabled}
                         onClick={() => {
                             onEdit(board);
                         }}
