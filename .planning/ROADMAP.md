@@ -402,7 +402,57 @@ removing columns.
 
   4. User can delete a column and it disappears from the board view along with any tasks and
      subtasks it contained.
-**Plans**: TBD
+**Plans**: 13 plans
+
+Plans:
+
+Wave 1 resolves everything this phase could not know at research time — the nonprod database was
+unreachable for the whole research session, so every reorder claim was an assumption, and dnd-kit had
+never been executed in this repo. All three run in parallel; only 03-01 needs the backend.
+
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — live-backend probe (R1-R7) resolving reorder semantics, version bumps, duplicate-name policy and cascade renumbering, recorded as 03-BACKEND-FACTS.md
+- [ ] 03-02-PLAN.md — the five UI-SPEC design tokens (three column-dot accents, two ghost-column gradient stops) with pipeline assertions in both themes
+- [ ] 03-03-PLAN.md — dnd-kit dependencies pinned per ADR tech/0003, plus a React 19 / Next 16 runtime spike driven in a real headless browser
+
+**Wave 2** *(blocked on 03-03)*
+
+- [ ] 03-04-PLAN.md — column path templates, the four action input schemas, the response schema, and every pure model function, all unit-covered
+
+**Wave 3** *(blocked on 03-02, 03-04)*
+
+- [ ] 03-05-PLAN.md — TRACER: create one column end to end, ghost column through Server Action to a new swimlane (COLUMN-01)
+
+**Wave 4** *(blocked on 03-05)*
+
+- [ ] 03-06-PLAN.md — `ColumnHeader` extracted with the position-cycled decorative dot (U-03)
+
+**Wave 5** *(blocked on 03-01, 03-06)*
+
+- [ ] 03-07-PLAN.md — COLUMN-01 completed: empty-state CTA, post-create auto-scroll, the 9-column nudge, and the duplicate-name inline branch (D-02, D-03, D-04, D-05)
+
+**Wave 6** *(blocked on 03-07)*
+
+- [ ] 03-08-PLAN.md — optimistic column rename with rollback, a distinct version-conflict toast, and the header kebab (COLUMN-02)
+
+**Wave 7** *(blocked on 03-08)*
+
+- [ ] 03-09-PLAN.md — confirmed, never-optimistic column delete with its server-side cascade (COLUMN-04)
+
+**Wave 8** *(blocked on 03-01, 03-03, 03-09)*
+
+- [ ] 03-10-PLAN.md — drag and keyboard reorder via dnd-kit, live-region announcements, and the in-flight mutation lock (COLUMN-03, D-06)
+
+**Wave 9** *(blocked on 03-10)*
+
+- [ ] 03-11-PLAN.md — real-backend integration suites for all four column endpoints, pinning the board-segment trap the generated types cannot catch
+- [ ] 03-12-PLAN.md — end-to-end specs proving each success criterion in a real browser, including the two that only a reload can demonstrate
+
+**Wave 10** *(blocked on 03-11, 03-12)*
+
+- [ ] 03-13-PLAN.md — CONVENTIONS.md drift corrected against the shipped code, full phase gate, and the closing human walkthrough
+
 **UI hint**: yes
 
 ### Phase 4: Task & Subtask Workflow
@@ -442,5 +492,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
-| 3. Column Management | 0/TBD | Not started | - |
+| 3. Column Management | 0/13 | Planned     | - |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
