@@ -1,188 +1,206 @@
 # Phase 3 — Observed Backend Facts
 
-> Produced by `scripts/probe-column-backend.mjs`, written and run against the deployed nonprod
-> backend (`EXTERNAL_API_BASE_URL`) on 2026-08-26. **The probe never reached the point of issuing a
-> column request** — its reachability preflight halted on every one of 14 attempts. This file
-> therefore records the outage as observed, and every R section below stays `NOT YET OBSERVED`.
-> Nothing here supersedes `03-RESEARCH.md`'s Assumptions Log A1–A5 yet.
+> Produced by `scripts/probe-column-backend.mjs` against the deployed nonprod backend
+> (`EXTERNAL_API_BASE_URL`). The 2026-08-26 morning run never reached a column request — its
+> reachability preflight halted on all 14 attempts against a database outage (full record kept
+> below). Nonprod recovered later the same day; a follow-up run completed cleanly end to end and
+> produced real answers to R1-R7. This file now supersedes `03-RESEARCH.md`'s Assumptions Log
+> A1-A5 with observed facts.
 
 ---
 
-## Status: BLOCKED
+## Status: OBSERVED
 
-The nonprod backend's database was unavailable for the whole 2026-08-26 execution window. The probe
-halts with exit code `2` in both observed failure modes, so neither is ever read as a defect in this
-phase's code.
+The probe completed a full run against the live nonprod backend: seeded a throwaway account, one
+board, and four columns (`Alpha, Bravo, Charlie, Delta`), then exercised R1-R7 in sequence. All
+seven sections below carry real, dated observations.
 
-**Failure mode 1 — application layer up, database down** (10 of 14 attempts, 13:21Z–13:50Z):
+**Traceability:** account `probe-column-7a6d020e-7c04-4fd3-876e-8c2ba4f4cb5a@example.com`, board
+`8p6wapihj9j4`. Permanent nonprod records (no delete-account endpoint exists), but hold no state
+any other plan depends on.
 
-```
-POST /signup -> status 500, body: {"type":"about:blank","title":"Internal Server Error","status":500,
-  "detail":"Unable to acquire JDBC Connection [HikariPool-1 - Connection is not available,
-   request timed out after 30000ms (total=0, active=0, idle=0, waiting=2)] [n/a]",
-  "instance":"/api/signup","code":"INTERNAL_ERROR"}
-```
-
-`total=0, active=0, idle=0` means the pool cannot open a single connection — the application is
-serving requests, its database is not. This is byte-for-byte the same failure `03-RESEARCH.md`
-§ "Environment Availability" recorded earlier the same day, so the outage has now persisted across
-two independent sessions.
-
-**Failure mode 2 — host not reachable at all** (4 of 14 attempts, 13:33Z–13:37Z):
-
-```
-POST /signup -> UND_ERR_CONNECT_TIMEOUT
-DNS resolves: yes
-TCP 443: timeout
-```
-
-Between 13:33Z and 13:37Z the host stopped accepting TCP connections entirely, then began answering
-with failure mode 1 again. DNS resolution succeeded throughout, so this is the deployment going
-away and coming back, not a name-resolution problem on the developer machine.
-
-**Attempts:** 14, spread over roughly 28 minutes (13:21Z–13:50Z) — 2 by hand, then 12 on a 45-second
-retry loop. The database never recovered inside that window.
-
-**What unblocks this document:** re-run the probe once the nonprod database is back.
-
-```bash
-node --env-file=.env.local scripts/probe-column-backend.mjs
-```
-
-A healthy run prints seven labelled blocks (`## R1` … `## R7`) of raw status codes and bodies; the
-answers then replace the `NOT YET OBSERVED` lines below. Exit code `2` means the backend, not the
-probe, is the problem.
-
-**What downstream plans should do meanwhile:** `03-07` already prescribes its own behaviour for this
-state (build the duplicate-name branch anyway and report its reachability as unconfirmed). `03-10`'s
-`<precondition>` holds the reorder work until R1 and R2 carry real observations — do not soften that
-gate by reading `03-RESEARCH.md`'s assumptions as facts.
+**Prior outage (historical, resolved):** the database was unreachable for the entire 2026-08-26
+13:21Z-13:50Z window — 10/14 attempts `500 INTERNAL_ERROR` from an exhausted JDBC pool
+(`total=0, active=0, idle=0`), 4/14 `UND_ERR_CONNECT_TIMEOUT` at the transport layer. Byte-for-byte
+the same failure `03-RESEARCH.md` recorded earlier that day. Resolved; no action needed.
 
 ---
 
-## R1 targetPosition semantics
+## R1 targetPosition semantics — CONFIRMED (final index)
 
-**Question (supersedes A1):** With columns `Alpha, Bravo, Charlie, Delta` at positions 0–3, does
+**Question (supersedes A1):** With columns `Alpha, Bravo, Charlie, Delta` at positions 0-3, does
 `PATCH /boards/{boardId}/columns/{alphaId}/reorder` with `{ version, targetPosition: 2 }` produce
-`B,C,A,D` (so `targetPosition` is the moved column's **final** 0-based index, and `arrayMove`'s `to`
-can be sent verbatim) or `B,A,C,D` (an insert-before-the-original-index semantic the client must
-translate)?
+`B,C,A,D` (final 0-based index — `arrayMove`'s `to` sent verbatim) or `B,A,C,D`
+(insert-before-original-index, needing client translation)?
 
-**Observed:** NOT YET OBSERVED — the probe halted at its reachability preflight.
+**Observed:** `targetPosition` is the moved column's **final 0-based index**. Moving Alpha (at
+position 0) with `targetPosition: 2` left it at `position: 2`; Bravo and Charlie shifted down to
+fill 0 and 1; Delta (already past the target) stayed at 3 — i.e. `B, C, A, D`.
 
-**Why it matters:** the single highest-value unknown in this phase. Every reorder lands one position
-off in one direction if this is guessed wrong, silently, visible only after a reload.
+```
+PATCH /boards/{boardId}/columns/{alphaId}/reorder  body: {"version":0,"targetPosition":2}
+-> 200 {"id":"8p6wapqy6vpc","name":"Alpha","version":1,"position":2}
+```
 
----
-
-## R2 version bump on shifted columns
-
-**Question (supersedes A2):** After the R1 reorder, does `GET /boards/{boardId}/full` show a changed
-`version` on the columns that merely **shifted** position rather than being moved? And does a rename
-issued against a shifted column, carrying that column's pre-reorder `version`, still succeed?
-
-**Observed:** NOT YET OBSERVED — the probe halted at its reachability preflight.
-
-**Why it matters:** decides how wide plan 03-10's in-flight mutation lock must be (`03-RESEARCH.md`
-Pitfall 6), and whether a mutation issued immediately after a reorder can be allowed at all.
+**Consequence for 03-10:** send dnd-kit's post-`arrayMove` final index directly as
+`targetPosition` — no translation needed.
 
 ---
 
-## R3 stale-version reorder
+## R2 version bump on shifted columns — CONFIRMED (not bumped)
 
-**Question:** Replaying the R1 `PATCH` body verbatim — now carrying a stale `version` — what status
-and problem-detail `code` comes back? `02-BACKEND-FACTS.md` P3 proved `409 OPTIMISTIC_LOCK_CONFLICT`
-for a board rename, never for a column reorder.
+**Question (supersedes A2):** After the R1 reorder, does `GET /boards/{boardId}/full` show a
+changed `version` on columns that merely **shifted** position? Does a rename against a shifted
+column, carrying its pre-reorder `version`, still succeed?
 
-**Observed:** NOT YET OBSERVED — the probe halted at its reachability preflight.
+**Observed:** Only the **moved** column's version changed (Alpha: 0 → 1). Both columns that
+merely shifted kept their version unchanged (Bravo: pos 1→0, version stayed 0; Charlie: pos 2→1,
+version stayed 0); the untouched column (Delta) was also unchanged. A `PUT` rename against the
+shifted "Charlie", carrying its **pre-reorder** version (0), succeeded (`200`, new version 1) — a
+shifted column's pre-reorder version is still valid for its next mutation.
 
-**Why it matters:** decides whether UI-SPEC's distinct version-conflict toast has a live branch on
-the reorder path.
-
----
-
-## R4 out-of-range and no-op targetPosition
-
-**Question (supersedes A5):** `targetPosition: 99` (out of range), then `targetPosition` equal to the
-column's own current position (a no-op) — what status, problem-detail `code`, and resulting `version`
-does each produce?
-
-**Observed:** NOT YET OBSERVED — the probe halted at its reachability preflight.
-
-**Why it matters:** decides whether the client must clamp or short-circuit, and whether a no-op
-reorder burns a `version` (which would make every client-held version stale for no user-visible
-change).
+**Consequence for 03-10:** `03-RESEARCH.md` Pitfall 6's whole-row in-flight mutation lock is not
+required by version-safety alone — a mutation against a shifted-but-not-moved column succeeds
+with its pre-reorder version. Whether to narrow the lock to just the moved column is 03-10's own
+call to make against this observation, not a default prescribed here.
 
 ---
 
-## R5 duplicate column name
+## R3 stale-version reorder — CONFIRMED (409 OPTIMISTIC_LOCK_CONFLICT)
 
-**Question (supersedes A3):** `POST /boards/{boardId}/columns` with a `name` already used by another
-column on the same board — refused with `DUPLICATE_RESOURCE`, or accepted?
+**Question:** Replaying the R1 PATCH body verbatim, now carrying a stale `version` — what status
+and problem-detail `code`? `02-BACKEND-FACTS.md` P3 proved this for a board rename, never a column
+reorder.
 
-**Observed:** NOT YET OBSERVED — the probe halted at its reachability preflight.
+**Observed:** Replaying `{"version":0,"targetPosition":2}` against Alpha (now at `version: 1`)
+returned:
 
-**Why it matters:** UI-SPEC's "Duplicate column name" inline-on-the-field branch is dead code if the
-backend accepts duplicates. This is `.planning/LEARNINGS.md`'s board-name lesson one containment
-level down. `03-07` builds the branch regardless while this reads `NOT YET OBSERVED`, and reports
-its reachability as unconfirmed.
+```
+409 {"type":"about:blank","title":"Conflict","status":409,
+ "detail":"Column was modified by another request, please refetch.","code":"OPTIMISTIC_LOCK_CONFLICT"}
+```
 
----
-
-## R6 cascade delete and position renumbering
-
-**Question (supersedes A4):** After putting a task into `Bravo` and deleting `Bravo`, are the column
-and its task both gone from `GET /boards/{boardId}/full`? Are the remaining columns' `position`
-values renumbered contiguously — and does that still hold after deleting a **middle** column?
-
-**Observed:** NOT YET OBSERVED — the probe halted at its reachability preflight.
-
-**Why it matters:** the cascade is COLUMN-04's success criterion. Contiguous renumbering also
-decides whether the `position % 3` dot-colour sequence reshuffles after a delete (cosmetic, but a
-UAT surprise if unexpected).
+**Consequence:** same problem-detail code as the board-rename conflict — the existing
+version-conflict toast branch covers the reorder path with no new code path needed.
 
 ---
 
-## R7 double delete
+## R4 out-of-range and no-op targetPosition — REFUTES A5 (clamped, not refused)
+
+**Question (supersedes A5):** `targetPosition: 99` (out of range), then `targetPosition` equal to
+the column's own current position (a no-op) — refused, clamped, or version-burning?
+
+**Observed:** `targetPosition: 99` against a 4-column board (valid indices 0-3) was **not
+refused** — it was silently clamped to the last valid index (3), and did bump the version because
+a real position change occurred (Alpha: position 2→3, version 1→2). Immediately re-sending
+`targetPosition: 3` (now Alpha's own current position — a true no-op) returned `200` with the
+**same** version (2, unchanged) — a no-op reorder does not burn a version.
+
+```
+targetPosition: 99 -> 200 {"version":2,"position":3}   (clamped from 99 to 3)
+targetPosition: 3  -> 200 {"version":2,"position":3}   (no-op: no version change)
+```
+
+**Consequence:** the client does not need to validate/clamp `targetPosition` before sending — the
+server clamps silently. A no-op drag (dropped back where it started) is safe to send as-is and
+costs no version.
+
+---
+
+## R5 duplicate column name — REFUTES A3 (accepted, not refused)
+
+**Question (supersedes A3):** `POST /boards/{boardId}/columns` with a `name` already used by
+another column on the same board — refused with `DUPLICATE_RESOURCE`, or accepted?
+
+**Observed:** Accepted. `POST` with `{"name":"Alpha"}` on a board that already had a column named
+"Alpha" returned `201`, not a refusal:
+
+```
+201 {"id":"8p6warv43f9c","name":"Alpha","version":0,"position":4}
+```
+
+The board now holds two columns both named "Alpha". No `DUPLICATE_RESOURCE` (or any)
+problem-detail code was returned.
+
+**Consequence — flags 03-07:** this is `.planning/LEARNINGS.md`'s board-name lesson one
+containment level down. UI-SPEC's "duplicate column name" inline-on-the-field validation branch
+has **no backend enforcement behind it** — the backend accepts duplicates unconditionally. 03-07
+must not build a rejection branch expecting a `DUPLICATE_RESOURCE` response (it will never arrive);
+if the inline validation stays, document it explicitly as client-side-only UX with no server
+backstop — a duplicate can still reach the board via any path that skips it, or a race between two
+clients.
+
+---
+
+## R6 cascade delete and position renumbering — CONFIRMED
+
+**Question (supersedes A4):** After putting a task into `Bravo` and deleting `Bravo`, are the
+column and its task both gone from `GET /boards/{boardId}/full`? Are remaining columns'
+`position` values renumbered contiguously — including after deleting a **middle** column?
+
+**Observed:** Deleting "Bravo" (holding one task) removed both the column and its task
+(`Bravo absent: true; its task absent: true`). Remaining columns' positions renumbered
+contiguously (`[3,0,1,4]` → `[2,0,1,3]`), and this held again after deleting a second, **middle**
+column ("Delta" at position 1): remaining positions renumbered to `[1,0,2]`. In both cases the
+renumbered columns' **versions did not change** — only `position` shifted, consistent with R2's
+finding that shifting alone never bumps version.
+
+**Consequence:** the `position % 3` decorative-dot colour cycle (U-03) does reshuffle after any
+delete, for every column past the deleted one — cosmetic, but real; dot rendering must key off the
+live `position` after a delete, not a cached index.
+
+---
+
+## R7 double delete — CONFIRMED (404 ENTITY_NOT_FOUND)
 
 **Question:** A second `DELETE` against an already-deleted column id — what status and
 problem-detail `code`?
 
-**Observed:** NOT YET OBSERVED — the probe halted at its reachability preflight.
+**Observed:**
 
-**Why it matters:** decides whether a double-submit needs its own branch or falls through to the
-shared not-found handling.
+```
+DELETE {alreadyDeletedColumnId} -> 404
+{"type":"about:blank","title":"Not Found","status":404,"detail":"Column was not found","code":"ENTITY_NOT_FOUND"}
+```
+
+**Consequence:** a double-submit delete falls through to the same not-found handling as any other
+missing-id lookup — no dedicated conflict code for "already deleted."
 
 ---
 
 ## Supersedes 03-RESEARCH.md A1-A5
 
-Nothing yet. Each assumption stays exactly as `03-RESEARCH.md` rates it until its probe runs; no
-verdict is recorded on the strength of an unrun probe.
-
-| Assumption | Claim                                                        | Answered by | Risk if wrong | State            |
-| ---------- | ------------------------------------------------------------ | ----------- | ------------- | ---------------- |
-| **A1**     | `targetPosition` is the moved column's final 0-based index     | R1          | High          | NOT YET OBSERVED |
-| **A2**     | A reorder does not bump merely-shifted columns' `version`       | R2          | High          | NOT YET OBSERVED |
-| **A3**     | A duplicate column name is refused with `DUPLICATE_RESOURCE`    | R5          | Medium        | NOT YET OBSERVED |
-| **A4**     | A delete renumbers remaining `position` values contiguously     | R6          | Medium        | NOT YET OBSERVED |
-| **A5**     | An out-of-range `targetPosition` is refused, not clamped        | R4          | Low           | NOT YET OBSERVED |
+| Assumption | Claim | Answered by | Risk if wrong | State |
+| ---------- | ----- | ----------- | ------------- | ----- |
+| **A1** | `targetPosition` is the moved column's final 0-based index | R1 | High | **CONFIRMED** |
+| **A2** | A reorder does not bump merely-shifted columns' `version` | R2 | High | **CONFIRMED** |
+| **A3** | A duplicate column name is refused with `DUPLICATE_RESOURCE` | R5 | Medium | **REFUTED** — duplicates are accepted (201), no server enforcement |
+| **A4** | A delete renumbers remaining `position` values contiguously | R6 | Medium | **CONFIRMED** (holds for both a task-holding delete and a middle-position delete) |
+| **A5** | An out-of-range `targetPosition` is refused, not clamped | R4 | Low | **REFUTED** — clamped to the last valid index; the clamped move bumps version, a true no-op does not |
 
 ---
 
 ## Consequences for plan 03-10 (reorder)
 
-Not derivable yet — both inputs are `NOT YET OBSERVED`.
+- **`targetPosition` value to send:** dnd-kit's post-`arrayMove` final index, verbatim — R1
+  confirms this is exactly what the API expects.
+- **In-flight mutation lock width:** R2 confirms a shifted (not moved) column's pre-reorder
+  version stays valid for its next mutation. `03-RESEARCH.md` Pitfall 6's whole-row lock is no
+  longer the only version-safe option — 03-10 can choose to narrow the lock to just the moved
+  column now that the observation backing that choice exists, or keep the wider lock for other
+  reasons (e.g. UX). The choice and its rationale belong in 03-10's own plan/execution.
+- **Client-side clamping:** not needed — the server clamps out-of-range values itself, and a
+  same-position no-op costs no version.
 
-- **`targetPosition` value to send:** cannot be named until R1 runs. `arrayMove`'s `to` is only
-  correct under one of the two candidate semantics, and `03-RESEARCH.md` A1 is an assumption, not an
-  observation — do not send it verbatim on that basis.
-- **In-flight mutation lock width:** `03-RESEARCH.md` Pitfall 6 prescribes disabling rename/delete on
-  **every** column in the row while a reorder is in flight, as the version-safe superset under either
-  R2 answer. That prescription still stands and costs nothing. Narrowing it to the moved column alone
-  is available only once R2 shows that shifted columns keep their `version`.
+## Consequences for plan 03-07 (add column)
+
+- R5 refutes A3: the backend enforces no column-name uniqueness. 03-07's duplicate-name branch, if
+  kept, is client-side-only UX with no server backstop — do not wire it to expect a
+  `DUPLICATE_RESOURCE` response, and document the branch as advisory rather than authoritative.
 
 ---
 
 _Phase: 03-column-management_
-_Last probe attempt: 2026-08-26 13:50Z (exit 2, database down)_
+_Probe history: outage 2026-08-26 13:21Z-13:50Z (14 attempts, exit 2 both times); resolved later
+the same day; full R1-R7 run completed cleanly against account
+`probe-column-7a6d020e-7c04-4fd3-876e-8c2ba4f4cb5a@example.com`, board `8p6wapihj9j4`._

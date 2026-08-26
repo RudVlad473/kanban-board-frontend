@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 18
+open_count: 17
 waived_count: 0
-fixed_count: 6
+fixed_count: 7
 total_count: 24
-last_updated: 2026-08-26T13:52:58.902Z
+last_updated: 2026-08-26T19:35:18.622Z
 ---
 
 # Broken Windows Ledger
@@ -38,7 +38,7 @@ last_updated: 2026-08-26T13:52:58.902Z
 | 21 | 02 | unrun-verify | src/features/boards/server/fetch-boards.ts |  | Plan 02-11 wrapped fetchBoards in React's cache so the sidebar, the dashboard header and a board page's membership check share one upstream call per render, but no test asserts the call count. The plan's own behavior bullet ('loadBoards called twice within one server render performs exactly one upstream call') is therefore unproven: the e2e suite shows the app works, not that it issues one call rather than three. Needs either an instrumented integration test or a server-side call counter. | open |  | 2026-08-25T14:26:38.598Z |  |
 | 22 | 02 | deviation | app/api/session/force-sign-out/route.ts |  | Plan 02-11 widened the WR-01 logout-CSRF guard from Sec-Fetch-Site === 'same-origin' to an allow-list of {same-origin, none}. Making /boards a Server Component that calls the external API in its own render turned the forced-sign-out redirect into a real HTTP 307 on the document request, and Chromium carries the initiating navigation's Sec-Fetch-Site across that same-origin hop, so a visitor opening /boards directly arrived with 'none' and was 403'd out of the flow the handler exists to serve (measured 2026-08-25). 'none' is unforgeable by an attacker page and cross-site/same-site/absent are still rejected; SESSION-03's three cases still pass. Recorded as a dated amendment in docs/adr/tech/0026. Open because it is a security-control change made outside plan 02-11's own threat register and deserves a reviewer's explicit sign-off. | open |  | 2026-08-25T14:26:45.483Z |  |
 | 23 | 02 | stub | src/features/boards/components/board-list.tsx |  | BoardCard onDelete is a no-op; plan 02-13 supplies D-06's confirm modal | open |  | 2026-08-25T16:26:55.940Z |  |
-| 24 | 03 | unrun-verify | .planning/phases/03-column-management/03-BACKEND-FACTS.md |  | Column probe R1-R7 never observed: nonprod database down for all 14 attempts on 2026-08-26; every R section reads NOT YET OBSERVED | open |  | 2026-08-26T13:52:58.902Z |  |
+| 24 | 03 | unrun-verify | .planning/phases/03-column-management/03-BACKEND-FACTS.md |  | Column probe R1-R7 never observed: nonprod database down for all 14 attempts on 2026-08-26; every R section reads NOT YET OBSERVED | fixed |  | 2026-08-26T13:52:58.902Z | 2026-08-26T19:35:18.622Z |
 
 ````json
 [
@@ -325,10 +325,10 @@ last_updated: 2026-08-26T13:52:58.902Z
     "file": ".planning/phases/03-column-management/03-BACKEND-FACTS.md",
     "line": null,
     "description": "Column probe R1-R7 never observed: nonprod database down for all 14 attempts on 2026-08-26; every R section reads NOT YET OBSERVED",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-08-26T13:52:58.902Z",
-    "resolved_at": null
+    "resolved_at": "2026-08-26T19:35:18.622Z"
   }
 ]
 ````
