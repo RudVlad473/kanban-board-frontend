@@ -83,16 +83,16 @@ export const ColumnHeader = ({
                     <span className="flex min-h-11 items-center gap-4">{captionRow}</span>
                 ) : (
                     /*
-                     * D-06: no click handler of its own. The enter key LIFTS the column, so a handle
-                     * that also activated on enter would be ambiguous — every ARIA attribute here is
-                     * the library's own spread, never a hand-written copy.
+                     * D-06: no click handler of its own — enter LIFTS the column, so a handle that also
+                     * activated on enter would be ambiguous. `uppercase` repeats the h2's on purpose: a
+                     * UA rule sets text-transform:none on form controls, beating inheritance (03-14).
                      */
                     <button
                         type="button"
                         ref={setHandleNode}
                         {...handleAttributes}
                         {...handleListeners}
-                        className="flex min-h-11 w-full cursor-grab items-center gap-4 rounded-sm text-left focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none aria-pressed:cursor-grabbing"
+                        className="flex min-h-11 w-full cursor-grab items-center gap-4 rounded-sm text-left uppercase focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none aria-pressed:cursor-grabbing"
                     >
                         {captionRow}
                     </button>
