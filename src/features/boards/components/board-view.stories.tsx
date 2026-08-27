@@ -86,6 +86,17 @@ export const RenameColumnOpen: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }), defaultRenameColumnTargetIndex: 0 },
 };
 
+/** Seeds the delete confirmation open on the first column, the same prop-driven way as the rename. */
+export const DeleteColumnOpen: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }), defaultDeleteColumnTargetIndex: 0 },
+};
+
+/*
+ * UI-SPEC zero-one-many/exactly-1-column: both kebab entries stay meaningful on a board's only
+ * column, unlike the drag affordance plan 03-10 withholds from it.
+ */
+export const LoneColumn: Story = { args: { board: createBoardFull({ columns: createColumnsFull({ count: 1 }) }) } };
+
 /* Duplicated verbatim in `board-view.test.tsx` — a non-story export here would break `composeStories`. */
 const SERVER_RENAMED_NAME = "Renamed On The Server";
 const SERVER_CHANGED_NAME = "Changed Somewhere Else";
@@ -132,4 +143,35 @@ const ServerPropsHost = (props: ComponentProps<typeof BoardView>) => {
 export const ServerColumnsAdvance: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }) },
     render: (args) => <ServerPropsHost {...args} />,
+};
+
+/*
+ * Lands the refreshed render a completed delete produces — the middle column simply absent. The
+ * container never removes one itself, so this is the only way its post-delete order can be read.
+ */
+const ServerDeleteHost = (props: ComponentProps<typeof BoardView>) => {
+    const [board, setBoard] = useState<BoardFull>(props.board);
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => {
+                    setBoard((current) => ({
+                        ...current,
+                        columns: current.columns.filter((_, index) => index !== 1),
+                    }));
+                }}
+            >
+                Land the refreshed render without the middle column
+            </button>
+
+            <BoardView {...props} board={board} />
+        </>
+    );
+};
+
+export const ServerColumnRemoved: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 4 }) }) },
+    render: (args) => <ServerDeleteHost {...args} />,
 };

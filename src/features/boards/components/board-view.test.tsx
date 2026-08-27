@@ -17,6 +17,13 @@ import {
     resetCreateColumnStub,
     settleCreateColumn,
 } from "@/test-utils/create-column-action-storybook-stub";
+import {
+    deleteColumnActionCalls,
+    holdNextDeleteColumn,
+    queueDeleteColumnFailure,
+    resetDeleteColumnStub,
+    settleDeleteColumn,
+} from "@/test-utils/delete-column-action-storybook-stub";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import {
     holdNextRenameColumn,
@@ -41,6 +48,9 @@ const {
     NineColumns,
     RenameColumnOpen,
     ServerColumnsAdvance,
+    DeleteColumnOpen,
+    LoneColumn,
+    ServerColumnRemoved,
 } = composeStories(stories);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
@@ -53,6 +63,10 @@ const SERVER_CHANGED_NAME = "Changed Somewhere Else";
 /** The two authored toast strings, as the user reads them — title and description run together. */
 const GENERIC_RENAME_TOAST = "Couldn't rename column.Try again.";
 const CONFLICT_RENAME_TOAST = "This board changed somewhere else.Refresh to see the latest.";
+
+/** The delete path's own two, which the UI-SPEC requires to differ from each other. */
+const GENERIC_DELETE_TOAST = "Couldn't delete column.Try again.";
+const CONFLICT_DELETE_TOAST = "This board changed somewhere else.Refresh to see the latest.";
 
 /*
  * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
@@ -109,6 +123,18 @@ const openRenameFor = async (columnName: string): Promise<void> => {
     await userEvent.click(await screen.findByRole("menuitem", { name: "Rename Column" }));
 };
 
+/** Opens a column's kebab and activates its delete entry, leaving the confirmation on that column. */
+const openDeleteFor = async (columnName: string): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: `Column actions for ${columnName}` }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete Column" }));
+};
+
+/** The whole COLUMN-04 entry path: kebab, delete entry, then the destructive confirmation. */
+const deleteColumnFromHeader = async (columnName: string): Promise<void> => {
+    await openDeleteFor(columnName);
+    await userEvent.click(await screen.findByRole("button", { name: "Delete Column" }));
+};
+
 /** The whole COLUMN-02 entry path: kebab, rename entry, retype the name, submit. */
 const renameColumnFromHeader = async ({
     columnName,
@@ -132,6 +158,7 @@ describeForEachDevice({
         beforeEach(() => {
             resetCreateColumnStub();
             resetRenameColumnStub();
+            resetDeleteColumnStub();
         });
 
         it("renders one column per column, each captioned with its name and task count", async () => {
@@ -680,6 +707,181 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(getRenderedColumnNames()[0]).toBe(SERVER_CHANGED_NAME);
             });
+        });
+
+        it("opens the confirmation naming that column when its delete entry is activated", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await openDeleteFor("Fixture Column 2");
+
+            // Assert — that column is named, and nothing has been deleted yet.
+            expect(await screen.findByRole("heading", { name: "Delete this column?" })).toBeInTheDocument();
+            expect(screen.getByText(/'Fixture Column 2' column\?/)).toBeInTheDocument();
+            expect(deleteColumnActionCalls).toHaveLength(0);
+        });
+
+        it("renders the delete confirmation when staged open", async () => {
+            // Act
+            await render(<DeleteColumnOpen />);
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Delete this column?" })).toBeInTheDocument();
+            expect(screen.getByText(/'Fixture Column 1' column\?/)).toBeInTheDocument();
+        });
+
+        it("sends that column's own board id and column id with the delete, exactly once", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await deleteColumnFromHeader("Fixture Column 2");
+
+            // Assert — T-03-30: one call, never two.
+            await vi.waitFor(() => {
+                expect(deleteColumnActionCalls).toHaveLength(1);
+            });
+            expect(deleteColumnActionCalls[0]).toEqual({
+                boardId: FIXTURE_BOARD_ID,
+                columnId: Populated.args.board?.columns[1]?.id,
+            });
+        });
+
+        /*
+         * U-05's whole point: the cascade is irreversible (ADR domain/0002), so nothing may leave
+         * the screen before the server has agreed — there is nothing to roll back to if it refuses.
+         */
+        it("still renders the column while the delete is in flight, removing nothing optimistically", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            holdNextDeleteColumn();
+
+            // Act — submit, then observe while the action is still unresolved.
+            await deleteColumnFromHeader("Fixture Column 1");
+            await vi.waitFor(() => {
+                expect(deleteColumnActionCalls).toHaveLength(1);
+            });
+
+            // Assert — the whole set is untouched, not merely the target still present.
+            expect(getRenderedColumnNames()).toEqual(namesBefore);
+
+            // Act — let the write land.
+            settleDeleteColumn();
+
+            // Assert — still nothing removed here: the refreshed props are what remove it.
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Delete this column?" })).not.toBeInTheDocument();
+            });
+            expect(getRenderedColumnNames()).toEqual(namesBefore);
+            expect(getRaisedToastCount()).toBe(0);
+        });
+
+        it("closes the modal, leaves the column on the board and announces a generic delete failure", async () => {
+            // Arrange — held, so the pre-settle state is observed before the failure lands.
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            queueDeleteColumnFailure(RESULT_STATUS.ERROR);
+            holdNextDeleteColumn();
+
+            // Act
+            await deleteColumnFromHeader("Fixture Column 1");
+            await vi.waitFor(() => {
+                expect(deleteColumnActionCalls).toHaveLength(1);
+            });
+            settleDeleteColumn();
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toEqual([GENERIC_DELETE_TOAST]);
+            });
+            expect(screen.queryByRole("heading", { name: "Delete this column?" })).not.toBeInTheDocument();
+            expect(getRenderedColumnNames()).toEqual(namesBefore);
+        });
+
+        /*
+         * UI-SPEC error/version-conflict: a stale version earns its OWN copy, because retrying
+         * against the same version fails identically and generic retry copy would loop the user.
+         */
+        it("raises the distinct version-conflict copy, not the generic one, when the delete conflicts", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            queueDeleteColumnFailure(RESULT_STATUS.CONFLICT);
+
+            // Act
+            await deleteColumnFromHeader("Fixture Column 1");
+
+            // Assert — the two branches are proved different, not merely proved to raise something.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toEqual([CONFLICT_DELETE_TOAST]);
+            });
+            expect(CONFLICT_DELETE_TOAST).not.toBe(GENERIC_DELETE_TOAST);
+            expect(getRenderedColumnNames()).toEqual(namesBefore);
+        });
+
+        /*
+         * UI-SPEC empty/after-deleting-the-last-column: the same zero-columns state plan 03-07
+         * wired, not a separate "you just deleted everything" screen.
+         */
+        it("falls through to the zero-columns empty state when no columns remain", async () => {
+            // Act
+            await render(<EmptyBoard />);
+
+            // Assert
+            expect(screen.getByText("This board is empty. Create a new column to get started.")).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "+ Add New Column" })).toBeInTheDocument();
+            expect(screen.queryAllByRole("heading", { level: 2 })).toHaveLength(0);
+        });
+
+        /* COLUMN-04 ordering: removal filters the surviving columns, it never re-sorts them. */
+        it("keeps the surviving columns in their relative order when a middle one is removed", async () => {
+            // Arrange
+            await render(<ServerColumnRemoved />);
+            expect(getRenderedColumnNames()).toEqual([
+                "Fixture Column 1",
+                "Fixture Column 2",
+                "Fixture Column 3",
+                "Fixture Column 4",
+            ]);
+
+            // Act — land the refreshed render a completed delete of the second column produces.
+            await userEvent.click(
+                screen.getByRole("button", { name: "Land the refreshed render without the middle column" }),
+            );
+
+            // Assert — the same order minus one, never a reshuffle.
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()).toEqual(["Fixture Column 1", "Fixture Column 3", "Fixture Column 4"]);
+            });
+        });
+
+        it("names the newly targeted column when the confirmation is reopened on another one", async () => {
+            // Arrange — open on one column, then dismiss without deleting.
+            await render(<Populated />);
+            await openDeleteFor("Fixture Column 1");
+            await userEvent.click(await screen.findByRole("button", { name: "Keep Column" }));
+
+            // Act
+            await openDeleteFor("Fixture Column 3");
+
+            // Assert — that column's own name, not the one previously targeted.
+            expect(await screen.findByText(/'Fixture Column 3' column\?/)).toBeInTheDocument();
+            expect(screen.queryByText(/'Fixture Column 1' column\?/)).not.toBeInTheDocument();
+        });
+
+        /* UI-SPEC zero-one-many/exactly-1-column: both entries stay meaningful on a lone column. */
+        it("offers both kebab entries on a board holding exactly one column", async () => {
+            // Arrange
+            await render(<LoneColumn />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Column actions for Fixture Column 1" }));
+
+            // Assert
+            expect(await screen.findByRole("menuitem", { name: "Rename Column" })).toBeInTheDocument();
+            expect(screen.getByRole("menuitem", { name: "Delete Column" })).toBeInTheDocument();
         });
     },
 });
