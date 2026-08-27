@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button/button";
 import { AddColumnModal } from "@/features/boards/components/add-column-modal";
 import { AddColumnPlaceholder } from "@/features/boards/components/add-column-placeholder";
 import { ColumnHeader } from "@/features/boards/components/column-header";
+import { DeleteColumnConfirm } from "@/features/boards/components/delete-column-confirm";
 import { RenameColumnModal } from "@/features/boards/components/rename-column-modal";
 import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
+import { useDeleteColumn, type DeleteColumnArgs } from "@/features/boards/hooks/use-delete-column";
 import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";
 import { toSubtaskSummary } from "@/features/boards/model";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
@@ -24,9 +26,16 @@ type Props = {
     defaultIsAddColumnOpen?: boolean;
     /** Storybook-only staging — seeds the rename modal open on the column at this index. */
     defaultRenameColumnTargetIndex?: number;
+    /** Storybook-only staging — seeds the delete confirmation open on the column at this index. */
+    defaultDeleteColumnTargetIndex?: number;
 };
 
-export const BoardView = ({ board, defaultIsAddColumnOpen = false, defaultRenameColumnTargetIndex }: Props) => {
+export const BoardView = ({
+    board,
+    defaultIsAddColumnOpen = false,
+    defaultRenameColumnTargetIndex,
+    defaultDeleteColumnTargetIndex,
+}: Props) => {
     const {
         value: isAddColumnOpen,
         setValue: setIsAddColumnOpen,
@@ -41,10 +50,14 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false, defaultRename
     const [columnBeingRenamed, setColumnBeingRenamed] = useState<ColumnFull | null>(
         defaultRenameColumnTargetIndex === undefined ? null : (board.columns[defaultRenameColumnTargetIndex] ?? null),
     );
+    const [columnBeingDeleted, setColumnBeingDeleted] = useState<ColumnFull | null>(
+        defaultDeleteColumnTargetIndex === undefined ? null : (board.columns[defaultDeleteColumnTargetIndex] ?? null),
+    );
     const columnCount = board.columns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
     /* The DERIVED columns, not the raw props — that array is what carries the optimistic name. */
     const { renameColumn, columns: renderedColumns } = useRenameColumn({ columns: board.columns });
+    const { deleteColumn, isPending: isDeletePending } = useDeleteColumn();
 
     const ghostColumnRef = useRef<HTMLButtonElement>(null);
     /** The column count when a create landed — a ref, so retiring the request costs no render. */
@@ -100,6 +113,17 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false, defaultRename
         setColumnBeingRenamed(null);
     };
 
+    /*
+     * U-05, and the deliberate opposite of the rename handler above: closed when the mutation
+     * SETTLES, not when it is submitted. Nothing was removed optimistically, so the destructive
+     * button's own pending state is the only signal the user has that anything is happening.
+     */
+    const handleDeleteSubmit = (values: DeleteColumnArgs): void => {
+        void deleteColumn(values).finally(() => {
+            setColumnBeingDeleted(null);
+        });
+    };
+
     const openAddColumn = (): void => {
         handleOpenChange(true);
     };
@@ -138,7 +162,11 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false, defaultRename
                             aria-labelledby={`board-column-${column.id}`}
                             className="flex w-70 shrink-0 flex-col overflow-y-auto rounded-sm"
                         >
-                            <ColumnHeader column={column} onRename={setColumnBeingRenamed} />
+                            <ColumnHeader
+                                column={column}
+                                onRename={setColumnBeingRenamed}
+                                onDelete={setColumnBeingDeleted}
+                            />
 
                             <ul className="flex flex-col gap-4">
                                 {column.tasks.map((task) => (
@@ -186,6 +214,23 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false, defaultRename
                         }
                     }}
                     onSubmit={handleRenameSubmit}
+                />
+            )}
+
+            {columnBeingDeleted === null ? null : (
+                <DeleteColumnConfirm
+                    /* Keyed on the target column, so reopening on another header names that column. */
+                    key={columnBeingDeleted.id}
+                    boardId={board.id}
+                    column={columnBeingDeleted}
+                    isOpen
+                    onOpenChange={(nextIsOpen) => {
+                        if (!nextIsOpen) {
+                            setColumnBeingDeleted(null);
+                        }
+                    }}
+                    onSubmit={handleDeleteSubmit}
+                    isPending={isDeletePending}
                 />
             )}
         </>
