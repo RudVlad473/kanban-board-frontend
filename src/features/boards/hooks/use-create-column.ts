@@ -14,10 +14,11 @@ const GENERIC_CREATE_FAILURE_MESSAGE = "Couldn't create column. Try again.";
 
 /*
  * Only the branches with something distinct to tell the user, mirroring `use-create-board.ts`'s
- * own table. `DUPLICATE`'s copy is plan 03-07's, which is what makes its column-name guidance a
- * change to one entry here rather than a change to this hook's shape.
+ * own table. `DUPLICATE` is advisory here: 03-BACKEND-FACTS R5 observed the backend ACCEPTING a
+ * duplicate column name, so nothing upstream selects this entry today (see 03-07-SUMMARY.md).
  */
 const CREATE_FAILURE_MESSAGE: Partial<Record<ResultStatus, string>> = {
+    [RESULT_STATUS.DUPLICATE]: "A column with that name already exists on this board.",
     [RESULT_STATUS.UNAUTHENTICATED]: "Your session has expired. Sign in again to create a column.",
 };
 

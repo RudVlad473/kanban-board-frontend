@@ -53,3 +53,11 @@ export const ManyTasksInOneColumn: Story = {
 export const AddColumnOpen: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }), defaultIsAddColumnOpen: true },
 };
+
+/*
+ * The board already holds "Fixture Column 1", so retyping that name is what its test submits — the
+ * duplicate branch is legible from the story rather than only from the failure queued on the stub.
+ */
+export const DuplicateColumnName: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }), defaultIsAddColumnOpen: true },
+};

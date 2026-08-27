@@ -21,8 +21,15 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import * as stories from "./board-view.stories";
 
-const { Populated, EmptyBoard, ColumnsWithNoTasks, EvenlyCycledColumns, ManyColumns, AddColumnOpen } =
-    composeStories(stories);
+const {
+    Populated,
+    EmptyBoard,
+    ColumnsWithNoTasks,
+    EvenlyCycledColumns,
+    ManyColumns,
+    AddColumnOpen,
+    DuplicateColumnName,
+} = composeStories(stories);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
@@ -37,11 +44,22 @@ const getRaisedToastCount = (): number => {
     return region === null ? 0 : within(region).queryAllByRole("dialog").length;
 };
 
+/** Fills and submits an Add Column modal that is already open, whichever entry point opened it. */
+const submitOpenColumnForm = async (name: string): Promise<void> => {
+    await userEvent.fill(await screen.findByLabelText("Column Name"), name);
+    await userEvent.click(screen.getByRole("button", { name: "Create New Column" }));
+};
+
 /** Opens the ghost column's modal, types a name and submits it — the whole COLUMN-01 entry path. */
 const submitNewColumn = async (name: string): Promise<void> => {
     await userEvent.click(screen.getByRole("button", { name: "+ New Column" }));
-    await userEvent.fill(await screen.findByLabelText("Column Name"), name);
-    await userEvent.click(screen.getByRole("button", { name: "Create New Column" }));
+    await submitOpenColumnForm(name);
+};
+
+/** The same path from the zero-columns empty state, whose call to action replaces the ghost column. */
+const submitFirstColumn = async (name: string): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: "+ Add New Column" }));
+    await submitOpenColumnForm(name);
 };
 
 /*
@@ -86,10 +104,6 @@ describeForEachDevice({
             ]);
         });
 
-        /*
-         * The omission is the assertion: the zero-columns call to action is plan 03-07's work, so
-         * this state still offers no add-column entry point of any kind.
-         */
         it("renders the verbatim empty-board message and no columns for a board with none", async () => {
             // Act
             await render(<EmptyBoard />);
@@ -97,8 +111,79 @@ describeForEachDevice({
             // Assert
             expect(screen.getByText("This board is empty. Create a new column to get started.")).toBeInTheDocument();
             expect(screen.queryAllByRole("heading", { level: 2 })).toHaveLength(0);
-            expect(screen.queryByText("+ Add New Column")).not.toBeInTheDocument();
+        });
+
+        /*
+         * The omission is half the assertion: UI-SPEC empty/0-columns has the centred call to action
+         * REPLACE the ghost column in this state, so exactly one of the two labels may be present.
+         */
+        it("offers the empty-state call to action and no ghost column on a board with no columns", async () => {
+            // Act
+            await render(<EmptyBoard />);
+
+            // Assert
+            expect(screen.getByRole("button", { name: "+ Add New Column" })).toBeInTheDocument();
+            expect(screen.getAllByRole("button", { name: /Add New Column/ })).toHaveLength(1);
             expect(screen.queryByRole("button", { name: "+ New Column" })).not.toBeInTheDocument();
+        });
+
+        it("opens the same Add Column modal from the empty-state call to action", async () => {
+            // Arrange
+            await render(<EmptyBoard />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Column" }));
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Add New Column" })).toBeInTheDocument();
+            expect(await screen.findByLabelText("Column Name")).toBeInTheDocument();
+        });
+
+        /* COLUMN-01 on the one board state the tracer could not reach at all. */
+        it("reaches the create action once from the empty state, with the board's own id", async () => {
+            // Arrange
+            await render(<EmptyBoard />);
+
+            // Act
+            await submitFirstColumn("Backlog");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(createColumnActionCalls).toHaveLength(1);
+            });
+            expect(createColumnActionCalls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
+        });
+
+        /* UI-SPEC error/Add-Column-duplicate: its own copy, inline, and still never a toast. */
+        it("keeps the modal open with the duplicate-name copy when the name is refused as a duplicate", async () => {
+            // Arrange
+            queueCreateColumnFailure(RESULT_STATUS.DUPLICATE);
+            await render(<DuplicateColumnName />);
+
+            // Act
+            await submitOpenColumnForm("Fixture Column 1");
+
+            // Assert
+            expect(await screen.findByRole("alert")).toHaveTextContent(
+                "A column with that name already exists on this board.",
+            );
+            expect(screen.getByRole("dialog")).toBeInTheDocument();
+            expect(getRaisedToastCount()).toBe(0);
+        });
+
+        /* The new table entry must not swallow the fallback every other failure branch still uses. */
+        it("still renders the generic create-failure copy for a failure that is not a duplicate", async () => {
+            // Arrange
+            queueCreateColumnFailure(RESULT_STATUS.ERROR);
+            await render(<DuplicateColumnName />);
+
+            // Act
+            await submitOpenColumnForm("Fixture Column 1");
+
+            // Assert
+            const alert = await screen.findByRole("alert");
+            expect(alert).toHaveTextContent("Couldn't create column. Try again.");
+            expect(alert).not.toHaveTextContent("A column with that name already exists on this board.");
         });
 
         it("renders a zero count and no task cards for a column holding no tasks", async () => {
