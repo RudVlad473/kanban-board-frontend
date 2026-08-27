@@ -162,6 +162,19 @@ describe("taskFullSchema", () => {
         expect(result.success).toBe(true);
         expect(result.success && result.data.description).toBeUndefined();
     });
+
+    /*
+     * The real backend sends `null` rather than omitting the key (observed 2026-08-27); `.optional()`
+     * alone rejected it, which failed every full-board read once any task existed (03-11-SUMMARY.md).
+     */
+    it("accepts the explicit null the backend sends for a task with no description", () => {
+        // Act
+        const result = taskFullSchema.safeParse({ ...createTaskFull(), description: null });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.description).toBeNull();
+    });
 });
 
 describe("boardNameSchema", () => {

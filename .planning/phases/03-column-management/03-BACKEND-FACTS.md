@@ -210,6 +210,38 @@ owner's `userId` in the query. No board id a caller can put in the URL widens th
 
 ---
 
+## R9 a task's `description` arrives as explicit `null` — broke `boardFullSchema`
+
+**Question (raised by plan 03-11 while seeding the cascade test, observed 2026-08-27):** what does
+`GET /boards/{boardId}/full` carry for a task created without a description?
+
+**Observed:** the key is **present and `null`**, never omitted:
+
+```
+POST /boards/{boardId}/columns/{columnId}  body: {"title":"Cascade Task One"}
+-> 201 {"id":"…","title":"Cascade Task One","description":null,"version":0,"position":0}
+
+GET /boards/{boardId}/full
+-> columns[0].tasks[0] = {"id":"…","title":"…","description":null,"version":0,"position":0,"subtasks":[]}
+```
+
+`taskFullSchema` declared `description: z.string().optional()`, which accepts a **missing** key but
+rejects an explicit `null`. `boardFullSchema` therefore failed to parse **any board containing a
+task without a description** — and `fetchBoardFull` treats a parse failure as an error, so the
+board page would have shown its failure state rather than the board.
+
+**Why it was invisible until now:** nothing in phases 1-3 creates a task, and every fixture omits
+`description` rather than setting it to `null`, so both the unit suite and the browser suite agreed
+with each other and with nothing real. This suite is the first code in the repo to put a real task
+on a real board and read it back.
+
+**Fixed in this plan:** `description: z.string().nullish()`, with a regression case in
+`schemas.unit.test.ts` pinning the `null` form. **Consequence for the tasks phase:** treat
+`TaskFull["description"]` as `string | null | undefined` at every read site, and prefer real
+round-tripped payloads over hand-authored fixtures when pinning a wire shape.
+
+---
+
 ## Supersedes 03-RESEARCH.md A1-A5
 
 | Assumption | Claim | Answered by | Risk if wrong | State |
