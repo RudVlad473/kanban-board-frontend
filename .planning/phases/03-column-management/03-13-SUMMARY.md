@@ -117,10 +117,10 @@ coverage:
         ref: "CI=1 pnpm test:visual → 260/260 with baselines compared"
         status: pass
       - kind: e2e
-        ref: "CI=1 pnpm exec playwright test --project=e2e → 42 passed, 1 failed (SESSION-01 only)"
-        status: fail
+        ref: "CI=1 pnpm exec playwright test --project=e2e → 43/43 after 8b77c76 fixed the SESSION-01 regression"
+        status: pass
     human_judgment: true
-    rationale: "Everything passes except SESSION-01, which the orchestrator verified 5/5 green on the merged main checkout and on CI. It fails deterministically in this worktree, including serially and in isolation, so the cross-run-interference explanation does not fit what was measured here. Deferred to the orchestrator's environment as authoritative, but recorded rather than laundered."
+    rationale: "SESSION-01 was a regression this plan introduced — the .env.local loader ran after e2e/test-env.ts had already frozen E2E_CONFIG, so the spec sealed cookies with a fallback secret the app never used. Diagnosed and fixed in 8b77c76; the full suite is 43/43 with no shell-exported env. The deterministic-and-serial measurement recorded here was the signal that led to it."
   - id: D7
     description: "COLUMN-01 through COLUMN-04 demonstrated against the running application, in both themes"
     verification:
@@ -315,24 +315,47 @@ cosmetic. Recorded because the reasoning was plausible and still wrong.
 | Command | Before | After |
 |---------|--------|-------|
 | `CI=1 … <3 specs> --repeat-each=3 --workers=2` | **2 failed, 13 passed** | **15 passed, exit 0** |
-| `CI=1 pnpm exec playwright test --project=e2e` (full) | 42 passed, 1 failed | **42 passed, 1 failed — SESSION-01 only** |
+| `CI=1 pnpm exec playwright test --project=e2e` (full) | 42 passed, 1 failed | **43/43** after `8b77c76` |
 | `pnpm test` | 1297 passed | **1297 passed** |
 | `pnpm lint` | pass | **pass** (caught a real type error in the first draft of the matcher: `headers()` is `Record<string, string>`, so `!== undefined` had no overlap — changed to an `in` check and re-ran the reproduction, since a matcher that matches nothing would hang rather than pass) |
 | The other eight blocking checks | pass | **pass** |
 
-## Correction: my earlier SESSION-01 claim
+## Correction: SESSION-01 was a regression this plan introduced
 
-My previous revision reported SESSION-01 as an open pre-existing failure. **The orchestrator
-verified it 5/5 green on the merged main checkout, and it passes on CI at the same commit.** Their
-environment is authoritative and the claim is corrected accordingly: it is not a defect in the
-shipped code.
+Two earlier readings of this were wrong and are superseded. The first called it a pre-existing
+shipped defect. The second (above, now corrected) accepted "not a defect" but left the
+worktree-vs-checkout difference unexplained. **The measurement that did not fit was the real
+signal, and it pointed at this plan's own `playwright.config.ts` change.**
 
-Recording what was actually measured here, because it does not fit the cross-run-interference
-explanation and a future reader should not be surprised by it: in **this worktree** it failed on
-every one of five attempts, including `--workers=1` on that spec alone, with no other suite
-running. Deterministic and serial is not contention. The difference is therefore between the two
-checkouts or their moment in time, not between load levels. Not investigated further — the
-orchestrator scoped it out, and one 20-second serial run was the whole cost of establishing this.
+Diagnosed and fixed by the orchestrator in `8b77c76`, after this executor's worktree was merged.
+The loader was added to `playwright.config.ts` *below* its `import { E2E_CONFIG } from
+"./e2e/test-env"`. An ES module is evaluated before the body of the module importing it, so
+`test-env.ts` read `process.env.SESSION_SECRET` while it was still unset, froze the
+`"test-only-session-secret-not-for-production"` fallback into `E2E_CONFIG`, and only then did
+`loadLocalEnvFile()` populate `process.env`. From that point the two disagreed permanently:
+`session-bridge.e2e.spec.ts:37` seals its forged cookie with `E2E_CONFIG.SESSION_SECRET`, while
+the running app reads `process.env.SESSION_SECRET` (`src/lib/server/session.ts:149`) — so the app
+could not verify the cookie, forced sign-out destroyed nothing, and the survival assertion failed.
+
+This explains every observation, including the ones that looked contradictory: it fails whenever
+`.env.local` is the only supplier (deterministic, serial, isolated — hence "not contention"), and
+passes whenever the values are shell-exported instead (which is how the orchestrator's 5/5 was
+obtained, without either of us realising the prefix was the variable).
+
+**CI could not have caught it.** CI exports the real values as environment variables and ships no
+`.env.local`, so the fallback never triggers there. This defect was local-only — the exact inverse
+of the reorder flake fixed earlier in this same plan, which was CI-only. A green CI run was not
+evidence about it, and neither was this plan's own gate.
+
+Fixed by moving the load into `test-env.ts`'s own body, ahead of the object it builds: statement
+order inside one module body cannot be reordered by an import sorter, which a fix in the caller —
+or a side-effect module imported there — both could be. Verified with no shell-exported env:
+session-bridge 5/5 on three consecutive runs (was 0/3), full `--project=e2e` **43/43**.
+
+The honest lesson is about the fallback, not the ordering: a test-only secret that silently
+substitutes for a missing real one turned a misconfiguration into a wrong answer instead of a
+loud failure. `session.ts` fails fast when `SESSION_SECRET` is unset; `test-env.ts` does not.
+Making it announce itself is carried forward, not done here — other suites depend on that fallback.
 
 ## Issues Encountered
 

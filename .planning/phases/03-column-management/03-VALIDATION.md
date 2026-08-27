@@ -137,10 +137,14 @@ cover; recorded, not chased.
 
 1. **Local: `e2e/session-bridge.e2e.spec.ts` SESSION-01** — "redirects and renders no board content
    or raw upstream error text". The forced sign-out redirects correctly and leaks no upstream error
-   text, but the session cookie survives, failing the cookie-clearance assertion. **Proven
-   pre-existing:** the identical failure reproduces with `src/` and `app/` checked out at this
-   plan's base commit `c063aa7`, so no change in plan 03-13 caused it. It is also **local-only** —
-   CI passed this test at that same commit.
+   text, but the session cookie survives, failing the cookie-clearance assertion. Originally
+   recorded here as "proven pre-existing", on the strength of the identical failure reproducing
+   with `src/` and `app/` checked out at this plan's base commit `c063aa7`. **That conclusion was
+   wrong, and the bisect that produced it is the reason:** it restored only `src/` and `app/`,
+   while the defect lived in `playwright.config.ts` — a file the bisect left untouched, so the
+   supposed control and the supposed variable both carried it. A bisect that does not restore the
+   files the change actually touched cannot exonerate that change. It was a regression introduced
+   by this plan, diagnosed and fixed in `8b77c76`; see `03-13-SUMMARY.md` for the mechanism.
 2. **CI: `e2e/columns-reorder.e2e.spec.ts` COLUMN-03, two keyboard cases** — CI run `33095258448`
    at `c063aa7` (the wave-10 merge, this plan's base) is **red**: `moves a column one position by
    keyboard and keeps that order across a reload` and `writes nothing when a lifted column is moved
@@ -148,10 +152,19 @@ cover; recorded, not chased.
    Both **passed locally** in the same run that failed SESSION-01.
 
 The two failure sets being disjoint, and each passing where the other failed, read at the time like
-environment-sensitive timing. That reading was **half wrong**, and the correction is the useful part
-of this record: item 2 was a genuine defect that simply needed the right conditions to surface —
-`--repeat-each=3 --workers=2` — and it had been shipping since Phase 2. "Passes in the other
-environment" is evidence about load, not about correctness. Item 1 alone was environmental.
+environment-sensitive timing. That reading was **wrong on both counts**, and the correction is the
+useful part of this record.
+
+Item 2 was a genuine defect that needed the right conditions to surface — `--repeat-each=3
+--workers=2` — and had been shipping since Phase 2. Item 1 was a genuine defect too, introduced by
+this plan, that needed the opposite conditions: it appears only when `.env.local` is the sole
+supplier of `SESSION_SECRET`, so shell-exporting the values hid it and CI never had the fallback to
+trip over at all.
+
+The shared lesson is that "passes in the other environment" was never evidence of correctness in
+either direction. One bug was invisible locally and only CI saw it; the other was invisible on CI
+and only a local run without a shell prefix saw it. Both were called environmental, and neither
+was.
 
 ---
 
