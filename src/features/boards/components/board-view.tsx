@@ -22,9 +22,11 @@ type Props = {
     board: BoardFull;
     /** Storybook-only staging for the Add Column modal's open state — no real caller passes this. */
     defaultIsAddColumnOpen?: boolean;
+    /** Storybook-only staging — seeds the rename modal open on the column at this index. */
+    defaultRenameColumnTargetIndex?: number;
 };
 
-export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
+export const BoardView = ({ board, defaultIsAddColumnOpen = false, defaultRenameColumnTargetIndex }: Props) => {
     const {
         value: isAddColumnOpen,
         setValue: setIsAddColumnOpen,
@@ -36,7 +38,9 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
      * is retained across opens (mirrors `board-list.tsx`).
      */
     const [openCount, setOpenCount] = useState(0);
-    const [columnBeingRenamed, setColumnBeingRenamed] = useState<ColumnFull | null>(null);
+    const [columnBeingRenamed, setColumnBeingRenamed] = useState<ColumnFull | null>(
+        defaultRenameColumnTargetIndex === undefined ? null : (board.columns[defaultRenameColumnTargetIndex] ?? null),
+    );
     const columnCount = board.columns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
     /* The DERIVED columns, not the raw props — that array is what carries the optimistic name. */
