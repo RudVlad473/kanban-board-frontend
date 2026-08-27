@@ -30,8 +30,15 @@ export const subtaskSchema = z.object({
 export const taskFullSchema = z.object({
     id: z.string(),
     title: z.string(),
-    // The contract declares `description` optional; a task without one is well-formed, not malformed.
-    description: z.string().optional(),
+    /*
+     * The contract declares `description` optional, but the backend sends an explicit `null` for a
+     * task created without one (observed 2026-08-27, plan 03-12) — normalised to the one absent
+     * value, so a consumer never has to handle two spellings of the same thing.
+     */
+    description: z
+        .string()
+        .nullish()
+        .transform((value) => value ?? undefined),
     version: z.number(),
     position: z.number(),
     subtasks: subtaskSchema.array(),

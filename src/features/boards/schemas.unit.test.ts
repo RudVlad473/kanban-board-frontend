@@ -162,6 +162,16 @@ describe("taskFullSchema", () => {
         expect(result.success).toBe(true);
         expect(result.success && result.data.description).toBeUndefined();
     });
+
+    /* Pinned against the backend's own observed answer: it sends `null`, not an absent key (03-12). */
+    it("accepts a task whose description came back as an explicit null, and normalises it away", () => {
+        // Act
+        const result = taskFullSchema.safeParse({ ...createTaskFull(), description: null });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.description).toBeUndefined();
+    });
 });
 
 describe("boardNameSchema", () => {
