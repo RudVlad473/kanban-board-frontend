@@ -258,6 +258,10 @@ None — no new dependency, script entry, or seeding helper was added.
 - **The `description: null` finding generalises.** Every response schema in `src/features/boards/schemas.ts` was written against the OpenAPI document, which declares no field nullable anywhere, while the backend evidently does send `null` for absent optionals. Phase 4 touches far more optional task/subtask fields than this phase did; each is the same latent whole-view-fails-to-load defect. Worth a deliberate pass rather than discovering them one production surface at a time.
 - One backstop remains open (D7): pointer-drag auto-scroll past the fold is deliberately unasserted and needs a human in a real browser.
 
+## Self-Check: PASSED
+
+All 7 claimed files exist on disk; all 5 claimed commits resolve in `git log`.
+
 ---
 *Phase: 03-column-management*
 *Completed: 2026-08-27*
