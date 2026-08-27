@@ -60,6 +60,8 @@ const {
     ServerColumnRemoved,
     ReorderableColumns,
     ReorderInFlight,
+    ReorderedServerOrder,
+    ColumnsOutOfPositionOrder,
 } = composeStories(stories);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
@@ -1141,6 +1143,50 @@ describeForEachDevice({
                 "Fixture Column 3",
                 "Fixture Column 4",
             ]);
+        });
+
+        /*
+         * COLUMN-03's read half: the board arrives already in display order, so the container renders
+         * it verbatim and the optimistic `arrayMove` composes on top of that order (03-14).
+         */
+        it("renders a board the user already reordered in the order the read boundary handed over", async () => {
+            // Arrange & Act
+            await render(<ReorderedServerOrder />);
+
+            // Assert
+            expect(getRenderedColumnNames()).toEqual([
+                "Fixture Column 2",
+                "Fixture Column 3",
+                "Fixture Column 1",
+                "Fixture Column 4",
+            ]);
+        });
+
+        it("moves a column relative to that already-reordered order, not to creation order", async () => {
+            // Arrange
+            await render(<ReorderedServerOrder />);
+
+            // Act
+            await reorderFromKeyboard({ caption: "Fixture Column 2 (2)" });
+
+            // Assert
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 3", "Fixture Column 2", "Fixture Column 1", "Fixture Column 4"]);
+            expect(reorderColumnActionCalls).toHaveLength(1);
+            expect(reorderColumnActionCalls[0].targetPosition).toBe(1);
+        });
+
+        /*
+         * T-03-43: ordering is the read boundary's one job. Given props whose array order and
+         * `position` values disagree, this container must still render the array it was handed.
+         */
+        it("adds no ordering of its own when the props' array order and positions disagree", async () => {
+            // Arrange & Act
+            await render(<ColumnsOutOfPositionOrder />);
+
+            // Assert
+            expect(getRenderedColumnNames()).toEqual(["Fixture Column 1", "Fixture Column 2", "Fixture Column 3"]);
         });
     },
 });
