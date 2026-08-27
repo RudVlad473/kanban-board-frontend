@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { findTsxDeclarationViolations } from "./check-tsx-declarations.mjs";
 
-const relativePath = "src/features/boards/components/example.tsx";
+const relativePath = "src/features/boards/components/example/example.tsx";
 
 describe("findTsxDeclarationViolations", () => {
     it("flags a zod schema declared at top level, naming the identifier", () => {

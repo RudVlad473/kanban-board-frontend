@@ -1,4 +1,4 @@
-import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton";
+import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton/board-view-skeleton";
 
 /*
  * Next wraps this segment in its own `<Suspense>` with this file as the fallback, so the skeleton

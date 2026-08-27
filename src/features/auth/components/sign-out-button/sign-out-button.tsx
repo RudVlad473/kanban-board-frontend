@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button/button";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
-import { signOutAction } from "@/features/auth/actions/sign-out";
+import { signOutAction } from "@/features/auth/actions/sign-out-action";
 
 /**
  * Sign-out is non-destructive (UI-SPEC), no confirmation modal — submits via `useActionState` +

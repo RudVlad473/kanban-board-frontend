@@ -5,10 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useBoolean } from "usehooks-ts";
 
-import { AddBoardModal } from "@/features/boards/components/add-board-modal";
-import { BoardCard } from "@/features/boards/components/board-card";
-import { DeleteBoardConfirm } from "@/features/boards/components/delete-board-confirm";
-import { EditBoardModal } from "@/features/boards/components/edit-board-modal";
+import { AddBoardModal } from "@/features/boards/components/add-board-modal/add-board-modal";
+import { BoardCard } from "@/features/boards/components/board-card/board-card";
+import { DeleteBoardConfirm } from "@/features/boards/components/delete-board-confirm/delete-board-confirm";
+import { EditBoardModal } from "@/features/boards/components/edit-board-modal/edit-board-modal";
 import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
 import { useDeleteBoard } from "@/features/boards/hooks/use-delete-board";
 import { useRenameBoard, type RenameBoardArgs } from "@/features/boards/hooks/use-rename-board";

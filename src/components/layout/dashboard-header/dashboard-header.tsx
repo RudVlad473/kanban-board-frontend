@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { SignOutButton } from "@/features/auth/components/sign-out-button/sign-out-button";
 import { applyRenameOverride, useRenameOverride } from "@/features/boards/hooks/use-rename-board";
 import type { Board } from "@/features/boards/schemas";
 import { toBoardIdFromPath } from "@/lib/core/routing/routes";

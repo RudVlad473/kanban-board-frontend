@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { DashboardHeader } from "@/components/layout/dashboard-header/dashboard-header";
+import { BoardList } from "@/features/boards/components/board-list/board-list";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 import { createBoards } from "@/test-utils/factories/board";
 
-import { BoardList } from "./board-list";
 import { RenameOverrideProvider } from "./rename-override-provider";
 
 /*

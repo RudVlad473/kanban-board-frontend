@@ -4,9 +4,9 @@ import type { PropsWithChildren } from "react";
 
 import { DashboardHeader } from "@/components/layout/dashboard-header/dashboard-header";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
-import { BoardList } from "@/features/boards/components/board-list";
-import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton";
-import { RenameOverrideProvider } from "@/features/boards/components/rename-override-provider";
+import { BoardList } from "@/features/boards/components/board-list/board-list";
+import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton/board-list-skeleton";
+import { RenameOverrideProvider } from "@/features/boards/components/rename-override-provider/rename-override-provider";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { BoardsEmptyState } from "@/features/boards/components/boards-empty-state";
+import { BoardsEmptyState } from "@/features/boards/components/boards-empty-state/boards-empty-state";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";

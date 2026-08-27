@@ -1,5 +1,5 @@
-import { AuthCard } from "@/features/auth/components/auth-card";
-import { SignUpForm } from "@/features/auth/components/sign-up-form";
+import { AuthCard } from "@/features/auth/components/auth-card/auth-card";
+import { SignUpForm } from "@/features/auth/components/sign-up-form/sign-up-form";
 
 const RegisterPage = () => {
     return (

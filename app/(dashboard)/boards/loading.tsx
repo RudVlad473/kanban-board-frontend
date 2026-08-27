@@ -1,4 +1,4 @@
-import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton";
+import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton/board-view-skeleton";
 
 /*
  * Reuses the board skeleton rather than authoring a second one: this route either redirects into a

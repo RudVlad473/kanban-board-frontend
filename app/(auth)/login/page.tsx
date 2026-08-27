@@ -1,5 +1,5 @@
-import { AuthCard } from "@/features/auth/components/auth-card";
-import { SignInForm } from "@/features/auth/components/sign-in-form";
+import { AuthCard } from "@/features/auth/components/auth-card/auth-card";
+import { SignInForm } from "@/features/auth/components/sign-in-form/sign-in-form";
 
 const LoginPage = () => {
     return (

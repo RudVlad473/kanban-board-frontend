@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { BoardList } from "@/features/boards/components/board-list";
+import { BoardList } from "@/features/boards/components/board-list/board-list";
 import { THEME } from "@/lib/core/theme/theme";
 import { createBoards } from "@/test-utils/factories/board";
 

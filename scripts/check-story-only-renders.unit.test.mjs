@@ -6,7 +6,7 @@ import {
     MIGRATION_EXEMPTIONS,
 } from "./check-story-only-renders.mjs";
 
-const relativePath = "src/features/boards/components/add-board-modal.test.tsx";
+const relativePath = "src/features/boards/components/add-board-modal/add-board-modal.test.tsx";
 
 describe("findStoryOnlyRenderViolations", () => {
     it("flags a component imported from a sibling module and used as a JSX element", () => {

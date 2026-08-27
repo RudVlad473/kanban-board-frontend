@@ -10,7 +10,7 @@ import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { cleanup, render } from "vitest-browser-react";
 
-import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton";
+import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton/board-list-skeleton";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";

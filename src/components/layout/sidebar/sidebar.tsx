@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useBoolean } from "usehooks-ts";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
-import { ThemeToggle } from "@/features/theme/components/theme-toggle";
+import { ThemeToggle } from "@/features/theme/components/theme-toggle/theme-toggle";
 import type { Theme } from "@/lib/core/theme/theme";
 
 type Props = {

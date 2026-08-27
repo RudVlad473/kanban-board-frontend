@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { AuthCard } from "./auth-card";
+import { AuthCard } from "@/features/auth/components/auth-card/auth-card";
+
 import { SignInForm } from "./sign-in-form";
 
 /*

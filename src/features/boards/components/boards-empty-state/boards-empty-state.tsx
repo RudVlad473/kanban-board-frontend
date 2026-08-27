@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useBoolean } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
-import { AddBoardModal } from "@/features/boards/components/add-board-modal";
+import { AddBoardModal } from "@/features/boards/components/add-board-modal/add-board-modal";
 import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
 import type { AddBoardSubmitValues } from "@/features/boards/schemas";
 

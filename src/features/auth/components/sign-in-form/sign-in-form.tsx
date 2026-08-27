@@ -10,21 +10,17 @@ import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
-import { signUpAction } from "@/features/auth/actions/sign-up";
+import { signInAction } from "@/features/auth/actions/sign-in-action";
 import { readFormField } from "@/features/auth/model";
-import { REQUIRED_FIELD_MESSAGE, signUpSchema, type SignUpInput } from "@/features/auth/schemas";
+import { REQUIRED_FIELD_MESSAGE, signInSchema, type SignInInput } from "@/features/auth/schemas";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
 
 type Props = {
-    /** Pre-fills field values (a plain React Hook Form `defaultValues` passthrough) — used by the "Filled"/"LongValues" stories, mirroring Dropdown's `defaultOpen`/TextField's `defaultValue` staging pattern (D-25's non-interactive alternative to a play function). */
-    defaultValues?: Partial<SignUpInput>;
-    /** Storybook-only staging — renders Email/Password's required-error state without a real submit. */
+    /** Pre-fills field values (a plain React Hook Form `defaultValues` passthrough) — used by the "Filled" story, mirroring Dropdown's `defaultOpen`/TextField's `defaultValue` staging pattern (D-25's non-interactive alternative to a play function). */
+    defaultValues?: Partial<SignInInput>;
+    /** Storybook-only staging — renders both fields' required-error state without a real submit. */
     forceFieldErrors?: boolean;
-    /** Storybook-only staging — renders the Name field's error state with this message, without a real submit. */
-    forceNameError?: string;
-    /** Storybook-only staging — renders the Password field's error state with this message, without a real submit. */
-    forcePasswordError?: string;
     /** Storybook-only staging — renders the form-level failure banner without a real failed action. */
     forceServerError?: string;
     /** Storybook-only staging — renders the submit control's disabled/loading state without a real pending action. */
@@ -34,49 +30,48 @@ type Props = {
 };
 
 /**
- * React Hook Form + Zod sign-up form composed from the design-system primitives only, submitted
- * via `useActionState` + `signUpAction` so it works pre-hydration — React Hook Form is
- * display-only validation (`mode: "onTouched"`), never gating submission (see 01-33-SUMMARY.md).
+ * React Hook Form + Zod sign-in form submitted via `useActionState` + `signInAction` so it works
+ * pre-hydration; React Hook Form is display-only validation, never gating submission (see
+ * 01-33-SUMMARY.md). A rejected sign-in clears the password field, not the email.
  */
-export const SignUpForm = ({
+export const SignInForm = ({
     defaultValues,
     forceFieldErrors = false,
-    forceNameError,
-    forcePasswordError,
     forceServerError,
     forceSubmitting = false,
     defaultPasswordRevealed = false,
 }: Props) => {
     const { value: isPasswordRevealed, toggle: togglePasswordRevealed } = useBoolean(defaultPasswordRevealed);
-    const [state, dispatch, isActionPending] = useActionState(signUpAction, AUTH_ACTION_IDLE);
+    const [state, dispatch, isActionPending] = useActionState(signInAction, AUTH_ACTION_IDLE);
     const {
         register,
+        resetField,
         setValue,
         formState: { errors },
-    } = useForm<SignUpInput>({
-        resolver: zodResolver(signUpSchema),
+    } = useForm<SignInInput>({
+        resolver: zodResolver(signInSchema),
         mode: "onTouched",
         defaultValues,
     });
 
     /*
      * React's `requestFormReset` clears every uncontrolled field once the action settles
-     * (progressive-enhancement default) — sign-up restores every field as submitted (no deliberate
-     * clear, unlike sign-in's password). `null` until the first submission so this never fires on mount.
+     * (progressive-enhancement default) — captured here so it can be selectively restored below;
+     * `null` until the first real submission so the effect never fires on mount.
      */
-    const lastSubmittedRef = useRef<{ email: string; displayName: string; password: string } | null>(null);
+    const lastSubmittedRef = useRef<{ email: string; password: string } | null>(null);
     const formAction = (formData: FormData) => {
         lastSubmittedRef.current = {
             email: readFormField({ formData, key: "email" }),
-            displayName: readFormField({ formData, key: "displayName" }),
             password: readFormField({ formData, key: "password" }),
         };
         dispatch(formData);
     };
 
     /*
-     * Keyed on `isActionPending`, not `state` — `useActionState`'s `Object.is` bailout can skip a
-     * reference-equal resolution (e.g. tests reusing the shared `AUTH_ACTION_IDLE` constant).
+     * Restores email always, clears password on error instead — undoes React's own field reset
+     * once the action settles. Keyed on `isActionPending`, not `state`, since `useActionState`'s
+     * `Object.is` bailout can skip a reference-equal resolution (e.g. tests reusing `AUTH_ACTION_IDLE`).
      */
     useEffect(() => {
         if (isActionPending) {
@@ -89,9 +84,12 @@ export const SignUpForm = ({
         }
 
         setValue("email", submitted.email);
-        setValue("displayName", submitted.displayName);
-        setValue("password", submitted.password);
-    }, [isActionPending, setValue]);
+        if (state.status === RESULT_STATUS.ERROR) {
+            resetField("password");
+        } else {
+            setValue("password", submitted.password);
+        }
+    }, [isActionPending, state, resetField, setValue]);
 
     const isPending = forceSubmitting || isActionPending;
     const serverErrorMessage = forceServerError ?? (state.status === RESULT_STATUS.ERROR ? state.message : undefined);
@@ -102,14 +100,8 @@ export const SignUpForm = ({
      */
     const emailErrorMessage =
         errors.email?.message ?? (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.email : undefined);
-    const nameErrorMessage =
-        forceNameError ??
-        errors.displayName?.message ??
-        (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.displayName : undefined);
     const passwordErrorMessage =
-        forcePasswordError ??
-        errors.password?.message ??
-        (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.password : undefined);
+        errors.password?.message ?? (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.password : undefined);
 
     return (
         <form noValidate action={formAction} className="flex flex-col gap-4">
@@ -120,16 +112,6 @@ export const SignUpForm = ({
                 hasError={forceFieldErrors || Boolean(emailErrorMessage)}
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : emailErrorMessage}
                 {...register("email")}
-            />
-
-            <TextField
-                label="Name"
-                type="text"
-                description="Optional"
-                isLoading={isPending}
-                hasError={Boolean(nameErrorMessage)}
-                errorMessage={nameErrorMessage}
-                {...register("displayName")}
             />
 
             <TextField
@@ -168,19 +150,19 @@ export const SignUpForm = ({
             ) : null}
 
             <Button type="submit" variant="primary" isDisabled={isPending} isLoading={isPending}>
-                Create Account
+                Sign In
             </Button>
 
             <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
                 {/*
-                 * A plain anchor, not next/link's `Link` — auth issues an httpOnly cookie (ADR tech/0001),
-                 * so router state isn't worth preserving; `next/link` needs `process.env`, unset in Vitest tests.
+                 * A plain anchor, not next/link's `Link` — see sign-up-form.tsx's identical comment
+                 * for the rationale.
                  */}
-                {"Already have an account? "}
+                {"Don't have an account? "}
 
                 {/* eslint-disable-next-line no-restricted-syntax -- see comment above: intentional full navigation, next/link unusable in this project's test environment */}
-                <a href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">
-                    Sign In
+                <a href={ROUTE.SIGN_UP} className="text-bg-primary hover:text-bg-primary-hover">
+                    Create Account
                 </a>
             </p>
         </form>
