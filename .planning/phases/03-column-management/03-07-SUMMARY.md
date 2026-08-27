@@ -22,8 +22,8 @@ affects: [03-08, 03-09, 03-10, 03-11]
 
 actuals:
   tokens: 8656
-  tasks: 2
-  commits: 3
+  tasks: 3
+  commits: 5
 
 tech-stack:
   added: []
@@ -68,8 +68,10 @@ coverage:
       - kind: a11y
         ref: "pnpm test:a11y — 163 passed across 28 files, no axe violation on the four new stories"
         status: pass
-    human_judgment: true
-    rationale: "Presence, the one-CTA/no-ghost-column exclusivity, and non-full-width are all asserted against real layout in real Chromium. Whether the button READS as the PDF p2 treatment at both themes is a visual judgement nothing here has looked at — no Playwright MCP tool resolves in this executor (see Outstanding)."
+      - kind: automated_ui
+        ref: "Checkpoint walkthrough step 1 (headless Playwright, running app, light and dark) — CTA 143px against a 980px main (14.6%, auto-width), centred to 0px offset, accent rgb(99,95,199), no ghost column in this state"
+        status: pass
+    human_judgment: false
   - id: D2
     description: "The two CTA labels stay distinct and PDF-verbatim: `+ Add New Column` in the empty state, `+ New Column` on the ghost column, each owned by its own component"
     requirement: "COLUMN-01"
@@ -102,8 +104,11 @@ coverage:
       - kind: browser
         ref: "src/features/boards/components/board-view.test.tsx#BoardView > still renders the generic create-failure copy for a failure that is not a duplicate"
         status: pass
-    human_judgment: true
-    rationale: "Driven end to end against the aliased stub with DUPLICATE queued, so the wiring is proved. The branch is UNREACHABLE against the real backend — 03-BACKEND-FACTS R5 observed a duplicate column name accepted with 201. See Known Stubs; the checkpoint asks the human to confirm the refutation from the running app."
+      - kind: automated_ui
+        ref: "Checkpoint walkthrough step 5 (running app, real nonprod backend) — submitting a duplicate name SUCCEEDED: 10 -> 11 columns, two identically named, modal closed, no inline error"
+        status: pass
+    human_judgment: false
+    rationale: "Wiring proved through the aliased stub; the branch itself is CONFIRMED UNREACHABLE against the real backend, exactly as 03-BACKEND-FACTS R5 predicts. Recorded under Known Stubs as client-only advisory UX with no server backstop. `status: pass` records that the observation matched the prediction, not that a duplicate is refused."
   - id: D5
     description: "D-04: a successful create scrolls the column row to bring the end of the row — and so the new column — into view; a failed create does not"
     requirement: "COLUMN-01"
@@ -114,8 +119,11 @@ coverage:
       - kind: browser
         ref: "src/features/boards/components/board-view.test.tsx#BoardView > leaves the column row where it was when the create fails"
         status: pass
-    human_judgment: true
-    rationale: "Real scrollLeft movement in real Chromium proves the FIRST of the two passes. The second pass — the one that fires once the action's own refresh() grows the row — cannot be exercised here, because a composed story's board prop is static and no test can grow it. Only the running app proves the new column ends up visible; the checkpoint asks for exactly that."
+      - kind: automated_ui
+        ref: "Checkpoint walkthrough step 3 (running app) — creating a 9th column moved scrollLeft 0 -> 2060 and the new column landed fully in view; settles 24px short of max, which is the row's own p-6"
+        status: pass
+    human_judgment: false
+    rationale: "The tests prove only the FIRST of the two passes — a composed story's board prop is static, so no test here can grow the column count. The second pass, which fires once the action's own refresh() grows the row, was observed in the running app: it is what carried scrollLeft to 2060 and put the new column in view."
   - id: D6
     description: "D-04's motion is one CSS declaration: the scroll call names no motion, and the row carries the smooth-scroll utility with its reduced-motion opt-out"
     verification:
@@ -125,8 +133,11 @@ coverage:
       - kind: other
         ref: "grep -c 'behavior' board-view.tsx = 0; grep -c 'motion-reduce:' board-view.tsx = 1, on the horizontal scroll row"
         status: pass
-    human_judgment: true
-    rationale: "That the declaration is `smooth` is read off real computed style. That a reduced-motion PREFERENCE collapses it to a jump is asserted structurally (the `motion-reduce:scroll-auto` class), not by emulating the media query — Vitest Browser Mode exposes no reduced-motion emulation here. The checkpoint asks the human to toggle the OS setting."
+      - kind: automated_ui
+        ref: "Checkpoint walkthrough step 3 under prefers-reduced-motion: reduce (running app) — computed scroll-behavior flipped smooth -> auto and the scroll had already jumped the full 2084px at 150ms; the new column still ended up in view"
+        status: pass
+    human_judgment: false
+    rationale: "The tests read `smooth` off real computed style but assert the reduced-motion opt-out structurally only (the class), because Vitest Browser Mode exposes no reduced-motion emulation. The preference was exercised for real in the running app: one CSS declaration governs both, with no JavaScript branch."
   - id: D7
     description: "D-03/D-05: exactly one neutral informational toast on the create that takes the board to nine columns; none at eight, none at ten"
     verification:
@@ -152,9 +163,12 @@ coverage:
     human_judgment: false
   - id: D9
     description: "The nudge copy states a fact and stops — no scolding, no judgement, no undo offer (the plan's two minted prohibitions)"
-    verification: []
+    verification:
+      - kind: manual_procedural
+        ref: "Checkpoint walkthrough step 4 — the user read the raised toast in the running app and approved its tone"
+        status: pass
     human_judgment: true
-    rationale: "Both prohibitions are `verification: judgment` in the plan itself. The copy was authored to the plan's exact wording; whether it READS as neutral rather than as the app telling the user off is precisely what the checkpoint asks a human to judge."
+    rationale: "Both prohibitions are `verification: judgment` in the plan itself, and tone is not assertable. The user rendered that judgment at the 03-07 checkpoint and approved the copy; kept `true` because any later re-wording needs the same human read, not a passing test."
   - id: D10
     description: "T-03-03: the duplicate sentence is authored client-side, selected by a mapped RESULT_STATUS discriminant — no upstream detail string reaches the field"
     verification:
@@ -185,12 +199,12 @@ status: complete
 
 ## Performance
 
-- **Duration:** 22 min
+- **Duration:** 22 min of execution, plus the checkpoint walkthrough run separately by the orchestrating session
 - **Started:** 2026-08-27T10:12:00Z
-- **Completed:** 2026-08-27T10:34:00Z
-- **Tasks:** 2 executed, 1 human checkpoint outstanding
+- **Completed:** 2026-08-27T10:34:00Z (checkpoint approved after that)
+- **Tasks:** 3 (2 executed, 1 human checkpoint — approved)
 - **Files modified:** 5
-- **Commits:** 3
+- **Commits:** 5
 
 ## Accomplishments
 
@@ -208,7 +222,7 @@ status: complete
 2. **Task 2: Post-create auto-scroll (D-04) and the column-count nudge (D-03/D-05)** — `f4a23fc` (feat)
 3. **Auto-width regression guard for the empty-state CTA** — `9f3fe2d` (test)
 
-_Task 3 is a `checkpoint:human-verify` gate and is outstanding — see Outstanding._
+_Task 3 is a `checkpoint:human-verify` gate — **approved**. It produced no code commit; its record is the plan-metadata commits `5fdefa6` and this one._
 
 ## Files Created/Modified
 
@@ -280,13 +294,15 @@ Consequences, as this plan handled them:
 - **Nothing was wired to expect a `DUPLICATE_RESOURCE` response.** No new mapping, no new branch, no client-side pre-check against the board's existing names. The entry is selected only if some upstream response ever maps to `RESULT_STATUS.DUPLICATE`.
 - **It ships as client-side-only advisory UX with no server backstop, and is unreachable against the real backend today.** Its test drives it through the aliased stub, which is the only place `DUPLICATE` can currently originate. A duplicate name can still reach a board via any path — including this one — and two clients racing could produce duplicates regardless.
 
+**Confirmed in the running app at the Task 3 checkpoint**, not just from the probe record: submitting a name already used on the board **succeeded** — 10 → 11 columns, two identically named, modal closed, no inline error. The branch never fires.
+
 This is a recorded, expected condition, not a defect found during execution.
 
 ## Known Stubs
 
 | Stub | File | Line | Reason |
 |------|------|------|--------|
-| `DUPLICATE` failure copy is dead against the real backend | `src/features/boards/hooks/use-create-column.ts` | 22 | 03-BACKEND-FACTS R5 observed the backend ACCEPTING duplicate column names (201). Kept deliberately per the plan's `verification: backstop` statement and UI-SPEC's Copywriting Contract row; advisory only, no server enforcement behind it. Reachable only through the aliased stub. |
+| `DUPLICATE` failure copy is dead against the real backend | `src/features/boards/hooks/use-create-column.ts` | 22 | 03-BACKEND-FACTS R5 observed the backend ACCEPTING duplicate column names (201), and the Task 3 checkpoint re-confirmed it in the running app (10 → 11 columns, two identically named, no inline error). Kept deliberately per the plan's `verification: backstop` statement and UI-SPEC's Copywriting Contract row; advisory only, no server enforcement behind it. Reachable only through the aliased stub. |
 
 No placeholder value, no dead control and no skipped test was introduced. The zero-columns branch's deliberate omission of the ghost column is asserted, not stubbed.
 
@@ -295,6 +311,7 @@ No placeholder value, no dead control and no skipped test was introduced. The ze
 - **The worktree started with no `node_modules` and no Next.js route types** — the same fresh-worktree artifact plans 03-04/03-05 recorded. `pnpm install --frozen-lockfile` and `pnpm exec next typegen` were both needed before `tsc --noEmit` could run. `.env.local` was copied in per `CLAUDE.md`.
 - **The raised toast has `role="dialog"` too.** The nudge test's first draft asserted the modal had closed via `queryByRole("dialog")` and failed — it was finding the toast. Re-scoped to the modal's `Add New Column` heading; noted here because the same trap will catch 03-08/03-09's delete and rename toasts.
 - **`pnpm test:browser -- <file>` still does not filter** (03-05 recorded this). `pnpm exec vitest run --project browser <file>` was used for the per-task loops.
+- **`next typegen` and `next build` write different paths into the tracked `next-env.d.ts`** — `./.next/dev/types/…` versus `./.next/types/…`. Running both in one session leaves that file dirty for reasons wholly unrelated to the plan. Restored to `HEAD` rather than committed, per the scope boundary; worth knowing before a future executor stages it by reflex.
 
 ## TDD Gate Compliance
 
@@ -320,19 +337,36 @@ Both tasks are `tdd="true"`; both RED gates were **run and observed failing** be
 | `pnpm format:check` | exit 0 |
 | `pnpm routes:check`, `handlers:check`, `stories:check`, `renders:check`, `tsx:check`, `comments:check` | all pass |
 | `pnpm build` | compiles, all 8 routes prerender |
-| Human checkpoint (Task 3) | **outstanding — see Outstanding** |
+| Human checkpoint (Task 3) | **approved** — all five observations confirmed against the running app; zero console errors, zero dev-log errors |
 
-## Outstanding — needs human eyes
+## Checkpoint (Task 3): APPROVED
 
-**Task 3's `checkpoint:human-verify` has NOT been driven through the running app.** The plan's `what-built` instructs the executor to start `pnpm dev` and drive all five observations through the headless `mcp__playwright__*` tools first, as `CLAUDE.md` requires. **No Playwright MCP tool resolves in this executor's tool set** — neither `mcp__playwright__*` nor the plugin variant. Project-scoped `.mcp.json` servers are not inherited by worktree-isolated subagents; every wave 2-4 executor in this phase hit the same wall. Writing a throwaway browser script instead is what the same `CLAUDE.md` instruction forbids, so this was **impossible here rather than skipped**.
+**Not run by this executor.** The plan directs the executor to drive all five observations through the headless `mcp__playwright__*` tools before handing over, as `CLAUDE.md` requires. **No Playwright MCP tool resolved in this executor's tool set** — neither `mcp__playwright__*` nor the plugin variant, because project-scoped `.mcp.json` servers are not inherited by worktree-isolated subagents (every wave 2-4 executor in this phase hit the same wall). Writing a throwaway browser script instead is what the same instruction forbids, so it was **impossible here rather than skipped**, and the executor handed the gate over saying so.
 
-Everything in the Verification Run above is test-, type-, lint- and build-level evidence, gathered in real Chromium through Vitest Browser Mode but never against the running application. The five checkpoint observations, and what is and is not already proved:
+**The orchestrating main session then ran the walkthrough** against the dev server on this branch, the real nonprod backend, and headless Playwright. All five observations confirmed; **zero console errors, zero dev-log errors**.
 
-1. **Empty board** — the heading, the CTA's presence, its exclusivity against the ghost column, and its non-full-width sizing are all asserted against real layout. **Unproved:** whether it reads as PDF p2 at both themes.
-2. **Ghost column** — unchanged by this plan; 03-05 left its gradient/label/hover-accent appearance outstanding for the same reason.
-3. **Auto-scroll (D-04)** — the first pass moves real `scrollLeft` and `scroll-behavior: smooth` is read off real computed style. **Unproved, and only the running app can prove it:** the second pass, which fires once `refresh()` grows the row and is the one that actually brings the *new* column into view — a composed story's `board` prop is static, so no test here can grow the column count. Also unproved: that an OS reduce-motion preference collapses the scroll to a jump (asserted structurally via the `motion-reduce:scroll-auto` class only).
-4. **Nudge (D-03/D-05)** — the count transitions, the single toast, its exact copy, its neutral treatment and its non-blocking nature are all asserted. **Unproved:** the copy's *tone* — both prohibitions the plan minted around it are `verification: judgment`, so a human reading it is the only check that exists.
-5. **Duplicate name** — the wiring is proved through the stub. **Expected to be unreachable in the running app:** R5 says the backend will accept the duplicate and create a second column. Confirming that from the app is worth doing, because it converts a documented probe result into an observed product behaviour.
+| # | Observation | Result |
+|---|-------------|--------|
+| 1 | Empty board | **CONFIRMED**, light and dark. Heading plus `+ Add New Column` at **143px against a 980px main** — 14.6% of the width, so genuinely auto-width, not full-width — centred to a 0px offset, accent `rgb(99,95,199)`. No ghost column in this state. |
+| 2 | Ghost column | **CONFIRMED** present as the last child of the row on a populated board. |
+| 3 | Auto-scroll (D-04) | **CONFIRMED, including the second pass no test here could reach.** Creating a 9th column moved `scrollLeft` **0 → 2060** and the new column landed fully in view. It settles 24px short of max, which is the row's own `p-6` — expected, not a shortfall. |
+| 3b | Reduced motion | **CONFIRMED.** Under `prefers-reduced-motion: reduce`, computed `scroll-behavior` flipped **smooth → auto** and the scroll had already jumped the full 2084px at 150ms: it jumps rather than animates, and the column still ends up in view. One CSS declaration governs both, with no JavaScript branch — exactly what D-04's `must_haves` truth requires. |
+| 4 | Nudge (D-03/D-05) | **CONFIRMED.** 8 → 9 raised exactly one toast with the exact copy in the neutral treatment, the column was created and the modal closed; 7 → 8 silent; 9 → 10 silent. **Copy tone approved by the user** — the one thing no assertion could settle. |
+| 5 | Duplicate name | **CONFIRMED UNREACHABLE**, exactly as R5 predicts. Submitting a duplicate name succeeded: 10 → 11 columns, two identically named, modal closed, no inline error. |
+
+Observation 3 is the one that matters most for this plan's confidence: the second scroll pass is unreachable from a composed-story test (the `board` prop is static, so nothing can grow the column count), and it is the pass that actually brings the new column into view. It is now observed rather than argued.
+
+## Out-of-scope UI findings (deferred, NOT fixed here)
+
+The user raised three findings while reviewing the running app. **None is in 03-07's scope and none was touched by this plan** — the orchestrator is deferring all three to their own plan:
+
+1. The sidebar's `+ Create New Board` is pinned to the bottom instead of flowing under the board list.
+2. The theme-toggle container's corner radius reads too round.
+3. The ghost column's corner radius reads too round — `rounded-lg` (28px) where the mock wants ~6px.
+
+Finding 3 touches `add-column-placeholder.tsx`, which this plan modified (for the `ref` prop only), so it is worth being precise about who owns it: the 28px radius is a **known, deliberate deviation recorded in `03-UI-SPEC.md`** under "The `+ New Column` ghost column", chosen so the placeholder matches every other shipped surface rather than becoming the only one with its own radius. Revisiting it is a design-contract change, not a 03-07 bug.
+
+**Constraint on whichever plan takes findings 2 and 3:** the fix must reuse the closest **existing** radius token, `--radius-sm` (4px). **The user has ruled out minting a new token** — so `~6px` is to be met with the 4px tier already in `tokens.css`, not with a new `--radius-*` entry and the Phase 1 token-pipeline plus visual-regression re-baseline that would drag in.
 
 ## User Setup Required
 
@@ -345,10 +379,11 @@ None — no external service configuration required.
 - **The section's `tabIndex={0}` still stands**, unchanged and still 03-08's to remove alongside the header kebab. This plan touched neither the section nor `ColumnHeader`.
 - **`AddColumnPlaceholder` now takes an optional `ref`.** 03-10 will need the same row to auto-scroll during a drag near its edges; the ref and the CSS declaration are already in place.
 - **The toast-is-a-`dialog` trap is documented above** — 03-08's rename and 03-09's delete both raise toasts over a modal and will hit it.
+- **Three out-of-scope UI findings were raised at this checkpoint and deliberately left alone** (sidebar CTA placement, and two corner radii). They are the orchestrator's to schedule; see "Out-of-scope UI findings" above, including the user's ruling that the radius fix reuse `--radius-sm` rather than mint a token.
 
 ## Self-Check: PASSED
 
-All 5 modified files exist on disk; all three task commits (`63977eb`, `f4a23fc`, `9f3fe2d`) resolve in `git log`; `git diff --diff-filter=D` across all three reports no deletions; the working tree is clean and no untracked file was left behind.
+All 5 modified files exist on disk; all three task commits (`63977eb`, `f4a23fc`, `9f3fe2d`) resolve in `git log`; `git diff --diff-filter=D` across all three reports no deletions; the working tree is clean and no untracked file was left behind. `STATE.md` and `ROADMAP.md` are untouched, as parallel-mode execution requires. No source file changed after the checkpoint — this revision is documentation only.
 
 ---
 
