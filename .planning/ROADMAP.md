@@ -402,9 +402,11 @@ removing columns.
 
   4. User can delete a column and it disappears from the board view along with any tasks and
      subtasks it contained.
-**Plans**: 10/13 plans executed
+**Plans**: 11/14 plans executed
 
 Plans:
+
+- [x] 03-14-PLAN.md
 
 Wave 1 resolves everything this phase could not know at research time — the nonprod database was
 unreachable for the whole research session, so every reorder claim was an assumption, and dnd-kit had
@@ -492,5 +494,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
-| 3. Column Management | 10/13 | In Progress|  |
+| 3. Column Management | 11/14 | In Progress|  |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
