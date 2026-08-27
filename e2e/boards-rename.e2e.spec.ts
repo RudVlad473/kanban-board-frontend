@@ -20,10 +20,11 @@ test.describe("BOARD-04: rename a board", () => {
         // Arrange — one curl-seeded account with two boards; a second account would exceed the 2-session cap.
         const account = seedAccount();
         const suffix = randomUUID().slice(0, 8);
-        const originalName = `E2E Rename ${suffix}`;
+        const seededNames = [`E2E Rename ${suffix}`, `E2E Other ${suffix}`];
         const renamedName = `E2E Renamed ${suffix}`;
-        seedBoard({ account, name: originalName });
-        seedBoard({ account, name: `E2E Other ${suffix}` });
+        seededNames.forEach((name) => {
+            seedBoard({ account, name });
+        });
 
         // Arrange — sign in through the real form.
         await page.goto(ROUTE.SIGN_IN);
@@ -32,7 +33,16 @@ test.describe("BOARD-04: rename a board", () => {
         await page.getByRole("button", { name: "Sign In" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
 
-        // Act — rename the first board from its own row's overflow menu.
+        /*
+         * Rename whichever board the app auto-selected: the header `h1` names the OPEN board, so
+         * the rename assertion only holds for that one, and board order is the backend's to choose
+         * until it supplies createdAt (todos/2026-08-24-sort-boards-by-createdat-once-backend...).
+         */
+        const originalName = await page.getByRole("heading", { level: 1 }).innerText();
+        expect(seededNames).toContain(originalName);
+        const untouchedName = seededNames.find((name) => name !== originalName);
+
+        // Act — rename the open board from its own row's overflow menu.
         const sidebar = page.getByRole("navigation", { name: "Boards" });
         await sidebar.getByRole("button", { name: `Board actions for ${originalName}` }).click();
         await page.getByRole("menuitem", { name: "Edit Board" }).click();
@@ -51,6 +61,6 @@ test.describe("BOARD-04: rename a board", () => {
         await expect(sidebar.getByRole("link", { name: renamedName })).toBeVisible();
         await expect(page.getByRole("heading", { level: 1, name: renamedName })).toBeVisible();
         await expect(sidebar.getByRole("link", { name: originalName })).toBeHidden();
-        await expect(sidebar.getByRole("link", { name: `E2E Other ${suffix}` })).toBeVisible();
+        await expect(sidebar.getByRole("link", { name: untouchedName })).toBeVisible();
     });
 });

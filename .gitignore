@@ -40,6 +40,12 @@ storybook-static/
 # GSD / harness runtime state (not meant to be committed)
 .gsd/
 .claude/worktrees/
+# Machine-local Claude Code state, never shared. Listed file-by-file rather than ignoring all of
+# .claude/ so genuinely shared config (skills, agents) stays trackable if it is ever added.
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+# GSD's per-session phase lock — holds a pid, meaningless on another machine.
+.planning/milestone.lock
 
 # Browser-automation MCP scratch output (console logs, screenshots)
 .playwright-mcp/

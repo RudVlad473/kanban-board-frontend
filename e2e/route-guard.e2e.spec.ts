@@ -48,8 +48,12 @@ test.describe("AUTH-03: route guard", () => {
         // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
         await expect(page.getByRole("navigation", { name: PROTECTED_LANDMARK })).toHaveCount(0);
-        // Nor the board view itself — its columns are the only `region`s this app renders.
-        await expect(page.getByRole("region")).toHaveCount(0);
+        /*
+         * The board's columns are the only `region`s inside `main`. Scoped to `main` because the
+         * root layout's toast viewport is also a `region` ("Notifications") on every page, sign-in
+         * included — an unscoped count asserts 0 against a page that always has at least 1.
+         */
+        await expect(page.getByRole("main").getByRole("region")).toHaveCount(0);
     });
 
     test("redirects a signed-in visitor away from the sign-in route to the board list", async ({ page }) => {
