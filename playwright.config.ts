@@ -1,24 +1,8 @@
-import { existsSync, readFileSync } from "node:fs";
-import { parseEnv } from "node:util";
-
 import { defineConfig, devices, type PlaywrightTestConfig } from "@playwright/test";
 
 import { E2E_CONFIG } from "./e2e/test-env";
 
-/*
- * SETUP.md and `e2e/global-setup.ts` both promise `NONPROD_RESET_TOKEN` may live in `.env.local`,
- * but nothing loaded that file into this process, so the promise was false off-CI (03-13).
- * An already-exported value wins, so CI's own secrets are never overwritten.
- */
-const loadLocalEnvFile = () => {
-    if (!existsSync(".env.local")) return;
-
-    for (const [key, value] of Object.entries(parseEnv(readFileSync(".env.local", "utf8")))) {
-        process.env[key] ??= value;
-    }
-};
-
-loadLocalEnvFile();
+/* `.env.local` is loaded by `e2e/test-env.ts`, not here — doing it here ran too late (see its note). */
 
 const PORT = 6007;
 
