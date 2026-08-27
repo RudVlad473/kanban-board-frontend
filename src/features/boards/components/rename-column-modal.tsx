@@ -1,0 +1,77 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+
+import { Button } from "@/components/ui/button/button";
+import { Modal } from "@/components/ui/modal/modal";
+import { TextField } from "@/components/ui/text-field/text-field";
+import { renameColumnFormSchema, type ColumnFull, type RenameColumnFormValues } from "@/features/boards/schemas";
+
+type Props = {
+    boardId: string;
+    column: ColumnFull;
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+    onSubmit: (values: { boardId: string; columnId: string; name: string; version: number }) => void;
+    /** Storybook-only staging — renders the column-name field's error state without a real submit. */
+    forceNameError?: string;
+};
+
+/**
+ * COLUMN-02's rename form. Takes no loading state at all: U-05 makes the rename optimistic, so the
+ * new name is already on screen when this closes and a later failure surfaces as rollback plus a
+ * toast (03-UI-SPEC loading/Rename-submit). `onSubmit` is a prop so its tests need no module mock.
+ */
+export const RenameColumnModal = ({ boardId, column, isOpen, onOpenChange, onSubmit, forceNameError }: Props) => {
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<RenameColumnFormValues>({
+        resolver: zodResolver(renameColumnFormSchema),
+        mode: "onTouched",
+        defaultValues: { name: column.name },
+    });
+
+    const nameErrorMessage = forceNameError ?? errors.name?.message;
+
+    return (
+        <Modal.Root isOpen={isOpen} onOpenChange={onOpenChange}>
+            <Modal.Content>
+                <form
+                    noValidate
+                    onSubmit={(event) => {
+                        /*
+                         * Wrapped rather than passed straight through: React Hook Form calls its
+                         * callback with `(values, event)`, and this component's contract is values.
+                         */
+                        void handleSubmit((values) => {
+                            /* The version comes from the RSC-supplied column, never from typed input (T-03-04). */
+                            onSubmit({ boardId, columnId: column.id, name: values.name, version: column.version });
+                        })(event);
+                    }}
+                    className="flex flex-col gap-6"
+                >
+                    <Modal.Title>Rename Column</Modal.Title>
+
+                    <TextField
+                        label="Column Name"
+                        type="text"
+                        placeholder="e.g. Todo"
+                        hasError={Boolean(nameErrorMessage)}
+                        errorMessage={nameErrorMessage}
+                        {...register("name")}
+                    />
+
+                    {/* No error banner of its own — U-05 makes a failed rename a toast raised by the hook. */}
+                    <Modal.Footer>
+                        <Button type="submit" variant="primary" className="w-full">
+                            Save Changes
+                        </Button>
+                    </Modal.Footer>
+                </form>
+            </Modal.Content>
+        </Modal.Root>
+    );
+};

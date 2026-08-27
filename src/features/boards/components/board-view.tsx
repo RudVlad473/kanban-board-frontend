@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button/button";
 import { AddColumnModal } from "@/features/boards/components/add-column-modal";
 import { AddColumnPlaceholder } from "@/features/boards/components/add-column-placeholder";
 import { ColumnHeader } from "@/features/boards/components/column-header";
+import { RenameColumnModal } from "@/features/boards/components/rename-column-modal";
 import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
+import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";
 import { toSubtaskSummary } from "@/features/boards/model";
-import type { BoardFull } from "@/features/boards/schemas";
+import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 
 /*
  * COLUMN-01 makes this the board's client container: it owns the Add Column modal's open state and
@@ -34,8 +36,11 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
      * is retained across opens (mirrors `board-list.tsx`).
      */
     const [openCount, setOpenCount] = useState(0);
+    const [columnBeingRenamed, setColumnBeingRenamed] = useState<ColumnFull | null>(null);
     const columnCount = board.columns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
+    /* The DERIVED columns, not the raw props — that array is what carries the optimistic name. */
+    const { renameColumn, columns: renderedColumns } = useRenameColumn({ columns: board.columns });
 
     const ghostColumnRef = useRef<HTMLButtonElement>(null);
     /** The column count when a create landed — a ref, so retiring the request costs no render. */
@@ -81,6 +86,16 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
         });
     };
 
+    /*
+     * U-05: closed on submit, not on settle — `renameColumn` applied the optimistic override
+     * synchronously before this line runs, so the header already shows the new name underneath. A
+     * later failure still reverts it and raises the hook's own toast, modal or no modal.
+     */
+    const handleRenameSubmit = (values: RenameColumnArgs): void => {
+        void renameColumn(values);
+        setColumnBeingRenamed(null);
+    };
+
     const openAddColumn = (): void => {
         handleOpenChange(true);
     };
@@ -108,19 +123,18 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
                  * wrapping. The one declaration governing D-04's motion and its opt-out lives here.
                  */
                 <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto scroll-smooth bg-bg-app p-6 motion-reduce:scroll-auto">
-                    {board.columns.map((column) => (
+                    {renderedColumns.map((column) => (
                         /*
-                         * Its own vertical scroll region, so one long column never moves the rest — and
-                         * focusable only because nothing inside it is yet (axe scrollable-region-focusable);
-                         * plan 03-08's header kebab ends that condition and takes this attribute with it.
+                         * Its own vertical scroll region, so one long column never moves the rest. No
+                         * tab stop of its own: the header kebab is real focusable content, which is what
+                         * axe's scrollable-region-focusable rule actually asks for (03-RESEARCH Pitfall 10).
                          */
                         <section
                             key={column.id}
-                            tabIndex={0}
                             aria-labelledby={`board-column-${column.id}`}
-                            className="flex w-70 shrink-0 flex-col overflow-y-auto rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring-focus"
+                            className="flex w-70 shrink-0 flex-col overflow-y-auto rounded-sm"
                         >
-                            <ColumnHeader column={column} />
+                            <ColumnHeader column={column} onRename={setColumnBeingRenamed} />
 
                             <ul className="flex flex-col gap-4">
                                 {column.tasks.map((task) => (
@@ -154,6 +168,22 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
                 isPending={isPending}
                 errorMessage={errorMessage}
             />
+
+            {columnBeingRenamed === null ? null : (
+                <RenameColumnModal
+                    /* Keyed on the target column, so reopening on another header seeds that column's name. */
+                    key={columnBeingRenamed.id}
+                    boardId={board.id}
+                    column={columnBeingRenamed}
+                    isOpen
+                    onOpenChange={(nextIsOpen) => {
+                        if (!nextIsOpen) {
+                            setColumnBeingRenamed(null);
+                        }
+                    }}
+                    onSubmit={handleRenameSubmit}
+                />
+            )}
         </>
     );
 };

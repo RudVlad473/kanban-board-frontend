@@ -338,9 +338,10 @@ describeForEachDevice({
             const ghostColumn = screen.getByRole("button", { name: "+ New Column" });
             const rowChildren = Array.from(ghostColumn.parentElement?.children ?? []);
             expect(rowChildren.at(-1)).toBe(ghostColumn);
-            expect(rowChildren.slice(0, -1).map((child) => child.firstElementChild?.tagName)).toEqual(
-                Array(4).fill("H2"),
-            );
+            /* The header row is the section's first child; the heading is the first thing inside it. */
+            expect(
+                rowChildren.slice(0, -1).map((child) => child.firstElementChild?.firstElementChild?.tagName),
+            ).toEqual(Array(4).fill("H2"));
             expect(document.querySelectorAll('section h2 [aria-hidden="true"]')).toHaveLength(4);
         });
 
