@@ -9,6 +9,7 @@ import {
     COLUMN_DOT_TOKENS,
     createEmptyColumnRows,
     DEFAULT_COLUMN_ROW_COUNT,
+    isColumnDestinationVisible,
     removeBoard,
     reorderColumns,
     resolveDestinationAfterDelete,
@@ -367,6 +368,53 @@ describe("sortColumnsByPosition", () => {
     it("returns an empty array for a board holding no columns at all", () => {
         // Act & Assert
         expect(sortColumnsByPosition([])).toEqual([]);
+    });
+});
+
+/*
+ * The predicate that decides whether dnd-kit's own keyboard scroll is warranted. Its boundaries are
+ * what separate "the destination is on screen already" from "past the fold" (03-14-SUMMARY.md).
+ */
+describe("isColumnDestinationVisible", () => {
+    const visibleBox = { left: 0, right: 1440 };
+
+    it("accepts a destination sitting wholly inside the visible box", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 936, right: 1216 }, visibleBox })).toBe(true);
+    });
+
+    it("accepts a destination flush against either edge of the visible box", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 0, right: 280 }, visibleBox })).toBe(true);
+        expect(isColumnDestinationVisible({ destination: { left: 1160, right: 1440 }, visibleBox })).toBe(true);
+    });
+
+    /* The past-the-fold case dnd-kit's own scroll must keep handling, or keyboard reach is lost. */
+    it("rejects a destination whose far edge is past the fold, even by a pixel", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 1161, right: 1441 }, visibleBox })).toBe(false);
+    });
+
+    it("rejects a destination that starts behind the box's near edge", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: -4, right: 276 }, visibleBox })).toBe(false);
+    });
+
+    /* The row does not start at the viewport's own origin once the dashboard sidebar is beside it. */
+    it("measures against the box it was given, not the viewport", () => {
+        // Act & Assert
+        expect(
+            isColumnDestinationVisible({
+                destination: { left: 628, right: 908 },
+                visibleBox: { left: 300, right: 1440 },
+            }),
+        ).toBe(true);
+        expect(
+            isColumnDestinationVisible({
+                destination: { left: 100, right: 380 },
+                visibleBox: { left: 300, right: 1440 },
+            }),
+        ).toBe(false);
     });
 });
 

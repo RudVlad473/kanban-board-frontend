@@ -204,6 +204,14 @@ const createReorderedColumns = () => {
 
 export const ReorderedServerOrder: Story = { args: { board: createBoardFull({ columns: createReorderedColumns() }) } };
 
+/**
+ * The exact board the 03-10 checkpoint found the keyboard-scroll defect on — five columns, which
+ * overflow 1440px, so the row scrolls while the first arrow step's destination is already on screen.
+ */
+export const FiveReorderableColumns: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 5 }) }) },
+};
+
 /*
  * Array order and `position` deliberately disagree. Ordering is the read boundary's one job, so this
  * must still render in ARRAY order — a second sort here is what T-03-43 forbids.

@@ -1,18 +1,7 @@
 "use client";
 
-import {
-    closestCenter,
-    DndContext,
-    DragOverlay,
-    KeyboardSensor,
-    MouseSensor,
-    TouchSensor,
-    useSensor,
-    useSensors,
-    type DragEndEvent,
-    type DragStartEvent,
-} from "@dnd-kit/core";
-import { horizontalListSortingStrategy, SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { closestCenter, DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
+import { horizontalListSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import { useEffect, useRef, useState } from "react";
 import { useBoolean, useMediaQuery } from "usehooks-ts";
 
@@ -22,6 +11,7 @@ import { AddColumnPlaceholder } from "@/features/boards/components/add-column-pl
 import { DeleteColumnConfirm } from "@/features/boards/components/delete-column-confirm/delete-column-confirm";
 import { RenameColumnModal } from "@/features/boards/components/rename-column-modal/rename-column-modal";
 import { SortableColumn } from "@/features/boards/components/sortable-column/sortable-column";
+import { useColumnDragSensors } from "@/features/boards/hooks/use-column-drag-sensors";
 import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
 import { useDeleteColumn, type DeleteColumnArgs } from "@/features/boards/hooks/use-delete-column";
 import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";
@@ -82,17 +72,7 @@ export const BoardView = ({
     const { deleteColumn, isPending: isDeletePending } = useDeleteColumn();
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
 
-    /*
-     * The mouse and touch sensors rather than the combined pointer one: that keeps real touch
-     * support while staying reachable by automation, and it sidesteps the pointer sensor's complete
-     * absence of an interactive-element guard (03-RESEARCH Pitfall 5, T-03-32).
-     */
-    const sensors = useSensors(
-        useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
-        /* No lift-key override: D-06 keeps the library's defaults, so both space and enter lift. */
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-    );
+    const sensors = useColumnDragSensors();
 
     const liftedColumn = renderedColumns.find((column) => column.id === liftedColumnId) ?? null;
 

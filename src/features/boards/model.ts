@@ -104,6 +104,21 @@ export const toColumnDotToken = ({ id }: { id: string }): (typeof COLUMN_DOT_TOK
 export const sortColumnsByPosition = (columns: ColumnFull[]): ColumnFull[] =>
     [...columns].sort((left, right) => left.position - right.position);
 
+export type HorizontalBox = { left: number; right: number };
+
+/**
+ * Whether a keyboard step's destination already sits inside the column row's visible box. dnd-kit's
+ * `KeyboardSensor` scrolls for anything past the container's MIDPOINT, which on a row several
+ * columns wide throws an on-screen neighbour off it (03-14-SUMMARY.md).
+ */
+export const isColumnDestinationVisible = ({
+    destination,
+    visibleBox,
+}: {
+    destination: HorizontalBox;
+    visibleBox: HorizontalBox;
+}): boolean => destination.left >= visibleBox.left && destination.right <= visibleBox.right;
+
 export type ColumnOrderOverride = { previousOrder: string[]; order: string[] };
 
 /**
