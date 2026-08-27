@@ -341,6 +341,46 @@ review.
 - Every E2E test body (or logical block) carries explicit `// Arrange` / `// Act` / `// Assert` comments. Enforcement: code review.
 - E2E data seeding is a curl-based CLI, reusing the sign-up response's own session credential via a cookie jar rather than signing in a second time (the backend caps one account at two concurrent sessions). Enforcement: `pnpm exec playwright test --project e2e` against the real deployed nonprod backend.
 
+**A spec that asserts an optimistically-applied value and then reloads must first wait for the
+write to reach the server.** Reloading is how an optimistic mutation (U-05) is proved to have
+persisted, but the optimistic assertion says nothing about whether the write ever left the browser
+— so under load the reload outruns the in-flight Server Action and reads stale server state. The
+wait is `createServerActionSettled(page)` from `e2e/server-action.ts`, keyed on the one POST
+carrying a `next-action` request header that a Server Action actually is. It **must be created
+before** the click that triggers the action, or it races the response it is waiting for:
+
+```ts
+const settled = createServerActionSettled(page);
+await page.getByRole("button", { name: "Save Changes" }).click();
+await expect(heading).toHaveText(optimisticValue); // the optimistic assertion still runs
+await settled;
+await page.reload();
+```
+
+Never a `waitForTimeout` or any other sleep. A timer is the defect this rule exists to prevent, one
+layer down.
+
+This applies only to an **optimistic** mutation. Create and delete wait for the server (U-05), so
+the assertion that the thing appeared or disappeared *is* the settle-wait and needs nothing added —
+12 of the suite's 17 reloads are in that category or are not mutations at all. Where a reload
+deliberately has no settle-wait because no write was issued (a cancelled drag), say so in a comment
+at the reload.
+
+Enforcement: code review, plus `createServerActionSettled` existing so the mechanism is copied
+rather than re-derived. **Deliberately not a check script**, unlike `stories:check` /
+`coverage:check`: the property that matters — "this assertion was optimistic" — is invisible to a
+text scanner, so a checker could only key on `page.reload()`, flagging those 12 correct reloads and
+demanding a justifying comment that proves nothing. A `Covered by:` pointer names a file the
+checker resolves; "I thought about this" is unfalsifiable, and a rule whose escape hatch is
+unfalsifiable prose is worse than the prose alone. If this decays a second time, the tool that
+actually detects it is a contention run — `--repeat-each=3 --workers=2`, which reproduced it 2
+failures in 15 — not a grep.
+
+This decayed across two phases undetected: `boards-rename.e2e.spec.ts` shipped with it in Phase 2
+and it was copied forward into `columns-rename` and `columns-reorder` in Phase 3. It is invisible at
+the default worker count and only surfaces under contention, which is why review caught it in
+neither phase.
+
 ## Comment length (docs/adr/tech/0023)
 
 - A comment block's prose may not exceed three consecutive lines, mechanically checked (not just code-reviewed). An over-limit block can be marked exempt with a `comment-length-exempt:` marker line carrying a stated reason. Enforcement: `pnpm comments:check` (`scripts/check-comment-length.mjs`), CI-wired and blocking.
