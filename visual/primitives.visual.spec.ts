@@ -92,36 +92,45 @@ const storyIds = [
  */
 const deviceTypes = Object.values(DEVICE_TYPE);
 
+// comment-length-exempt: records the two measured failure modes this mapping exists to rule out, so a future reader does not revert to probing every selector on every story
 /*
- * Base UI portals render outside `#storybook-root`, so a story whose subject is portalled must be
- * screenshotted through the portal's own root. Ordered by specificity: Toast's region+aria-live
- * pair is unique, Menu's `role="menu"` never collides with Modal's `role="dialog"` (ADR tech/0011).
+ * Which Base UI portal a story's subject renders into, keyed by story-id prefix. Driven by the
+ * story's identity rather than by probing the DOM, because both probing strategies have measurably
+ * failed here (2026-08-27): asking whether a portal EXISTS routed every story into the empty,
+ * permanently hidden toast viewport that the global `ToastProvider` decorator mounts, and asking
+ * whether one is visible RIGHT NOW raced Base UI's open transition, capturing the trigger instead
+ * of the popup on a slower machine. The story id is the one signal available before the render.
  */
-const PORTAL_SELECTORS = ['[role="region"][aria-live="polite"]', '[role="menu"]', '[role="dialog"]'];
+const PORTAL_SELECTOR_BY_PREFIX = [
+    ["components-ui-toast--", '[role="region"][aria-live="polite"]'],
+    ["components-ui-menu--", '[role="menu"]'],
+    ["components-ui-modal--", '[role="dialog"]'],
+] as const;
 
-const gotoStory = async ({ page, url }: { page: Page; url: string }) => {
+/* Bounded so a deliberately-closed story (`menu--closed`) falls back to its trigger, not a failure. */
+const PORTAL_WAIT_MS = 5_000;
+
+const gotoStory = async ({ page, url, storyId }: { page: Page; url: string; storyId: string }) => {
     await page.goto(url);
     /*
-     * Anchor on the story's own root first. Every story mounts something here — a portalled story
-     * still mounts its trigger — so this is the one wait that is always satisfiable, and it makes
-     * the portal probes below run after the first render instead of racing it (ADR tech/0011).
+     * Anchor on the story's own root first — a portalled story still mounts its trigger here, so
+     * this wait is always satisfiable, and it doubles as the fallback target (ADR tech/0011).
      */
     const root = page.locator("#storybook-root > *").first();
     await root.waitFor({ state: "visible" });
 
-    // comment-length-exempt: records the measured failure a presence check caused and why visibility is the correct predicate, so a future reader does not revert to counting elements
-    /*
-     * Choose a portal target by VISIBILITY, never by presence. The `ToastProvider` decorator mounts
-     * an empty — and therefore permanently hidden — toast viewport into every story, so a presence
-     * check (`count() > 0`) routed every non-toast story into a wait for that hidden element to
-     * become visible, which it never does. Measured 2026-08-27: 30s timeouts on button--primary and
-     * button--secondary at both viewports and both themes, and the same trap is now latent for Menu
-     * and Modal should either provider ever become global too.
-     */
-    for (const selector of PORTAL_SELECTORS) {
-        const candidate = page.locator(selector).first();
-        if (await candidate.isVisible()) {
+    const portal = PORTAL_SELECTOR_BY_PREFIX.find(([prefix]) => storyId.startsWith(prefix));
+    if (portal) {
+        /*
+         * `visible=true` picks the first VISIBLE match, never merely the first — the hidden global
+         * toast viewport is always element zero and would otherwise win every toast story.
+         */
+        const candidate = page.locator(`${portal[1]} >> visible=true`).first();
+        try {
+            await candidate.waitFor({ state: "visible", timeout: PORTAL_WAIT_MS });
             return candidate;
+        } catch {
+            return root;
         }
     }
     return root;
@@ -145,6 +154,7 @@ for (const storyId of storyIds) {
             await page.setViewportSize(viewportSize);
             const root = await gotoStory({
                 page,
+                storyId,
                 url: `/iframe.html?id=${storyId}&viewMode=story&globals=theme:light`,
             });
             await expect(root).toHaveScreenshot(`${storyId}-${deviceLabel}-light.png`);
@@ -154,6 +164,7 @@ for (const storyId of storyIds) {
             await page.setViewportSize(viewportSize);
             const root = await gotoStory({
                 page,
+                storyId,
                 url: `/iframe.html?id=${storyId}&viewMode=story&globals=theme:dark`,
             });
             await expect(root).toHaveScreenshot(`${storyId}-${deviceLabel}-dark.png`);
