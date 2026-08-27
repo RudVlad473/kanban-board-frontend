@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 import { seedAccount, seedBoard } from "./seed";
+import { createServerActionSettled } from "./server-action";
 import { ROUTE } from "../src/lib/core/routing/routes";
 
 // comment-length-exempt: records the one behaviour this spec deliberately does not cover and where it is proved instead, so a future reader does not re-add a step the backend refuses (docs/adr/tech/0023)
@@ -47,6 +48,8 @@ test.describe("BOARD-04: rename a board", () => {
         await sidebar.getByRole("button", { name: `Board actions for ${originalName}` }).click();
         await page.getByRole("menuitem", { name: "Edit Board" }).click();
         await page.getByLabel("Board Name", { exact: true }).fill(renamedName);
+        /* Created before the click it waits on, per createServerActionSettled's own contract. */
+        const settled = createServerActionSettled(page);
         await page.getByRole("button", { name: "Save Changes" }).click();
 
         // Assert — the sidebar row AND the header title carry the new name, and the modal is gone.
@@ -54,7 +57,8 @@ test.describe("BOARD-04: rename a board", () => {
         await expect(page.getByRole("heading", { level: 1, name: renamedName })).toBeVisible();
         await expect(page.getByRole("heading", { name: "Edit Board" })).toBeHidden();
 
-        // Act — reload, so nothing on screen can be standing in for the server's own value.
+        // Act — let the write reach the server, then reload; nothing on screen stands in for it.
+        await settled;
         await page.reload();
 
         // Assert — the rename persisted in both places, and the other board is untouched.

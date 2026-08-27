@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 import { seedAccount, seedBoard, seedColumn } from "./seed";
+import { createServerActionSettled } from "./server-action";
 import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 
 // comment-length-exempt: records why the reload is the assertion and not a convenience, so a future reader does not simplify it away into a second read of the same rendered DOM
@@ -45,6 +46,8 @@ test.describe("COLUMN-02: rename a column", () => {
         await page.getByRole("button", { name: "Column actions for Backlog" }).click();
         await page.getByRole("menuitem", { name: "Rename Column" }).click();
         await page.getByLabel("Column Name", { exact: true }).fill(renamedName);
+        /* Created before the click it waits on, per createServerActionSettled's own contract. */
+        const settled = createServerActionSettled(page);
         await page.getByRole("button", { name: "Save Changes" }).click();
 
         // Assert — the header carries the new name, in place, and the modal is gone.
@@ -52,7 +55,8 @@ test.describe("COLUMN-02: rename a column", () => {
         /* Exact: an accessible name is matched as a substring otherwise, and the board's own `h1` contains this one. */
         await expect(page.getByRole("heading", { name: "Rename Column", exact: true })).toBeHidden();
 
-        // Act — reload, so the optimistic override cannot be what the assertion is reading.
+        // Act — let the write reach the server, then reload; the override cannot answer for it.
+        await settled;
         await page.reload();
 
         // Assert — the rename reached the server: it survived, and the untouched column did too.
