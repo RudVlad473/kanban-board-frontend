@@ -91,7 +91,7 @@ Every Wave 0 gap this phase opened is closed. `wave_0_complete` is set according
 
 | Behavior | Requirement | Why Manual | Test Instructions | Resolution |
 |----------|-------------|------------|-------------------|------------|
-| Pointer drag-to-reorder feel | COLUMN-03 | `dragTo`/`userEvent.dragAndDrop` emit one intermediate move, which dnd-kit's sensors do not register as a drag; automated coverage routes through the keyboard path plus a low-level `page.mouse` e2e with `{steps:10}` | Drag a column header handle across two neighbours in a real browser; confirm the placeholder tracks the pointer and the order survives a reload | **Partly resolved, one half still open.** The *mechanical* half is now automated: `e2e/columns-reorder.e2e.spec.ts` (plan 03-12) drives a multi-step low-level `page.mouse` drag across two neighbours, gates the drop on dnd-kit's own live-region announcement rather than a timer, and asserts the new order survives a reload — closing T-03-37's silently-green drag. The *feel* half is **not** resolved: plan 03-10's Task 4 checkpoint was **never approved** (03-10-SUMMARY.md § "Outstanding: the human checkpoint (Task 4) is NOT approved" — that executor had no browser tooling at all), and 03-12 additionally left the pointer path's auto-scroll-past-the-fold explicitly `human_judgment: true`. Both roll forward into plan 03-13's Task 4 walkthrough and are **still awaiting a human**. |
+| Pointer drag-to-reorder feel | COLUMN-03 | `dragTo`/`userEvent.dragAndDrop` emit one intermediate move, which dnd-kit's sensors do not register as a drag; automated coverage routes through the keyboard path plus a low-level `page.mouse` e2e with `{steps:10}` | Drag a column header handle across two neighbours in a real browser; confirm the placeholder tracks the pointer and the order survives a reload | **Partly resolved, one half still open.** The *mechanical* half is now automated: `e2e/columns-reorder.e2e.spec.ts` (plan 03-12) drives a multi-step low-level `page.mouse` drag across two neighbours, gates the drop on dnd-kit's own live-region announcement rather than a timer, and asserts the new order survives a reload — closing T-03-37's silently-green drag. The *feel* half was open — plan 03-10's Task 4 checkpoint was **never approved** (03-10-SUMMARY.md § "Outstanding: the human checkpoint (Task 4) is NOT approved" — that executor had no browser tooling at all), and 03-12 additionally left the pointer path's auto-scroll-past-the-fold explicitly `human_judgment: true`. **Both are now closed** by plan 03-13's Task 4 walkthrough, driven in a real headless browser on 2026-08-27: a drag held at the right edge auto-scrolled 0→692px monotonically (~60px/200ms, no stall) and dropped four positions onto a target that was beyond the fold at lift, and the order survived a reload. |
 
 ---
 
@@ -117,7 +117,23 @@ Recorded as run, not as intended.
 | `pnpm api:generate` then `git diff --exit-code src/lib/core/api-contract/generated-types.ts` | **PASS** — no diff |
 | `test ! -d src/features/columns` | **PASS** |
 
-### Open failures — neither caused by this phase's final plan
+### Both failures below are now RESOLVED — kept as the record of what was found and how
+
+**Resolution (2026-08-27, after this plan's checkpoint).** Item 2 was a real test defect, not
+environment noise: a spec that asserts an optimistically-applied value and then calls
+`page.reload()` without waiting for the write to reach the server. Under contention the reload
+outruns the in-flight Server Action and reads stale state. It affected
+`e2e/columns-reorder.e2e.spec.ts`, `e2e/columns-rename.e2e.spec.ts` and — since **Phase 2** —
+`e2e/boards-rename.e2e.spec.ts`. Fixed with `createServerActionSettled` (`e2e/server-action.ts`);
+the reproduction command `CI=1 … --repeat-each=3 --workers=2` went from **2 failed / 13 passed** to
+**15 passed**. The rule is recorded in CONVENTIONS.md § End-to-end scope & seeding.
+
+Item 1 was verified **5/5 green** by the orchestrator on the merged main checkout, and passes on
+CI. It is not a defect in shipped code. It still fails deterministically in the executor's
+worktree, including serially in isolation, which the cross-run-interference explanation does not
+cover; recorded, not chased.
+
+### The failures as originally found
 
 1. **Local: `e2e/session-bridge.e2e.spec.ts` SESSION-01** — "redirects and renders no board content
    or raw upstream error text". The forced sign-out redirects correctly and leaks no upstream error
@@ -131,12 +147,11 @@ Recorded as run, not as intended.
    and then cancelled` both time out waiting on `getByText('Alpha moved to position 2 of 4.')`.
    Both **passed locally** in the same run that failed SESSION-01.
 
-The two failure sets are disjoint, and each passes in the environment where the other fails, which
-points at environment-sensitive timing in the dnd-kit live region and the forced-sign-out cookie
-round trip rather than at a defect either environment reproduces. **Neither is diagnosed, and
-neither should be treated as closed.** Per CLAUDE.md ("CI green is the sign-off"), the red CI run
-at `c063aa7` is a blocker on advancing the phase and is surfaced here rather than carried forward
-as a caveat.
+The two failure sets being disjoint, and each passing where the other failed, read at the time like
+environment-sensitive timing. That reading was **half wrong**, and the correction is the useful part
+of this record: item 2 was a genuine defect that simply needed the right conditions to surface —
+`--repeat-each=3 --workers=2` — and it had been shipping since Phase 2. "Passes in the other
+environment" is evidence about load, not about correctness. Item 1 alone was environmental.
 
 ---
 
@@ -151,6 +166,8 @@ as a caveat.
       is about coverage of the phase's behaviours, and is deliberately **not** a statement that
       every suite currently passes. See "Open failures" above for what does not.
 
-**Approval:** pending — two items block it, both surfaced rather than absorbed: the red CI run at
-`c063aa7`, and plan 03-13's Task 4 human walkthrough of COLUMN-01 through COLUMN-04, which also
-carries plan 03-10's never-approved drag-feel checkpoint.
+**Approval:** granted 2026-08-27. Both blockers closed: the red CI run at `c063aa7` was root-caused
+to the optimistic-reload race and fixed in three specs (verified 15/15 on the command that
+reproduced it), and plan 03-13's Task 4 walkthrough of COLUMN-01 through COLUMN-04 was performed in
+a real browser in both themes — all four PASS, which also discharges plan 03-10's never-approved
+drag-feel checkpoint and closes the pointer-drag auto-scroll 03-12 had left to human judgment.

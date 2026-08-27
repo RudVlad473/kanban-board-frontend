@@ -16,12 +16,14 @@ provides:
   - "scripts/check-coverage-pointers.mjs — a ninth blocking check enforcing that rule, wired into CI's quality job"
   - "51 source files now name their real coverage, five of them admitting the escape hatch"
   - "03-VALIDATION.md closed: every Wave 0 item resolved against the plan that satisfied it, and the phase gate recorded as executed"
+  - "e2e/server-action.ts — createServerActionSettled, the settle-wait that closes the optimistic-reload race in three specs (one shipped in Phase 2)"
+  - "The CONVENTIONS.md rule for it, with the reasoning for why it is prose rather than a check script recorded inline"
 affects: [04-task-management, any phase adding a source file, any phase reading CONVENTIONS.md for placement or test-location rules]
 
 actuals:
-  tokens: 19866
-  tasks: 3
-  commits: 4
+  tokens: 28150
+  tasks: 4
+  commits: 8
 
 tech-stack:
   added: []
@@ -33,11 +35,15 @@ key-files:
   created:
     - scripts/check-coverage-pointers.mjs
     - scripts/check-coverage-pointers.unit.test.mjs
+    - e2e/server-action.ts
   modified:
     - CONVENTIONS.md
     - package.json
     - .github/workflows/ci.yml
     - playwright.config.ts
+    - e2e/boards-rename.e2e.spec.ts
+    - e2e/columns-rename.e2e.spec.ts
+    - e2e/columns-reorder.e2e.spec.ts
     - .planning/phases/03-column-management/03-VALIDATION.md
     - "51 source files under src/ and app/ — a header comment each, nothing else"
 
@@ -48,10 +54,14 @@ key-decisions:
   - "`generated-types.ts` is exempt from the check — a pointer there would be a banned hand-edit erased by the next `pnpm api:generate`"
   - "Fixed the `.env.local` loading gap in playwright.config.ts rather than working around it: without it the e2e half of this plan's own gate could not run at all"
   - "Did not resolve 03-BACKEND-FACTS § R8's re-characterisation of threat T-03-21 — 03-11 deliberately left that to a human and this plan honours that"
+  - "The settle-wait rule gets prose, not a check script: its real predicate (the assertion was optimistic) is invisible to a text scanner, and a 'settle-wait or a comment' escape hatch is unfalsifiable — unlike coverage:check's, which names a file the checker resolves"
+  - "The settle-wait resolves on the response head, not response.finished(): the streamed refresh() payload never closes, which was measured to hang past the 30s test timeout"
 
 patterns-established:
   - "Coverage pointer: a file with no co-located direct test opens with `Covered by:` naming an existing test file; `pnpm coverage:check` resolves every one"
   - "Escape hatch with a stated reason: `Covered by: nothing to test — <one clause why>`, and every use of it listed in the SUMMARY as an admitted gap"
+  - "Optimistic-reload settle-wait: an e2e spec asserting an optimistic value then reloading first awaits createServerActionSettled, created before the click that triggers the action"
+  - "Contention run as a flake detector: --repeat-each=3 --workers=2 surfaces staleness races that are invisible at the default worker count"
 
 requirements-completed: [COLUMN-01, COLUMN-02, COLUMN-03, COLUMN-04]
 
@@ -100,34 +110,50 @@ coverage:
   - id: D6
     description: "The phase gate ran: five Vitest projects, the visual project with baselines actually compared, both browser suites, nine blocking checks, and a no-diff API regeneration"
     verification:
+      - kind: unit
+        ref: "pnpm test → 93 files, 1297 tests"
+        status: pass
+      - kind: automated_ui
+        ref: "CI=1 pnpm test:visual → 260/260 with baselines compared"
+        status: pass
       - kind: e2e
-        ref: "CI=1 pnpm test:visual → 260/260 pass; pnpm exec playwright test --project=e2e → 42 passed, 1 failed"
+        ref: "CI=1 pnpm exec playwright test --project=e2e → 42 passed, 1 failed (SESSION-01 only)"
         status: fail
     human_judgment: true
-    rationale: "The gate is NOT green as one run. One local e2e failure (SESSION-01) and a red CI run at this plan's base commit are both recorded in 03-VALIDATION.md; both are proven pre-existing but neither is diagnosed, and a human must decide whether they block the phase."
+    rationale: "Everything passes except SESSION-01, which the orchestrator verified 5/5 green on the merged main checkout and on CI. It fails deterministically in this worktree, including serially and in isolation, so the cross-run-interference explanation does not fit what was measured here. Deferred to the orchestrator's environment as authoritative, but recorded rather than laundered."
   - id: D7
-    description: "COLUMN-01 through COLUMN-04 demonstrated by a human against the running application"
-    verification: []
+    description: "COLUMN-01 through COLUMN-04 demonstrated against the running application, in both themes"
+    verification:
+      - kind: manual_procedural
+        ref: "orchestrator-driven headless Playwright walkthrough at 1280x800 against a seeded nonprod account, 2026-08-27"
+        status: pass
     human_judgment: true
-    rationale: "Task 4 is a blocking checkpoint and was not reached. No Playwright MCP tools resolve in a worktree-isolated executor, so this plan drove nothing through the running app — it could not, rather than chose not to."
+    rationale: "Performed by the orchestrator, not this executor — no Playwright MCP tools resolve in a worktree-isolated subagent. All four requirements PASS, including the pointer-drag auto-scroll past the fold that 03-12 had left open, and an id-keyed dot check that a position-keyed implementation would have failed."
+  - id: D8
+    description: "An e2e spec that asserts an optimistic value and then reloads first waits for the write to reach the server"
+    verification:
+      - kind: e2e
+        ref: "CI=1 pnpm exec playwright test --project=e2e <3 affected specs> --repeat-each=3 --workers=2 → 15/15 (2 of 15 failed before the fix)"
+        status: pass
+    human_judgment: false
 
 # Metrics
-duration: 42 min
+duration: 77 min
 completed: 2026-08-27
-status: halted
+status: complete
 ---
 
 # Phase 3 Plan 13: Convention Correction and Coverage Pointers Summary
 
-**Six drifted CONVENTIONS.md rules corrected against the live repository, a coverage-pointer rule enforced by a ninth blocking check that resolves every pointer against the filesystem, and 51 source files now naming the test that actually covers them — with the phase gate run in full and its two pre-existing failures recorded rather than absorbed.**
+**Six drifted CONVENTIONS.md rules corrected against the live repository, a coverage-pointer rule enforced by a ninth blocking check that resolves every pointer against the filesystem, 51 source files now naming the test that actually covers them — and the optimistic-reload race that had been silently shipping since Phase 2 root-caused, fixed in three e2e specs, and written down.**
 
 ## Performance
 
-- **Duration:** 42 min
+- **Duration:** 77 min
 - **Started:** 2026-08-27T16:46:30Z
-- **Completed:** 2026-08-27T17:28:18Z
-- **Tasks:** 3 of 4 (Task 4 is the blocking human checkpoint — not reached)
-- **Files modified:** 58
+- **Completed:** 2026-08-27T18:03:31Z
+- **Tasks:** 4 of 4 (Task 4 performed by the orchestrator — see below)
+- **Files modified:** 62
 
 ## Accomplishments
 
@@ -137,13 +163,35 @@ status: halted
 - **Demonstrated the enforcement failing, twice.** A pointer deleted from `cn.ts` produced `no 'Covered by:' line`; one edited to name a nonexistent test produced `does not exist`. Both were reverted. An enforcement claim never observed to fail is not an enforcement claim.
 - **Ran the whole gate and recorded what it actually said** — including the two things that did not pass, both proven to predate this plan.
 
+## Task 4 — walkthrough results (performed by the orchestrator)
+
+This executor could not drive a browser: no `mcp__playwright__*` tools resolve in a
+worktree-isolated subagent. The orchestrator performed the walkthrough itself, headless at
+1280x800 against a real seeded nonprod account, and reported:
+
+| Requirement | Result | Notes |
+|-------------|--------|-------|
+| COLUMN-01 add | **PASS** | Empty board shows the centred `+ Add New Column` CTA; the created column survives reload. Once populated the CTA becomes the ghost column `+ New Column`; the row auto-scrolls to reveal each new column. |
+| COLUMN-02 rename | **PASS** | Kebab offers exactly Rename/Delete; the modal prefills the current name; the rename survives reload. |
+| COLUMN-03 reorder | **PASS** | A pointer drag held at the right edge auto-scrolled 0→692px monotonically (~60px/200ms, no stall) and dropped four positions onto a target that was beyond the fold at lift; the order survived reload. |
+| COLUMN-04 delete | **PASS** | The confirmation names the column and warns about the cascade, and focuses the **safe** option (`Keep Column`); declining is safe; deleting removed the column and its task, still gone after reload; delete-to-zero lands on the shared empty state. |
+| Visual system | **PASS** | Both themes, compared against mock p3: header shape (dot · uppercase letter-spaced name · count), ghost-column gradient and centred label all match. The kebab is an addition the mock lacks, authorized by 03-UI-SPEC U-01. |
+| U-03 dot keying | **PASS** | Not trusted from colour order alone: deleting a middle column left Alpha green, Gamma cyan, Delta green. Position-keying would have repainted them, so the dots are genuinely id-keyed. |
+
+**This closes D7, which this plan had left open**, and closes the pointer-drag auto-scroll past the
+fold that 03-12 recorded as `human_judgment: true` — verified, not deferred. A board holding a real
+task rendered correctly, independently confirming wave 10's `description: null` fix.
+
 ## Task Commits
 
 1. **Task 1: Correct the drifted convention rules and add the coverage-pointer rule** — `a4c9b6f` (docs)
 2. **Task 2: Apply the coverage pointers and the check that keeps them true** — `042bd00` (feat)
 3. **Task 3: Run the full phase gate and close the validation contract** — `41af648` (fix)
+4. **Task 4: walkthrough** — performed by the orchestrator, no commit of its own
+5. **Post-checkpoint: fix the optimistic-reload race in three e2e specs** — `089a82a` (fix)
+6. **Post-checkpoint: record the settle-wait rule** — `178b869` (docs)
 
-**Plan metadata:** see the `docs(03-13)` commit that carries this file.
+**Plan metadata:** `9f9c2be`, `aec2941`, and the `docs(03-13)` commit carrying this revision.
 
 ## Files Created/Modified
 
@@ -154,6 +202,8 @@ status: halted
 - `playwright.config.ts` — loads `.env.local` (see Deviations).
 - `.planning/phases/03-column-management/03-VALIDATION.md` — closed.
 - 51 files under `src/` and `app/` — one header comment each. `git diff -- src app` contains **no removed lines**.
+- `e2e/server-action.ts` — `createServerActionSettled`, the settle-wait for an optimistic mutation.
+- `e2e/{boards,columns}-rename.e2e.spec.ts`, `e2e/columns-reorder.e2e.spec.ts` — settle-waits added before four reloads; the cancelled-lift reload keeps none and says why.
 
 ## Decisions Made
 
@@ -218,18 +268,81 @@ The rule's escape hatch is only honest if every use of it is reported. Five file
 
 The two marked **genuine gap** are the honest output of this rule: they were invisible before, and closing them is a small, well-defined piece of future work.
 
+## Post-checkpoint work: the red CI run was a real test defect, now fixed
+
+**Root cause: a spec that asserts an OPTIMISTIC value and then calls `page.reload()` without
+waiting for the write to reach the server.** Under contention the reload outruns the in-flight
+Server Action and reads stale server state. Diagnosed by the orchestrator; reproduced and fixed
+here.
+
+**Reproduced before touching anything** with
+`CI=1 pnpm exec playwright test --project=e2e <the 3 specs> --repeat-each=3 --workers=2`:
+**2 of 15 runs failed**, both `boards-rename`, both at the post-reload assertion, reverted to the
+pre-rename name. That is a third distinct symptom of the same defect — CI showed it as an
+announcement timeout, the orchestrator saw it on the pointer test's post-reload assertion, and it
+surfaced here on the Phase 2 board-rename spec. **It is invisible at the default worker count**,
+which is why review missed it in two consecutive phases.
+
+**Fixed in three specs** — one of them shipped in **Phase 2**:
+
+| Spec | Reloads gated | Origin |
+|------|---------------|--------|
+| `e2e/boards-rename.e2e.spec.ts` | 1 | **Phase 2** — shipped with the defect, copied forward |
+| `e2e/columns-rename.e2e.spec.ts` | 1 | Phase 3 (03-12) |
+| `e2e/columns-reorder.e2e.spec.ts` | 2 gated, 1 deliberately not | Phase 3 (03-12) |
+
+The mechanism is `createServerActionSettled` in the new `e2e/server-action.ts`, keyed on the single
+POST carrying a `next-action` request header that a Server Action is, created **before** the click
+that triggers it. No timer anywhere: the reorder spec's own header comment already said "wait on
+the announcement, never on a timer" — the principle was right and had been applied to only the drag
+half of the operation. The cancelled-lift reload keeps **no** settle-wait and says why at the
+reload: a cancelled lift issues no action, so there is no response to wait for.
+
+**Not affected and deliberately untouched:** `columns-create`, `columns-delete`, `boards-create`,
+`boards-delete`. Those mutations are not optimistic (U-05), so the appearance/disappearance
+assertion already *is* the settle-wait.
+
+**One thing I tried that was wrong, and caught before claiming it.** I first strengthened the
+helper with `response.finished()`, reasoning it would also silence the server's "destination stream
+closed early" log. The full suite then **timed out** at that line on `columns-rename`: the
+`refresh()` RSC payload keeps streaming, so `finished()` never resolves. Reverted to the
+header-level wait, which is sufficient on its own — the action awaits its upstream write before
+responding at all, so a status line already means the write is durable. The stream-abort log is
+cosmetic. Recorded because the reasoning was plausible and still wrong.
+
+**Verification (commands run, output read):**
+
+| Command | Before | After |
+|---------|--------|-------|
+| `CI=1 … <3 specs> --repeat-each=3 --workers=2` | **2 failed, 13 passed** | **15 passed, exit 0** |
+| `CI=1 pnpm exec playwright test --project=e2e` (full) | 42 passed, 1 failed | **42 passed, 1 failed — SESSION-01 only** |
+| `pnpm test` | 1297 passed | **1297 passed** |
+| `pnpm lint` | pass | **pass** (caught a real type error in the first draft of the matcher: `headers()` is `Record<string, string>`, so `!== undefined` had no overlap — changed to an `in` check and re-ran the reproduction, since a matcher that matches nothing would hang rather than pass) |
+| The other eight blocking checks | pass | **pass** |
+
+## Correction: my earlier SESSION-01 claim
+
+My previous revision reported SESSION-01 as an open pre-existing failure. **The orchestrator
+verified it 5/5 green on the merged main checkout, and it passes on CI at the same commit.** Their
+environment is authoritative and the claim is corrected accordingly: it is not a defect in the
+shipped code.
+
+Recording what was actually measured here, because it does not fit the cross-run-interference
+explanation and a future reader should not be surprised by it: in **this worktree** it failed on
+every one of five attempts, including `--workers=1` on that spec alone, with no other suite
+running. Deterministic and serial is not contention. The difference is therefore between the two
+checkouts or their moment in time, not between load levels. Not investigated further — the
+orchestrator scoped it out, and one 20-second serial run was the whole cost of establishing this.
+
 ## Issues Encountered
 
-**The phase gate is not green as one run.** Two failures, disjoint and each passing where the other fails:
+**`pnpm exec next typegen` was needed before `pnpm lint`** in the fresh worktree, as the dispatch
+prompt warned. No source change.
 
-1. **`e2e/session-bridge.e2e.spec.ts` SESSION-01 fails locally** — forced sign-out redirects correctly and leaks no upstream error text, but the session cookie survives. **Proven pre-existing**: `git checkout c063aa7 -- src app` reproduces it identically, so nothing in this plan caused it. It passes on CI at that same commit.
-2. **CI run `33095258448` at `c063aa7` — this plan's base — is red** on two `columns-reorder.e2e.spec.ts` COLUMN-03 keyboard cases, both timing out waiting on dnd-kit's live-region announcement. Both pass locally.
-
-Per CLAUDE.md, a red CI job is a hard blocker on advancing, not a caveat. Neither failure is diagnosed and neither should be read as closed. Both are recorded in `03-VALIDATION.md` § "Open failures".
-
-**Nothing in this plan was driven through the running application.** No `mcp__playwright__*` tools resolve in a worktree-isolated executor (project-scoped `.mcp.json` is not inherited by spawned subagents), so the Task 4 walkthrough could not be attempted, only handed over. This is impossibility, not omission — CLAUDE.md's "verify before presenting" requires saying so explicitly rather than passing off an unverified claim.
-
-**`pnpm exec next typegen` was needed before `pnpm lint`** in the fresh worktree, as the dispatch prompt warned. No source change.
+**`.env.local` is loaded only because this plan made it so.** Confirmed by `printenv`: the token is
+absent from the shell, so the `set -a; . ./.env.local` prefix is *not* what makes e2e runnable here
+— `playwright.config.ts`'s new loader is. Every e2e command in this summary was run without that
+prefix.
 
 ## Documentation drift found but NOT fixed
 
@@ -239,22 +352,60 @@ Per CLAUDE.md, a red CI job is a hard blocker on advancing, not a caveat. Neithe
 
 None — no external service configuration required.
 
+## Should the settle-wait rule get a check script? My call: no — prose, and here is why
+
+The repo's own precedent (`stories:check`, and the `coverage:check` this plan just built) favours
+enforcement for mechanical rules, and this one has already decayed once across two phases. I still
+land on prose, for one reason that is about *this* rule rather than about effort:
+
+**A checker could only key on `page.reload()`, and that is the wrong predicate.** The property that
+matters is "the assertion above this was optimistic", which is invisible to a text scanner. Of the
+suite's **17** reloads, only **5** are optimistic-then-reload. The other 12 are correct as written —
+create/delete wait for the server, and the theme/auth reloads are not mutations at all. A
+`page.reload()` check would flag all 12 and demand a justifying comment on correct code.
+
+**And the escape hatch would prove nothing.** This is the decisive difference from `coverage:check`:
+there, the escape hatch still names a file the checker *resolves* — a checkable fact. Here,
+"settle-wait or a comment" is satisfied by typing a comment. A rule whose escape hatch is
+unfalsifiable prose is worse than the prose alone, because it looks enforced.
+
+What I did instead, and what would actually catch a recurrence:
+
+- **The mechanism is a shared function**, not a copied idiom — `createServerActionSettled` is the
+  one place the "create before the click" contract is stated, so a spec author copies a call rather
+  than re-deriving a pattern.
+- **If it decays a second time, reach for a contention run, not a grep.**
+  `--repeat-each=3 --workers=2` detected the real property — staleness under load — 2 failures in
+  15, on code that was green at the default worker count. That is a genuine detector. Whether it is
+  worth its CI minutes is a separate call I am flagging, not making.
+
 ## Next Phase Readiness
 
-**Not ready.** Three things stand between this phase and done, all surfaced rather than absorbed:
+**Ready.** All three blockers from the previous revision are closed:
 
-1. **Task 4 — the human walkthrough of COLUMN-01 through COLUMN-04** is a blocking checkpoint and has not been reached. It also carries plan 03-10's drag-feel checkpoint, which that plan recorded as **never approved**.
-2. **The red CI run at `c063aa7`** must be resolved or explicitly accepted.
-3. **The local SESSION-01 e2e failure** is undiagnosed. It predates this plan, but "pre-existing" is not "fine".
+1. **Task 4** — performed by the orchestrator; COLUMN-01 through COLUMN-04 all PASS in a real
+   browser, in both themes, including the pointer-drag auto-scroll 03-12 had left open and an
+   id-keyed dot check. This also discharges plan 03-10's never-approved drag-feel checkpoint.
+2. **The red CI run at `c063aa7`** — root-caused to a real test defect, fixed in three specs (one
+   of them Phase 2's), and verified green 15/15 on the command that reproduced it.
+3. **SESSION-01** — verified green by the orchestrator on the merged checkout and on CI; corrected
+   above. My worktree-local failure is recorded but is not a defect in shipped code.
 
-Ready for the next phase once those close: the convention document now describes the codebase as it is, the coverage the codebase already had is legible from the files that have it, and a ninth blocking check keeps it that way.
+The convention document now describes the codebase as it is, the coverage the codebase already had
+is legible from the files that have it, a ninth blocking check keeps it that way, and the
+optimistic-reload race that had been quietly shipping since Phase 2 is closed and written down.
+
+**Carried forward, small and well-defined:** two real coverage gaps (`app/page.tsx`,
+`board-view-skeleton.tsx`), and a `SETUP.md` pass to check whether its `.env.local` claim is still
+false for runners other than Playwright.
 
 ## Self-Check: PASSED
 
 - `scripts/check-coverage-pointers.mjs` — FOUND
 - `scripts/check-coverage-pointers.unit.test.mjs` — FOUND
 - `CONVENTIONS.md`, `03-VALIDATION.md`, `03-13-SUMMARY.md` — FOUND
-- Commits `a4c9b6f`, `042bd00`, `41af648`, `9f9c2be` — FOUND in `git log`
+- `e2e/server-action.ts` — FOUND
+- Commits `a4c9b6f`, `042bd00`, `41af648`, `9f9c2be`, `aec2941`, `089a82a`, `178b869` — FOUND in `git log`
 - Working tree clean; no untracked build artifacts left behind
 
 ---
