@@ -41,6 +41,17 @@ regardless, then hand the user only what still genuinely needs their own eyes. O
 doing so is truly impossible (the check needs the user's own machine/network) — say so explicitly
 rather than silently handing over an unverified claim.
 
+**Compare against the mock, not only the running app.** The design source of truth is
+`docs/kanban-task-management-web-app.pdf` (gitignored, 115MB — over the Read tool's PDF limit, so
+render pages with `pdftoppm -f N -l N -r <dpi> -png [-x -y -W -H] <pdf> <out>` and read the PNG).
+Open the mock for every surface visible in the screenshots you are about to present, not only the
+ones your change touched; a surface you never opened in the mock is unverified. Compare placement,
+spacing, and corner radii specifically — those are what "it works and looks plausible" misses. To
+measure rather than eyeball, render at 600 DPI and divide by 6.25 for CSS px, the method
+`tokens/radius.tokens.json` records for every radius token. When the mock and a UI-SPEC disagree,
+surface the conflict instead of following either silently — on 2026-08-27 the mock overruled
+`02-UI-SPEC.md`'s pinned-footer reading of `+ Create New Board`.
+
 ## Copy `.env.local` into every worktree
 
 `.env.local` is gitignored, so `git worktree add` never copies it — a plan executed in an
