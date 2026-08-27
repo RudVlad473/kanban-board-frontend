@@ -1,3 +1,4 @@
+// Covered by: `e2e/cookie-policy.e2e.spec.ts`
 import "server-only";
 
 import { cookies } from "next/headers";

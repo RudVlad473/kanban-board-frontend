@@ -1,3 +1,4 @@
+// Covered by: `e2e/theme.e2e.spec.ts`
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 

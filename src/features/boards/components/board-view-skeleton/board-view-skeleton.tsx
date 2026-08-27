@@ -1,3 +1,4 @@
+// Covered by: nothing to test — a static SkeletonRow arrangement no test renders; see 03-13-SUMMARY.md's gap list
 import { SkeletonRow } from "@/components/ui/skeleton/skeleton-row";
 
 /**

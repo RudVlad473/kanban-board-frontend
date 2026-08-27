@@ -99,6 +99,9 @@ jobs:
             - name: Comment length check
               run: pnpm comments:check
 
+            - name: Coverage pointer check
+              run: pnpm coverage:check
+
             - name: API types drift
               run: |
                   pnpm api:generate

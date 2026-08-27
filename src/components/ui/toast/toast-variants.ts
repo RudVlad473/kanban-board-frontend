@@ -1,3 +1,4 @@
+// Covered by: `src/components/ui/toast/toast.test.tsx`
 import { cva } from "class-variance-authority";
 
 /*

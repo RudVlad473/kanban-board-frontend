@@ -1,3 +1,4 @@
+// Covered by: nothing to test — a Suspense fallback returning BoardViewSkeleton with no logic of its own
 import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton/board-view-skeleton";
 
 /*

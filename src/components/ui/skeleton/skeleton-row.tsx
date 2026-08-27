@@ -1,3 +1,4 @@
+// Covered by: `src/components/layout/sidebar/sidebar.test.tsx`
 import { cn } from "@/lib/core/styling/cn";
 
 /**

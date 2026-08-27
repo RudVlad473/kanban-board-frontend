@@ -1,3 +1,4 @@
+// Covered by: `e2e/boards-detail.e2e.spec.ts`
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 

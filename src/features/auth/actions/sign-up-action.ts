@@ -1,5 +1,7 @@
 "use server";
 
+// Covered by: `e2e/auth.e2e.spec.ts`
+
 import { redirect } from "next/navigation";
 
 import { type AuthActionState } from "@/features/auth/action-state";

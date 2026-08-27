@@ -1,5 +1,7 @@
 "use server";
 
+// Covered by: `e2e/boards-create.e2e.spec.ts`
+
 import { refresh } from "next/cache";
 
 import { columnNameSchema, createBoardColumnsInputSchema } from "@/features/boards/schemas";

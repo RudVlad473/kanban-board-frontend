@@ -1,3 +1,5 @@
+// Covered by: `src/components/ui/modal/modal.test.tsx`
+
 /**
  * Single source of truth for this project's two test/story viewport sizes (ADR tech/0010),
  * shared by `.storybook/preview.ts`, `visual/primitives.visual.spec.ts`, and

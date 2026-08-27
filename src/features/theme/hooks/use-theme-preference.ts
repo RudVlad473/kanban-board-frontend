@@ -1,5 +1,7 @@
 "use client";
 
+// Covered by: `src/features/theme/components/theme-toggle/theme-toggle.test.tsx`
+
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 

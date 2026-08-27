@@ -1,3 +1,4 @@
+// Covered by: `e2e/route-guard.e2e.spec.ts`
 import "server-only";
 
 import { cache } from "react";

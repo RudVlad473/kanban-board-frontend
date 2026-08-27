@@ -1,3 +1,4 @@
+// Covered by: `src/components/layout/sidebar/sidebar.test.tsx`
 import { SkeletonRow } from "@/components/ui/skeleton/skeleton-row";
 
 /**

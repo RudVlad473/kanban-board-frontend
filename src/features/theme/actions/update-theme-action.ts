@@ -1,5 +1,7 @@
 "use server";
 
+// Covered by: `e2e/theme.e2e.spec.ts`
+
 import { z } from "zod";
 
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
