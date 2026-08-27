@@ -31,10 +31,14 @@ export const taskFullSchema = z.object({
     id: z.string(),
     title: z.string(),
     /*
-     * `.nullish()`, not `.optional()`: the backend sends an explicit `description: null` for a task
-     * without one, which bare `.optional()` rejects — failing the whole board read (03-11-SUMMARY.md).
+     * The contract declares `description` optional, but the backend sends an explicit `null` for a
+     * task created without one (observed 2026-08-27, plan 03-12) — normalised to the one absent
+     * value, so a consumer never has to handle two spellings of the same thing.
      */
-    description: z.string().nullish(),
+    description: z
+        .string()
+        .nullish()
+        .transform((value) => value ?? undefined),
     version: z.number(),
     position: z.number(),
     subtasks: subtaskSchema.array(),
