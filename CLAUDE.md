@@ -52,6 +52,19 @@ measure rather than eyeball, render at 600 DPI and divide by 6.25 for CSS px, th
 surface the conflict instead of following either silently — on 2026-08-27 the mock overruled
 `02-UI-SPEC.md`'s pinned-footer reading of `+ Create New Board`.
 
+## CI green is the sign-off
+
+A wave, plan, or phase is done when CI says so. Wait for the run to finish — `gh run list --limit 1`
+for the id, then poll `gh run view <id> --json status` until it reads `completed` — then report each
+job's conclusion. A red job is a hard blocker on advancing, not a caveat to carry forward, and a
+queued or running job means the answer is "not yet" rather than "probably fine".
+
+Local green is weaker than CI green by design, not by accident: `playwright.config.ts` sets
+`ignoreSnapshots: !process.env.CI` (ADR tech/0008), so off-CI every `toHaveScreenshot` is a silent
+no-op and a fully green local visual run proves only that the specs executed. Prefix with `CI=1` to
+compare against baselines locally — found 2026-08-27, after a 260/260 local run reported success on
+screenshots it never compared.
+
 ## Copy `.env.local` into every worktree
 
 `.env.local` is gitignored, so `git worktree add` never copies it — a plan executed in an
