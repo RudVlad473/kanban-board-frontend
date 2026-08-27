@@ -370,3 +370,7 @@ None — no external service configuration required.
 
 _Phase: 03-column-management_
 _Completed: 2026-08-27_
+
+## Self-Check: PASSED
+
+All six created files and the SUMMARY exist on disk; all four commits (`0fb6e97`, `9df5fcb`, `d2eb2d1`, `c54b2cf`) resolve in `git log`. `REQUIREMENTS.md` deliberately untouched: COLUMN-03 is also declared by 03-11, 03-12 and 03-13, none of which have summaries yet, so the shared-ID gate blocks marking it complete here.
