@@ -1,3 +1,4 @@
+// Covered by: `src/components/ui/text-field/text-field.test.tsx`
 import { cva } from "class-variance-authority";
 
 /*

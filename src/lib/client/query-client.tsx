@@ -1,5 +1,7 @@
 "use client";
 
+// Covered by: `e2e/boards-create.e2e.spec.ts`
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type PropsWithChildren } from "react";
 

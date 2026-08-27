@@ -1,3 +1,4 @@
+// Covered by: `e2e/boards-list.e2e.spec.ts`
 import { redirect } from "next/navigation";
 
 import { BoardsEmptyState } from "@/features/boards/components/boards-empty-state/boards-empty-state";

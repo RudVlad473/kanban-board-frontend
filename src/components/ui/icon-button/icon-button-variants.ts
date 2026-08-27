@@ -1,3 +1,4 @@
+// Covered by: `src/components/ui/icon-button/icon-button.test.tsx`
 import { cva } from "class-variance-authority";
 
 /*

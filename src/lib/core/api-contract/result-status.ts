@@ -1,3 +1,5 @@
+// Covered by: nothing to test — an enum-like constant table; a test could only restate its members
+
 /**
  * The single declaration of every result/status discriminant this app produces (ADR tech/0012's
  * enum-like pattern). Every producer and consumer — Server Actions, RSC reads, hooks and Storybook

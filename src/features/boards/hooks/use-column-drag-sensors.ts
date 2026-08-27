@@ -1,5 +1,7 @@
 "use client";
 
+// Covered by: `src/features/boards/components/board-view/board-view.test.tsx`
+
 import {
     KeyboardCode,
     KeyboardSensor,

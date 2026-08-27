@@ -1,3 +1,4 @@
+// Covered by: `e2e/session-bridge.e2e.spec.ts`
 import { NextResponse, type NextRequest } from "next/server";
 
 import { ROUTE } from "@/lib/core/routing/routes";

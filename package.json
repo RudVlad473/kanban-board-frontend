@@ -13,6 +13,7 @@
         "comments:check": "node scripts/check-comment-length.mjs",
         "tsx:check": "node scripts/check-tsx-declarations.mjs",
         "renders:check": "node scripts/check-story-only-renders.mjs",
+        "coverage:check": "node scripts/check-coverage-pointers.mjs",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "prepare": "husky",

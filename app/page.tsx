@@ -1,3 +1,4 @@
+// Covered by: nothing to test — the public landing route, which no test navigates to
 import { ROUTE } from "@/lib/core/routing/routes";
 
 /*

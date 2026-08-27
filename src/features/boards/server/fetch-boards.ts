@@ -1,3 +1,4 @@
+// Covered by: `e2e/boards-list.e2e.spec.ts`
 import "server-only";
 
 import { cache } from "react";

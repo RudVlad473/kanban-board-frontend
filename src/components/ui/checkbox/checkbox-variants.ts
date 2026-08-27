@@ -1,3 +1,4 @@
+// Covered by: `src/components/ui/checkbox/checkbox.test.tsx`
 import { cva } from "class-variance-authority";
 
 /*

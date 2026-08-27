@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { seedAccount, seedBoard, seedColumn, type SeededAccount, type SeededBoard } from "./seed";
+import { createServerActionSettled } from "./server-action";
 import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 
 // comment-length-exempt: records the drag mechanism this spec is required to use and the reason a simpler one would pass while proving nothing, which is the whole hazard the spec exists to avoid
@@ -100,12 +101,15 @@ test.describe("COLUMN-03: reorder columns", () => {
         await page.mouse.move(source.x + 16, source.y, { steps: 4 });
         await page.mouse.move(target.x, target.y, { steps: DRAG_MOVE_STEPS });
         await expectMoveAnnounced({ page, name: "Alpha", position: 3 });
+        /* Created before the release that issues the write, per createServerActionSettled's contract. */
+        const settled = createServerActionSettled(page);
         await page.mouse.up();
 
         // Assert — the drag really moved the column across two neighbours, not merely wobbled it.
         await expect(columnHeadings(page)).toHaveText(toCaptions(["Bravo", "Charlie", "Alpha", "Delta"]));
 
-        // Act — reload, so the optimistic order cannot be what the assertion is reading.
+        // Act — let the write reach the server, then reload; the optimistic order cannot answer for it.
+        await settled;
         await page.reload();
 
         // Assert — the move reached the server.
@@ -126,12 +130,15 @@ test.describe("COLUMN-03: reorder columns", () => {
         await expect(handle).toHaveAttribute("aria-pressed", "true");
         await page.keyboard.press("ArrowRight");
         await expectMoveAnnounced({ page, name: "Alpha", position: 2 });
+        /* Created before the drop that issues the write, per createServerActionSettled's contract. */
+        const settled = createServerActionSettled(page);
         await page.keyboard.press("Space");
 
         // Assert — D-06's keyboard path produced the same kind of move the pointer path does.
         await expect(columnHeadings(page)).toHaveText(toCaptions(["Bravo", "Alpha", "Charlie", "Delta"]));
 
-        // Act — reload, so the optimistic order cannot be what the assertion is reading.
+        // Act — let the write reach the server, then reload; the optimistic order cannot answer for it.
+        await settled;
         await page.reload();
 
         // Assert — the move reached the server.
@@ -158,6 +165,10 @@ test.describe("COLUMN-03: reorder columns", () => {
         await expect(handle).not.toHaveAttribute("aria-pressed", "true");
         await expect(columnHeadings(page)).toHaveText(toCaptions(SEEDED_COLUMN_NAMES));
 
+        /*
+         * Deliberately no settle-wait before this reload: a cancelled lift issues no Server Action,
+         * so there is no response to wait for and waiting would hang until the test timed out.
+         */
         // Act — reload, the only way to tell a local revert from a write that was never issued.
         await page.reload();
 

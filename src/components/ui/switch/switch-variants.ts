@@ -1,3 +1,4 @@
+// Covered by: `src/components/ui/switch/switch.test.tsx`
 import { cva } from "class-variance-authority";
 
 /*

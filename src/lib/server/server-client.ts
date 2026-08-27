@@ -1,3 +1,4 @@
+// Covered by: `src/features/boards/server/fetch-board-full.integration.test.ts`
 import "server-only";
 
 import { redirect } from "next/navigation";

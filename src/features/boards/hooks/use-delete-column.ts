@@ -1,5 +1,7 @@
 "use client";
 
+// Covered by: `src/features/boards/components/board-view/board-view.test.tsx`
+
 import { useMutation } from "@tanstack/react-query";
 
 import { useToast } from "@/components/ui/toast/use-toast";
