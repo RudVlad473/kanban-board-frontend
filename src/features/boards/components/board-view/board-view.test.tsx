@@ -60,6 +60,9 @@ const {
     ServerColumnRemoved,
     ReorderableColumns,
     ReorderInFlight,
+    ReorderedServerOrder,
+    ColumnsOutOfPositionOrder,
+    FiveReorderableColumns,
 } = composeStories(stories);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
@@ -100,6 +103,19 @@ const getScrollRow = (): HTMLElement => {
     }
 
     return row;
+};
+
+/** Every rendered column that still overlaps the scroll row's own visible box, in rendered order. */
+const getColumnsOverlappingTheVisibleBox = (): (string | null | undefined)[] => {
+    const rowRect = getScrollRow().getBoundingClientRect();
+
+    return Array.from(document.querySelectorAll("section"))
+        .filter((section) => {
+            const rect = section.getBoundingClientRect();
+
+            return rect.right > rowRect.left && rect.left < rowRect.right;
+        })
+        .map((section) => section.querySelector("h2")?.firstElementChild?.children[1]?.textContent);
 };
 
 /** Fills and submits an Add Column modal that is already open, whichever entry point opened it. */
@@ -186,6 +202,69 @@ const reorderFromKeyboard = async ({
     }
 
     await userEvent.keyboard(liftKey);
+};
+
+/*
+ * Both the strategy's transform transition and the sensor's smooth scroll animate, so a rect read
+ * taken as soon as an announcement lands is mid-flight. The empty seed forces a second poll pass.
+ */
+const waitForColumnLayoutToSettle = async (): Promise<void> => {
+    const readLayout = (): string => {
+        const scrollRow = getScrollRow();
+
+        return Array.from(document.querySelectorAll("section"))
+            .map((section) => String(Math.round(section.getBoundingClientRect().left)))
+            .concat(String(Math.round(scrollRow.scrollLeft)))
+            .join(",");
+    };
+
+    let previousLayout = "";
+
+    await expect
+        .poll(() => {
+            const currentLayout = readLayout();
+            const isSettled = currentLayout === previousLayout;
+            previousLayout = currentLayout;
+
+            return isSettled;
+        })
+        .toBe(true);
+};
+
+/**
+ * One arrow step of a lift already in progress, reported as the pair the 03-10 defect broke: whether
+ * the destination slot was already fully inside the row's visible box, and whether the row scrolled.
+ */
+const stepRightAndMeasureScroll = async ({
+    movedName,
+}: {
+    movedName: string;
+}): Promise<{ wasDestinationVisible: boolean; didScroll: boolean }> => {
+    await waitForColumnLayoutToSettle();
+    const scrollRow = getScrollRow();
+    const rowRect = scrollRow.getBoundingClientRect();
+    /* Read off live rects, never DOM order: a lift moves columns by transform and leaves the DOM as it was. */
+    const rects = Array.from(document.querySelectorAll("section")).map((section) => ({
+        name: section.querySelector("h2")?.firstElementChild?.children[1]?.textContent,
+        rect: section.getBoundingClientRect(),
+    }));
+    const movedLeft = rects.find(({ name }) => name === movedName)?.rect.left ?? Number.NaN;
+    const destination = rects
+        .filter(({ rect }) => rect.left > movedLeft)
+        .sort((left, right) => left.rect.left - right.rect.left)
+        .at(0)?.rect;
+    const wasDestinationVisible =
+        destination !== undefined &&
+        destination.left >= rowRect.left &&
+        destination.right <= rowRect.left + scrollRow.clientWidth;
+    const scrollBefore = scrollRow.scrollLeft;
+    const announcedBefore = getAnnouncement();
+
+    await userEvent.keyboard("{ArrowRight}");
+    await expect.poll(getAnnouncement).not.toBe(announcedBefore);
+    await waitForColumnLayoutToSettle();
+
+    return { wasDestinationVisible, didScroll: scrollRow.scrollLeft !== scrollBefore };
 };
 
 /** The whole COLUMN-02 entry path: kebab, rename entry, retype the name, submit. */
@@ -1141,6 +1220,115 @@ describeForEachDevice({
                 "Fixture Column 3",
                 "Fixture Column 4",
             ]);
+        });
+
+        /*
+         * COLUMN-03's read half: the board arrives already in display order, so the container renders
+         * it verbatim and the optimistic `arrayMove` composes on top of that order (03-14).
+         */
+        it("renders a board the user already reordered in the order the read boundary handed over", async () => {
+            // Arrange & Act
+            await render(<ReorderedServerOrder />);
+
+            // Assert
+            expect(getRenderedColumnNames()).toEqual([
+                "Fixture Column 2",
+                "Fixture Column 3",
+                "Fixture Column 1",
+                "Fixture Column 4",
+            ]);
+        });
+
+        it("moves a column relative to that already-reordered order, not to creation order", async () => {
+            // Arrange
+            await render(<ReorderedServerOrder />);
+
+            // Act
+            await reorderFromKeyboard({ caption: "Fixture Column 2 (2)" });
+
+            // Assert
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 3", "Fixture Column 2", "Fixture Column 1", "Fixture Column 4"]);
+            expect(reorderColumnActionCalls).toHaveLength(1);
+            expect(reorderColumnActionCalls[0].targetPosition).toBe(1);
+        });
+
+        /*
+         * The 03-10 checkpoint's defect, as an invariant that holds at both viewports: dnd-kit
+         * scrolled for any destination past the row's MIDPOINT, throwing a visible neighbour off it.
+         */
+        it("scrolls the row only for a keyboard step whose destination is not already fully on screen", async () => {
+            // Arrange
+            await render(<FiveReorderableColumns />);
+            focusColumnHandle("Fixture Column 1 (2)");
+            await userEvent.keyboard(" ");
+
+            // Act
+            const steps: { wasDestinationVisible: boolean; didScroll: boolean }[] = [];
+            for (let step = 0; step < 4; step += 1) {
+                steps.push(await stepRightAndMeasureScroll({ movedName: "Fixture Column 1" }));
+            }
+            await userEvent.keyboard(" ");
+
+            // Assert
+            expect(steps.map(({ wasDestinationVisible, didScroll }) => wasDestinationVisible && didScroll)).toEqual([
+                false,
+                false,
+                false,
+                false,
+            ]);
+        });
+
+        /* T-03-45's other side: the narrowing is keyboard-only, so the pointer path's scroll is untouched. */
+        it("leaves the row's scroll where it was through a plain pointer press on a column handle", async () => {
+            // Arrange
+            await render(<FiveReorderableColumns />);
+            const scrollRow = getScrollRow();
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Fixture Column 1 (2)" }));
+
+            // Assert
+            expect(scrollRow.scrollLeft).toBe(0);
+            expect(reorderColumnActionCalls).toHaveLength(0);
+        });
+
+        /*
+         * The trade this task refuses: suppressing the scroll wholesale passes the case above and
+         * silently removes keyboard access to every column past the fold.
+         */
+        it("still moves a column past the fold by keyboard and leaves it on screen", async () => {
+            // Arrange
+            await render(<FiveReorderableColumns />);
+
+            // Act
+            await reorderFromKeyboard({ caption: "Fixture Column 1 (2)", steps: 4 });
+
+            // Assert
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual([
+                    "Fixture Column 2",
+                    "Fixture Column 3",
+                    "Fixture Column 4",
+                    "Fixture Column 5",
+                    "Fixture Column 1",
+                ]);
+            expect(reorderColumnActionCalls[0].targetPosition).toBe(4);
+            await expect.poll(getColumnsOverlappingTheVisibleBox).toContain("Fixture Column 1");
+        });
+
+        /*
+         * T-03-43: ordering is the read boundary's one job. Given props whose array order and
+         * `position` values disagree, this container must still render the array it was handed.
+         */
+        it("adds no ordering of its own when the props' array order and positions disagree", async () => {
+            // Arrange & Act
+            await render(<ColumnsOutOfPositionOrder />);
+
+            // Assert
+            expect(getRenderedColumnNames()).toEqual(["Fixture Column 1", "Fixture Column 2", "Fixture Column 3"]);
         });
     },
 });

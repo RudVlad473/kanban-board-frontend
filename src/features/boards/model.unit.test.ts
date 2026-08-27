@@ -9,14 +9,17 @@ import {
     COLUMN_DOT_TOKENS,
     createEmptyColumnRows,
     DEFAULT_COLUMN_ROW_COUNT,
+    isColumnDestinationVisible,
     removeBoard,
     reorderColumns,
     resolveDestinationAfterDelete,
     shouldNudgeOnColumnCount,
+    sortColumnsByPosition,
     toColumnDotToken,
     toReorderTargetPosition,
     toSubmittedColumnNames,
 } from "@/features/boards/model";
+import type { ColumnFull } from "@/features/boards/schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 import { createBoards } from "@/test-utils/factories/board";
 import { createColumnsFull } from "@/test-utils/factories/board-full";
@@ -293,6 +296,125 @@ describe("applyColumnOrderOverride", () => {
 
         // Assert
         expect(rendered).toEqual(remaining);
+    });
+});
+
+/*
+ * Every fixture in this suite is authored in creation order, where array index and `position` are
+ * the same number — which is exactly why nothing caught the read-order defect. These cases author
+ * the disagreement deliberately (03-14-SUMMARY.md).
+ */
+describe("sortColumnsByPosition", () => {
+    /** The shape the real backend returns after a reorder: array order and `position` disagree. */
+    const createShuffledColumns = (): ColumnFull[] => {
+        const [first, second, third] = createColumnsFull({ count: 3 });
+
+        return [
+            { ...first, position: 2 },
+            { ...second, position: 0 },
+            { ...third, position: 1 },
+        ];
+    };
+
+    it("orders columns by their position rather than by the array order they arrived in", () => {
+        // Arrange
+        const columns = createShuffledColumns();
+
+        // Act
+        const ordered = sortColumnsByPosition(columns);
+
+        // Assert
+        expect(ordered.map((column) => column.position)).toEqual([0, 1, 2]);
+        expect(ordered.map((column) => column.id)).toEqual([columns[1].id, columns[2].id, columns[0].id]);
+    });
+
+    it("leaves an array that already agrees with its positions exactly as it was", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act & Assert
+        expect(sortColumnsByPosition(columns)).toEqual(columns);
+    });
+
+    /* `Array.prototype.sort` sorts in place, and this input is `cache()`d data other derivations read. */
+    it("never mutates the array it was given", () => {
+        // Arrange
+        const columns = createShuffledColumns();
+        const orderBefore = columns.map((column) => column.id);
+
+        // Act
+        sortColumnsByPosition(columns);
+
+        // Assert
+        expect(columns.map((column) => column.id)).toEqual(orderBefore);
+    });
+
+    it("keeps columns sharing a position in the relative order they arrived in", () => {
+        // Arrange
+        const [first, second, third] = createColumnsFull({ count: 3 });
+        const columns = [
+            { ...first, position: 1 },
+            { ...second, position: 1 },
+            { ...third, position: 0 },
+        ];
+
+        // Act
+        const ordered = sortColumnsByPosition(columns);
+
+        // Assert
+        expect(ordered.map((column) => column.id)).toEqual([third.id, first.id, second.id]);
+    });
+
+    it("returns an empty array for a board holding no columns at all", () => {
+        // Act & Assert
+        expect(sortColumnsByPosition([])).toEqual([]);
+    });
+});
+
+/*
+ * The predicate that decides whether dnd-kit's own keyboard scroll is warranted. Its boundaries are
+ * what separate "the destination is on screen already" from "past the fold" (03-14-SUMMARY.md).
+ */
+describe("isColumnDestinationVisible", () => {
+    const visibleBox = { left: 0, right: 1440 };
+
+    it("accepts a destination sitting wholly inside the visible box", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 936, right: 1216 }, visibleBox })).toBe(true);
+    });
+
+    it("accepts a destination flush against either edge of the visible box", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 0, right: 280 }, visibleBox })).toBe(true);
+        expect(isColumnDestinationVisible({ destination: { left: 1160, right: 1440 }, visibleBox })).toBe(true);
+    });
+
+    /* The past-the-fold case dnd-kit's own scroll must keep handling, or keyboard reach is lost. */
+    it("rejects a destination whose far edge is past the fold, even by a pixel", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 1161, right: 1441 }, visibleBox })).toBe(false);
+    });
+
+    it("rejects a destination that starts behind the box's near edge", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: -4, right: 276 }, visibleBox })).toBe(false);
+    });
+
+    /* The row does not start at the viewport's own origin once the dashboard sidebar is beside it. */
+    it("measures against the box it was given, not the viewport", () => {
+        // Act & Assert
+        expect(
+            isColumnDestinationVisible({
+                destination: { left: 628, right: 908 },
+                visibleBox: { left: 300, right: 1440 },
+            }),
+        ).toBe(true);
+        expect(
+            isColumnDestinationVisible({
+                destination: { left: 100, right: 380 },
+                visibleBox: { left: 300, right: 1440 },
+            }),
+        ).toBe(false);
     });
 });
 

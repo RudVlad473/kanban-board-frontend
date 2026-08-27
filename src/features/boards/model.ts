@@ -96,6 +96,29 @@ const hashColumnId = (id: string): number => {
 export const toColumnDotToken = ({ id }: { id: string }): (typeof COLUMN_DOT_TOKENS)[number] =>
     COLUMN_DOT_TOKENS[hashColumnId(id) % COLUMN_DOT_TOKENS.length];
 
+/**
+ * `position` is the backend's ordering authority — the response array's own order carries no
+ * guarantee and only looked like one because every fixture is authored in creation order. Copies
+ * first: the input is `cache()`d RSC data other derivations also read (03-14-SUMMARY.md).
+ */
+export const sortColumnsByPosition = (columns: ColumnFull[]): ColumnFull[] =>
+    [...columns].sort((left, right) => left.position - right.position);
+
+export type HorizontalBox = { left: number; right: number };
+
+/**
+ * Whether a keyboard step's destination already sits inside the column row's visible box. dnd-kit's
+ * `KeyboardSensor` scrolls for anything past the container's MIDPOINT, which on a row several
+ * columns wide throws an on-screen neighbour off it (03-14-SUMMARY.md).
+ */
+export const isColumnDestinationVisible = ({
+    destination,
+    visibleBox,
+}: {
+    destination: HorizontalBox;
+    visibleBox: HorizontalBox;
+}): boolean => destination.left >= visibleBox.left && destination.right <= visibleBox.right;
+
 export type ColumnOrderOverride = { previousOrder: string[]; order: string[] };
 
 /**

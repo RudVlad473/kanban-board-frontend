@@ -191,3 +191,35 @@ export const ReorderableColumns: Story = {
 export const ReorderInFlight: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 4 }) }) },
 };
+
+/**
+ * A board the user has already reordered, as the read boundary now hands it over — array in display
+ * order, so the names are out of creation order while the positions still run 0,1,2 (03-14).
+ */
+const createReorderedColumns = () => {
+    const [first, second, third, fourth] = createColumnsFull({ count: 4 });
+
+    return [second, third, first, fourth].map((column, index) => ({ ...column, position: index }));
+};
+
+export const ReorderedServerOrder: Story = { args: { board: createBoardFull({ columns: createReorderedColumns() }) } };
+
+/**
+ * The exact board the 03-10 checkpoint found the keyboard-scroll defect on — five columns, which
+ * overflow 1440px, so the row scrolls while the first arrow step's destination is already on screen.
+ */
+export const FiveReorderableColumns: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 5 }) }) },
+};
+
+/*
+ * Array order and `position` deliberately disagree. Ordering is the read boundary's one job, so this
+ * must still render in ARRAY order — a second sort here is what T-03-43 forbids.
+ */
+export const ColumnsOutOfPositionOrder: Story = {
+    args: {
+        board: createBoardFull({
+            columns: createColumnsFull({ count: 3 }).map((column, index) => ({ ...column, position: 2 - index })),
+        }),
+    },
+};

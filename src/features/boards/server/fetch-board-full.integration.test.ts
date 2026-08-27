@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { boardFullSchema } from "@/features/boards/schemas";
+import { sortColumnsByPosition } from "@/features/boards/model";
+import { boardFullSchema, type ColumnFull } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 
 // comment-length-exempt: records what this suite can and cannot reach and where the remainder is proved — a scope contract a future reader would otherwise re-litigate (docs/adr/tech/0023)
@@ -101,6 +102,45 @@ const readBoardFull = async ({
     return { status: response.status, body: await response.json().catch(() => null) };
 };
 
+/** 03-BACKEND-FACTS.md § R1: `targetPosition` is the moved column's FINAL 0-based index. */
+const reorderColumn = async ({
+    account,
+    boardId,
+    column,
+    targetPosition,
+}: {
+    account: SeededAccount;
+    boardId: string;
+    column: ColumnFull;
+    targetPosition: number;
+}): Promise<number> => {
+    const response = await fetch(
+        `${baseUrl}${EXTERNAL_PATH.COLUMN_REORDER.replace("{boardId}", boardId).replace("{columnId}", column.id)}?userId=${account.id}`,
+        {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", Cookie: `JSESSIONID=${account.jsessionId}` },
+            body: JSON.stringify({ version: column.version, targetPosition }),
+        },
+    );
+
+    return response.status;
+};
+
+/** The columns of a board read back, parsed — the only shape a caller of this suite should assert on. */
+const readColumns = async ({
+    account,
+    boardId,
+}: {
+    account: SeededAccount;
+    boardId: string;
+}): Promise<ColumnFull[]> => {
+    const { body } = await readBoardFull({ account, boardId });
+    const parsed = boardFullSchema.safeParse(body);
+
+    expect(parsed.success).toBe(true);
+    return parsed.success ? parsed.data.columns : [];
+};
+
 describe("the full-board read against the real backend", () => {
     let owner: SeededAccount;
     let ownedBoardId: string;
@@ -159,5 +199,63 @@ describe("the full-board read against the real backend", () => {
         // Act & Assert
         expect(boardFullSchema.safeParse({ id: "b1", name: "Board", version: 0 }).success).toBe(false);
         expect(boardFullSchema.safeParse({ id: "b1", name: "Board", version: 0, columns: [{}] }).success).toBe(false);
+    });
+
+    /*
+     * COLUMN-03's own success criterion, which no gate exercised: 03-10 proved the write returns 200,
+     * never that a later read reflects it. Seeded on its own board so the suite's order assertion
+     * above keeps asserting an untouched board.
+     */
+    describe("after a reorder the same account issued", () => {
+        let reorderedBoardId: string;
+        let columnsAfterReorder: ColumnFull[];
+
+        beforeAll(async () => {
+            reorderedBoardId = await createBoardWithColumns({
+                account: owner,
+                columnNames: ["Alpha", "Beta", "Gamma"],
+            });
+            const seeded = await readColumns({ account: owner, boardId: reorderedBoardId });
+            const alpha = seeded.find((column) => column.name === "Alpha");
+
+            expect(alpha).toBeDefined();
+            const status = await reorderColumn({
+                account: owner,
+                boardId: reorderedBoardId,
+                column: alpha ?? seeded[0],
+                targetPosition: 2,
+            });
+
+            expect(status).toBe(200);
+            columnsAfterReorder = await readColumns({ account: owner, boardId: reorderedBoardId });
+        }, 60_000);
+
+        it("stores the new order as the columns' own positions", () => {
+            // Act
+            const positionByName = new Map(columnsAfterReorder.map((column) => [column.name, column.position]));
+
+            // Assert
+            expect(positionByName.get("Beta")).toBe(0);
+            expect(positionByName.get("Gamma")).toBe(1);
+            expect(positionByName.get("Alpha")).toBe(2);
+        });
+
+        it("reads back in the order the user left it once the read boundary's own sort is applied", () => {
+            // Act
+            const displayed = sortColumnsByPosition(columnsAfterReorder).map((column) => column.name);
+
+            // Assert
+            expect(displayed).toEqual(["Beta", "Gamma", "Alpha"]);
+        });
+
+        /*
+         * What makes the assertion above falsifiable rather than decorative: were the raw array
+         * already position-ordered, the sort would be a no-op and this suite could not fail on the
+         * defect it exists to close.
+         */
+        it("carries a raw array order that does not already agree with those positions", () => {
+            // Act & Assert
+            expect(columnsAfterReorder.map((column) => column.name)).not.toEqual(["Beta", "Gamma", "Alpha"]);
+        });
     });
 });
