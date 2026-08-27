@@ -168,6 +168,48 @@ missing-id lookup — no dedicated conflict code for "already deleted."
 
 ---
 
+## R8 the board path segment on the column endpoints — REFUTES 03-RESEARCH Pitfall 2's premise
+
+**Question (raised by plan 03-11, observed 2026-08-27):** `03-RESEARCH.md` Pitfall 2 established
+that `openapi-fetch` silently *skips* a missing path parameter, leaving `%7BboardId%7D` in the URL,
+and that TypeScript catches neither variant. It then assumed the resulting request **fails**. Does
+it?
+
+**Observed — it does not fail. The board segment is inert on all three endpoints whose generated
+`path` type omits it.** The backend resolves the column from `columnId` alone and derives the
+owning board from the column itself:
+
+```
+PUT    /boards/%7BboardId%7D/columns/{columnId}          -> 200, rename applied
+PUT    /boards/no-such-board/columns/{columnId}          -> 200, rename applied
+PATCH  /boards/%7BboardId%7D/columns/{columnId}/reorder  -> 200, moved to targetPosition
+DELETE /boards/%7BboardId%7D/columns/{columnId}          -> 200, column gone
+POST   /boards/%7BboardId%7D/columns                     -> 404 ENTITY_NOT_FOUND "Board was not found"
+```
+
+The one refusal is `POST /boards/{boardId}/columns` — **the only column endpoint whose committed
+spec declares a `boardId` path parameter.** The generated types are therefore *accurate*: the three
+that omit it omit it because the backend genuinely does not read it.
+
+**Ownership is unaffected — it is enforced from the session, never from the path.** A stranger's
+rename of another account's column is refused `403 ACCESS_DENIED` ("You do not have access to that
+board") with the segment unresolved, with the stranger's *own* board id in the path, and with the
+owner's `userId` in the query. No board id a caller can put in the URL widens their reach.
+
+**Consequences:**
+
+- **T-03-21 is not the threat it was written as.** A dropped `boardId` cannot write to the wrong
+  board — the path board is not consulted at all. Its real character is the opposite of "loud
+  failure": the omission is *invisible* at runtime on rename/reorder/delete.
+- **Keep spelling `boardId` out in the four column actions.** It is the documented URL, it is what
+  `POST` requires, and the backend may tighten later. But the source-level assertions those plans
+  carry guard a **convention**, not an observable failure — do not describe them as the last line
+  of defense against a real bug.
+- **`create` is where the assertion bites**, and that is the one this suite proves
+  (`create-column-action.integration.test.ts`).
+
+---
+
 ## Supersedes 03-RESEARCH.md A1-A5
 
 | Assumption | Claim | Answered by | Risk if wrong | State |
