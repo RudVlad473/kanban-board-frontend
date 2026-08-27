@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createContext, useContext, useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
-import { renameBoardAction } from "@/features/boards/actions/rename-board";
+import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
 import type { Board } from "@/features/boards/schemas";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 

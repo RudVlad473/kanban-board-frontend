@@ -2,7 +2,7 @@ import type { ProblemCode } from "@/lib/core/api-contract/problem-detail";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 
 /**
- * A lightweight stand-in for `@/features/auth/actions/sign-out`'s runtime module, aliased for the
+ * A lightweight stand-in for `@/features/auth/actions/sign-out-action`'s runtime module, aliased for the
  * "browser" and "storybook" Vitest projects — the real module reaches `node:crypto` via
  * `@/lib/server/session`. No story or composed-story test ever submits a form (D-25); see docs/adr/tech/0020.
  */

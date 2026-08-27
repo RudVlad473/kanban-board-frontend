@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 
 import { useToast } from "@/components/ui/toast/use-toast";
-import { deleteColumnAction } from "@/features/boards/actions/delete-column";
+import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
 /*

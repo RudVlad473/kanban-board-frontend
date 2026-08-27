@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
-import { renameColumnAction } from "@/features/boards/actions/rename-column";
+import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import type { ColumnFull } from "@/features/boards/schemas";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 

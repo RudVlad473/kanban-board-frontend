@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { useToast } from "@/components/ui/toast/use-toast";
-import { deleteBoardAction } from "@/features/boards/actions/delete-board";
+import { deleteBoardAction } from "@/features/boards/actions/delete-board-action";
 import { removeBoard, resolveDestinationAfterDelete } from "@/features/boards/model";
 import type { Board } from "@/features/boards/schemas";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";

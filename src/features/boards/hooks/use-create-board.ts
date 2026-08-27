@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
-import { createBoardAction } from "@/features/boards/actions/create-board";
-import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns";
+import { createBoardAction } from "@/features/boards/actions/create-board-action";
+import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
 import { toSubmittedColumnNames } from "@/features/boards/model";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";

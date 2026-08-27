@@ -44,63 +44,52 @@ const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
  */
 const serverActionStubAlias = [
     {
-        find: "@/features/auth/actions/sign-in",
+        find: "@/features/auth/actions/sign-in-action",
         replacement: path.resolve(rootDir, "src/test-utils/sign-in-action-storybook-stub.ts"),
     },
     {
-        find: "@/features/auth/actions/sign-up",
+        find: "@/features/auth/actions/sign-up-action",
         replacement: path.resolve(rootDir, "src/test-utils/sign-up-action-storybook-stub.ts"),
     },
     {
-        find: "@/features/auth/actions/sign-out",
+        find: "@/features/auth/actions/sign-out-action",
         replacement: path.resolve(rootDir, "src/test-utils/sign-out-action-storybook-stub.ts"),
     },
     {
-        find: "@/features/theme/actions/update-theme",
+        find: "@/features/theme/actions/update-theme-action",
         replacement: path.resolve(rootDir, "src/test-utils/update-theme-action-storybook-stub.ts"),
     },
     /*
-     * The columns entry must precede the board one — Vite matches a string `find` by prefix, so
-     * `create-board` would otherwise swallow `create-board-columns` too.
+     * Vite matches a string `find` by prefix. The `-action` suffix leaves no entry below a prefix
+     * of any other, so this list's order carries no meaning — re-check that before adding an entry
+     * whose name extends an existing one.
      */
     {
-        find: "@/features/boards/actions/create-board-columns",
+        find: "@/features/boards/actions/create-board-columns-action",
         replacement: path.resolve(rootDir, "src/test-utils/create-board-columns-action-storybook-stub.ts"),
     },
     {
-        find: "@/features/boards/actions/create-board",
+        find: "@/features/boards/actions/create-board-action",
         replacement: path.resolve(rootDir, "src/test-utils/create-board-action-storybook-stub.ts"),
     },
     {
-        find: "@/features/boards/actions/rename-board",
+        find: "@/features/boards/actions/rename-board-action",
         replacement: path.resolve(rootDir, "src/test-utils/rename-board-action-storybook-stub.ts"),
     },
     {
-        find: "@/features/boards/actions/delete-board",
+        find: "@/features/boards/actions/delete-board-action",
         replacement: path.resolve(rootDir, "src/test-utils/delete-board-action-storybook-stub.ts"),
     },
-    /*
-     * Checked against the prefix rule above before appending: `create-column` neither starts with
-     * nor is started by any entry here, so its position in this list carries no meaning.
-     */
     {
-        find: "@/features/boards/actions/create-column",
+        find: "@/features/boards/actions/create-column-action",
         replacement: path.resolve(rootDir, "src/test-utils/create-column-action-storybook-stub.ts"),
     },
-    /*
-     * Checked against the prefix rule above: `rename-column` neither starts with nor is started by
-     * `rename-board`, `create-column` or any other entry, so its position here carries no meaning.
-     */
     {
-        find: "@/features/boards/actions/rename-column",
+        find: "@/features/boards/actions/rename-column-action",
         replacement: path.resolve(rootDir, "src/test-utils/rename-column-action-storybook-stub.ts"),
     },
-    /*
-     * Checked against the prefix rule above: `delete-column` neither starts with nor is started by
-     * `delete-board`, `rename-column` or any other entry, so its position here carries no meaning.
-     */
     {
-        find: "@/features/boards/actions/delete-column",
+        find: "@/features/boards/actions/delete-column-action",
         replacement: path.resolve(rootDir, "src/test-utils/delete-column-action-storybook-stub.ts"),
     },
 ];

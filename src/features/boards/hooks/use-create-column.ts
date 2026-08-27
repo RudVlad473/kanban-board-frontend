@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
-import { createColumnAction } from "@/features/boards/actions/create-column";
+import { createColumnAction } from "@/features/boards/actions/create-column-action";
 import { shouldNudgeOnColumnCount } from "@/features/boards/model";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
