@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 19
+open_count: 21
 waived_count: 0
 fixed_count: 7
-total_count: 26
-last_updated: 2026-08-27T12:53:48.822Z
+total_count: 28
+last_updated: 2026-08-27T16:21:57.475Z
 ---
 
 # Broken Windows Ledger
@@ -41,6 +41,8 @@ last_updated: 2026-08-27T12:53:48.822Z
 | 24 | 03 | unrun-verify | .planning/phases/03-column-management/03-BACKEND-FACTS.md |  | Column probe R1-R7 never observed: nonprod database down for all 14 attempts on 2026-08-26; every R section reads NOT YET OBSERVED | fixed |  | 2026-08-26T13:52:58.902Z | 2026-08-26T19:35:18.622Z |
 | 25 | 03 | unrun-verify | src/features/boards/components/column-header.tsx |  | 03-08: no live-app visual pass on the column kebab (Playwright MCP is not visible to spawned subagents); mock comparison done from the PDF only | open |  | 2026-08-27T12:13:08.402Z |  |
 | 26 | 03 | unrun-verify | src/features/boards/components/delete-column-confirm.tsx |  | No live-app visual pass on the delete confirmation or the destructive kebab entry — Playwright MCP is not visible to spawned subagents | open |  | 2026-08-27T12:53:48.822Z |  |
+| 27 | 03 | deviation | src/features/boards/actions/rename-column-action.integration.test.ts |  | R8: board path segment is inert on rename/reorder/delete; T-03-21 overstates what spelling boardId out protects against and needs re-scoping to the create endpoint | open |  | 2026-08-27T16:21:53.335Z |  |
+| 28 | 03 | deviation | src/features/boards/schemas.ts |  | R9: taskFullSchema.description widened to .nullish() after the backend was observed sending null; every read site in the tasks phase must handle string \| null \| undefined | open |  | 2026-08-27T16:21:57.475Z |  |
 
 ````json
 [
@@ -354,6 +356,30 @@ last_updated: 2026-08-27T12:53:48.822Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-27T12:53:48.822Z",
+    "resolved_at": null
+  },
+  {
+    "id": 27,
+    "kind": "deviation",
+    "phase": "03",
+    "file": "src/features/boards/actions/rename-column-action.integration.test.ts",
+    "line": null,
+    "description": "R8: board path segment is inert on rename/reorder/delete; T-03-21 overstates what spelling boardId out protects against and needs re-scoping to the create endpoint",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T16:21:53.335Z",
+    "resolved_at": null
+  },
+  {
+    "id": 28,
+    "kind": "deviation",
+    "phase": "03",
+    "file": "src/features/boards/schemas.ts",
+    "line": null,
+    "description": "R9: taskFullSchema.description widened to .nullish() after the backend was observed sending null; every read site in the tasks phase must handle string | null | undefined",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T16:21:57.475Z",
     "resolved_at": null
   }
 ]

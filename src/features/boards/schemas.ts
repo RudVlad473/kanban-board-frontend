@@ -30,8 +30,11 @@ export const subtaskSchema = z.object({
 export const taskFullSchema = z.object({
     id: z.string(),
     title: z.string(),
-    // The contract declares `description` optional; a task without one is well-formed, not malformed.
-    description: z.string().optional(),
+    /*
+     * `.nullish()`, not `.optional()`: the backend sends an explicit `description: null` for a task
+     * without one, which bare `.optional()` rejects — failing the whole board read (03-11-SUMMARY.md).
+     */
+    description: z.string().nullish(),
     version: z.number(),
     position: z.number(),
     subtasks: subtaskSchema.array(),
