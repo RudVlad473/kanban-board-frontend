@@ -109,3 +109,44 @@ export const LoneColumnMenuOpen: Story = {
         defaultIsMenuOpen: true,
     },
 };
+
+/** Where the library's own `aria-describedby` points in the real board — its hidden lift instructions. */
+const DRAG_INSTRUCTIONS_ID = "column-header-story-drag-instructions";
+
+/*
+ * The handle props exactly as `useSortable` hands them over, staged rather than driven — this
+ * component is presentational, so what matters here is that it spreads them and adds nothing.
+ */
+export const DragHandleFocused: Story = {
+    decorators: [
+        (Story) => (
+            <>
+                <span id={DRAG_INSTRUCTIONS_ID} hidden>
+                    To pick up a column, press space or enter.
+                </span>
+
+                <Story />
+            </>
+        ),
+    ],
+    args: {
+        handleProps: {
+            setNode: () => undefined,
+            attributes: {
+                role: "button",
+                tabIndex: 0,
+                "aria-disabled": false,
+                "aria-pressed": undefined,
+                "aria-roledescription": "draggable column",
+                "aria-describedby": DRAG_INSTRUCTIONS_ID,
+            },
+            listeners: undefined,
+        },
+    },
+};
+
+/*
+ * UI-SPEC loading/reorder-in-flight: while this column's own reorder is unsettled, its version is
+ * stale, so neither entry may fire a second mutation against it (T-03-31).
+ */
+export const MutationsDisabled: Story = { args: { areMutationsDisabled: true, defaultIsMenuOpen: true } };

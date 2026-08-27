@@ -92,6 +92,10 @@ const serverActionStubAlias = [
         find: "@/features/boards/actions/delete-column-action",
         replacement: path.resolve(rootDir, "src/test-utils/delete-column-action-storybook-stub.ts"),
     },
+    {
+        find: "@/features/boards/actions/reorder-column-action",
+        replacement: path.resolve(rootDir, "src/test-utils/reorder-column-action-storybook-stub.ts"),
+    },
 ];
 
 export default defineConfig({

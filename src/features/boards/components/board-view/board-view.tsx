@@ -1,19 +1,34 @@
 "use client";
 
+import {
+    closestCenter,
+    DndContext,
+    DragOverlay,
+    KeyboardSensor,
+    MouseSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+    type DragStartEvent,
+} from "@dnd-kit/core";
+import { horizontalListSortingStrategy, SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useEffect, useRef, useState } from "react";
-import { useBoolean } from "usehooks-ts";
+import { useBoolean, useMediaQuery } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
 import { AddColumnModal } from "@/features/boards/components/add-column-modal/add-column-modal";
 import { AddColumnPlaceholder } from "@/features/boards/components/add-column-placeholder/add-column-placeholder";
-import { ColumnHeader } from "@/features/boards/components/column-header/column-header";
 import { DeleteColumnConfirm } from "@/features/boards/components/delete-column-confirm/delete-column-confirm";
 import { RenameColumnModal } from "@/features/boards/components/rename-column-modal/rename-column-modal";
+import { SortableColumn } from "@/features/boards/components/sortable-column/sortable-column";
 import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
 import { useDeleteColumn, type DeleteColumnArgs } from "@/features/boards/hooks/use-delete-column";
 import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";
-import { toSubtaskSummary } from "@/features/boards/model";
+import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
+import { createColumnReorderAnnouncements, toColumnCaption, toColumnDotToken } from "@/features/boards/model";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
+import { cn } from "@/lib/core/styling/cn";
 
 /*
  * COLUMN-01 makes this the board's client container: it owns the Add Column modal's open state and
@@ -53,11 +68,33 @@ export const BoardView = ({
     const [columnBeingDeleted, setColumnBeingDeleted] = useState<ColumnFull | null>(
         defaultDeleteColumnTargetIndex === undefined ? null : (board.columns[defaultDeleteColumnTargetIndex] ?? null),
     );
+    const [liftedColumnId, setLiftedColumnId] = useState<string | null>(null);
     const columnCount = board.columns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
     /* The DERIVED columns, not the raw props — that array is what carries the optimistic name. */
-    const { renameColumn, columns: renderedColumns } = useRenameColumn({ columns: board.columns });
+    const { renameColumn, columns: renamedColumns } = useRenameColumn({ columns: board.columns });
+    /* Chained onto the rename's own output, so a column can be renamed and moved in the same session. */
+    const {
+        reorderColumns: requestReorder,
+        columns: renderedColumns,
+        reorderingColumnId,
+    } = useReorderColumns({ columns: renamedColumns });
     const { deleteColumn, isPending: isDeletePending } = useDeleteColumn();
+    const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
+
+    /*
+     * The mouse and touch sensors rather than the combined pointer one: that keeps real touch
+     * support while staying reachable by automation, and it sidesteps the pointer sensor's complete
+     * absence of an interactive-element guard (03-RESEARCH Pitfall 5, T-03-32).
+     */
+    const sensors = useSensors(
+        useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+        /* No lift-key override: D-06 keeps the library's defaults, so both space and enter lift. */
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+
+    const liftedColumn = renderedColumns.find((column) => column.id === liftedColumnId) ?? null;
 
     const ghostColumnRef = useRef<HTMLButtonElement>(null);
     /** The column count when a create landed — a ref, so retiring the request costs no render. */
@@ -128,6 +165,36 @@ export const BoardView = ({
         handleOpenChange(true);
     };
 
+    const handleDragStart = ({ active }: DragStartEvent): void => {
+        setLiftedColumnId(String(active.id));
+    };
+
+    const handleDragCancel = (): void => {
+        setLiftedColumnId(null);
+    };
+
+    /*
+     * One completed move, one request (T-03-12). A drop with no target, or one that ended where it
+     * began, is not a move — every intermediate arrow step stayed inside the library.
+     */
+    const handleDragEnd = ({ active, over }: DragEndEvent): void => {
+        setLiftedColumnId(null);
+
+        if (over === null || active.id === over.id) {
+            return;
+        }
+
+        /* Both indices come from the RENDERED array, which is the same order the sortable items are in. */
+        const fromIndex = renderedColumns.findIndex((column) => column.id === active.id);
+        const toIndex = renderedColumns.findIndex((column) => column.id === over.id);
+
+        if (fromIndex === -1 || toIndex === -1) {
+            return;
+        }
+
+        void requestReorder({ boardId: board.id, fromIndex, toIndex });
+    };
+
     return (
         <>
             {columnCount === 0 ? (
@@ -147,49 +214,72 @@ export const BoardView = ({
                 </div>
             ) : (
                 /*
-                 * The column row scrolls horizontally; columns keep their width rather than
-                 * wrapping. The one declaration governing D-04's motion and its opt-out lives here.
+                 * The context id is derived from the board's own id, not left to the library: its
+                 * description ids come from a module-scope counter that drifts between the server
+                 * render and a fresh client, producing an `aria-describedby` hydration mismatch.
                  */
-                <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto scroll-smooth bg-bg-app p-6 motion-reduce:scroll-auto">
-                    {renderedColumns.map((column) => (
-                        /*
-                         * Its own vertical scroll region, so one long column never moves the rest. No
-                         * tab stop of its own: the header kebab is real focusable content, which is what
-                         * axe's scrollable-region-focusable rule actually asks for (03-RESEARCH Pitfall 10).
-                         */
-                        <section
-                            key={column.id}
-                            aria-labelledby={`board-column-${column.id}`}
-                            className="flex w-70 shrink-0 flex-col overflow-y-auto rounded-sm"
+                <DndContext
+                    id={`board-columns-${board.id}`}
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    /*
+                     * The library renders its own live region behind a mounted gate — separate from
+                     * the toast viewport by construction, which is what the UI-SPEC requires.
+                     */
+                    accessibility={{ announcements: createColumnReorderAnnouncements({ columns: renderedColumns }) }}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDragCancel={handleDragCancel}
+                >
+                    {/*
+                     * The column row scrolls horizontally; columns keep their width rather than
+                     * wrapping. The one declaration governing D-04's motion and its opt-out lives here.
+                     */}
+                    <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto scroll-smooth bg-bg-app p-6 motion-reduce:scroll-auto">
+                        {/* Item ids come from the same rendered array the map walks — the library requires render order. */}
+                        <SortableContext
+                            items={renderedColumns.map((column) => column.id)}
+                            strategy={horizontalListSortingStrategy}
                         >
-                            <ColumnHeader
-                                column={column}
-                                onRename={setColumnBeingRenamed}
-                                onDelete={setColumnBeingDeleted}
-                            />
+                            {renderedColumns.map((column) => (
+                                <SortableColumn
+                                    key={column.id}
+                                    column={column}
+                                    isReorderDisabled={renderedColumns.length === 1}
+                                    isReordering={column.id === reorderingColumnId}
+                                    onRename={setColumnBeingRenamed}
+                                    onDelete={setColumnBeingDeleted}
+                                />
+                            ))}
+                        </SortableContext>
 
-                            <ul className="flex flex-col gap-4">
-                                {column.tasks.map((task) => (
-                                    <li
-                                        key={task.id}
-                                        className="flex flex-col gap-2 rounded-lg bg-bg-surface px-4 py-6 shadow-sm"
-                                    >
-                                        <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
-                                            {task.title}
-                                        </p>
+                        {/* Last flex child INSIDE the scroll row, so it scrolls away with the columns (UI-SPEC overflow). */}
+                        <AddColumnPlaceholder ref={ghostColumnRef} onOpen={openAddColumn} />
+                    </div>
 
-                                        <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
-                                            {toSubtaskSummary(task.subtasks)}
-                                        </p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </section>
-                    ))}
+                    {/* The full-opacity preview that follows the pointer while the column itself stays
+                        in place at reduced opacity; the settle is dropped entirely under reduce-motion. */}
+                    <DragOverlay dropAnimation={prefersReducedMotion ? null : undefined}>
+                        {liftedColumn === null ? null : (
+                            <div className="flex w-70 items-center gap-4 rounded-sm bg-bg-surface px-2 py-3 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase shadow-lg">
+                                <span
+                                    aria-hidden="true"
+                                    className={cn(
+                                        "size-4 shrink-0 rounded-full",
+                                        toColumnDotToken({ id: liftedColumn.id }),
+                                    )}
+                                />
 
-                    {/* Last flex child INSIDE the scroll row, so it scrolls away with the columns (UI-SPEC overflow). */}
-                    <AddColumnPlaceholder ref={ghostColumnRef} onOpen={openAddColumn} />
-                </div>
+                                <span className="min-w-0 truncate">
+                                    {toColumnCaption({
+                                        name: liftedColumn.name,
+                                        taskCount: liftedColumn.tasks.length,
+                                    })}
+                                </span>
+                            </div>
+                        )}
+                    </DragOverlay>
+                </DndContext>
             )}
 
             <AddColumnModal

@@ -14,6 +14,7 @@ import {
     resolveDestinationAfterDelete,
     shouldNudgeOnColumnCount,
     toColumnDotToken,
+    toReorderTargetPosition,
     toSubmittedColumnNames,
 } from "@/features/boards/model";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
@@ -310,6 +311,53 @@ describe("reorderColumns", () => {
 });
 
 /*
+ * All three assert one observed fact (03-BACKEND-FACTS.md § R1): the wire's `targetPosition` is
+ * where the moved column ENDS UP, so the value sent must be the index `reorderColumns` actually put
+ * it at. Reading the moved column back out of the reordered array is what makes that falsifiable.
+ */
+describe("toReorderTargetPosition", () => {
+    it("sends the moved column's final index for a forward move", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act
+        const targetPosition = toReorderTargetPosition({ toIndex: 2 });
+
+        // Assert
+        expect(targetPosition).toBe(2);
+        expect(reorderColumns({ columns, fromIndex: 0, toIndex: 2 })[targetPosition]).toEqual(columns[0]);
+    });
+
+    it("sends the moved column's final index for a backward move", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act
+        const targetPosition = toReorderTargetPosition({ toIndex: 1 });
+
+        // Assert
+        expect(targetPosition).toBe(1);
+        expect(reorderColumns({ columns, fromIndex: 3, toIndex: 1 })[targetPosition]).toEqual(columns[3]);
+    });
+
+    it("stays inside the board's own index range for every from/to pair", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act & Assert
+        for (let fromIndex = 0; fromIndex < columns.length; fromIndex += 1) {
+            for (let toIndex = 0; toIndex < columns.length; toIndex += 1) {
+                const targetPosition = toReorderTargetPosition({ toIndex });
+
+                expect(targetPosition).toBeGreaterThanOrEqual(0);
+                expect(targetPosition).toBeLessThanOrEqual(columns.length - 1);
+                expect(reorderColumns({ columns, fromIndex, toIndex })[targetPosition]).toEqual(columns[fromIndex]);
+            }
+        }
+    });
+});
+
+/*
  * D-05 resolves D-03's "first crosses 8" as *exceeds* 8, and testing one exact transition is what
  * makes "once only" true by construction rather than by remembering.
  */
@@ -395,5 +443,24 @@ describe("createColumnReorderAnnouncements", () => {
         // Act & Assert
         expect(announcements.onDragOver({ active: createActive(columns[0].id), over: null })).toBeUndefined();
         expect(announcements.onDragStart({ active: createActive("no-such-column") })).toBeUndefined();
+    });
+
+    /*
+     * The library fires one `onDragOver` on the lift itself, over the column's own droppable —
+     * announcing it would overwrite "Picked up …" before a screen reader ever reached it.
+     */
+    it("says nothing when the column is only over its own place", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act
+        const announcement = announcements.onDragOver({
+            active: createActive(columns[0].id),
+            over: createOver(columns[0].id),
+        });
+
+        // Assert
+        expect(announcement).toBeUndefined();
     });
 });

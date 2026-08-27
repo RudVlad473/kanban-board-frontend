@@ -128,7 +128,7 @@ export const applyColumnOrderOverride = ({
 
 /**
  * The rendered order after one column moves, so no call site does its own `splice`. `toIndex` is the
- * item's *final* index here; whether the wire's `targetPosition` means the same is plan 03-01's R1.
+ * item's *final* index here, which is also what the wire means by it — see the translation below.
  */
 export const reorderColumns = ({
     columns,
@@ -139,6 +139,13 @@ export const reorderColumns = ({
     fromIndex: number;
     toIndex: number;
 }): ColumnFull[] => arrayMove(columns, fromIndex, toIndex);
+
+/*
+ * 03-BACKEND-FACTS.md § R1 (probed 2026-08-26): `targetPosition` is the moved column's FINAL 0-based
+ * index, so `arrayMove`'s own `toIndex` goes out verbatim and there is no translation to get wrong.
+ * § R4 observed an out-of-range value is clamped server-side, so no client clamp belongs here.
+ */
+export const toReorderTargetPosition = ({ toIndex }: { toIndex: number }): number => toIndex;
 
 /** D-03's stated threshold. D-02 keeps the count itself uncapped — nothing here refuses a create. */
 export const COLUMN_COUNT_NUDGE_THRESHOLD = 8;
@@ -174,9 +181,14 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
                 : `Picked up ${column.name}, position ${column.position} of ${total}. Use left and right arrow keys to move, space to drop, escape to cancel.`;
         },
 
+        /*
+         * The library fires this once on the lift itself, with the column over its own droppable —
+         * announcing that would overwrite "Picked up …" before it is ever read, so a target that is
+         * the column itself says nothing (verified live in plan 03-10's keyboard tests).
+         */
         onDragOver: ({ active, over }) => {
             const column = resolveColumn(active.id);
-            const target = over === null ? null : resolveColumn(over.id);
+            const target = over === null || over.id === active.id ? null : resolveColumn(over.id);
 
             return column === null || target === null
                 ? undefined

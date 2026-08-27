@@ -22,6 +22,8 @@ const {
     MenuOpen,
     MenuOpenWithDelete,
     LoneColumnMenuOpen,
+    DragHandleFocused,
+    MutationsDisabled,
 } = composeStories(stories);
 
 /** The dot is `aria-hidden`, so it is reached through the DOM rather than by role. */
@@ -229,6 +231,47 @@ describeForEachDevice({
             // Assert
             await expect.poll(() => MenuOpen.args.onRename).toHaveBeenCalledWith(MenuOpen.args.column);
             expect(MenuOpen.args.onRename).toHaveBeenCalledTimes(1);
+        });
+
+        /*
+         * D-06's direct consequence: the enter key LIFTS the column, so a handle that also
+         * activated on enter would be ambiguous — this one carries no click action at all.
+         */
+        it("spreads the library's own handle attributes and adds no click action of its own", async () => {
+            // Arrange
+            const screen = await render(<DragHandleFocused />);
+            const handle = screen.getByRole("button", { name: "Todo (4)" }).element();
+
+            // Act
+            await userEvent.click(handle);
+
+            // Assert
+            expect(handle).toHaveAttribute("aria-roledescription", "draggable column");
+            expect(handle).toHaveAttribute("aria-describedby", "column-header-story-drag-instructions");
+            expect(DragHandleFocused.args.onRename).not.toHaveBeenCalled();
+            expect(DragHandleFocused.args.onDelete).not.toHaveBeenCalled();
+        });
+
+        /* The handle is the whole caption row, so the dot and the count travel inside it (U-02). */
+        it("puts the dot and the caption inside the handle rather than beside it", async () => {
+            // Act
+            const screen = await render(<DragHandleFocused />);
+
+            // Assert
+            const handle = screen.getByRole("button", { name: "Todo (4)" }).element();
+            expect(handle.querySelector('[aria-hidden="true"]')).not.toBeNull();
+            expect(handle.textContent).toBe("Todo (4)");
+        });
+
+        /* T-03-31: a second mutation against the version a reorder just invalidated cannot be fired. */
+        it("disables both menu entries while this column's own reorder is unsettled", async () => {
+            // Act
+            const screen = await render(<MutationsDisabled />);
+
+            // Assert
+            await expect.element(screen.getByRole("menuitem", { name: "Rename Column" })).toBeVisible();
+            const items = Array.from(document.querySelectorAll('[role="menuitem"]'));
+            expect(items.map((item) => item.getAttribute("data-disabled"))).toEqual(["", ""]);
         });
 
         /*
