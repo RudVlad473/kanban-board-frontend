@@ -249,6 +249,14 @@ None — no external service configuration required.
 
 Ready for the next phase once those close: the convention document now describes the codebase as it is, the coverage the codebase already had is legible from the files that have it, and a ninth blocking check keeps it that way.
 
+## Self-Check: PASSED
+
+- `scripts/check-coverage-pointers.mjs` — FOUND
+- `scripts/check-coverage-pointers.unit.test.mjs` — FOUND
+- `CONVENTIONS.md`, `03-VALIDATION.md`, `03-13-SUMMARY.md` — FOUND
+- Commits `a4c9b6f`, `042bd00`, `41af648`, `9f9c2be` — FOUND in `git log`
+- Working tree clean; no untracked build artifacts left behind
+
 ---
 *Phase: 03-column-management*
 *Completed: 2026-08-27*
