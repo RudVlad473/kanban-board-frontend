@@ -47,6 +47,21 @@ const expectMoveAnnounced = async ({ page, name, position }: { page: Page; name:
     await expect(page.getByText(`${name} moved to position ${String(position)} of 4.`)).toBeAttached();
 };
 
+// comment-length-exempt: records which readiness signal is insufficient and the CI-only failure that proved it, so the weaker one is not restored as an equivalent
+/*
+ * The lift, waited on before the first arrow step. `aria-pressed="true"` says the sensor activated;
+ * it does NOT say the library has measured its droppables and opened a drag context. An arrow key
+ * pressed in that gap resolves its destination to the dragged column's own slot, and the move
+ * announcement is suppressed by design when the target is the column itself (`model.ts`
+ * `onDragOver`) — so nothing is announced, ever, and the wait below times out rather than failing
+ * fast. Invisible locally and on the first CI run it looked like geometry, because both keyboard
+ * cases failed together; the second run failed only one of them, which is what a race looks like.
+ * `onDragStart` fires after the context is open, so its announcement is the honest gate.
+ */
+const expectLiftAnnounced = async ({ page, name, position }: { page: Page; name: string; position: number }) => {
+    await expect(page.getByText(`Picked up ${name}, position ${String(position)} of 4.`)).toBeAttached();
+};
+
 const centerOf = async (locator: Locator): Promise<{ x: number; y: number }> => {
     const box = await locator.boundingBox();
 
@@ -128,6 +143,7 @@ test.describe("COLUMN-03: reorder columns", () => {
         await page.keyboard.press("Space");
         /* The lift, waited on structurally rather than by a timer — the library presses the handle. */
         await expect(handle).toHaveAttribute("aria-pressed", "true");
+        await expectLiftAnnounced({ page, name: "Alpha", position: 1 });
         await page.keyboard.press("ArrowRight");
         await expectMoveAnnounced({ page, name: "Alpha", position: 2 });
         /* Created before the drop that issues the write, per createServerActionSettled's contract. */
@@ -156,6 +172,7 @@ test.describe("COLUMN-03: reorder columns", () => {
         await handle.focus();
         await page.keyboard.press("Space");
         await expect(handle).toHaveAttribute("aria-pressed", "true");
+        await expectLiftAnnounced({ page, name: "Alpha", position: 1 });
         await page.keyboard.press("ArrowRight");
         /* Waited on here for a second reason: an escape that outran the step would cancel nothing. */
         await expectMoveAnnounced({ page, name: "Alpha", position: 2 });
