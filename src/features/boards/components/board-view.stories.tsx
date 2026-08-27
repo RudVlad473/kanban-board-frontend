@@ -61,3 +61,20 @@ export const AddColumnOpen: Story = {
 export const DuplicateColumnName: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }), defaultIsAddColumnOpen: true },
 };
+
+/*
+ * D-05's three neighbouring counts, each staged with the modal already open so the next submit is
+ * the create under test — and so no ghost-column click can scroll the row before the create does.
+ */
+export const SevenColumns: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 7 }) }), defaultIsAddColumnOpen: true },
+};
+
+/** The nudge's one firing count: the next create takes this board to nine. */
+export const EightColumns: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 8 }) }), defaultIsAddColumnOpen: true },
+};
+
+export const NineColumns: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 9 }) }), defaultIsAddColumnOpen: true },
+};

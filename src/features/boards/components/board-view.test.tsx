@@ -29,6 +29,9 @@ const {
     ManyColumns,
     AddColumnOpen,
     DuplicateColumnName,
+    SevenColumns,
+    EightColumns,
+    NineColumns,
 } = composeStories(stories);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
@@ -38,10 +41,22 @@ const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
  * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
  * query would report the modal and make "no toast was raised" pass for the wrong reason.
  */
-const getRaisedToastCount = (): number => {
+const getRaisedToasts = (): HTMLElement[] => {
     const region = screen.queryByRole("region", { name: "Notifications" });
 
-    return region === null ? 0 : within(region).queryAllByRole("dialog").length;
+    return region === null ? [] : within(region).queryAllByRole("dialog");
+};
+
+const getRaisedToastCount = (): number => getRaisedToasts().length;
+
+/** The horizontal column row — the scrolling box D-04's `scrollIntoView` actually moves. */
+const getScrollRow = (): HTMLElement => {
+    const row = document.querySelector<HTMLElement>("div.overflow-x-auto");
+    if (row === null) {
+        throw new Error("The horizontal column row is not rendered.");
+    }
+
+    return row;
 };
 
 /** Fills and submits an Add Column modal that is already open, whichever entry point opened it. */
@@ -320,6 +335,93 @@ describeForEachDevice({
                 Array(4).fill("H2"),
             );
             expect(document.querySelectorAll('section h2 [aria-hidden="true"]')).toHaveLength(4);
+        });
+
+        /*
+         * D-04: the ghost column always sits immediately after the newest column, so bringing it
+         * into view is what confirms the create the user cannot otherwise see (D-01 appends).
+         */
+        it("scrolls the column row to its end after a successful create, with motion governed by CSS", async () => {
+            // Arrange
+            await render(<EightColumns />);
+            const scrollRow = getScrollRow();
+            expect(scrollRow.scrollLeft).toBe(0);
+
+            // Act
+            await submitOpenColumnForm("Backlog");
+
+            // Assert — the row itself owns the motion, so no scroll call has to name it.
+            await vi.waitFor(() => {
+                expect(scrollRow.scrollLeft).toBeGreaterThan(0);
+            });
+            expect(getComputedStyle(scrollRow).scrollBehavior).toBe("smooth");
+            expect(scrollRow).toHaveClass("motion-reduce:scroll-auto");
+        });
+
+        /* T-03-27: the pending-scroll flag is set only in the success branch, so a failure is inert. */
+        it("leaves the column row where it was when the create fails", async () => {
+            // Arrange
+            queueCreateColumnFailure(RESULT_STATUS.ERROR);
+            await render(<EightColumns />);
+            const scrollRow = getScrollRow();
+
+            // Act
+            await submitOpenColumnForm("Backlog");
+
+            // Assert
+            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create column. Try again.");
+            expect(scrollRow.scrollLeft).toBe(0);
+        });
+
+        /* D-03/D-05 fire on one exact transition, and D-02 keeps the create itself uncapped. */
+        it("raises one neutral nudge on the create that takes the board to nine columns", async () => {
+            // Arrange
+            await render(<EightColumns />);
+
+            // Act
+            await submitOpenColumnForm("Backlog");
+
+            // Assert — the create landed and the modal closed; the nudge never stood in the way.
+            await vi.waitFor(() => {
+                expect(getRaisedToastCount()).toBe(1);
+            });
+            expect(getRaisedToasts()[0]).toHaveTextContent(
+                "That's 9 columns on this board.Columns scroll horizontally from here.",
+            );
+            expect(getRaisedToasts()[0]).not.toHaveClass("border-l-border-danger");
+            expect(createColumnActionCalls).toHaveLength(1);
+            /* By its heading, not its role — the raised toast is a `dialog` too. */
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Add New Column" })).not.toBeInTheDocument();
+            });
+        });
+
+        it("raises no nudge on the create that takes the board to eight columns", async () => {
+            // Arrange
+            await render(<SevenColumns />);
+
+            // Act
+            await submitOpenColumnForm("Backlog");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(createColumnActionCalls).toHaveLength(1);
+            });
+            expect(getRaisedToastCount()).toBe(0);
+        });
+
+        it("raises no nudge on the create that takes the board to ten columns", async () => {
+            // Arrange
+            await render(<NineColumns />);
+
+            // Act
+            await submitOpenColumnForm("Backlog");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(createColumnActionCalls).toHaveLength(1);
+            });
+            expect(getRaisedToastCount()).toBe(0);
         });
 
         /*

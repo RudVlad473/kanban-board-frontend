@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBoolean } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
@@ -34,7 +34,31 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
      * is retained across opens (mirrors `board-list.tsx`).
      */
     const [openCount, setOpenCount] = useState(0);
-    const { createColumn, isPending, errorMessage, clearError } = useCreateColumn();
+    const columnCount = board.columns.length;
+    const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
+
+    const ghostColumnRef = useRef<HTMLButtonElement>(null);
+    /** The column count when a create landed — a ref, so retiring the request costs no render. */
+    const scrollRequestedAtCount = useRef<number | null>(null);
+
+    /* No motion argument: the default resolves to the row's own CSS, which is what `motion-reduce` varies. */
+    const scrollGhostColumnIntoView = (): void => {
+        ghostColumnRef.current?.scrollIntoView({ inline: "end", block: "nearest" });
+    };
+
+    /*
+     * D-04's second pass. The row grows only once the action's own `refresh()` lands, so scrolling
+     * at the instant of success alone would move the row as it stood before the new column existed.
+     * Retired as it runs, so a later count change (a delete) cannot re-fire it (T-03-27).
+     */
+    useEffect(() => {
+        if (scrollRequestedAtCount.current === null || scrollRequestedAtCount.current === columnCount) {
+            return;
+        }
+
+        scrollRequestedAtCount.current = null;
+        scrollGhostColumnIntoView();
+    }, [columnCount]);
 
     const handleOpenChange = (nextIsOpen: boolean): void => {
         setIsAddColumnOpen(nextIsOpen);
@@ -50,6 +74,9 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
         void createColumn({ boardId: board.id, name: values.name }).then((outcome) => {
             if (outcome.didCreate) {
                 closeAddColumn();
+                /* Confirms the create at once against the row as it stands; the effect finishes the job. */
+                scrollRequestedAtCount.current = columnCount;
+                scrollGhostColumnIntoView();
             }
         });
     };
@@ -60,7 +87,7 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
 
     return (
         <>
-            {board.columns.length === 0 ? (
+            {columnCount === 0 ? (
                 /*
                  * UI-SPEC empty/0-columns: the centred call to action REPLACES the ghost column
                  * here, so this branch deliberately renders no `AddColumnPlaceholder`.
@@ -76,8 +103,11 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
                     </Button>
                 </div>
             ) : (
-                /* The column row scrolls horizontally; columns keep their width rather than wrapping. */
-                <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto bg-bg-app p-6">
+                /*
+                 * The column row scrolls horizontally; columns keep their width rather than
+                 * wrapping. The one declaration governing D-04's motion and its opt-out lives here.
+                 */
+                <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto scroll-smooth bg-bg-app p-6 motion-reduce:scroll-auto">
                     {board.columns.map((column) => (
                         /*
                          * Its own vertical scroll region, so one long column never moves the rest — and
@@ -112,7 +142,7 @@ export const BoardView = ({ board, defaultIsAddColumnOpen = false }: Props) => {
                     ))}
 
                     {/* Last flex child INSIDE the scroll row, so it scrolls away with the columns (UI-SPEC overflow). */}
-                    <AddColumnPlaceholder onOpen={openAddColumn} />
+                    <AddColumnPlaceholder ref={ghostColumnRef} onOpen={openAddColumn} />
                 </div>
             )}
 
