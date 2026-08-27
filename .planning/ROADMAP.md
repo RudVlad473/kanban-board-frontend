@@ -402,7 +402,7 @@ removing columns.
 
   4. User can delete a column and it disappears from the board view along with any tasks and
      subtasks it contained.
-**Plans**: 8/13 plans executed
+**Plans**: 9/13 plans executed
 
 Plans:
 
@@ -438,7 +438,7 @@ never been executed in this repo. All three run in parallel; only 03-01 needs th
 
 **Wave 7** *(blocked on 03-08)*
 
-- [ ] 03-09-PLAN.md — confirmed, never-optimistic column delete with its server-side cascade (COLUMN-04)
+- [x] 03-09-PLAN.md — confirmed, never-optimistic column delete with its server-side cascade (COLUMN-04)
 
 **Wave 8** *(blocked on 03-01, 03-03, 03-09)*
 
@@ -492,5 +492,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
-| 3. Column Management | 8/13 | In Progress|  |
+| 3. Column Management | 9/13 | In Progress|  |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |
