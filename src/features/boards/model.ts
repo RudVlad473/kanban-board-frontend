@@ -181,9 +181,14 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
                 : `Picked up ${column.name}, position ${column.position} of ${total}. Use left and right arrow keys to move, space to drop, escape to cancel.`;
         },
 
+        /*
+         * The library fires this once on the lift itself, with the column over its own droppable —
+         * announcing that would overwrite "Picked up …" before it is ever read, so a target that is
+         * the column itself says nothing (verified live in plan 03-10's keyboard tests).
+         */
         onDragOver: ({ active, over }) => {
             const column = resolveColumn(active.id);
-            const target = over === null ? null : resolveColumn(over.id);
+            const target = over === null || over.id === active.id ? null : resolveColumn(over.id);
 
             return column === null || target === null
                 ? undefined

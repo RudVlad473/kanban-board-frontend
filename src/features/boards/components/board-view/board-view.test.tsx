@@ -32,6 +32,13 @@ import {
     resetRenameColumnStub,
     settleRenameColumn,
 } from "@/test-utils/rename-column-action-storybook-stub";
+import {
+    holdNextReorderColumn,
+    queueReorderColumnFailure,
+    reorderColumnActionCalls,
+    resetReorderColumnStub,
+    settleReorderColumn,
+} from "@/test-utils/reorder-column-action-storybook-stub";
 
 import * as stories from "./board-view.stories";
 
@@ -51,6 +58,8 @@ const {
     DeleteColumnOpen,
     LoneColumn,
     ServerColumnRemoved,
+    ReorderableColumns,
+    ReorderInFlight,
 } = composeStories(stories);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
@@ -67,6 +76,9 @@ const CONFLICT_RENAME_TOAST = "This board changed somewhere else.Refresh to see 
 /** The delete path's own two, which the UI-SPEC requires to differ from each other. */
 const GENERIC_DELETE_TOAST = "Couldn't delete column.Try again.";
 const CONFLICT_DELETE_TOAST = "This board changed somewhere else.Refresh to see the latest.";
+
+/** COLUMN-03's own rollback copy, which the UI-SPEC requires to name the whole board's order. */
+const GENERIC_REORDER_TOAST = "Couldn't reorder columns.Try again.";
 
 /*
  * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
@@ -112,8 +124,11 @@ const submitFirstColumn = async (name: string): Promise<void> => {
  * Read off the DOM rather than by role: Base UI marks the tree outside an open dialog `aria-hidden`,
  * so a role query would report zero headings exactly when a failed rename's rollback needs reading.
  */
-const getRenderedColumnNames = (): (string | null)[] =>
-    Array.from(document.querySelectorAll("section h2 > span > span:nth-child(2)")).map((name) => name.textContent);
+const getRenderedColumnNames = (): (string | null | undefined)[] =>
+    Array.from(document.querySelectorAll("section h2")).map(
+        /* The heading's single child is the drag handle, or a plain span on a lone column. */
+        (heading) => heading.firstElementChild?.children[1]?.textContent,
+    );
 
 const getRaisedToastTexts = (): (string | null)[] => getRaisedToasts().map((toast) => toast.textContent);
 
@@ -133,6 +148,44 @@ const openDeleteFor = async (columnName: string): Promise<void> => {
 const deleteColumnFromHeader = async (columnName: string): Promise<void> => {
     await openDeleteFor(columnName);
     await userEvent.click(await screen.findByRole("button", { name: "Delete Column" }));
+};
+
+/*
+ * The library's own live region, which it renders behind a mounted gate — this app adds no status
+ * element of its own, so anything matched here came from `createColumnReorderAnnouncements`.
+ */
+const getAnnouncement = (): string | null | undefined => document.querySelector('[role="status"]')?.textContent;
+
+/** U-02: the drag handle is the caption row itself, so its accessible name is the caption. */
+const focusColumnHandle = (caption: string): void => {
+    screen.getByRole("button", { name: caption }).focus();
+};
+
+/** The whole U-02 keyboard path: lift, step right, drop — with no request until the drop. */
+const reorderFromKeyboard = async ({
+    caption,
+    liftKey = " ",
+    steps = 1,
+}: {
+    caption: string;
+    liftKey?: string;
+    steps?: number;
+}): Promise<void> => {
+    focusColumnHandle(caption);
+    await userEvent.keyboard(liftKey);
+
+    for (let step = 0; step < steps; step += 1) {
+        const announcedBefore = getAnnouncement();
+        await userEvent.keyboard("{ArrowRight}");
+
+        /*
+         * Waiting on the announcement rather than on a timer: at a viewport too narrow to show the
+         * next column, the sensor scrolls the row first and only then re-detects what it is over.
+         */
+        await expect.poll(getAnnouncement).not.toBe(announcedBefore);
+    }
+
+    await userEvent.keyboard(liftKey);
 };
 
 /** The whole COLUMN-02 entry path: kebab, rename entry, retype the name, submit. */
@@ -159,6 +212,7 @@ describeForEachDevice({
             resetCreateColumnStub();
             resetRenameColumnStub();
             resetDeleteColumnStub();
+            resetReorderColumnStub();
         });
 
         it("renders one column per column, each captioned with its name and task count", async () => {
@@ -416,9 +470,11 @@ describeForEachDevice({
             const ghostColumn = screen.getByRole("button", { name: "+ New Column" });
             const rowChildren = Array.from(ghostColumn.parentElement?.children ?? []);
             expect(rowChildren.at(-1)).toBe(ghostColumn);
-            /* The header row is the section's first child; the heading is the first thing inside it. */
+            /* Section, then its scroll region, then the header row, then the heading inside it. */
             expect(
-                rowChildren.slice(0, -1).map((child) => child.firstElementChild?.firstElementChild?.tagName),
+                rowChildren
+                    .slice(0, -1)
+                    .map((child) => child.firstElementChild?.firstElementChild?.firstElementChild?.tagName),
             ).toEqual(Array(4).fill("H2"));
             expect(document.querySelectorAll('section h2 [aria-hidden="true"]')).toHaveLength(4);
         });
@@ -887,6 +943,204 @@ describeForEachDevice({
             // Assert
             expect(await screen.findByRole("menuitem", { name: "Rename Column" })).toBeInTheDocument();
             expect(screen.getByRole("menuitem", { name: "Delete Column" })).toBeInTheDocument();
+        });
+
+        /*
+         * The keyboard path carries the automated coverage deliberately: a harness pointer drag
+         * raises one intermediate move, which this library does not register as a drag, so an
+         * automated pointer assertion would pass while testing nothing (03-RESEARCH Pitfall 4).
+         */
+        it("moves a column one position later when it is lifted, arrowed right and dropped", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+
+            // Act
+            await reorderFromKeyboard({ caption: "Fixture Column 1 (2)" });
+
+            // Assert
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 2", "Fixture Column 1", "Fixture Column 3", "Fixture Column 4"]);
+            expect(reorderColumnActionCalls).toHaveLength(1);
+        });
+
+        /* D-06: the library's default lift keys are kept, so enter lifts exactly as space does. */
+        it("lifts and drops on the enter key as well as the space bar", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+
+            // Act
+            await reorderFromKeyboard({ caption: "Fixture Column 1 (2)", liftKey: "{Enter}" });
+
+            // Assert
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 2", "Fixture Column 1", "Fixture Column 3", "Fixture Column 4"]);
+            expect(reorderColumnActionCalls).toHaveLength(1);
+        });
+
+        it("returns the column to its original index and issues nothing when the move is cancelled", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+            focusColumnHandle("Fixture Column 1 (2)");
+
+            // Act
+            await userEvent.keyboard(" ");
+            await userEvent.keyboard("{ArrowRight}");
+            await userEvent.keyboard("{Escape}");
+
+            // Assert
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 1", "Fixture Column 2", "Fixture Column 3", "Fixture Column 4"]);
+            expect(reorderColumnActionCalls).toHaveLength(0);
+        });
+
+        /*
+         * T-03-12: a request per keystroke would burn versions and conflict against itself, so the
+         * number of intermediate steps must not change the number of requests.
+         */
+        it("issues exactly one request however many arrow steps the move took", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+
+            // Act
+            await reorderFromKeyboard({ caption: "Fixture Column 1 (2)", steps: 3 });
+
+            // Assert
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 2", "Fixture Column 3", "Fixture Column 4", "Fixture Column 1"]);
+            expect(reorderColumnActionCalls).toHaveLength(1);
+            expect(reorderColumnActionCalls[0].targetPosition).toBe(3);
+        });
+
+        /*
+         * The four strings are asserted in full, not by substring, so an edit to 03-UI-SPEC's
+         * Copywriting Contract fails here rather than shipping silently. Positions are 1-based.
+         */
+        it("announces the lift, each move and the drop in the contract's own wording", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+            focusColumnHandle("Fixture Column 1 (2)");
+
+            // Act & Assert
+            await userEvent.keyboard(" ");
+            await expect
+                .poll(getAnnouncement)
+                .toBe(
+                    "Picked up Fixture Column 1, position 1 of 4. Use left and right arrow keys to move, space to drop, escape to cancel.",
+                );
+
+            await userEvent.keyboard("{ArrowRight}");
+            await expect.poll(getAnnouncement).toBe("Fixture Column 1 moved to position 2 of 4.");
+
+            await userEvent.keyboard(" ");
+            await expect.poll(getAnnouncement).toBe("Fixture Column 1 dropped at position 2 of 4.");
+        });
+
+        it("announces a cancelled move as a return to the position the column started at", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+            focusColumnHandle("Fixture Column 1 (2)");
+
+            // Act
+            await userEvent.keyboard(" ");
+            await userEvent.keyboard("{ArrowRight}");
+            await userEvent.keyboard("{Escape}");
+
+            // Assert
+            await expect.poll(getAnnouncement).toBe("Move cancelled. Fixture Column 1 returned to position 1 of 4.");
+        });
+
+        /* The announcements are the library's own region, never the toast viewport (UI-SPEC toast reuse). */
+        it("keeps the reorder announcements out of the toast area", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+            focusColumnHandle("Fixture Column 1 (2)");
+
+            // Act
+            await userEvent.keyboard(" ");
+
+            // Assert
+            await expect.poll(getAnnouncement).toContain("Picked up Fixture Column 1");
+            expect(getRaisedToastCount()).toBe(0);
+        });
+
+        /*
+         * T-03-31, at the width 03-BACKEND-FACTS § R2 justifies: only the MOVED column's version was
+         * bumped, so only its own two entries close — a merely shifted column stays usable.
+         */
+        it("disables the moved column's own two entries while its reorder is in flight", async () => {
+            // Arrange
+            await render(<ReorderInFlight />);
+            holdNextReorderColumn();
+            await reorderFromKeyboard({ caption: "Fixture Column 1 (2)" });
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Column actions for Fixture Column 1" }));
+
+            // Assert
+            const items = await screen.findAllByRole("menuitem");
+            expect(items.map((item) => item.textContent)).toEqual(["Rename Column", "Delete Column"]);
+            expect(items.map((item) => item.getAttribute("data-disabled"))).toEqual(["", ""]);
+            settleReorderColumn();
+        });
+
+        it("leaves a merely shifted column's entries available while the reorder is in flight", async () => {
+            // Arrange
+            await render(<ReorderInFlight />);
+            holdNextReorderColumn();
+            await reorderFromKeyboard({ caption: "Fixture Column 1 (2)" });
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Column actions for Fixture Column 2" }));
+
+            // Assert
+            const items = await screen.findAllByRole("menuitem");
+            expect(items.map((item) => item.getAttribute("data-disabled"))).toEqual([null, null]);
+            settleReorderColumn();
+        });
+
+        /* U-05: the WHOLE board's order comes back, because the move shifted every column between. */
+        it("restores the rendered order and raises the rollback toast when the reorder fails", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+            queueReorderColumnFailure(RESULT_STATUS.ERROR);
+
+            // Act
+            await reorderFromKeyboard({ caption: "Fixture Column 1 (2)", steps: 3 });
+
+            // Assert
+            await expect.poll(getRaisedToastTexts).toEqual([GENERIC_REORDER_TOAST]);
+            expect(getRenderedColumnNames()).toEqual([
+                "Fixture Column 1",
+                "Fixture Column 2",
+                "Fixture Column 3",
+                "Fixture Column 4",
+            ]);
+        });
+
+        /*
+         * T-03-32's most likely regression, and the reason the kebab is a sibling of the handle
+         * rather than a descendant: a plain press must never cross the activation constraint.
+         */
+        it("opens a column's menu on a plain kebab click and starts no reorder", async () => {
+            // Arrange
+            await render(<ReorderableColumns />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Column actions for Fixture Column 2" }));
+
+            // Assert
+            expect(await screen.findByRole("menuitem", { name: "Rename Column" })).toBeInTheDocument();
+            expect(reorderColumnActionCalls).toHaveLength(0);
+            expect(getRenderedColumnNames()).toEqual([
+                "Fixture Column 1",
+                "Fixture Column 2",
+                "Fixture Column 3",
+                "Fixture Column 4",
+            ]);
         });
     },
 });

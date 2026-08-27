@@ -444,4 +444,23 @@ describe("createColumnReorderAnnouncements", () => {
         expect(announcements.onDragOver({ active: createActive(columns[0].id), over: null })).toBeUndefined();
         expect(announcements.onDragStart({ active: createActive("no-such-column") })).toBeUndefined();
     });
+
+    /*
+     * The library fires one `onDragOver` on the lift itself, over the column's own droppable —
+     * announcing it would overwrite "Picked up …" before a screen reader ever reached it.
+     */
+    it("says nothing when the column is only over its own place", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act
+        const announcement = announcements.onDragOver({
+            active: createActive(columns[0].id),
+            over: createOver(columns[0].id),
+        });
+
+        // Assert
+        expect(announcement).toBeUndefined();
+    });
 });

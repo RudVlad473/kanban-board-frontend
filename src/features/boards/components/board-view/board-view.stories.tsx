@@ -175,3 +175,19 @@ export const ServerColumnRemoved: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 4 }) }) },
     render: (args) => <ServerDeleteHost {...args} />,
 };
+
+/*
+ * Four columns, which is what the keyboard path needs to prove a move is one position rather than
+ * "to the end" — and enough that a three-arrow move still lands inside the board.
+ */
+export const ReorderableColumns: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 4 }) }) },
+};
+
+/*
+ * UI-SPEC loading/reorder-in-flight, driven rather than staged: the test holds the stubbed action
+ * open, so the moved column's own two entries are read while its version is genuinely stale.
+ */
+export const ReorderInFlight: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 4 }) }) },
+};
