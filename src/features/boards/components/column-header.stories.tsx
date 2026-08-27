@@ -18,7 +18,11 @@ const meta: Meta<typeof ColumnHeader> = {
             </div>
         ),
     ],
-    args: { column: createColumnFull({ name: "Todo", position: 0, tasks: createTasksFull(4) }), onRename: fn() },
+    args: {
+        column: createColumnFull({ name: "Todo", position: 0, tasks: createTasksFull(4) }),
+        onRename: fn(),
+        onDelete: fn(),
+    },
 };
 
 export default meta;
@@ -60,3 +64,20 @@ export const LongColumnName: Story = {
  * (`pnpm stories:check` bans those) — the same `defaultOpen` route `board-card.tsx` already takes.
  */
 export const MenuOpen: Story = { args: { defaultIsMenuOpen: true } };
+
+/*
+ * The completed kebab — both entries live at once, which is what the destructive one's own
+ * treatment and its `onDelete` reporting are read from.
+ */
+export const MenuOpenWithDelete: Story = { args: { defaultIsMenuOpen: true } };
+
+/*
+ * UI-SPEC zero-one-many/exactly-1-column: a lone column still offers both entries. Staged as its
+ * own column rather than a board, since this header knows nothing of how many siblings it has.
+ */
+export const LoneColumnMenuOpen: Story = {
+    args: {
+        column: createColumnFull({ name: "Only Column", position: 0, tasks: createTasksFull(1) }),
+        defaultIsMenuOpen: true,
+    },
+};

@@ -12,6 +12,8 @@ type Props = {
     column: ColumnFull;
     /** Opens the rename modal for this column — the rename itself never happens from here. */
     onRename: (column: ColumnFull) => void;
+    /** Opens the delete confirmation for this column — nothing is destroyed from here. */
+    onDelete: (column: ColumnFull) => void;
     /** Storybook-only staging for the kebab menu's open state (see BoardCard's `defaultIsMenuOpen`). */
     defaultIsMenuOpen?: boolean;
 };
@@ -21,7 +23,7 @@ type Props = {
  * per-column overflow menu. Presentational by design: it owns no state and calls no mutation hook,
  * so its tests drive it without a module mock (ADR tech/0020).
  */
-export const ColumnHeader = ({ column, onRename, defaultIsMenuOpen = false }: Props) => {
+export const ColumnHeader = ({ column, onRename, onDelete, defaultIsMenuOpen = false }: Props) => {
     const caption = toColumnCaption({ name: column.name, taskCount: column.tasks.length });
     /* The count half is cut from the caption itself, so the format stays owned by that one function. */
     const countSuffix = caption.slice(column.name.length);
@@ -64,14 +66,24 @@ export const ColumnHeader = ({ column, onRename, defaultIsMenuOpen = false }: Pr
                 />
 
                 <Menu.Content>
-                    {/* One entry for now — the destructive one lands with plan 03-09, which is when
-                        it will actually do something. */}
+                    {/* Both entries stay available on a lone column: renaming and deleting are each
+                        meaningful there, unlike dragging (UI-SPEC zero-one-many/exactly-1-column). */}
                     <Menu.Item
                         onClick={() => {
                             onRename(column);
                         }}
                     >
                         Rename Column
+                    </Menu.Item>
+
+                    {/* `isDestructive` is the shared danger treatment, not a local colour choice. */}
+                    <Menu.Item
+                        isDestructive
+                        onClick={() => {
+                            onDelete(column);
+                        }}
+                    >
+                        Delete Column
                     </Menu.Item>
                 </Menu.Content>
             </Menu.Root>

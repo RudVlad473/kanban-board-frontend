@@ -12,8 +12,17 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import * as stories from "./column-header.stories";
 
-const { Default, SecondPosition, ThirdPosition, FourthPositionCyclesBack, NoTasks, LongColumnName, MenuOpen } =
-    composeStories(stories);
+const {
+    Default,
+    SecondPosition,
+    ThirdPosition,
+    FourthPositionCyclesBack,
+    NoTasks,
+    LongColumnName,
+    MenuOpen,
+    MenuOpenWithDelete,
+    LoneColumnMenuOpen,
+} = composeStories(stories);
 
 /** The dot is `aria-hidden`, so it is reached through the DOM rather than by role. */
 const getDotElement = (): HTMLElement => {
@@ -143,14 +152,58 @@ describeForEachDevice({
             expect(height).toBeGreaterThanOrEqual(44);
         });
 
-        /* Only the entry that works today — `Delete Column` lands with plan 03-09 (dead-control rule). */
-        it("offers Rename Column as the kebab's only entry when staged open", async () => {
+        /* The kebab is complete at two entries — both live, so neither is a dead control. */
+        it("offers Rename Column then Delete Column, in that order, when staged open", async () => {
             // Act
             const screen = await render(<MenuOpen />);
 
             // Assert
             await expect.element(screen.getByRole("menuitem", { name: "Rename Column" })).toBeVisible();
-            expect(document.querySelectorAll('[role="menuitem"]')).toHaveLength(1);
+            const items = Array.from(document.querySelectorAll('[role="menuitem"]'));
+            expect(items.map((item) => item.textContent)).toEqual(["Rename Column", "Delete Column"]);
+        });
+
+        /*
+         * UI-SPEC "Destructive reserved for" item 4: the danger colour comes from `Menu.Item`'s own
+         * `isDestructive` prop, and only the delete entry carries it.
+         */
+        it("marks only the delete entry with the shared destructive treatment", async () => {
+            // Act
+            const screen = await render(<MenuOpenWithDelete />);
+
+            // Assert
+            const remove = screen.getByRole("menuitem", { name: "Delete Column" }).element();
+            const rename = screen.getByRole("menuitem", { name: "Rename Column" }).element();
+            expect(remove).toHaveClass("text-text-danger");
+            expect(rename).toHaveClass("text-text-primary");
+        });
+
+        it("reports this column back to its caller when Delete Column is chosen", async () => {
+            // Arrange
+            const screen = await render(<MenuOpenWithDelete />);
+
+            // Act
+            await userEvent.click(screen.getByRole("menuitem", { name: "Delete Column" }));
+
+            // Assert — reported, never destroyed here: the confirmation is the container's job.
+            await expect
+                .poll(() => MenuOpenWithDelete.args.onDelete)
+                .toHaveBeenCalledWith(MenuOpenWithDelete.args.column);
+            expect(MenuOpenWithDelete.args.onDelete).toHaveBeenCalledTimes(1);
+            expect(MenuOpenWithDelete.args.onRename).not.toHaveBeenCalled();
+        });
+
+        /*
+         * UI-SPEC zero-one-many/exactly-1-column: both entries stay meaningful on a lone column,
+         * unlike dragging, which plan 03-10 withholds from it.
+         */
+        it("still offers both entries on a board's only column", async () => {
+            // Act
+            const screen = await render(<LoneColumnMenuOpen />);
+
+            // Assert
+            await expect.element(screen.getByRole("menuitem", { name: "Rename Column" })).toBeVisible();
+            await expect.element(screen.getByRole("menuitem", { name: "Delete Column" })).toBeVisible();
         });
 
         it("reports this column back to its caller when Rename Column is chosen", async () => {
