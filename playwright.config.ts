@@ -62,6 +62,16 @@ const e2eWebServer: NonNullable<PlaywrightTestConfig["webServer"]> = {
 export default defineConfig({
     testDir: "./visual",
     testMatch: "**/*.visual.spec.ts",
+    // comment-length-exempt: records that both CI upload steps were silently uploading nothing, which is why a CI-only failure had no evidence to debug from
+    /*
+     * Both CI jobs already carry an `if: failure()` "Upload Playwright report" step pointing at
+     * `playwright-report/`, but nothing ever wrote that directory: no reporter was configured, so CI
+     * got the default `dot` and the upload silently produced no artifact. A CI-only failure was
+     * therefore undebuggable by construction — found 2026-08-27 chasing exactly one. The trace is
+     * what makes the next such failure answerable instead of a guess.
+     */
+    reporter: process.env.CI ? [["html", { open: "never" }], ["dot"]] : "list",
+    use: { trace: "retain-on-failure" },
     expect: {
         toHaveScreenshot: {
             maxDiffPixelRatio: 0.01,
