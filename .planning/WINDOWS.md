@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 17
+open_count: 18
 waived_count: 0
 fixed_count: 7
-total_count: 24
-last_updated: 2026-08-26T19:35:18.622Z
+total_count: 25
+last_updated: 2026-08-27T12:13:08.402Z
 ---
 
 # Broken Windows Ledger
@@ -39,6 +39,7 @@ last_updated: 2026-08-26T19:35:18.622Z
 | 22 | 02 | deviation | app/api/session/force-sign-out/route.ts |  | Plan 02-11 widened the WR-01 logout-CSRF guard from Sec-Fetch-Site === 'same-origin' to an allow-list of {same-origin, none}. Making /boards a Server Component that calls the external API in its own render turned the forced-sign-out redirect into a real HTTP 307 on the document request, and Chromium carries the initiating navigation's Sec-Fetch-Site across that same-origin hop, so a visitor opening /boards directly arrived with 'none' and was 403'd out of the flow the handler exists to serve (measured 2026-08-25). 'none' is unforgeable by an attacker page and cross-site/same-site/absent are still rejected; SESSION-03's three cases still pass. Recorded as a dated amendment in docs/adr/tech/0026. Open because it is a security-control change made outside plan 02-11's own threat register and deserves a reviewer's explicit sign-off. | open |  | 2026-08-25T14:26:45.483Z |  |
 | 23 | 02 | stub | src/features/boards/components/board-list.tsx |  | BoardCard onDelete is a no-op; plan 02-13 supplies D-06's confirm modal | open |  | 2026-08-25T16:26:55.940Z |  |
 | 24 | 03 | unrun-verify | .planning/phases/03-column-management/03-BACKEND-FACTS.md |  | Column probe R1-R7 never observed: nonprod database down for all 14 attempts on 2026-08-26; every R section reads NOT YET OBSERVED | fixed |  | 2026-08-26T13:52:58.902Z | 2026-08-26T19:35:18.622Z |
+| 25 | 03 | unrun-verify | src/features/boards/components/column-header.tsx |  | 03-08: no live-app visual pass on the column kebab (Playwright MCP is not visible to spawned subagents); mock comparison done from the PDF only | open |  | 2026-08-27T12:13:08.402Z |  |
 
 ````json
 [
@@ -329,6 +330,18 @@ last_updated: 2026-08-26T19:35:18.622Z
     "reason": "",
     "recorded_at": "2026-08-26T13:52:58.902Z",
     "resolved_at": "2026-08-26T19:35:18.622Z"
+  },
+  {
+    "id": 25,
+    "kind": "unrun-verify",
+    "phase": "03",
+    "file": "src/features/boards/components/column-header.tsx",
+    "line": null,
+    "description": "03-08: no live-app visual pass on the column kebab (Playwright MCP is not visible to spawned subagents); mock comparison done from the PDF only",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T12:13:08.402Z",
+    "resolved_at": null
   }
 ]
 ````
