@@ -378,7 +378,12 @@ describeForEachDevice({
             });
         });
 
-        it("cycles the column header dots across the three accents and repeats on the fourth", async () => {
+        /*
+         * The sequence is a property of the fixture's ids, not the row — the hue is id-keyed, so
+         * this asserts only that each header gets its own column. `model.unit.test.ts` owns the
+         * keying itself, including the delete-stability regression.
+         */
+        it("gives each column header the accent its own id selects", async () => {
             // Act
             await render(<EvenlyCycledColumns />);
 

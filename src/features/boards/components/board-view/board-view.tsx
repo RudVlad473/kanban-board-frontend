@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useBoolean } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
-import { AddColumnModal } from "@/features/boards/components/add-column-modal";
-import { AddColumnPlaceholder } from "@/features/boards/components/add-column-placeholder";
-import { ColumnHeader } from "@/features/boards/components/column-header";
-import { DeleteColumnConfirm } from "@/features/boards/components/delete-column-confirm";
-import { RenameColumnModal } from "@/features/boards/components/rename-column-modal";
+import { AddColumnModal } from "@/features/boards/components/add-column-modal/add-column-modal";
+import { AddColumnPlaceholder } from "@/features/boards/components/add-column-placeholder/add-column-placeholder";
+import { ColumnHeader } from "@/features/boards/components/column-header/column-header";
+import { DeleteColumnConfirm } from "@/features/boards/components/delete-column-confirm/delete-column-confirm";
+import { RenameColumnModal } from "@/features/boards/components/rename-column-modal/rename-column-modal";
 import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
 import { useDeleteColumn, type DeleteColumnArgs } from "@/features/boards/hooks/use-delete-column";
 import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";

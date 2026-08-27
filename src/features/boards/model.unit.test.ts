@@ -187,23 +187,49 @@ describe("resolveDestinationAfterDelete", () => {
     });
 });
 
-/* U-03: the contract carries no colour field, so the dot's hue cycles from `position` alone. */
+/* U-03: the contract carries no colour field, so the dot's hue derives from the column's own id. */
 describe("toColumnDotToken", () => {
-    it("cycles the three accents by position and repeats every third column", () => {
+    it("returns the same accent every time for the same id", () => {
         // Act & Assert
-        expect([0, 3, 6].map((position) => toColumnDotToken({ position }))).toEqual([
-            COLUMN_DOT_TOKENS[0],
-            COLUMN_DOT_TOKENS[0],
-            COLUMN_DOT_TOKENS[0],
-        ]);
-        expect([1, 4].map((position) => toColumnDotToken({ position }))).toEqual([
-            COLUMN_DOT_TOKENS[1],
-            COLUMN_DOT_TOKENS[1],
-        ]);
-        expect([2, 5].map((position) => toColumnDotToken({ position }))).toEqual([
-            COLUMN_DOT_TOKENS[2],
-            COLUMN_DOT_TOKENS[2],
-        ]);
+        expect(toColumnDotToken({ id: "8p9ekduj9uyo" })).toBe(toColumnDotToken({ id: "8p9ekduj9uyo" }));
+    });
+
+    it("only ever returns one of the three authorized accents", () => {
+        // Arrange
+        const ids = ["a", "8p9ekduj9uyo", "zzzz", "", "column-42", "ÄÖÜ"];
+
+        // Act & Assert
+        ids.forEach((id) => {
+            expect(COLUMN_DOT_TOKENS).toContain(toColumnDotToken({ id }));
+        });
+    });
+
+    it("spreads a realistic set of ids across more than one accent", () => {
+        // Arrange
+        const ids = ["8p9ekduj9uyo", "8p9ho68ok8hs", "7q2mvbn4xa1c", "3k8dlqp0zzt5", "9w1rsyc6ee2n"];
+
+        // Act
+        const distinct = new Set(ids.map((id) => toColumnDotToken({ id })));
+
+        // Assert
+        expect(distinct.size).toBeGreaterThan(1);
+    });
+
+    /*
+     * The regression this keying exists for: positions renumber contiguously on delete
+     * (03-BACKEND-FACTS R2/R3), so a position-keyed hue repainted every surviving column.
+     */
+    it("leaves every surviving column's accent unchanged when an earlier column is deleted", () => {
+        // Arrange
+        const ids = ["8p9ekduj9uyo", "8p9ho68ok8hs", "7q2mvbn4xa1c", "3k8dlqp0zzt5"];
+        const before = ids.map((id) => toColumnDotToken({ id }));
+
+        // Act
+        const survivors = ids.slice(1);
+        const after = survivors.map((id) => toColumnDotToken({ id }));
+
+        // Assert
+        expect(after).toEqual(before.slice(1));
     });
 });
 

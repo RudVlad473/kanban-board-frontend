@@ -14,9 +14,9 @@ import * as stories from "./column-header.stories";
 
 const {
     Default,
-    SecondPosition,
-    ThirdPosition,
-    FourthPositionCyclesBack,
+    SecondAccent,
+    ThirdAccent,
+    AccentFollowsIdNotPosition,
     NoTasks,
     LongColumnName,
     MenuOpen,
@@ -36,7 +36,7 @@ const getDotElement = (): HTMLElement => {
 describeForEachDevice({
     name: "ColumnHeader",
     body: () => {
-        it("carries the first column accent on the dot of a column at position 0", async () => {
+        it("carries the first column accent on the dot of a column whose id hashes there", async () => {
             // Act
             await render(<Default />);
 
@@ -44,25 +44,29 @@ describeForEachDevice({
             expect(getDotElement()).toHaveClass("bg-accent-column-1");
         });
 
-        it("carries the second column accent at position 1", async () => {
+        it("carries the second column accent for an id hashing to the second bucket", async () => {
             // Act
-            await render(<SecondPosition />);
+            await render(<SecondAccent />);
 
             // Assert
             expect(getDotElement()).toHaveClass("bg-accent-column-2");
         });
 
-        it("carries the third column accent at position 2", async () => {
+        it("carries the third column accent for an id hashing to the third bucket", async () => {
             // Act
-            await render(<ThirdPosition />);
+            await render(<ThirdAccent />);
 
             // Assert
             expect(getDotElement()).toHaveClass("bg-accent-column-3");
         });
 
-        it("cycles back to the first column accent at position 3", async () => {
+        /*
+         * The regression the id keying exists for: a delete renumbers positions, and a
+         * position-keyed hue repainted every surviving column (see `toColumnDotToken`).
+         */
+        it("keeps a column's accent when its position changes", async () => {
             // Act
-            await render(<FourthPositionCyclesBack />);
+            await render(<AccentFollowsIdNotPosition />);
 
             // Assert
             expect(getDotElement()).toHaveClass("bg-accent-column-1");
@@ -115,13 +119,22 @@ describeForEachDevice({
         });
 
         it("keeps the id the column section's aria-labelledby points at", async () => {
+            /*
+             * Arrange — read the id off the story rather than restating it, so changing the
+             * fixture cannot silently turn this into an assertion about nothing.
+             */
+            const column = Default.args.column;
+            if (!column) {
+                throw new Error("The Default story must supply a column for this assertion to mean anything.");
+            }
+
             // Act
             const screen = await render(<Default />);
 
             // Assert
             expect(screen.getByRole("heading", { name: "Todo (4)" }).element()).toHaveAttribute(
                 "id",
-                "board-column-00000000-0000-4000-8000-00000000000c",
+                `board-column-${column.id}`,
             );
         });
 

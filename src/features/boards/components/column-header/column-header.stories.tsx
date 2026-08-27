@@ -6,6 +6,15 @@ import { createColumnFull, createTasksFull } from "@/test-utils/factories/board-
 import { ColumnHeader } from "./column-header";
 
 /*
+ * U-03 keys the dot off the column id, so an accent is staged by picking an id — these three hash
+ * into the three buckets. Chosen by running `toColumnDotToken`, not by arithmetic anyone can do by
+ * eye; if the hash ever changes, re-pick them rather than assuming these still hold.
+ */
+const FIRST_ACCENT_ID = "00000000-0000-4000-8000-000000000001";
+const SECOND_ACCENT_ID = "00000000-0000-4000-8000-000000000002";
+const THIRD_ACCENT_ID = "00000000-0000-4000-8000-000000000000";
+
+/*
  * Visual-only CSF3 (D-25), mirroring `board-view.stories.tsx`. The decorator supplies the 280px
  * column width the real board gives this header, which is what makes an overlong name truncate.
  */
@@ -19,7 +28,12 @@ const meta: Meta<typeof ColumnHeader> = {
         ),
     ],
     args: {
-        column: createColumnFull({ name: "Todo", position: 0, tasks: createTasksFull(4) }),
+        column: createColumnFull({
+            id: FIRST_ACCENT_ID,
+            name: "Todo",
+            position: 0,
+            tasks: createTasksFull(4),
+        }),
         onRename: fn(),
         onDelete: fn(),
     },
@@ -31,17 +45,26 @@ type Story = StoryObj<typeof ColumnHeader>;
 
 export const Default: Story = {};
 
-export const SecondPosition: Story = {
-    args: { column: createColumnFull({ name: "Doing", position: 1, tasks: createTasksFull(3) }) },
+export const SecondAccent: Story = {
+    args: {
+        column: createColumnFull({ id: SECOND_ACCENT_ID, name: "Doing", position: 1, tasks: createTasksFull(3) }),
+    },
 };
 
-export const ThirdPosition: Story = {
-    args: { column: createColumnFull({ name: "Done", position: 2, tasks: createTasksFull(1) }) },
+export const ThirdAccent: Story = {
+    args: {
+        column: createColumnFull({ id: THIRD_ACCENT_ID, name: "Done", position: 2, tasks: createTasksFull(1) }),
+    },
 };
 
-/** U-03's cycle wraps at three, so a fourth column carries the first accent again. */
-export const FourthPositionCyclesBack: Story = {
-    args: { column: createColumnFull({ name: "Shipped", position: 3, tasks: createTasksFull(2) }) },
+/*
+ * The dot follows the column, not its place in the row: same id as `Default`, four positions later,
+ * same accent. This is the case a position-keyed hue got wrong — see `toColumnDotToken`.
+ */
+export const AccentFollowsIdNotPosition: Story = {
+    args: {
+        column: createColumnFull({ id: FIRST_ACCENT_ID, name: "Shipped", position: 4, tasks: createTasksFull(2) }),
+    },
 };
 
 /*
@@ -49,13 +72,18 @@ export const FourthPositionCyclesBack: Story = {
  * empty copy and no add-a-task control, since task creation is Phase 4.
  */
 export const NoTasks: Story = {
-    args: { column: createColumnFull({ name: "Backlog", position: 0, tasks: [] }) },
+    args: { column: createColumnFull({ id: FIRST_ACCENT_ID, name: "Backlog", position: 0, tasks: [] }) },
 };
 
 /** The backend's own 32-character ceiling, in wide glyphs so it overflows the 280px header. */
 export const LongColumnName: Story = {
     args: {
-        column: createColumnFull({ name: "Mmmmmmmm Mmmmmmmm Mmmmmmmm Mmmmm", position: 0, tasks: createTasksFull(2) }),
+        column: createColumnFull({
+            id: FIRST_ACCENT_ID,
+            name: "Mmmmmmmm Mmmmmmmm Mmmmmmmm Mmmmm",
+            position: 0,
+            tasks: createTasksFull(2),
+        }),
     },
 };
 
@@ -77,7 +105,7 @@ export const MenuOpenWithDelete: Story = { args: { defaultIsMenuOpen: true } };
  */
 export const LoneColumnMenuOpen: Story = {
     args: {
-        column: createColumnFull({ name: "Only Column", position: 0, tasks: createTasksFull(1) }),
+        column: createColumnFull({ id: FIRST_ACCENT_ID, name: "Only Column", position: 0, tasks: createTasksFull(1) }),
         defaultIsMenuOpen: true,
     },
 };

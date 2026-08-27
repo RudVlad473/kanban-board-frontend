@@ -40,7 +40,7 @@ export const ColumnHeader = ({ column, onRename, onDelete, defaultIsMenuOpen = f
                     {/* Decoration only: the hue states nothing the caption beside it does not already say. */}
                     <span
                         aria-hidden="true"
-                        className={cn("size-4 shrink-0 rounded-full", toColumnDotToken({ position: column.position }))}
+                        className={cn("size-4 shrink-0 rounded-full", toColumnDotToken({ id: column.id }))}
                     />
 
                     <span className="min-w-0 truncate">{column.name}</span>

@@ -74,9 +74,27 @@ export const resolveDestinationAfterDelete = ({
  */
 export const COLUMN_DOT_TOKENS = ["bg-accent-column-1", "bg-accent-column-2", "bg-accent-column-3"] as const;
 
-/** U-03: the contract has no colour field, so the decorative header dot derives its hue from position. */
-export const toColumnDotToken = ({ position }: { position: number }): (typeof COLUMN_DOT_TOKENS)[number] =>
-    COLUMN_DOT_TOKENS[position % COLUMN_DOT_TOKENS.length];
+/*
+ * djb2. Any stable string→int would do; this one is here only so the bucket below is a pure
+ * function of the id, with no dependency and no per-render allocation.
+ */
+const hashColumnId = (id: string): number => {
+    let hash = 5381;
+
+    for (let index = 0; index < id.length; index += 1) {
+        hash = ((hash << 5) + hash + id.charCodeAt(index)) >>> 0;
+    }
+
+    return hash;
+};
+
+/**
+ * U-03: the decorative header dot derives its hue from the column's own id, never its position —
+ * delete renumbers positions, so a position-keyed hue repainted every surviving column.
+ * Full rationale: 03-UI-SPEC.md § Color, "Keyed by id, not by position".
+ */
+export const toColumnDotToken = ({ id }: { id: string }): (typeof COLUMN_DOT_TOKENS)[number] =>
+    COLUMN_DOT_TOKENS[hashColumnId(id) % COLUMN_DOT_TOKENS.length];
 
 export type ColumnOrderOverride = { previousOrder: string[]; order: string[] };
 

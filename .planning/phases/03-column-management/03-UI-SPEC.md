@@ -42,7 +42,7 @@ phase is authorized to add (three column-dot accents, two ghost-column gradient 
 |----|----------|
 | **U-01** | Column add/rename/delete uses **per-column affordances**, not the PDF's batched `Board Columns` section inside Edit Board. The `+ New Column` ghost column opens an Add-Column modal; each column header carries a kebab menu with `Rename Column` / `Delete Column`. Rationale: every column carries its own `version` for optimistic concurrency, so one `Save Changes` across N columns is really N independent POST/PUT/DELETE calls that can partially fail — the exact D-04 partial-failure problem Phase 2 already hit. Also gives reorder somewhere to live, and follows D-07's precedent of relocating the PDF's header-kebab actions onto the row they act on. |
 | **U-02** | Reorder drag handle is the **whole column header**, no separate grip glyph — plus a **mandatory** keyboard path (focus header → `Space` lift → `←`/`→` move → `Space` drop → `Esc` cancel) with an `aria-live` announcement. Drag-only would make COLUMN-03 keyboard-inaccessible. |
-| **U-03** | Column headers render the PDF's **colored dot**, cycled deterministically by `position % 3` from three new tokens (the backend `ColumnResponseDTO` has no color field). |
+| **U-03** | Column headers render the PDF's **colored dot**, assigned deterministically from the column's own **id** across three new tokens (the backend `ColumnResponseDTO` has no color field). Keyed by id, **not** by position — see the note under Color, below. |
 | **U-04** | Column delete is confirmed through a modal **mirroring `DeleteBoardConfirm` exactly** — `"Delete this column?"` / `"Delete Column"` (destructive) / `"Keep Column"` (secondary, holds initial focus). |
 | **U-05** | Rename and reorder apply **optimistically with rollback + error toast** (D-15's pattern); delete **waits for the server** (D-09's pattern, since the cascade is irreversible per ADR domain/0002). |
 
@@ -170,9 +170,19 @@ and must **not** be layered over anything other than `--color-bg-app`.
 **The three dot colors are purely decorative and must be `aria-hidden="true"`.** No information is
 carried by hue alone — the column's identity is its adjacent text caption — so these three values
 are exempt from a text-contrast requirement, and the checker should read them as decoration, not as
-a fourth/fifth/sixth semantic color. They are assigned by `position % 3` (U-03), a pure function
-that belongs in `features/boards/model.ts` per CONVENTIONS.md's `model.ts` rule, so the mapping is
-assertable without rendering.
+a fourth/fifth/sixth semantic color. They are assigned by hashing the column's **id** into
+the three tokens (U-03), a pure function that belongs in `features/boards/model.ts` per
+CONVENTIONS.md's `model.ts` rule, so the mapping is assertable without rendering.
+
+**Keyed by id, not by position — this was corrected on 2026-08-27 and must not be reverted.** The
+original reading of U-03 was `position % 3`, and it shipped that way. The backend renumbers
+positions contiguously on delete (03-BACKEND-FACTS R2/R3), so a position-keyed hue repaints every
+column after the deleted one: deleting the first of four columns was measured live recolouring all
+three survivors at once. A hue that changes in response to an edit elsewhere reads as a bug to a
+user who has learned "Done is the green one". An id is immutable for the column's lifetime. The
+visible cost is that the three accents are no longer guaranteed to appear in order, or at all, on a
+board with few columns — accepted deliberately, because the dot carries no meaning the caption does
+not already carry.
 
 ### Accent reserved for (explicit list — never "all interactive elements")
 
@@ -286,7 +296,7 @@ The header becomes three elements in one 44px-min-height flex row, replacing tod
 ```
 <h2 id="board-column-{id}">          ← keeps the section's aria-labelledby target
   <button type="button">             ← the drag handle (U-02); contains dot + caption
-    <span aria-hidden="true" />      ← the position%3 dot (decorative, U-03)
+    <span aria-hidden="true" />      ← the id-keyed dot (decorative, U-03)
     {NAME} ({N})                     ← toColumnCaption(), `uppercase`, name truncates
   </button>
 </h2>
