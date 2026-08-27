@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Board Management** - Signed-in users create, view, rename, delete, and (completed 2026-08-26)
   browse their boards from a collapsible sidebar
 
-- [ ] **Phase 3: Column Management** - Users shape a board's workflow by adding, naming,
+- [x] **Phase 3: Column Management** - Users shape a board's workflow by adding, naming, (completed 2026-08-27)
   reordering, and removing columns
 
 - [ ] **Phase 4: Task & Subtask Workflow** - Users create, inspect, edit, drag-and-drop move,
@@ -494,5 +494,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation, Auth & Preferences | 38/38 | Complete    | 2026-08-20 |
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
-| 3. Column Management | 14/14 | In Progress|  |
+| 3. Column Management | 14/14 | Complete    | 2026-08-27 |
 | 4. Task & Subtask Workflow | 0/TBD | Not started | - |

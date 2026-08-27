@@ -27,10 +27,10 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Columns
 
-- [ ] **COLUMN-01**: User can add a new column to a board
-- [ ] **COLUMN-02**: User can rename a column
-- [ ] **COLUMN-03**: User can reorder columns within a board
-- [ ] **COLUMN-04**: User can delete a column (cascades to its tasks and subtasks)
+- [x] **COLUMN-01**: User can add a new column to a board
+- [x] **COLUMN-02**: User can rename a column
+- [x] **COLUMN-03**: User can reorder columns within a board
+- [x] **COLUMN-04**: User can delete a column (cascades to its tasks and subtasks)
 
 ### Tasks
 
@@ -104,10 +104,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOARD-04 | Phase 2 | Complete |
 | BOARD-05 | Phase 2 | Complete |
 | BOARD-06 | Phase 2 | Complete |
-| COLUMN-01 | Phase 3 | Pending |
-| COLUMN-02 | Phase 3 | Pending |
-| COLUMN-03 | Phase 3 | Pending |
-| COLUMN-04 | Phase 3 | Pending |
+| COLUMN-01 | Phase 3 | Complete |
+| COLUMN-02 | Phase 3 | Complete |
+| COLUMN-03 | Phase 3 | Complete |
+| COLUMN-04 | Phase 3 | Complete |
 | TASK-01 | Phase 4 | Pending |
 | TASK-02 | Phase 4 | Pending |
 | TASK-03 | Phase 4 | Pending |
