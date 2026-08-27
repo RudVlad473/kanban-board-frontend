@@ -137,9 +137,16 @@ describeForEachDevice({
             await render(<EmptyBoard />);
 
             // Assert
-            expect(screen.getByRole("button", { name: "+ Add New Column" })).toBeInTheDocument();
+            const callToAction = screen.getByRole("button", { name: "+ Add New Column" });
+            expect(callToAction).toBeInTheDocument();
             expect(screen.getAllByRole("button", { name: /Add New Column/ })).toHaveLength(1);
             expect(screen.queryByRole("button", { name: "+ New Column" })).not.toBeInTheDocument();
+
+            /* UI-SPEC accent reserved-for item 6 — read off real layout, not off a class name. */
+            const emptyState = callToAction.parentElement;
+            expect(callToAction.getBoundingClientRect().width).toBeLessThan(
+                emptyState?.getBoundingClientRect().width ?? 0,
+            );
         });
 
         it("opens the same Add Column modal from the empty-state call to action", async () => {
