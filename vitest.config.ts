@@ -95,6 +95,14 @@ const serverActionStubAlias = [
         find: "@/features/boards/actions/rename-column",
         replacement: path.resolve(rootDir, "src/test-utils/rename-column-action-storybook-stub.ts"),
     },
+    /*
+     * Checked against the prefix rule above: `delete-column` neither starts with nor is started by
+     * `delete-board`, `rename-column` or any other entry, so its position here carries no meaning.
+     */
+    {
+        find: "@/features/boards/actions/delete-column",
+        replacement: path.resolve(rootDir, "src/test-utils/delete-column-action-storybook-stub.ts"),
+    },
 ];
 
 export default defineConfig({
