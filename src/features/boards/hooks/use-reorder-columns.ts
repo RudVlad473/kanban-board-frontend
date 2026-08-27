@@ -5,12 +5,8 @@ import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
-import {
-    applyColumnOrderOverride,
-    reorderColumns,
-    toReorderTargetPosition,
-    type ColumnOrderOverride,
-} from "@/features/boards/model";
+import { reorderColumns } from "@/features/boards/column-drag-model";
+import { applyColumnOrderOverride, toReorderTargetPosition, type ColumnOrderOverride } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
