@@ -8,9 +8,9 @@ note: >-
   overwrites wholesale — never hand-edit those; add durable, cross-cutting knowledge here.
 counts:
   decisions: 0
-  lessons: 3
+  lessons: 5
   patterns: 0
-  surprises: 1
+  surprises: 2
 ---
 
 # Project Learnings
@@ -65,7 +65,54 @@ in `02-board-management/.continue-here.md` for 02-12 (board rename, another uniq
 operation) — record it here too since the underlying lesson outlives that one plan.
 **Source:** `02-10-SUMMARY.md` key-decisions; `.planning/phases/02-board-management/.continue-here.md`
 
+### A test that has never passed is not a regression
+
+All three e2e specs that took CI red on 2026-08-25 — `route-guard`, `boards-rename`,
+`boards-detail` — failed on the first run after they were written and had never passed once.
+`route-guard` asserted zero `region` roles on the sign-in page, on its own stated premise that "its
+columns are the only `region`s this app renders"; the root layout's toast viewport is also a
+`region`, on every page, so the count was 0-vs-1 from the moment the assertion landed. Read as
+regressions, all three send you hunting for a change that never happened.
+
+**Context:** Found 2026-08-27. Before treating a red test as a regression, establish whether it ever
+ran green — `gh run list --branch <branch>` back to the commit that introduced it. That is one
+command, and it separates "something broke" from "this never worked", which are different
+investigations with different fixes. Two of the three encoded assumptions already false when
+written; the third asserted a transport guarantee the framework cannot deliver, because
+`BoardsPage` awaits `fetchBoards()` before `redirect()` and the response has begun streaming by
+then.
+**Source:** commit 34ecf7b; CI runs 32745086262 (last green), 33058290975
+
+### Red CI that no sign-off depends on stays red
+
+CI failed on every branch, `main` included, from 2026-08-25 to 2026-08-27. Four waves of phase-03
+work were planned, executed, merged and signed off during that window. Nothing forced the question,
+because each wave was verified locally, each local run was green, and the red pipeline was reported
+as a known-carried concern rather than a gate.
+
+**Context:** The habit that fixes this is a gate, not vigilance: a wave or phase is done when CI
+says so, and a red job blocks advancing instead of being carried forward. Recorded as a rule in
+`CLAUDE.md` ("CI green is the sign-off"); this entry is why it exists. Note the specific trap that
+made local green feel sufficient — see the visual-suite surprise below.
+**Source:** `CLAUDE.md`; commit 79d2133
+
 ## Surprises
+
+### A visual-regression suite can be green while photographing the wrong element
+
+`components-ui-menu--open`'s committed baseline was a **1×1 PNG, 87 bytes**. `modal--open`'s was
+its 108×40 trigger button rather than the 448×75 modal; `toast--default`'s was a 1408×384 wrapper
+rather than the 384×78 toast. The suite passed for months because the capture and the baseline were
+wrong in the *same* way — `gotoStory` fell back to `#storybook-root > *` for portalled stories, and
+the baselines had been generated through that same fallback. Twenty stories asserted nothing.
+
+**Impact:** Nothing in the pipeline could surface it, and one config line guaranteed local runs
+never would: `playwright.config.ts` sets `ignoreSnapshots: !process.env.CI` (ADR tech/0008), so
+off-CI every `toHaveScreenshot` is a silent no-op and a fully green local visual run proves only
+that the specs executed. Prefix with `CI=1` to compare against baselines locally. When a baseline is
+in question, read its pixel dimensions before its pixels — a component that is 1×1, or exactly the
+size of its own trigger, is a capture bug wearing a passing check.
+**Source:** PR #3; `visual/primitives.visual.spec.ts`
 
 ### An aborted test keeps typing into the next one
 
