@@ -92,47 +92,38 @@ const storyIds = [
  */
 const deviceTypes = Object.values(DEVICE_TYPE);
 
+/*
+ * Base UI portals render outside `#storybook-root`, so a story whose subject is portalled must be
+ * screenshotted through the portal's own root. Ordered by specificity: Toast's region+aria-live
+ * pair is unique, Menu's `role="menu"` never collides with Modal's `role="dialog"` (ADR tech/0011).
+ */
+const PORTAL_SELECTORS = ['[role="region"][aria-live="polite"]', '[role="menu"]', '[role="dialog"]'];
+
 const gotoStory = async ({ page, url }: { page: Page; url: string }) => {
     await page.goto(url);
     /*
-     * Toast's Base UI portal renders into document.body like Modal's, but a Stacked story can
-     * render more than one `[role="dialog"]` at once — checked first via its unique
-     * region+aria-live role combination (see docs/adr/tech/0011).
-     */
-    const toastViewport = page.locator('[role="region"][aria-live="polite"]');
-    if ((await toastViewport.count()) > 0) {
-        const viewport = toastViewport.first();
-        await viewport.waitFor({ state: "visible" });
-        return viewport;
-    }
-    /*
-     * Menu's Base UI portal renders its open popup (`role="menu"`) into document.body too — checked
-     * before the dialog branch below; Menu and Modal never share a role, so the two never compete
-     * (see docs/adr/tech/0011).
-     */
-    const menuPopup = page.locator('[role="menu"]');
-    if ((await menuPopup.count()) > 0) {
-        const popup = menuPopup.first();
-        await popup.waitFor({ state: "visible" });
-        return popup;
-    }
-    /*
-     * Modal's Base UI portal renders the Backdrop/Popup into document.body by design, so its
-     * #storybook-root child is just an empty Trigger button — screenshotting that would be
-     * meaningless (see docs/adr/tech/0011).
-     */
-    const dialog = page.locator('[role="dialog"]');
-    if ((await dialog.count()) > 0) {
-        const dialogRoot = dialog.first();
-        await dialogRoot.waitFor({ state: "visible" });
-        return dialogRoot;
-    }
-    /*
-     * #storybook-root itself is a full-width block, so the fallback target is its first real
-     * child — the story's own single root element, not the shell around it (see docs/adr/tech/0011).
+     * Anchor on the story's own root first. Every story mounts something here — a portalled story
+     * still mounts its trigger — so this is the one wait that is always satisfiable, and it makes
+     * the portal probes below run after the first render instead of racing it (ADR tech/0011).
      */
     const root = page.locator("#storybook-root > *").first();
     await root.waitFor({ state: "visible" });
+
+    // comment-length-exempt: records the measured failure a presence check caused and why visibility is the correct predicate, so a future reader does not revert to counting elements
+    /*
+     * Choose a portal target by VISIBILITY, never by presence. The `ToastProvider` decorator mounts
+     * an empty — and therefore permanently hidden — toast viewport into every story, so a presence
+     * check (`count() > 0`) routed every non-toast story into a wait for that hidden element to
+     * become visible, which it never does. Measured 2026-08-27: 30s timeouts on button--primary and
+     * button--secondary at both viewports and both themes, and the same trap is now latent for Menu
+     * and Modal should either provider ever become global too.
+     */
+    for (const selector of PORTAL_SELECTORS) {
+        const candidate = page.locator(selector).first();
+        if (await candidate.isVisible()) {
+            return candidate;
+        }
+    }
     return root;
 };
 
