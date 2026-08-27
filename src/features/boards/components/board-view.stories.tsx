@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { useState, type ComponentProps } from "react";
 
+import type { BoardFull } from "@/features/boards/schemas";
 import { createBoardFull, createColumnsFull } from "@/test-utils/factories/board-full";
 
 import { BoardView } from "./board-view";
@@ -77,4 +79,57 @@ export const EightColumns: Story = {
 
 export const NineColumns: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 9 }) }), defaultIsAddColumnOpen: true },
+};
+
+/** Seeds the rename modal open on the first column, the same prop-driven way as the create modal. */
+export const RenameColumnOpen: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }), defaultRenameColumnTargetIndex: 0 },
+};
+
+/* Duplicated verbatim in `board-view.test.tsx` — a non-story export here would break `composeStories`. */
+const SERVER_RENAMED_NAME = "Renamed On The Server";
+const SERVER_CHANGED_NAME = "Changed Somewhere Else";
+
+/*
+ * Owns the board the RSC would otherwise supply, so a test can land a refreshed server render and
+ * then a later server-side change — the two steps the self-retiring override is proved by.
+ */
+const ServerPropsHost = (props: ComponentProps<typeof BoardView>) => {
+    const [board, setBoard] = useState<BoardFull>(props.board);
+
+    const replaceFirstColumnName = (name: string): void => {
+        setBoard((current) => ({
+            ...current,
+            columns: current.columns.map((column, index) => (index === 0 ? { ...column, name } : column)),
+        }));
+    };
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => {
+                    replaceFirstColumnName(SERVER_RENAMED_NAME);
+                }}
+            >
+                Land the refreshed server render
+            </button>
+
+            <button
+                type="button"
+                onClick={() => {
+                    replaceFirstColumnName(SERVER_CHANGED_NAME);
+                }}
+            >
+                Land a later server change
+            </button>
+
+            <BoardView {...props} board={board} />
+        </>
+    );
+};
+
+export const ServerColumnsAdvance: Story = {
+    args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }) },
+    render: (args) => <ServerPropsHost {...args} />,
 };

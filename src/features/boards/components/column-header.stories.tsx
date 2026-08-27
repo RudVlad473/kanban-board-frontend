@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { fn } from "storybook/test";
 
 import { createColumnFull, createTasksFull } from "@/test-utils/factories/board-full";
 
@@ -17,7 +18,7 @@ const meta: Meta<typeof ColumnHeader> = {
             </div>
         ),
     ],
-    args: { column: createColumnFull({ name: "Todo", position: 0, tasks: createTasksFull(4) }) },
+    args: { column: createColumnFull({ name: "Todo", position: 0, tasks: createTasksFull(4) }), onRename: fn() },
 };
 
 export default meta;
@@ -53,3 +54,9 @@ export const LongColumnName: Story = {
         column: createColumnFull({ name: "Mmmmmmmm Mmmmmmmm Mmmmmmmm Mmmmm", position: 0, tasks: createTasksFull(2) }),
     },
 };
+
+/*
+ * Stages the kebab's open state, which is what a play function would otherwise have had to drive
+ * (`pnpm stories:check` bans those) — the same `defaultOpen` route `board-card.tsx` already takes.
+ */
+export const MenuOpen: Story = { args: { defaultIsMenuOpen: true } };

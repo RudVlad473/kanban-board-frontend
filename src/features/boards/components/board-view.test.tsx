@@ -18,6 +18,13 @@ import {
     settleCreateColumn,
 } from "@/test-utils/create-column-action-storybook-stub";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import {
+    holdNextRenameColumn,
+    queueRenameColumnFailure,
+    renameColumnActionCalls,
+    resetRenameColumnStub,
+    settleRenameColumn,
+} from "@/test-utils/rename-column-action-storybook-stub";
 
 import * as stories from "./board-view.stories";
 
@@ -32,10 +39,20 @@ const {
     SevenColumns,
     EightColumns,
     NineColumns,
+    RenameColumnOpen,
+    ServerColumnsAdvance,
 } = composeStories(stories);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
+
+/* Duplicated verbatim from `board-view.stories.tsx`'s own host — see the comment beside them there. */
+const SERVER_RENAMED_NAME = "Renamed On The Server";
+const SERVER_CHANGED_NAME = "Changed Somewhere Else";
+
+/** The two authored toast strings, as the user reads them — title and description run together. */
+const GENERIC_RENAME_TOAST = "Couldn't rename column.Try again.";
+const CONFLICT_RENAME_TOAST = "This board changed somewhere else.Refresh to see the latest.";
 
 /*
  * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
@@ -78,6 +95,34 @@ const submitFirstColumn = async (name: string): Promise<void> => {
 };
 
 /*
+ * Read off the DOM rather than by role: Base UI marks the tree outside an open dialog `aria-hidden`,
+ * so a role query would report zero headings exactly when a failed rename's rollback needs reading.
+ */
+const getRenderedColumnNames = (): (string | null)[] =>
+    Array.from(document.querySelectorAll("section h2 > span > span:nth-child(2)")).map((name) => name.textContent);
+
+const getRaisedToastTexts = (): (string | null)[] => getRaisedToasts().map((toast) => toast.textContent);
+
+/** Opens a column's kebab and activates its rename entry, leaving the modal open on that column. */
+const openRenameFor = async (columnName: string): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: `Column actions for ${columnName}` }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Rename Column" }));
+};
+
+/** The whole COLUMN-02 entry path: kebab, rename entry, retype the name, submit. */
+const renameColumnFromHeader = async ({
+    columnName,
+    nextName,
+}: {
+    columnName: string;
+    nextName: string;
+}): Promise<void> => {
+    await openRenameFor(columnName);
+    await userEvent.fill(await screen.findByLabelText("Column Name"), nextName);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+};
+
+/*
  * ADR tech/0014: the whole body runs at both viewports. BoardView has no viewport-conditional
  * behaviour of its own — the horizontal/vertical overflow treatments are the same at both sizes.
  */
@@ -86,6 +131,7 @@ describeForEachDevice({
     body: () => {
         beforeEach(() => {
             resetCreateColumnStub();
+            resetRenameColumnStub();
         });
 
         it("renders one column per column, each captioned with its name and task count", async () => {
@@ -338,9 +384,10 @@ describeForEachDevice({
             const ghostColumn = screen.getByRole("button", { name: "+ New Column" });
             const rowChildren = Array.from(ghostColumn.parentElement?.children ?? []);
             expect(rowChildren.at(-1)).toBe(ghostColumn);
-            expect(rowChildren.slice(0, -1).map((child) => child.firstElementChild?.tagName)).toEqual(
-                Array(4).fill("H2"),
-            );
+            /* The header row is the section's first child; the heading is the first thing inside it. */
+            expect(
+                rowChildren.slice(0, -1).map((child) => child.firstElementChild?.firstElementChild?.tagName),
+            ).toEqual(Array(4).fill("H2"));
             expect(document.querySelectorAll('section h2 [aria-hidden="true"]')).toHaveLength(4);
         });
 
@@ -448,6 +495,191 @@ describeForEachDevice({
             expect(rowChildren).toHaveLength(9);
             expect(rowChildren.at(-1)).toBe(ghostColumn);
             expect(rowChildren.slice(0, -1).map((child) => child.tagName)).toEqual(Array(8).fill("SECTION"));
+        });
+
+        /* A board with no rename in flight renders the server's own names, override or not. */
+        it("renders the server's own column names while no rename is in flight", async () => {
+            // Act
+            await render(<Populated />);
+
+            // Assert
+            expect(getRenderedColumnNames()).toEqual(["Fixture Column 1", "Fixture Column 2", "Fixture Column 3"]);
+        });
+
+        it("opens the rename modal seeded with that column's name when its kebab entry is chosen", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await openRenameFor("Fixture Column 2");
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Rename Column" })).toBeInTheDocument();
+            expect(await screen.findByLabelText("Column Name")).toHaveValue("Fixture Column 2");
+        });
+
+        it("renders the rename modal when staged open", async () => {
+            // Act
+            await render(<RenameColumnOpen />);
+
+            // Assert
+            expect(await screen.findByLabelText("Column Name")).toHaveValue("Fixture Column 1");
+        });
+
+        /*
+         * U-05's whole point, plus the UI-SPEC loading row: the header asserts the new name and the
+         * modal is already gone while the write is still in flight, and no other column is touched.
+         */
+        it("closes the modal and shows the new name in that header before the rename resolves", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            holdNextRenameColumn();
+
+            // Act — submit, then observe while the action is still unresolved.
+            await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
+
+            // Assert — applied optimistically and already dismissed, with the write demonstrably open.
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()).toEqual(["In Progress", ...namesBefore.slice(1)]);
+            });
+            expect(screen.queryByRole("heading", { name: "Rename Column" })).not.toBeInTheDocument();
+
+            // Act — let the write land.
+            settleRenameColumn();
+
+            // Assert — the name stays and nothing was announced, the modal having closed long before.
+            await vi.waitFor(() => {
+                expect(renameColumnActionCalls).toHaveLength(1);
+            });
+            expect(getRenderedColumnNames()).toEqual(["In Progress", ...namesBefore.slice(1)]);
+            expect(getRaisedToastCount()).toBe(0);
+        });
+
+        it("sends the column's own board id, column id, typed name and current version, exactly once", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await renameColumnFromHeader({ columnName: "Fixture Column 2", nextName: "In Progress" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(renameColumnActionCalls).toHaveLength(1);
+            });
+            expect(renameColumnActionCalls[0]).toEqual({
+                boardId: FIXTURE_BOARD_ID,
+                columnId: Populated.args.board?.columns[1]?.id,
+                name: "In Progress",
+                version: Populated.args.board?.columns[1]?.version,
+            });
+        });
+
+        /*
+         * The load-bearing rollback case: asserting only that the renamed header reverted would pass
+         * whether or not the override had leaked into a neighbouring column on the way back out.
+         */
+        it("restores the whole rendered name set and announces the reason when a rename fails", async () => {
+            // Arrange — held, so the optimistic name is observed before the failure lands on it.
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            queueRenameColumnFailure(RESULT_STATUS.ERROR);
+            holdNextRenameColumn();
+
+            // Act
+            await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()[0]).toBe("In Progress");
+            });
+            settleRenameColumn();
+
+            // Assert — identical to the pre-submit set, not merely "the renamed header reverted".
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toEqual([GENERIC_RENAME_TOAST]);
+            });
+            expect(getRenderedColumnNames()).toEqual(namesBefore);
+        });
+
+        /*
+         * UI-SPEC error/version-conflict: a stale version earns its OWN copy, because retrying with
+         * the same version fails identically and generic retry copy would loop the user.
+         */
+        it("raises the distinct version-conflict copy, not the generic one, for a stale version", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            queueRenameColumnFailure(RESULT_STATUS.CONFLICT);
+            holdNextRenameColumn();
+
+            // Act
+            await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()[0]).toBe("In Progress");
+            });
+            settleRenameColumn();
+
+            // Assert — the two branches are proved different, not merely proved to raise something.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toEqual([CONFLICT_RENAME_TOAST]);
+            });
+            expect(CONFLICT_RENAME_TOAST).not.toBe(GENERIC_RENAME_TOAST);
+            expect(getRenderedColumnNames()).toEqual(namesBefore);
+        });
+
+        it("tells the user to sign in again when the rename is refused as unauthenticated", async () => {
+            // Arrange
+            await render(<Populated />);
+            queueRenameColumnFailure(RESULT_STATUS.UNAUTHENTICATED);
+
+            // Act
+            await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toEqual([
+                    "Your session has expired.Sign in again to rename this column.",
+                ]);
+            });
+        });
+
+        /* The override applies only where the id matches, so a second column keeps its own name. */
+        it("seeds the modal with each column's own name when the kebab is reopened elsewhere", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act — rename the first column, then open the rename modal on a different one.
+            await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()[0]).toBe("In Progress");
+            });
+            await openRenameFor("Fixture Column 3");
+
+            // Assert — that column's own name, not the one just renamed.
+            expect(await screen.findByLabelText("Column Name")).toHaveValue("Fixture Column 3");
+        });
+
+        /*
+         * T-03-29: the override must not outlive the value it stands in for, or a change made in
+         * another tab would sit behind a stale local name indefinitely.
+         */
+        it("retires the override once the refreshed props carry it, so a later server change renders", async () => {
+            // Arrange
+            await render(<ServerColumnsAdvance />);
+
+            // Act — rename optimistically, then land the refreshed server render carrying that name.
+            await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: SERVER_RENAMED_NAME });
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()[0]).toBe(SERVER_RENAMED_NAME);
+            });
+            await userEvent.click(screen.getByRole("button", { name: "Land the refreshed server render" }));
+
+            // Act — a later server-side change to that same column.
+            await userEvent.click(screen.getByRole("button", { name: "Land a later server change" }));
+
+            // Assert — rendered, not masked by the override that stood in for the earlier value.
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()[0]).toBe(SERVER_CHANGED_NAME);
+            });
         });
     },
 });
