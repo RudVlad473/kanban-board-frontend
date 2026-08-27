@@ -68,9 +68,9 @@ Declared values — this project's own already-implemented 4px-base scale (`src/
 
 | Token | Value | Usage this phase |
 |-------|-------|------------------|
-| `--space-1` | 4px | Menu popup inset (`Menu.Content` `p-1`), dot-to-caption gap |
+| `--space-1` | 4px | Menu popup inset (`Menu.Content` `p-1`) |
 | `--space-2` | 8px | Caption-to-kebab gap in the column header row; Add/Rename modal field-to-error gap |
-| `--space-4` | 16px | Modal padding (mobile); `Menu.Item` horizontal padding (already `px-4`) |
+| `--space-4` | 16px | Modal padding (mobile); `Menu.Item` horizontal padding (already `px-4`); dot-to-caption gap in the column header row |
 | `--space-6` | 24px | Modal padding (tablet+); the board canvas's own `p-6`; the inter-column gutter (`gap-6`, already shipped in `board-view.tsx:30`); column-header bottom padding (`pb-6`, already shipped) |
 | `--space-8` | 32px | Layout gaps between major regions |
 | `--space-12` | 48px | Major section breaks |
@@ -78,6 +78,14 @@ Declared values — this project's own already-implemented 4px-base scale (`src/
 
 This phase's new components (`AddColumnModal`, `RenameColumnModal`, `DeleteColumnConfirm`,
 `ColumnHeader`, `AddColumnPlaceholder`) are built exclusively from the seven tiers above.
+
+**The dot-to-caption gap is 16px because the mock overruled this spec.** This table originally
+assigned it `--space-1` (4px), and `ColumnHeader` shipped that way in plan 03-06. Measured against
+PDF p3 on 2026-08-27 the mock's gap is ~15px — a 62px gap beside a 62px dot at 300 DPI, calibrated
+by the column pitch (304.1px = 280px column + 24px gutter). `--space-4` (16px) is the nearest tier,
+so the code and this row were both corrected in plan 03-08. Do not "restore" 4px: it was a spec
+error, not a deliberate deviation. Second time the mock has overruled a UI-SPEC reading this
+milestone — see 02-UI-SPEC.md's pinned-footer `+ Create New Board`.
 
 **`--space-3` (12px) remains barred for new work.** It exists in `tokens.css` and is load-bearing
 inside `TextField`'s and `Dropdown`'s already-baselined internals, and `Menu.Item`'s `py-3` — all

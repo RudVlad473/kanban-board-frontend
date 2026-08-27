@@ -34,7 +34,7 @@ export const ColumnHeader = ({ column, onRename, defaultIsMenuOpen = false }: Pr
                 className="min-w-0 flex-1 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase"
             >
                 {/* The 44px tier is the kebab's touch target, which sets this row's height too. */}
-                <span className="flex min-h-11 items-center gap-1">
+                <span className="flex min-h-11 items-center gap-4">
                     {/* Decoration only: the hue states nothing the caption beside it does not already say. */}
                     <span
                         aria-hidden="true"
