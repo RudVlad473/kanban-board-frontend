@@ -96,6 +96,14 @@ const hashColumnId = (id: string): number => {
 export const toColumnDotToken = ({ id }: { id: string }): (typeof COLUMN_DOT_TOKENS)[number] =>
     COLUMN_DOT_TOKENS[hashColumnId(id) % COLUMN_DOT_TOKENS.length];
 
+/**
+ * `position` is the backend's ordering authority — the response array's own order carries no
+ * guarantee and only looked like one because every fixture is authored in creation order. Copies
+ * first: the input is `cache()`d RSC data other derivations also read (03-14-SUMMARY.md).
+ */
+export const sortColumnsByPosition = (columns: ColumnFull[]): ColumnFull[] =>
+    [...columns].sort((left, right) => left.position - right.position);
+
 export type ColumnOrderOverride = { previousOrder: string[]; order: string[] };
 
 /**
