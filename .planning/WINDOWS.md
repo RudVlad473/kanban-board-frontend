@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 18
+open_count: 19
 waived_count: 0
 fixed_count: 7
-total_count: 25
-last_updated: 2026-08-27T12:13:08.402Z
+total_count: 26
+last_updated: 2026-08-27T12:53:48.822Z
 ---
 
 # Broken Windows Ledger
@@ -40,6 +40,7 @@ last_updated: 2026-08-27T12:13:08.402Z
 | 23 | 02 | stub | src/features/boards/components/board-list.tsx |  | BoardCard onDelete is a no-op; plan 02-13 supplies D-06's confirm modal | open |  | 2026-08-25T16:26:55.940Z |  |
 | 24 | 03 | unrun-verify | .planning/phases/03-column-management/03-BACKEND-FACTS.md |  | Column probe R1-R7 never observed: nonprod database down for all 14 attempts on 2026-08-26; every R section reads NOT YET OBSERVED | fixed |  | 2026-08-26T13:52:58.902Z | 2026-08-26T19:35:18.622Z |
 | 25 | 03 | unrun-verify | src/features/boards/components/column-header.tsx |  | 03-08: no live-app visual pass on the column kebab (Playwright MCP is not visible to spawned subagents); mock comparison done from the PDF only | open |  | 2026-08-27T12:13:08.402Z |  |
+| 26 | 03 | unrun-verify | src/features/boards/components/delete-column-confirm.tsx |  | No live-app visual pass on the delete confirmation or the destructive kebab entry — Playwright MCP is not visible to spawned subagents | open |  | 2026-08-27T12:53:48.822Z |  |
 
 ````json
 [
@@ -341,6 +342,18 @@ last_updated: 2026-08-27T12:13:08.402Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-27T12:13:08.402Z",
+    "resolved_at": null
+  },
+  {
+    "id": 26,
+    "kind": "unrun-verify",
+    "phase": "03",
+    "file": "src/features/boards/components/delete-column-confirm.tsx",
+    "line": null,
+    "description": "No live-app visual pass on the delete confirmation or the destructive kebab entry — Playwright MCP is not visible to spawned subagents",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T12:53:48.822Z",
     "resolved_at": null
   }
 ]
