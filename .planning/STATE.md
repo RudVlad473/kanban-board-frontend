@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 4
 current_phase_name: Task & Subtask Workflow
 status: planning
-stopped_at: Phase 4 context gathered
-last_updated: "2026-08-28T08:22:45.292Z"
+stopped_at: Phase 4 UI-SPEC approved
+last_updated: "2026-08-28T10:07:23.032Z"
 last_activity: 2026-08-28
 last_activity_desc: Post-phase-03 convention review; ready to plan Phase 4
-state_head: e4542e828c3d15a16f69e867ff14a86b20ce1663
+state_head: 0332c6575c4789a0f068408dd5c4dcc443ec9051
 progress:
   total_phases: 6
   completed_phases: 5
@@ -175,8 +175,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-28T08:22:44.942Z
-Stopped at: Phase 4 context gathered
+Last session: 2026-08-28T10:07:22.204Z
+Stopped at: Phase 4 UI-SPEC approved
 
 **This session:** Resumed from a HANDOFF.json pause at the Wave 7 (02.1-15) Task 3 human
 checkpoint — user replied "approved". Ran the phase's post-execution gate in full:
@@ -321,7 +321,7 @@ lessons and this flake's surprise. Also added a `userEvent.type()` sizing rule t
 One unrelated flake surfaced during verification and is diagnosed but unfixed: `toast.test.tsx`
 races Base UI's 5s auto-dismiss (see Blockers).
 
-Resume file: .planning/phases/04-task-subtask-workflow/04-CONTEXT.md
+Resume file: .planning/phases/04-task-subtask-workflow/04-UI-SPEC.md
 
 **This session (02-10 checkpoint close-out + Wave 9 planning):** Resumed `/gsd-execute-phase 2`
 with 02-10 halted on its unapproved Task 4 checkpoint (`02-10-UAT.md`, 4 UI findings). Per user
