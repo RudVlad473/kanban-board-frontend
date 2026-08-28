@@ -92,41 +92,82 @@ test.
 `02.1-01`), not by ad hoc per-test object literals and not by a class requiring `new` — matching
 this project's own established convention against class-needing-`new` patterns.
 
-### Server Action alias carve-out
+### Server Action doubling carve-out
 
 Written in `tech/0017`'s carve-out style, closing the gap flagged by
 `.planning/todos/completed/2026-08-22-reconcile-action-stub-aliasing-with-the-no-mock-policy.md`:
-a whole-module build-time alias for a Server Action is a distinct mechanism from a `vi.mock`, and
-was previously an undocumented, unenforced exception to this record's own no-mocking rule.
+a whole-module build-time substitution for a Server Action is a distinct mechanism from a
+`vi.mock`, and was previously an undocumented, unenforced exception to this record's own
+no-mocking rule.
 
-**Mechanism:** `vitest.config.ts`'s `serverActionStubAlias` rewrites four exact module specifiers
-(`@/features/auth/actions/sign-in`, `sign-up`, `sign-out`, `@/features/theme/actions/update-theme`)
-to real stub modules under `src/test-utils/` for the `browser` and `storybook` Vitest projects.
-This is a build-time module alias — the same category as the pre-existing `server-only` alias in
-the same file, not a `vi.mock`/`vi.spyOn` call — so it is not a shim covered by D-19 above, and
-`no-restricted-properties` (which targets `vi.mock`/`vi.spyOn` call shapes, not resolver
-configuration) has no way to flag it.
+**Amended in place by phase 04 (04-CONTEXT.md D-05), not superseded.** The mechanism below replaced
+an alias register; the rest of this record's no-mocking rule is unchanged and still current. This
+section previously described the register, and described it wrongly — see "The drift this
+amendment corrects".
 
-**Justification:** real `"use server"` Server Actions cannot execute inside
-`@storybook/nextjs-vite`'s Vite-driven Vitest rendering — see `docs/adr/tech/0025`'s D-08 research
-paragraph for the full citation (no RSC-aware `"use server"` transform; the action's real import
-chain reaches `node:crypto` and the external API client, unbundlable in a browser test page). The
-alternative — refactoring an action into a fetchable Route Handler so it could be called for real
-— is banned project-wide by `docs/adr/tech/0019`.
+**Mechanism:** `scripts/vite-plugin-server-action-stub.mjs` is a Vite `transform` plugin, enabled on
+the `browser` and `storybook` Vitest projects and on Storybook's own dev server. It detects a
+leading `"use server"` directive, reads the module's exported arrow-function names off the
+TypeScript AST, and emits a recorder module carrying the same export names, each bound to
+`registerActionStub` from `src/test-utils/action-stub-registry.ts` — one generic programmable
+recorder (`actionStub(action)` giving `queue`/`hold`/`settle`/`calls`) in place of the
+queue/hold/settle/reset skeleton that used to be copy-pasted per action. A Server Action added
+after this needs no double module and no config entry. This is a build-time module substitution —
+the same category as the pre-existing `server-only` alias, not a `vi.mock`/`vi.spyOn` call — so it
+is not a shim covered by D-19 above, and `no-restricted-properties` (which targets
+`vi.mock`/`vi.spyOn` call shapes, not build configuration) has no way to flag it.
 
-**Scope limit (D-09):** a stub-backed test may assert what the COMPONENT does — that its
-`formAction` is wired to the action and invoked it, proven by a real invocation counter on the
-stub module (never a `vi.fn()`), as `src/features/auth/components/sign-out-button.test.tsx` does.
-It may never assert what the REAL action does — a redirect, a cookie write, a backend-rejection
-message. Those live in Playwright e2e (`e2e/auth.e2e.spec.ts`).
+**Justification:** real `"use server"` Server Actions cannot even be IMPORTED inside
+`@storybook/nextjs-vite`'s Vite-driven Vitest rendering. Measured 2026-08-28
+(`.planning/spikes/action-stub-automation/FINDINGS.md`, Question 1): a spec importing
+`create-column-action.ts` through a relative path, bypassing every substitution, fails at module
+evaluation with `ReferenceError: process is not defined` inside `next/cache`'s `refresh()` — the
+first blocker, reached before `verifySession` ever pulls `node:crypto` in. This record's earlier
+"cannot execute" wording, and `docs/adr/tech/0025`'s D-08 paragraph it cited, both understated the
+constraint; tech/0025's paragraph is corrected to match. The alternative — refactoring an action
+into a fetchable Route Handler so it could be called for real — is banned project-wide by
+`docs/adr/tech/0019`.
 
-**Register:** the four aliased specifiers above, each mapped to its own
-`src/test-utils/*-action-storybook-stub.ts` file. `src/test-utils/index.ts` (D-11's thin
-re-export barrel) is not a fifth stub — it only re-exports the four.
+**Scope limit (D-09):** a doubled test may assert what the COMPONENT does — that its `formAction` is
+wired to the action and invoked it, proven by the recorder's real `calls` log (never a `vi.fn()`),
+as `src/features/auth/components/sign-out-button.test.tsx` does. It may never assert what the REAL
+action does — a redirect, a cookie write, a backend-rejection message. Those live in Playwright e2e
+(`e2e/auth.e2e.spec.ts`).
+
+**Register: none, by construction.** There is no list of doubled actions to keep current — the
+transform matches on the `"use server"` directive itself. `src/test-utils/index.ts` (D-11's thin
+re-export barrel) was deleted outright in plan 04-08 as dead code with zero importers; no migration
+of it happened and none was needed.
+
+**Known limit of the transform:** `readExportedFunctionNames` collects exported const arrow
+functions ONLY, so an exported type or const object declared in an action module is dropped from
+the emitted recorder. Safe today because nothing value-imports anything else from an action module;
+the moment something does, that import resolves to `undefined` rather than failing loudly. A test
+in `scripts/vite-plugin-server-action-stub.unit.test.mjs` asserts the limit rather than hiding it.
+
+**D-03's mechanism was replaced by one delivering its purpose.** 04-CONTEXT.md's D-03 asks an
+unqueued call to THROW at the call site. It records and reports instead, raised from the global
+`afterEach` (`assertNoUnqueuedActionCalls`). Reason: every hook here wraps its mutation in a catch
+that converts a rejection into a generic error branch, so a throw would be swallowed and surface as
+a downstream assertion naming nothing — exactly the confusion D-03 exists to prevent. The full
+decision, and what would make it wrong, is recorded at `action-stub-registry.ts`'s own call site.
+
+**The drift this amendment corrects.** Until 2026-08-28 this section documented FOUR double modules
+and four aliased specifiers where reality had TWELVE of each: phases 02 and 03 added eight
+(create-board, create-board-columns, rename-board, delete-board, create-column, rename-column,
+delete-column, reorder-column) without amending the record, and nothing gated the two against each
+other. Deleting the register removes that particular drift as a side effect, but not the class of
+it. What closes the class is `pnpm actions:check`
+(`scripts/check-action-verbs.mjs#findStubSeamViolations`, plan 04-11): it fails if a
+`-storybook-stub.ts` module reappears under `src/test-utils/` or if `vitest.config.ts` names a
+Server Action module again, and it is already a step in CI's blocking `quality` job. The gate was
+proven fail-first by hand before being trusted.
 
 **Unwind trigger:** if `@storybook/nextjs-vite` ships an RSC-aware `"use server"` transform,
-re-evaluate replacing the stubs with real calls — the original D-07 direction this carve-out
-stands in for.
+re-evaluate replacing the doubling with real calls — the original D-07 direction this carve-out
+stands in for. Checked against `@storybook/nextjs-vite@10.5.7` on 2026-08-28 and NOT fired:
+grepping its `dist/` for `use server`, `serverAction` and `server-action` returns nothing, and its
+export map offers only `cache.mock`, `headers.mock`, `link.mock`, `navigation.mock`, `router.mock`.
 
 ## Consequences
 
@@ -215,8 +256,12 @@ Sources:
   `tech/0021` cite.
 - `eslint.config.mjs` (section 8d-2) — the `no-restricted-properties` enforcement block.
 - `docs/adr/tech/0025-direct-composed-story-rendering.md` — D-08's Server Action infeasibility
-  research this record's alias carve-out cites rather than duplicates; also the record that
+  research this record's doubling carve-out cites rather than duplicates; also the record that
   retired the `next/headers` D-19 standing example.
+- `.planning/spikes/action-stub-automation/FINDINGS.md` — the 2026-08-28 measurement behind the
+  carve-out's transform mechanism, its stronger import-time finding, and the register-drift table.
+- `.planning/phases/04-task-subtask-workflow/04-CONTEXT.md` — D-01 through D-05, this amendment's
+  source.
 - `.planning/phases/02.2-unify-component-tests-fully-onto-storybook-stories-eliminate/02.2-CONTEXT.md`
   — D-07 through D-16, the source of this amendment's carve-out, register regeneration and
   coverage-change bullets.
