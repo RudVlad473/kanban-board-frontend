@@ -512,7 +512,89 @@ register, and therefore that drift, as a side effect.
 
   8. No `*-action-storybook-stub.ts` file and no `serverActionStubAlias` entry exists for any
      Server Action this phase adds, and the full `browser` Vitest project passes without them.
-**Plans**: TBD
+**Plans**: 22 plans
+
+Plans:
+
+Waves 1-6 are the tooling scope the roadmap sequenced first. Wave 1 also carries everything the
+feature half needs before it can start — the backend probe, the design-system additions, the D-16
+schema promotion, and D-18's `BoardView` relocation — since none of those touch a Server Action.
+Wave 7 is the tracer: the phase's only genuinely new engineering (dnd-kit multi-container) proven end
+to end on one path before any breadth is added.
+
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — the two folded `browser`/`storybook` flakes fixed at their causes, proven over repeated runs
+- [ ] 04-02-PLAN.md — live-backend probe (T1-T9) resolving task/subtask create shape, omitted ancestor segments, move-position semantics, conflict codes and cascade, recorded as `04-BACKEND-FACTS.md`
+- [ ] 04-03-PLAN.md — the `"use server"` transform plugin and one generic typed recorder, with their own unit gates (D-01, D-02, D-03)
+- [ ] 04-04-PLAN.md — `BoardView` relocated to `src/components/layout/`, the full measured footprint moved with it, boundaries policy untouched (D-18)
+- [ ] 04-05-PLAN.md — `heading-m`, the `Textarea` primitive, and the reachable completed-subtask label treatment (C-02, RESEARCH Pitfall 16)
+- [ ] 04-06-PLAN.md — task/subtask schemas promoted to the core ring, the four URL templates, and tasks ordered at the read (D-16, D-11)
+
+**Wave 2** *(blocked on 04-03)*
+
+- [ ] 04-07-PLAN.md — the transform wired into all three consumers plus D-04's global reset; register kept as a transitional scaffold; the `pnpm storybook` crash todo closed
+
+**Wave 3** *(blocked on 04-07)*
+
+- [ ] 04-08-PLAN.md — D-01's one-way decision checkpoint, then the auth/theme cutover (four doubles, zero test rewrites)
+
+**Wave 4** *(blocked on 04-08)*
+
+- [ ] 04-09-PLAN.md — board-action cutover: `board-list.test.tsx` and `rename-override-provider.test.tsx` rewritten onto the recorder
+
+**Wave 5** *(blocked on 04-04, 04-09)*
+
+- [ ] 04-10-PLAN.md — column-action cutover: `board-view.test.tsx` and `sortable-column.test.tsx` rewritten; the register, the last four doubles and the dead barrel deleted
+
+**Wave 6** *(blocked on 04-01, 04-10)*
+
+- [ ] 04-11-PLAN.md — success criterion 8 put behind a blocking gate proven fail-first; ADR tech/0020 amended in place with the 4-vs-12 drift corrected (D-05)
+
+**Wave 7** *(blocked on 04-05, 04-06, 04-11)*
+
+- [ ] 04-12-PLAN.md — TRACER: a task dragged across columns end to end, with column reorder still green (TASK-04)
+
+**Wave 8** *(blocked on 04-12)*
+
+- [ ] 04-13-PLAN.md — keyboard move, within-column reorder and the live announcements (TASK-04, D-11)
+
+**Wave 9** *(blocked on 04-13)*
+
+- [ ] 04-14-PLAN.md — empty-column droppable, drop indicator, lifted visuals, and SYNC-01 on the move path (TASK-04, SYNC-01, D-12)
+
+**Wave 10** *(blocked on 04-14)*
+
+- [ ] 04-15-PLAN.md — task creation with its initial-subtask fan-out and the header entry point (TASK-01, SUBTASK-01, D-07, S-06)
+
+**Wave 11** *(blocked on 04-15)*
+
+- [ ] 04-16-PLAN.md — the detail view and the `Current Status` dropdown as the move mutation's second caller (TASK-02, TASK-04, D-10)
+
+**Wave 12** *(blocked on 04-16)*
+
+- [ ] 04-17-PLAN.md — optimistic subtask completion toggle with its per-subtask lock and caption rollback (SUBTASK-02, D-08)
+
+**Wave 13** *(blocked on 04-17)*
+
+- [ ] 04-18-PLAN.md — the Edit Task modal, title and description only, with the autosave hint (TASK-03, S-01, S-02)
+
+**Wave 14** *(blocked on 04-18)*
+
+- [ ] 04-19-PLAN.md — subtask add, inline rename and confirm-less delete, per item (SUBTASK-01, SUBTASK-03, SUBTASK-04, D-06, D-09)
+
+**Wave 15** *(blocked on 04-19)*
+
+- [ ] 04-20-PLAN.md — task delete behind a cascade-naming confirmation, never optimistic (TASK-05)
+
+**Wave 16** *(blocked on 04-20)*
+
+- [ ] 04-21-PLAN.md — e2e specs for criteria 1, 2, 3, 5 and 7, with SYNC-01 proved against a real stale-version rejection
+
+**Wave 17** *(blocked on 04-21)*
+
+- [ ] 04-22-PLAN.md — CONVENTIONS.md drift corrected, all eight criteria verified, mock comparison of every rendered surface, CI sign-off
+
 **UI hint**: yes
 
 ## Progress
@@ -526,4 +608,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 14/14 | Complete    | 2026-08-27 |
-| 4. Task & Subtask Workflow | 0/TBD | Not started | - |
+| 4. Task & Subtask Workflow | 0/22 | Planned | - |
