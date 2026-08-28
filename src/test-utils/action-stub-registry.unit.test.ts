@@ -9,7 +9,7 @@ import {
 
 /**
  * The signature shape of a real Server Action, declared locally on purpose: a module under
- * `src/features/*​/actions/` cannot be imported in any test environment at all, which is the whole
+ * `src/features/<domain>/actions/` cannot be imported in any test environment at all, which is the
  * reason this recorder exists (docs/adr/tech/0020's Server Action carve-out).
  */
 type CreateColumnCall = { boardId: string; name: string };
