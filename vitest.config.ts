@@ -41,8 +41,7 @@ const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 /*
  * Real stub modules (not Vitest mocks; must stay before the general `@` alias) for Server Actions
  * whose import chain reaches `node:crypto` — docs/adr/tech/0020's "Server Action alias carve-out".
- * Transitional since 04-07: an entry still wins over `serverActionStubPlugin`; 04-09/10 remove the
- * rest. The four auth/theme actions left in 04-08 and now resolve through the plugin instead.
+ * Transitional: an entry still shadows the plugin; 04-08 unwound the auth/theme four, 04-09/10 the rest.
  */
 const serverActionStubAlias = [
     /*
