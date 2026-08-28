@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 21
+open_count: 22
 waived_count: 0
 fixed_count: 7
-total_count: 28
-last_updated: 2026-08-27T16:21:57.475Z
+total_count: 29
+last_updated: 2026-08-28T13:11:27.554Z
 ---
 
 # Broken Windows Ledger
@@ -43,6 +43,7 @@ last_updated: 2026-08-27T16:21:57.475Z
 | 26 | 03 | unrun-verify | src/features/boards/components/delete-column-confirm.tsx |  | No live-app visual pass on the delete confirmation or the destructive kebab entry — Playwright MCP is not visible to spawned subagents | open |  | 2026-08-27T12:53:48.822Z |  |
 | 27 | 03 | deviation | src/features/boards/actions/rename-column-action.integration.test.ts |  | R8: board path segment is inert on rename/reorder/delete; T-03-21 overstates what spelling boardId out protects against and needs re-scoping to the create endpoint | open |  | 2026-08-27T16:21:53.335Z |  |
 | 28 | 03 | deviation | src/features/boards/schemas.ts |  | R9: taskFullSchema.description widened to .nullish() after the backend was observed sending null; every read site in the tasks phase must handle string \| null \| undefined | open |  | 2026-08-27T16:21:57.475Z |  |
+| 29 | 04 | deviation | .planning/phases/04-task-subtask-workflow/04-01-SUMMARY.md |  | Plan 04-01 left requirements-completed empty: its inherited requirements TASK-01..05, SUBTASK-01..04, SYNC-01 are unclaimed and must be claimed by a later plan in phase 04 | open |  | 2026-08-28T13:11:27.554Z |  |
 
 ````json
 [
@@ -380,6 +381,18 @@ last_updated: 2026-08-27T16:21:57.475Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-27T16:21:57.475Z",
+    "resolved_at": null
+  },
+  {
+    "id": 29,
+    "kind": "deviation",
+    "phase": "04",
+    "file": ".planning/phases/04-task-subtask-workflow/04-01-SUMMARY.md",
+    "line": null,
+    "description": "Plan 04-01 left requirements-completed empty: its inherited requirements TASK-01..05, SUBTASK-01..04, SYNC-01 are unclaimed and must be claimed by a later plan in phase 04",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-28T13:11:27.554Z",
     "resolved_at": null
   }
 ]
