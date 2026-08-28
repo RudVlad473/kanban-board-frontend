@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import type { Column } from "@/features/boards/schemas";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+
 import {
     actionStub,
     assertNoUnqueuedActionCalls,
@@ -8,16 +11,24 @@ import {
 } from "./action-stub-registry";
 
 /**
- * The signature shape of a real Server Action, declared locally on purpose: a module under
+ * `createColumnAction`'s signature, restated locally rather than imported: a module under
  * `src/features/<domain>/actions/` cannot be imported in any test environment at all, which is the
  * reason this recorder exists (docs/adr/tech/0020's Server Action carve-out).
  */
 type CreateColumnCall = { boardId: string; name: string };
 
+/*
+ * Mirrors `create-column-action.ts`'s exported union member for member, off the same `RESULT_STATUS`
+ * and `Column` the real module uses — so the type gate below tracks the real contract rather than a
+ * simplification that could drift from it silently.
+ */
 type CreateColumnResult =
-    | { status: "SUCCESS"; column: { id: string; name: string; position: number; version: number } }
-    | { status: "DUPLICATE" }
-    | { status: "ERROR" };
+    | { status: typeof RESULT_STATUS.SUCCESS; column: Column }
+    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
+    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
+    | { status: typeof RESULT_STATUS.DUPLICATE }
+    | { status: typeof RESULT_STATUS.NOT_FOUND }
+    | { status: typeof RESULT_STATUS.ERROR };
 
 type CreateColumnAction = (input: CreateColumnCall) => Promise<CreateColumnResult>;
 
@@ -33,7 +44,7 @@ const registerCreateColumnStub = (): CreateColumnAction =>
     registerActionStub({ moduleKey: MODULE_KEY, exportName: EXPORT_NAME }) as unknown as CreateColumnAction;
 
 const SUCCESS: CreateColumnResult = {
-    status: "SUCCESS",
+    status: RESULT_STATUS.SUCCESS,
     column: { id: "column-1", name: "Backlog", position: 0, version: 0 },
 };
 
@@ -54,7 +65,7 @@ describe("action-stub-registry", () => {
             const createColumnAction = registerCreateColumnStub();
             const stub = actionStub(createColumnAction);
             stub.queue(SUCCESS);
-            stub.queue({ status: "DUPLICATE" });
+            stub.queue({ status: RESULT_STATUS.DUPLICATE });
 
             // Act
             await createColumnAction({ boardId: "board-1", name: "Backlog" });
@@ -71,7 +82,7 @@ describe("action-stub-registry", () => {
             // Arrange
             const createColumnAction = registerCreateColumnStub();
             const stub = actionStub(createColumnAction);
-            stub.queue({ status: "DUPLICATE" });
+            stub.queue({ status: RESULT_STATUS.DUPLICATE });
             stub.queue(SUCCESS);
 
             // Act
@@ -79,7 +90,7 @@ describe("action-stub-registry", () => {
             const second = await createColumnAction({ boardId: "board-1", name: "Doing" });
 
             // Assert
-            expect(first).toEqual({ status: "DUPLICATE" });
+            expect(first).toEqual({ status: RESULT_STATUS.DUPLICATE });
             expect(second).toEqual(SUCCESS);
         });
 
@@ -122,7 +133,7 @@ describe("action-stub-registry", () => {
             const createColumnAction = registerCreateColumnStub();
             const stub = actionStub(createColumnAction);
             stub.queue(SUCCESS);
-            stub.queue({ status: "ERROR" });
+            stub.queue({ status: RESULT_STATUS.ERROR });
             stub.hold();
 
             // Act
@@ -130,7 +141,7 @@ describe("action-stub-registry", () => {
             const immediate = await createColumnAction({ boardId: "board-1", name: "Doing" });
 
             // Assert
-            expect(immediate).toEqual({ status: "ERROR" });
+            expect(immediate).toEqual({ status: RESULT_STATUS.ERROR });
             stub.settle();
             await expect(held).resolves.toEqual(SUCCESS);
         });
@@ -198,11 +209,11 @@ describe("action-stub-registry", () => {
 
             // Act
             resetAllActionStubs();
-            actionStub(first).queue({ status: "ERROR" });
+            actionStub(first).queue({ status: RESULT_STATUS.ERROR });
             const afterReset = await first({ boardId: "board-1", name: "Doing" });
 
             // Assert — a cleared hold resolves immediately, and a cleared queue drops the old outcome.
-            expect(afterReset).toEqual({ status: "ERROR" });
+            expect(afterReset).toEqual({ status: RESULT_STATUS.ERROR });
             expect(actionStub(second).calls).toEqual([]);
         });
 
@@ -230,25 +241,38 @@ describe("action-stub-registry", () => {
             expect(() => actionStub(notAStub)).toThrow(/not a registered Server Action stub/);
         });
 
-        it("infers queue and calls from the real action's signature", async () => {
+        it("types calls as the action's own first parameter", async () => {
             // Arrange
             const createColumnAction = registerCreateColumnStub();
             const stub = actionStub(createColumnAction);
-
-            /*
-             * The type-level half of this plan's gate: a payload missing the discriminant is a `tsc`
-             * failure, which `@ts-expect-error` asserts by failing if the error ever disappears.
-             */
-            // @ts-expect-error -- `queue` accepts only this action's own awaited return type.
-            stub.queue({ column: { id: "column-1", name: "Backlog", position: 0, version: 0 } });
             stub.queue(SUCCESS);
 
             // Act
             await createColumnAction({ boardId: "board-1", name: "Backlog" });
 
-            // Assert — `calls` is typed as the action's first parameter, checked by this assignment.
+            // Assert — the annotation is the assertion; `tsc` rejects it if `calls` is `unknown[]`.
             const calls: CreateColumnCall[] = stub.calls;
             expect(calls).toEqual([{ boardId: "board-1", name: "Backlog" }]);
+        });
+
+        it("rejects a queued payload that is not the action's own awaited return type", () => {
+            /*
+             * A `tsc`-checked gate, not a runtime one: each `@ts-expect-error` fails the typecheck if
+             * the error it marks ever disappears, so a widened `queue` breaks the build.
+             */
+            const stub = actionStub(registerCreateColumnStub());
+
+            // @ts-expect-error -- missing the `status` discriminant entirely.
+            stub.queue({ column: { id: "column-1", name: "Backlog", position: 0, version: 0 } });
+
+            // @ts-expect-error -- the SUCCESS branch carries a `column`; this one omits it.
+            stub.queue({ status: RESULT_STATUS.SUCCESS });
+
+            // @ts-expect-error -- `IDLE` is a RESULT_STATUS member this action never returns.
+            stub.queue({ status: RESULT_STATUS.IDLE });
+
+            // Assert — nothing was called, so the queue is the only observable effect.
+            expect(stub.calls).toEqual([]);
         });
     });
 });
