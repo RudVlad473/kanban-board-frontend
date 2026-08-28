@@ -101,14 +101,20 @@ coverage:
     rationale: "Whether the paragraph 'reads as a rule rather than a narrative' and lands where the next reader will find it is an editorial judgement no check can make; comments:check and format:check only prove it is well-formed."
   - id: D6
     description: "The board renders as before in the running app, drag/rename/delete/board-switching still work, and the surfaces still match the design mock"
-    verification: []
+    verification:
+      - kind: automated_ui
+        ref: "ORCHESTRATOR-RUN: headless mcp__playwright__* against this worktree's dev server on port 3111, seeded two-board account — render, keyboard column move, rename, delete, board switch"
+        status: pass
+      - kind: manual_procedural
+        ref: "ORCHESTRATOR-RUN: compared against docs/kanban-task-management-web-app.pdf p4"
+        status: pass
     human_judgment: true
-    rationale: "BLOCKED, NOT VERIFIED. No `mcp__playwright__*` tool resolves in this executor — custom subagents do not inherit the project-scoped `.mcp.json` server — and CLAUDE.md forbids both falling back to the `plugin_` variant and substituting a throwaway DOM script. The e2e suite was run instead as the closest sanctioned real-app evidence, but the mock comparison (PDF p4) genuinely needs a browser."
+    rationale: "Approved at the Task 4 checkpoint. Verified by the ORCHESTRATOR, not by this executor — no `mcp__playwright__*` tool resolves in a custom subagent, which does not inherit the project-scoped `.mcp.json` server. Kept `human_judgment: true` because the sign-off is a human/mock judgement, not an assertion any check re-runs."
 
 # Metrics
 duration: 57min
 completed: 2026-08-28
-status: halted
+status: complete
 ---
 
 # Phase 4 Plan 04: BoardView Relocation Summary
@@ -118,10 +124,10 @@ byte-identical (R100) renames, making D-14's `src/features/tasks/` folder legal 
 `feature -> feature` boundary edge D-15 refuses — proven by a clean `pnpm lint` against an
 unmodified `eslint.config.mjs`.**
 
-> **Status: halted, not complete.** Tasks 1–3 are done, verified and committed. Task 4 is a
-> `checkpoint:human-verify` (`gate="blocking"`) that has **not** been approved, and auto-advance is
-> off (`workflow.auto_advance: false`). Flip this to `status: complete` only once a human approves
-> that checkpoint. See "Issues Encountered" for why the executor could not drive the browser itself.
+> **Status: complete.** All four tasks are done. Task 4's `checkpoint:human-verify`
+> (`gate="blocking"`) was **approved** after the orchestrator drove every check in the running app
+> and against the mock — see "Task 4 checkpoint verification" below. This executor did not and could
+> not perform that browser pass itself; the evidence there is the orchestrator's, recorded as such.
 
 ## Performance
 
@@ -150,6 +156,37 @@ unmodified `eslint.config.mjs`.**
 1. **Task 1: Move the four board-view artefacts into the layout ring** — `ff324c3` (refactor)
 2. **Task 2: Repoint every referrer and prove the boundary policy is unchanged** — `a2a29c4` (refactor)
 3. **Task 3: Prove behaviour is unchanged, then record the placement rule** — `1188a2c` (docs)
+4. **Task 4: Checkpoint — verified in the running app and against the mock** — no code commit;
+   approved after the orchestrator's verification pass (recorded below)
+
+## Task 4 checkpoint verification
+
+**All evidence in this section was gathered by the ORCHESTRATOR, not by this executor.** No
+`mcp__playwright__*` tool resolves inside a custom subagent — it inherits only user-scoped MCP
+servers, so the project's own headless `.mcp.json` server is unreachable from here. CLAUDE.md
+forbids falling back to the `mcp__plugin_playwright_playwright__*` variant or substituting a
+throwaway DOM script, so this executor stopped and handed the checkpoint up rather than guessing.
+The orchestrator ran the pass and reported:
+
+- **Setup:** this worktree's dev server on port 3111 against a freshly seeded two-board account,
+  driven headless through this project's own `mcp__playwright__*` server.
+- **Renders as before:** sidebar, header, three columns each with dot + count, and the
+  "+ New Column" panel. Compared against `docs/kanban-task-management-web-app.pdf` p4 — matches for
+  every element this plan owns.
+  - *Known, expected divergence:* the header shows account name + Sign Out where the mock has
+    "+ Add New Task" + kebab. That is unbuilt Phase 4 scope (plan 04-15), **not** a relocation
+    regression.
+- **Keyboard column move:** focused the first column's drag handle, `Space` → `ArrowRight` →
+  `Space` moved Todo from index 0 to 1; the order held across a full reload.
+- **Rename:** Todo → Backlog via the column kebab; persisted across reload.
+- **Delete:** the Done column removed via the kebab's confirm dialog; persisted across reload.
+- **Sidebar board switch:** clicking the other board updated the URL, heading, active pill and the
+  live-region announcement. **Confirmed by end state only** — the transient loading skeleton
+  resolves too fast against this backend to capture mid-switch, so no visual sighting of the
+  skeleton is claimed.
+- **Console:** no application errors. The only errors are hot-reload WebSocket failures pointing at
+  port 3000, an artifact of running dev on 3111.
+- **Cleanup:** both seeded boards deleted (200 each), dev server stopped, no stray artifacts.
 
 ## Files Created/Modified
 
@@ -243,14 +280,21 @@ environment gaps, not code.
 
 ## Issues Encountered
 
-**The Task 4 checkpoint could not be self-verified in a browser — this is the one thing left undone.**
-CLAUDE.md requires driving the change through the running app before presenting it, using tools
-named `mcp__playwright__*`, and explicitly forbids falling back to the globally-installed
-`mcp__plugin_playwright_playwright__*` variant or writing a throwaway DOM script. **Neither
-resolves in this executor**: a custom subagent inherits only user-scoped MCP servers, so the
-project's own `.mcp.json` headless server is invisible here. This is the same gap recorded in
-STATE.md for phase 03 wave 4, where the orchestrator had to do the visual check in the main session.
-The strongest sanctioned substitute was run instead — see the checkpoint hand-off below.
+**The Task 4 checkpoint could not be self-verified in a browser by this executor — the orchestrator
+did it instead (resolved, not outstanding).** CLAUDE.md requires driving the change through the
+running app before presenting it, using tools named `mcp__playwright__*`, and explicitly forbids
+falling back to the globally-installed `mcp__plugin_playwright_playwright__*` variant or writing a
+throwaway DOM script. **Neither resolves in this executor**: a custom subagent inherits only
+user-scoped MCP servers, so the project's own `.mcp.json` headless server is invisible here. This is
+the same gap recorded in STATE.md for phase 03 wave 4, where the orchestrator also had to do the
+visual check in the main session. The e2e suite was run here as the strongest sanctioned substitute;
+the browser and mock pass was then performed by the orchestrator and is recorded under
+"Task 4 checkpoint verification" above.
+
+**Worth fixing at the framework level:** this is now the second phase where a worktree executor hit
+a blocking `checkpoint:human-verify` it structurally could not discharge. Either the project-scoped
+MCP server needs to reach dispatched subagents, or plans should stop assigning browser verification
+to an executor that provably cannot run one.
 
 **Three full-suite test failures were confirmed as contention flakes, not regressions.** The first
 `pnpm test` reported 3 failed / 1310 passed; every failure was a 15s timeout, never an assertion,
@@ -283,20 +327,24 @@ None — no external service configuration required.
 - **Ready:** the layout ring is now a legal composition point, so a real `src/features/tasks/`
   folder can land without touching `eslint.config.mjs`. The `layout -> feature` policy that makes
   this work already existed and was not widened.
-- **Blocker:** Task 4's human checkpoint is unapproved, and the browser + mock comparison it asks
-  for has not been performed by anyone yet. Until it is, treat this plan as `halted`.
-- **Note for the orchestrator:** `04-PATTERNS.md` line 930 still lists the 52 Vitest screenshots as
-  part of the movable footprint. That line is wrong (see Deviation 1) and will mislead any later
-  plan that reads it.
+- **No blockers.** Task 4's checkpoint was approved after the orchestrator's browser + mock pass;
+  the plan is closed.
+- **Open item the orchestrator owns:** `04-PATTERNS.md` line 930 still lists the 52 Vitest
+  screenshots as part of the movable footprint. The orchestrator independently confirmed
+  `.gitignore:36` ignores `src/**/__screenshots__/`, so that line is wrong (see Deviation 1) and
+  will mislead any later plan that reads it. **Deliberately not edited here** — it is outside this
+  plan's declared `files_modified`, and the orchestrator will correct it after the wave merges.
 
 ## Self-Check: PASSED
 
 - All three relocated files exist at `src/components/layout/board-view/`.
-- All four commits resolve on `worktree-agent-a36546e967c4370d5`: `ff324c3`, `a2a29c4`, `1188a2c`,
-  `80c7593`.
+- All commits resolve on `worktree-agent-a36546e967c4370d5`: `ff324c3`, `a2a29c4`, `1188a2c`, plus
+  the metadata commit carrying this summary.
 - `git status --short` is empty — no stray artifact, no leftover temp config, no untracked file.
-- Every acceptance criterion for Tasks 1–3 was re-run and passes; Task 4 remains an unapproved
-  human checkpoint, which is why `status` is `halted`.
+  `next-env.d.ts`, which `next typegen` had flipped to its dev-mode import paths, was restored to
+  the committed build-mode version so no unrelated generated churn rides along into the wave merge.
+- Every acceptance criterion for Tasks 1–3 was re-run and passes. Task 4 was approved on the
+  orchestrator's browser + mock verification, which is why `status` is `complete`.
 
 ---
 *Phase: 04-task-subtask-workflow*
