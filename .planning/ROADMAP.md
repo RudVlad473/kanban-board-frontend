@@ -512,7 +512,7 @@ register, and therefore that drift, as a side effect.
 
   8. No `*-action-storybook-stub.ts` file and no `serverActionStubAlias` entry exists for any
      Server Action this phase adds, and the full `browser` Vitest project passes without them.
-**Plans**: 6/22 plans executed
+**Plans**: 7/22 plans executed
 
 Plans:
 
@@ -533,7 +533,7 @@ to end on one path before any breadth is added.
 
 **Wave 2** *(blocked on 04-03)*
 
-- [ ] 04-07-PLAN.md — the transform wired into all three consumers plus D-04's global reset; register kept as a transitional scaffold; the `pnpm storybook` crash todo closed
+- [x] 04-07-PLAN.md — the transform wired into all three consumers plus D-04's global reset; register kept as a transitional scaffold; the `pnpm storybook` crash todo closed
 
 **Wave 3** *(blocked on 04-07)*
 
@@ -608,4 +608,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 14/14 | Complete    | 2026-08-27 |
-| 4. Task & Subtask Workflow | 6/22 | In Progress|  |
+| 4. Task & Subtask Workflow | 7/22 | In Progress|  |
