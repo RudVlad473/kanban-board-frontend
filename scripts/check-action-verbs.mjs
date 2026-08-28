@@ -50,6 +50,9 @@ export const findActionNameViolations = ({ relativePath, source }) => {
     return violations;
 };
 
+// RED skeleton — the assertion itself lands in this task's GREEN commit.
+export const findStubSeamViolations = () => [];
+
 const scanFile = (relativePath) => {
     const source = readFileSync(path.resolve(repoRoot, relativePath), "utf8");
     return findActionNameViolations({ relativePath, source });
