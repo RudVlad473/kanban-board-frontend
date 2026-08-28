@@ -464,8 +464,8 @@ never been executed in this repo. All three run in parallel; only 03-01 needs th
 subtask checklists, with changes reliably reconciled against the server even when a version
 conflict occurs — built on generated Server Action stubs rather than seven more hand-written ones.
 **Depends on**: Phase 3
-**Requirements**: TASK-01, TASK-02, TASK-03, TASK-04, TASK-05, SUBTASK-01, SUBTASK-02,
-SUBTASK-03, SUBTASK-04, SYNC-01, plus the tooling scope below (derived from
+**Requirements**: TASK-01, TASK-02, TASK-03, TASK-04, TASK-05, SUBTASK-01, SUBTASK-02, SUBTASK-03, SUBTASK-04, SYNC-01
+Plus the tooling scope below (derived from
 `.planning/spikes/action-stub-automation/FINDINGS.md`, no user-facing requirement id — the same
 shape Phases 02.1 and 02.2 used for internal quality work)
 
