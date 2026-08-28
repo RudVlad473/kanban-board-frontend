@@ -70,12 +70,12 @@ export const Checkbox = ({
                 className={cn(
                     "font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary",
                     /*
-                     * 04-UI-SPEC.md's completed-subtask treatment: 50% of primary composites to
-                     * the mock's sampled #797B87 (p5) and #8F9095 (p15), which the muted token
-                     * misses. Lives here because `className` reaches the box, not the label.
+                     * 04-UI-SPEC.md's completed-subtask treatment: 55% of primary, the lowest
+                     * percent clearing WCAG AA (#6e707c, 4.58:1); the mock's own 50% is 3.87:1.
+                     * Lives here because `className` reaches the box, not the label.
                      */
                     hasStrikethroughWhenChecked &&
-                        "peer-data-[checked]:text-text-primary/50 peer-data-[checked]:line-through",
+                        "peer-data-[checked]:text-text-primary/55 peer-data-[checked]:line-through",
                 )}
             >
                 {label}

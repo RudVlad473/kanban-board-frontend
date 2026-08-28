@@ -252,11 +252,13 @@ at identical coordinates.
 
 ### Completed-subtask treatment (derived, not a new token)
 
-A completed subtask's label is `line-through` at **50% of `--color-text-primary`**
-(`text-text-primary/50 line-through`). Falsifiable: `#000112` at 50% over the row's `#F4F7FD` fill
-composites to `#7A7C87`; p5 samples `#797B87` at that row. `#FFFFFF` at 50% over the dark row's
-`#20212C` composites to `#8F9095`; p15 samples `#8F9095` exactly. Do not substitute
+A completed subtask's label is `line-through` at **55% of `--color-text-primary`**
+(`text-text-primary/55 line-through`). Falsifiable: `#000112` at 55% over the row's `#F4F7FD` fill
+composites to `#6e707c` (4.58:1). `#FFFFFF` at 55% over the dark row's
+`#20212C` composites to `#9b9ba0` (5.77:1) — dark passed at 50% too (`#8F9095`, p15's own
+sample, 5.03:1), and moves only so one opacity rule covers both themes. Do not substitute
 `text-text-muted` — it is a different value in each theme and misses both.
+**50% was the mock-sampled value (`#7A7C87`, p5 samples `#797B87`) but fails WCAG AA at 3.87:1; 55% is the lowest whole percent that clears 4.5:1, so do not "restore" it to match the mock.**
 
 ### Accent reserved for (explicit list — never "all interactive elements")
 

@@ -91,7 +91,7 @@ describeForEachDevice({
          * RESEARCH Pitfall 16: `className` routes to the checkbox box, so a consumer cannot reach
          * the label — 04-UI-SPEC.md's completed-subtask colour has to live in the primitive.
          */
-        it("strikes a checked label through and drops it to 50% of the primary text colour when hasStrikethroughWhenChecked", async () => {
+        it("strikes a checked label through and drops it to 55% of the primary text colour when hasStrikethroughWhenChecked", async () => {
             // Arrange
             const struck = await render(<CheckedWithStrikethrough />);
             const reference = await render(<Unchecked />);
@@ -100,9 +100,9 @@ describeForEachDevice({
             const struckStyle = getComputedStyle(readLabel(struck.container));
             const referenceStyle = getComputedStyle(readLabel(reference.container));
 
-            // Assert — half-transparent primary, never the muted token, which misses both themes.
+            // Assert — 55% primary (#6e707c, the lowest percent clearing WCAG AA), never the muted token.
             expect(struckStyle.textDecorationLine).toContain("line-through");
-            expect(struckStyle.color).toContain("0.5");
+            expect(struckStyle.color).toContain("0.55");
             expect(struckStyle.color).not.toBe(referenceStyle.color);
         });
 
