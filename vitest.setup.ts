@@ -25,6 +25,8 @@ import { cleanup as cleanupVitestBrowserReactRender } from "vitest-browser-react
  */
 import "@testing-library/jest-dom/vitest";
 
+import { assertNoUnqueuedActionCalls, resetAllActionStubs } from "@/test-utils/action-stub-registry";
+
 import { previewAnnotations } from "./.storybook/preview-annotations";
 
 /*
@@ -50,4 +52,12 @@ afterEach(async () => {
     cleanupTestingLibraryRender();
     await cleanupVitestBrowserReactRender();
     clearAllMocks();
+
+    /*
+     * D-04: every registered Server Action stub resets here, centrally, with no opt-out. Reset
+     * first so leftovers cannot leak into the next test when the assert throws; assert second so
+     * D-03's report lands where a hook's `.catch` cannot swallow it (action-stub-registry.ts).
+     */
+    resetAllActionStubs();
+    assertNoUnqueuedActionCalls();
 });
