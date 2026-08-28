@@ -15,14 +15,16 @@ import {
     resolveDestinationAfterDelete,
     shouldNudgeOnColumnCount,
     sortColumnsByPosition,
+    sortTasksByPosition,
     toColumnDotToken,
     toReorderTargetPosition,
     toSubmittedColumnNames,
 } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
+import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 import { createBoards } from "@/test-utils/factories/board";
-import { createColumnsFull } from "@/test-utils/factories/board-full";
+import { createColumnsFull, createTasksFull } from "@/test-utils/factories/board-full";
 
 describe("toSubmittedColumnNames", () => {
     it("returns the trimmed rows in the order given", () => {
@@ -368,6 +370,78 @@ describe("sortColumnsByPosition", () => {
     it("returns an empty array for a board holding no columns at all", () => {
         // Act & Assert
         expect(sortColumnsByPosition([])).toEqual([]);
+    });
+});
+
+/*
+ * The within-column half of the same rule (D-11). Every fixture writes tasks in creation order, so
+ * the fixtures here are deliberately shuffled — authoring them in position order is exactly what
+ * hid the missing sort until now (04-RESEARCH.md Pitfall 15).
+ */
+describe("sortTasksByPosition", () => {
+    const createShuffledTasks = (): TaskFull[] => {
+        const [first, second, third] = createTasksFull(3);
+
+        return [
+            { ...first, position: 2 },
+            { ...second, position: 0 },
+            { ...third, position: 1 },
+        ];
+    };
+
+    it("orders tasks by their position rather than by the array order they arrived in", () => {
+        // Arrange
+        const tasks = createShuffledTasks();
+
+        // Act
+        const ordered = sortTasksByPosition(tasks);
+
+        // Assert
+        expect(ordered.map((task) => task.position)).toEqual([0, 1, 2]);
+        expect(ordered.map((task) => task.id)).toEqual([tasks[1].id, tasks[2].id, tasks[0].id]);
+    });
+
+    it("leaves an array that already agrees with its positions exactly as it was", () => {
+        // Arrange
+        const tasks = createTasksFull(4);
+
+        // Act & Assert
+        expect(sortTasksByPosition(tasks)).toEqual(tasks);
+    });
+
+    /* `Array.prototype.sort` sorts in place, and this input is `cache()`d data other derivations read. */
+    it("never mutates the array it was given", () => {
+        // Arrange
+        const tasks = createShuffledTasks();
+        const orderBefore = tasks.map((task) => task.id);
+
+        // Act
+        const ordered = sortTasksByPosition(tasks);
+
+        // Assert
+        expect(tasks.map((task) => task.id)).toEqual(orderBefore);
+        expect(ordered).not.toBe(tasks);
+    });
+
+    it("keeps tasks sharing a position in the relative order they arrived in", () => {
+        // Arrange
+        const [first, second, third] = createTasksFull(3);
+        const tasks = [
+            { ...first, position: 1 },
+            { ...second, position: 1 },
+            { ...third, position: 0 },
+        ];
+
+        // Act
+        const ordered = sortTasksByPosition(tasks);
+
+        // Assert
+        expect(ordered.map((task) => task.id)).toEqual([third.id, first.id, second.id]);
+    });
+
+    it("returns an empty array for a column holding no tasks at all", () => {
+        // Act & Assert
+        expect(sortTasksByPosition([])).toEqual([]);
     });
 });
 

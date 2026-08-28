@@ -1,6 +1,7 @@
 import type { Announcements, UniqueIdentifier } from "@dnd-kit/core";
 
 import type { Board, ColumnFull } from "@/features/boards/schemas";
+import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 
 /**
@@ -102,6 +103,14 @@ export const toColumnDotToken = ({ id }: { id: string }): (typeof COLUMN_DOT_TOK
  */
 export const sortColumnsByPosition = (columns: ColumnFull[]): ColumnFull[] =>
     [...columns].sort((left, right) => left.position - right.position);
+
+/**
+ * D-11's within-column ordering, on the same terms as the column sort one level up: `position` is
+ * the authority, and the copy is not optional because the input is `cache()`d RSC data. Every
+ * factory authors tasks in creation order, which is why the missing sort was invisible until now.
+ */
+export const sortTasksByPosition = (tasks: TaskFull[]): TaskFull[] =>
+    [...tasks].sort((left, right) => left.position - right.position);
 
 export type HorizontalBox = { left: number; right: number };
 

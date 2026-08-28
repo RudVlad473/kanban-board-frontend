@@ -1,4 +1,5 @@
-import type { BoardFull, ColumnFull, Subtask, TaskFull } from "@/features/boards/schemas";
+import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
+import type { Subtask, TaskFull } from "@/lib/core/api-contract/task-schemas";
 
 /**
  * D-11's fixture-entity mechanism for the full-board hierarchy — plain factory functions taking

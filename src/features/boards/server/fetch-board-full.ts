@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { sortColumnsByPosition } from "@/features/boards/model";
+import { sortColumnsByPosition, sortTasksByPosition } from "@/features/boards/model";
 import { boardFullSchema, type BoardFull } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
@@ -65,12 +65,18 @@ const fetchBoardFullById = cache(async (boardId: string): Promise<FetchBoardFull
     }
 
     /*
-     * The ONE ordering site: every consumer downstream of here is position-ordered by construction,
-     * so no component sorts and the optimistic `arrayMove` composes with display order (COLUMN-03).
+     * The ONE ordering site, now covering both levels (D-11): every consumer downstream is
+     * position-ordered by construction, so no component sorts a column or a task list and the
+     * optimistic `arrayMove` composes with display order (COLUMN-03).
      */
     return {
         status: RESULT_STATUS.SUCCESS,
-        board: { ...parsed.data, columns: sortColumnsByPosition(parsed.data.columns) },
+        board: {
+            ...parsed.data,
+            columns: sortColumnsByPosition(parsed.data.columns).map((column) => {
+                return { ...column, tasks: sortTasksByPosition(column.tasks) };
+            }),
+        },
     };
 });
 
