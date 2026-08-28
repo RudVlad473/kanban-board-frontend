@@ -54,6 +54,10 @@
   --text-heading-l: 18px;
   --font-weight-heading-l: 700;
   --leading-heading-l: 23px;
+  --font-heading-m: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
+  --text-heading-m: 15px;
+  --font-weight-heading-m: 700;
+  --leading-heading-m: 19px;
   --font-heading-s: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
   --text-heading-s: 12px;
   --font-weight-heading-s: 700;

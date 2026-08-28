@@ -71,9 +71,10 @@ describe("style dictionary token pipeline (D-12)", () => {
 
     /*
      * The mock's sixth type role (04-UI-SPEC.md C-02), which Phase 1 omitted because nothing
-     * rendered a task card. Typography is mode-invariant, so both blocks must agree exactly.
+     * rendered a task card. Typography is mode-invariant: it is declared once in @theme and the
+     * .dark block never overrides it, which is what makes it resolve identically in both themes.
      */
-    it("expands font-heading-m into the same four custom properties in the @theme block and the .dark block", async () => {
+    it("declares font-heading-m's four custom properties in the @theme block and overrides none of them in .dark, so it resolves identically in both themes", async () => {
         // Arrange
         const declarations = [
             "--font-heading-m: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;",
@@ -90,8 +91,8 @@ describe("style dictionary token pipeline (D-12)", () => {
         // Assert
         for (const declaration of declarations) {
             expect(themeBlock).toContain(declaration);
-            expect(darkBlock).toContain(declaration);
         }
+        expect(darkBlock).not.toContain("heading-m");
     });
 
     /*
