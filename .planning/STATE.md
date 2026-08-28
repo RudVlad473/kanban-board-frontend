@@ -5,10 +5,10 @@ current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
 stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-08-28T11:41:51.019Z"
+last_updated: "2026-08-28T12:04:57.330Z"
 last_activity: 2026-08-28
-last_activity_desc: Post-phase-03 convention review; ready to plan Phase 4
-state_head: 4a4e1fe15e36ea92f50c54099db39795dd2eaf17
+last_activity_desc: Phase 04 execution started
+state_head: 710ba7ca487f3eb0325e0d61be6f132f36903f00
 progress:
   total_phases: 6
   completed_phases: 5
@@ -26,16 +26,16 @@ See: .planning/PROJECT.md (updated 2026-08-22)
 **Core value:** A signed-in user can create boards, organize tasks across columns via
 drag-and-drop, and trust that every change is reliably persisted and reconciled against the
 real backend.
-**Current focus:** Phase 03 — Column Management
+**Current focus:** Phase 04 — Task & Subtask Workflow
 cover board create + initial columns (BOARD-02), board detail view, rename, and delete.
 
 ## Current Position
 
-Phase: 04 (Task & Subtask Workflow) — READY TO EXECUTE
+Phase: 04 (Task & Subtask Workflow) — EXECUTING
 03-01/02/03 in wave 1, 03-04 in wave 2, 03-05 in wave 3, 03-06 in wave 4)
 Phase 02 (Board Management): COMPLETE — 15/15 plans, verified (02-VERIFICATION.md status: passed).
-Status: Ready to execute
-Last activity: 2026-08-27 — Phase 03 complete, transitioned to Phase 4
+Status: Executing Phase 04
+Last activity: 2026-08-28 — Phase 04 execution started
 
 Progress: Milestone v1.0 — Phase 1: 38/38 plans; Phase 02.1: 15/15 plans; Phase 02.2: 9/9 plans;
 Phase 02: 15/15 plans (complete); Phase 03: 4/13 plans (in progress)

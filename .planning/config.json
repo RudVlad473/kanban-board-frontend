@@ -7,7 +7,10 @@
     "plan_check": true,
     "verifier": true,
     "research": true,
-    "subagent_timeout": 900000
+    "subagent_timeout": 900000,
+    "build_command": "pnpm build",
+    "test_command": "pnpm test",
+    "test_gate_timeout": 900
   },
   "model_profile": "quality",
   "git": {
