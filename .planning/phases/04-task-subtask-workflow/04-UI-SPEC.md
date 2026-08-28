@@ -50,7 +50,7 @@ followed — per this phase's brief.
 | ID | Conflict | Resolution |
 |----|----------|------------|
 | **C-01** | **Measurement calibration.** `tokens/radius.tokens.json` (and `CLAUDE.md`, quoting it) records "render at 600 DPI and divide by 6.25 for CSS px". 03-UI-SPEC.md instead calibrated on the column pitch, which is 1 PDF pt = 1 CSS px (÷8.333 at 600 DPI). The two differ by exactly 1.3333×. **This spec used the pt calibration and confirmed it independently:** the task-card title measures 15.1 CSS px, and PDF p1's own typography table states `Heading (M) … 15px / 19px Line`. The ÷6.25 divisor therefore over-reads every measurement by 1.333×, which is why the shipped radius scale (4/24/28px) is inflated against a mock whose card corner is ~8px. **Not fixed here** — re-deriving the radius scale is a Phase 1 token change plus a full visual-regression re-baseline, and a pending todo (`Container corner radii use rounded-lg where the mock wants ~6px`) already tracks it. Every measurement in this document is pt-calibrated; do not re-measure with ÷6.25 and "correct" these numbers. |
-| **C-02** | **Task-card title token.** The shipped inert card (`sortable-column.tsx:97`) renders the title at `body-m` (12px / 700). The mock renders it at `Heading (M)` — 15px / 19px / 700 — a token Phase 1 never generated. | This phase **adds `heading-m`** to `tokens/typography.tokens.json` and switches the card title to it. See Typography. |
+| **C-02** | **Task-card title token, and the font-size ceiling underneath it.** The shipped inert card (`sortable-column.tsx:97`) renders the title at `body-m` (12px / 700). The mock renders it at `Heading (M)` — 15px / 19px / 700 — a token Phase 1 never generated. Adding it takes the project from 4 distinct font sizes to 5, which is a **cross-phase scale change**, not a local addition. | This phase **adds `heading-m`** to `tokens/typography.tokens.json` and switches the card title to it. The ceiling move from 4 to 5 was put to the user on 2026-08-28 and signed off as *"Raise ceiling to 5 sizes"*; merging `heading-s`/`body-m` back to 4 was considered and rejected. Full record, authority and falsification test: **Typography → “Font-size ceiling: 4 distinct sizes → 5”**. |
 | **C-03** | **`Edit Task`'s batched `Save Changes`.** PDF p7 puts title, description, every subtask row and the status behind one `Save Changes`. Each subtask carries its own `version`, so that one button is N independently-failing calls. | CONTEXT D-06 already rejected the batch. Recorded here as **S-01**, the second deliberate divergence in the same direction as 03-UI-SPEC.md's **U-01**. |
 | **C-04** | **Subtask row padding is 12px in the mock.** Measured: row left inset 12.0px, row height exactly 40px around a 16px checkbox. 02-UI-SPEC.md and 03-UI-SPEC.md both bar *new* 12px (`--space-3`) usage. | Prescribed as `min-h-10 px-4 py-2` — the single-line row lands on the mock's 40px exactly; the left inset is 16px against the mock's 12px (+4px) and a wrapped two-line row is 46px against the mock's measured 59px (−13px). Both deviations are deliberate and recorded here so a later reader does not "fix" them by reaching for 12px. |
 | **C-05** | **Secondary-button fill.** The mock's `+ Add New Subtask` (p6) is a `#635FC7`-at-10% purple tint. The shipped `Button variant="secondary"` is bordered white (`button-variants.ts:19`), which is what `+ Add New Column` already ships as (`add-board-modal.tsx:139`). | Reuse the shipped `secondary` variant. The divergence is inherited from Phase 2, not introduced here. |
@@ -107,31 +107,33 @@ Declared values — this project's own already-implemented 4px-base scale (`src/
 
 This phase's new components (`TaskCard`, `TaskDetailModal`, `AddTaskModal`, `EditTaskModal`,
 `SubtaskChecklistRow`, `SubtaskEditorRow`, `DeleteTaskConfirm`, and the `Textarea` primitive) are
-built from the seven tiers above plus the three measured exceptions below.
+built from the seven declared tiers above plus the tier-2 off-scale values below.
 
 **`--space-3` (12px) remains barred for new work**, carried forward verbatim from 02-UI-SPEC.md and
 03-UI-SPEC.md. It is load-bearing inside `TextField`'s, `Dropdown`'s and `Menu.Item`'s already-
 baselined internals — components this phase **reuses as-is**. See **C-04** for the one place this
 bar costs fidelity, and do not resolve that by reaching for 12px.
 
-Exceptions (each measured, each a multiple of 4):
+### Tier 2 — off-scale values (declared, measured, and not violations)
 
-- **44×44px minimum touch target** on every icon-only control — the task card's drag handle
-  (S-04), the detail view's kebab, and the subtask row's `×` are all `IconButton`
-  `variant="ghost"` `size="md"` (`size-11` = 44px, already implemented).
-- **Inter-card gap: 20px** (`gap-5`). Measured twice on PDF p4 at 300 DPI: card edge to card edge
-  = 84px → 20.2 CSS px. This **corrects** the shipped `gap-4` at `sortable-column.tsx:89` (S-07).
-  It is not a declared `--space-*` tier; it comes off Tailwind's dynamic scale from
-  `--spacing: 4px`, exactly as the shipped 280px column does via `w-70`.
-- **Description textarea min-height: 112px** (`min-h-28`). Measured on PDF p6 at 300 DPI: 462px →
-  110.9 CSS px.
-- **Subtask row min-height: 40px** (`min-h-10`). Measured on p5 and p15 at 300 DPI: 167px → 40.1
-  CSS px, identical in both themes.
-- **Task card total height: 88px** for a single-line title (measured 87.8px) — a *consequence* of
-  `py-6` + 19px title line + `gap-2` + 15px caption, not a fixed height. The card must not be
-  height-clamped; a wrapped title grows it.
-- **Column width stays 280px** (`w-70`) and the inter-column gutter stays 24px (`gap-6`) — both
-  already shipped and unchanged by this phase.
+Every value below is a multiple of 4 but sits **outside** the seven `--space-*` tiers: it comes off
+Tailwind v4's dynamic scale, generated from the same `--spacing: 4px` base the tiers are, exactly as
+the already-shipped 280px column does via `w-70`. That is the whole reason none of them is a
+scale violation, and stating it once here is the point of this table — the **Shared** rows are
+standing project precedent that a later phase should cite rather than re-derive from scratch, and
+`gap-5` / `min-h-28` / `min-h-10` become part of that precedent the moment this phase ships.
+
+| Value | Utility | Where | Origin | Measurement evidence |
+|-------|---------|-------|--------|----------------------|
+| **44×44px** | `size-11` | Minimum touch target on **every** icon-only control — the task card's drag handle (S-04), the detail view's kebab, the subtask row's `×`; all `IconButton variant="ghost" size="md"` | **Shared** — established Phase 2, applied unchanged in Phases 3 and 4 | Accessibility floor (WCAG 2.5.5 target size), not a mock measurement; already implemented in `IconButton` |
+| **280px** | `w-70` | Column width, unchanged by this phase | **Shared** — established Phase 2, shipped | Measured Phase 2; re-confirmed unchanged here, not re-measured |
+| **20px** | `gap-5` | Inter-card gap in a column | **This phase** (S-07) — joins the shared set once shipped | PDF p4 at 300 DPI, measured twice: card edge to card edge = 84px → **20.2 CSS px**. **Corrects** the shipped `gap-4` at `sortable-column.tsx:89` |
+| **112px** | `min-h-28` | `Description` textarea minimum box | **This phase** — joins the shared set once shipped | PDF p6 at 300 DPI: 462px → **110.9 CSS px** |
+| **40px** | `min-h-10` | Subtask checklist row minimum height (and every `h-10` control in both task modals) | **This phase** — joins the shared set once shipped | PDF p5 and p15 at 300 DPI: 167px → **40.1 CSS px**, identical in both themes |
+| **88px** | none — emergent | Task card total height for a single-line title, **and** the minimum drop-target height of an empty column body | **This phase** — a *consequence*, never a clamp | Measured **87.8px** on p4; falls out of `py-6` + 19px title line + `gap-2` + 15px caption. The card must **not** be height-clamped — a wrapped title grows it |
+
+The inter-column gutter stays at **24px** (`gap-6`, `--space-6`) — a declared tier, already shipped,
+listed here only so its absence from this table is not read as an oversight.
 
 ---
 
@@ -147,6 +149,61 @@ This project's type scale (`src/styles/tokens.css`) mapped onto the template's s
 | Label (caption) | `heading-s` | 12px | 700 | 15px, +2.4px tracking | The ALL-CAPS column header caption — already shipped, unchanged |
 | Label | `body-m` | 12px | 700 | 15px | The card's `N of M subtasks` caption (`text-text-muted`); every field label (`Title`, `Description`, `Subtasks`, `Status`, `Current Status`); the `Subtasks (N of M)` caption; every subtask checklist row's label; button text |
 | Body | `body-l` | 13px | 500 | 23px | The task description in the detail view (measured: 3 lines at a 23.0px pitch on p5, `text-text-muted`); `Menu.Item` text; delete-confirmation body copy; `TextField`/`Textarea` values and error text |
+
+**Six tokens, five distinct sizes** (24 / 18 / 15 / 13 / 12 — `heading-s` and `body-m` both sit at
+12px and differ only in kerning and case). **Two weights only:** 700 and 500. The move from four
+distinct sizes to five is a recorded cross-phase decision — see the next subsection.
+
+### Font-size ceiling: 4 distinct sizes → 5 (cross-phase scale change, signed off 2026-08-28)
+
+**This is a project-wide scale change, not a quiet one-phase addition.** It is recorded here so the
+ceiling is a decision on the record rather than unstated drift, and so a later reader does not treat
+the fifth size as an accident to be cleaned up.
+
+Before this phase `tokens/typography.tokens.json` held **five tokens across four distinct sizes**
+(24 / 18 / 13 / 12). Adding `heading-m` makes it **six tokens across five distinct sizes**. The
+ceiling for this phase and every phase after it is **5 distinct font sizes — 24, 18, 15, 13, 12**.
+A sixth distinct size would need its own recorded decision in the shape of this one.
+
+**Authority: the mock's own design-system sheet, not this phase's convenience.** PDF page 1's
+`02 Typography` block — rendered at 110 DPI and read directly during this session — defines **six**
+type roles across **five** distinct sizes:
+
+| Role         | Family            | Weight | Size | Line height | Extra         | Ported by Phase 1? |
+|--------------|-------------------|--------|------|-------------|---------------|--------------------|
+| Heading (XL) | Plus Jakarta Sans | Bold   | 24px | 30px        | —             | yes — `heading-xl` |
+| Heading (L)  | Plus Jakarta Sans | Bold   | 18px | 23px        | —             | yes — `heading-l`  |
+| Heading (M)  | Plus Jakarta Sans | Bold   | 15px | 19px        | —             | **no — the gap this phase closes** |
+| Heading (S)  | Plus Jakarta Sans | Bold   | 12px | 15px        | 2.4px kerning | yes — `heading-s`  |
+| Body (L)     | Plus Jakarta Sans | Medium | 13px | 23px        | —             | yes — `body-l`     |
+| Body (M)     | Plus Jakarta Sans | Bold   | 12px | 15px        | —             | yes — `body-m`     |
+
+Five distinct sizes **by design**. The project's four-size scale was therefore never a deliberate
+ceiling — it is an artifact of Phase 1 porting five of the design system's six roles, because
+nothing in Phases 1–3 rendered a task card and `Heading (M)` had no consumer to justify it.
+
+**Considered and rejected: merging `heading-s` into `body-m` to stay at four distinct sizes.** The
+two are byte-identical on family, weight, size and line height (Plus Jakarta Sans / 700 / 12px /
+15px) and differ only in `letterSpacing: 2.4px` and `textTransform: uppercase`, so collapsing them
+would hold the count at four even with `heading-m` added. **Rejected**, for two reasons: the mock
+defines them as two distinct roles whose whole difference *is* the kerning and case treatment, so
+merging them would contradict the design source of truth purely to satisfy a count; and `heading-s`
+is already shipped and visual-regression-baselined on every column header, so the merge would force
+a Phase 1 token change plus a re-baseline to buy nothing. Do not merge them.
+
+**Sign-off.** The choice was put to the user during `/gsd-ui-phase 4` on **2026-08-28**, with the
+six-role table above as the evidence, and the user chose **“Raise ceiling to 5 sizes.”** Verbatim
+scope of that sign-off:
+
+- Add `heading-m` (15px / 700 / 19px) as specified below.
+- Record the ceiling move from 4 to 5 as an explicit **cross-phase** scale change, justified by the
+  mock's own six-role design system — not as a quiet one-phase addition.
+- Phases 01 / 02 / 03 keep their current output. **Nothing is retro-edited.**
+- The shipped 12px card-title defect (**C-02**) is fixed by this.
+
+**Falsifiable, re-runnable:** `pdftoppm -f 1 -l 1 -r 110 -png docs/kanban-task-management-web-app.pdf`
+and read the `02 Typography` block. If it lists fewer than six roles, or gives `Heading (M)` a size
+other than 15px at a 19px line, this decision is wrong and the ceiling returns to four.
 
 ### The one new type token this phase adds
 
