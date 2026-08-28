@@ -4,6 +4,9 @@ import { expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
+import { signUpAction } from "@/features/auth/actions/sign-up-action";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { flattenFormData } from "@/test-utils/flatten-form-data";
 
@@ -245,6 +248,8 @@ describeForEachDevice({
              */
             // Arrange
             const rendered = await renderSignUpForm();
+            // D-02: no implicit success default — this submit's outcome is queued at the call site.
+            actionStub(signUpAction).queue(AUTH_ACTION_IDLE);
             const submitted: { formData: FormData | null } = { formData: null };
             rendered.container.querySelector("form")?.addEventListener("submit", (event) => {
                 submitted.formData = new FormData(event.target as HTMLFormElement);
@@ -267,6 +272,8 @@ describeForEachDevice({
         it("submits the typed values as real form data, including the name, on a valid submit", async () => {
             // Arrange
             const rendered = await renderSignUpForm();
+            // D-02: no implicit success default — this submit's outcome is queued at the call site.
+            actionStub(signUpAction).queue(AUTH_ACTION_IDLE);
             const submitted: { formData: FormData | null } = { formData: null };
             rendered.container.querySelector("form")?.addEventListener("submit", (event) => {
                 submitted.formData = new FormData(event.target as HTMLFormElement);

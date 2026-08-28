@@ -1,10 +1,12 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 
+import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
+import { signOutAction } from "@/features/auth/actions/sign-out-action";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
-import { resetSignOutActionCallCount, signOutActionCallCount } from "@/test-utils/index";
 
 import * as stories from "./sign-out-button.stories";
 
@@ -23,10 +25,11 @@ const renderSignOutButton = () => render(<Default />);
 describeForEachDevice({
     name: "SignOutButton",
     body: () => {
-        // File-local: the invocation counter lives on the real aliased stub module, not vitest state.
-        afterEach(() => {
-            resetSignOutActionCallCount();
-        });
+        /*
+         * No file-local reset hook: the recorder's call log is cleared centrally by
+         * `resetAllActionStubs()` in vitest.setup.ts's afterEach (D-04), which replaced this file's
+         * own counter reset when the hand-written double went away.
+         */
 
         // Shallow: accessible name — asserted through the composed story (D-08).
         it("renders a secondary button labelled Sign Out", async () => {
@@ -37,7 +40,7 @@ describeForEachDevice({
             expect(screen.getByRole("button", { name: "Sign Out" })).toBeInTheDocument();
         });
 
-        // Deep: real click interaction and the real (aliased-stub) action's recorded invocation.
+        // Deep: real click interaction and the recorder's own logged invocation.
         it("submits through the form element's own action, not a click handler, so it works before hydration", async () => {
             // Arrange
             const rendered = await renderSignOutButton();
@@ -51,19 +54,21 @@ describeForEachDevice({
         });
 
         /*
-         * D-09: a component-wiring claim ("formAction invoked the aliased stub once"), not a
-         * real-effect claim — the session cookie clearing and redirect are proven in
-         * e2e/auth.e2e.spec.ts instead (docs/adr/tech/0025).
+         * D-09: a component-wiring claim ("formAction invoked the action once"), not a real-effect
+         * claim — the session cookie clearing and redirect are proven in e2e/auth.e2e.spec.ts
+         * instead (docs/adr/tech/0025).
          */
         it("calls signOutAction exactly once when clicked, asking the backend for nothing beyond that one call", async () => {
             // Arrange
             const rendered = await renderSignOutButton();
+            // D-02: no implicit success default — this one click's outcome is queued at the call site.
+            actionStub(signOutAction).queue(AUTH_ACTION_IDLE);
 
             // Act
             await rendered.getByRole("button", { name: "Sign Out" }).click();
 
-            // Assert — the real (aliased-stub) module's own recorded invocation, not a mock.
-            await expect.poll(() => signOutActionCallCount()).toBe(1);
+            // Assert — the recorder's own call log, not a mock.
+            await expect.poll(() => actionStub(signOutAction).calls.length).toBe(1);
         });
     },
 });

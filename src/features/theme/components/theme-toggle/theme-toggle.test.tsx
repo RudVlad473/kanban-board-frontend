@@ -4,6 +4,10 @@ import { afterEach, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { updateThemeAction } from "@/features/theme/actions/update-theme-action";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { THEME } from "@/lib/core/theme/theme";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import * as stories from "./theme-toggle.stories";
@@ -72,6 +76,8 @@ describeForEachDevice({
             // Arrange
             const rendered = await render(<Light />);
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
+            // D-02: no implicit success default — the persisted outcome is queued at the call site.
+            actionStub(updateThemeAction).queue({ status: RESULT_STATUS.SUCCESS, theme: THEME.DARK });
 
             // Act
             await toggle.click();
@@ -91,6 +97,7 @@ describeForEachDevice({
             expect(toggle.element().tabIndex).toBe(0);
 
             // Act
+            actionStub(updateThemeAction).queue({ status: RESULT_STATUS.SUCCESS, theme: THEME.DARK });
             toggle.element().focus();
             await userEvent.keyboard(" ");
 
@@ -102,6 +109,9 @@ describeForEachDevice({
             // Arrange
             const rendered = await render(<Light />);
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
+            // Two clicks, so two outcomes are queued — one per call, in the order they are made.
+            actionStub(updateThemeAction).queue({ status: RESULT_STATUS.SUCCESS, theme: THEME.DARK });
+            actionStub(updateThemeAction).queue({ status: RESULT_STATUS.SUCCESS, theme: THEME.LIGHT });
 
             // Act
             await toggle.click();

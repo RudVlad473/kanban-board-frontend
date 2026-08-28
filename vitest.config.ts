@@ -41,25 +41,10 @@ const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 /*
  * Real stub modules (not Vitest mocks; must stay before the general `@` alias) for Server Actions
  * whose import chain reaches `node:crypto` — docs/adr/tech/0020's "Server Action alias carve-out".
- * Transitional since 04-07: an entry still wins over `serverActionStubPlugin`; 04-08/09/10 remove it.
+ * Transitional since 04-07: an entry still wins over `serverActionStubPlugin`; 04-09/10 remove the
+ * rest. The four auth/theme actions left in 04-08 and now resolve through the plugin instead.
  */
 const serverActionStubAlias = [
-    {
-        find: "@/features/auth/actions/sign-in-action",
-        replacement: path.resolve(rootDir, "src/test-utils/sign-in-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/auth/actions/sign-up-action",
-        replacement: path.resolve(rootDir, "src/test-utils/sign-up-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/auth/actions/sign-out-action",
-        replacement: path.resolve(rootDir, "src/test-utils/sign-out-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/theme/actions/update-theme-action",
-        replacement: path.resolve(rootDir, "src/test-utils/update-theme-action-storybook-stub.ts"),
-    },
     /*
      * Vite matches a string `find` by prefix. The `-action` suffix leaves no entry below a prefix
      * of any other, so this list's order carries no meaning — re-check that before adding an entry

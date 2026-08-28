@@ -6,7 +6,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 /*
  * Visual-only CSF3 (D-25); behavioral assertions live in theme-toggle.test.tsx.
- * `updateThemeAction` resolves through the shared Server Action stub alias (docs/adr/tech/0020),
+ * `updateThemeAction` resolves through `serverActionStubPlugin`'s generic recorder (docs/adr/tech/0020),
  * never invoked for real. Per ADR tech/0011, this component gets no visual-regression baseline.
  */
 const meta: Meta<typeof ThemeToggle> = {
