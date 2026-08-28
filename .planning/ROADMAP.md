@@ -512,7 +512,7 @@ register, and therefore that drift, as a side effect.
 
   8. No `*-action-storybook-stub.ts` file and no `serverActionStubAlias` entry exists for any
      Server Action this phase adds, and the full `browser` Vitest project passes without them.
-**Plans**: 22 plans
+**Plans**: 6/22 plans executed
 
 Plans:
 
@@ -524,12 +524,12 @@ to end on one path before any breadth is added.
 
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — the two folded `browser`/`storybook` flakes fixed at their causes, proven over repeated runs
-- [ ] 04-02-PLAN.md — live-backend probe (T1-T9) resolving task/subtask create shape, omitted ancestor segments, move-position semantics, conflict codes and cascade, recorded as `04-BACKEND-FACTS.md`
-- [ ] 04-03-PLAN.md — the `"use server"` transform plugin and one generic typed recorder, with their own unit gates (D-01, D-02, D-03)
-- [ ] 04-04-PLAN.md — `BoardView` relocated to `src/components/layout/`, the full measured footprint moved with it, boundaries policy untouched (D-18)
-- [ ] 04-05-PLAN.md — `heading-m`, the `Textarea` primitive, and the reachable completed-subtask label treatment (C-02, RESEARCH Pitfall 16)
-- [ ] 04-06-PLAN.md — task/subtask schemas promoted to the core ring, the four URL templates, and tasks ordered at the read (D-16, D-11)
+- [x] 04-01-PLAN.md — the two folded `browser`/`storybook` flakes fixed at their causes, proven over repeated runs
+- [x] 04-02-PLAN.md — live-backend probe (T1-T9) resolving task/subtask create shape, omitted ancestor segments, move-position semantics, conflict codes and cascade, recorded as `04-BACKEND-FACTS.md`
+- [x] 04-03-PLAN.md — the `"use server"` transform plugin and one generic typed recorder, with their own unit gates (D-01, D-02, D-03)
+- [x] 04-04-PLAN.md — `BoardView` relocated to `src/components/layout/`, the full measured footprint moved with it, boundaries policy untouched (D-18)
+- [x] 04-05-PLAN.md — `heading-m`, the `Textarea` primitive, and the reachable completed-subtask label treatment (C-02, RESEARCH Pitfall 16)
+- [x] 04-06-PLAN.md — task/subtask schemas promoted to the core ring, the four URL templates, and tasks ordered at the read (D-16, D-11)
 
 **Wave 2** *(blocked on 04-03)*
 
@@ -608,4 +608,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 14/14 | Complete    | 2026-08-27 |
-| 4. Task & Subtask Workflow | 0/22 | Planned | - |
+| 4. Task & Subtask Workflow | 6/22 | In Progress|  |
