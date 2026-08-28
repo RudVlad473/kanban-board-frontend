@@ -272,3 +272,10 @@ None — no external service configuration required. (`.env.local` was copied in
 ---
 *Phase: 04-task-subtask-workflow*
 *Completed: 2026-08-28*
+
+## Self-Check: PASSED
+
+- `src/lib/core/api-contract/task-schemas.ts` — FOUND on disk
+- `src/lib/core/api-contract/task-schemas.unit.test.ts` — FOUND on disk
+- `.planning/phases/04-task-subtask-workflow/04-06-SUMMARY.md` — FOUND on disk
+- Commits `30d9291`, `2423c4f`, `f7642cc`, `08f2d75` — all present in `git log`
