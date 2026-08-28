@@ -358,11 +358,17 @@ comment. Enforcement: `pnpm tsx:check` (`scripts/check-tsx-declarations.mjs`), b
   every non-browser project on 0) so the two fleets never run at once — Vitest additionally refuses
   to start when projects sharing a `groupOrder` declare different `maxWorkers`.
 - Measured after that change: full-suite failures dropped from 15/5/12/5 to 0-2 per run. The
-  residue is not contention — `dropdown.stories.tsx > Disabled` hangs for ~405s in a full run and
-  passes in 22s when the `storybook` project runs alone, so it is a real defect that the old noise
-  was hiding. Tracked as a todo; do not "fix" it by raising `testTimeout`, which would hide
-  contention from CI and delay genuine hangs rather than remove the cause. Enforcement: code
-  review; re-measure with repeated full-suite runs before changing either number.
+  residue is still contention, and the ~405s once attributed to `dropdown.stories.tsx > Disabled`
+  was never a story defect: browser-mode `testTimeout` is 15s, so no test can legitimately report
+  405s of execution. When a Chromium tester is starved, the in-browser runner that enforces that
+  timeout is starved with it, nothing bounds the test, and whichever test happens to be in flight
+  absorbs the run's remaining wall clock and is reported as the failure. The victim is arbitrary —
+  `Disabled` on the 2026-08-24 run, `add-board-modal.test.tsx > hands the typed board name to the
+  submit handler` on 2026-08-28 (15450ms elapsed, leaving `locator.click: Timeout 206ms exceeded`).
+  A 405s duration is therefore the signature of a starved tester, not of a hanging test: look for
+  the memory ceiling, never raise `testTimeout` or add retries, both of which hide contention from
+  CI. Enforcement: code review; re-measure with repeated full-suite runs before changing either
+  number.
 
 ## Test setup: prefer `beforeEach`/nested `describe` over helper functions
 

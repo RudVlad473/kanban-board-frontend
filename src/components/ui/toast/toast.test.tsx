@@ -42,9 +42,14 @@ const ToastHarness = ({ configs }: { configs: ToastConfig[] }) => {
     );
 };
 
+/*
+ * `timeout={0}` adopts the `Default` story's own precedent (toast.stories.tsx): a harness test
+ * that spends past Base UI's 5000ms default between seeding and querying loses the element
+ * outright, which reads as a missing element rather than a dismissed one.
+ */
 const renderToastHarness = (configs: ToastConfig[]) =>
     render(
-        <ToastProvider>
+        <ToastProvider timeout={0}>
             <ToastHarness configs={configs} />
         </ToastProvider>,
     );
@@ -54,7 +59,7 @@ describeForEachDevice({
     name: "Toast",
     body: () => {
         it("renders a toast with the seeded title and description", async () => {
-            // Act — the Default story already seeds one toast with timeout: 0 (toast.stories.tsx).
+            // Act — the Default story seeds its own toast; this only renders it.
             await render(<Default />);
 
             // Assert
@@ -152,6 +157,46 @@ describeForEachDevice({
 
             // Assert
             await expect.element(screen.getByText("Couldn't rename board.")).not.toBeInTheDocument();
+        });
+
+        it("keeps a harness-seeded toast on screen past Base UI's default auto-dismiss window", async () => {
+            /*
+             * Arrange — Base UI schedules dismissal through a plain `setTimeout`, so a fake clock
+             * reaches it; `shouldAdvanceTime` keeps that clock ticking with real time so the
+             * browser driver's own round-trips still resolve.
+             */
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            try {
+                const screen = await renderToastHarness([{ title: "Couldn't rename board." }]);
+                await screen.getByRole("button", { name: "Add toast 1" }).click();
+                await expect.element(screen.getByText("Couldn't rename board.")).toBeVisible();
+
+                // Act — past Base UI's 5000ms default; a provider carrying that default loses it here.
+                await vi.advanceTimersByTimeAsync(6000);
+
+                // Assert
+                await expect.element(screen.getByText("Couldn't rename board.")).toBeVisible();
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it("auto-dismisses a toast that opts into its own timeout at the call site", async () => {
+            // Arrange — the opt-in route for dismissal behaviour, now that the harness provider has none.
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            try {
+                const screen = await renderToastHarness([{ title: "Couldn't rename board.", timeout: 1000 }]);
+                await screen.getByRole("button", { name: "Add toast 1" }).click();
+                await expect.element(screen.getByText("Couldn't rename board.")).toBeVisible();
+
+                // Act
+                await vi.advanceTimersByTimeAsync(1500);
+
+                // Assert
+                await expect.element(screen.getByText("Couldn't rename board.")).not.toBeInTheDocument();
+            } finally {
+                vi.useRealTimers();
+            }
         });
 
         // Deep: stacking behaviour, explicitly called out as Deep by this plan's action text.

@@ -11,7 +11,7 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { Dropdown } from "./dropdown";
 import * as stories from "./dropdown.stories";
 
-const { Closed, Loading, OpenWithSelection } = composeStories(stories);
+const { Closed, Disabled, Loading, OpenWithSelection } = composeStories(stories);
 
 type RootProps = ComponentProps<typeof Dropdown.Root>;
 
@@ -156,6 +156,18 @@ describeForEachDevice({
             // Assert
             expect(screen.getByRole("option", { name: "Doing" })).toHaveAttribute("aria-selected", "true");
             expect(screen.getByRole("option", { name: "Todo" })).toHaveAttribute("aria-selected", "false");
+        });
+
+        it("shows a disabled, non-busy trigger with the list absent when the root isDisabled", async () => {
+            // Act
+            await render(<Disabled />);
+            const trigger = screen.getByRole("combobox", { name: "Select a status" });
+
+            // Assert — disabled without aria-busy, which is isLoading's alone.
+            expect(trigger).toBeDisabled();
+            expect(trigger).toHaveAttribute("data-disabled");
+            expect(trigger).toHaveAttribute("aria-busy", "false");
+            expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
         });
 
         it("shows a disabled, aria-busy trigger with a spinner in place of the chevron when isLoading", async () => {

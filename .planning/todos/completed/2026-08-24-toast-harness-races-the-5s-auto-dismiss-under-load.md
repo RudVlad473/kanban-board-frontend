@@ -40,3 +40,13 @@ the provider default.
 
 Verify the same way the text-field flake was: repeat `pnpm test` 8+ times and confirm this file
 stays clean (it failed 1/8 before the change).
+
+## Resolution (plan 04-01, 2026-08-28)
+
+Fixed as proposed: `renderToastHarness` renders `<ToastProvider timeout={0}>`. Written test-first
+— the RED case seeds a harness toast, advances a fake clock past 5000ms and asserts the element
+survives; it failed at both viewports before the change and passes after. A companion case pins
+the opt-in route (a per-toast `timeout` at the call site still auto-dismisses), so the provider
+default cannot be relied on by accident. Base UI schedules dismissal through a plain `setTimeout`,
+which is what makes a fake clock able to reach it. No `waitFor`, real `setTimeout`, or raised
+`testTimeout` was added. Verified over five consecutive green `pnpm test` runs (1319/1319 each).

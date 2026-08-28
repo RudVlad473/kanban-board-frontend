@@ -81,6 +81,11 @@ export const DisabledItem: Story = {
     },
 };
 
+/*
+ * Not a hang: measured at 140ms in a full-suite run on 2026-08-28, and this file declares no
+ * `play` (enforced by `pnpm stories:check`), so there is nothing here to await. The ~405s once
+ * recorded against this story is starved-tester wall clock — see 04-01-SUMMARY.md.
+ */
 export const Disabled: Story = {
     args: {
         isDisabled: true,
