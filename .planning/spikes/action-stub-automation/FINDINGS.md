@@ -80,6 +80,13 @@ Two ways to close it, both far smaller than the current twelve modules:
 2. Require every test to queue its own outcome explicitly. No per-action code at all, at the cost
    of touching the 104 assertions and losing the "unqueued means success" default.
 
+## Outcome
+
+**Folded into Phase 4 on 2026-08-28 by user decision**, sequenced to run first in the phase — the
+contract's seven mutating task/subtask operations would otherwise hand-write roughly 600 more lines
+of this same skeleton before the tooling replaced it. See `.planning/ROADMAP.md`'s Phase 4 section
+for the scope, the sequencing argument, and the design gap the planning has to close.
+
 ## Register drift found along the way
 
 ADR tech/0020's Server Action alias carve-out documents **four** stub modules and four aliased

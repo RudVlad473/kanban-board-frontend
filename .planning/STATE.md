@@ -456,7 +456,14 @@ backend and browser, `CI=1 pnpm test:visual` 260/260 compared against baselines,
 `tsc`, `lint`, `format` and all seven check scripts. **CI run 33152938843 green on all four jobs**
 (`secrets`, `quality`, `e2e`, `visual`). Everything pushed; tree clean.
 
-**Open decision carried forward:** whether to adopt the stub-generation plugin, and how to supply
-the per-action default success payload it cannot infer. See the spike's FINDINGS.md.
+**Decided after the review:** the stub-generation plugin is folded into Phase 4 and sequenced to run
+*first* in the phase, before any task or subtask action lands. The contract exposes seven mutating
+task/subtask operations, so building them on today's pattern would hand-write roughly 600 more lines
+of the same skeleton and grow the register from twelve entries to nineteen — the same
+write-it-then-delete-it argument that pulled Phase 02.2 forward ahead of plans 02-10/12/13.
+`ROADMAP.md`'s Phase 4 section carries the scope, the sequencing note, the design gap planning must
+close (the default success payload a generic recorder cannot invent), and the note that Phase 02.2
+only ever answered the import-ergonomics half of this. Success criterion 8 was added so the phase is
+verified against it.
 
 **Next:** plan Phase 4 (Task & Subtask Workflow) via `/gsd-plan-phase 4`.

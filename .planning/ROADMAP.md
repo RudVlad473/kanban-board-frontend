@@ -33,7 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   reordering, and removing columns
 
 - [ ] **Phase 4: Task & Subtask Workflow** - Users create, inspect, edit, drag-and-drop move,
-  and delete tasks and their subtask checklists, with version-conflict reconciliation
+  and delete tasks and their subtask checklists, with version-conflict reconciliation; opens by
+  replacing the hand-written Server Action stubs with a generated one (folded in 2026-08-28)
 
 ## Phase Details
 
@@ -461,10 +462,37 @@ never been executed in this repo. All three run in parallel; only 03-01 needs th
 
 **Goal**: A signed-in user can create, inspect, edit, move, and remove tasks and their
 subtask checklists, with changes reliably reconciled against the server even when a version
-conflict occurs.
+conflict occurs — built on generated Server Action stubs rather than seven more hand-written ones.
 **Depends on**: Phase 3
 **Requirements**: TASK-01, TASK-02, TASK-03, TASK-04, TASK-05, SUBTASK-01, SUBTASK-02,
-SUBTASK-03, SUBTASK-04, SYNC-01
+SUBTASK-03, SUBTASK-04, SYNC-01, plus the tooling scope below (derived from
+`.planning/spikes/action-stub-automation/FINDINGS.md`, no user-facing requirement id — the same
+shape Phases 02.1 and 02.2 used for internal quality work)
+
+**Tooling scope, folded in 2026-08-28 by user decision.** Replace the twelve hand-written
+`src/test-utils/*-action-storybook-stub.ts` modules and `vitest.config.ts`'s twelve-entry
+`serverActionStubAlias` register with the Vite plugin the spike prototyped and proved against the
+real create-column action: a `"use server"` transform plus one generic programmable recorder.
+
+**Sequencing note.** This runs *first in the phase*, before any task or subtask action lands — the
+same argument that pulled Phase 02.2 forward ahead of plans 02-10/12/13. The contract exposes seven
+mutating task/subtask operations (task create/update/delete/move, subtask create/update/delete), so
+building them on today's pattern would hand-write roughly 600 more lines of the same
+queue/hold/settle/reset skeleton and grow the register from twelve entries to nineteen. Doing the
+tooling after the feature work means writing that boilerplate and then deleting it.
+
+**Known design gap the planning must close.** The prototype is not a drop-in. A generic recorder
+cannot invent the domain-shaped default success payload each hand-written stub returns, which left
+104 tests across four files failing on a full `browser` run — one cause, not many. The spike names
+two ways to close it: a one-line success factory registered per action, or explicit queuing in
+every test. Picking between them is this phase's call, not a settled default.
+
+**Related prior art, so this is not re-litigated as settled.** Phase 02.2 already looked at the
+per-action stub boilerplate and answered only the *import-ergonomics* half of it, with D-11's thin
+barrel re-export (`src/test-utils/index.ts`). It never addressed the duplicated skeleton and never
+considered a build-time transform, and there were four stubs then against twelve now. ADR
+tech/0020's Server Action alias carve-out still documents four; adopting the plugin removes the
+register, and therefore that drift, as a side effect.
 **Success Criteria** (what must be TRUE):
 
   1. User can create a task with a title (and optional description) inside a column.
@@ -481,6 +509,9 @@ SUBTASK-03, SUBTASK-04, SYNC-01
   6. User can delete a task and its subtasks are removed with it.
   7. If a move or edit is rejected due to a stale version, the user sees an error and the
      affected change reverts.
+
+  8. No `*-action-storybook-stub.ts` file and no `serverActionStubAlias` entry exists for any
+     Server Action this phase adds, and the full `browser` Vitest project passes without them.
 **Plans**: TBD
 **UI hint**: yes
 
