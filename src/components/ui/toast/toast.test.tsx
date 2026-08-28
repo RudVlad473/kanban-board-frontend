@@ -42,9 +42,14 @@ const ToastHarness = ({ configs }: { configs: ToastConfig[] }) => {
     );
 };
 
+/*
+ * `timeout={0}` adopts the `Default` story's own precedent (toast.stories.tsx): a harness test
+ * that spends past Base UI's 5000ms default between seeding and querying loses the element
+ * outright, which reads as a missing element rather than a dismissed one.
+ */
 const renderToastHarness = (configs: ToastConfig[]) =>
     render(
-        <ToastProvider>
+        <ToastProvider timeout={0}>
             <ToastHarness configs={configs} />
         </ToastProvider>,
     );
@@ -54,7 +59,7 @@ describeForEachDevice({
     name: "Toast",
     body: () => {
         it("renders a toast with the seeded title and description", async () => {
-            // Act — the Default story already seeds one toast with timeout: 0 (toast.stories.tsx).
+            // Act — the Default story seeds its own toast; this only renders it.
             await render(<Default />);
 
             // Assert
