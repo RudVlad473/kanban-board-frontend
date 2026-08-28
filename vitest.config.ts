@@ -6,6 +6,7 @@ import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
+import { serverActionStubPlugin } from "./scripts/vite-plugin-server-action-stub.mjs";
 import { resolveTestApiBaseUrl } from "./src/test-utils/api-base-url";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -38,9 +39,9 @@ const serverOnlyAlias = {
 const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 
 /*
- * Real stub modules (not Vitest mocks; must stay before the general `@` alias) for every Server
- * Action a story test imports — real import chains reach `node:crypto`, unbundlable in a browser
- * test page. Formally carved out in docs/adr/tech/0020's "Server Action alias carve-out".
+ * Real stub modules (not Vitest mocks; must stay before the general `@` alias) for Server Actions
+ * whose import chain reaches `node:crypto` — docs/adr/tech/0020's "Server Action alias carve-out".
+ * Transitional since 04-07: an entry still wins over `serverActionStubPlugin`; 04-08/09/10 remove it.
  */
 const serverActionStubAlias = [
     {
@@ -140,6 +141,7 @@ export default defineConfig({
             },
             {
                 resolve: { alias: [...serverActionStubAlias, ...alias] },
+                plugins: [serverActionStubPlugin({ rootDir })],
                 test: {
                     name: "browser",
                     sequence: { groupOrder: 1 },
@@ -195,7 +197,15 @@ export default defineConfig({
                 resolve: {
                     alias: [...serverActionStubAlias, ...alias],
                 },
-                plugins: [storybookTest({ configDir: path.join(rootDir, ".storybook") })],
+                /*
+                 * Listed first as documentation of intent only — what actually orders the transform
+                 * ahead of @storybook/nextjs-vite's own transforms, so its AST reader sees raw
+                 * TypeScript, is its `enforce: "pre"`, which Vite honours regardless of position.
+                 */
+                plugins: [
+                    serverActionStubPlugin({ rootDir }),
+                    storybookTest({ configDir: path.join(rootDir, ".storybook") }),
+                ],
                 test: {
                     name: "storybook",
                     sequence: { groupOrder: 2 },
