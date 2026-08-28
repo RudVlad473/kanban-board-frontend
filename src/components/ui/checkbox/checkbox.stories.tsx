@@ -100,3 +100,14 @@ export const CheckedWithStrikethrough: Story = {
         hasStrikethroughWhenChecked: true,
     },
 };
+
+/*
+ * The other half of the opt-in: an incomplete subtask row. Its label must stay at full primary
+ * colour with no strikethrough, so the treatment reads as "completed" rather than "opted in".
+ */
+export const UncheckedWithStrikethroughOptIn: Story = {
+    args: {
+        label: "Design the login flow",
+        hasStrikethroughWhenChecked: true,
+    },
+};

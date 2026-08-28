@@ -14,7 +14,20 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { Checkbox } from "./checkbox";
 import * as stories from "./checkbox.stories";
 
-const { Unchecked, Error, Disabled, Loading } = composeStories(stories);
+const { Unchecked, Error, Disabled, Loading, Checked, CheckedWithStrikethrough, UncheckedWithStrikethroughOptIn } =
+    composeStories(stories);
+
+/*
+ * Narrows a render's own container to its label. Needed because the completed-label assertions
+ * compare two renders that share a label, which a page-wide role query rejects under strict mode.
+ */
+const readLabel = (container: HTMLElement) => {
+    const label = container.querySelector("label");
+    if (label === null) {
+        throw new Error("expected the composed story to render a label");
+    }
+    return label;
+};
 
 /*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; Checkbox has no
@@ -64,6 +77,57 @@ describeForEachDevice({
             const checkbox = screen.getByRole("checkbox", { name: "Remember me" });
             expect(checkbox).toHaveAttribute("aria-busy", "true");
             expect(checkbox).toHaveAttribute("aria-disabled", "true");
+        });
+
+        /*
+         * RESEARCH Pitfall 16: `className` routes to the checkbox box, so a consumer cannot reach
+         * the label — 04-UI-SPEC.md's completed-subtask colour has to live in the primitive.
+         */
+        it("strikes a checked label through and drops it to 50% of the primary text colour when hasStrikethroughWhenChecked", async () => {
+            // Arrange
+            const struck = await render(<CheckedWithStrikethrough />);
+            const reference = await render(<Unchecked />);
+
+            // Act
+            const struckStyle = getComputedStyle(readLabel(struck.container));
+            const referenceStyle = getComputedStyle(readLabel(reference.container));
+
+            // Assert — half-transparent primary, never the muted token, which misses both themes.
+            expect(struckStyle.textDecorationLine).toContain("line-through");
+            expect(struckStyle.color).toContain("0.5");
+            expect(struckStyle.color).not.toBe(referenceStyle.color);
+        });
+
+        it("leaves an opted-in but unchecked label at full primary colour with no strikethrough", async () => {
+            // Arrange
+            const optedIn = await render(<UncheckedWithStrikethroughOptIn />);
+            const reference = await render(<Unchecked />);
+
+            // Act
+            const optedInStyle = getComputedStyle(readLabel(optedIn.container));
+            const referenceStyle = getComputedStyle(readLabel(reference.container));
+
+            // Assert
+            expect(optedInStyle.textDecorationLine).toBe("none");
+            expect(optedInStyle.color).toBe(referenceStyle.color);
+        });
+
+        /*
+         * The regression this opt-in exists to prevent: every shipped consumer (the auth forms'
+         * "Remember me") must render byte-identically whether checked or not.
+         */
+        it("leaves a checked label's colour and decoration untouched when hasStrikethroughWhenChecked is absent", async () => {
+            // Arrange
+            const checked = await render(<Checked />);
+            const unchecked = await render(<Unchecked />);
+
+            // Act
+            const checkedStyle = getComputedStyle(readLabel(checked.container));
+            const uncheckedStyle = getComputedStyle(readLabel(unchecked.container));
+
+            // Assert
+            expect(checkedStyle.textDecorationLine).toBe("none");
+            expect(checkedStyle.color).toBe(uncheckedStyle.color);
         });
 
         // Deep: real pointer/keyboard interaction, computed style, and layout — stay direct renders.
