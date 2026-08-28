@@ -93,6 +93,12 @@ jobs:
             - name: Story-only render check
               run: pnpm renders:check
 
+            - name: Component folder-name check
+              run: pnpm folders:check
+
+            - name: Server Action verb check
+              run: pnpm actions:check
+
             - name: Format check
               run: pnpm format:check
 

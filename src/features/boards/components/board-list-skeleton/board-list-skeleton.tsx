@@ -1,5 +1,5 @@
 // Covered by: `src/components/layout/sidebar/sidebar.test.tsx`
-import { SkeletonRow } from "@/components/ui/skeleton/skeleton-row";
+import { SkeletonRow } from "@/components/ui/skeleton-row/skeleton-row";
 
 /**
  * The `<Suspense>` fallback for `BoardList`. A static, prop-free fallback with no behaviour of its

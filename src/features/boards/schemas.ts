@@ -5,15 +5,15 @@ import { z } from "zod";
  * contract declares no `required` array, so a raw cast to `Board` can't be trusted (see
  * docs/adr/tech/0024).
  */
-export const BoardSchema = z.object({
+export const boardSchema = z.object({
     id: z.string(),
     name: z.string(),
     version: z.number(),
 });
 
-export const boardsSchema = BoardSchema.array();
+export const boardsSchema = boardSchema.array();
 
-export type Board = z.infer<typeof BoardSchema>;
+export type Board = z.infer<typeof boardSchema>;
 
 /*
  * The full-board containment hierarchy, composed a level at a time. None of the four response

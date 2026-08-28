@@ -1,5 +1,5 @@
 // Covered by: nothing to test — a static SkeletonRow arrangement no test renders; see 03-13-SUMMARY.md's gap list
-import { SkeletonRow } from "@/components/ui/skeleton/skeleton-row";
+import { SkeletonRow } from "@/components/ui/skeleton-row/skeleton-row";
 
 /**
  * The `<Suspense>` fallback for `BoardView` — column-header bars and card-shaped placeholders, so

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { boardFullSchema, columnSchema, BoardSchema, type Column } from "@/features/boards/schemas";
+import { boardFullSchema, columnSchema, boardSchema, type Column } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { parseProblemDetail, PROBLEM_CODE } from "@/lib/core/api-contract/problem-detail";
 
@@ -84,7 +84,7 @@ const createBoardUpstream = async ({ account, name }: { account: SeededAccount; 
     });
 
     expect(response.ok).toBe(true);
-    const board = BoardSchema.safeParse(await response.json());
+    const board = boardSchema.safeParse(await response.json());
     expect(board.success).toBe(true);
     return board.success ? board.data : null;
 };

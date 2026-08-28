@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { boardFullSchema, deleteBoardInputSchema, BoardSchema } from "@/features/boards/schemas";
+import { boardFullSchema, deleteBoardInputSchema, boardSchema } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 
 // comment-length-exempt: records what this suite can and cannot reach and where the remainder is proved — a scope contract a future reader would otherwise re-litigate (docs/adr/tech/0023)
@@ -64,7 +64,7 @@ const createBoardUpstream = async ({ account, name }: { account: SeededAccount; 
     });
 
     expect(response.ok).toBe(true);
-    const board = BoardSchema.safeParse(await response.json());
+    const board = boardSchema.safeParse(await response.json());
     expect(board.success).toBe(true);
     return board.success ? board.data : null;
 };

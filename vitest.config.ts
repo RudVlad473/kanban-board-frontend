@@ -122,7 +122,12 @@ export default defineConfig({
                     sequence: { groupOrder: 0 },
                     environment: "node",
                     include: [
-                        "src/lib/server/session.test.ts",
+                        /*
+                         * A Node-environment unit test: pure logic whose module graph reaches
+                         * `node:crypto`, so jsdom cannot host it. A pattern, never a literal path —
+                         * the previous hardcoded entry meant a second such file would silently not run.
+                         */
+                        "src/**/*.node.test.ts",
                         "src/**/*.integration.test.ts",
                         // Plain Node ESM with no jsdom/React dependency — belongs here, not "unit".
                         "scripts/**/*.unit.test.mjs",

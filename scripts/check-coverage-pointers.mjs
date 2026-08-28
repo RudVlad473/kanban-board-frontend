@@ -16,7 +16,14 @@ const repoRoot = path.resolve(__dirname, "..");
 const SOURCE_GLOBS = ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"];
 
 /** The suffix set CONVENTIONS.md's test-location table defines, longest first so `.unit.test.ts` wins over `.test.ts`. */
-const TEST_SUFFIXES = [".integration.test.ts", ".unit.test.tsx", ".unit.test.ts", ".test.tsx", ".test.ts"];
+const TEST_SUFFIXES = [
+    ".integration.test.ts",
+    ".unit.test.tsx",
+    ".unit.test.ts",
+    ".node.test.ts",
+    ".test.tsx",
+    ".test.ts",
+];
 
 const POINTER_PREFIX = "Covered by:";
 

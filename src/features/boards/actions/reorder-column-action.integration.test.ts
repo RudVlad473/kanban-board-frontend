@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { reorderColumns } from "@/features/boards/column-drag-model";
 import { sortColumnsByPosition, toReorderTargetPosition } from "@/features/boards/model";
-import { boardFullSchema, columnSchema, BoardSchema, type ColumnFull } from "@/features/boards/schemas";
+import { boardFullSchema, columnSchema, boardSchema, type ColumnFull } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { parseProblemDetail, PROBLEM_CODE } from "@/lib/core/api-contract/problem-detail";
 
@@ -86,7 +86,7 @@ const createBoardUpstream = async ({ account, name }: { account: SeededAccount; 
     });
 
     expect(response.ok).toBe(true);
-    const board = BoardSchema.safeParse(await response.json());
+    const board = boardSchema.safeParse(await response.json());
     expect(board.success).toBe(true);
     return board.success ? board.data : null;
 };

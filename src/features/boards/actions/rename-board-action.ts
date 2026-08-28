@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 
-import { BoardSchema, renameBoardInputSchema, type Board } from "@/features/boards/schemas";
+import { boardSchema, renameBoardInputSchema, type Board } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -76,7 +76,7 @@ export const renameBoardAction = async ({
      * `BoardResponseDTO` declares no `required` array, so every field is optional at the type level
      * regardless of what the backend actually sent — `.safeParse`, never `.parse` (T-02.1-03).
      */
-    const board = BoardSchema.safeParse(data);
+    const board = boardSchema.safeParse(data);
     if (!board.success) {
         return { status: RESULT_STATUS.ERROR };
     }

@@ -105,13 +105,15 @@ contains and a stack trace or editor tab says which component it is. This applie
 `features/<domain>/components/`, `components/ui/` and `components/layout/` alike;
 `src/components/ui/button/button.tsx` was the original example, and
 `features/*/components/` was brought in line retroactively on 2026-08-27. Imports name the file,
-not the folder: `@/features/boards/components/board-card/board-card`. A component's own
+not the folder: `@/features/boards/components/board-card/board-card`. Enforcement: `pnpm folders:check`
+(`scripts/check-component-folders.mjs`), blocking in CI's `quality` job — every component folder must hold a
+`.tsx` named after itself. `skeleton/skeleton-row.tsx` was the live counter-example until 2026-08-28. A component's own
 non-component helper (e.g. `button-variants.ts`) lives in that same folder; a helper shared by two
 components does not, and follows the eight-homes decision above.
 
 **When in doubt between step 2 and step 3/4, default to step 2** (feature-specific) — promote to `components/` only once a *second* domain actually needs it. Do not create a generic `src/shared/` catch-all folder; every file has one of the eight homes above.
 
-**A domain's Server Actions (`"use server"` mutation functions) live one-per-file at `features/<domain>/actions/<action-name>-action.ts`, never a flat multi-export `actions.ts` and never a barrel `index.ts`** (docs/adr/tech/0017's mechanism; this phase's PC-04 for the per-file shape). An action is tested against the real deployed backend by a co-located `*.integration.test.ts`, never a `*.unit.test.ts` — see the test-location table below for what that suite can and cannot reach. A shared type consumed by several of a domain's actions (e.g. auth's `action-state.ts`) stays at the feature root, not inside `actions/` — it isn't an action itself. This keeps step 2's feature-folder rule and the `eslint-plugin-boundaries` policy applying unchanged: a Server Action is still domain-owned code, only the mechanism that dispatches it differs. Board, column, and task mutations are Server Actions too (docs/adr/tech/0019, narrowing ADR tech/0002's original TanStack-Query-for-everything decision) and therefore do gain an `actions/` folder, the same as auth's. A domain's server-only RSC read functions live at the sibling location `features/<domain>/server/<name>.ts` — `src/features/boards/server/fetch-boards.ts` is the example — kept separate from `actions/` because a read function is invoked directly by an RSC, never dispatched as a form action or a mutation. **Every action file name ends in `-action`**, mirroring the exported symbol (`createColumnAction` lives in `create-column-action.ts`) so a grep for either finds the other and a reader can tell an action from a read at a glance. Applied retroactively on 2026-08-27. Examples: `src/features/auth/actions/{sign-in,sign-up,sign-out}-action.ts`, `src/features/theme/actions/update-theme-action.ts`, `src/features/boards/server/fetch-board-full.ts`.
+**A domain's Server Actions (`"use server"` mutation functions) live one-per-file at `features/<domain>/actions/<action-name>-action.ts`, never a flat multi-export `actions.ts` and never a barrel `index.ts`** (docs/adr/tech/0017's mechanism; this phase's PC-04 for the per-file shape). An action is tested against the real deployed backend by a co-located `*.integration.test.ts`, never a `*.unit.test.ts` — see the test-location table below for what that suite can and cannot reach. A shared type consumed by several of a domain's actions (e.g. auth's `action-state.ts`) stays at the feature root, not inside `actions/` — it isn't an action itself. This keeps step 2's feature-folder rule and the `eslint-plugin-boundaries` policy applying unchanged: a Server Action is still domain-owned code, only the mechanism that dispatches it differs. Board, column, and task mutations are Server Actions too (docs/adr/tech/0019, narrowing ADR tech/0002's original TanStack-Query-for-everything decision) and therefore do gain an `actions/` folder, the same as auth's. A domain's server-only RSC read functions live at the sibling location `features/<domain>/server/<name>.ts` — `src/features/boards/server/fetch-boards.ts` is the example — kept separate from `actions/` because a read function is invoked directly by an RSC, never dispatched as a form action or a mutation. **Every action file name ends in `-action`**, mirroring the exported symbol (`createColumnAction` lives in `create-column-action.ts`) so a grep for either finds the other and a reader can tell an action from a read at a glance. Applied retroactively on 2026-08-27. **The leading verb comes from a closed set**: `create`, `update`, `delete`, `rename`, `reorder`, `move`, `sign`. The first three ride their HTTP methods (POST/PUT/PATCH/DELETE); `rename`, `reorder` and `move` are narrower domain verbs kept deliberately over a generic `update`, so a reader learns which kind of update it is from the name; `sign` covers the non-CRUD auth actions, which have no HTTP verb to derive from. Adding a verb to the set is a CONVENTIONS.md edit, not a per-file judgement. Enforcement: `pnpm actions:check` (`scripts/check-action-verbs.mjs`), blocking in CI's `quality` job — it checks the `-action` suffix, verb-set membership, and that the exported symbol mirrors the file name. Examples: `src/features/auth/actions/{sign-in,sign-up,sign-out}-action.ts`, `src/features/theme/actions/update-theme-action.ts`, `src/features/boards/server/fetch-board-full.ts`.
 
 **Where tests live (by kind):**
 
@@ -123,6 +125,9 @@ components does not, and follows the eight-homes decision above.
 | Story/a11y | `*.stories.tsx` | Co-located with the component | Vitest `storybook` project (`@storybook/addon-vitest`) | Visual states only per D-25, no play functions — mechanically checked by `pnpm stories:check`, not convention alone (ADR tech/0025) |
 | Visual regression | `*.visual.spec.ts` | Under `visual/` | Playwright `visual` project | `components/ui/` primitives only per ADR tech/0011 |
 | End-to-end | `*.e2e.spec.ts` | Under `e2e/` | Playwright `e2e` project | Full-navigation/server behavior |
+| Node-environment unit | `*.node.test.ts` | Co-located with the module | Vitest `node` project | Pure logic whose module graph reaches a Node built-in (`node:crypto`), so jsdom cannot host it. `src/lib/server/session.node.test.ts` is the example. Added 2026-08-28: this file previously ran only because its literal path was listed in `vitest.config.ts`, so a second one would silently never have run |
+| Tooling script unit | `*.unit.test.mjs` | Co-located under `scripts/` | Vitest `node` project | A `scripts/check-*.mjs` gate's own pure entry points. Plain Node ESM with no jsdom or React dependency, which is why it runs in `node` rather than `unit` despite the `unit` suffix |
+| Token build | `*.test.ts` | Under `tokens/` | Vitest `tokens` project | The Style Dictionary build's own output assertions |
 
 **Every source file without a co-located direct test names the file that covers it.** A file under
 `src/` or `app/` with no sibling `*.test.tsx` / `*.test.ts` / `*.unit.test.{ts,tsx}` /
@@ -212,6 +217,32 @@ pointer rule reproduces exactly that failure, once per file.
 - A structured, delimiter-joined string built from multiple named fields (a cookie string, a query string, a header value, a CSV row — any format with a real syntax, not free-form prose) is assembled by one named `build<Thing>String`-style function, never by an inline template literal repeated at each call site. One call site is fine; the moment a second one needs the same shape, the join belongs in a function so the two can't silently drift apart (as `use-theme-preference.ts` and `theme-cookie.ts` once did over the theme cookie's name and max-age). Inside that function, each field/attribute is a `[key, value]` pair pushed through one shared formatting step (e.g. a `.filter().map().join("; ")` pipeline), never a hand-typed `` `${key}=${value}` `` repeated once per field — the whole point of centralizing the join is losing the copy-pasted `key=value` syntax too, not just the call sites (`buildClientCookieString` is the example). Enforcement: code review.
 - A function name starts with a verb describing what it does (`flattenFormData`, `createBoard`, `fetchBoards`, `resolveDisplayName`) — never a bare noun-to-noun phrase that reads like a type-conversion label (`formDataToObject`). This is the general case; the narrower verb conventions above (`create<Thing>` factories) and below (`fetch<Noun>` RSC reads, imperative-mutation-verb Server Actions) are specific applications of it, not exceptions. Enforcement: code review.
 - A boolean variable, prop, or return value states its condition as a past-tense verb phrase, not a past-participle-led compound noun — `didLoadFail`, not `loadFailed`; `didSubmit`, not `submitted`. Enforcement: code review.
+
+## Naming enforcement (2026-08-28)
+
+Every naming rule in this document used to end in "Enforcement: code review". Most now end in a
+command. What checks what:
+
+| Rule | Enforcement |
+|------|-------------|
+| Identifier casing — camelCase default, `PascalCase` types, `UPPER_CASE` enum-like members | `@typescript-eslint/naming-convention`, `eslint.config.mjs` sections 10/10a/10b |
+| File names are kebab-case under `src/`, `app/`, `e2e/`, `visual/`, `scripts/` | `check-file/filename-naming-convention`, section 10c |
+| Feature and component folder names are kebab-case | `check-file/folder-naming-convention`, section 10c |
+| A component folder holds a `.tsx` named after itself | `pnpm folders:check` |
+| A Server Action's verb, `-action` suffix, and exported symbol | `pnpm actions:check` |
+| Enum-like `ROUTE` / `EXTERNAL_PATH` members are declared once | `pnpm routes:check` |
+
+Three PascalCase allowances are framework-forced rather than stylistic, and are scoped in the
+config so nothing else inherits them: a JSX identifier must be PascalCase or it parses as an HTML
+element; Storybook's CSF names each story by its exported binding; and a compound-component
+namespace member (`Toast.Root`) is itself a component. A React context and a dnd-kit sensor
+subclass are allowed PascalCase in a plain `.ts` file by an explicit `(Context|Sensor)$` filter.
+An HTTP header key and a quoted `aria-*` or CSS property are external wire syntax and are exempt.
+
+Still unenforced, with the reason: the past-tense-verb-phrase rule for booleans (`didLoadFail`, not
+`loadFailed`). A lint rule can require a prefix from a fixed set; it cannot tell a past-tense verb
+phrase from a past-participle compound noun, so the approximation would license the exact shape the
+rule exists to reject.
 
 ## Component props
 

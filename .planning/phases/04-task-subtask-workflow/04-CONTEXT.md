@@ -134,27 +134,30 @@ decision below constrains the UI-SPEC (D-06, D-09, D-13), it says so explicitly.
   alongside columns. — **Reversibility:** costly — every task/subtask import path and the
   boundaries policy change with it.
 
-- **D-15:** The `eslint-plugin-boundaries` policy gains **exactly one directed edge:
-  `boards → tasks`**. Every other feature-to-feature import still errors. This is the first
-  exception to ADR tech/0009's no-cross-feature-imports rule, which today has none; a blanket
-  "any feature may import any feature" was considered and rejected because it would remove the
-  guarantee the rule exists to provide. Each future pairing needs its own entry rather than
-  widening this one. — **Reversibility:** costly — the edge is load-bearing for both the board
-  view's composition and, per D-16, the board-full read.
+- **D-15 (revised 2026-08-28):** **No feature-to-feature boundary edge is added.** The original
+  decision widened the `eslint-plugin-boundaries` policy with a single `boards -> tasks` edge. A
+  rushmore entity-taxonomy run found that `CONVENTIONS.md`'s project-organization section already
+  forecloses that route: it states a nested aggregate level cannot get its own feature folder until
+  the shared schemas are promoted, and calls a feature-folder split an ADR-level change rather than
+  a refactor. The reasoning it gives for columns applies verbatim to tasks, since `TaskFull` is
+  declared inside `columnFullSchema` exactly as `ColumnFull` is declared inside `boardFullSchema`.
+  The no-cross-feature-imports rule stays exception-free. — **Reversibility:** reversible — this
+  keeps the existing policy rather than changing it.
 
-- **D-16:** The task and subtask zod schemas **move out of `src/features/boards/schemas.ts` into
-  the tasks feature**; `boardFullSchema` imports them across the new edge. The entity's shape
-  lives with the entity. Consequence the planner must honour: this makes the `boards → tasks` edge
-  load-bearing for a *read path* (`fetch-board-full.ts`), not only for components, so the schema
-  move and the policy change must land together or the board read breaks. — **Reversibility:**
-  costly — `boardFullSchema`, `columnFullSchema`, and every consumer of `TaskFull`/`Subtask` move
-  with them.
+- **D-16 (revised 2026-08-28):** The task and subtask zod schemas are **promoted to
+  `src/lib/core/api-contract/`**, not moved into the tasks feature. This is the promotion rule ADR
+  tech/0024 already states for a shape a second domain needs, and it is what makes D-14's tasks
+  feature legal without any new boundary edge: both features import the shapes from the core ring,
+  which the policy already allows. Consequence the planner must honour: `boardFullSchema` and
+  `columnFullSchema` compose those shapes, so the promotion and the tasks feature must land
+  together or the board-full read breaks. — **Reversibility:** costly — every consumer of
+  `TaskFull`/`Subtask` moves with them.
 
-- **D-17:** `docs/adr/tech/0009-project-organization.md` is **amended in place** to record the
-  narrow `boards → tasks` exception and its rationale (a Task belongs to a Column belongs to a
-  Board — the containment the domain language already states), matching D-05's treatment of
-  tech/0020. Not a new ADR, and not a config-comment-only change, which would leave the ADR
-  contradicting the code — the exact drift D-05 is correcting.
+- **D-17 (revised 2026-08-28):** `docs/adr/tech/0009-project-organization.md` needs **no
+  amendment** — no exception to it is being added. The phase exercises ADR tech/0024's existing
+  promotion rule instead, and `CONVENTIONS.md`'s project-organization section is updated to record
+  that a tasks feature now exists and how its schemas got a legal home. D-05's in-place amendment
+  of tech/0020 is unaffected and still stands.
 
 ### Claude's Discretion
 
@@ -244,10 +247,10 @@ decision below constrains the UI-SPEC (D-06, D-09, D-13), it says so explicitly.
 
 ### Architecture rules this phase changes
 - `docs/adr/tech/0009-project-organization.md` — the feature-folder hybrid and the
-  no-cross-feature-imports rule D-15 puts its first exception in and D-17 amends.
+  no-cross-feature-imports rule D-15 deliberately leaves exception-free.
 - `eslint.config.mjs` §7 — the `boundaries/elements` element map and `boundaries/dependencies`
   policy list. `feature → feature` is absent today (`default: "disallow"`); `layout → feature`
-  exists and carries a comment explaining why it was added. D-15 adds one policy in that shape.
+  exists and carries a comment explaining why it was added. D-15 adds no policy of its own.
 - `docs/adr/tech/0019-server-entry-points.md` — RSC-or-Server-Action, Route Handlers banned.
 - `docs/adr/tech/0024-boundary-schema-validation.md` — `.safeParse` at every boundary, schema as
   source of truth, type via `z.infer`.
@@ -292,7 +295,7 @@ decision below constrains the UI-SPEC (D-06, D-09, D-13), it says so explicitly.
   `toast/` — the primitives the task surfaces need. A `Checkbox` and a `Dropdown` already exist,
   which the subtask checklist and the `Current Status` control both want.
 - `src/features/boards/model.ts` — already exports `toSubtaskSummary()` (the `N of M subtasks`
-  caption) and `toColumnCaption()`. `toSubtaskSummary` moves with the schemas under D-16.
+  caption) and `toColumnCaption()`. `toSubtaskSummary` follows the schemas to the core ring under D-16.
 
 ### Established Patterns
 - `sortable-column.tsx` already renders task cards read-only, with a comment at
@@ -303,8 +306,8 @@ decision below constrains the UI-SPEC (D-06, D-09, D-13), it says so explicitly.
   at the read, not in the card list.
 - `src/features/boards/schemas.ts` already defines `subtaskSchema`, `taskFullSchema`,
   `columnFullSchema`, and a `columnSchema` derived by omitting `tasks` — with a comment recording
-  that the tasks-less shape exists because `ColumnResponseDTO` returns no tasks. D-16 moves the
-  first two.
+  that the tasks-less shape exists because `ColumnResponseDTO` returns no tasks. D-16 promotes the
+  first two to `lib/core/api-contract/`.
 
 ### Integration Points
 - `src/features/boards/components/board-view/board-view.tsx` and
@@ -324,10 +327,10 @@ decision below constrains the UI-SPEC (D-06, D-09, D-13), it says so explicitly.
   a factory map is a per-action register, and a per-action register is the thing being deleted.
   Downstream agents should not reintroduce it as a convenience, even scoped to the four affected
   files.
-- The `boards → tasks` boundary edge (D-15) was chosen over both a blanket feature-to-feature
-  allowance and a layout-tier composition. The narrowness is the point — it should read in
-  `eslint.config.mjs` as one named exception with a comment, in the same shape as the existing
-  `layout → feature` entry.
+- The original `boards -> tasks` boundary edge was reversed on 2026-08-28, after a rushmore
+  entity-taxonomy run surfaced its conflict with `CONVENTIONS.md`. What carries forward is that
+  the no-cross-feature-imports rule still has zero exceptions, and a phase that wants one should
+  reach for ADR tech/0024's schema promotion first.
 
 </specifics>
 

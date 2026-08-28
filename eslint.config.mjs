@@ -3,6 +3,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import boundaries from "eslint-plugin-boundaries";
+import checkFile from "eslint-plugin-check-file";
 import importX from "eslint-plugin-import-x";
 import noUnsanitized from "eslint-plugin-no-unsanitized";
 import preferArrowFunctions from "eslint-plugin-prefer-arrow-functions";
@@ -434,6 +435,164 @@ const eslintConfig = defineConfig([
      */
     {
         ...noUnsanitized.configs.recommended,
+    },
+
+    /*
+     * 10. Mechanical naming enforcement (2026-08-28). Every rule below encodes a convention
+     * CONVENTIONS.md already states; none introduces a new one. The PascalCase allowances are
+     * framework-forced, not stylistic — see docs/adr/tech/0029.
+     */
+    {
+        files: ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "e2e/**/*.ts", "visual/**/*.ts", "tokens/**/*.ts"],
+        plugins: { "@typescript-eslint": tseslint.plugin },
+        rules: {
+            "@typescript-eslint/naming-convention": [
+                "error",
+                {
+                    selector: "default",
+                    format: ["camelCase"],
+                    leadingUnderscore: "allowDouble",
+                    trailingUnderscore: "allow",
+                },
+                /*
+                 * A quoted key is external syntax this codebase does not name — an HTTP header,
+                 * an aria-* attribute, a CSS property. The taxonomy's declarative-DSL carve-out.
+                 */
+                { selector: ["objectLiteralProperty", "typeProperty"], modifiers: ["requiresQuotes"], format: null },
+                /*
+                 * An HTTP header name is external wire syntax, and Prettier's as-needed quoting
+                 * strips the quotes that would otherwise mark it as such.
+                 */
+                {
+                    selector: "objectLiteralProperty",
+                    filter: { regex: "^(Cookie|Set-Cookie|Content-Type|Authorization|Accept)$", match: true },
+                    format: null,
+                },
+                { selector: "import", format: ["camelCase", "PascalCase"] },
+                { selector: "typeLike", format: ["PascalCase"] },
+                { selector: "variable", format: ["camelCase", "UPPER_CASE"], leadingUnderscore: "allow" },
+                /*
+                 * A React context and a dnd-kit sensor subclass are constructor-like values used in
+                 * type position (`<Ctx.Provider>`), so both ecosystems spell them PascalCase.
+                 */
+                {
+                    selector: "variable",
+                    filter: { regex: "(Context|Sensor)$", match: true },
+                    format: ["PascalCase"],
+                },
+                { selector: "objectLiteralProperty", format: ["camelCase"], leadingUnderscore: "allowDouble" },
+                { selector: "parameter", format: ["camelCase"], leadingUnderscore: "allow" },
+            ],
+        },
+    },
+    {
+        /*
+         * 10a. JSX forces PascalCase: a lowercase JSX identifier is parsed as an HTML element, and
+         * Storybook's CSF names each story by its exported binding. Scoped to .tsx so a plain .ts
+         * module gets no such licence.
+         */
+        files: ["src/**/*.tsx", "app/**/*.tsx"],
+        plugins: { "@typescript-eslint": tseslint.plugin },
+        rules: {
+            "@typescript-eslint/naming-convention": [
+                "error",
+                {
+                    selector: "default",
+                    format: ["camelCase"],
+                    leadingUnderscore: "allowDouble",
+                    trailingUnderscore: "allow",
+                },
+                { selector: ["objectLiteralProperty", "typeProperty"], modifiers: ["requiresQuotes"], format: null },
+                /*
+                 * An HTTP header name is external wire syntax, and Prettier's as-needed quoting
+                 * strips the quotes that would otherwise mark it as such.
+                 */
+                {
+                    selector: "objectLiteralProperty",
+                    filter: { regex: "^(Cookie|Set-Cookie|Content-Type|Authorization|Accept)$", match: true },
+                    format: null,
+                },
+                { selector: "import", format: ["camelCase", "PascalCase"] },
+                { selector: "typeLike", format: ["PascalCase"] },
+                { selector: "variable", format: ["camelCase", "PascalCase", "UPPER_CASE"], leadingUnderscore: "allow" },
+                // A compound-component namespace member (`Toast.Root`) is itself a component.
+                {
+                    selector: "objectLiteralProperty",
+                    format: ["camelCase", "PascalCase"],
+                    leadingUnderscore: "allowDouble",
+                },
+                // Storybook hands a decorator the story as a component argument.
+                { selector: "parameter", format: ["camelCase", "PascalCase"], leadingUnderscore: "allow" },
+            ],
+        },
+    },
+    {
+        /*
+         * 10b. ADR tech/0012's enum-like constants mirror their own SCREAMING_SNAKE values as keys.
+         * Scoped to the two places that declare them, so no feature module gains the same licence.
+         */
+        files: ["src/lib/core/**/*.ts", "e2e/**/*.ts"],
+        plugins: { "@typescript-eslint": tseslint.plugin },
+        rules: {
+            "@typescript-eslint/naming-convention": [
+                "error",
+                {
+                    selector: "default",
+                    format: ["camelCase"],
+                    leadingUnderscore: "allowDouble",
+                    trailingUnderscore: "allow",
+                },
+                { selector: ["objectLiteralProperty", "typeProperty"], modifiers: ["requiresQuotes"], format: null },
+                /*
+                 * An HTTP header name is external wire syntax, and Prettier's as-needed quoting
+                 * strips the quotes that would otherwise mark it as such.
+                 */
+                {
+                    selector: "objectLiteralProperty",
+                    filter: { regex: "^(Cookie|Set-Cookie|Content-Type|Authorization|Accept)$", match: true },
+                    format: null,
+                },
+                { selector: "import", format: ["camelCase", "PascalCase"] },
+                { selector: "typeLike", format: ["PascalCase"] },
+                { selector: "variable", format: ["camelCase", "UPPER_CASE"], leadingUnderscore: "allow" },
+                {
+                    selector: "objectLiteralProperty",
+                    format: ["camelCase", "UPPER_CASE"],
+                    leadingUnderscore: "allowDouble",
+                },
+                { selector: "parameter", format: ["camelCase"], leadingUnderscore: "allow" },
+            ],
+        },
+    },
+    {
+        /*
+         * 10c. Filename and folder shape — the half CONVENTIONS.md states and nothing checked:
+         * every component is a kebab-case folder holding a file of the same name, and every test
+         * suffix maps to a Vitest/Playwright project.
+         */
+        files: ["src/**/*", "app/**/*", "e2e/**/*", "visual/**/*", "scripts/**/*"],
+        plugins: { "check-file": checkFile },
+        rules: {
+            "check-file/filename-naming-convention": [
+                "error",
+                {
+                    "src/**/*.{ts,tsx}": "KEBAB_CASE",
+                    "app/**/*.{ts,tsx}": "KEBAB_CASE",
+                    "e2e/**/*.ts": "KEBAB_CASE",
+                    "visual/**/*.ts": "KEBAB_CASE",
+                    "scripts/**/*.mjs": "KEBAB_CASE",
+                },
+                { ignoreMiddleExtensions: true },
+            ],
+            "check-file/folder-naming-convention": [
+                "error",
+                {
+                    "src/features/*/": "KEBAB_CASE",
+                    "src/components/*/*/": "KEBAB_CASE",
+                    "src/features/*/components/*/": "KEBAB_CASE",
+                },
+            ],
+        },
     },
 
     // 9. Generated/vendored trees are never hand-edited or worth linting.
