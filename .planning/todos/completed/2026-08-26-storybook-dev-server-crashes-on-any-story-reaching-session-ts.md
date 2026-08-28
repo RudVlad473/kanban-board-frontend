@@ -49,3 +49,27 @@ around by checking `column-header.stories.tsx` directly instead, which doesn't r
   `serverActionStubAlias` map `vitest.config.ts` defines, or an equivalent `resolve.alias`.
 - Reproduce against `board-view.stories.tsx > Populated` directly via `pnpm storybook` to confirm
   the fix.
+
+## Resolution (plan 04-07, 2026-08-28)
+
+The suspected cause was right about the mechanism but wrong about the fix. `.storybook/main.ts`
+did lack what `vitest.config.ts` had, but copying `serverActionStubAlias` across would not have
+worked: `src/test-utils/sign-out-action-storybook-stub.ts` imports `@/lib/server/session` itself,
+so the alias only moves the crash one module along.
+
+What closes it is `viteFinal` adding `serverActionStubPlugin` (`scripts/vite-plugin-server-action-stub.mjs`),
+which replaces the `"use server"` module wholesale at `enforce: "pre"` — the import chain to
+`session.ts` never forms.
+
+Verified by observation, both directions, against `pnpm storybook` on
+`components-layout-board-view--populated` in headless Chromium:
+
+- **With `viteFinal`:** the story renders (three columns, task cards, `+ New Column`). HAR shows
+  131×200 / 2×101 and zero requests, `__vite-browser-external` or otherwise, for `node:crypto` or
+  `src/lib/server/session.ts`. Dev-server log clean.
+- **Control, `viteFinal` reverted:** reproduces this file's error verbatim — `Module "node:crypto"
+  has been externalized …` at `__vite-browser-external:node:crypto:3:11` / `session.ts:1:50`.
+
+The dev server also serves `src/features/boards/actions/create-column-action.ts` and
+`src/features/auth/actions/sign-out-action.ts` as recorder modules, confirming the transform fires
+against real module ids rather than only fixtures.
