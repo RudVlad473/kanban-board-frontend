@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { taskFullSchema } from "@/lib/core/api-contract/task-schemas";
+
 /**
  * Runtime-verified shape replacing the deleted `isBoard`/`isBoardArray` guards (D-12) — the
  * contract declares no `required` array, so a raw cast to `Board` can't be trusted (see
@@ -18,32 +20,8 @@ export type Board = z.infer<typeof boardSchema>;
 /*
  * The full-board containment hierarchy, composed a level at a time. None of the four response
  * shapes declares a `required` array, so a cast at any level would be a claim rather than a fact
- * (see docs/adr/tech/0024).
+ * (docs/adr/tech/0024). Its task and subtask levels moved to the core ring under D-16.
  */
-export const subtaskSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    isCompleted: z.boolean(),
-    version: z.number(),
-});
-
-export const taskFullSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    /*
-     * The contract declares `description` optional, but the backend sends an explicit `null` for a
-     * task created without one (observed 2026-08-27, plan 03-12) — normalised to the one absent
-     * value, so a consumer never has to handle two spellings of the same thing.
-     */
-    description: z
-        .string()
-        .nullish()
-        .transform((value) => value ?? undefined),
-    version: z.number(),
-    position: z.number(),
-    subtasks: subtaskSchema.array(),
-});
-
 export const columnFullSchema = z.object({
     id: z.string(),
     name: z.string(),
@@ -58,10 +36,6 @@ export const boardFullSchema = z.object({
     version: z.number(),
     columns: columnFullSchema.array(),
 });
-
-export type Subtask = z.infer<typeof subtaskSchema>;
-
-export type TaskFull = z.infer<typeof taskFullSchema>;
 
 export type ColumnFull = z.infer<typeof columnFullSchema>;
 

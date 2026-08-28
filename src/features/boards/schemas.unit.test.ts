@@ -15,7 +15,6 @@ import {
     renameBoardInputSchema,
     renameColumnInputSchema,
     reorderColumnInputSchema,
-    taskFullSchema,
 } from "@/features/boards/schemas";
 import { createBoard, createBoards } from "@/test-utils/factories/board";
 import { createBoardFull, createColumnFull, createTaskFull } from "@/test-utils/factories/board-full";
@@ -138,39 +137,6 @@ describe("columnFullSchema", () => {
 
         // Act & Assert
         expect(columnFullSchema.safeParse(withoutTasks).success).toBe(false);
-    });
-});
-
-describe("taskFullSchema", () => {
-    it("rejects a task holding a malformed subtask", () => {
-        // Act & Assert
-        expect(
-            taskFullSchema.safeParse({ ...createTaskFull(), subtasks: [{ id: "s1", title: "Subtask", version: 0 }] })
-                .success,
-        ).toBe(false);
-    });
-
-    /* The contract declares `description` optional, so its absence is well-formed, not malformed. */
-    it("accepts a task with no description", () => {
-        // Arrange
-        const { description: _description, ...withoutDescription } = createTaskFull();
-
-        // Act
-        const result = taskFullSchema.safeParse(withoutDescription);
-
-        // Assert
-        expect(result.success).toBe(true);
-        expect(result.success && result.data.description).toBeUndefined();
-    });
-
-    /* Pinned against the backend's own observed answer: it sends `null`, not an absent key (03-12). */
-    it("accepts a task whose description came back as an explicit null, and normalises it away", () => {
-        // Act
-        const result = taskFullSchema.safeParse({ ...createTaskFull(), description: null });
-
-        // Assert
-        expect(result.success).toBe(true);
-        expect(result.success && result.data.description).toBeUndefined();
     });
 });
 
