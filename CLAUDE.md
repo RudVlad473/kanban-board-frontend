@@ -85,6 +85,19 @@ so without it `pnpm lint` reports three `no-unsafe-assignment` errors in
 as a real regression in a file you never touched. Found 2026-08-28, reported independently by two
 Phase 4 executors.
 
+`next typegen` also rewrites tracked `next-env.d.ts`, pointing its imports at `./.next/dev/types/`
+instead of the committed `./.next/types/`. Next regenerates that file and marks it "should not be
+edited", so the rewrite is generated churn, not a change worth keeping. Restore it before you
+commit anything, or it rides into the wave merge:
+
+```bash
+git checkout -- next-env.d.ts
+```
+
+`pnpm build` also populates `.next/types` and leaves `next-env.d.ts` matching the committed form.
+Prefer it when you were going to build anyway; prefer `typegen` plus the restore when you only
+need lint and types to resolve.
+
 ### `.env.local` specifically
 
 `.env.local` is gitignored, so `git worktree add` never copies it — a plan executed in an
