@@ -77,16 +77,21 @@ the deep-interaction tests it was expected to also serve. The pre-10.x direct-re
   Consequences section already documents for `no-restricted-properties`. Keeping the `.run()` ban
   file-scope-unqualified (matching every file, stories included) sidesteps that hazard entirely
   rather than risk re-triggering it.
-- D-08's research gate is settled: real `"use server"` Server Actions cannot execute inside
+- D-08's research gate is settled: real `"use server"` Server Actions cannot be used inside
   `@storybook/nextjs-vite`'s Vite-driven Vitest rendering — its bundling has no RSC-aware transform
-  for `"use server"` exports, so it attempts to bundle the action's real dependency graph (reaching
-  `node:crypto`, the external API client) into a browser-loadable bundle, which fails outright.
-  This is a currently open, named gap in Storybook's own issue tracker (`github.com/storybookjs/
-  storybook` discussion #31127), not a version-specific bug already fixed upstream. The whole-module
-  `serverActionStubAlias` in `vitest.config.ts` therefore stays; interaction coverage that depends
-  on a real action's effect (redirect, cookie write, backend-rejection message) moves to Playwright
-  e2e instead, which runs against a real Next.js server. See `docs/adr/tech/0020`'s D-19 carve-out
-  section for the formal wording of what stays a shim and why — not duplicated here.
+  for `"use server"` exports, so it attempts to bundle the action's real dependency graph into a
+  browser-loadable bundle, which fails outright. This is a currently open, named gap in Storybook's
+  own issue tracker (`github.com/storybookjs/storybook` discussion #31127), not a version-specific
+  bug already fixed upstream. **Corrected 2026-08-28:** this paragraph said the failure reached
+  `node:crypto` and the external API client, which overstated how far evaluation gets. Measured
+  (`.planning/spikes/action-stub-automation/FINDINGS.md`, Question 1), the action cannot even be
+  IMPORTED — `next/cache`'s `refresh()` throws `ReferenceError: process is not defined` first, before
+  `verifySession` pulls `node:crypto` in. Every Server Action is therefore doubled at build time;
+  as of phase 04 that is a `"use server"` transform rather than the `serverActionStubAlias` register
+  this paragraph named, which no longer exists. Interaction coverage that depends on a real action's
+  effect (redirect, cookie write, backend-rejection message) moves to Playwright e2e instead, which
+  runs against a real Next.js server. See `docs/adr/tech/0020`'s doubling carve-out for the formal
+  wording of what stays a double and why — not duplicated here.
 
 ## Consequences
 
