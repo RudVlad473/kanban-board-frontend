@@ -37,6 +37,16 @@ const storyIds = [
     "components-ui-text-field--sizes",
     "components-ui-text-field--long-value",
     "components-ui-text-field--loading", // plan 01-16, Task 1
+    // Textarea (plan 04-05, Task 2) — nine stories.
+    "components-ui-textarea--idle",
+    "components-ui-textarea--focused",
+    "components-ui-textarea--filled",
+    "components-ui-textarea--error",
+    "components-ui-textarea--error-message-without-error",
+    "components-ui-textarea--disabled",
+    "components-ui-textarea--loading",
+    "components-ui-textarea--with-description",
+    "components-ui-textarea--long-value",
     // Checkbox (plan 01-07, Task 2) — nine stories.
     "components-ui-checkbox--unchecked",
     "components-ui-checkbox--checked",
