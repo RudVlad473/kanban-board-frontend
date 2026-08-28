@@ -14,8 +14,16 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { Checkbox } from "./checkbox";
 import * as stories from "./checkbox.stories";
 
-const { Unchecked, Error, Disabled, Loading, Checked, CheckedWithStrikethrough, UncheckedWithStrikethroughOptIn } =
-    composeStories(stories);
+/* `Error` is aliased rather than destructured bare — the CSF name shadows the global constructor. */
+const {
+    Unchecked,
+    Error: ErrorStory,
+    Disabled,
+    Loading,
+    Checked,
+    CheckedWithStrikethrough,
+    UncheckedWithStrikethroughOptIn,
+} = composeStories(stories);
 
 /*
  * Narrows a render's own container to its label. Needed because the completed-label assertions
@@ -55,7 +63,7 @@ describeForEachDevice({
 
         it("marks the control invalid when hasError", async () => {
             // Act
-            await render(<Error />);
+            await render(<ErrorStory />);
 
             // Assert
             expect(screen.getByRole("checkbox", { name: "Remember me" })).toHaveAttribute("aria-invalid", "true");

@@ -69,7 +69,13 @@ export const Checkbox = ({
             <Field.Label
                 className={cn(
                     "font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary",
-                    hasStrikethroughWhenChecked && "peer-data-[checked]:line-through",
+                    /*
+                     * 04-UI-SPEC.md's completed-subtask treatment: 50% of primary composites to
+                     * the mock's sampled #797B87 (p5) and #8F9095 (p15), which the muted token
+                     * misses. Lives here because `className` reaches the box, not the label.
+                     */
+                    hasStrikethroughWhenChecked &&
+                        "peer-data-[checked]:text-text-primary/50 peer-data-[checked]:line-through",
                 )}
             >
                 {label}

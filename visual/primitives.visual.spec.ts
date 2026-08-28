@@ -56,6 +56,7 @@ const storyIds = [
     "components-ui-checkbox--disabled",
     "components-ui-checkbox--sizes",
     "components-ui-checkbox--checked-with-strikethrough",
+    "components-ui-checkbox--unchecked-with-strikethrough-opt-in", // plan 04-05, Task 3
     "components-ui-checkbox--loading", // plan 01-23
     // Switch (plan 01-08, Task 1) — seven stories.
     "components-ui-switch--off",
