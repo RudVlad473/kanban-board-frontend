@@ -159,6 +159,33 @@ decision below constrains the UI-SPEC (D-06, D-09, D-13), it says so explicitly.
   that a tasks feature now exists and how its schemas got a legal home. D-05's in-place amendment
   of tech/0020 is unaffected and still stands.
 
+- **D-18 (added 2026-08-28, resolves the D-14 / D-15 conflict):** `BoardView` moves from
+  `src/features/boards/components/` to **`src/components/layout/`**, and composes the two features
+  by passing task nodes down to `SortableColumn` as `ReactNode` / render props between two client
+  components. This keeps **D-14** (a real `src/features/tasks/` folder), **D-15** (no
+  feature-to-feature edge is added; the policy stays exception-free), and **D-16** (schemas promoted
+  to `src/lib/core/api-contract/`) all intact simultaneously.
+
+  **Why this was needed.** `04-RESEARCH.md` § Open Questions #1 proved with executed ESLint probes
+  that `boundaries/dependencies` blocks `feature -> feature` at `"error"` in both directions, and
+  that the §7b `"off"` exemption covers only `src/components/ui/**` stories and tests. D-16 legalises
+  the `TaskFull` / `Subtask` **type** import from the core ring, but not the **component** import
+  that `04-UI-SPEC.md` § "Task card anatomy" prescribes — an interactive task card replacing the
+  `<li>` inside `sortable-column.tsx`, which lives in `features/boards/`. `feature -> layout ->
+  feature` was probed and passes clean, so the layout ring is the legal composition point.
+
+  **Rejected alternatives.** Adding a `boards -> tasks` policy edge (reverses D-15, which a rushmore
+  entity-taxonomy run had already argued against). Keeping every task component and hook inside
+  `features/boards/` (abandons D-14 outright). Composing in
+  `app/(dashboard)/boards/[boardId]/page.tsx` (not viable — it is a Server Component, a render prop
+  is not serializable across the RSC boundary, and the task list takes optimistic inserts).
+
+  **Cost the planner must absorb, chosen with the cost stated.** `BoardView` is a Phase 3 component
+  with an established test, story, and visual-baseline footprint; all of it moves with the file.
+  Plan the relocation, its import-path fan-out, and its Storybook/Playwright baseline updates as
+  explicit work, not as incidental churn. — **Reversibility:** costly — a second move would
+  re-disturb the same footprint.
+
 ### Claude's Discretion
 
 - Where the drag context spanning columns and tasks lives, and empty-column drop behavior —
