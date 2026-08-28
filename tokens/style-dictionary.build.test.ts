@@ -69,6 +69,43 @@ describe("style dictionary token pipeline (D-12)", () => {
         expect(css).toContain("--leading-heading-xl: 30px;");
     });
 
+    /*
+     * The mock's sixth type role (04-UI-SPEC.md C-02), which Phase 1 omitted because nothing
+     * rendered a task card. Typography is mode-invariant, so both blocks must agree exactly.
+     */
+    it("expands font-heading-m into the same four custom properties in the @theme block and the .dark block", async () => {
+        // Arrange
+        const declarations = [
+            "--font-heading-m: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;",
+            "--text-heading-m: 15px;",
+            "--font-weight-heading-m: 700;",
+            "--leading-heading-m: 19px;",
+        ];
+
+        // Act
+        const css = await buildFullCss();
+        const themeBlock = css.slice(css.indexOf("@theme"), css.indexOf(".dark"));
+        const darkBlock = css.slice(css.indexOf(".dark"));
+
+        // Assert
+        for (const declaration of declarations) {
+            expect(themeBlock).toContain(declaration);
+            expect(darkBlock).toContain(declaration);
+        }
+    });
+
+    /*
+     * Kerning and case are the entire difference between heading-s and body-m at 12px; heading-m
+     * carries neither, so a --tracking-* property here would mean the wrong role was copied.
+     */
+    it("gives font-heading-m no --tracking-* property, unlike font-heading-s", async () => {
+        // Act
+        const css = await buildFullCss();
+
+        // Assert
+        expect(css).not.toContain("--tracking-heading-m");
+    });
+
     it("carries font-heading-s's letter-spacing as a distinct --tracking-* custom property", async () => {
         // Act
         const css = await buildModeCss({ mode: "light", platform: "css" });
