@@ -32,25 +32,29 @@ export const Default: Story = {
  * Copywriting Contract ("Show password" / "Hide password").
  */
 export const Ghost: Story = {
-    render: () => (
-        <div className="flex items-center gap-4">
-            <IconButton label="Show password" icon={<Eye />} variant="ghost" />
+    render: () => {
+        return (
+            <div className="flex items-center gap-4">
+                <IconButton label="Show password" icon={<Eye />} variant="ghost" />
 
-            <IconButton label="Hide password" icon={<EyeOff />} variant="ghost" />
-        </div>
-    ),
+                <IconButton label="Hide password" icon={<EyeOff />} variant="ghost" />
+            </div>
+        );
+    },
 };
 
 export const Sizes: Story = {
-    render: (args) => (
-        <div className="flex items-center gap-4">
-            <IconButton {...args} size="sm" />
+    render: (args) => {
+        return (
+            <div className="flex items-center gap-4">
+                <IconButton {...args} size="sm" />
 
-            <IconButton {...args} size="md" />
+                <IconButton {...args} size="md" />
 
-            <IconButton {...args} size="lg" />
-        </div>
-    ),
+                <IconButton {...args} size="lg" />
+            </div>
+        );
+    },
 };
 
 /*
@@ -59,11 +63,13 @@ export const Sizes: Story = {
  */
 export const Hover: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&>button]:bg-bg-app">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&>button]:bg-bg-app">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -73,11 +79,13 @@ export const Hover: Story = {
  */
 export const Focus: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&>button]:outline-2 [&>button]:outline-offset-2 [&>button]:outline-ring-focus">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&>button]:outline-2 [&>button]:outline-offset-2 [&>button]:outline-ring-focus">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 

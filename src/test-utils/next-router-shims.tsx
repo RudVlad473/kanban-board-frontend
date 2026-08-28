@@ -23,10 +23,12 @@ export const createNextNavigationShim = ({
 
 export const createNextLinkShim = () => ({
     __esModule: true,
-    default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
-        // eslint-disable-next-line no-restricted-syntax -- this IS the next/link stand-in itself (see file doc comment above), not a component opting out of it
-        <a href={href} className={className}>
-            {children}
-        </a>
-    ),
+    default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => {
+        return (
+            // eslint-disable-next-line no-restricted-syntax -- this IS the next/link stand-in itself (see file doc comment above), not a component opting out of it
+            <a href={href} className={className}>
+                {children}
+            </a>
+        );
+    },
 });

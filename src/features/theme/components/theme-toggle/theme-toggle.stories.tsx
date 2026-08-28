@@ -46,11 +46,13 @@ export const Focus: Story = {
         initialTheme: THEME.LIGHT,
     },
     decorators: [
-        (Story) => (
-            <div className="[&_[role=switch]]:outline-2 [&_[role=switch]]:outline-offset-2 [&_[role=switch]]:outline-ring-focus">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_[role=switch]]:outline-2 [&_[role=switch]]:outline-offset-2 [&_[role=switch]]:outline-ring-focus">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 

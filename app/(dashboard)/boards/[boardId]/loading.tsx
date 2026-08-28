@@ -6,6 +6,8 @@ import { BoardViewSkeleton } from "@/features/boards/components/board-view-skele
  * paints the instant a navigation starts — before `BoardDetailPage`'s blocking `fetchBoards()`
  * membership check even begins (D-03). Composition only, no logic ("app/ is routing only").
  */
-const BoardDetailLoading = () => <BoardViewSkeleton />;
+const BoardDetailLoading = () => {
+    return <BoardViewSkeleton />;
+};
 
 export default BoardDetailLoading;

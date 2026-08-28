@@ -13,15 +13,17 @@ const meta: Meta<typeof Modal.Root> = {
     args: {
         defaultOpen: true,
     },
-    render: (args) => (
-        <Modal.Root {...args}>
-            <Modal.Trigger render={<Button>Open modal</Button>} />
+    render: (args) => {
+        return (
+            <Modal.Root {...args}>
+                <Modal.Trigger render={<Button>Open modal</Button>} />
 
-            <Modal.Content>
-                <Modal.Title>Delete this board?</Modal.Title>
-            </Modal.Content>
-        </Modal.Root>
-    ),
+                <Modal.Content>
+                    <Modal.Title>Delete this board?</Modal.Title>
+                </Modal.Content>
+            </Modal.Root>
+        );
+    },
 };
 
 export default meta;
@@ -31,64 +33,70 @@ type Story = StoryObj<typeof Modal.Root>;
 export const Open: Story = {};
 
 export const WithDescription: Story = {
-    render: (args) => (
-        <Modal.Root {...args}>
-            <Modal.Trigger render={<Button>Open modal</Button>} />
+    render: (args) => {
+        return (
+            <Modal.Root {...args}>
+                <Modal.Trigger render={<Button>Open modal</Button>} />
 
-            <Modal.Content>
-                <Modal.Title>Delete this board?</Modal.Title>
+                <Modal.Content>
+                    <Modal.Title>Delete this board?</Modal.Title>
 
-                <Modal.Description>
-                    This action cannot be undone. All columns and tasks inside it will be permanently deleted.
-                </Modal.Description>
-            </Modal.Content>
-        </Modal.Root>
-    ),
+                    <Modal.Description>
+                        This action cannot be undone. All columns and tasks inside it will be permanently deleted.
+                    </Modal.Description>
+                </Modal.Content>
+            </Modal.Root>
+        );
+    },
 };
 
 export const WithFooterActions: Story = {
-    render: (args) => (
-        <Modal.Root {...args}>
-            <Modal.Trigger render={<Button>Open modal</Button>} />
+    render: (args) => {
+        return (
+            <Modal.Root {...args}>
+                <Modal.Trigger render={<Button>Open modal</Button>} />
 
-            <Modal.Content>
-                <Modal.Title>Rename board</Modal.Title>
+                <Modal.Content>
+                    <Modal.Title>Rename board</Modal.Title>
 
-                <Modal.Footer>
-                    <Button variant="secondary">Cancel</Button>
+                    <Modal.Footer>
+                        <Button variant="secondary">Cancel</Button>
 
-                    <Button variant="primary">Save Changes</Button>
-                </Modal.Footer>
-            </Modal.Content>
-        </Modal.Root>
-    ),
+                        <Button variant="primary">Save Changes</Button>
+                    </Modal.Footer>
+                </Modal.Content>
+            </Modal.Root>
+        );
+    },
 };
 
 export const LongContent: Story = {
-    render: (args) => (
-        <Modal.Root {...args}>
-            <Modal.Trigger render={<Button>Open modal</Button>} />
+    render: (args) => {
+        return (
+            <Modal.Root {...args}>
+                <Modal.Trigger render={<Button>Open modal</Button>} />
 
-            <Modal.Content>
-                <Modal.Title>Task activity</Modal.Title>
+                <Modal.Content>
+                    <Modal.Title>Task activity</Modal.Title>
 
-                <div className="flex flex-col gap-4">
-                    {Array.from({ length: 12 }, (_, index) => {
-                        const position = String(index + 1);
-                        return (
-                            <p key={position} className="font-body-l text-body-l text-text-primary">
-                                {`Activity entry ${position} — a scrolling body proves the panel's own overflow-y-auto rather than growing past the viewport.`}
-                            </p>
-                        );
-                    })}
-                </div>
+                    <div className="flex flex-col gap-4">
+                        {Array.from({ length: 12 }, (_, index) => {
+                            const position = String(index + 1);
+                            return (
+                                <p key={position} className="font-body-l text-body-l text-text-primary">
+                                    {`Activity entry ${position} — a scrolling body proves the panel's own overflow-y-auto rather than growing past the viewport.`}
+                                </p>
+                            );
+                        })}
+                    </div>
 
-                <Modal.Footer>
-                    <Button variant="secondary">Close</Button>
-                </Modal.Footer>
-            </Modal.Content>
-        </Modal.Root>
-    ),
+                    <Modal.Footer>
+                        <Button variant="secondary">Close</Button>
+                    </Modal.Footer>
+                </Modal.Content>
+            </Modal.Root>
+        );
+    },
 };
 
 export const Closed: Story = {
@@ -102,25 +110,27 @@ export const Closed: Story = {
  * the dismissal-blocking behaviour itself is proven behaviourally in modal.test.tsx, not here.
  */
 export const Submitting: Story = {
-    render: (args) => (
-        <Modal.Root {...args}>
-            <Modal.Trigger render={<Button>Open modal</Button>} />
+    render: (args) => {
+        return (
+            <Modal.Root {...args}>
+                <Modal.Trigger render={<Button>Open modal</Button>} />
 
-            <Modal.Content>
-                <Modal.Title>Delete board</Modal.Title>
+                <Modal.Content>
+                    <Modal.Title>Delete board</Modal.Title>
 
-                <Modal.Description>This action cannot be undone.</Modal.Description>
+                    <Modal.Description>This action cannot be undone.</Modal.Description>
 
-                <Modal.Footer>
-                    <Button variant="secondary" isDisabled>
-                        Cancel
-                    </Button>
+                    <Modal.Footer>
+                        <Button variant="secondary" isDisabled>
+                            Cancel
+                        </Button>
 
-                    <Button variant="destructive" isLoading>
-                        Delete
-                    </Button>
-                </Modal.Footer>
-            </Modal.Content>
-        </Modal.Root>
-    ),
+                        <Button variant="destructive" isLoading>
+                            Delete
+                        </Button>
+                    </Modal.Footer>
+                </Modal.Content>
+            </Modal.Root>
+        );
+    },
 };

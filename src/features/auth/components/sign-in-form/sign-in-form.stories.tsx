@@ -17,11 +17,13 @@ const meta: Meta<typeof SignInForm> = {
         },
     },
     decorators: [
-        (Story) => (
-            <AuthCard title="Sign In">
-                <Story />
-            </AuthCard>
-        ),
+        (Story) => {
+            return (
+                <AuthCard title="Sign In">
+                    <Story />
+                </AuthCard>
+            );
+        },
     ],
 };
 

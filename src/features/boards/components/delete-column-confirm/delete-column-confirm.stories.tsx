@@ -67,4 +67,8 @@ const SettlingHost = (props: ComponentProps<typeof DeleteColumnConfirm>) => {
 };
 
 /** U-05: the modal closes once the delete settles, whether it succeeded or failed. */
-export const SubmitSettles: Story = { render: (args) => <SettlingHost {...args} /> };
+export const SubmitSettles: Story = {
+    render: (args) => {
+        return <SettlingHost {...args} />;
+    },
+};

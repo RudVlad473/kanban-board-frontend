@@ -15,11 +15,13 @@ const meta: Meta<typeof BoardList> = {
     component: BoardList,
     parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
     decorators: [
-        (Story) => (
-            <div className="flex h-150 w-75 flex-col">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="flex h-150 w-75 flex-col">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -90,5 +92,7 @@ const ServerPropsHost = (props: ComponentProps<typeof BoardList>) => {
 
 export const ServerPropsAdvance: Story = {
     args: { boards: createBoards(3) },
-    render: (args) => <ServerPropsHost {...args} />,
+    render: (args) => {
+        return <ServerPropsHost {...args} />;
+    },
 };

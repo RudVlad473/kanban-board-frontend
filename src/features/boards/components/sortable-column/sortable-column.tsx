@@ -89,17 +89,22 @@ export const SortableColumn = ({ column, isReorderDisabled, isReordering, onRena
                 />
 
                 <ul className="flex flex-col gap-4">
-                    {column.tasks.map((task) => (
-                        <li key={task.id} className="flex flex-col gap-2 rounded-lg bg-bg-surface px-4 py-6 shadow-sm">
-                            <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
-                                {task.title}
-                            </p>
+                    {column.tasks.map((task) => {
+                        return (
+                            <li
+                                key={task.id}
+                                className="flex flex-col gap-2 rounded-lg bg-bg-surface px-4 py-6 shadow-sm"
+                            >
+                                <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
+                                    {task.title}
+                                </p>
 
-                            <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
-                                {toSubtaskSummary(task.subtasks)}
-                            </p>
-                        </li>
-                    ))}
+                                <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
+                                    {toSubtaskSummary(task.subtasks)}
+                                </p>
+                            </li>
+                        );
+                    })}
                 </ul>
             </div>
         </section>

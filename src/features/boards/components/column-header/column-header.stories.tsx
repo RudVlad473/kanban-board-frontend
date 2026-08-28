@@ -21,11 +21,13 @@ const THIRD_ACCENT_ID = "00000000-0000-4000-8000-000000000000";
 const meta: Meta<typeof ColumnHeader> = {
     component: ColumnHeader,
     decorators: [
-        (Story) => (
-            <div className="w-70 bg-bg-app">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="w-70 bg-bg-app">
+                    <Story />
+                </div>
+            );
+        },
     ],
     args: {
         column: createColumnFull({
@@ -119,15 +121,17 @@ const DRAG_INSTRUCTIONS_ID = "column-header-story-drag-instructions";
  */
 export const DragHandleFocused: Story = {
     decorators: [
-        (Story) => (
-            <>
-                <span id={DRAG_INSTRUCTIONS_ID} hidden>
-                    To pick up a column, press space or enter.
-                </span>
+        (Story) => {
+            return (
+                <>
+                    <span id={DRAG_INSTRUCTIONS_ID} hidden>
+                        To pick up a column, press space or enter.
+                    </span>
 
-                <Story />
-            </>
-        ),
+                    <Story />
+                </>
+            );
+        },
     ],
     args: {
         handleProps: {

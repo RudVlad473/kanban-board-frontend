@@ -15,11 +15,13 @@ const meta: Meta<typeof BoardView> = {
     component: BoardView,
     parameters: { layout: "fullscreen" },
     decorators: [
-        (Story) => (
-            <div className="flex h-150 flex-col">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="flex h-150 flex-col">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -142,7 +144,9 @@ const ServerPropsHost = (props: ComponentProps<typeof BoardView>) => {
 
 export const ServerColumnsAdvance: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 3 }) }) },
-    render: (args) => <ServerPropsHost {...args} />,
+    render: (args) => {
+        return <ServerPropsHost {...args} />;
+    },
 };
 
 /*
@@ -173,7 +177,9 @@ const ServerDeleteHost = (props: ComponentProps<typeof BoardView>) => {
 
 export const ServerColumnRemoved: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 4 }) }) },
-    render: (args) => <ServerDeleteHost {...args} />,
+    render: (args) => {
+        return <ServerDeleteHost {...args} />;
+    },
 };
 
 /*

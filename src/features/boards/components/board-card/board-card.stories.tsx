@@ -13,11 +13,13 @@ const meta: Meta<typeof BoardCard> = {
     component: BoardCard,
     parameters: { nextjs: { appDirectory: true } },
     decorators: [
-        (Story) => (
-            <ul className="w-75 py-4">
-                <Story />
-            </ul>
-        ),
+        (Story) => {
+            return (
+                <ul className="w-75 py-4">
+                    <Story />
+                </ul>
+            );
+        },
     ],
     args: {
         board: createBoard({ id: "8okxhwo6oq2o", name: "Platform Launch" }),

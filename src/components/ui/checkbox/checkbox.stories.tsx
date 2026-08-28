@@ -31,11 +31,13 @@ export const Checked: Story = {
  */
 export const Hover: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&_[role=checkbox]]:bg-bg-app">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_[role=checkbox]]:bg-bg-app">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -45,11 +47,13 @@ export const Hover: Story = {
  */
 export const Focus: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&_[role=checkbox]]:outline-2 [&_[role=checkbox]]:outline-offset-2 [&_[role=checkbox]]:outline-ring-focus">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_[role=checkbox]]:outline-2 [&_[role=checkbox]]:outline-offset-2 [&_[role=checkbox]]:outline-ring-focus">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -72,15 +76,17 @@ export const Loading: Story = {
 };
 
 export const Sizes: Story = {
-    render: (args) => (
-        <div className="flex items-center gap-4">
-            <Checkbox {...args} size="sm" label="Small" defaultChecked />
+    render: (args) => {
+        return (
+            <div className="flex items-center gap-4">
+                <Checkbox {...args} size="sm" label="Small" defaultChecked />
 
-            <Checkbox {...args} size="md" label="Medium" defaultChecked />
+                <Checkbox {...args} size="md" label="Medium" defaultChecked />
 
-            <Checkbox {...args} size="lg" label="Large" defaultChecked />
-        </div>
-    ),
+                <Checkbox {...args} size="lg" label="Large" defaultChecked />
+            </div>
+        );
+    },
 };
 
 /*

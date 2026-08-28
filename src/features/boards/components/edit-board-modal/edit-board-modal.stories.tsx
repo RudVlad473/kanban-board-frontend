@@ -58,4 +58,8 @@ const SettlingHost = (props: ComponentProps<typeof EditBoardModal>) => {
 };
 
 /** The rename settles successfully, so the caller closes the modal. */
-export const SubmitSettles: Story = { render: (args) => <SettlingHost {...args} /> };
+export const SubmitSettles: Story = {
+    render: (args) => {
+        return <SettlingHost {...args} />;
+    },
+};

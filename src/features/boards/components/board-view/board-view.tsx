@@ -221,16 +221,18 @@ export const BoardView = ({
                             items={renderedColumns.map((column) => column.id)}
                             strategy={horizontalListSortingStrategy}
                         >
-                            {renderedColumns.map((column) => (
-                                <SortableColumn
-                                    key={column.id}
-                                    column={column}
-                                    isReorderDisabled={renderedColumns.length === 1}
-                                    isReordering={column.id === reorderingColumnId}
-                                    onRename={setColumnBeingRenamed}
-                                    onDelete={setColumnBeingDeleted}
-                                />
-                            ))}
+                            {renderedColumns.map((column) => {
+                                return (
+                                    <SortableColumn
+                                        key={column.id}
+                                        column={column}
+                                        isReorderDisabled={renderedColumns.length === 1}
+                                        isReordering={column.id === reorderingColumnId}
+                                        onRename={setColumnBeingRenamed}
+                                        onDelete={setColumnBeingDeleted}
+                                    />
+                                );
+                            })}
                         </SortableContext>
 
                         {/* Last flex child INSIDE the scroll row, so it scrolls away with the columns (UI-SPEC overflow). */}

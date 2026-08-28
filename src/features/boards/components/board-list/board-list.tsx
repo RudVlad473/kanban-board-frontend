@@ -138,16 +138,18 @@ export const BoardList = ({
                     </div>
                 ) : (
                     <ul className="flex flex-col gap-2">
-                        {renderedBoards.map((board) => (
-                            <BoardCard
-                                key={board.id}
-                                board={board}
-                                isSelected={pathname === buildBoardDetailPath(board.id)}
-                                onEdit={setBoardBeingRenamed}
-                                onDelete={setBoardBeingDeleted}
-                                isEditDisabled={board.id === pendingRenameBoardId}
-                            />
-                        ))}
+                        {renderedBoards.map((board) => {
+                            return (
+                                <BoardCard
+                                    key={board.id}
+                                    board={board}
+                                    isSelected={pathname === buildBoardDetailPath(board.id)}
+                                    onEdit={setBoardBeingRenamed}
+                                    onDelete={setBoardBeingDeleted}
+                                    isEditDisabled={board.id === pendingRenameBoardId}
+                                />
+                            );
+                        })}
                     </ul>
                 )}
             </div>

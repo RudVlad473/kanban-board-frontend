@@ -56,4 +56,8 @@ const SettlingHost = (props: ComponentProps<typeof RenameColumnModal>) => {
 };
 
 /** U-05: the modal closes on submit rather than holding a spinner — the rename is optimistic. */
-export const SubmitSettles: Story = { render: (args) => <SettlingHost {...args} /> };
+export const SubmitSettles: Story = {
+    render: (args) => {
+        return <SettlingHost {...args} />;
+    },
+};

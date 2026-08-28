@@ -38,21 +38,23 @@ export const Destructive: Story = {
 };
 
 export const Sizes: Story = {
-    render: (args) => (
-        <div className="flex items-center gap-4">
-            <Button {...args} size="sm">
-                Small
-            </Button>
+    render: (args) => {
+        return (
+            <div className="flex items-center gap-4">
+                <Button {...args} size="sm">
+                    Small
+                </Button>
 
-            <Button {...args} size="md">
-                Medium
-            </Button>
+                <Button {...args} size="md">
+                    Medium
+                </Button>
 
-            <Button {...args} size="lg">
-                Large
-            </Button>
-        </div>
-    ),
+                <Button {...args} size="lg">
+                    Large
+                </Button>
+            </div>
+        );
+    },
 };
 
 /*
@@ -61,11 +63,13 @@ export const Sizes: Story = {
  */
 export const Hover: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&>button]:bg-bg-primary-hover">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&>button]:bg-bg-primary-hover">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -75,11 +79,13 @@ export const Hover: Story = {
  */
 export const Focus: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&>button]:outline-2 [&>button]:outline-offset-2 [&>button]:outline-ring-focus">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&>button]:outline-2 [&>button]:outline-offset-2 [&>button]:outline-ring-focus">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 

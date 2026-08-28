@@ -106,5 +106,7 @@ const FailingSubmitHost = (props: ComponentProps<typeof AddBoardModal>) => {
 /** D-05: the submit handler reports failure, so the modal stays open with everything typed intact. */
 export const SubmitFails: Story = {
     args: { defaultColumns: ["Todo"] },
-    render: (args) => <FailingSubmitHost {...args} />,
+    render: (args) => {
+        return <FailingSubmitHost {...args} />;
+    },
 };

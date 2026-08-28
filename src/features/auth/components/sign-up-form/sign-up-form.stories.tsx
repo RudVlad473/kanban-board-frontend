@@ -21,11 +21,13 @@ const meta: Meta<typeof SignUpForm> = {
         },
     },
     decorators: [
-        (Story) => (
-            <AuthCard title="Sign Up">
-                <Story />
-            </AuthCard>
-        ),
+        (Story) => {
+            return (
+                <AuthCard title="Sign Up">
+                    <Story />
+                </AuthCard>
+            );
+        },
     ],
 };
 

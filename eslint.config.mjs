@@ -381,6 +381,21 @@ const eslintConfig = defineConfig([
                     message:
                         "composeStories' story-runner .run() is banned repo-wide (docs/adr/tech/0025-direct-composed-story-rendering.md, supersedes tech/0021) — render the composed story directly instead, e.g. `render(<Primary />)`. If this is a genuinely deliberate exception, add a `// eslint-disable-next-line no-restricted-syntax` with a one-line reason.",
                 },
+                /*
+                 * 8h: JSX is always returned explicitly (docs/adr/tech/0028). Scoped to a JSX body
+                 * rather than core `arrow-body-style: always`, which would also brace every
+                 * non-JSX one-liner — a far wider change than the decision this encodes.
+                 */
+                {
+                    selector: "ArrowFunctionExpression > JSXElement",
+                    message:
+                        "Return JSX with an explicit `return` inside a block body, never a concise body (docs/adr/tech/0028-jsx-return-style.md).",
+                },
+                {
+                    selector: "ArrowFunctionExpression > JSXFragment",
+                    message:
+                        "Return JSX with an explicit `return` inside a block body, never a concise body (docs/adr/tech/0028-jsx-return-style.md).",
+                },
             ],
         },
     },

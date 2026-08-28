@@ -128,19 +128,21 @@ const ToastList = () => {
     const { toasts } = useToast();
     return (
         <>
-            {toasts.map((toast) => (
-                <Toast.Root key={toast.id} toast={toast}>
-                    <Toast.Content>
-                        <Toast.Title>{toast.title}</Toast.Title>
+            {toasts.map((toast) => {
+                return (
+                    <Toast.Root key={toast.id} toast={toast}>
+                        <Toast.Content>
+                            <Toast.Title>{toast.title}</Toast.Title>
 
-                        {toast.description ? <Toast.Description>{toast.description}</Toast.Description> : null}
+                            {toast.description ? <Toast.Description>{toast.description}</Toast.Description> : null}
 
-                        <Toast.Action />
-                    </Toast.Content>
+                            <Toast.Action />
+                        </Toast.Content>
 
-                    <Toast.Close />
-                </Toast.Root>
-            ))}
+                        <Toast.Close />
+                    </Toast.Root>
+                );
+            })}
         </>
     );
 };

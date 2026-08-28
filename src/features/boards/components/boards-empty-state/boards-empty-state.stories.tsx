@@ -11,11 +11,13 @@ const meta: Meta<typeof BoardsEmptyState> = {
     component: BoardsEmptyState,
     parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
     decorators: [
-        (Story) => (
-            <div className="flex h-150 flex-col">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="flex h-150 flex-col">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 

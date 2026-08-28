@@ -11,17 +11,19 @@ import { IconButton } from "../icon-button/icon-button";
  */
 const meta: Meta<typeof Menu.Root> = {
     component: Menu.Root,
-    render: (args) => (
-        <Menu.Root {...args}>
-            <Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />
+    render: (args) => {
+        return (
+            <Menu.Root {...args}>
+                <Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />
 
-            <Menu.Content>
-                <Menu.Item>Edit Board</Menu.Item>
+                <Menu.Content>
+                    <Menu.Item>Edit Board</Menu.Item>
 
-                <Menu.Item isDestructive>Delete Board</Menu.Item>
-            </Menu.Content>
-        </Menu.Root>
-    ),
+                    <Menu.Item isDestructive>Delete Board</Menu.Item>
+                </Menu.Content>
+            </Menu.Root>
+        );
+    },
 };
 
 export default meta;
@@ -46,33 +48,37 @@ export const WithDisabledItem: Story = {
     args: {
         defaultOpen: true,
     },
-    render: (args) => (
-        <Menu.Root {...args}>
-            <Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />
+    render: (args) => {
+        return (
+            <Menu.Root {...args}>
+                <Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />
 
-            <Menu.Content>
-                <Menu.Item isDisabled>Edit Board</Menu.Item>
+                <Menu.Content>
+                    <Menu.Item isDisabled>Edit Board</Menu.Item>
 
-                <Menu.Item isDestructive>Delete Board</Menu.Item>
-            </Menu.Content>
-        </Menu.Root>
-    ),
+                    <Menu.Item isDestructive>Delete Board</Menu.Item>
+                </Menu.Content>
+            </Menu.Root>
+        );
+    },
 };
 
 export const LongItemList: Story = {
     args: {
         defaultOpen: true,
     },
-    render: (args) => (
-        <Menu.Root {...args}>
-            <Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />
+    render: (args) => {
+        return (
+            <Menu.Root {...args}>
+                <Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />
 
-            <Menu.Content>
-                {Array.from({ length: 12 }, (_, index) => {
-                    const position = String(index + 1);
-                    return <Menu.Item key={position}>{`Action ${position}`}</Menu.Item>;
-                })}
-            </Menu.Content>
-        </Menu.Root>
-    ),
+                <Menu.Content>
+                    {Array.from({ length: 12 }, (_, index) => {
+                        const position = String(index + 1);
+                        return <Menu.Item key={position}>{`Action ${position}`}</Menu.Item>;
+                    })}
+                </Menu.Content>
+            </Menu.Root>
+        );
+    },
 };

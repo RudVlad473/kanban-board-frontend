@@ -9,19 +9,21 @@ import { Dropdown } from "./dropdown";
  */
 const meta: Meta<typeof Dropdown.Root> = {
     component: Dropdown.Root,
-    render: (args) => (
-        <Dropdown.Root {...args}>
-            <Dropdown.Trigger placeholder="Select a status" />
+    render: (args) => {
+        return (
+            <Dropdown.Root {...args}>
+                <Dropdown.Trigger placeholder="Select a status" />
 
-            <Dropdown.Content>
-                <Dropdown.Item value="todo">Todo</Dropdown.Item>
+                <Dropdown.Content>
+                    <Dropdown.Item value="todo">Todo</Dropdown.Item>
 
-                <Dropdown.Item value="doing">Doing</Dropdown.Item>
+                    <Dropdown.Item value="doing">Doing</Dropdown.Item>
 
-                <Dropdown.Item value="done">Done</Dropdown.Item>
-            </Dropdown.Content>
-        </Dropdown.Root>
-    ),
+                    <Dropdown.Item value="done">Done</Dropdown.Item>
+                </Dropdown.Content>
+            </Dropdown.Root>
+        );
+    },
 };
 
 export default meta;
@@ -60,21 +62,23 @@ export const DisabledItem: Story = {
     args: {
         defaultOpen: true,
     },
-    render: (args) => (
-        <Dropdown.Root {...args}>
-            <Dropdown.Trigger placeholder="Select a status" />
+    render: (args) => {
+        return (
+            <Dropdown.Root {...args}>
+                <Dropdown.Trigger placeholder="Select a status" />
 
-            <Dropdown.Content>
-                <Dropdown.Item value="todo">Todo</Dropdown.Item>
+                <Dropdown.Content>
+                    <Dropdown.Item value="todo">Todo</Dropdown.Item>
 
-                <Dropdown.Item value="doing" isDisabled>
-                    Doing
-                </Dropdown.Item>
+                    <Dropdown.Item value="doing" isDisabled>
+                        Doing
+                    </Dropdown.Item>
 
-                <Dropdown.Item value="done">Done</Dropdown.Item>
-            </Dropdown.Content>
-        </Dropdown.Root>
-    ),
+                    <Dropdown.Item value="done">Done</Dropdown.Item>
+                </Dropdown.Content>
+            </Dropdown.Root>
+        );
+    },
 };
 
 export const Disabled: Story = {
@@ -98,39 +102,43 @@ export const LongSelectedValue: Story = {
     args: {
         defaultValue: "A very long board name that will definitely overflow the trigger width",
     },
-    render: (args) => (
-        <div style={{ width: "220px" }}>
-            <Dropdown.Root {...args}>
-                <Dropdown.Trigger placeholder="Select a board" />
+    render: (args) => {
+        return (
+            <div style={{ width: "220px" }}>
+                <Dropdown.Root {...args}>
+                    <Dropdown.Trigger placeholder="Select a board" />
 
-                <Dropdown.Content>
-                    <Dropdown.Item value="A very long board name that will definitely overflow the trigger width">
-                        A very long board name that will definitely overflow the trigger width
-                    </Dropdown.Item>
-                </Dropdown.Content>
-            </Dropdown.Root>
-        </div>
-    ),
+                    <Dropdown.Content>
+                        <Dropdown.Item value="A very long board name that will definitely overflow the trigger width">
+                            A very long board name that will definitely overflow the trigger width
+                        </Dropdown.Item>
+                    </Dropdown.Content>
+                </Dropdown.Root>
+            </div>
+        );
+    },
 };
 
 export const LongItemList: Story = {
     args: {
         defaultOpen: true,
     },
-    render: (args) => (
-        <Dropdown.Root {...args}>
-            <Dropdown.Trigger placeholder="Select a board" />
+    render: (args) => {
+        return (
+            <Dropdown.Root {...args}>
+                <Dropdown.Trigger placeholder="Select a board" />
 
-            <Dropdown.Content>
-                {Array.from({ length: 12 }, (_, index) => {
-                    const position = String(index + 1);
-                    return (
-                        <Dropdown.Item key={position} value={`board-${position}`}>
-                            {`Board ${position}`}
-                        </Dropdown.Item>
-                    );
-                })}
-            </Dropdown.Content>
-        </Dropdown.Root>
-    ),
+                <Dropdown.Content>
+                    {Array.from({ length: 12 }, (_, index) => {
+                        const position = String(index + 1);
+                        return (
+                            <Dropdown.Item key={position} value={`board-${position}`}>
+                                {`Board ${position}`}
+                            </Dropdown.Item>
+                        );
+                    })}
+                </Dropdown.Content>
+            </Dropdown.Root>
+        );
+    },
 };

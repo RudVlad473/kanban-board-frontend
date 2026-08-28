@@ -32,16 +32,18 @@ const SortableRow = ({
         <DndContext id="sortable-column-story">
             <SortableContext items={columns.map((each) => each.id)} strategy={horizontalListSortingStrategy}>
                 <div className="flex h-100 gap-6 bg-bg-app p-6">
-                    {columns.map((each) => (
-                        <SortableColumn
-                            key={each.id}
-                            column={each}
-                            isReorderDisabled={columns.length === 1}
-                            isReordering={isReordering && each.id === column.id}
-                            onRename={onRename}
-                            onDelete={onDelete}
-                        />
-                    ))}
+                    {columns.map((each) => {
+                        return (
+                            <SortableColumn
+                                key={each.id}
+                                column={each}
+                                isReorderDisabled={columns.length === 1}
+                                isReordering={isReordering && each.id === column.id}
+                                onRename={onRename}
+                                onDelete={onDelete}
+                            />
+                        );
+                    })}
                 </div>
             </SortableContext>
         </DndContext>
@@ -77,16 +79,18 @@ const ReorderHost = ({ onRename, onDelete }: ComponentProps<typeof SortableColum
                     strategy={horizontalListSortingStrategy}
                 >
                     <div className="flex h-100 gap-6 bg-bg-app p-6">
-                        {renderedColumns.map((column) => (
-                            <SortableColumn
-                                key={column.id}
-                                column={column}
-                                isReorderDisabled={renderedColumns.length === 1}
-                                isReordering={column.id === reorderingColumnId}
-                                onRename={onRename}
-                                onDelete={onDelete}
-                            />
-                        ))}
+                        {renderedColumns.map((column) => {
+                            return (
+                                <SortableColumn
+                                    key={column.id}
+                                    column={column}
+                                    isReorderDisabled={renderedColumns.length === 1}
+                                    isReordering={column.id === reorderingColumnId}
+                                    onRename={onRename}
+                                    onDelete={onDelete}
+                                />
+                            );
+                        })}
                     </div>
                 </SortableContext>
             </DndContext>
@@ -109,7 +113,9 @@ const meta: Meta<typeof SortableColumn> = {
         onRename: fn(),
         onDelete: fn(),
     },
-    render: (args) => <SortableRow {...args} />,
+    render: (args) => {
+        return <SortableRow {...args} />;
+    },
 };
 
 export default meta;
@@ -145,4 +151,8 @@ export const LoneColumn: Story = {
  * The hook's own harness. The stub the test configures decides whether the move succeeds, fails or
  * conflicts — the story stages only the board it acts on.
  */
-export const OptimisticReorder: Story = { render: (args) => <ReorderHost {...args} /> };
+export const OptimisticReorder: Story = {
+    render: (args) => {
+        return <ReorderHost {...args} />;
+    },
+};

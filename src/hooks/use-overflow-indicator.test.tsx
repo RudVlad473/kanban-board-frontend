@@ -53,9 +53,9 @@ describe("useOverflowIndicator", () => {
 
     it("re-evaluates when the observed element's text content changes via a re-render", async () => {
         // Arrange
-        const Rerenderable = ({ long }: { long: boolean }) => (
-            <OverflowProbe text={long ? "x".repeat(300) : "short"} width={100} />
-        );
+        const Rerenderable = ({ long }: { long: boolean }) => {
+            return <OverflowProbe text={long ? "x".repeat(300) : "short"} width={100} />;
+        };
         const screen = await render(<Rerenderable long={false} />);
         await expect.element(screen.getByTestId("status")).toHaveTextContent("fits");
 

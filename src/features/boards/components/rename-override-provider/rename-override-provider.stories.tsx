@@ -13,15 +13,17 @@ import { RenameOverrideProvider } from "./rename-override-provider";
  */
 const SHELL_BOARDS = createBoards(3);
 
-const DashboardShell = () => (
-    <RenameOverrideProvider>
-        <DashboardHeader displayName="Ada Lovelace" boards={SHELL_BOARDS} />
+const DashboardShell = () => {
+    return (
+        <RenameOverrideProvider>
+            <DashboardHeader displayName="Ada Lovelace" boards={SHELL_BOARDS} />
 
-        <div className="flex h-100 w-75 flex-col">
-            <BoardList boards={SHELL_BOARDS} />
-        </div>
-    </RenameOverrideProvider>
-);
+            <div className="flex h-100 w-75 flex-col">
+                <BoardList boards={SHELL_BOARDS} />
+            </div>
+        </RenameOverrideProvider>
+    );
+};
 
 const meta: Meta<typeof RenameOverrideProvider> = {
     component: RenameOverrideProvider,
@@ -30,7 +32,9 @@ const meta: Meta<typeof RenameOverrideProvider> = {
         /* The first fixture board is open, so its title is the one a rename has to move. */
         nextjs: { appDirectory: true, navigation: { pathname: buildBoardDetailPath(SHELL_BOARDS[0].id) } },
     },
-    render: () => <DashboardShell />,
+    render: () => {
+        return <DashboardShell />;
+    },
 };
 
 export default meta;

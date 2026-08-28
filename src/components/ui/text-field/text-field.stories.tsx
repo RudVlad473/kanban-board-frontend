@@ -26,11 +26,13 @@ export const Idle: Story = {};
  */
 export const Focused: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&_input]:ring-2 [&_input]:ring-ring-focus [&_input]:ring-offset-2">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_input]:ring-2 [&_input]:ring-ring-focus [&_input]:ring-offset-2">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -90,15 +92,17 @@ export const Password: Story = {
 };
 
 export const Sizes: Story = {
-    render: (args) => (
-        <div className="flex w-64 flex-col gap-4">
-            <TextField {...args} size="sm" label="Small" />
+    render: (args) => {
+        return (
+            <div className="flex w-64 flex-col gap-4">
+                <TextField {...args} size="sm" label="Small" />
 
-            <TextField {...args} size="md" label="Medium" />
+                <TextField {...args} size="md" label="Medium" />
 
-            <TextField {...args} size="lg" label="Large" />
-        </div>
-    ),
+                <TextField {...args} size="lg" label="Large" />
+            </div>
+        );
+    },
 };
 
 /*
@@ -107,9 +111,11 @@ export const Sizes: Story = {
  * state's visual baseline.
  */
 export const LongValue: Story = {
-    render: (args) => (
-        <div style={{ width: "320px" }}>
-            <TextField {...args} defaultValue={"x".repeat(300)} />
-        </div>
-    ),
+    render: (args) => {
+        return (
+            <div style={{ width: "320px" }}>
+                <TextField {...args} defaultValue={"x".repeat(300)} />
+            </div>
+        );
+    },
 };

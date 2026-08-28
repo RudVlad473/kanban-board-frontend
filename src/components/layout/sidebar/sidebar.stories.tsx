@@ -16,11 +16,13 @@ const meta: Meta<typeof Sidebar> = {
     component: Sidebar,
     parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
     decorators: [
-        (Story) => (
-            <div className="flex h-150">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="flex h-150">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 

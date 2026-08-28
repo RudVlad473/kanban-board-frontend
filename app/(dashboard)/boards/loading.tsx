@@ -6,6 +6,8 @@ import { BoardViewSkeleton } from "@/features/boards/components/board-view-skele
  * board detail route or renders `BoardsEmptyState`, and the column shape is a better first paint
  * than a blank frame for either, so a bespoke skeleton for a redirect is not worth building (D-03).
  */
-const BoardsLoading = () => <BoardViewSkeleton />;
+const BoardsLoading = () => {
+    return <BoardViewSkeleton />;
+};
 
 export default BoardsLoading;
