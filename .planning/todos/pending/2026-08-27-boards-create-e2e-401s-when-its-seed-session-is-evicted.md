@@ -54,3 +54,26 @@ sign-up session instead of signing in again — see the comment in `e2e/seed.sh`
 ## Found by
 
 CI run 33066389570 on `visual-baselines-update-17`, 2026-08-27.
+
+## Reproduced under concurrent CI runs (2026-08-28)
+
+Two CI runs on byte-identical trees overlapped for seven minutes against the one shared nonprod
+backend. Both failed e2e; each failed a *different* pair of tests. A third run on the same content,
+with the backend to itself, passed. The failing pairs were `columns-create` + `columns-delete`
+(a 401 from `seed.sh column`, the symptom this todo already describes) and `columns-reorder` +
+`route-guard` (a `toHaveURL` assertion after a redirect that should not have happened).
+
+| Run | Commit | Window (UTC) | e2e |
+|-------------|---------|-------------|------|
+| 33157704494 | 9973433 | 09:02-09:09 | pass |
+| 33158280373 | 451e094 | 09:10-09:18 | fail |
+| 33158332950 | 451e094 | 09:11-09:19 | fail |
+
+`451e094` changed only `CLAUDE.md`, so the code cannot account for the difference. Re-running
+33158332950's failed job alone went green with no other change.
+
+This widens the todo: the two-session cap is not only a within-suite budgeting problem, it is a
+**cross-run** one. Nothing scopes seeded accounts per run, so two suites racing the same backend
+evict each other's sessions, and the eviction surfaces as whatever assertion happened to be next
+rather than as an auth error. Any fix has to survive two CI runs overlapping, which is normal
+whenever a branch is pushed and then merged.
