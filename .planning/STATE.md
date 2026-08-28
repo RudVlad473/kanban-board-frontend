@@ -5,9 +5,9 @@ current_phase: 4
 current_phase_name: Task & Subtask Workflow
 status: planning
 stopped_at: Phase 03 complete, ready to plan Phase 4
-last_updated: "2026-08-27T19:20:40.967Z"
-last_activity: 2026-08-27
-last_activity_desc: Phase 03 complete, transitioned to Phase 4
+last_updated: "2026-08-28T08:05:00.000Z"
+last_activity: 2026-08-28
+last_activity_desc: Post-phase-03 convention review; ready to plan Phase 4
 state_head: 5ab43e702e8035c087f3f6acbfd3f4372beaaaf1
 progress:
   total_phases: 6
@@ -408,3 +408,55 @@ writing this pause rather than leaving an orphaned background agent/worktree).
 Next: resume Phase 3 at Wave 5 — plan `03-07-PLAN.md` (COLUMN-01 completed: empty-state CTA,
 post-create auto-scroll, the 9-column nudge, and the duplicate-name inline branch — now known to be
 client-only UX per the R5 refutation above) via `/gsd-execute-phase 3`.
+
+**This session (2026-08-28, post-phase-03 convention review):** Resumed via `/gsd-resume-work`.
+Removed two stale phase-03 handoff artifacts (`HANDOFF.json`, the phase `.continue-here.md`) that
+still pointed resume at Wave 5, long since shipped. The user then raised four review points about
+the phase-03 implementation; two premises turned out to be wrong, and checking them surfaced two
+real defects nobody had flagged.
+
+1. **Force sign-out is not a rule violation and is not from phase 03.** ADR tech/0019 bans Route
+   Handlers; ADR tech/0026 carves out exactly one file, because a Suspense-streamed Server
+   Component cannot legally mutate cookies. `scripts/check-no-route-handlers.mjs` hard-codes a
+   one-entry allowlist, so a second handler still fails the build. Landed in Phase 02.2, amended in
+   plan 02-11. Incidentally re-verified live this session: the dev log shows the real
+   `GET /api/session/force-sign-out 307` hop, and e2e SESSION-01/03 cover both directions.
+
+2. **`renderSignInForm` never violated the rule** — it is a zero-argument alias for
+   `render(<Empty />)` and configures nothing; the rule bans *re-configuring* a story. But the audit
+   the question prompted found `sidebar.test.tsx` spreading `defaultIsExpanded` and `children` onto
+   a composed story reached through a helper parameter. That file is not exempt and `renders:check`
+   passed anyway, because the checker only ever saw JSX tags bound by a sibling import.
+   `findStoryPropOverrideViolations` now resolves story bindings through aliases, destructured
+   defaults and typed parameters, and treats JSX children as a prop. Reports outside
+   `MIGRATION_EXEMPTIONS` so the ten tracked ratchets do not shift. Repository-wide result after
+   replacing the helper with three named stories: zero. The checker's own guidance text, which
+   claimed all same-file render helpers were banned, was corrected — it never was the rule
+   (commit `e8e8601`, ADR tech/0025 amended).
+
+3. **Action-stub spike run** (`.planning/spikes/action-stub-automation/FINDINGS.md`, commit
+   `014fc46`). Eliminating the doubling is impossible: the real action module cannot even be
+   *imported* in the browser project — `next/cache` throws `process is not defined` before
+   `node:crypto` is reached. ADR tech/0020's unwind trigger has not fired
+   (`@storybook/nextjs-vite@10.5.7` ships no `"use server"` transform). Generating them *works*: a
+   prototype Vite plugin plus one generic recorder replaces all twelve stub modules and the
+   twelve-entry alias register, demonstrated against the real create-column action. Full browser run
+   left 104 tests in 4 files failing, all on one gap — a generic recorder cannot invent a
+   domain-shaped default success payload. **Not adopted; awaiting a decision.** Also found: ADR
+   tech/0020's register documents 4 stubs where 12 exist.
+
+4. **JSX return style decided** (ADR tech/0028, commit `7d5dd21`). Measured 76/8 block-vs-concise
+   for named components against 7/58 the other way for inline callbacks — two opposite de-facto
+   conventions, both inside single files. User chose "always explicit return"; all 66 concise JSX
+   bodies converted, enforced by two `no-restricted-syntax` selectors rather than
+   `arrow-body-style: always`, which cannot be scoped to a JSX body.
+
+Verified end to end, not just claimed: `pnpm test` 1304/1304, `pnpm test:e2e` 43/43 against the real
+backend and browser, `CI=1 pnpm test:visual` 260/260 compared against baselines, `pnpm build`,
+`tsc`, `lint`, `format` and all seven check scripts. **CI run 33152938843 green on all four jobs**
+(`secrets`, `quality`, `e2e`, `visual`). Everything pushed; tree clean.
+
+**Open decision carried forward:** whether to adopt the stub-generation plugin, and how to supply
+the per-action default success payload it cannot infer. See the spike's FINDINGS.md.
+
+**Next:** plan Phase 4 (Task & Subtask Workflow) via `/gsd-plan-phase 4`.
