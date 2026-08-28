@@ -41,7 +41,7 @@ const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 /*
  * Real stub modules (not Vitest mocks; must stay before the general `@` alias) for Server Actions
  * whose import chain reaches `node:crypto` — docs/adr/tech/0020's "Server Action alias carve-out".
- * Transitional: an entry still shadows the plugin; 04-08 unwound the auth/theme four, 04-09/10 the rest.
+ * Transitional: an entry still shadows the plugin; 04-08 unwound auth/theme, 04-09 board, 04-10 column.
  */
 const serverActionStubAlias = [
     /*
@@ -49,22 +49,6 @@ const serverActionStubAlias = [
      * of any other, so this list's order carries no meaning — re-check that before adding an entry
      * whose name extends an existing one.
      */
-    {
-        find: "@/features/boards/actions/create-board-columns-action",
-        replacement: path.resolve(rootDir, "src/test-utils/create-board-columns-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/create-board-action",
-        replacement: path.resolve(rootDir, "src/test-utils/create-board-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/rename-board-action",
-        replacement: path.resolve(rootDir, "src/test-utils/rename-board-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/delete-board-action",
-        replacement: path.resolve(rootDir, "src/test-utils/delete-board-action-storybook-stub.ts"),
-    },
     {
         find: "@/features/boards/actions/create-column-action",
         replacement: path.resolve(rootDir, "src/test-utils/create-column-action-storybook-stub.ts"),

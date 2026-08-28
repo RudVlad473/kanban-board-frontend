@@ -5,22 +5,17 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
-import { createBoards } from "@/test-utils/factories/board";
+import { createBoard, createBoards } from "@/test-utils/factories/board";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
-import {
-    holdNextRenameBoard,
-    queueRenameBoardFailure,
-    renameBoardActionCalls,
-    resetRenameBoardStub,
-    settleRenameBoard,
-} from "@/test-utils/rename-board-action-storybook-stub";
 
 import * as stories from "./rename-override-provider.stories";
 
@@ -33,6 +28,12 @@ vi.mock("next/navigation", () =>
 vi.mock("next/link", () => createNextLinkShim());
 
 const { SidebarAndHeader } = composeStories(stories);
+
+/*
+ * Looked up off the imported binding, so `queue` accepts only `renameBoardAction`'s own awaited
+ * result and no module-key string is spelled here (04-CONTEXT.md D-01).
+ */
+const renameBoardStub = actionStub(renameBoardAction);
 
 /*
  * Both read off the DOM rather than by role: Base UI marks the tree outside an open dialog
@@ -54,10 +55,7 @@ const renameOpenBoard = async (nextName: string): Promise<void> => {
 describeForEachDevice({
     name: "RenameOverrideProvider",
     body: () => {
-        beforeEach(() => {
-            resetRenameBoardStub();
-        });
-
+        // No stub reset here: D-04's global `afterEach` resets every registered stub centrally.
         it("names the open board in the header before any rename", async () => {
             // Act
             await render(<SidebarAndHeader />);
@@ -74,7 +72,11 @@ describeForEachDevice({
         it("moves the header title and the sidebar row in the same instant, before the write resolves", async () => {
             // Arrange
             await render(<SidebarAndHeader />);
-            holdNextRenameBoard();
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+            renameBoardStub.hold();
 
             // Act — submit, then observe while the action is demonstrably still unresolved.
             await renameOpenBoard("Platform Relaunch");
@@ -88,11 +90,11 @@ describeForEachDevice({
             expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
 
             // Act — let the write land.
-            settleRenameBoard();
+            renameBoardStub.settle();
 
             // Assert — both still carry it once the write settles.
             await vi.waitFor(() => {
-                expect(renameBoardActionCalls).toHaveLength(1);
+                expect(renameBoardStub.calls).toHaveLength(1);
             });
             expect(getHeaderTitle()).toBe("Platform Relaunch");
             expect(getSidebarRowNames()[0]).toBe("Platform Relaunch");
@@ -101,7 +103,7 @@ describeForEachDevice({
         it("reverts the header title as well as the sidebar row when the rename fails", async () => {
             // Arrange
             await render(<SidebarAndHeader />);
-            queueRenameBoardFailure(RESULT_STATUS.ERROR);
+            renameBoardStub.queue({ status: RESULT_STATUS.ERROR });
 
             // Act
             await renameOpenBoard("Platform Relaunch");
@@ -116,7 +118,11 @@ describeForEachDevice({
         it("leaves the other rows' names untouched while one row is overridden", async () => {
             // Arrange
             await render(<SidebarAndHeader />);
-            holdNextRenameBoard();
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+            renameBoardStub.hold();
 
             // Act
             await renameOpenBoard("Platform Relaunch");
@@ -125,7 +131,7 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(getSidebarRowNames()).toEqual(["Platform Relaunch", "Fixture Board 2", "Fixture Board 3"]);
             });
-            settleRenameBoard();
+            renameBoardStub.settle();
         });
     },
 });
