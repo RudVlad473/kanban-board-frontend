@@ -9,33 +9,16 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { createBoardAction } from "@/features/boards/actions/create-board-action";
+import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
+import { deleteBoardAction } from "@/features/boards/actions/delete-board-action";
+import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
-/*
- * Imported from the stub module directly, not through the action specifier `vitest.config.ts`
- * aliases onto it — the alias only exists at runtime, so TypeScript would resolve the real module
- * and never see these programmable exports. Both paths are the same module instance here.
- */
-import { queueCreateBoardFailure, resetCreateBoardStub } from "@/test-utils/create-board-action-storybook-stub";
-import {
-    createBoardColumnsActionCalls,
-    queueCreateBoardColumnsFailure,
-    resetCreateBoardColumnsStub,
-} from "@/test-utils/create-board-columns-action-storybook-stub";
-import {
-    deleteBoardActionCalls,
-    queueDeleteBoardFailure,
-    resetDeleteBoardStub,
-} from "@/test-utils/delete-board-action-storybook-stub";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { createBoard } from "@/test-utils/factories/board";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
-import {
-    holdNextRenameBoard,
-    queueRenameBoardFailure,
-    renameBoardActionCalls,
-    resetRenameBoardStub,
-    settleRenameBoard,
-} from "@/test-utils/rename-board-action-storybook-stub";
 
 import * as stories from "./board-list.stories";
 
@@ -70,8 +53,17 @@ const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, DeleteOpen, Sing
 const SERVER_RENAMED_NAME = "Renamed On The Server";
 const SERVER_CHANGED_NAME = "Changed Somewhere Else";
 
-/** The id `create-board-action-storybook-stub.ts` always resolves with. */
+/** The id every create-board success below queues, and so the id a landed create navigates to. */
 const STUB_BOARD_ID = "stub-board-id";
+
+/*
+ * One recorder per action, looked up off the imported binding — `queue` accepts only that action's
+ * own awaited result and `calls` is typed as its first parameter (04-CONTEXT.md D-01).
+ */
+const createBoardStub = actionStub(createBoardAction);
+const createBoardColumnsStub = actionStub(createBoardColumnsAction);
+const renameBoardStub = actionStub(renameBoardAction);
+const deleteBoardStub = actionStub(deleteBoardAction);
 
 /*
  * Scoped to the notifications region, since the create modal is a `dialog` too. Reading the
@@ -148,10 +140,7 @@ describeForEachDevice({
     name: "BoardList",
     body: () => {
         beforeEach(() => {
-            resetCreateBoardStub();
-            resetCreateBoardColumnsStub();
-            resetRenameBoardStub();
-            resetDeleteBoardStub();
+            // No stub reset here: D-04's global `afterEach` resets every registered stub centrally.
             mockPush.mockClear();
             mockReplace.mockClear();
             currentPathname.value = ROUTE.BOARDS;
@@ -250,6 +239,8 @@ describeForEachDevice({
         it("closes the modal, navigates to the new board and raises no toast when every column lands", async () => {
             // Arrange
             await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [] });
 
             // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
@@ -265,7 +256,8 @@ describeForEachDevice({
         it("still closes the modal and navigates when some columns failed — whatever landed is kept", async () => {
             // Arrange
             await render(<Empty />);
-            queueCreateBoardColumnsFailure(["Doing", "Done"]);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Doing", "Done"] });
 
             // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
@@ -291,7 +283,7 @@ describeForEachDevice({
             // Assert — the modal is still open, reporting the row, and nothing was sent.
             expect(await screen.findByText("Can't be empty")).toBeInTheDocument();
             expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
-            expect(createBoardColumnsActionCalls).toHaveLength(0);
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
             expect(mockPush).not.toHaveBeenCalled();
         });
 
@@ -299,6 +291,7 @@ describeForEachDevice({
         it("creates a board with no columns when every row is removed", async () => {
             // Arrange
             await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
 
             // Act
             await submitNewBoard({ name: "Launch", columns: [] });
@@ -307,7 +300,7 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
             });
-            expect(createBoardColumnsActionCalls).toHaveLength(0);
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
             expect(getRaisedToastTexts()).toHaveLength(0);
         });
 
@@ -318,7 +311,7 @@ describeForEachDevice({
         it("names the clash inline and keeps the modal open when the board name is already taken", async () => {
             // Arrange
             await render(<Empty />);
-            queueCreateBoardFailure(RESULT_STATUS.DUPLICATE);
+            createBoardStub.queue({ status: RESULT_STATUS.DUPLICATE });
 
             // Act
             await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
@@ -328,7 +321,7 @@ describeForEachDevice({
                 "A board with that name already exists. Choose a different name.",
             );
             expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
-            expect(createBoardColumnsActionCalls).toHaveLength(0);
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
             expect(mockPush).not.toHaveBeenCalled();
         });
 
@@ -336,7 +329,7 @@ describeForEachDevice({
         it("keeps the generic create-failure copy for a refusal with nothing distinct to say", async () => {
             // Arrange
             await render(<Empty />);
-            queueCreateBoardFailure(RESULT_STATUS.ERROR);
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
 
             // Act
             await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
@@ -354,7 +347,8 @@ describeForEachDevice({
         it("narrows one failure toast across successive retries and closes it when the last column lands", async () => {
             // Arrange
             await render(<Empty />);
-            queueCreateBoardColumnsFailure(["Doing", "Done"]);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Doing", "Done"] });
 
             // Act — create with three named columns, two of which fail.
             await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
@@ -366,7 +360,7 @@ describeForEachDevice({
             expect(getRaisedToastTexts()[0]).toContain("Couldn't create 2 column(s).");
 
             // Act — retry those two; one fails again.
-            queueCreateBoardColumnsFailure(["Done"]);
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Done"] });
             await userEvent.click(screen.getByRole("button", { name: "Retry" }));
 
             // Assert — still ONE toast (same id, upserted), with a strictly smaller failed set.
@@ -376,6 +370,7 @@ describeForEachDevice({
             expect(getRaisedToastTexts()).toHaveLength(1);
 
             // Act — retry the last one; it succeeds.
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [] });
             await userEvent.click(screen.getByRole("button", { name: "Retry" }));
 
             // Assert — the toast closes rather than naming a column that now exists.
@@ -387,7 +382,7 @@ describeForEachDevice({
              * Every attempt was scoped to exactly what was still failing, each set a strict subset
              * of the one before it.
              */
-            expect(createBoardColumnsActionCalls.map((call) => call.names)).toEqual([
+            expect(createBoardColumnsStub.calls.map((call) => call.names)).toEqual([
                 ["Todo", "Doing", "Done"],
                 ["Doing", "Done"],
                 ["Done"],
@@ -423,7 +418,11 @@ describeForEachDevice({
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
-            holdNextRenameBoard();
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+            renameBoardStub.hold();
 
             // Act — submit, then observe while the action is still unresolved.
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
@@ -435,11 +434,11 @@ describeForEachDevice({
             expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
 
             // Act — let the write land.
-            settleRenameBoard();
+            renameBoardStub.settle();
 
             // Assert — the name stays and nothing was announced, the modal having closed long before.
             await vi.waitFor(() => {
-                expect(renameBoardActionCalls).toHaveLength(1);
+                expect(renameBoardStub.calls).toHaveLength(1);
             });
             expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
             expect(getRaisedToastTexts()).toHaveLength(0);
@@ -453,7 +452,11 @@ describeForEachDevice({
         it("does not show an unrelated board's edit modal as pending while another row's rename is in flight", async () => {
             // Arrange
             await render(<Populated />);
-            holdNextRenameBoard();
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+            renameBoardStub.hold();
 
             // Act — start a rename on row 1; the modal closes instantly (D-02) while its write is held.
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
@@ -466,7 +469,7 @@ describeForEachDevice({
             expect(await screen.findByRole("heading", { name: "Edit Board" })).toBeInTheDocument();
             expect(screen.getByRole("button", { name: "Save Changes" })).toBeEnabled();
 
-            settleRenameBoard();
+            renameBoardStub.settle();
         });
 
         /*
@@ -477,7 +480,11 @@ describeForEachDevice({
         it("keeps the same row's Edit Board entry inert while its own rename is in flight", async () => {
             // Arrange
             await render(<Populated />);
-            holdNextRenameBoard();
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+            renameBoardStub.hold();
 
             // Act — submit a rename on row 1; the modal closes instantly while the write is held.
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
@@ -492,21 +499,25 @@ describeForEachDevice({
             );
             expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
 
-            settleRenameBoard();
+            renameBoardStub.settle();
         });
 
         it("sends the row's own id and current version with the rename", async () => {
             // Arrange
             await render(<Populated />);
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
 
             // Assert
             await vi.waitFor(() => {
-                expect(renameBoardActionCalls).toHaveLength(1);
+                expect(renameBoardStub.calls).toHaveLength(1);
             });
-            expect(renameBoardActionCalls[0]).toEqual({
+            expect(renameBoardStub.calls[0]).toEqual({
                 boardId: Populated.args.boards?.[0]?.id,
                 name: "Platform Relaunch",
                 version: Populated.args.boards?.[0]?.version,
@@ -521,7 +532,7 @@ describeForEachDevice({
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
-            queueRenameBoardFailure(RESULT_STATUS.ERROR);
+            renameBoardStub.queue({ status: RESULT_STATUS.ERROR });
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
@@ -537,7 +548,7 @@ describeForEachDevice({
         it("raises the authored rename-failure copy, with no text from the rejection", async () => {
             // Arrange
             await render(<Populated />);
-            queueRenameBoardFailure(RESULT_STATUS.ERROR);
+            renameBoardStub.queue({ status: RESULT_STATUS.ERROR });
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
@@ -557,7 +568,7 @@ describeForEachDevice({
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
-            queueRenameBoardFailure(RESULT_STATUS.CONFLICT);
+            renameBoardStub.queue({ status: RESULT_STATUS.CONFLICT });
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
@@ -578,7 +589,7 @@ describeForEachDevice({
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
-            queueRenameBoardFailure(RESULT_STATUS.DUPLICATE);
+            renameBoardStub.queue({ status: RESULT_STATUS.DUPLICATE });
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Fixture Board 2" });
@@ -594,7 +605,7 @@ describeForEachDevice({
         it("tells the user to sign in again when the rename is refused as unauthenticated", async () => {
             // Arrange
             await render(<Populated />);
-            queueRenameBoardFailure(RESULT_STATUS.UNAUTHENTICATED);
+            renameBoardStub.queue({ status: RESULT_STATUS.UNAUTHENTICATED });
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
@@ -609,7 +620,7 @@ describeForEachDevice({
         it("says the board is gone when the rename is refused as not visible to this account", async () => {
             // Arrange
             await render(<Populated />);
-            queueRenameBoardFailure(RESULT_STATUS.NOT_FOUND);
+            renameBoardStub.queue({ status: RESULT_STATUS.NOT_FOUND });
 
             // Act
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
@@ -634,7 +645,7 @@ describeForEachDevice({
             // Assert — that board is named, and nothing has been deleted yet.
             expect(await screen.findByRole("heading", { name: "Delete this board?" })).toBeInTheDocument();
             expect(screen.getByText(/'Fixture Board 2' board\?/)).toBeInTheDocument();
-            expect(deleteBoardActionCalls).toHaveLength(0);
+            expect(deleteBoardStub.calls).toHaveLength(0);
         });
 
         it("renders the delete confirmation when staged open", async () => {
@@ -649,13 +660,14 @@ describeForEachDevice({
         it("sends the row's own id with the delete and moves nobody when it was not the open board", async () => {
             // Arrange — the board list route, so no board is open at all.
             await render(<Populated />);
+            deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
 
             // Act
             await deleteBoardFromRow("Fixture Board 2");
 
             // Assert
             await vi.waitFor(() => {
-                expect(deleteBoardActionCalls).toEqual([{ boardId: Populated.args.boards?.[1]?.id }]);
+                expect(deleteBoardStub.calls).toEqual([{ boardId: Populated.args.boards?.[1]?.id }]);
             });
             expect(mockReplace).not.toHaveBeenCalled();
             expect(mockPush).not.toHaveBeenCalled();
@@ -670,6 +682,7 @@ describeForEachDevice({
             const boards = Populated.args.boards ?? [];
             currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
             await render(<Populated />);
+            deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
 
             // Act
             await deleteBoardFromRow("Fixture Board 1");
@@ -687,6 +700,7 @@ describeForEachDevice({
             const boards = SingleBoard.args.boards ?? [];
             currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
             await render(<SingleBoard />);
+            deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
 
             // Act
             await deleteBoardFromRow("Fixture Board 1");
@@ -705,7 +719,7 @@ describeForEachDevice({
             // Arrange
             const boards = Populated.args.boards ?? [];
             currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
-            queueDeleteBoardFailure(RESULT_STATUS.ERROR);
+            deleteBoardStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
 
@@ -724,7 +738,7 @@ describeForEachDevice({
 
         it("closes the confirmation once the delete settles, whichever way it went", async () => {
             // Arrange
-            queueDeleteBoardFailure(RESULT_STATUS.ERROR);
+            deleteBoardStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<Populated />);
 
             // Act
@@ -743,6 +757,10 @@ describeForEachDevice({
         it("clears the override once the refreshed props carry it, so a later server change is rendered", async () => {
             // Arrange
             await render(<ServerPropsAdvance />);
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: SERVER_RENAMED_NAME, version: 1 }),
+            });
 
             // Act — rename optimistically, then land the refreshed server render carrying that name.
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: SERVER_RENAMED_NAME });
