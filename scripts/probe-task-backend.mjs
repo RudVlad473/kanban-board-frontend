@@ -404,11 +404,15 @@ const probeT2 = async ({ cookie, userId, boardId, columns }) => {
         ...base,
         taskId,
         subtaskId,
-        body: { title: "T2 Subtask Renamed Via Full Path", isCompleted: false, version: subtaskVersion },
+        body: { title: "T2 Sub Full", isCompleted: false, version: subtaskVersion },
     });
     printResult({ label: "subtask PUT, full ancestors", result: subtaskFull });
     subtaskVersion = nextVersion({ result: subtaskFull, fallback: subtaskVersion });
 
+    /*
+     * Titles here stay short on purpose: a long one fails the update-side length bound (T8) and
+     * would confound the path question this block exists to answer.
+     */
     const subtaskPlaceholder = await authedFetch({
         path:
             `/boards/%7BboardId%7D/columns/%7BcolumnId%7D/tasks/%7BtaskId%7D/subtasks/${subtaskId}` +
@@ -416,7 +420,7 @@ const probeT2 = async ({ cookie, userId, boardId, columns }) => {
         cookie,
         init: jsonInit({
             method: "PUT",
-            body: { title: "T2 Subtask Renamed Via Placeholder", isCompleted: false, version: subtaskVersion },
+            body: { title: "T2 Sub Placeholder", isCompleted: false, version: subtaskVersion },
         }),
     }).then(readResponse);
     printResult({ label: "subtask PUT, placeholder ancestors", result: subtaskPlaceholder });
@@ -868,8 +872,50 @@ const probeT8 = async ({ cookie, userId, boardId, columns }) => {
     printResult({ label: "PUT 33-char title", result: longPut });
     version = nextVersion({ result: longPut, fallback: version });
 
+    /*
+     * 2 and 33 both come back "cannot be empty", so the in-bounds ends decide whether it is a 3-32
+     * bound with misleading copy or something else entirely.
+     */
+    const minPut = await updateTask({ ...base, taskId, body: { title: "abc", version } });
+    printResult({ label: "PUT 3-char title (lower bound)", result: minPut });
+    version = nextVersion({ result: minPut, fallback: version });
+
+    const maxPut = await updateTask({ ...base, taskId, body: { title: "y".repeat(32), version } });
+    printResult({ label: "PUT 32-char title (upper bound)", result: maxPut });
+    version = nextVersion({ result: maxPut, fallback: version });
+
+    console.log("  --- subtask update side (UpdateSubtaskRequestDTO also declares no bounds) ---");
+    const subtask = await createSubtask({ ...base, taskId, body: { title: "T8 Subtask" } });
+    let subtaskVersion = subtask.json?.version;
+
+    const subtaskMax = await updateSubtask({
+        ...base,
+        taskId,
+        subtaskId: subtask.json?.id,
+        body: { title: "z".repeat(32), isCompleted: false, version: subtaskVersion },
+    });
+    printResult({ label: "subtask PUT 32-char title", result: subtaskMax });
+    subtaskVersion = nextVersion({ result: subtaskMax, fallback: subtaskVersion });
+
+    const subtaskOver = await updateSubtask({
+        ...base,
+        taskId,
+        subtaskId: subtask.json?.id,
+        body: { title: "z".repeat(33), isCompleted: false, version: subtaskVersion },
+    });
+    printResult({ label: "subtask PUT 33-char title", result: subtaskOver });
+    subtaskVersion = nextVersion({ result: subtaskOver, fallback: subtaskVersion });
+
+    const subtaskEmpty = await updateSubtask({
+        ...base,
+        taskId,
+        subtaskId: subtask.json?.id,
+        body: { title: "", isCompleted: false, version: subtaskVersion },
+    });
+    printResult({ label: 'subtask PUT empty title ""', result: subtaskEmpty });
+
     const snapshot = await snapshotOf({ cookie, userId, boardId });
-    console.log(`  task after both PUTs: ${JSON.stringify(findTaskById({ snapshot, taskId }))}`);
+    console.log(`  task after the PUTs: ${JSON.stringify(findTaskById({ snapshot, taskId }))}`);
     printTasks({ label: "after T8", column: findColumnById({ snapshot, columnId }) });
 };
 
@@ -892,6 +938,42 @@ const probeT9 = async ({ cookie, userId, boardId, columns }) => {
 
     const filled = await createTask({ ...base, body: { title: "T9 Filled Description", description: "a real one" } });
     printResult({ label: 'POST with description: "a real one"', result: filled });
+
+    /*
+     * The Edit Task form must be able to CLEAR a description, so the update side is the half that
+     * decides what a cleared textarea sends.
+     */
+    console.log("  --- update side: how does an Edit Task form clear a description? ---");
+    const taskId = filled.json?.id;
+    let version = filled.json?.version;
+
+    /*
+     * The changed-value case runs FIRST as the control: without it, "null left it alone" cannot be
+     * told apart from "description is ignored on update entirely".
+     */
+    const putChanged = await updateTask({
+        ...base,
+        taskId,
+        body: { title: "T9 Filled", description: "a changed one", version },
+    });
+    printResult({ label: 'PUT with description: "a changed one" (control)', result: putChanged });
+    version = nextVersion({ result: putChanged, fallback: version });
+
+    const putEmpty = await updateTask({ ...base, taskId, body: { title: "T9 Filled", description: "", version } });
+    printResult({ label: 'PUT with description: ""', result: putEmpty });
+    version = nextVersion({ result: putEmpty, fallback: version });
+
+    const putNull = await updateTask({ ...base, taskId, body: { title: "T9 Null", description: null, version } });
+    printResult({ label: "PUT with description: null", result: putNull });
+    version = nextVersion({ result: putNull, fallback: version });
+
+    const putOmitted = await updateTask({ ...base, taskId, body: { title: "T9 Omitted", version } });
+    printResult({ label: "PUT with description omitted", result: putOmitted });
+    version = nextVersion({ result: putOmitted, fallback: version });
+
+    const putBlank = await updateTask({ ...base, taskId, body: { title: "T9 Blank", description: " ", version } });
+    printResult({ label: 'PUT with description: " " (single space)', result: putBlank });
+    version = nextVersion({ result: putBlank, fallback: version });
 
     /* Reads the raw /full body, not the snapshot — the snapshot would invent an absent key. */
     const full = await readBoardFull({ cookie, userId, boardId });
