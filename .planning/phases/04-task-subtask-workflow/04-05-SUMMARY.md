@@ -10,13 +10,13 @@ requires:
 provides:
   - "`heading-m` (15px / 700 / 19px) — the mock's sixth type role, the task card title's token"
   - "`Textarea` primitive at `src/components/ui/textarea/` with stories, browser tests, axe pass and 36 visual baselines"
-  - "`Checkbox`'s `hasStrikethroughWhenChecked` opt-in now carries the completed-subtask label colour as well as the strikethrough"
+  - "`Checkbox`'s `hasStrikethroughWhenChecked` opt-in now carries the completed-subtask label colour (55% of primary) as well as the strikethrough"
 affects: [task-card, add-task-modal, edit-task-modal, subtask-checklist-row, task-detail-modal]
 
 actuals:
   tokens: 6987
   tasks: 3
-  commits: 5
+  commits: 6
 
 tech-stack:
   added: []
@@ -41,7 +41,7 @@ key-files:
 key-decisions:
   - "`heading-m` is asserted as declared-once-in-@theme-and-never-overridden-in-.dark, because the dark build source carries only colour tokens — the plan's literal 'present in both blocks' assertion is unsatisfiable without changing Phase 1's pipeline"
   - "`Textarea` ships no `size` variant: TextField's size axis maps to fixed heights, which contradicts the min-h-28 floor this box grows from"
-  - "The completed-subtask colour was left exactly as UI-SPEC specifies and the axe failure left unsuppressed, rather than silently choosing between the mock and WCAG AA"
+  - "The completed-subtask colour is 55% of `--color-text-primary`, not the mock's 50%: 50% fails WCAG AA at 3.87:1, and 55% is the lowest whole percent clearing 4.5:1. Kept as a derived opacity rule rather than a hex literal, and `04-UI-SPEC.md` was amended to match"
 
 patterns-established:
   - "Tier-2 off-scale `min-h-28` (112px) joins the shared precedent set, sourced from Tailwind v4's dynamic scale on the same 4px base"
@@ -86,40 +86,42 @@ coverage:
         ref: "src/components/ui/checkbox/checkbox.test.tsx#leaves a checked label's colour and decoration untouched when hasStrikethroughWhenChecked is absent"
         status: pass
       - kind: integration
-        ref: "pnpm test:a11y — checkbox.stories.tsx > Checked With Strikethrough (color-contrast 3.86:1)"
-        status: fail
-    human_judgment: true
-    rationale: "The colour is provably correct against the mock (#7a7c87 rendered vs #797B87 sampled on p5) and provably fails WCAG AA. Which authority wins is a product/accessibility decision, not an executor call."
+        ref: "pnpm test:a11y — checkbox.stories.tsx > Checked With Strikethrough (color-contrast clean at 55%)"
+        status: pass
+      - kind: automated_ui
+        ref: "playwright:components-ui-checkbox--checked-with-strikethrough-{desktop,mobile}-{light,dark}.png (re-recorded at 55%)"
+        status: pass
+    human_judgment: false
 
-duration: 76 min
+duration: 105 min
 completed: 2026-08-28
-status: halted
+status: complete
 ---
 
 # Phase 4 Plan 05: Design-System Prerequisites Summary
 
-**Added the mock's sixth type role (`heading-m`), a `Textarea` primitive mirroring `TextField`'s Field anatomy through Base UI's `render` prop, and the colour half of `Checkbox`'s completed-label opt-in — which turned out to fail WCAG AA at exactly the value the mock specifies.**
+**Added the mock's sixth type role (`heading-m`), a `Textarea` primitive mirroring `TextField`'s Field anatomy through Base UI's `render` prop, and the colour half of `Checkbox`'s completed-label opt-in — raised from the mock's 50% to 55% because 50% fails WCAG AA.**
 
 ## Performance
 
-- **Duration:** 76 min
-- **Started:** 2026-08-28T14:05Z
-- **Completed:** 2026-08-28T13:26Z (UTC clock; wall time above)
-- **Tasks:** 3 of 3 implemented, 1 blocked on an unresolved decision
-- **Files modified:** 11 source files + 40 visual baselines
+- **Duration:** 105 min (76 min to implementation, then a decision round-trip and re-verification)
+- **Started:** 2026-08-28T13:05Z
+- **Completed:** 2026-08-28T13:55Z
+- **Tasks:** 3 of 3 complete
+- **Files modified:** 12 source files + 40 visual baselines
 
 ## Accomplishments
 
 - `heading-m` (Plus Jakarta Sans / 700 / 15px / 19px) is in the token pipeline, asserted in both themes, with the existing five roles byte-identical.
 - `Textarea` ships at `src/components/ui/textarea/` — nine stories, 24 browser assertions across both viewports, an axe pass, and 36 Playwright baselines in light and dark.
-- `Checkbox`'s `hasStrikethroughWhenChecked` now applies `text-text-primary/50` alongside the strikethrough, closing RESEARCH Pitfall 16 at the primitive.
-- Surfaced a genuine conflict the plan did not anticipate: the specified completed-label colour fails WCAG AA contrast.
+- `Checkbox`'s `hasStrikethroughWhenChecked` now applies `text-text-primary/55` alongside the strikethrough, closing RESEARCH Pitfall 16 at the primitive.
+- Surfaced a conflict the plan did not anticipate — the mock's own completed-label colour fails WCAG AA — and resolved it by raising the opacity rather than by suppressing the gate or hardcoding a hex.
 
 ## Task Commits
 
 1. **Task 1: heading-m type token** — `ccee574` (test, RED) → `8a085f2` (feat, GREEN)
 2. **Task 2: Textarea primitive** — `0f6a3ef` (feat)
-3. **Task 3: Checkbox completed-label colour** — `5978b0e` (test, RED) → `0bdf64b` (feat, GREEN)
+3. **Task 3: Checkbox completed-label colour** — `5978b0e` (test, RED) → `0bdf64b` (feat, GREEN at the mock's 50%) → `4f3ca32` (fix, raised to 55% for WCAG AA)
 
 ## Files Created/Modified
 
@@ -128,7 +130,8 @@ status: halted
 - `src/components/ui/textarea/textarea.tsx` — exports `Textarea`; `Field.Control render={<textarea />}` with `aria-busy` and `disabled={isDisabled || isLoading}`.
 - `src/components/ui/textarea/textarea-variants.ts` — exports `textareaVariants`; `min-h-28` floor, `state` and `isBusy` axes.
 - `src/components/ui/textarea/textarea.stories.tsx`, `textarea.test.tsx` — nine stories, 12 assertions × 2 viewports.
-- `src/components/ui/checkbox/checkbox.tsx` — the opt-in gains `peer-data-[checked]:text-text-primary/50`.
+- `src/components/ui/checkbox/checkbox.tsx` — the opt-in gains `peer-data-[checked]:text-text-primary/55`.
+- `.planning/phases/04-task-subtask-workflow/04-UI-SPEC.md` — § "Completed-subtask treatment" amended from 50% to 55% in both themes, with the rejected 50% recorded so it is not "restored" to match the mock.
 - `src/components/ui/checkbox/checkbox.stories.tsx` — adds `UncheckedWithStrikethroughOptIn`.
 - `src/components/ui/checkbox/checkbox.test.tsx` — three completed-label assertions; `Error` aliased to `ErrorStory`.
 - `visual/primitives.visual.spec.ts` — nine `components-ui-textarea--*` ids and one new checkbox id.
@@ -137,7 +140,10 @@ status: halted
 
 1. **`Textarea` has no `size` variant.** `TextField`'s `size` maps to `h-8`/`h-10`/`h-12`. A fixed height directly contradicts "`min-h-28` and let it grow, never a fixed height", so the axis was dropped. The `Omit<…, "size">` base is kept, so a raw HTML `size` attribute still cannot leak in.
 2. **`Textarea` has no `trailing` slot.** An absolutely-positioned trailing node inside a growing, scrolling box has no sensible anchor, and the plan's props list omits it.
-3. **The axe failure was neither suppressed nor designed around.** See the blocker below.
+3. **The completed-subtask label is 55% of `--color-text-primary`, not the mock's 50%.** 50% fails
+   WCAG AA at 3.87:1; 55% is the lowest whole percent clearing 4.5:1 (`#6e707c`, 4.58:1). Kept as a
+   derived opacity rule rather than a hex literal, applied in both themes, and `04-UI-SPEC.md` was
+   amended so the code and the spec agree. No axe rule was suppressed. See "Issues Encountered".
 
 ## Deviations from Plan
 
@@ -182,19 +188,12 @@ status: halted
 
 **Total deviations:** 4 auto-fixed (2 × Rule 1, 2 × Rule 3). No scope creep — each unblocked a stated plan requirement.
 
-## Acceptance Criteria Not Met As Written
-
-Two of the plan's criteria were factually wrong about the repository, and one is self-contradictory. None indicates a defect in the delivered code.
-
-1. **`grep -c '15px' tokens/typography.tokens.json` is 1** — it is 3. `heading-s` and `body-m` already carried `"lineHeight": "15px"` before this plan. The meaningful form, `grep -c '"fontSize": "15px"'`, is exactly 1.
-2. **`grep -c 'heading-m' tokens/style-dictionary.build.test.ts` is at least 2** — it is 9. Satisfied.
-3. **`git status --porcelain visual/` shows only ADDED baselines, no modified pre-existing Checkbox baseline** — **not satisfiable.** `components-ui-checkbox--checked-with-strikethrough` is the story that *renders the treatment this task changes*; its four baselines necessarily move. The criterion's protective intent is intact: the other **eight** Checkbox baselines are byte-identical, and the recorded diff is the label colour alone (checkbox box, strikethrough, metrics and layout unchanged — confirmed by reading the actual/expected/diff PNGs). Re-recording was scoped with `-g "components-ui-checkbox--checked-with-strikethrough" --update-snapshots=changed` so nothing else could be touched.
-
 ## Issues Encountered
 
-**BLOCKER — the specified completed-subtask colour fails WCAG AA, and the mock is where it comes from.**
+**RESOLVED — the mock's completed-subtask colour fails WCAG AA; the opacity was raised to 55%.**
 
-`pnpm test:a11y` is **red** on one story: `checkbox.stories.tsx > Checked With Strikethrough`.
+Task 3 initially shipped `text-text-primary/50` exactly as `04-UI-SPEC.md` specified, and
+`pnpm test:a11y` went red on `checkbox.stories.tsx > Checked With Strikethrough`:
 
 ```
 Elements must meet minimum color contrast ratio thresholds (color-contrast)
@@ -202,25 +201,60 @@ insufficient color contrast of 3.86 (foreground #7a7c87, background #f4f7fd,
 font size: 13px, weight: normal). Expected contrast ratio of 4.5:1
 ```
 
-What is verified, not assumed:
+The implementation was not at fault: `04-UI-SPEC.md` predicted exactly `#7A7C87` for that
+composite and recorded `#797B87` sampled from mock p5, and rendering p5 at 300 DPI confirmed the
+mock does draw completed rows in a light grey struck-through label. **The mock's own design fails
+AA.** So the conflict was surfaced rather than resolved unilaterally (`CLAUDE.md`: "When the mock
+and a UI-SPEC disagree, surface the conflict instead of following either silently"), with the axe
+rule left unsuppressed so the failure stayed visible.
 
-- The rendered foreground is **`#7a7c87`** — measured by axe against the real render, not inferred.
-- `04-UI-SPEC.md` § "Completed-subtask treatment" predicts exactly `#7A7C87` for this composite and records `#797B87` sampled from mock p5. **The implementation is correct.**
-- Mock p5 was rendered at 300 DPI and read this session: its completed subtask rows do carry a light grey struck-through label, visibly lighter than the incomplete row's near-black one. The design intends this.
-- The dark theme is unaffected (`#8F9095` on `#20212C` is high-contrast); only the light row fails.
-- Every other gate is green: `pnpm test` 1354/1355, `CI=1 pnpm test:visual` 300/300, `pnpm lint`, `tsc --noEmit`, `format:check`, and all six check scripts.
+**Decision (user, 2026-08-28): Option B — raise the opacity from 50% to 55%.**
 
-So the mock, the UI-SPEC and WCAG AA cannot all be satisfied. Three resolutions, none of which is an executor's call:
+The orchestrator independently confirmed both halves before the decision (orchestrator-run, not
+this executor's measurements):
 
-| Option | Consequence |
-|--------|-------------|
-| **A. Ship as-is, record a scoped axe exception** | Matches the mock exactly. Ships a known 4.5:1 failure on real content, and weakens D-21's "an axe violation fails the story rather than merely annotating it — nothing ships unverified." Every future subtask row inherits it. |
-| **B. Darken the completed label to reach 4.5:1** | Passes AA. Diverges from the mock and from UI-SPEC's explicitly-sampled composite; the UI-SPEC would need amending, not just the code. |
-| **C. Use `--color-text-muted` (`#66707F` light)** | **Explicitly barred** by UI-SPEC ("Do not substitute `text-text-muted` — it is a different value in each theme and misses both"). Listed only so it is visibly rejected rather than silently rediscovered. |
+| Sample | Composite | Ratio | Verdict |
+|--------|-----------|-------|---------|
+| Light @ 50% (implemented) | `#7a7c87` on `#f4f7fd` | 3.87:1 | fails AA |
+| Light @ 50% (mock-sampled `#797B87`) | — | 3.92:1 | fails AA — not implementation drift |
+| Light @ **55%** | `#6e707c` on `#f4f7fd` | **4.58:1** | **passes** — first whole percent clearing AA |
+| Dark @ 55% | `#9b9ba0` on `#20212C` | 5.77:1 | passes (dark already passed at 50%, 5.03:1) |
 
-Per `CLAUDE.md` ("When the mock and a UI-SPEC disagree, surface the conflict instead of following either silently") the code was left exactly as specified and the axe rule left **unsuppressed**, so the failure is visible rather than buried. Recorded in `.planning/WINDOWS.md` as an `unmet-truth`.
+This executor re-derived the light and dark composites and all four ratios from the raw hex
+independently and reproduced them exactly, including `#6e707c` at 4.58:1.
 
-`status: halted` is deliberate: CI is red, and `CLAUDE.md` states a red job is a hard blocker on advancing rather than a caveat to carry forward. Downstream plans consuming this Checkbox treatment should stay blocked until the decision is made.
+**Kept as a derived opacity rule, not a hex literal.** `04-UI-SPEC.md` states this as a percentage
+of `--color-text-primary`; a hardcoded `#6f717c` would also pass AA but would replace a system rule
+with a literal nothing else in the codebase uses. The spec was amended in both themes — the dark
+half moved to 55% too, so one rule covers both — and records the rejected 50% inline so a future
+reader does not "restore" it to match the mock.
+
+**No axe exception was added.** The gate is green on its own terms.
+
+## Acceptance Criteria Not Met As Written
+
+Two of the plan's criteria were factually wrong about the repository, and one is self-contradictory.
+None indicates a defect in the delivered code, and all three are preserved here as planning defects
+worth fixing at the source rather than deleted now that the gates are green.
+
+1. **`grep -c '15px' tokens/typography.tokens.json` is 1** — it is 3. `heading-s` and `body-m`
+   already carried `"lineHeight": "15px"` before this plan. The meaningful form,
+   `grep -c '"fontSize": "15px"'`, is exactly 1.
+2. **`grep -c 'heading-m' tokens/style-dictionary.build.test.ts` is at least 2** — it is 9.
+   Satisfied.
+3. **`git status --porcelain visual/` shows only ADDED baselines, no modified pre-existing Checkbox
+   baseline** — **not satisfiable.** `components-ui-checkbox--checked-with-strikethrough` is the
+   story that *renders the treatment this task changes*; its four baselines necessarily move. The
+   criterion's protective intent is intact and was verified twice (at 50% and again at 55%): the
+   other **eight** Checkbox stories' baselines are byte-identical to their committed versions, and
+   the recorded diff is the label colour alone — checkbox box, strikethrough, metrics and layout
+   unchanged, confirmed by reading the actual/expected/diff PNGs. Re-recording was scoped with
+   `-g "components-ui-checkbox--checked-with-strikethrough"` so nothing else could be touched.
+
+   One detail worth carrying forward: at 55% the re-record needed `--update-snapshots=all`, not
+   `=changed`. The 50%→55% shift is subtle enough to fall under Playwright's default per-pixel
+   `threshold`, so `=changed` reported all four as passing and rewrote nothing — which would have
+   left committed baselines that no longer matched what ships.
 
 ## User Setup Required
 
@@ -234,15 +268,16 @@ None — no external service configuration required. This plan installed no pack
 - `Textarea` is available for the Description field in `Add New Task` / `Edit Task`, baselined in both themes. It performs no validation and claims none — `.safeParse` at the action boundary remains the real defence (T-04-19).
 - `label` is a required prop on `Textarea`, so an unlabelled control fails type-checking, not merely the axe pass (T-04-20 mitigated; verified with a throwaway probe file that errored `TS2741`, then deleted).
 
-**Blocked:**
+- The subtask checklist row's completed-state treatment is ready and AA-clean. Consumers opt in with `hasStrikethroughWhenChecked`; the default path is untouched.
 
-- The subtask checklist row cannot ship its completed-state treatment until the contrast decision above is made. The primitive is ready either way; only the one colour literal changes.
+**Nothing is blocked.** All gates green: `pnpm test` 1355/1355 across all five projects, `pnpm test:a11y` 203/203, `CI=1 pnpm test:visual` 300/300, `pnpm lint`, `tsc --noEmit`, `format:check`, and all six check scripts.
 
 ## Self-Check: PASSED
 
 - All four created files exist on disk (`src/components/ui/textarea/{textarea.tsx,textarea-variants.ts,textarea.stories.tsx,textarea.test.tsx}`).
 - All five commits resolve: `ccee574`, `8a085f2`, `0f6a3ef`, `5978b0e`, `0bdf64b`.
-- No stubs, no skipped tests, no unrun `<verify>` commands. The single failing gate is documented above, not hidden.
+- No stubs, no skipped tests, no unrun `<verify>` commands, and no suppressed lint or axe rules.
+- `.planning/WINDOWS.md` entry 29 (`unmet-truth`) is marked `fixed` — the contrast gate it recorded is green.
 
 ---
 
