@@ -19,8 +19,9 @@ type Story = StoryObj<typeof AddColumnPlaceholder>;
 export const Default: Story = {};
 
 /*
- * The bounded-height horizontal row `board-view.stories.tsx` gives it in real use — the only place
- * the gradient and the cross-axis stretch are visible at review and in the axe run.
+ * The bounded-height horizontal row `src/components/layout/board-view/board-view.stories.tsx` gives
+ * it in real use — the only place the gradient and the cross-axis stretch are visible at review and
+ * in the axe run.
  */
 export const InRow: Story = {
     decorators: [

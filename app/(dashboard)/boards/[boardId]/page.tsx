@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { BoardView } from "@/features/boards/components/board-view/board-view";
+import { BoardView } from "@/components/layout/board-view/board-view";
 import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton/board-view-skeleton";
 import { fetchBoardFull } from "@/features/boards/server/fetch-board-full";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";

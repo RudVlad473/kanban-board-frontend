@@ -62,7 +62,7 @@ src/
 │   │   ├── TextField/{TextField.tsx,TextField.stories.tsx}
 │   │   ├── Dropdown/{Dropdown.tsx,Dropdown.stories.tsx}
 │   │   └── Checkbox/{Checkbox.tsx,Checkbox.stories.tsx}
-│   └── layout/                       # Sidebar, AppShell — cross-domain, not primitives, not a feature
+│   └── layout/                       # Sidebar, AppShell, BoardView — cross-domain chrome AND the two-feature composition point
 │
 ├── hooks/                            # generic, non-domain hooks (useMediaQuery, useDebounce, useLocalStorage)
 ├── lib/
@@ -87,6 +87,16 @@ was reproduced. Column components, hooks and actions therefore live in `features
 phase that genuinely needs a separate columns feature must first promote the shared schemas into
 `lib/core/api-contract/` (ADR tech/0024's stated promotion rule) — an ADR-level change, not a
 refactor.
+
+**`components/layout/` is also the composition point when one surface needs two features at once.**
+A component that must render one feature's nodes inside another feature's container cannot live in
+either feature: the `boundaries` policy disallows `feature → feature` in both directions and keeps
+no exception, so the composition belongs in the layout ring, which the policy already allows to
+import both. `BoardView` is the instance — it moved from `features/boards/components/board-view/` to
+`components/layout/board-view/` in Phase 4 so a `features/tasks/` folder could exist without
+widening the policy, and it should not be "corrected" back into the boards feature. No ADR
+amendment accompanies this and no exception to `docs/adr/tech/0009` is added; the schemas half is
+covered separately by ADR tech/0024's promotion rule above.
 
 **Placement rule ("where does X go" — apply in this order):**
 1. Does it render a route? → `app/`.
