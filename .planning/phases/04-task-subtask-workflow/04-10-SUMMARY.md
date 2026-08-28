@@ -245,3 +245,14 @@ The `CI=1` prefix on the local visual run is what makes it meaningful — `playw
 - **The remote branch `worktree-agent-a892b8b74c6a7edfa` was pushed** so CI could run on the exact SHA the orchestrator merges. Delete it after the wave merge — the run's results persist independently of the ref.
 - **04-11 owns the documentation debt.** Both ADRs and `CONVENTIONS.md` describe a register and a barrel that no longer exist. The register's "Unwind trigger" section in `tech/0020` has now fired in full, which is a stronger amendment than a wording fix.
 - **A new Server Action needs no file and no config entry.** Adding one under `src/features/<domain>/actions/` with a `"use server"` directive is sufficient for both Chromium projects to double it.
+
+## Self-Check: PASSED
+
+- `.planning/phases/04-task-subtask-workflow/04-10-SUMMARY.md` — FOUND
+- `src/components/layout/board-view/board-view.test.tsx` — FOUND (modified)
+- `src/features/boards/components/sortable-column/sortable-column.test.tsx` — FOUND (modified)
+- `vitest.config.ts` — FOUND (modified)
+- The four `src/test-utils/*-column-action-storybook-stub.ts` — confirmed ABSENT (intended)
+- Commits `7f84e8b`, `53cc19a`, `f9399be` — all present in `git log`
+- `next-env.d.ts`, `.planning/STATE.md`, `.planning/ROADMAP.md` — unchanged versus `29b51c8`
+- Working tree clean
