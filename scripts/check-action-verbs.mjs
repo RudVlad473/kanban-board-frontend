@@ -50,8 +50,66 @@ export const findActionNameViolations = ({ relativePath, source }) => {
     return violations;
 };
 
-// RED skeleton — the assertion itself lands in this task's GREEN commit.
-export const findStubSeamViolations = () => [];
+/*
+ * Phase 4 success criterion 8's absence property: the `"use server"` transform
+ * (scripts/vite-plugin-server-action-stub.mjs) doubles every Server Action, so neither a
+ * hand-written double module nor an alias register may exist. See docs/adr/tech/0020's carve-out.
+ */
+export const DOUBLE_MODULE_SUFFIX = "-storybook-stub.ts";
+
+const VITEST_CONFIG_PATH = "vitest.config.ts";
+
+/*
+ * A comment naming the deleted register is a record of it, not a reinstatement, so comment text is
+ * scanned out first — the same allowance a by-hand grep of this property makes.
+ */
+const stripComments = (source) =>
+    source
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .split("\n")
+        .filter((line) => !/^\s*\/\//.test(line))
+        .join("\n");
+
+/*
+ * Two rules, not one: the second catches a register that renames itself, which a name-only check
+ * would wave through — the drift this gate exists to stop was invisible for exactly that long.
+ */
+const REGISTER_RULES = [
+    {
+        pattern: /\b\w*[Aa]ctionStubAlias(?:es)?\b/,
+        reason: 'declares an action-stub alias register; the `"use server"` transform replaced it (plan 04-10)',
+    },
+    {
+        pattern: /["'][^"']*\/actions\/[^"']*["']/,
+        reason:
+            "names a Server Action module — aliasing one to a replacement module is banned; the " +
+            "transform doubles it with no config entry",
+    },
+];
+
+export const findStubSeamViolations = ({ testUtilPaths, vitestConfigSource }) => {
+    const doubleViolations = testUtilPaths
+        .filter((relativePath) => relativePath.endsWith(DOUBLE_MODULE_SUFFIX))
+        .map((relativePath) => ({
+            relativePath,
+            reason: "is a hand-written Server Action double; the transform emits one from the real module instead",
+        }));
+
+    const configSource = stripComments(vitestConfigSource);
+    const registerViolations = REGISTER_RULES.filter(({ pattern }) => pattern.test(configSource)).map(({ reason }) => ({
+        relativePath: VITEST_CONFIG_PATH,
+        reason,
+    }));
+
+    return [...doubleViolations, ...registerViolations];
+};
+
+const reportViolations = ({ heading, violations }) => {
+    console.error(heading);
+    for (const violation of violations) {
+        console.error(`  ${violation.relativePath} — ${violation.reason}`);
+    }
+};
 
 const scanFile = (relativePath) => {
     const source = readFileSync(path.resolve(repoRoot, relativePath), "utf8");
@@ -63,20 +121,39 @@ const runCli = () => {
         (relativePath) => !relativePath.includes(".test."),
     );
 
-    const violations = files.flatMap(scanFile).sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+    const nameViolations = files.flatMap(scanFile).sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 
-    if (violations.length > 0) {
-        console.error(
-            "actions:check failed — a Server Action's name is outside CONVENTIONS.md's closed verb set, " +
+    const seamViolations = findStubSeamViolations({
+        testUtilPaths: globRealFiles({ patterns: ["src/test-utils/**/*.{ts,tsx}"], cwd: repoRoot }),
+        vitestConfigSource: readFileSync(path.resolve(repoRoot, VITEST_CONFIG_PATH), "utf8"),
+    }).sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+
+    if (nameViolations.length > 0) {
+        reportViolations({
+            heading:
+                "actions:check failed — a Server Action's name is outside CONVENTIONS.md's closed verb set, " +
                 "or its exported symbol does not mirror its file name.\n",
-        );
-        for (const violation of violations) {
-            console.error(`  ${violation.relativePath} — ${violation.reason}`);
-        }
+            violations: nameViolations,
+        });
+    }
+
+    if (seamViolations.length > 0) {
+        reportViolations({
+            heading:
+                "actions:check failed — a hand-written Server Action double or an alias register has " +
+                "reappeared (phase 04 success criterion 8, docs/adr/tech/0020).\n",
+            violations: seamViolations,
+        });
+    }
+
+    if (nameViolations.length > 0 || seamViolations.length > 0) {
         process.exit(1);
     }
 
-    console.log(`actions:check passed — ${String(files.length)} Server Action(s) match the naming rule.`);
+    console.log(
+        `actions:check passed — ${String(files.length)} Server Action(s) match the naming rule, ` +
+            "and no double module or alias register exists.",
+    );
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
