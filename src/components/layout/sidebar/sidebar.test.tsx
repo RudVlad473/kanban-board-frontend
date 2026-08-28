@@ -5,12 +5,10 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { cleanup, render } from "vitest-browser-react";
 
-import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton/board-list-skeleton";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
@@ -30,22 +28,14 @@ vi.mock("next/navigation", () => createNextNavigationShim({ pathname: ROUTE.BOAR
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see board-list.test.tsx)
 vi.mock("next/link", () => createNextLinkShim());
 
-const { Expanded, Collapsed, Overflowing } = composeStories(stories);
-
-/*
- * D-03: deep tests render a composed story too, not a bare `<Sidebar />`, so they mount through
- * its real decorators (docs/adr/tech/0025). `story` picks whichever composed story stages the
- * closest baseline per test; only `children`/`defaultIsExpanded` vary from it.
- */
-const renderSidebar = ({
-    story: Story = Expanded,
-    children,
-    defaultIsExpanded,
-}: {
-    story?: typeof Expanded;
-    children: ReactNode;
-    defaultIsExpanded?: boolean;
-}) => render(<Story defaultIsExpanded={defaultIsExpanded}>{children}</Story>);
+const {
+    Expanded,
+    Collapsed,
+    Overflowing,
+    ExpandedWithPlainChildren,
+    CollapsedWithPlainChildren,
+    ExpandedWithPendingBoardList,
+} = composeStories(stories);
 
 describeForEachDevice({
     name: "Sidebar",
@@ -84,7 +74,7 @@ describeForEachDevice({
         // Deep: real toggling, keyboard reachability, remount and the C-009 no-persistence guarantee.
         it("collapses on activating Hide Sidebar, hiding the Boards landmark and showing Show Sidebar instead", async () => {
             // Arrange
-            const rendered = await renderSidebar({ children: <div>List</div> });
+            const rendered = await render(<ExpandedWithPlainChildren />);
 
             // Act
             await rendered.getByRole("button", { name: "Hide Sidebar" }).click();
@@ -97,7 +87,7 @@ describeForEachDevice({
 
         it("restores the panel on activating Show Sidebar", async () => {
             // Arrange
-            const rendered = await renderSidebar({ children: <div>List</div> });
+            const rendered = await render(<ExpandedWithPlainChildren />);
             await rendered.getByRole("button", { name: "Hide Sidebar" }).click();
 
             // Act
@@ -110,7 +100,7 @@ describeForEachDevice({
 
         it("activates Hide Sidebar and Show Sidebar on both Enter and Space", async () => {
             // Arrange
-            const rendered = await renderSidebar({ children: <div>List</div> });
+            const rendered = await render(<ExpandedWithPlainChildren />);
 
             // Act
             rendered.getByRole("button", { name: "Hide Sidebar" }).element().focus();
@@ -129,7 +119,7 @@ describeForEachDevice({
 
         it("renders expanded on a fresh mount, even after a prior instance was collapsed", async () => {
             // Arrange
-            const first = await renderSidebar({ children: <div>List</div> });
+            const first = await render(<ExpandedWithPlainChildren />);
             await first.getByRole("button", { name: "Hide Sidebar" }).click();
             await expect.element(first.getByRole("button", { name: "Show Sidebar" })).toBeInTheDocument();
             /*
@@ -140,7 +130,7 @@ describeForEachDevice({
             await cleanup();
 
             // Act
-            const second = await renderSidebar({ children: <div>List</div> });
+            const second = await render(<ExpandedWithPlainChildren />);
 
             // Assert
             await expect.element(second.getByRole("button", { name: "Hide Sidebar" })).toBeInTheDocument();
@@ -148,7 +138,7 @@ describeForEachDevice({
 
         it("leaves document.cookie byte-identical and writes nothing to storage when toggled", async () => {
             // Arrange
-            const rendered = await renderSidebar({ children: <div>List</div> });
+            const rendered = await render(<ExpandedWithPlainChildren />);
             const cookieBefore = document.cookie;
 
             // Act
@@ -162,7 +152,7 @@ describeForEachDevice({
 
         it("renders the brand mark and Hide Sidebar alongside a not-yet-resolved board list", async () => {
             // Act
-            const rendered = await renderSidebar({ children: <BoardListSkeleton /> });
+            const rendered = await render(<ExpandedWithPendingBoardList />);
 
             // Assert
             await expect.element(rendered.getByText("kanban")).toBeInTheDocument();
@@ -176,7 +166,7 @@ describeForEachDevice({
          */
         it("keeps the expanded panel in normal document flow, never positioned over the content", async () => {
             // Arrange
-            const rendered = await renderSidebar({ children: <div>List</div> });
+            const rendered = await render(<ExpandedWithPlainChildren />);
 
             // Assert
             expect(getComputedStyle(rendered.getByRole("navigation", { name: "Boards" }).element()).position).not.toBe(
@@ -186,7 +176,7 @@ describeForEachDevice({
 
         it("returns the full viewport width to the board view with no horizontal overflow once collapsed", async () => {
             // Arrange
-            await renderSidebar({ story: Collapsed, children: <div>List</div> });
+            await render(<CollapsedWithPlainChildren />);
 
             // Assert
             expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);

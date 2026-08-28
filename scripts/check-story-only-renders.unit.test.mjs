@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
     classifyViolations,
     findStoryOnlyRenderViolations,
+    findStoryPropOverrideViolations,
     MIGRATION_EXEMPTIONS,
 } from "./check-story-only-renders.mjs";
 
@@ -278,5 +279,85 @@ describe("classifyViolations", () => {
         // Assert
         expect(MIGRATION_EXEMPTIONS.size).toBeGreaterThan(0);
         expect([...MIGRATION_EXEMPTIONS.values()].every((ceiling) => ceiling > 0)).toBe(true);
+    });
+});
+
+describe("findStoryPropOverrideViolations", () => {
+    it("flags props written straight onto a composed story", () => {
+        // Arrange
+        const source = [
+            'import { composeStories } from "@storybook/react";',
+            "",
+            'import * as stories from "./sidebar.stories";',
+            "",
+            "const { Expanded } = composeStories(stories);",
+            "",
+            'it("renders", async () => {',
+            "    await render(<Expanded defaultIsExpanded={false} />);",
+            "});",
+        ].join("\n");
+
+        // Act
+        const violations = findStoryPropOverrideViolations({ source, relativePath });
+
+        // Assert
+        expect(violations).toEqual([{ line: 8, name: "Expanded", props: ["defaultIsExpanded"] }]);
+    });
+
+    it("flags a story funnelled through a render helper's destructured default", () => {
+        // Arrange
+        const source = [
+            'import { composeStories } from "@storybook/react";',
+            "",
+            'import * as stories from "./sidebar.stories";',
+            "",
+            "const { Expanded } = composeStories(stories);",
+            "",
+            "const renderSidebar = ({ story: Story = Expanded, children }) => render(<Story>{children}</Story>);",
+        ].join("\n");
+
+        // Act
+        const violations = findStoryPropOverrideViolations({ source, relativePath });
+
+        // Assert
+        expect(violations).toEqual([{ line: 7, name: "Story", props: ["children"] }]);
+    });
+
+    it("flags a story funnelled through a helper that types the parameter rather than defaulting it", () => {
+        // Arrange
+        const source = [
+            'import { composeStories } from "@storybook/react";',
+            "",
+            'import * as stories from "./sidebar.stories";',
+            "",
+            "const { Expanded } = composeStories(stories);",
+            "",
+            "const renderSidebar = ({ story: Story }: { story: typeof Expanded }) => render(<Story isOpen />);",
+        ].join("\n");
+
+        // Act
+        const violations = findStoryPropOverrideViolations({ source, relativePath });
+
+        // Assert
+        expect(violations).toEqual([{ line: 7, name: "Story", props: ["isOpen"] }]);
+    });
+
+    it("reports none for a zero-argument alias that renders one composed story unchanged", () => {
+        // Arrange
+        const source = [
+            'import { composeStories } from "@storybook/react";',
+            "",
+            'import * as stories from "./sign-in-form.stories";',
+            "",
+            "const { Empty } = composeStories(stories);",
+            "",
+            "const renderSignInForm = () => render(<Empty />);",
+        ].join("\n");
+
+        // Act
+        const violations = findStoryPropOverrideViolations({ source, relativePath });
+
+        // Assert
+        expect(violations).toEqual([]);
     });
 });

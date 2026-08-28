@@ -142,6 +142,149 @@ export const findStoryOnlyRenderViolations = ({ source, relativePath }) => {
     return violations;
 };
 
+/*
+ * The second half of docs/adr/tech/0025's rule. `findStoryOnlyRenderViolations` above sees only
+ * "rendered the raw component"; this sees "rendered a composed story but re-configured it", which
+ * reaches the same banned end through a binding no import graph names.
+ */
+const collectComposedStoryBindings = (sourceFile) => {
+    const names = new Set();
+
+    const seedFromComposeStories = (node) => {
+        if (
+            ts.isVariableDeclaration(node) &&
+            node.initializer !== undefined &&
+            ts.isCallExpression(node.initializer) &&
+            ts.isIdentifier(node.initializer.expression) &&
+            node.initializer.expression.text === "composeStories" &&
+            ts.isObjectBindingPattern(node.name)
+        ) {
+            for (const element of node.name.elements) {
+                if (ts.isIdentifier(element.name)) {
+                    names.add(element.name.text);
+                }
+            }
+        }
+
+        ts.forEachChild(node, seedFromComposeStories);
+    };
+
+    seedFromComposeStories(sourceFile);
+
+    /*
+     * Widening repeats until stable, so an alias declared above its source still resolves and so
+     * does a chain of them.
+     */
+    let grew = true;
+    while (grew) {
+        grew = false;
+
+        const remember = (identifier) => {
+            if (!names.has(identifier.text)) {
+                names.add(identifier.text);
+                grew = true;
+            }
+        };
+
+        const isKnownStory = (node) => node !== undefined && ts.isIdentifier(node) && names.has(node.text);
+
+        const widen = (node) => {
+            /* `const Story = Expanded` — a plain alias. */
+            if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && isKnownStory(node.initializer)) {
+                remember(node.name);
+            }
+
+            /* `{ story: Story = Expanded }` — the destructured default a render helper takes. */
+            if (ts.isBindingElement(node) && ts.isIdentifier(node.name) && isKnownStory(node.initializer)) {
+                remember(node.name);
+            }
+
+            /* `({ story: Story }: { story: typeof Expanded })` — the same input, typed not defaulted. */
+            if (
+                ts.isParameter(node) &&
+                ts.isObjectBindingPattern(node.name) &&
+                node.type !== undefined &&
+                ts.isTypeLiteralNode(node.type)
+            ) {
+                for (const element of node.name.elements) {
+                    const propertyName = element.propertyName ?? element.name;
+                    if (!ts.isIdentifier(propertyName) || !ts.isIdentifier(element.name)) {
+                        continue;
+                    }
+
+                    const member = node.type.members.find(
+                        (candidate) =>
+                            ts.isPropertySignature(candidate) &&
+                            candidate.name !== undefined &&
+                            ts.isIdentifier(candidate.name) &&
+                            candidate.name.text === propertyName.text,
+                    );
+
+                    if (
+                        member?.type !== undefined &&
+                        ts.isTypeQueryNode(member.type) &&
+                        ts.isIdentifier(member.type.exprName) &&
+                        names.has(member.type.exprName.text)
+                    ) {
+                        remember(element.name);
+                    }
+                }
+            }
+
+            ts.forEachChild(node, widen);
+        };
+
+        widen(sourceFile);
+    }
+
+    return names;
+};
+
+const readAttributeLabel = (property) =>
+    property.name !== undefined && ts.isIdentifier(property.name) ? property.name.text : "{...spread}";
+
+/** Whitespace-only JSX text is what a multi-line `<Story>\n</Story>` leaves behind, not a child. */
+const hasMeaningfulChildren = (children) =>
+    children.some((child) => !ts.isJsxText(child) || child.text.trim().length > 0);
+
+export const findStoryPropOverrideViolations = ({ source, relativePath }) => {
+    const sourceFile = ts.createSourceFile(relativePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const storyBindings = collectComposedStoryBindings(sourceFile);
+    const violations = [];
+
+    const record = ({ opening, props }) => {
+        const name = readTagRootName(opening.tagName);
+        if (name === undefined || !storyBindings.has(name) || props.length === 0) {
+            return;
+        }
+
+        const { line } = sourceFile.getLineAndCharacterOfPosition(opening.getStart(sourceFile));
+        violations.push({ line: line + 1, name, props });
+    };
+
+    const visit = (node) => {
+        if (ts.isJsxSelfClosingElement(node)) {
+            record({ opening: node, props: node.attributes.properties.map(readAttributeLabel) });
+        }
+
+        /*
+         * `<Story>{children}</Story>` re-configures the story's `children` arg with no attribute to
+         * show for it, so the children are read as a prop rather than only the attribute list.
+         */
+        if (ts.isJsxElement(node)) {
+            const attributes = node.openingElement.attributes.properties.map(readAttributeLabel);
+            const props = hasMeaningfulChildren(node.children) ? [...attributes, "children"] : attributes;
+            record({ opening: node.openingElement, props });
+        }
+
+        ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
+
+    return violations;
+};
+
 const countByFile = (violations) => {
     const counts = new Map();
 
@@ -186,10 +329,24 @@ const scanFile = (relativePath) => {
     return findStoryOnlyRenderViolations({ source, relativePath }).map((violation) => ({ ...violation, relativePath }));
 };
 
+const scanFileForPropOverrides = (relativePath) => {
+    const absolutePath = path.resolve(repoRoot, relativePath);
+    const source = readFileSync(absolutePath, "utf8");
+    return findStoryPropOverrideViolations({ source, relativePath }).map((violation) => ({
+        ...violation,
+        relativePath,
+    }));
+};
+
+/*
+ * Says only what docs/adr/tech/0025 says. An earlier wording also claimed every render helper
+ * declared in a test file was banned; the record bans re-configuring a story, so a zero-argument
+ * alias for one composed story (`sign-in-form.test.tsx`) was never a violation.
+ */
 const FIX_GUIDANCE =
     "Add a named exported story per prop combination in the component's *.stories.tsx and render " +
-    "that composed story — never one composed story fed varying props, and never a render helper " +
-    "declared in the test file, both of which the same record bans.";
+    "that composed story — never one composed story fed varying props, whether those props are " +
+    "written at the call site or funnelled through a helper.";
 
 /** Printed on every run, pass or fail: a carve-out nobody can see is indistinguishable from coverage. */
 const reportExemptions = ({ tracked }) => {
@@ -222,11 +379,33 @@ const runCli = () => {
 
     const { blocking, tracked, regressions, stale } = classifyViolations({ violations });
 
+    /*
+     * Deliberately outside the exemption ledger: those ceilings count direct renders, so folding a
+     * second violation class into them would move every count and trip the ratchet on ten suites
+     * that never changed.
+     */
+    const propOverrides = files
+        .flatMap(scanFileForPropOverrides)
+        .sort((a, b) => a.relativePath.localeCompare(b.relativePath) || a.line - b.line);
+
     reportExemptions({ tracked });
 
-    if (blocking.length === 0 && regressions.length === 0 && stale.length === 0) {
+    if (blocking.length === 0 && regressions.length === 0 && stale.length === 0 && propOverrides.length === 0) {
         console.log("renders:check passed — every non-exempt *.test.tsx renders composed stories only.");
         return;
+    }
+
+    if (propOverrides.length > 0) {
+        console.error(
+            "\nrenders:check failed — a *.test.tsx passes props to a composed story instead of " +
+                "rendering one already configured in the stories file, banned by " +
+                `docs/adr/tech/0025-direct-composed-story-rendering.md. ${FIX_GUIDANCE}\n`,
+        );
+        for (const violation of propOverrides) {
+            console.error(
+                `  ${violation.relativePath}:${String(violation.line)} — <${violation.name} ${violation.props.join(" ")}>`,
+            );
+        }
     }
 
     if (blocking.length > 0) {

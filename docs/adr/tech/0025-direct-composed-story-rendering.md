@@ -126,6 +126,27 @@ the wrong fix (one composed story fed varying props) is banned by this same reco
 graph: a type-only import is never flagged, and a sibling component rendered inside a host component
 the test file declares is.
 
+**Amended 2026-08-28.** `renders:check` originally saw only half this record's rule. It flagged
+"rendered the raw component", detected through the import graph, and was structurally blind to
+"rendered a composed story but re-configured it" — the wrong fix its own message names. Found when
+a user asked why `sign-in-form.test.tsx`'s `renderSignInForm` was permitted: that helper is a
+zero-argument alias for one composed story and overrides nothing, so it never violated this record,
+but the audit prompted by the question found `sidebar.test.tsx` spreading `defaultIsExpanded` and
+`children` onto a composed story reached through a helper parameter. That file is not exempt, and
+the gate passed anyway, because the story arrived as a parameter binding rather than an import.
+
+`findStoryPropOverrideViolations` now covers it: it resolves composed-story bindings through plain
+aliases, destructured defaults (`{ story: Story = Expanded }`) and typed parameters
+(`{ story: typeof Expanded }`), then fails on any such element carrying attributes or JSX children.
+Children count as a prop, which is what `<Story>{children}</Story>` overrides with no attribute to
+show for it. It reports outside `MIGRATION_EXEMPTIONS` deliberately: those ceilings count direct
+renders, so folding a second violation class into them would shift every count and trip the ratchet
+on ten suites that never changed. Repository-wide result after fixing `sidebar.test.tsx`: zero.
+
+The checker's fix guidance was corrected in the same pass. It had claimed this record bans "a render
+helper declared in the test file", which it does not and never did — the ban is on re-configuring a
+story, wherever the props are written.
+
 **This gate is not yet repository-wide, and the scope of what it does not cover is deliberately
 stated rather than implied.** It is fully enforced for new and touched files and for
 `add-board-modal.test.tsx`. Ten pre-existing suites carry a dated exemption, recorded as
