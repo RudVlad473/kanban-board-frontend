@@ -20,6 +20,16 @@
                 "lineHeight": "23px"
             }
         },
+        "heading-m": {
+            "$type": "typography",
+            "$description": "Task card title on the board",
+            "$value": {
+                "fontFamily": "Plus Jakarta Sans",
+                "fontWeight": "700",
+                "fontSize": "15px",
+                "lineHeight": "19px"
+            }
+        },
         "heading-s": {
             "$type": "typography",
             "$description": "Column-style uppercase labels",

@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 21
 waived_count: 0
-fixed_count: 7
-total_count: 28
-last_updated: 2026-08-27T16:21:57.475Z
+fixed_count: 8
+total_count: 29
+last_updated: 2026-08-28T13:51:50.354Z
 ---
 
 # Broken Windows Ledger
@@ -43,6 +43,7 @@ last_updated: 2026-08-27T16:21:57.475Z
 | 26 | 03 | unrun-verify | src/features/boards/components/delete-column-confirm.tsx |  | No live-app visual pass on the delete confirmation or the destructive kebab entry — Playwright MCP is not visible to spawned subagents | open |  | 2026-08-27T12:53:48.822Z |  |
 | 27 | 03 | deviation | src/features/boards/actions/rename-column-action.integration.test.ts |  | R8: board path segment is inert on rename/reorder/delete; T-03-21 overstates what spelling boardId out protects against and needs re-scoping to the create endpoint | open |  | 2026-08-27T16:21:53.335Z |  |
 | 28 | 03 | deviation | src/features/boards/schemas.ts |  | R9: taskFullSchema.description widened to .nullish() after the backend was observed sending null; every read site in the tasks phase must handle string \| null \| undefined | open |  | 2026-08-27T16:21:57.475Z |  |
+| 29 | 04 | unmet-truth | src/components/ui/checkbox/checkbox.tsx |  | Completed-subtask label (text-text-primary/50, #7a7c87 on #f4f7fd) fails axe color-contrast at 3.86:1 vs WCAG AA 4.5:1; pnpm test:a11y red pending a mock-vs-accessibility decision | fixed |  | 2026-08-28T13:26:01.911Z | 2026-08-28T13:51:50.354Z |
 
 ````json
 [
@@ -381,6 +382,18 @@ last_updated: 2026-08-27T16:21:57.475Z
     "reason": "",
     "recorded_at": "2026-08-27T16:21:57.475Z",
     "resolved_at": null
+  },
+  {
+    "id": 29,
+    "kind": "unmet-truth",
+    "phase": "04",
+    "file": "src/components/ui/checkbox/checkbox.tsx",
+    "line": null,
+    "description": "Completed-subtask label (text-text-primary/50, #7a7c87 on #f4f7fd) fails axe color-contrast at 3.86:1 vs WCAG AA 4.5:1; pnpm test:a11y red pending a mock-vs-accessibility decision",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-28T13:26:01.911Z",
+    "resolved_at": "2026-08-28T13:51:50.354Z"
   }
 ]
 ````

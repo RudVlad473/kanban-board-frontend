@@ -69,7 +69,13 @@ export const Checkbox = ({
             <Field.Label
                 className={cn(
                     "font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary",
-                    hasStrikethroughWhenChecked && "peer-data-[checked]:line-through",
+                    /*
+                     * 04-UI-SPEC.md's completed-subtask treatment: 55% of primary, the lowest
+                     * percent clearing WCAG AA (#6e707c, 4.58:1); the mock's own 50% is 3.87:1.
+                     * Lives here because `className` reaches the box, not the label.
+                     */
+                    hasStrikethroughWhenChecked &&
+                        "peer-data-[checked]:text-text-primary/55 peer-data-[checked]:line-through",
                 )}
             >
                 {label}
