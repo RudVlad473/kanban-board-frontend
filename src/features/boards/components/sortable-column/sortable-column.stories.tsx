@@ -52,8 +52,8 @@ const SortableRow = ({
 
 /*
  * Owns the hook the way the real board container does, plus one button standing in for a completed
- * move — the keyboard and pointer paths themselves are `board-view`'s to prove, so this harness
- * asserts only what the override, the rollback and the in-flight lock do.
+ * move — the keyboard and pointer paths are `src/components/layout/board-view/`'s to prove, so this
+ * harness asserts only what the override, the rollback and the in-flight lock do.
  */
 const ReorderHost = ({ onRename, onDelete }: ComponentProps<typeof SortableColumn>) => {
     const {

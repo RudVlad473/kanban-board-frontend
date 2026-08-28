@@ -1,6 +1,6 @@
 "use client";
 
-// Covered by: `src/features/boards/components/board-view/board-view.test.tsx`
+// Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation } from "@tanstack/react-query";
 
