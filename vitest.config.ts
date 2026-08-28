@@ -38,35 +38,6 @@ const serverOnlyAlias = {
 };
 const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 
-/*
- * Real stub modules (not Vitest mocks; must stay before the general `@` alias) for Server Actions
- * whose import chain reaches `node:crypto` — docs/adr/tech/0020's "Server Action alias carve-out".
- * Transitional: an entry still shadows the plugin; 04-08 unwound auth/theme, 04-09 board, 04-10 column.
- */
-const serverActionStubAlias = [
-    /*
-     * Vite matches a string `find` by prefix. The `-action` suffix leaves no entry below a prefix
-     * of any other, so this list's order carries no meaning — re-check that before adding an entry
-     * whose name extends an existing one.
-     */
-    {
-        find: "@/features/boards/actions/create-column-action",
-        replacement: path.resolve(rootDir, "src/test-utils/create-column-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/rename-column-action",
-        replacement: path.resolve(rootDir, "src/test-utils/rename-column-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/delete-column-action",
-        replacement: path.resolve(rootDir, "src/test-utils/delete-column-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/reorder-column-action",
-        replacement: path.resolve(rootDir, "src/test-utils/reorder-column-action-storybook-stub.ts"),
-    },
-];
-
 export default defineConfig({
     test: {
         projects: [
@@ -108,7 +79,7 @@ export default defineConfig({
                 },
             },
             {
-                resolve: { alias: [...serverActionStubAlias, ...alias] },
+                resolve: { alias },
                 plugins: [serverActionStubPlugin({ rootDir })],
                 test: {
                     name: "browser",
@@ -157,14 +128,7 @@ export default defineConfig({
                 },
             },
             {
-                /*
-                 * Stories render components importing real Server Action modules, but Storybook's
-                 * Vitest-driven rendering has no server/client build split for them — the same
-                 * `serverActionStubAlias` used by "browser" above stands in here too.
-                 */
-                resolve: {
-                    alias: [...serverActionStubAlias, ...alias],
-                },
+                resolve: { alias },
                 /*
                  * Listed first as documentation of intent only — what actually orders the transform
                  * ahead of @storybook/nextjs-vite's own transforms, so its AST reader sees raw

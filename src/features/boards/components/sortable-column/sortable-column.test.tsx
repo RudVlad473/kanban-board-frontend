@@ -5,23 +5,30 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen, within } from "@testing-library/react";
-import { beforeEach, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
-import {
-    holdNextReorderColumn,
-    queueReorderColumnFailure,
-    reorderColumnActionCalls,
-    resetReorderColumnStub,
-    settleReorderColumn,
-} from "@/test-utils/reorder-column-action-storybook-stub";
 
 import * as stories from "./sortable-column.stories";
 
 const { Default, Reordering, LoneColumn, OptimisticReorder } = composeStories(stories);
+
+/*
+ * One recorder, looked up off the imported binding — `queue` accepts only this action's own awaited
+ * result and `calls` is typed as its first parameter (04-CONTEXT.md D-01).
+ */
+const reorderColumnStub = actionStub(reorderColumnAction);
+
+/**
+ * The id every queued success below states for the column it moved. The deleted double derived one
+ * from the call; no consumer reads it back, since `useReorderColumns` branches on `status` alone.
+ */
+const STUB_WRITTEN_COLUMN_ID = "stub-written-column-id";
 
 /** The two authored toast strings, as the user reads them — title and description run together. */
 const GENERIC_REORDER_TOAST = "Couldn't reorder columns.Try again.";
@@ -53,10 +60,6 @@ const moveFirstColumnToThirdPosition = async (): Promise<void> => {
 describeForEachDevice({
     name: "SortableColumn",
     body: () => {
-        beforeEach(() => {
-            resetReorderColumnStub();
-        });
-
         /*
          * U-02: the whole header is the handle, and the role description is what tells a screen
          * reader it can be lifted at all. It comes from the library's spread, never a hand-written copy.
@@ -147,7 +150,11 @@ describeForEachDevice({
         it("renders the new order before the reorder settles, and sends exactly one request", async () => {
             // Arrange
             await render(<OptimisticReorder />);
-            holdNextReorderColumn();
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 2 },
+            });
+            reorderColumnStub.hold();
 
             // Act
             await moveFirstColumnToThirdPosition();
@@ -156,8 +163,8 @@ describeForEachDevice({
             await expect
                 .poll(getRenderedColumnNames)
                 .toEqual(["Fixture Column 2", "Fixture Column 3", "Fixture Column 1", "Fixture Column 4"]);
-            expect(reorderColumnActionCalls).toHaveLength(1);
-            settleReorderColumn();
+            expect(reorderColumnStub.calls).toHaveLength(1);
+            reorderColumnStub.settle();
         });
 
         /*
@@ -166,14 +173,18 @@ describeForEachDevice({
          */
         it("sends the moved column's own version and its final 0-based index", async () => {
             // Arrange
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 2 },
+            });
             await render(<OptimisticReorder />);
 
             // Act
             await moveFirstColumnToThirdPosition();
 
             // Assert
-            await expect.poll(() => reorderColumnActionCalls).toHaveLength(1);
-            expect(reorderColumnActionCalls[0]).toEqual({
+            await expect.poll(() => reorderColumnStub.calls).toHaveLength(1);
+            expect(reorderColumnStub.calls[0]).toEqual({
                 boardId: "00000000-0000-4000-8000-000000000001",
                 columnId: "00000000-0000-4000-8000-c00000000001",
                 version: 0,
@@ -188,7 +199,7 @@ describeForEachDevice({
         it("restores the whole board's order and raises the rollback toast when a reorder fails", async () => {
             // Arrange
             await render(<OptimisticReorder />);
-            queueReorderColumnFailure(RESULT_STATUS.ERROR);
+            reorderColumnStub.queue({ status: RESULT_STATUS.ERROR });
 
             // Act
             await moveFirstColumnToThirdPosition();
@@ -210,7 +221,7 @@ describeForEachDevice({
         it("raises the distinct version-conflict copy instead when the reorder is refused as stale", async () => {
             // Arrange
             await render(<OptimisticReorder />);
-            queueReorderColumnFailure(RESULT_STATUS.CONFLICT);
+            reorderColumnStub.queue({ status: RESULT_STATUS.CONFLICT });
 
             // Act
             await moveFirstColumnToThirdPosition();
@@ -228,7 +239,11 @@ describeForEachDevice({
         it("reports the moved column as busy while its own request is still in flight", async () => {
             // Arrange
             await render(<OptimisticReorder />);
-            holdNextReorderColumn();
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 2 },
+            });
+            reorderColumnStub.hold();
 
             // Act
             await moveFirstColumnToThirdPosition();
@@ -247,7 +262,7 @@ describeForEachDevice({
                     ["board-column-00000000-0000-4000-8000-c00000000001", "true"],
                     ["board-column-00000000-0000-4000-8000-c00000000004", "false"],
                 ]);
-            settleReorderColumn();
+            reorderColumnStub.settle();
         });
     },
 });

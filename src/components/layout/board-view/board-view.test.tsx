@@ -5,40 +5,17 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen, within } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { createColumnAction } from "@/features/boards/actions/create-column-action";
+import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
+import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
+import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
-import {
-    createColumnActionCalls,
-    holdNextCreateColumn,
-    queueCreateColumnFailure,
-    resetCreateColumnStub,
-    settleCreateColumn,
-} from "@/test-utils/create-column-action-storybook-stub";
-import {
-    deleteColumnActionCalls,
-    holdNextDeleteColumn,
-    queueDeleteColumnFailure,
-    resetDeleteColumnStub,
-    settleDeleteColumn,
-} from "@/test-utils/delete-column-action-storybook-stub";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
-import {
-    holdNextRenameColumn,
-    queueRenameColumnFailure,
-    renameColumnActionCalls,
-    resetRenameColumnStub,
-    settleRenameColumn,
-} from "@/test-utils/rename-column-action-storybook-stub";
-import {
-    holdNextReorderColumn,
-    queueReorderColumnFailure,
-    reorderColumnActionCalls,
-    resetReorderColumnStub,
-    settleReorderColumn,
-} from "@/test-utils/reorder-column-action-storybook-stub";
 
 import * as stories from "./board-view.stories";
 
@@ -65,8 +42,23 @@ const {
     FiveReorderableColumns,
 } = composeStories(stories);
 
+/*
+ * One recorder per action, looked up off the imported binding — `queue` accepts only that action's
+ * own awaited result and `calls` is typed as its first parameter (04-CONTEXT.md D-01).
+ */
+const createColumnStub = actionStub(createColumnAction);
+const renameColumnStub = actionStub(renameColumnAction);
+const deleteColumnStub = actionStub(deleteColumnAction);
+const reorderColumnStub = actionStub(reorderColumnAction);
+
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
+
+/**
+ * The id every queued success below states for the column it wrote. The deleted doubles derived one
+ * from the call; no consumer reads it back, since every column hook branches on `status` alone.
+ */
+const STUB_WRITTEN_COLUMN_ID = "stub-written-column-id";
 
 /* Duplicated verbatim from `board-view.stories.tsx`'s own host — see the comment beside them there. */
 const SERVER_RENAMED_NAME = "Renamed On The Server";
@@ -287,13 +279,6 @@ const renameColumnFromHeader = async ({
 describeForEachDevice({
     name: "BoardView",
     body: () => {
-        beforeEach(() => {
-            resetCreateColumnStub();
-            resetRenameColumnStub();
-            resetDeleteColumnStub();
-            resetReorderColumnStub();
-        });
-
         it("renders one column per column, each captioned with its name and task count", async () => {
             // Act
             await render(<Populated />);
@@ -370,6 +355,10 @@ describeForEachDevice({
         /* COLUMN-01 on the one board state the tracer could not reach at all. */
         it("reaches the create action once from the empty state, with the board's own id", async () => {
             // Arrange
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: 0 },
+            });
             await render(<EmptyBoard />);
 
             // Act
@@ -377,15 +366,15 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(createColumnActionCalls).toHaveLength(1);
+                expect(createColumnStub.calls).toHaveLength(1);
             });
-            expect(createColumnActionCalls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
+            expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
         });
 
         /* UI-SPEC error/Add-Column-duplicate: its own copy, inline, and still never a toast. */
         it("keeps the modal open with the duplicate-name copy when the name is refused as a duplicate", async () => {
             // Arrange
-            queueCreateColumnFailure(RESULT_STATUS.DUPLICATE);
+            createColumnStub.queue({ status: RESULT_STATUS.DUPLICATE });
             await render(<DuplicateColumnName />);
 
             // Act
@@ -402,7 +391,7 @@ describeForEachDevice({
         /* The new table entry must not swallow the fallback every other failure branch still uses. */
         it("still renders the generic create-failure copy for a failure that is not a duplicate", async () => {
             // Arrange
-            queueCreateColumnFailure(RESULT_STATUS.ERROR);
+            createColumnStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<DuplicateColumnName />);
 
             // Act
@@ -450,6 +439,10 @@ describeForEachDevice({
          */
         it("reaches the create action once with the board's own id, then closes the modal", async () => {
             // Arrange
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: 0 },
+            });
             await render(<Populated />);
 
             // Act
@@ -457,9 +450,9 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(createColumnActionCalls).toHaveLength(1);
+                expect(createColumnStub.calls).toHaveLength(1);
             });
-            expect(createColumnActionCalls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
+            expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
             await vi.waitFor(() => {
                 expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
             });
@@ -468,7 +461,7 @@ describeForEachDevice({
         /* UI-SPEC error/Add-Column-generic: nothing was created, so the failure lands inline. */
         it("keeps the modal open with inline copy and no toast when the create fails", async () => {
             // Arrange
-            queueCreateColumnFailure(RESULT_STATUS.ERROR);
+            createColumnStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<Populated />);
 
             // Act
@@ -486,7 +479,11 @@ describeForEachDevice({
          */
         it("shows the pending treatment and refuses Escape while the create is in flight", async () => {
             // Arrange
-            holdNextCreateColumn();
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: 0 },
+            });
+            createColumnStub.hold();
             await render(<Populated />);
 
             // Act
@@ -503,7 +500,7 @@ describeForEachDevice({
             expect(screen.getByRole("dialog")).toBeInTheDocument();
 
             // Act — settling the held call is what finally closes it.
-            settleCreateColumn();
+            createColumnStub.settle();
 
             // Assert
             await vi.waitFor(() => {
@@ -564,6 +561,10 @@ describeForEachDevice({
          */
         it("scrolls the column row to its end after a successful create, with motion governed by CSS", async () => {
             // Arrange
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: 8 },
+            });
             await render(<EightColumns />);
             const scrollRow = getScrollRow();
             expect(scrollRow.scrollLeft).toBe(0);
@@ -582,7 +583,7 @@ describeForEachDevice({
         /* T-03-27: the pending-scroll flag is set only in the success branch, so a failure is inert. */
         it("leaves the column row where it was when the create fails", async () => {
             // Arrange
-            queueCreateColumnFailure(RESULT_STATUS.ERROR);
+            createColumnStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<EightColumns />);
             const scrollRow = getScrollRow();
 
@@ -597,6 +598,10 @@ describeForEachDevice({
         /* D-03/D-05 fire on one exact transition, and D-02 keeps the create itself uncapped. */
         it("raises one neutral nudge on the create that takes the board to nine columns", async () => {
             // Arrange
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: 8 },
+            });
             await render(<EightColumns />);
 
             // Act
@@ -610,7 +615,7 @@ describeForEachDevice({
                 "That's 9 columns on this board.Columns scroll horizontally from here.",
             );
             expect(getRaisedToasts()[0]).not.toHaveClass("border-l-border-danger");
-            expect(createColumnActionCalls).toHaveLength(1);
+            expect(createColumnStub.calls).toHaveLength(1);
             /* By its heading, not its role — the raised toast is a `dialog` too. */
             await vi.waitFor(() => {
                 expect(screen.queryByRole("heading", { name: "Add New Column" })).not.toBeInTheDocument();
@@ -619,6 +624,10 @@ describeForEachDevice({
 
         it("raises no nudge on the create that takes the board to eight columns", async () => {
             // Arrange
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: 7 },
+            });
             await render(<SevenColumns />);
 
             // Act
@@ -626,13 +635,17 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(createColumnActionCalls).toHaveLength(1);
+                expect(createColumnStub.calls).toHaveLength(1);
             });
             expect(getRaisedToastCount()).toBe(0);
         });
 
         it("raises no nudge on the create that takes the board to ten columns", async () => {
             // Arrange
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: 9 },
+            });
             await render(<NineColumns />);
 
             // Act
@@ -640,7 +653,7 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(createColumnActionCalls).toHaveLength(1);
+                expect(createColumnStub.calls).toHaveLength(1);
             });
             expect(getRaisedToastCount()).toBe(0);
         });
@@ -701,7 +714,11 @@ describeForEachDevice({
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
-            holdNextRenameColumn();
+            renameColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "In Progress", version: 1, position: 0 },
+            });
+            renameColumnStub.hold();
 
             // Act — submit, then observe while the action is still unresolved.
             await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
@@ -713,11 +730,11 @@ describeForEachDevice({
             expect(screen.queryByRole("heading", { name: "Rename Column" })).not.toBeInTheDocument();
 
             // Act — let the write land.
-            settleRenameColumn();
+            renameColumnStub.settle();
 
             // Assert — the name stays and nothing was announced, the modal having closed long before.
             await vi.waitFor(() => {
-                expect(renameColumnActionCalls).toHaveLength(1);
+                expect(renameColumnStub.calls).toHaveLength(1);
             });
             expect(getRenderedColumnNames()).toEqual(["In Progress", ...namesBefore.slice(1)]);
             expect(getRaisedToastCount()).toBe(0);
@@ -725,6 +742,10 @@ describeForEachDevice({
 
         it("sends the column's own board id, column id, typed name and current version, exactly once", async () => {
             // Arrange
+            renameColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "In Progress", version: 1, position: 1 },
+            });
             await render(<Populated />);
 
             // Act
@@ -732,9 +753,9 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(renameColumnActionCalls).toHaveLength(1);
+                expect(renameColumnStub.calls).toHaveLength(1);
             });
-            expect(renameColumnActionCalls[0]).toEqual({
+            expect(renameColumnStub.calls[0]).toEqual({
                 boardId: FIXTURE_BOARD_ID,
                 columnId: Populated.args.board?.columns[1]?.id,
                 name: "In Progress",
@@ -750,15 +771,15 @@ describeForEachDevice({
             // Arrange — held, so the optimistic name is observed before the failure lands on it.
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
-            queueRenameColumnFailure(RESULT_STATUS.ERROR);
-            holdNextRenameColumn();
+            renameColumnStub.queue({ status: RESULT_STATUS.ERROR });
+            renameColumnStub.hold();
 
             // Act
             await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
             await vi.waitFor(() => {
                 expect(getRenderedColumnNames()[0]).toBe("In Progress");
             });
-            settleRenameColumn();
+            renameColumnStub.settle();
 
             // Assert — identical to the pre-submit set, not merely "the renamed header reverted".
             await vi.waitFor(() => {
@@ -775,15 +796,15 @@ describeForEachDevice({
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
-            queueRenameColumnFailure(RESULT_STATUS.CONFLICT);
-            holdNextRenameColumn();
+            renameColumnStub.queue({ status: RESULT_STATUS.CONFLICT });
+            renameColumnStub.hold();
 
             // Act
             await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
             await vi.waitFor(() => {
                 expect(getRenderedColumnNames()[0]).toBe("In Progress");
             });
-            settleRenameColumn();
+            renameColumnStub.settle();
 
             // Assert — the two branches are proved different, not merely proved to raise something.
             await vi.waitFor(() => {
@@ -796,7 +817,7 @@ describeForEachDevice({
         it("tells the user to sign in again when the rename is refused as unauthenticated", async () => {
             // Arrange
             await render(<Populated />);
-            queueRenameColumnFailure(RESULT_STATUS.UNAUTHENTICATED);
+            renameColumnStub.queue({ status: RESULT_STATUS.UNAUTHENTICATED });
 
             // Act
             await renameColumnFromHeader({ columnName: "Fixture Column 1", nextName: "In Progress" });
@@ -812,6 +833,10 @@ describeForEachDevice({
         /* The override applies only where the id matches, so a second column keeps its own name. */
         it("seeds the modal with each column's own name when the kebab is reopened elsewhere", async () => {
             // Arrange
+            renameColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "In Progress", version: 1, position: 0 },
+            });
             await render(<Populated />);
 
             // Act — rename the first column, then open the rename modal on a different one.
@@ -831,6 +856,10 @@ describeForEachDevice({
          */
         it("retires the override once the refreshed props carry it, so a later server change renders", async () => {
             // Arrange
+            renameColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: SERVER_RENAMED_NAME, version: 1, position: 0 },
+            });
             await render(<ServerColumnsAdvance />);
 
             // Act — rename optimistically, then land the refreshed server render carrying that name.
@@ -859,7 +888,7 @@ describeForEachDevice({
             // Assert — that column is named, and nothing has been deleted yet.
             expect(await screen.findByRole("heading", { name: "Delete this column?" })).toBeInTheDocument();
             expect(screen.getByText(/'Fixture Column 2' column\?/)).toBeInTheDocument();
-            expect(deleteColumnActionCalls).toHaveLength(0);
+            expect(deleteColumnStub.calls).toHaveLength(0);
         });
 
         it("renders the delete confirmation when staged open", async () => {
@@ -873,6 +902,7 @@ describeForEachDevice({
 
         it("sends that column's own board id and column id with the delete, exactly once", async () => {
             // Arrange
+            deleteColumnStub.queue({ status: RESULT_STATUS.SUCCESS });
             await render(<Populated />);
 
             // Act
@@ -880,9 +910,9 @@ describeForEachDevice({
 
             // Assert — T-03-30: one call, never two.
             await vi.waitFor(() => {
-                expect(deleteColumnActionCalls).toHaveLength(1);
+                expect(deleteColumnStub.calls).toHaveLength(1);
             });
-            expect(deleteColumnActionCalls[0]).toEqual({
+            expect(deleteColumnStub.calls[0]).toEqual({
                 boardId: FIXTURE_BOARD_ID,
                 columnId: Populated.args.board?.columns[1]?.id,
             });
@@ -896,19 +926,20 @@ describeForEachDevice({
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
-            holdNextDeleteColumn();
+            deleteColumnStub.queue({ status: RESULT_STATUS.SUCCESS });
+            deleteColumnStub.hold();
 
             // Act — submit, then observe while the action is still unresolved.
             await deleteColumnFromHeader("Fixture Column 1");
             await vi.waitFor(() => {
-                expect(deleteColumnActionCalls).toHaveLength(1);
+                expect(deleteColumnStub.calls).toHaveLength(1);
             });
 
             // Assert — the whole set is untouched, not merely the target still present.
             expect(getRenderedColumnNames()).toEqual(namesBefore);
 
             // Act — let the write land.
-            settleDeleteColumn();
+            deleteColumnStub.settle();
 
             // Assert — still nothing removed here: the refreshed props are what remove it.
             await vi.waitFor(() => {
@@ -922,15 +953,15 @@ describeForEachDevice({
             // Arrange — held, so the pre-settle state is observed before the failure lands.
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
-            queueDeleteColumnFailure(RESULT_STATUS.ERROR);
-            holdNextDeleteColumn();
+            deleteColumnStub.queue({ status: RESULT_STATUS.ERROR });
+            deleteColumnStub.hold();
 
             // Act
             await deleteColumnFromHeader("Fixture Column 1");
             await vi.waitFor(() => {
-                expect(deleteColumnActionCalls).toHaveLength(1);
+                expect(deleteColumnStub.calls).toHaveLength(1);
             });
-            settleDeleteColumn();
+            deleteColumnStub.settle();
 
             // Assert
             await vi.waitFor(() => {
@@ -948,7 +979,7 @@ describeForEachDevice({
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
-            queueDeleteColumnFailure(RESULT_STATUS.CONFLICT);
+            deleteColumnStub.queue({ status: RESULT_STATUS.CONFLICT });
 
             // Act
             await deleteColumnFromHeader("Fixture Column 1");
@@ -1031,6 +1062,10 @@ describeForEachDevice({
          */
         it("moves a column one position later when it is lifted, arrowed right and dropped", async () => {
             // Arrange
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 1 },
+            });
             await render(<ReorderableColumns />);
 
             // Act
@@ -1040,12 +1075,16 @@ describeForEachDevice({
             await expect
                 .poll(getRenderedColumnNames)
                 .toEqual(["Fixture Column 2", "Fixture Column 1", "Fixture Column 3", "Fixture Column 4"]);
-            expect(reorderColumnActionCalls).toHaveLength(1);
+            expect(reorderColumnStub.calls).toHaveLength(1);
         });
 
         /* D-06: the library's default lift keys are kept, so enter lifts exactly as space does. */
         it("lifts and drops on the enter key as well as the space bar", async () => {
             // Arrange
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 1 },
+            });
             await render(<ReorderableColumns />);
 
             // Act
@@ -1055,7 +1094,7 @@ describeForEachDevice({
             await expect
                 .poll(getRenderedColumnNames)
                 .toEqual(["Fixture Column 2", "Fixture Column 1", "Fixture Column 3", "Fixture Column 4"]);
-            expect(reorderColumnActionCalls).toHaveLength(1);
+            expect(reorderColumnStub.calls).toHaveLength(1);
         });
 
         it("returns the column to its original index and issues nothing when the move is cancelled", async () => {
@@ -1072,7 +1111,7 @@ describeForEachDevice({
             await expect
                 .poll(getRenderedColumnNames)
                 .toEqual(["Fixture Column 1", "Fixture Column 2", "Fixture Column 3", "Fixture Column 4"]);
-            expect(reorderColumnActionCalls).toHaveLength(0);
+            expect(reorderColumnStub.calls).toHaveLength(0);
         });
 
         /*
@@ -1081,6 +1120,10 @@ describeForEachDevice({
          */
         it("issues exactly one request however many arrow steps the move took", async () => {
             // Arrange
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 3 },
+            });
             await render(<ReorderableColumns />);
 
             // Act
@@ -1090,8 +1133,8 @@ describeForEachDevice({
             await expect
                 .poll(getRenderedColumnNames)
                 .toEqual(["Fixture Column 2", "Fixture Column 3", "Fixture Column 4", "Fixture Column 1"]);
-            expect(reorderColumnActionCalls).toHaveLength(1);
-            expect(reorderColumnActionCalls[0].targetPosition).toBe(3);
+            expect(reorderColumnStub.calls).toHaveLength(1);
+            expect(reorderColumnStub.calls[0].targetPosition).toBe(3);
         });
 
         /*
@@ -1100,6 +1143,10 @@ describeForEachDevice({
          */
         it("announces the lift, each move and the drop in the contract's own wording", async () => {
             // Arrange
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 1 },
+            });
             await render(<ReorderableColumns />);
             focusColumnHandle("Fixture Column 1 (2)");
 
@@ -1153,7 +1200,11 @@ describeForEachDevice({
         it("disables the moved column's own two entries while its reorder is in flight", async () => {
             // Arrange
             await render(<ReorderInFlight />);
-            holdNextReorderColumn();
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 1 },
+            });
+            reorderColumnStub.hold();
             await reorderFromKeyboard({ caption: "Fixture Column 1 (2)" });
 
             // Act
@@ -1163,13 +1214,17 @@ describeForEachDevice({
             const items = await screen.findAllByRole("menuitem");
             expect(items.map((item) => item.textContent)).toEqual(["Rename Column", "Delete Column"]);
             expect(items.map((item) => item.getAttribute("data-disabled"))).toEqual(["", ""]);
-            settleReorderColumn();
+            reorderColumnStub.settle();
         });
 
         it("leaves a merely shifted column's entries available while the reorder is in flight", async () => {
             // Arrange
             await render(<ReorderInFlight />);
-            holdNextReorderColumn();
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 1 },
+            });
+            reorderColumnStub.hold();
             await reorderFromKeyboard({ caption: "Fixture Column 1 (2)" });
 
             // Act
@@ -1178,14 +1233,14 @@ describeForEachDevice({
             // Assert
             const items = await screen.findAllByRole("menuitem");
             expect(items.map((item) => item.getAttribute("data-disabled"))).toEqual([null, null]);
-            settleReorderColumn();
+            reorderColumnStub.settle();
         });
 
         /* U-05: the WHOLE board's order comes back, because the move shifted every column between. */
         it("restores the rendered order and raises the rollback toast when the reorder fails", async () => {
             // Arrange
             await render(<ReorderableColumns />);
-            queueReorderColumnFailure(RESULT_STATUS.ERROR);
+            reorderColumnStub.queue({ status: RESULT_STATUS.ERROR });
 
             // Act
             await reorderFromKeyboard({ caption: "Fixture Column 1 (2)", steps: 3 });
@@ -1213,7 +1268,7 @@ describeForEachDevice({
 
             // Assert
             expect(await screen.findByRole("menuitem", { name: "Rename Column" })).toBeInTheDocument();
-            expect(reorderColumnActionCalls).toHaveLength(0);
+            expect(reorderColumnStub.calls).toHaveLength(0);
             expect(getRenderedColumnNames()).toEqual([
                 "Fixture Column 1",
                 "Fixture Column 2",
@@ -1241,6 +1296,10 @@ describeForEachDevice({
 
         it("moves a column relative to that already-reordered order, not to creation order", async () => {
             // Arrange
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 2", version: 1, position: 1 },
+            });
             await render(<ReorderedServerOrder />);
 
             // Act
@@ -1250,8 +1309,8 @@ describeForEachDevice({
             await expect
                 .poll(getRenderedColumnNames)
                 .toEqual(["Fixture Column 3", "Fixture Column 2", "Fixture Column 1", "Fixture Column 4"]);
-            expect(reorderColumnActionCalls).toHaveLength(1);
-            expect(reorderColumnActionCalls[0].targetPosition).toBe(1);
+            expect(reorderColumnStub.calls).toHaveLength(1);
+            expect(reorderColumnStub.calls[0].targetPosition).toBe(1);
         });
 
         /*
@@ -1260,6 +1319,10 @@ describeForEachDevice({
          */
         it("scrolls the row only for a keyboard step whose destination is not already fully on screen", async () => {
             // Arrange
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 4 },
+            });
             await render(<FiveReorderableColumns />);
             focusColumnHandle("Fixture Column 1 (2)");
             await userEvent.keyboard(" ");
@@ -1291,7 +1354,7 @@ describeForEachDevice({
 
             // Assert
             expect(scrollRow.scrollLeft).toBe(0);
-            expect(reorderColumnActionCalls).toHaveLength(0);
+            expect(reorderColumnStub.calls).toHaveLength(0);
         });
 
         /*
@@ -1300,6 +1363,10 @@ describeForEachDevice({
          */
         it("still moves a column past the fold by keyboard and leaves it on screen", async () => {
             // Arrange
+            reorderColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 4 },
+            });
             await render(<FiveReorderableColumns />);
 
             // Act
@@ -1315,7 +1382,7 @@ describeForEachDevice({
                     "Fixture Column 5",
                     "Fixture Column 1",
                 ]);
-            expect(reorderColumnActionCalls[0].targetPosition).toBe(4);
+            expect(reorderColumnStub.calls[0].targetPosition).toBe(4);
             await expect.poll(getColumnsOverlappingTheVisibleBox).toContain("Fixture Column 1");
         });
 
