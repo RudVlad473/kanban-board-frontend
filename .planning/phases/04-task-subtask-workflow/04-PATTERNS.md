@@ -927,7 +927,7 @@ plan it as such, not as a row-local class.
 | Component | `src/features/boards/components/board-view/board-view.tsx` | 310 lines |
 | Stories | `.../board-view/board-view.stories.tsx` | 231 lines, 20 composed stories |
 | Test | `.../board-view/board-view.test.tsx` | 1,334 lines, 60 `it()` × 2 devices |
-| Vitest screenshots | `.../board-view/__screenshots__/board-view.test.tsx/*.png` | **52 files** |
+| Vitest screenshots | `.../board-view/__screenshots__/` — **untracked**, `.gitignore:36` ignores `src/**/__screenshots__/` | 0 tracked files; any present are machine-local failure captures, not baselines, and never move with the folder |
 | Coverage pointers | `use-rename-column.ts:3`, `use-create-column.ts:3`, `use-reorder-columns.ts:3`, `use-column-drag-sensors.ts:3`, `use-delete-column.ts:3` | 5 comment lines, gated by `scripts/check-coverage-pointers.mjs` |
 | Route importer | `app/(dashboard)/boards/[boardId]/page.tsx:5` | 1 import |
 | Prose cross-references | `column-header.stories.tsx:18`, `sortable-column.stories.tsx:55`, `add-column-placeholder.stories.tsx:22` | 3 comments |

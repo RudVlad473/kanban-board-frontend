@@ -67,19 +67,31 @@ no-op and a fully green local visual run proves only that the specs executed. Pr
 compare against baselines locally — found 2026-08-27, after a 260/260 local run reported success on
 screenshots it never compared.
 
-## Copy `.env.local` into every worktree
+## Set up every fresh worktree before running anything
+
+Three things a `git worktree add` does not bring across. Run all three first in any worktree-based
+execution (GSD's `isolation="worktree"` dispatch or otherwise), before `pnpm dev`, tests, lint or
+e2e:
+
+```bash
+cp /home/andre/dev/kanban-board-frontend/.env.local "$(git rev-parse --show-toplevel)/.env.local"
+pnpm install --frozen-lockfile
+pnpm exec next typegen
+```
+
+Skipping `next typegen` is the one that misleads. `tsconfig.json` includes `.next/types/**/*.ts`,
+so without it `pnpm lint` reports three `no-unsafe-assignment` errors in
+`app/(dashboard)/boards/[boardId]/page.tsx` against the generated `PageProps<>` global. It reads
+as a real regression in a file you never touched. Found 2026-08-28, reported independently by two
+Phase 4 executors.
+
+### `.env.local` specifically
 
 `.env.local` is gitignored, so `git worktree add` never copies it — a plan executed in an
 isolated worktree (GSD's `isolation="worktree"` dispatch, or any other worktree-based
 execution) starts with none of the local env vars (`NONPROD_RESET_TOKEN`, `SESSION_SECRET`,
 etc.) that `pnpm dev`/tests/e2e runs depend on. This silently breaks any task that needs them —
 e.g. `e2e/global-setup.ts` refuses to run without `NONPROD_RESET_TOKEN`.
-
-Before running anything that needs local env in a freshly created worktree, copy it in first:
-
-```bash
-cp /home/andre/dev/kanban-board-frontend/.env.local "$(git rev-parse --show-toplevel)/.env.local"
-```
 
 Never `cat`, `grep`, or otherwise print `.env.local`'s contents — only copy it so the process
 environment picks the values up naturally. Never `git add` it (it's ignored on purpose). The
