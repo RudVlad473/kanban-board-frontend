@@ -38,7 +38,7 @@ Phase 02 (Board Management): 10 of 15 plans complete. 02-10's Task 4 checkpoint 
 Status: Ready to plan
 plan-checker-verified; the pause that blocked them (pull Phase 02.2 forward) is resolved, since
 02.2 shipped in full on 2026-08-22.
-Last activity: 2026-08-26 — Phase 02 complete, transitioned to Phase 02.1
+Last activity: 2026-08-29 - Completed quick task 260829-kyv: Regenerate OpenAPI contract from backend and scope e2e reset cleanup to seeded user ids instead of full-db wipe
 
 Progress: Milestone v1.0 — Phase 1: 38/38 plans; Phase 02.1: 15/15 plans; Phase 02.2: 9/9 plans;
 Phase 02: 10/15 plans (in progress)
@@ -150,6 +150,19 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
   gap; CI and the deployed Vercel build are unaffected — CI generates its own secret, Vercel has
   per-environment secrets set). User was asked to run `vercel env pull --yes` to fix locally;
   unconfirmed whether that happened.
+
+- **Cross-repo precondition on quick task 260829-kyv (below):** the sibling
+  `kanban-board-backend` repo's targeted-user-delete reset route exists only in that repo's local
+  `main` (commits `14dd89d`/`c29a32d`), still unpushed to its `origin/main` as of this session.
+  That repo deploys to the live nonprod backend on every push to `main`. Until it is pushed and
+  deploys, this quick task's branch will fail its first CI `e2e` run with a designed, loud refusal
+  ("backend still serves the old contract... must be redeployed") — not a regression to chase.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260829-kyv | Regenerate OpenAPI contract from backend and scope e2e reset cleanup to seeded user ids instead of full-db wipe | 2026-08-29 | 5f325f8 | Verified | [260829-kyv-regenerate-openapi-contract-from-backend](./quick/260829-kyv-regenerate-openapi-contract-from-backend/) |
 
 ### Roadmap Evolution
 
