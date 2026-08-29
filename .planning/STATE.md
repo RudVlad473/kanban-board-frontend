@@ -154,19 +154,21 @@ verifying phase 03 wave 4) —
 - **RESOLVED 2026-08-29** — local `pnpm build` no longer fails on a missing `SESSION_SECRET`.
   Verified this session: `pnpm build` exit 0 against the current `.env.local`.
 
-- **OPEN, blocking plan 04-12** — 20 failures in `board-view.test.tsx`, every keyboard column
-  reorder block in both MOBILE and DESKTOP (`pnpm test` 1474/1494 at `4a5b4fc`). One signature:
-  `expect.poll(getAnnouncement).not.toBe(announcedBefore)` times out — the drag announcement never
-  advances past "Picked up …". Introduced by 04-12's partial task 3. Prime suspect is
-  `createTaskMoveAnnouncements`' fallback delegation to `createColumnReorderAnnouncements` in
-  `board-view.tsx`; secondary is the new `DRAG_ITEM_TYPE.COLUMN` guard in
-  `use-column-drag-sensors.ts:47`. Full diagnosis in the phase `.continue-here.md`.
+- **PARTIALLY FIXED, still blocking plan 04-12** — 15 of 20 `board-view.test.tsx` failures fixed
+  in `eb1b80a`: `createTaskAwareCollisionDetection`'s column-drag branch called `closestCenter(args)`
+  unfiltered, so a column drag's `over` often resolved to a nearby task card instead of the
+  neighboring column once tasks shared the same `DndContext`. 5 failures remain, all MOBILE-only
+  keyboard reorders that need the row to scroll mid-drag — a separate, deeper root cause
+  (`sortableKeyboardCoordinates` ignores any `currentCoordinates` a caller passes and reads
+  dnd-kit's own stale `collisionRect` instead) diagnosed but not fixed; a first fix attempt
+  regressed further (dnd-kit's own `over` started double-advancing on scroll-needed steps) and was
+  reverted. Full diagnosis, the reverted attempt, and candidate directions:
+  `.planning/todos/pending/2026-08-29-mobile-keyboard-column-reorder-past-fold-still-broken.md`.
 
-- **Cross-repo precondition on quick task 260829-kyv (below):** the sibling
-  `kanban-board-backend` repo's targeted-user-delete reset route exists only in that repo's local
-  `main` (commits `14dd89d`/`c29a32d`), still unpushed to its `origin/main` as of this session.
-  That repo deploys to the live nonprod backend on every push to `main`. Until it is pushed and
-  deploys, this quick task's branch will fail its first CI `e2e` run with a designed, loud refusal
+- **RESOLVED 2026-08-29** — the sibling `kanban-board-backend` repo's targeted-user-delete reset
+  route (commits `14dd89d`/`c29a32d`) was local-only, unpushed to its `origin/main`, when quick task
+  260829-kyv's branch was created. Pushed this session (user-authorized); backend CI/CD deployed to
+  nonprod cleanly and the live `/api/docs` now confirms the new two-route `/admin/reset` contract.
   ("backend still serves the old contract... must be redeployed") — not a regression to chase.
 
 ### Quick Tasks Completed
