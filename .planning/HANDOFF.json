@@ -26,8 +26,9 @@
     {
       "id": 3,
       "name": "Wire the multi-container drag and prove one path end to end",
-      "status": "not_started",
-      "progress": "Executor was stopped mid-task. Its uncommitted edits to board-view.tsx, sortable-column.tsx, sortable-column.stories.tsx, use-column-drag-sensors.ts and boards/model.ts were DISCARDED by the stop and do not exist anywhere. Treat this task as starting from scratch on top of commit 92b3292. Its last action was wiring the sortable-column stories to supply renderTasks without importing the tasks feature."
+      "status": "in_progress",
+      "progress": "RECOVERED 2026-08-29. The earlier note claimed these edits were DISCARDED by the stop and did not exist anywhere; that was wrong. The executor's worktree survived, and all five files it named (board-view.tsx, sortable-column.tsx, sortable-column.stories.tsx, use-column-drag-sensors.ts, boards/model.ts) were intact and uncommitted in it. Committed as d6e3664 on worktree-agent-a89cf10a707dfba36 and pushed to origin; the worktree itself has since been removed. Do NOT restart this task from scratch \u2014 resume from d6e3664. It is incomplete: task 3 never reached its checkpoint and its end-to-end path is unproven.",
+      "commit": "d6e3664"
     }
   ],
   "remaining_tasks": [
