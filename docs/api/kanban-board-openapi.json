@@ -1907,9 +1907,79 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetUsersRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "400": {
+            "description": "Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An authenticated caller who does not own the requested resource (ACCESS_DENIED).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unhandled server-side failure (INTERNAL_ERROR).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -2702,6 +2772,21 @@
         },
         "required": [
           "title"
+        ]
+      },
+      "ResetUsersRequestDTO": {
+        "type": "object",
+        "properties": {
+          "userIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "userIds"
         ]
       },
       "MoveTaskRequestDTO": {
