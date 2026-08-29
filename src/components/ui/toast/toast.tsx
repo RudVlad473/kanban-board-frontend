@@ -28,7 +28,7 @@ const Root = ({ className, toast, ...props }: RootProps) => {
 type ContentProps = Omit<ToastContentProps, "className"> & ClassNameProp;
 
 /*
- * Same panel treatment `Modal.Content` uses (`bg-bg-surface`/`rounded-lg`/`shadow-lg`, carried on
+ * Same panel treatment `Modal.Content` uses (`bg-bg-surface`/`rounded-md`/`shadow-lg`, carried on
  * Root above so the danger border wraps the whole card) — Content itself only owns the internal
  * layout (UI-SPEC "Toast placement/behavior": no new visual tokens needed).
  */

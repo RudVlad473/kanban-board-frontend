@@ -71,7 +71,7 @@ export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Pr
                 <button
                     type="button"
                     onClick={collapseSidebar}
-                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted hover:bg-bg-app hover:text-text-primary"
+                    className="flex min-h-11 w-full items-center gap-2 rounded-full px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted hover:bg-bg-app hover:text-text-primary"
                 >
                     <EyeOff aria-hidden="true" className="size-5 shrink-0" />
                     Hide Sidebar

@@ -74,3 +74,39 @@ user rather than folded into that plan.
 
 Related: [[2026-08-27-sidebar-create-new-board-pinned-to-bottom-instead-of-flowing-under-the-list]] —
 same review pass.
+
+## Resolved 2026-08-29 (during plan 04-12's checkpoint)
+
+Both routes turned out to rest on a false premise. The tokens were not merely *applied* to the
+wrong elements — they were *measured* wrong. Every value in `radius.tokens.json` was converted with
+`600/96 = 6.25`, but the mock is a 1440 CSS px wide design, so a 600 DPI render needs
+`12000/1440 = 8.3333`. Every radius therefore read **1.333x too large**.
+
+Re-measured, calibrated independently on two pages (page 1's Button Primary (L) is 400px tall at
+600 DPI against a 48px design height; page 4's task card is 2332px wide against a 280px design
+width — both give 8.3333):
+
+| Element | Height | True radius | Nature | Old token |
+|--------------------------|--------|-------------|-----------------|-----------|
+| Button Primary (L)       | 48.0   | 24.0        | pill (h/2)      | `lg: 28px` |
+| Button Secondary         | 39.8   | 19.9        | pill (h/2)      | `md: 24px` |
+| Text Field / Dropdown    | 40.1   | 3.2         | true radius     | `sm: 4px` ✓ |
+| Task card (p4)           | —      | 7.4         | true radius     | *none*     |
+
+That is why there was no container radius: two of the three slots were spent on pills. Nothing
+looked broken because CSS clamps `border-radius` to half the box, so a 48px button with a 28px
+radius renders as a perfect pill *by accident* — only containers are large enough for 28px to show.
+
+Resolution (user decision, 2026-08-29 — supersedes the "reuse `--radius-sm`, do not mint a token"
+constraint above, which was reasoning from the wrong numbers): the scale was re-derived rather than
+re-applied. No new token was minted.
+
+- `sm: 4px` — controls: text field, dropdown trigger, subtask checkbox. Unchanged.
+- `md: 24px -> 8px` — surfaces: task cards, columns, modals, toasts, dropdown/menu popups.
+- `lg: 28px` — **retired**. Its only honest user was the pill.
+- `Button` / `IconButton` / the Hide Sidebar button -> `rounded-full`, stating the pill intent
+  instead of relying on the clamping accident, and staying correct at any height.
+
+The theme toggle and ghost column named at the top of this file are both fixed by the `md` change,
+along with every other surface. `03-UI-SPEC.md`'s ghost-column deviation note is struck through and
+annotated in place.

@@ -7,7 +7,7 @@ import { cva } from "class-variance-authority";
  * floor at every size — the descendant `[&_svg]` selector sizes only the glyph (see 01-06-SUMMARY.md).
  */
 export const iconButtonVariants = cva(
-    "inline-flex shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:shrink-0",
+    "inline-flex shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:shrink-0",
     {
         variants: {
             variant: {

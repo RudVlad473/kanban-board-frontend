@@ -25,7 +25,7 @@ export const ThemeToggle = ({ initialTheme, isAuthenticated, forceErrorMessage }
 
     return (
         <div className="flex flex-col gap-1">
-            <div className="flex w-full items-center justify-center gap-4 rounded-lg bg-bg-app p-4">
+            <div className="flex w-full items-center justify-center gap-4 rounded-md bg-bg-app p-4">
                 <Sun aria-hidden="true" className="size-5 shrink-0 text-text-muted" />
 
                 <Switch label={TOGGLE_LABEL} isChecked={theme === THEME.DARK} onCheckedChange={toggleTheme} />

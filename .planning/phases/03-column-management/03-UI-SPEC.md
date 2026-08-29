@@ -341,13 +341,16 @@ Measured from PDF p3 (light) and p13 (dark) at a 1440pt page width:
 - **280px wide** (identical to a real column, `w-70`), spanning the full height of the tallest
   column, as the **last** flex child of the existing horizontal scroll row.
 - **Vertical gradient**, `--color-bg-column-add-from` → `--color-bg-column-add-to`, 180deg.
-- **`rounded-lg` (28px).** The PDF's own corner measures ~6px, but every shipped card/modal/toast
-  surface in this codebase already uses `rounded-lg`, because Phase 1's radius scale was derived
-  from the PDF's *button* frames (`radius.tokens.json` records the measurements). Matching the
-  shipped surfaces is the right call here; matching the PDF's 6px would make the placeholder the
-  only surface on the board with its own radius. Recorded as a **known, deliberate deviation** —
-  re-deriving the radius scale is a Phase 1 token change plus a visual-regression re-baseline, not a
-  Phase 3 concern.
+- **`rounded-md` (8px).** ~~`rounded-lg` (28px), a known deliberate deviation from the PDF's ~6px
+  corner, kept so the placeholder would not be the only surface on the board with its own radius.~~
+  **Superseded 2026-08-29.** The deviation's premise was that the shipped 28px was right and the
+  PDF's ~6px was the outlier. It was the reverse: every radius token had been converted with
+  `600/96 = 6.25` when the mock is a 1440px-wide design needing `12000/1440 = 8.3333`, so the whole
+  scale read 1.333x too large, and two of its three slots were spent on *pills* (the mock's buttons
+  are `height/2` by construction, which CSS clamping made look correct). The scale was re-derived
+  during plan 04-12 — `sm: 4px` controls, `md: 8px` surfaces, buttons on `rounded-full` — so the
+  placeholder now matches both the PDF and every other surface at once, which is what this note
+  wanted and could not have at 28px.
 - **Label** `+ New Column`, `heading-xl` (24px/700), `text-text-muted`, centered on both axes.
 - **It is a real `<button>`**, full-bleed inside the placeholder, opening `AddColumnModal`. It is
   **not** a drop target for column reorder — dropping a column "on" the add-column affordance has no

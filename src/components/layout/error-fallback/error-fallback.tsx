@@ -16,7 +16,7 @@ type Props = {
 export const ErrorFallback = ({ title, description, digest, onRetry, homeHref }: Props) => {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg-app">
-            <div className="flex flex-col items-center gap-4 rounded-lg bg-bg-surface p-6">
+            <div className="flex flex-col items-center gap-4 rounded-md bg-bg-surface p-6">
                 <h1 className="font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
                     {title}
                 </h1>

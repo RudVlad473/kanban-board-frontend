@@ -361,7 +361,7 @@ export const BoardView = ({
                     <DragOverlay dropAnimation={prefersReducedMotion ? null : undefined}>
                         {liftedTask === null ? null : (
                             /* The card's own anatomy minus its controls — a preview, not a second interactive copy. */
-                            <div className="flex w-70 flex-col gap-2 rounded-lg bg-bg-surface py-6 pr-2 pl-4 shadow-lg">
+                            <div className="flex w-70 flex-col gap-2 rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-lg">
                                 <span className="font-heading-m text-heading-m [font-weight:var(--font-weight-heading-m)] break-words text-text-primary">
                                     {liftedTask.title}
                                 </span>

@@ -85,7 +85,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
                 transition: prefersReducedMotion ? undefined : transition,
             }}
             className={cn(
-                "relative flex items-center rounded-lg bg-bg-surface py-6 pr-2 pl-4 shadow-sm",
+                "relative flex items-center rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-sm",
                 isDragging && "opacity-50",
             )}
         >

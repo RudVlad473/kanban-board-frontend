@@ -278,8 +278,8 @@ describeForEachDevice({
             const lastRadius = getComputedStyle(getActiveElement()).borderRadius;
 
             // Assert — rounded top on first, rounded bottom on last, square (equal corners) on middle.
-            expect(firstRadius).toBe("24px 24px 4px 4px");
-            expect(lastRadius).toBe("4px 4px 24px 24px");
+            expect(firstRadius).toBe("8px 8px 4px 4px");
+            expect(lastRadius).toBe("4px 4px 8px 8px");
             const middleCorners = middleRadius.split(" ");
             expect(new Set(middleCorners).size).toBe(1);
         });

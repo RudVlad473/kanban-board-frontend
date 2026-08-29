@@ -74,7 +74,7 @@ const Content = ({ className, children, ...props }: ContentProps) => {
 
             <Dialog.Popup
                 className={cn(
-                    "fixed top-1/2 left-1/2 z-50 max-h-[calc(100vh-6rem)] w-[min(90vw,28rem)] -translate-1/2 overflow-hidden rounded-lg bg-bg-surface shadow-lg outline-none",
+                    "fixed top-1/2 left-1/2 z-50 max-h-[calc(100vh-6rem)] w-[min(90vw,28rem)] -translate-1/2 overflow-hidden rounded-md bg-bg-surface shadow-lg outline-none",
                     className,
                 )}
                 {...props}

@@ -22,7 +22,7 @@ const renderStubbedTasks = (column: ColumnFull) => {
     return (): ReactNode => {
         return column.tasks.map((task) => {
             return (
-                <li key={task.id} data-testid="stubbed-task" className="rounded-lg bg-bg-surface px-4 py-6 shadow-sm">
+                <li key={task.id} data-testid="stubbed-task" className="rounded-md bg-bg-surface px-4 py-6 shadow-sm">
                     {task.title}
                 </li>
             );

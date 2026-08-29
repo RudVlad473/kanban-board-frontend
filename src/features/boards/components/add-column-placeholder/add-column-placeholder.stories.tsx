@@ -28,7 +28,7 @@ export const InRow: Story = {
         (Story) => {
             return (
                 <div className="flex h-150 gap-6 overflow-x-auto bg-bg-app p-6">
-                    <div className="w-70 shrink-0 rounded-lg bg-bg-surface" />
+                    <div className="w-70 shrink-0 rounded-md bg-bg-surface" />
 
                     <Story />
                 </div>
