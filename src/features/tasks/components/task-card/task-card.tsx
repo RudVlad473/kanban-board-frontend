@@ -1,5 +1,6 @@
 "use client";
 
+import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
@@ -30,6 +31,19 @@ type Props = {
  */
 export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMoving }: Props) => {
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
+    // comment-length-exempt: an empirically-confirmed dnd-kit interaction a future reader would otherwise revert as unnecessary (docs/adr/tech/0023)
+    /*
+     * `sortableKeyboardCoordinates` (the column keyboard sensor's own coordinate getter) picks its
+     * candidate from every ENABLED droppable on the board regardless of declared type — so with a
+     * card's own droppable left enabled during a COLUMN drag, its rect competed with the next
+     * column's header and won often enough to send a keyboard column move downward into a card's
+     * row instead of sideways, corrupting the step silently (see the matching note in
+     * `sortable-column.tsx`, its column-body counterpart). The card's droppable half is disabled for
+     * exactly the drag it does not participate in; its draggable half keeps the existing
+     * `isMoveDisabled`/`isMoving` guards.
+     */
+    const { active } = useDndContext();
+    const isColumnDragActive = active?.data.current?.type === DRAG_ITEM_TYPE.COLUMN;
     const {
         activeIndex,
         attributes,
@@ -44,7 +58,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
         transition,
     } = useSortable({
         id: task.id,
-        disabled: isMoveDisabled || isMoving,
+        disabled: { draggable: isMoveDisabled || isMoving, droppable: isColumnDragActive },
         data: { type: DRAG_ITEM_TYPE.TASK, columnId },
         attributes: { roleDescription: "draggable task" },
     });

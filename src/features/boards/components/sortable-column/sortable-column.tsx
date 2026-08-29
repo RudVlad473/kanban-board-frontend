@@ -1,6 +1,6 @@
 "use client";
 
-import { useDroppable } from "@dnd-kit/core";
+import { useDndContext, useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { ReactNode } from "react";
@@ -58,9 +58,23 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
      * The card list is its own droppable, so a column holding no tasks is still a target — an empty
      * `<ul>` is zero-height and unreachable by pointer without the minimum height below.
      */
+    // comment-length-exempt: an empirically-confirmed dnd-kit interaction a future reader would otherwise revert as unnecessary (docs/adr/tech/0023)
+    /*
+     * Disabled outside a TASK drag: `sortableKeyboardCoordinates` (the column keyboard sensor's own
+     * coordinate getter) picks its candidate from every ENABLED droppable regardless of declared
+     * type, so with this body left enabled during a COLUMN keyboard drag its rect (well below the
+     * header row) kept winning the "closest" contest over the next column's own header, sending the
+     * step downward instead of sideways and silently corrupting every arrow press after the first
+     * (confirmed live: `collisionRect.top` advanced while `.left` stayed fixed). Read via
+     * `useDndContext` rather than a prop: threading `active` down would recreate the render-prop
+     * bridge D-18 already forbids.
+     */
+    const { active } = useDndContext();
+    const isTaskDragActive = active?.data.current?.type === DRAG_ITEM_TYPE.TASK;
     const { setNodeRef: setTaskListNodeRef } = useDroppable({
         id: buildColumnBodyDroppableId(column.id),
         data: { type: DRAG_ITEM_TYPE.COLUMN_BODY, columnId: column.id },
+        disabled: !isTaskDragActive,
     });
 
     /* Read off the strategy's own indices, so the pointer path and the keyboard path indicate identically. */

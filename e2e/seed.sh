@@ -6,6 +6,7 @@ set -euo pipefail
 usage() {
     echo "usage: seed.sh account | seed.sh board --jsession <id> --user <id> --name <name> |" >&2
     echo "       seed.sh column --jsession <id> --user <id> --board <id> --name <name> |" >&2
+    echo "       seed.sh task --jsession <id> --user <id> --board <id> --column <id> --title <title> |" >&2
     echo "       seed.sh board-full --jsession <id> --user <id> --board <id> |" >&2
     echo "       seed.sh cleanup [--users <id,id,...>] | seed.sh reset-all" >&2
     exit 2
@@ -150,6 +151,41 @@ cmd_column() {
     echo "$body_out"
 }
 
+# TASK-04's own fixture: task creation POSTs to the COLUMN's own resource URL, with no trailing
+# `/tasks` segment — the sibling path that does name one is GET-only (external-paths.ts's own
+# comment on COLUMN_DETAIL records the same trap for the app's own client).
+cmd_task() {
+    local jsession="" user="" board="" column="" title=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --jsession) jsession="$2"; shift 2 ;;
+            --user) user="$2"; shift 2 ;;
+            --board) board="$2"; shift 2 ;;
+            --column) column="$2"; shift 2 ;;
+            --title) title="$2"; shift 2 ;;
+            *) usage ;;
+        esac
+    done
+
+    if [ -z "$jsession" ] || [ -z "$user" ] || [ -z "$board" ] || [ -z "$column" ] || [ -z "$title" ]; then
+        usage
+    fi
+
+    local task_body raw status body_out
+    task_body=$(build_json title "$title")
+    raw=$(curl -sS -w '\n%{http_code}' -X POST "$EXTERNAL_API_BASE_URL/boards/$board/columns/$column?userId=$user" \
+        -H "Cookie: JSESSIONID=$jsession" -H "Content-Type: application/json" -d "$task_body")
+    status="${raw##*$'\n'}"
+    body_out="${raw%$'\n'*}"
+
+    if [[ "$status" != 2* ]]; then
+        echo "seed.sh task: task creation returned $status: $body_out" >&2
+        exit 1
+    fi
+
+    echo "$body_out"
+}
+
 # Reads a board back through the real backend so a spec can assert what actually persisted —
 # the board-detail UI is Phase 3 scope, so there is nothing to read it from on screen yet.
 cmd_board_full() {
@@ -255,6 +291,11 @@ case "${1:-}" in
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
         shift
         cmd_column "$@"
+        ;;
+    task)
+        : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
+        shift
+        cmd_task "$@"
         ;;
     board-full)
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"

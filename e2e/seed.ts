@@ -70,6 +70,36 @@ export const seedColumn = ({
         ]),
     ) as SeededColumn;
 
+export type SeededTask = { id: string; title: string; version: number; position: number };
+
+/** Creates one task on an already-seeded column — the same "one call at a time" rule as `seedColumn`. */
+export const seedTask = ({
+    account,
+    boardId,
+    columnId,
+    title,
+}: {
+    account: SeededAccount;
+    boardId: string;
+    columnId: string;
+    title: string;
+}): SeededTask =>
+    JSON.parse(
+        runSeedScript([
+            "task",
+            "--jsession",
+            account.jsessionId,
+            "--user",
+            account.id,
+            "--board",
+            boardId,
+            "--column",
+            columnId,
+            "--title",
+            title,
+        ]),
+    ) as SeededTask;
+
 export type SeededBoardFull = SeededBoard & { columns: { id: string; name: string; position: number }[] };
 
 /**
