@@ -264,5 +264,19 @@ describeForEachDevice({
                 ]);
             reorderColumnStub.settle();
         });
+
+        /*
+         * D-18's own proof: this component renders whatever `renderTasks()` hands it, verbatim, and
+         * nothing of its own — the property that keeps it importing nothing from the tasks feature.
+         */
+        it("renders exactly what the renderTasks prop returns for a column's own task list", async () => {
+            // Act
+            await render(<Default />);
+
+            // Assert
+            const firstColumn = document.querySelectorAll("section")[0];
+            const stubbedTasks = within(firstColumn).getAllByTestId("stubbed-task");
+            expect(stubbedTasks.map((task) => task.textContent)).toEqual(["Fixture Task 1", "Fixture Task 2"]);
+        });
     },
 });

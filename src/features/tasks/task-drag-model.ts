@@ -42,10 +42,15 @@ export const toDragItemData = (data: Record<string, unknown> | undefined): DragI
 /**
  * The board's collision strategy, branched on the ACTIVE item's declared type. A column drag keeps
  * `closestCenter` verbatim, because 60 `board-view.test.tsx` blocks assert that behaviour and a
- * blanket swap risks all of them. A task drag takes the classic multi-container strategy instead:
- * pointer-within first, rect-intersection as the fallback, then narrowed to the hovered column's own
- * cards — centre distance lets a tall column's centre beat a nearby card's, so drops land in the
- * wrong column near container edges (04-RESEARCH Pitfall 7).
+ * blanket swap risks all of them — but it is run against the COLUMN droppables only, never the whole
+ * `args.droppableContainers`. Before this plan the column sortables were the only droppables on the
+ * board; this plan added one column-BODY droppable per column so an empty column stays reachable, and
+ * an unfiltered `closestCenter` picks one of those over a column just as often, handing `over.id` a
+ * `column-body-*` id no column-reorder announcement or index lookup recognises — the announcement
+ * silently drops and every keyboard block making progress off it hangs. A task drag takes the classic
+ * multi-container strategy instead: pointer-within first, rect-intersection as the fallback, then
+ * narrowed to the hovered column's own cards — centre distance lets a tall column's centre beat a
+ * nearby card's, so drops land in the wrong column near container edges (04-RESEARCH Pitfall 7).
  */
 export const createTaskAwareCollisionDetection = ({
     columnTaskIds,
@@ -54,7 +59,11 @@ export const createTaskAwareCollisionDetection = ({
 }): CollisionDetection => {
     return (args) => {
         if (toDragItemData(args.active.data.current)?.type !== DRAG_ITEM_TYPE.TASK) {
-            return closestCenter(args);
+            const filtered = args.droppableContainers.filter(
+                (container) => toDragItemData(container.data.current)?.type === DRAG_ITEM_TYPE.COLUMN,
+            );
+
+            return closestCenter({ ...args, droppableContainers: filtered });
         }
 
         const pointerCollisions = pointerWithin(args);

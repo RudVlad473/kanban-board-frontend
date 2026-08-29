@@ -54,13 +54,24 @@ const createRect = ({ left, top }: { left: number; top: number }) => ({
     height: 40,
 });
 
-const createContainer = ({ id, left, top }: { id: string; left: number; top: number }) => ({
+const createContainer = ({
+    id,
+    left,
+    top,
+    data,
+}: {
+    id: string;
+    left: number;
+    top: number;
+    /** Left `undefined` for the task-path fixtures below, which never read a container's own type. */
+    data?: Record<string, unknown>;
+}) => ({
     id,
     key: id,
     disabled: false,
     node: { current: null },
     rect: { current: createRect({ left, top }) },
-    data: { current: undefined },
+    data: { current: data },
 });
 
 /*
@@ -96,13 +107,49 @@ describe("createTaskAwareCollisionDetection", () => {
      * column drag must still resolve to a COLUMN, never to a card inside one.
      */
     it("leaves a column drag on the shipped centre-distance strategy", () => {
+        // comment-length-exempt: an empirically-confirmed dnd-kit interaction a future reader would otherwise revert as unnecessary (docs/adr/tech/0023)
+        /*
+         * The column branch narrows `closestCenter` to COLUMN-declared containers only — the
+         * regression this narrowing fixed: `sortableKeyboardCoordinates` picks its own candidate
+         * from every ENABLED droppable regardless of type, so an un-narrowed column-body or task
+         * container competing on centre distance sent a keyboard column step to the wrong rect
+         * entirely (see the matching notes in `use-column-drag-sensors.ts` and
+         * `sortable-column.tsx`). The containers below carry their real declared types so the
+         * narrowing has something concrete to exclude, exactly as production registers them.
+         */
+        const containers = [
+            createContainer({ id: "left", left: 0, top: 0, data: { type: DRAG_ITEM_TYPE.COLUMN } }),
+            createContainer({
+                id: buildColumnBodyDroppableId("left"),
+                left: 0,
+                top: 0,
+                data: { type: DRAG_ITEM_TYPE.COLUMN_BODY, columnId: "left" },
+            }),
+            createContainer({ id: "left-1", left: 0, top: 0, data: { type: DRAG_ITEM_TYPE.TASK, columnId: "left" } }),
+            createContainer({ id: "right", left: 300, top: 0, data: { type: DRAG_ITEM_TYPE.COLUMN } }),
+            createContainer({
+                id: buildColumnBodyDroppableId("right"),
+                left: 300,
+                top: 0,
+                data: { type: DRAG_ITEM_TYPE.COLUMN_BODY, columnId: "right" },
+            }),
+            createContainer({
+                id: "right-1",
+                left: 300,
+                top: 0,
+                data: { type: DRAG_ITEM_TYPE.TASK, columnId: "right" },
+            }),
+        ];
+
         // Arrange
         const detect = createTaskAwareCollisionDetection({ columnTaskIds: COLUMN_TASK_IDS });
-        const environment = createDroppableEnvironment();
 
         // Act
         const collisions = detect({
-            ...environment,
+            droppableContainers: containers,
+            droppableRects: new Map(containers.map((container) => [container.id, container.rect.current])),
+            collisionRect: createRect({ left: 300, top: 0 }),
+            pointerCoordinates: { x: 400, y: 20 },
             active: {
                 id: "right",
                 data: { current: { type: DRAG_ITEM_TYPE.COLUMN } },
@@ -110,8 +157,9 @@ describe("createTaskAwareCollisionDetection", () => {
             },
         });
 
-        // Assert — some collision was found, and the strategy did not change under the column path.
+        // Assert — the closest collision is the COLUMN container, never the body or card beside it.
         expect(collisions.length).toBeGreaterThan(0);
+        expect(collisions[0].id).toBe("right");
     });
 
     /* A task drag resolves through the pointer, so the card actually under the pointer wins. */

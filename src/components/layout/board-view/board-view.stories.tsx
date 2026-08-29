@@ -2,7 +2,12 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useState, type ComponentProps } from "react";
 
 import type { BoardFull } from "@/features/boards/schemas";
-import { createBoardFull, createColumnsFull } from "@/test-utils/factories/board-full";
+import {
+    createBoardFull,
+    createColumnFull,
+    createColumnsFull,
+    createTaskFull,
+} from "@/test-utils/factories/board-full";
 
 import { BoardView } from "./board-view";
 
@@ -226,6 +231,44 @@ export const ColumnsOutOfPositionOrder: Story = {
     args: {
         board: createBoardFull({
             columns: createColumnsFull({ count: 3 }).map((column, index) => ({ ...column, position: 2 - index })),
+        }),
+    },
+};
+
+/*
+ * TASK-04's own fixture: two columns, ONE distinctly-titled task each (never "Fixture Task 1" in
+ * both, which `createColumnsFull` would give every column) — a cross-column drag test needs an
+ * unambiguous card to grab and an unambiguous column to land it in.
+ */
+export const TasksAcrossColumns: Story = {
+    args: {
+        board: createBoardFull({
+            columns: [
+                createColumnFull({
+                    id: "00000000-0000-4000-8000-c00000000001",
+                    name: "Fixture Column 1",
+                    position: 0,
+                    tasks: [
+                        createTaskFull({
+                            id: "00000000-0000-4000-8000-d10000000001",
+                            title: "Fixture Task Alpha",
+                            position: 0,
+                        }),
+                    ],
+                }),
+                createColumnFull({
+                    id: "00000000-0000-4000-8000-c00000000002",
+                    name: "Fixture Column 2",
+                    position: 1,
+                    tasks: [
+                        createTaskFull({
+                            id: "00000000-0000-4000-8000-d20000000001",
+                            title: "Fixture Task Beta",
+                            position: 0,
+                        }),
+                    ],
+                }),
+            ],
         }),
     },
 };
