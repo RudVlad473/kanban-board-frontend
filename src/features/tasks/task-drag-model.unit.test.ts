@@ -54,24 +54,27 @@ const createRect = ({ left, top }: { left: number; top: number }) => ({
     height: 40,
 });
 
-const createContainer = ({ id, left, top }: { id: string; left: number; top: number }) => ({
+const createContainer = ({ id, left, top, type }: { id: string; left: number; top: number; type?: string }) => ({
     id,
     key: id,
     disabled: false,
     node: { current: null },
     rect: { current: createRect({ left, top }) },
-    data: { current: undefined },
+    data: { current: type === undefined ? undefined : { type } },
 });
 
 /*
  * Two columns, each holding two cards, laid out side by side — enough geometry for the pointer to
- * sit inside exactly one card and for the wrong column's centre to be the nearer one.
+ * sit inside exactly one card and for the wrong column's centre to be the nearer one. Each column's
+ * own sortable droppable is included too, since real dnd-kit keeps it registered during its own drag.
  */
 const createDroppableEnvironment = () => {
     const containers = [
+        createContainer({ id: "left", left: 0, top: 0, type: DRAG_ITEM_TYPE.COLUMN }),
         createContainer({ id: buildColumnBodyDroppableId("left"), left: 0, top: 0 }),
         createContainer({ id: "left-1", left: 0, top: 0 }),
         createContainer({ id: "left-2", left: 0, top: 60 }),
+        createContainer({ id: "right", left: 300, top: 0, type: DRAG_ITEM_TYPE.COLUMN }),
         createContainer({ id: buildColumnBodyDroppableId("right"), left: 300, top: 0 }),
         createContainer({ id: "right-1", left: 300, top: 0 }),
         createContainer({ id: "right-2", left: 300, top: 60 }),
@@ -110,8 +113,8 @@ describe("createTaskAwareCollisionDetection", () => {
             },
         });
 
-        // Assert — some collision was found, and the strategy did not change under the column path.
-        expect(collisions.length).toBeGreaterThan(0);
+        // Assert — resolves to the COLUMN it is already over, never a card or column body beside it.
+        expect(collisions[0]?.id).toBe("right");
     });
 
     /* A task drag resolves through the pointer, so the card actually under the pointer wins. */
