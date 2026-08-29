@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { boardFullSchema, deleteBoardInputSchema, BoardSchema } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
+import { recordSeededUserId, SEED_SCOPE } from "@/test-utils/seeded-user-registry";
 
 // comment-length-exempt: records what this suite can and cannot reach and where the remainder is proved — a scope contract a future reader would otherwise re-litigate (docs/adr/tech/0023)
 /*
@@ -43,6 +44,7 @@ const signUp = async (): Promise<SeededAccount> => {
 
     expect(response.ok).toBe(true);
     const body = (await response.json()) as { id: string };
+    recordSeededUserId({ scope: SEED_SCOPE.VITEST, id: body.id });
     /*
      * Reuses the sign-up response's own credential rather than signing in again — the backend caps
      * one account at two concurrent sessions (docs/adr/tech/0022).

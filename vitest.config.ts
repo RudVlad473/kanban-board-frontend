@@ -104,6 +104,7 @@ export default defineConfig({
                     name: "node",
                     sequence: { groupOrder: 0 },
                     environment: "node",
+                    globalSetup: ["./src/test-utils/vitest-nonprod-cleanup.ts"],
                     include: [
                         "src/lib/server/session.test.ts",
                         "src/**/*.integration.test.ts",
