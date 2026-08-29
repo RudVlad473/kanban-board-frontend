@@ -6,9 +6,14 @@ set -euo pipefail
 usage() {
     echo "usage: seed.sh account | seed.sh board --jsession <id> --user <id> --name <name> |" >&2
     echo "       seed.sh column --jsession <id> --user <id> --board <id> --name <name> |" >&2
-    echo "       seed.sh board-full --jsession <id> --user <id> --board <id>" >&2
+    echo "       seed.sh board-full --jsession <id> --user <id> --board <id> |" >&2
+    echo "       seed.sh cleanup [--users <id,id,...>] | seed.sh reset-all" >&2
     exit 2
 }
+
+# Same literal spelling the TS registry (src/test-utils/seeded-user-registry.ts) resolves via
+# process.cwd() -- two different spellings would make `cleanup` silently clean nothing (D-A).
+REGISTRY_DIR=".e2e-seeded-users"
 
 # Satisfies the backend's password rule: 8-64 chars, upper, lower, digit, special.
 SEED_PASSWORD="E2eFixturePwd1!"
@@ -24,6 +29,14 @@ build_json() {
             obj[process.argv[i]] = process.argv[i + 1];
         }
         console.log(JSON.stringify(obj));
+    ' "$@"
+}
+
+# Same escaping rationale as build_json above, extended to build a { userIds: [...] } body from
+# a list of bare id arguments for cmd_cleanup/cmd_reset_all.
+build_json_array() {
+    node -e '
+        console.log(JSON.stringify({ userIds: process.argv.slice(1) }));
     ' "$@"
 }
 
@@ -168,6 +181,65 @@ cmd_board_full() {
     echo "$body_out"
 }
 
+# Recovery path for a killed run (D-A): with --users, deletes exactly those ids; without, reads
+# every file in the registry directory, since the registry outlives a crashed process. Exits 0 on
+# nothing-to-clean so CI's always-run step cannot fail an otherwise-green job.
+cmd_cleanup() {
+    local users_arg=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --users) users_arg="$2"; shift 2 ;;
+            *) usage ;;
+        esac
+    done
+
+    local ids=()
+    if [ -n "$users_arg" ]; then
+        IFS=',' read -ra ids <<<"$users_arg"
+    elif [ -d "$REGISTRY_DIR" ]; then
+        for registry_file in "$REGISTRY_DIR"/*; do
+            [ -f "$registry_file" ] || continue
+            while IFS= read -r line; do
+                [ -n "$line" ] && ids+=("$line")
+            done <"$registry_file"
+        done
+    fi
+
+    if [ ${#ids[@]} -eq 0 ]; then
+        echo "seed.sh cleanup: nothing to clean up"
+        exit 0
+    fi
+
+    local body raw status body_out
+    body=$(build_json_array "${ids[@]}")
+    raw=$(curl -sS -w '\n%{http_code}' -X POST "$EXTERNAL_API_BASE_URL/admin/reset" \
+        -H "X-Reset-Token: $NONPROD_RESET_TOKEN" -H "Content-Type: application/json" -d "$body")
+    status="${raw##*$'\n'}"
+    body_out="${raw%$'\n'*}"
+
+    if [[ "$status" != 2* ]]; then
+        echo "seed.sh cleanup: delete returned $status: $body_out" >&2
+        exit 1
+    fi
+
+    rm -f "$REGISTRY_DIR"/*
+    echo "seed.sh cleanup: deleted ${#ids[@]} user(s)"
+}
+
+# The manual, token-gated nuclear option (T-KYV-03) -- nothing automated may call this.
+cmd_reset_all() {
+    local status
+    status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$EXTERNAL_API_BASE_URL/admin/reset?fullReset=true" \
+        -H "X-Reset-Token: $NONPROD_RESET_TOKEN")
+
+    if [ "$status" != "204" ]; then
+        echo "seed.sh reset-all: reset endpoint returned $status, expected 204" >&2
+        exit 1
+    fi
+
+    echo "seed.sh reset-all: full reset complete"
+}
+
 case "${1:-}" in
     account)
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
@@ -188,6 +260,18 @@ case "${1:-}" in
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
         shift
         cmd_board_full "$@"
+        ;;
+    cleanup)
+        : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
+        : "${NONPROD_RESET_TOKEN:?NONPROD_RESET_TOKEN must be set}"
+        shift
+        cmd_cleanup "$@"
+        ;;
+    reset-all)
+        : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
+        : "${NONPROD_RESET_TOKEN:?NONPROD_RESET_TOKEN must be set}"
+        shift
+        cmd_reset_all "$@"
         ;;
     *)
         usage

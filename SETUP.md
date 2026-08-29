@@ -23,15 +23,28 @@ documentation.
 
 ## `NONPROD_RESET_TOKEN` — required before `pnpm exec playwright test --project e2e`
 
-The `e2e` Playwright project creates real, permanent accounts on the shared nonprod backend (see
-the next section). Its `globalSetup` (`e2e/global-setup.ts`) calls the backend's own
-`POST /admin/reset` before any spec runs, and **refuses to run the suite at all** if that call
-fails — availability of the reset endpoint and a working token to call it is a precondition, not
-an afterthought cleanup step. Set `NONPROD_RESET_TOKEN` in your environment (or `.env.local`) to
-the same value CI's `NONPROD_RESET_TOKEN` repository secret holds (the `APP_RESET_TOKEN` value in
-the backend host's `.env.nonprod` — see `kanban-board-backend/.env.nonprod.example`) before
-running `--project e2e` locally. Omitting it fails fast with a clear error instead of letting the
-suite silently accumulate orphaned accounts with no way to clean them up.
+The `e2e` Playwright project (and the Vitest `node` project's `*.integration.test.ts` files) create
+real, permanent accounts on the shared nonprod backend (see the next section). `e2e`'s `globalSetup`
+(`e2e/global-setup.ts`) probes the backend's own `POST /admin/reset` before any spec runs, and
+**refuses to run the suite at all** if that probe fails — availability of the reset endpoint and a
+working token to call it is still a hard precondition (docs/adr/tech/0022), unchanged from before.
+Set `NONPROD_RESET_TOKEN` in your environment (or `.env.local`) to the same value CI's
+`NONPROD_RESET_TOKEN` repository secret holds (the `APP_RESET_TOKEN` value in the backend host's
+`.env.nonprod` — see `kanban-board-backend/.env.nonprod.example`) before running `--project e2e`
+locally. Omitting it fails fast with a clear error rather than letting the suite run uncleanably.
+
+**What changed (260829-kyv): cleanup is now scoped, not a wipe.** The precondition probe no longer
+deletes anything to prove itself — it posts a single id no account will ever have, which the
+backend's own existence check rejects without touching a row. Each run's `globalTeardown` then
+deletes only the accounts _that run_ created (tracked in `.e2e-seeded-users/`, gitignored), never
+every account on the shared backend. This is not self-healing the way the old full wipe was: a run
+that is killed (Ctrl+C, a cancelled CI job) leaves its accounts behind, because nothing automated
+sweeps them up later. Two recovery paths exist for that case, and nothing else calls either of them:
+
+- `pnpm e2e:cleanup` — reads `.e2e-seeded-users/` (or `--users <id,id,...>` for a specific list) and
+  deletes precisely those accounts. Safe to run any time; a no-op when there is nothing to clean.
+- `pnpm e2e:seed reset-all` — the old full wipe, kept only as a manual last resort. Nothing
+  automated calls this; it deletes every account on the shared backend, not just leaked ones.
 
 ## This project runs no fake HTTP layer (docs/adr/tech/0018)
 
