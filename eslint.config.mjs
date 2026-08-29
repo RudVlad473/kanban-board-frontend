@@ -161,11 +161,12 @@ const eslintConfig = defineConfig([
             "*.config.{ts,mjs,js}",
             "**/*.stories.tsx",
             /*
-             * Playwright's own `globalSetup` config option requires the referenced file to export
-             * its setup function as the default export (Playwright loads it that way itself) —
-             * same framework-forced category as the entries above.
+             * Playwright's own `globalSetup`/`globalTeardown` config options require the referenced
+             * file to export its function as the default export (Playwright loads it that way
+             * itself) — same framework-forced category as the entries above.
              */
             "e2e/global-setup.ts",
+            "e2e/global-teardown.ts",
             /*
              * Storybook's own framework-forced default-export files (main config + preview config),
              * same category as next.config.ts above.

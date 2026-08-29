@@ -285,6 +285,8 @@ export interface components {
             name?: string;
             /** Format: int64 */
             version?: number;
+            /** Format: date-time */
+            createdAt?: string;
         };
         UpdateColumnRequestDTO: {
             name: string;
@@ -349,6 +351,9 @@ export interface components {
         SaveSubtaskRequestDTO: {
             title: string;
         };
+        ResetUsersRequestDTO: {
+            userIds: string[];
+        };
         MoveTaskRequestDTO: {
             targetColumnId: string;
             /** Format: int64 */
@@ -367,6 +372,8 @@ export interface components {
             name?: string;
             /** Format: int64 */
             version?: number;
+            /** Format: date-time */
+            createdAt?: string;
             columns?: components["schemas"]["ColumnFullResponseDTO"][];
         };
         ColumnFullResponseDTO: {
@@ -438,6 +445,30 @@ export interface components {
             sorted?: boolean;
             unsorted?: boolean;
         };
+        /** @description The RFC 7807 envelope every error response in this API uses. */
+        ProblemDetail: {
+            /**
+             * Format: uri
+             * @description Always 'about:blank' unless a more specific type is set.
+             */
+            type?: string;
+            /** @description Absent unless explicitly set -- both producers build the envelope through ProblemDetail.forStatusAndDetail, which populates status and detail only. */
+            title?: string;
+            /** Format: int32 */
+            status: number;
+            detail?: string;
+            /**
+             * Format: uri
+             * @description The authentication entry point sets this explicitly so both producers' key sets agree.
+             */
+            instance?: string;
+            /** @enum {string} */
+            code: "ENTITY_NOT_FOUND" | "ILLEGAL_ARGUMENT" | "MALFORMED_REQUEST_BODY" | "INTERNAL_ERROR" | "ACCESS_DENIED" | "CONSTRAINT_VIOLATION" | "OPTIMISTIC_LOCK_CONFLICT" | "DUPLICATE_RESOURCE" | "DATA_INTEGRITY_VIOLATION" | "BAD_CREDENTIALS" | "VALIDATION_FAILED" | "UNAUTHENTICATED";
+            /** @description Present only on the field-validation response: field name to message. */
+            errors?: {
+                [key: string]: string;
+            };
+        };
     };
     responses: never;
     parameters: never;
@@ -467,6 +498,60 @@ export interface operations {
                     "*/*": components["schemas"]["UserResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     updateTheme: {
@@ -491,6 +576,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UserResponseDTO"];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -521,6 +660,60 @@ export interface operations {
                     "*/*": components["schemas"]["BoardResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     deleteById: {
@@ -542,6 +735,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
             };
         };
     };
@@ -569,6 +816,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ColumnResponseDTO"];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -599,6 +900,60 @@ export interface operations {
                     "*/*": components["schemas"]["TaskResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     deleteById_1: {
@@ -620,6 +975,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
             };
         };
     };
@@ -649,6 +1058,60 @@ export interface operations {
                     "*/*": components["schemas"]["TaskResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     deleteById_2: {
@@ -670,6 +1133,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
             };
         };
     };
@@ -699,6 +1216,60 @@ export interface operations {
                     "*/*": components["schemas"]["SubtaskResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     deleteById_3: {
@@ -720,6 +1291,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
             };
         };
     };
@@ -743,6 +1368,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UserResponseDTO"];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -769,6 +1448,60 @@ export interface operations {
                     "*/*": components["schemas"]["UserResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     findAllByUserId: {
@@ -789,6 +1522,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BoardResponseDTO"][];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -817,6 +1604,60 @@ export interface operations {
                     "*/*": components["schemas"]["BoardResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     findAllByBoardId: {
@@ -839,6 +1680,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ColumnResponseDTO"][];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -869,6 +1764,60 @@ export interface operations {
                     "*/*": components["schemas"]["ColumnResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     findAllByTaskId: {
@@ -891,6 +1840,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SubtaskResponseDTO"][];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -921,6 +1924,60 @@ export interface operations {
                     "*/*": components["schemas"]["SubtaskResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     reset: {
@@ -932,7 +1989,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetUsersRequestDTO"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -940,6 +2001,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
             };
         };
     };
@@ -967,6 +2082,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TaskResponseDTO"];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -997,6 +2166,60 @@ export interface operations {
                     "*/*": components["schemas"]["ColumnResponseDTO"];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     findFullById: {
@@ -1019,6 +2242,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BoardFullResponseDTO"];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -1045,6 +2322,60 @@ export interface operations {
                     "*/*": components["schemas"]["TaskResponseDTO"][];
                 };
             };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     findAllByBoardId_1: {
@@ -1068,6 +2399,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PageActivityLogResponseDTO"];
+                };
+            };
+            /** @description Malformed request body, failed field validation (VALIDATION_FAILED, with a per-field errors map), or a violated path/param constraint (CONSTRAINT_VIOLATION / ILLEGAL_ARGUMENT / MALFORMED_REQUEST_BODY). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description No session at all (UNAUTHENTICATED, produced by ProblemDetailAuthenticationEntryPoint) or rejected credentials on signin (BAD_CREDENTIALS, produced by GlobalExceptionHandler). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An authenticated caller who does not own the requested resource (ACCESS_DENIED). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description The requested resource does not exist or is not visible to the caller (ENTITY_NOT_FOUND). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Optimistic-lock version mismatch (OPTIMISTIC_LOCK_CONFLICT), a duplicate resource (DUPLICATE_RESOURCE), or a database integrity violation (DATA_INTEGRITY_VIOLATION). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description An unhandled server-side failure (INTERNAL_ERROR). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };

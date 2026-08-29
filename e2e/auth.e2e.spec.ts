@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 import { decodeJwt } from "jose";
 
 import { seedAccount } from "./seed";
+import { registerSignedUpUser } from "./signed-up-user";
 import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
 
@@ -173,6 +174,7 @@ test.describe("AUTH-07: sign-up rejects a duplicate email", () => {
         await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
         await page.getByRole("button", { name: "Create Account" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await registerSignedUpUser(page);
 
         /*
          * Sign out first — proxy.ts redirects a signed-in visitor away from /register entirely, so
