@@ -162,11 +162,12 @@ const eslintConfig = defineConfig([
             "*.config.{ts,mjs,js}",
             "**/*.stories.tsx",
             /*
-             * Playwright's own `globalSetup` config option requires the referenced file to export
-             * its setup function as the default export (Playwright loads it that way itself) —
-             * same framework-forced category as the entries above.
+             * Playwright's own `globalSetup`/`globalTeardown` config options require the referenced
+             * file to export its function as the default export (Playwright loads it that way
+             * itself) — same framework-forced category as the entries above.
              */
             "e2e/global-setup.ts",
+            "e2e/global-teardown.ts",
             /*
              * Storybook's own framework-forced default-export files (main config + preview config),
              * same category as next.config.ts above.
@@ -529,9 +530,10 @@ const eslintConfig = defineConfig([
     {
         /*
          * 10b. ADR tech/0012's enum-like constants mirror their own SCREAMING_SNAKE values as keys.
-         * Scoped to the two places that declare them, so no feature module gains the same licence.
+         * Scoped to shared/non-feature code (app core, e2e, and their common test-utils), so no
+         * feature module gains the same licence.
          */
-        files: ["src/lib/core/**/*.ts", "e2e/**/*.ts"],
+        files: ["src/lib/core/**/*.ts", "e2e/**/*.ts", "src/test-utils/**/*.ts"],
         plugins: { "@typescript-eslint": tseslint.plugin },
         rules: {
             "@typescript-eslint/naming-convention": [

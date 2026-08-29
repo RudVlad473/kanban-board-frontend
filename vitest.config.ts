@@ -61,6 +61,7 @@ export default defineConfig({
                     name: "node",
                     sequence: { groupOrder: 0 },
                     environment: "node",
+                    globalSetup: ["./src/test-utils/vitest-nonprod-cleanup.ts"],
                     include: [
                         /*
                          * A Node-environment unit test: pure logic whose module graph reaches

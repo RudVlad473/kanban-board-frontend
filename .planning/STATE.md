@@ -34,7 +34,10 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 Phase: 04 (Task & Subtask Workflow) — EXECUTING, wave 7 of 17
 Plan: 04-12 (the tracer slice) — task 3 of 4, partial and RED
 Status: Executing Phase 04
-Last activity: 2026-08-29 — 04-12 tasks 1-3 cherry-picked onto the phase branch
+Last activity: 2026-08-29 — quick task 260829-kyv (regenerate OpenAPI contract from backend,
+scope e2e reset cleanup to seeded user ids instead of full-db wipe) merged onto this branch;
+04-12 tasks 1-3 remain cherry-picked onto the phase branch with the keyboard-reorder regression
+still open
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
 Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 11/22 (in progress)
@@ -158,6 +161,19 @@ verifying phase 03 wave 4) —
   `createTaskMoveAnnouncements`' fallback delegation to `createColumnReorderAnnouncements` in
   `board-view.tsx`; secondary is the new `DRAG_ITEM_TYPE.COLUMN` guard in
   `use-column-drag-sensors.ts:47`. Full diagnosis in the phase `.continue-here.md`.
+
+- **Cross-repo precondition on quick task 260829-kyv (below):** the sibling
+  `kanban-board-backend` repo's targeted-user-delete reset route exists only in that repo's local
+  `main` (commits `14dd89d`/`c29a32d`), still unpushed to its `origin/main` as of this session.
+  That repo deploys to the live nonprod backend on every push to `main`. Until it is pushed and
+  deploys, this quick task's branch will fail its first CI `e2e` run with a designed, loud refusal
+  ("backend still serves the old contract... must be redeployed") — not a regression to chase.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260829-kyv | Regenerate OpenAPI contract from backend and scope e2e reset cleanup to seeded user ids instead of full-db wipe | 2026-08-29 | 5f325f8 | Verified | [260829-kyv-regenerate-openapi-contract-from-backend](./quick/260829-kyv-regenerate-openapi-contract-from-backend/) |
 
 ### Roadmap Evolution
 

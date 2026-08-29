@@ -85,11 +85,12 @@ export default defineConfig({
      */
     ignoreSnapshots: !process.env.CI,
     /*
-     * `e2e` creates real accounts on the shared nonprod backend and refuses to run at all without
-     * a working reset capability (`e2e/global-setup.ts`, `SETUP.md`) — a hard precondition, only
-     * wired in when this run actually includes `e2e`.
+     * `e2e` creates real accounts on the shared nonprod backend: `globalSetup` refuses to run
+     * without a working reset capability, and `globalTeardown` deletes only what this run
+     * registered (`SETUP.md`) — both wired in only when this run actually includes `e2e`.
      */
     globalSetup: includesProject("e2e") ? "./e2e/global-setup.ts" : undefined,
+    globalTeardown: includesProject("e2e") ? "./e2e/global-teardown.ts" : undefined,
     webServer: runsOnlyProject("visual")
         ? visualWebServer
         : runsOnlyProject("e2e")

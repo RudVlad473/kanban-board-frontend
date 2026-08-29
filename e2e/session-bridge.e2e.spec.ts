@@ -4,6 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { SignJWT } from "jose";
 
 import { seedAccount } from "./seed";
+import { registerSignedUpUser } from "./signed-up-user";
 import { E2E_CONFIG } from "./test-env";
 import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
@@ -88,6 +89,7 @@ test.describe("SESSION-02: session rotation across two real sign-ins", () => {
         await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
         await page.getByRole("button", { name: "Create Account" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await registerSignedUpUser(page);
 
         const cookiesAfterFirst = await context.cookies();
         const firstSessionCookie = cookiesAfterFirst.find((cookie) => cookie.name === COOKIE.SESSION);

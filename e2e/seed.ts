@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 
 import { E2E_CONFIG } from "./test-env";
+import { recordSeededUserId, SEED_SCOPE } from "../src/test-utils/seeded-user-registry";
 
 export type SeededAccount = {
     id: string;
@@ -29,7 +30,11 @@ const runSeedScript = (args: string[]): string => {
     return result.stdout;
 };
 
-export const seedAccount = (): SeededAccount => JSON.parse(runSeedScript(["account"])) as SeededAccount;
+export const seedAccount = (): SeededAccount => {
+    const account = JSON.parse(runSeedScript(["account"])) as SeededAccount;
+    recordSeededUserId({ scope: SEED_SCOPE.PLAYWRIGHT, id: account.id });
+    return account;
+};
 
 export const seedBoard = ({ account, name }: { account: SeededAccount; name: string }): SeededBoard =>
     JSON.parse(

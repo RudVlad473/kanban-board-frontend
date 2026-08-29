@@ -3,10 +3,12 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedAccount } from "./seed";
+import { registerSignedUpUser } from "./signed-up-user";
 import { E2E_CONFIG } from "./test-env";
 import { EXTERNAL_PATH } from "../src/lib/core/api-contract/external-paths";
 import { ROUTE } from "../src/lib/core/routing/routes";
 import { isTheme, THEME, type Theme } from "../src/lib/core/theme/theme";
+import { recordSeededUserId, SEED_SCOPE } from "../src/test-utils/seeded-user-registry";
 
 const TOGGLE_NAME = "Toggle dark mode";
 /* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
@@ -38,15 +40,14 @@ const signUpDirectCapturingTheme = async (): Promise<{ email: string; password: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password: ACCOUNT_PASSWORD, displayName: ACCOUNT_DISPLAY_NAME }),
     });
-    const identity: unknown = await response.json();
-    const rawTheme =
-        typeof identity === "object" && identity !== null && "theme" in identity
-            ? (identity as { theme?: unknown }).theme
-            : undefined;
-    const theme = typeof rawTheme === "string" ? rawTheme : undefined;
-    if (!response.ok || !isTheme(theme)) {
-        throw new Error(`signUpDirectCapturingTheme: expected a theme-carrying signup response, got: ${String(theme)}`);
+    const identity = (await response.json()) as { id?: unknown; theme?: unknown };
+    const theme = typeof identity.theme === "string" ? identity.theme : undefined;
+    if (!response.ok || !isTheme(theme) || typeof identity.id !== "string") {
+        throw new Error(
+            `signUpDirectCapturingTheme: expected an id/theme-carrying signup response, got: ${String(theme)}`,
+        );
     }
+    recordSeededUserId({ scope: SEED_SCOPE.PLAYWRIGHT, id: identity.id });
     return { email, password: ACCOUNT_PASSWORD, theme };
 };
 
@@ -67,6 +68,7 @@ test.describe("THEME-01: theme persistence", () => {
         await page.getByLabel("Password", { exact: true }).fill(ACCOUNT_PASSWORD);
         await page.getByRole("button", { name: "Create Account" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await registerSignedUpUser(page);
 
         const toggle = page.getByRole("switch", { name: TOGGLE_NAME });
         const initialChecked = await toggle.getAttribute("aria-checked");
