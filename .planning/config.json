@@ -1,6 +1,6 @@
 {
   "workflow": {
-    "human_verify_mode": "mid-flight",
+    "human_verify_mode": "end-of-phase",
     "auto_advance": false,
     "_auto_chain_active": false,
     "use_worktrees": true,
@@ -10,9 +10,14 @@
     "subagent_timeout": 900000,
     "build_command": "pnpm build",
     "test_command": "pnpm test",
-    "test_gate_timeout": 900
+    "test_gate_timeout": 900,
+    "nyquist_validation": false,
+    "discuss_mode": "assumptions",
+    "pattern_mapper": false,
+    "post_planning_gaps": false,
+    "security_enforcement": false
   },
-  "model_profile": "quality",
+  "model_profile": "balanced",
   "git": {
     "branching_strategy": "phase"
   },
@@ -26,5 +31,9 @@
     "gsd-code-reviewer": "global:lsp-first-navigation",
     "gsd-debugger": "global:lsp-first-navigation",
     "gsd-verifier": "global:lsp-first-navigation"
+  },
+  "granularity": "coarse",
+  "fast_mode": {
+    "enabled": true
   }
 }
