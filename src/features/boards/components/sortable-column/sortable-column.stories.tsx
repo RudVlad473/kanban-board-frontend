@@ -1,16 +1,34 @@
 import { DndContext } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { fn } from "storybook/test";
 
 import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
+import type { ColumnFull } from "@/features/boards/schemas";
 import { createColumnFull, createColumnsFull, createTasksFull } from "@/test-utils/factories/board-full";
 
 import { SortableColumn } from "./sortable-column";
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a reorder must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
+
+/*
+ * D-18's render-prop bridge, staged with inert rows rather than real `TaskCard`s: this file is in
+ * the boards feature, which may not import the tasks feature — which is the property these stories
+ * exist to demonstrate. The layout ring's own stories cover the real cards.
+ */
+const renderStubbedTasks = (column: ColumnFull) => {
+    return (): ReactNode => {
+        return column.tasks.map((task) => {
+            return (
+                <li key={task.id} data-testid="stubbed-task" className="rounded-lg bg-bg-surface px-4 py-6 shadow-sm">
+                    {task.title}
+                </li>
+            );
+        });
+    };
+};
 
 const FIXTURE_COLUMNS = createColumnsFull({ count: 4 });
 
@@ -37,6 +55,7 @@ const SortableRow = ({
                             <SortableColumn
                                 key={each.id}
                                 column={each}
+                                renderTasks={renderStubbedTasks(each)}
                                 isReorderDisabled={columns.length === 1}
                                 isReordering={isReordering && each.id === column.id}
                                 onRename={onRename}
@@ -84,6 +103,7 @@ const ReorderHost = ({ onRename, onDelete }: ComponentProps<typeof SortableColum
                                 <SortableColumn
                                     key={column.id}
                                     column={column}
+                                    renderTasks={renderStubbedTasks(column)}
                                     isReorderDisabled={renderedColumns.length === 1}
                                     isReordering={column.id === reorderingColumnId}
                                     onRename={onRename}
@@ -108,6 +128,7 @@ const meta: Meta<typeof SortableColumn> = {
     parameters: { layout: "fullscreen" },
     args: {
         column: FIXTURE_COLUMNS[0],
+        renderTasks: renderStubbedTasks(FIXTURE_COLUMNS[0]),
         isReorderDisabled: false,
         isReordering: false,
         onRename: fn(),

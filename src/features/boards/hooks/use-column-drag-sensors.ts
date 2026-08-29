@@ -18,6 +18,7 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { isKeyboardEvent, subtract, type Coordinates } from "@dnd-kit/utilities";
 
 import { isColumnDestinationVisible } from "@/features/boards/model";
+import { DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
 
 /** The only two steps this narrowing applies to — the row is horizontal, so up and down never move. */
 const HORIZONTAL_STEP_CODES = new Set<string>([KeyboardCode.Right, KeyboardCode.Left]);
@@ -37,7 +38,16 @@ const resolveVisibleDestinationMove = ({
         return null;
     }
 
-    const { collisionRect, scrollableAncestors } = props.context.current;
+    /*
+     * One `DndContext` serves both drags, so this sensor also runs for a task — whose first
+     * scrollable ancestor is the column body, not the column row, making the box below the wrong
+     * one to measure. A task step falls straight through to the library (04-RESEARCH Pitfall 8).
+     */
+    const { active, collisionRect, scrollableAncestors } = props.context.current;
+    if (active?.data.current?.type !== DRAG_ITEM_TYPE.COLUMN) {
+        return null;
+    }
+
     const scrollRow = scrollableAncestors.at(0);
     if (collisionRect === null || scrollRow === undefined) {
         return null;

@@ -1,7 +1,7 @@
 "use client";
 
-import { closestCenter, DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
-import { horizontalListSortingStrategy, SortableContext } from "@dnd-kit/sortable";
+import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
+import { horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useEffect, useRef, useState } from "react";
 import { useBoolean, useMediaQuery } from "usehooks-ts";
 
@@ -18,12 +18,18 @@ import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/
 import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
 import { createColumnReorderAnnouncements, toColumnCaption, toColumnDotToken } from "@/features/boards/model";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
+import { TaskCard } from "@/features/tasks/components/task-card/task-card";
+import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
+import { createTaskMoveAnnouncements, toSubtaskSummary, toTaskMoveTargetPosition } from "@/features/tasks/model";
+import { createTaskAwareCollisionDetection, toDragItemData } from "@/features/tasks/task-drag-model";
+import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
+import { DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
 import { cn } from "@/lib/core/styling/cn";
 
 /*
- * COLUMN-01 makes this the board's client container: it owns the Add Column modal's open state and
- * the create hook, while its presentational children take `onSubmit`/`isPending` as props. Task
- * cards stay display only — task interaction is Phase 4.
+ * COLUMN-01 and TASK-04 make this the board's client container, and D-18 makes it the composition
+ * point for two features that may not import each other: it builds the tasks feature's cards and
+ * passes them DOWN into the boards feature's column as a render prop.
  */
 type Props = {
     board: BoardFull;
@@ -33,6 +39,11 @@ type Props = {
     defaultRenameColumnTargetIndex?: number;
     /** Storybook-only staging — seeds the delete confirmation open on the column at this index. */
     defaultDeleteColumnTargetIndex?: number;
+    /**
+     * Where a task card's open-detail activation lands. Absent in production for now: TASK-02's
+     * detail view is a later plan, and this is the seam it fills without changing the card's shape.
+     */
+    onOpenTaskDetail?: (task: TaskFull) => void;
 };
 
 export const BoardView = ({
@@ -40,6 +51,7 @@ export const BoardView = ({
     defaultIsAddColumnOpen = false,
     defaultRenameColumnTargetIndex,
     defaultDeleteColumnTargetIndex,
+    onOpenTaskDetail,
 }: Props) => {
     const {
         value: isAddColumnOpen,
@@ -59,6 +71,7 @@ export const BoardView = ({
         defaultDeleteColumnTargetIndex === undefined ? null : (board.columns[defaultDeleteColumnTargetIndex] ?? null),
     );
     const [liftedColumnId, setLiftedColumnId] = useState<string | null>(null);
+    const [liftedTaskId, setLiftedTaskId] = useState<string | null>(null);
     const columnCount = board.columns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
     /* The DERIVED columns, not the raw props — that array is what carries the optimistic name. */
@@ -66,15 +79,31 @@ export const BoardView = ({
     /* Chained onto the rename's own output, so a column can be renamed and moved in the same session. */
     const {
         reorderColumns: requestReorder,
-        columns: renderedColumns,
+        columns: reorderedColumns,
         reorderingColumnId,
     } = useReorderColumns({ columns: renamedColumns });
+    /* Last in the chain, so a task move renders on top of whatever the two column overrides produced. */
+    const {
+        moveTask: requestMove,
+        columns: renderedColumns,
+        movingTaskId,
+    } = useMoveTask({ columns: reorderedColumns });
     const { deleteColumn, isPending: isDeletePending } = useDeleteColumn();
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
 
     const sensors = useColumnDragSensors();
 
     const liftedColumn = renderedColumns.find((column) => column.id === liftedColumnId) ?? null;
+    const liftedTask =
+        renderedColumns.flatMap((column) => column.tasks).find((task) => task.id === liftedTaskId) ?? null;
+    /* Every column's own card ids, which is both the sortable item list and what narrows a collision. */
+    const columnTaskIds = renderedColumns.map((column) => ({
+        columnId: column.id,
+        taskIds: column.tasks.map((task) => task.id),
+    }));
+    const taskCount = renderedColumns.reduce((total, column) => total + column.tasks.length, 0);
+    /* UI-SPEC zero-one-many: one column holding one task is the only board a card cannot move on. */
+    const isTaskMoveDisabled = columnCount === 1 && taskCount === 1;
 
     const ghostColumnRef = useRef<HTMLButtonElement>(null);
     /** The column count when a create landed — a ref, so retiring the request costs no render. */
@@ -145,22 +174,74 @@ export const BoardView = ({
         handleOpenChange(true);
     };
 
+    /* Branched on the item's DECLARED type, never on the id: an id lookup returns -1 for the other kind. */
     const handleDragStart = ({ active }: DragStartEvent): void => {
+        if (toDragItemData(active.data.current)?.type === DRAG_ITEM_TYPE.TASK) {
+            setLiftedTaskId(String(active.id));
+
+            return;
+        }
+
         setLiftedColumnId(String(active.id));
     };
 
     const handleDragCancel = (): void => {
         setLiftedColumnId(null);
+        setLiftedTaskId(null);
+    };
+
+    /*
+     * TASK-04's one request per completed move. The destination comes from whatever the drop landed
+     * on — another card, or the column body itself, which is what makes an empty column reachable.
+     */
+    const moveDroppedTask = ({ active, over }: DragEndEvent): void => {
+        const overData = toDragItemData(over?.data.current);
+
+        if (over === null || overData?.columnId === undefined) {
+            return;
+        }
+
+        const targetColumnId = overData.columnId;
+
+        const destination = renderedColumns.find((column) => column.id === targetColumnId);
+        const source = renderedColumns.find((column) => column.tasks.some((task) => task.id === active.id));
+
+        if (destination === undefined || source === undefined) {
+            return;
+        }
+
+        const taskId = String(active.id);
+        const targetIndex = toTaskMoveTargetPosition({
+            destinationTaskIds: destination.tasks.map((task) => task.id),
+            taskId,
+            overTaskId: overData.type === DRAG_ITEM_TYPE.TASK ? String(over.id) : null,
+        });
+
+        /* A drop that ended exactly where it began is not a move, so it issues no request at all. */
+        if (source.id === targetColumnId && source.tasks.findIndex((task) => task.id === taskId) === targetIndex) {
+            return;
+        }
+
+        void requestMove({ taskId, targetColumnId, targetIndex });
     };
 
     /*
      * One completed move, one request (T-03-12). A drop with no target, or one that ended where it
      * began, is not a move — every intermediate arrow step stayed inside the library.
      */
-    const handleDragEnd = ({ active, over }: DragEndEvent): void => {
+    const handleDragEnd = (event: DragEndEvent): void => {
+        const { active, over } = event;
+        const wasTaskLifted = toDragItemData(active.data.current)?.type === DRAG_ITEM_TYPE.TASK;
         setLiftedColumnId(null);
+        setLiftedTaskId(null);
 
         if (over === null || active.id === over.id) {
+            return;
+        }
+
+        if (wasTaskLifted) {
+            moveDroppedTask(event);
+
             return;
         }
 
@@ -201,12 +282,18 @@ export const BoardView = ({
                 <DndContext
                     id={`board-columns-${board.id}`}
                     sensors={sensors}
-                    collisionDetection={closestCenter}
+                    /* Centre distance for a column, the nested-container strategy for a task (Pitfall 7). */
+                    collisionDetection={createTaskAwareCollisionDetection({ columnTaskIds })}
                     /*
                      * The library renders its own live region behind a mounted gate — separate from
                      * the toast viewport by construction, which is what the UI-SPEC requires.
                      */
-                    accessibility={{ announcements: createColumnReorderAnnouncements({ columns: renderedColumns }) }}
+                    accessibility={{
+                        announcements: createTaskMoveAnnouncements({
+                            columns: renderedColumns,
+                            fallback: createColumnReorderAnnouncements({ columns: renderedColumns }),
+                        }),
+                    }}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     onDragCancel={handleDragCancel}
@@ -226,6 +313,36 @@ export const BoardView = ({
                                     <SortableColumn
                                         key={column.id}
                                         column={column}
+                                        /*
+                                         * D-18: the tasks feature's nodes are built HERE and handed
+                                         * down, so the column imports nothing from that feature.
+                                         */
+                                        renderTasks={() => {
+                                            return (
+                                                <SortableContext
+                                                    items={column.tasks.map((task) => task.id)}
+                                                    strategy={verticalListSortingStrategy}
+                                                >
+                                                    {column.tasks.map((task) => {
+                                                        return (
+                                                            <TaskCard
+                                                                key={task.id}
+                                                                task={task}
+                                                                columnId={column.id}
+                                                                onOpenDetail={
+                                                                    onOpenTaskDetail ??
+                                                                    (() => {
+                                                                        /* TASK-02's detail view is a later plan. */
+                                                                    })
+                                                                }
+                                                                isMoveDisabled={isTaskMoveDisabled}
+                                                                isMoving={task.id === movingTaskId}
+                                                            />
+                                                        );
+                                                    })}
+                                                </SortableContext>
+                                            );
+                                        }}
                                         isReorderDisabled={renderedColumns.length === 1}
                                         isReordering={column.id === reorderingColumnId}
                                         onRename={setColumnBeingRenamed}
@@ -242,6 +359,21 @@ export const BoardView = ({
                     {/* The full-opacity preview that follows the pointer while the column itself stays
                         in place at reduced opacity; the settle is dropped entirely under reduce-motion. */}
                     <DragOverlay dropAnimation={prefersReducedMotion ? null : undefined}>
+                        {liftedTask === null ? null : (
+                            /* The card's own anatomy minus its controls — a preview, not a second interactive copy. */
+                            <div className="flex w-70 flex-col gap-2 rounded-lg bg-bg-surface py-6 pr-2 pl-4 shadow-lg">
+                                <span className="font-heading-m text-heading-m [font-weight:var(--font-weight-heading-m)] break-words text-text-primary">
+                                    {liftedTask.title}
+                                </span>
+
+                                {liftedTask.subtasks.length === 0 ? null : (
+                                    <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
+                                        {toSubtaskSummary(liftedTask.subtasks)}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
                         {liftedColumn === null ? null : (
                             <div className="flex w-70 items-center gap-4 rounded-sm bg-bg-surface px-2 py-3 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase shadow-lg">
                                 <span

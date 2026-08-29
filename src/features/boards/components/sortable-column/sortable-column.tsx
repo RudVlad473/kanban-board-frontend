@@ -1,16 +1,24 @@
 "use client";
 
+import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { ReactNode } from "react";
 import { useMediaQuery } from "usehooks-ts";
 
 import { ColumnHeader } from "@/features/boards/components/column-header/column-header";
-import { toSubtaskSummary } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
+import { buildColumnBodyDroppableId, DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
 import { cn } from "@/lib/core/styling/cn";
 
 type Props = {
     column: ColumnFull;
+    /**
+     * This column's task nodes, built by the layout ring and passed DOWN (D-18). A render prop
+     * rather than an import: the boundaries policy disallows `feature -> feature` in both
+     * directions, so this file must know nothing about the tasks feature at all.
+     */
+    renderTasks: () => ReactNode;
     /** UI-SPEC zero-one-many/exactly-1-column: a lone column has nowhere to go, so it gets no handle. */
     isReorderDisabled: boolean;
     /** T-03-31: this column was the one moved, and its reorder has not settled yet. */
@@ -24,7 +32,7 @@ type Props = {
  * handle button. Its own component because the sortable hook cannot be called inside the board
  * container's `map` — and because `pnpm tsx:check` allows one component per `.tsx`.
  */
-export const SortableColumn = ({ column, isReorderDisabled, isReordering, onRename, onDelete }: Props) => {
+export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReordering, onRename, onDelete }: Props) => {
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
     const {
         activeIndex,
@@ -41,7 +49,18 @@ export const SortableColumn = ({ column, isReorderDisabled, isReordering, onRena
     } = useSortable({
         id: column.id,
         disabled: isReorderDisabled,
+        /* Declared so a drag handler branches on what was lifted rather than guessing from the id. */
+        data: { type: DRAG_ITEM_TYPE.COLUMN },
         attributes: { roleDescription: "draggable column" },
+    });
+
+    /*
+     * The card list is its own droppable, so a column holding no tasks is still a target — an empty
+     * `<ul>` is zero-height and unreachable by pointer without the minimum height below.
+     */
+    const { setNodeRef: setTaskListNodeRef } = useDroppable({
+        id: buildColumnBodyDroppableId(column.id),
+        data: { type: DRAG_ITEM_TYPE.COLUMN_BODY, columnId: column.id },
     });
 
     /* Read off the strategy's own indices, so the pointer path and the keyboard path indicate identically. */
@@ -88,23 +107,12 @@ export const SortableColumn = ({ column, isReorderDisabled, isReordering, onRena
                     onDelete={onDelete}
                 />
 
-                <ul className="flex flex-col gap-4">
-                    {column.tasks.map((task) => {
-                        return (
-                            <li
-                                key={task.id}
-                                className="flex flex-col gap-2 rounded-lg bg-bg-surface px-4 py-6 shadow-sm"
-                            >
-                                <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
-                                    {task.title}
-                                </p>
-
-                                <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
-                                    {toSubtaskSummary(task.subtasks)}
-                                </p>
-                            </li>
-                        );
-                    })}
+                {/*
+                 * S-07: 20px between cards, measured twice on the mock, correcting the shipped 16px.
+                 * `min-h-22` is the 88px one-card floor an empty column needs to stay droppable.
+                 */}
+                <ul ref={setTaskListNodeRef} className="flex min-h-22 flex-col gap-5">
+                    {renderTasks()}
                 </ul>
             </div>
         </section>

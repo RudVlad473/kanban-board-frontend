@@ -17,12 +17,11 @@ export const DEFAULT_COLUMN_ROW_COUNT = 1;
 export const createEmptyColumnRows = (count: number): { value: string }[] =>
     Array.from({ length: count }, () => ({ value: "" }));
 
-/** The task card's meta line in the design's own "X of Y subtasks" wording (02-UI-SPEC Typography). */
-export const toSubtaskSummary = (subtasks: { isCompleted: boolean }[]): string => {
-    const completedCount = subtasks.filter((subtask) => subtask.isCompleted).length;
-
-    return `${String(completedCount)} of ${String(subtasks.length)} subtasks`;
-};
+/*
+ * `toSubtaskSummary` moved to `features/tasks/model.ts` in plan 04-12: after D-18 put the card in
+ * the tasks feature, this one had no consumer left here. D-16's promotion rule covers contract
+ * shapes, and a caption formatter is presentation — so it did not go to the core ring.
+ */
 
 /** The ALL-CAPS column caption with its task count, as the PDF renders it ("TODO (4)"). */
 export const toColumnCaption = ({ name, taskCount }: { name: string; taskCount: number }): string =>
