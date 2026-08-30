@@ -272,3 +272,53 @@ export const TasksAcrossColumns: Story = {
         }),
     },
 };
+
+/*
+ * D-11's own fixture: one column, four distinctly-titled tasks — the within-column keyboard
+ * reorder needs enough cards that a multi-step move still lands inside the column, mirroring
+ * `ReorderableColumns`'s four-column shape for the column path.
+ */
+export const ReorderableTasks: Story = {
+    args: {
+        board: createBoardFull({
+            columns: [
+                createColumnFull({
+                    id: "00000000-0000-4000-8000-c00000000001",
+                    name: "Fixture Column 1",
+                    position: 0,
+                    tasks: [
+                        createTaskFull({ id: "00000000-0000-4000-8000-e10000000001", title: "Task One", position: 0 }),
+                        createTaskFull({ id: "00000000-0000-4000-8000-e10000000002", title: "Task Two", position: 1 }),
+                        createTaskFull({
+                            id: "00000000-0000-4000-8000-e10000000003",
+                            title: "Task Three",
+                            position: 2,
+                        }),
+                        createTaskFull({ id: "00000000-0000-4000-8000-e10000000004", title: "Task Four", position: 3 }),
+                    ],
+                }),
+            ],
+        }),
+    },
+};
+
+/*
+ * UI-SPEC zero-one-many/drag-drop-surface: the only board with nowhere for a card to move —
+ * neither another column (there is one) nor another index in its own (there is one task).
+ */
+export const SingleColumnSingleTask: Story = {
+    args: {
+        board: createBoardFull({
+            columns: [
+                createColumnFull({
+                    id: "00000000-0000-4000-8000-c00000000001",
+                    name: "Fixture Column 1",
+                    position: 0,
+                    tasks: [
+                        createTaskFull({ id: "00000000-0000-4000-8000-f10000000001", title: "Only Task", position: 0 }),
+                    ],
+                }),
+            ],
+        }),
+    },
+};

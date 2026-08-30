@@ -172,9 +172,13 @@ export const createTaskMoveAnnouncements = ({
 
             /* The library fires this once on the lift, over the item's own slot — announcing that would overwrite "Picked up …". */
             const target = event.over === null || event.over.id === event.active.id ? null : resolveTask(event.over.id);
+            if (target === null) {
+                return undefined;
+            }
 
-            return target === null
-                ? undefined
+            /* The two Copywriting Contract wordings: the column reads first only when it changes. */
+            return task.column === target.column
+                ? `${task.title} moved to position ${target.position} of ${target.total} in ${target.column}.`
                 : `${task.title} moved to ${target.column}, position ${target.position} of ${target.total}.`;
         },
 

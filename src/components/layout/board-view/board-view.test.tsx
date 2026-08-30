@@ -42,6 +42,8 @@ const {
     ColumnsOutOfPositionOrder,
     FiveReorderableColumns,
     TasksAcrossColumns,
+    ReorderableTasks,
+    SingleColumnSingleTask,
 } = composeStories(stories);
 
 /*
@@ -1615,6 +1617,223 @@ describeForEachDevice({
                 { columnName: "Fixture Column 1", taskTitles: ["Fixture Task Alpha"] },
                 { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
             ]);
+        });
+
+        /* D-11: the mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */
+        it("announces the lift, naming the task's column and 1-based position", async () => {
+            // Arrange
+            await render(<ReorderableTasks />);
+
+            // Act
+            focusTaskHandle("Task One");
+            await userEvent.keyboard(" ");
+
+            // Assert
+            await expect
+                .poll(getAnnouncement)
+                .toBe(
+                    "Picked up Task One from Fixture Column 1, position 1 of 4. Use arrow keys to move, space to drop, escape to cancel.",
+                );
+
+            // Cleanup: drop where it started, issuing nothing.
+            await userEvent.keyboard(" ");
+        });
+
+        it("reorders a task within its column when lifted, arrowed down and dropped, sending exactly one request", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-e10000000001",
+                    title: "Task One",
+                    description: undefined,
+                    version: 1,
+                    position: 1,
+                },
+            });
+            await render(<ReorderableTasks />);
+            focusTaskHandle("Task One");
+
+            // Act
+            await userEvent.keyboard(" ");
+            const liftedAnnouncement = getAnnouncement();
+            await userEvent.keyboard("{ArrowDown}");
+            await expect.poll(getAnnouncement).not.toBe(liftedAnnouncement);
+            await userEvent.keyboard(" ");
+
+            // Assert
+            await expect
+                .poll(() => getColumnTaskTitles()[0].taskTitles)
+                .toEqual(["Task Two", "Task One", "Task Three", "Task Four"]);
+            expect(moveTaskStub.calls).toHaveLength(1);
+            expect(moveTaskStub.calls[0]).toEqual({
+                taskId: "00000000-0000-4000-8000-e10000000001",
+                targetColumnId: "00000000-0000-4000-8000-c00000000001",
+                version: 0,
+                targetPosition: 1,
+            });
+        });
+
+        /* The Copywriting Contract's two distinct wordings — the column reads last within, first across. */
+        it("announces a within-column move and the drop naming the position and column", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-e10000000001",
+                    title: "Task One",
+                    description: undefined,
+                    version: 1,
+                    position: 1,
+                },
+            });
+            await render(<ReorderableTasks />);
+            focusTaskHandle("Task One");
+
+            // Act & Assert
+            await userEvent.keyboard(" ");
+            await userEvent.keyboard("{ArrowDown}");
+            await expect.poll(getAnnouncement).toBe("Task One moved to position 2 of 4 in Fixture Column 1.");
+
+            await userEvent.keyboard(" ");
+            await expect.poll(getAnnouncement).toBe("Task One dropped in Fixture Column 1 at position 2 of 4.");
+        });
+
+        it("announces a cross-column move and the drop naming the column and position", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Fixture Task Alpha",
+                    description: undefined,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            await render(<TasksAcrossColumns />);
+            focusTaskHandle("Fixture Task Alpha");
+
+            // Act & Assert
+            await userEvent.keyboard(" ");
+            await userEvent.keyboard("{ArrowRight}");
+            await expect.poll(getAnnouncement).toBe("Fixture Task Alpha moved to Fixture Column 2, position 1 of 1.");
+
+            await userEvent.keyboard(" ");
+            await expect
+                .poll(getAnnouncement)
+                .toBe("Fixture Task Alpha dropped in Fixture Column 2 at position 1 of 1.");
+        });
+
+        it("returns a task to its original column and index when cancelled after two steps, issuing nothing", async () => {
+            // Arrange
+            await render(<ReorderableTasks />);
+            focusTaskHandle("Task One");
+
+            // Act
+            await userEvent.keyboard(" ");
+            let announcedBefore = getAnnouncement();
+            await userEvent.keyboard("{ArrowDown}");
+            await expect.poll(getAnnouncement).not.toBe(announcedBefore);
+            announcedBefore = getAnnouncement();
+            await userEvent.keyboard("{ArrowDown}");
+            await expect.poll(getAnnouncement).not.toBe(announcedBefore);
+            await userEvent.keyboard("{Escape}");
+
+            // Assert
+            await expect
+                .poll(() => getColumnTaskTitles()[0].taskTitles)
+                .toEqual(["Task One", "Task Two", "Task Three", "Task Four"]);
+            expect(getAnnouncement()).toBe("Move cancelled. Task One returned to Fixture Column 1, position 1 of 4.");
+            expect(moveTaskStub.calls).toHaveLength(0);
+        });
+
+        it("issues exactly one request however many arrow steps a task's move took", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-e10000000001",
+                    title: "Task One",
+                    description: undefined,
+                    version: 1,
+                    position: 2,
+                },
+            });
+            await render(<ReorderableTasks />);
+            focusTaskHandle("Task One");
+
+            // Act
+            await userEvent.keyboard(" ");
+            for (let step = 0; step < 2; step += 1) {
+                const announcedBefore = getAnnouncement();
+                await userEvent.keyboard("{ArrowDown}");
+                await expect.poll(getAnnouncement).not.toBe(announcedBefore);
+            }
+            await userEvent.keyboard(" ");
+
+            // Assert
+            await expect
+                .poll(() => getColumnTaskTitles()[0].taskTitles)
+                .toEqual(["Task Two", "Task Three", "Task One", "Task Four"]);
+            expect(moveTaskStub.calls).toHaveLength(1);
+        });
+
+        /* Boundary: nothing above the first index, so an up step there must issue no request. */
+        it("issues no request when an up step is taken at index 0", async () => {
+            // Arrange
+            await render(<ReorderableTasks />);
+            focusTaskHandle("Task One");
+
+            // Act
+            await userEvent.keyboard(" ");
+            await userEvent.keyboard("{ArrowUp}");
+            await userEvent.keyboard(" ");
+
+            // Assert
+            await expect
+                .poll(() => getColumnTaskTitles()[0].taskTitles)
+                .toEqual(["Task One", "Task Two", "Task Three", "Task Four"]);
+            expect(moveTaskStub.calls).toHaveLength(0);
+        });
+
+        /* Boundary: nothing below the last index, so a down step there must issue no request. */
+        it("issues no request when a down step is taken at the last index", async () => {
+            // Arrange
+            await render(<ReorderableTasks />);
+            focusTaskHandle("Task Four");
+
+            // Act
+            await userEvent.keyboard(" ");
+            await userEvent.keyboard("{ArrowDown}");
+            await userEvent.keyboard(" ");
+
+            // Assert
+            await expect
+                .poll(() => getColumnTaskTitles()[0].taskTitles)
+                .toEqual(["Task One", "Task Two", "Task Three", "Task Four"]);
+            expect(moveTaskStub.calls).toHaveLength(0);
+        });
+
+        /*
+         * UI-SPEC zero-one-many/drag-drop-surface: a single task in a MULTI-column board keeps a
+         * live handle, since cross-column movement is still possible even though within-column
+         * reorder is not — the dead-control rule applies only to the one-column, one-task board.
+         */
+        it("keeps a task's handle live when it is the only task in a multi-column board", async () => {
+            // Act
+            await render(<TasksAcrossColumns />);
+
+            // Assert
+            expect(screen.getByRole("button", { name: "Reorder Fixture Task Alpha" })).toBeEnabled();
+        });
+
+        it("disables a task's handle only when the board holds exactly one column and one task", async () => {
+            // Act
+            await render(<SingleColumnSingleTask />);
+
+            // Assert
+            expect(screen.getByRole("button", { name: "Reorder Only Task" })).toBeDisabled();
         });
     },
 });
