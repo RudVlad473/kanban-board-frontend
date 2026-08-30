@@ -39,3 +39,24 @@ Worked around **locally and non-invasively** for this plan by running the visual
 temporary copy of the config on port 6017, then deleting the copy — `playwright.config.ts` itself
 was never modified. A durable fix (env-overridable port, or a wave-level lock) is worth
 considering if parallel waves keep colliding, but it is infrastructure work outside this plan.
+
+## `pnpm folders:check` fails on a stray, untracked `board-view/` directory left by 04-04's move
+
+**Found during:** plan 04-13, Task 1 verification (`pnpm folders:check` run as part of the gate
+sweep).
+
+`src/features/boards/components/board-view/` still exists on disk, holding only a leftover
+`__screenshots__/` subfolder — a remnant of `ff324c3` (04-04's `git mv` of `BoardView` into
+`components/layout/board-view/`, per D-18). The directory is untracked by git (`git status
+--short` reports nothing for it), so no commit created it and no commit can delete it via a normal
+`git rm`; it is local filesystem debris from the move, not tracked content.
+
+**Why it is out of scope for 04-13:** neither this plan's tasks nor any file it touches reference
+`src/features/boards/components/board-view/` — the plan's own `files_modified` list never names
+it, and `folders:check` was already red before this plan's first commit (confirmed: the directory
+predates this plan by a month, `Aug 28` mtime against today's `Aug 30` work). Deleting an untracked
+directory outside this plan's declared scope is a manual filesystem cleanup, not a code change.
+
+**Suggested fix:** `rm -rf src/features/boards/components/board-view/` (safe — untracked, holds no
+committed content) whenever a plan next touches `folders:check` output or the boards feature
+folder directly.

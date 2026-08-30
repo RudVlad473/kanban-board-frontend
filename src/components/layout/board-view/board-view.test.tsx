@@ -271,6 +271,11 @@ const focusColumnHandle = (caption: string): void => {
     screen.getByRole("button", { name: caption }).focus();
 };
 
+/** S-04: a task's own handle, named "Reorder {Task Title}" (04-UI-SPEC Copywriting Contract). */
+const focusTaskHandle = (title: string): void => {
+    screen.getByRole("button", { name: `Reorder ${title}` }).focus();
+};
+
 /** The whole U-02 keyboard path: lift, step right, drop — with no request until the drop. */
 const reorderFromKeyboard = async ({
     caption,
@@ -1538,6 +1543,43 @@ describeForEachDevice({
                 targetPosition: 0,
             });
             moveTaskStub.settle();
+        });
+
+        /*
+         * 04-RESEARCH Pitfall 8's regression guard: an unguarded narrowing would measure a task's
+         * step against its own column body (a vertical scroll container), not the horizontal row —
+         * this proves the cross-column keyboard step still completes rather than getting stuck.
+         */
+        it("moves a task into another column when lifted, arrowed right and dropped by keyboard", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Fixture Task Alpha",
+                    description: undefined,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            await render(<TasksAcrossColumns />);
+            focusTaskHandle("Fixture Task Alpha");
+
+            // Act
+            await userEvent.keyboard(" ");
+            const liftedAnnouncement = getAnnouncement();
+            await userEvent.keyboard("{ArrowRight}");
+            /*
+             * At a viewport too narrow to show both columns, the sensor scrolls the row first and
+             * only then re-detects what it is over — the same defect class 03-14 fixed for columns.
+             */
+            await expect.poll(getAnnouncement).not.toBe(liftedAnnouncement);
+            await userEvent.keyboard(" ");
+
+            // Assert
+            await expect.poll(() => getColumnTaskTitles()[1].taskTitles).toContain("Fixture Task Alpha");
+            expect(getColumnTaskTitles()[0].taskTitles).not.toContain("Fixture Task Alpha");
+            expect(moveTaskStub.calls).toHaveLength(1);
         });
 
         it("issues no request when a task is dropped back where it began", async () => {
