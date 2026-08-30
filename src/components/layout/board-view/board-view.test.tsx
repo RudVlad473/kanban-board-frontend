@@ -85,6 +85,13 @@ const GENERIC_REORDER_TOAST = "Couldn't reorder columns.Try again.";
 const GENERIC_MOVE_TOAST = "Couldn't move task.Try again.";
 
 /*
+ * SYNC-01/C-08: the title matches the column phase's own conflict title EXACTLY; only the
+ * description differs, since the move action re-reads the board itself (D-12) rather than asking
+ * the user to refresh, which is what the column phase's own wording still (correctly) says.
+ */
+const CONFLICT_MOVE_TOAST = "This board changed somewhere else.Refreshing to show the latest.";
+
+/*
  * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
  * query would report the modal and make "no toast was raised" pass for the wrong reason.
  */
@@ -1826,6 +1833,31 @@ describeForEachDevice({
                 { columnName: "Fixture Column 1", taskTitles: ["Fixture Task Alpha"] },
                 { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
             ]);
+        });
+
+        /*
+         * SYNC-01/T-04-06/T-04-34: revert and toast proved TOGETHER — a silent revert reads as lost
+         * work. `moveTaskStub.calls` staying at 1 proves no client re-read; the action's own
+         * `refresh()` on `CONFLICT` is proved instead by `move-task-action.integration.test.ts`.
+         */
+        it("reverts the card, raises the distinct version-conflict toast, and issues no extra client request for a stale version", async () => {
+            // Arrange
+            await render(<TasksAcrossColumns />);
+            moveTaskStub.queue({ status: RESULT_STATUS.CONFLICT });
+            const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
+            const target = screen.getByRole("button", { name: /^Fixture Task Beta/ });
+
+            // Act
+            await dragElementOntoElement({ source, target });
+
+            // Assert — the two branches are proved different, not merely proved to raise something.
+            await expect.poll(getRaisedToastTexts).toEqual([CONFLICT_MOVE_TOAST]);
+            expect(CONFLICT_MOVE_TOAST).not.toBe(GENERIC_MOVE_TOAST);
+            expect(getColumnTaskTitles()).toEqual([
+                { columnName: "Fixture Column 1", taskTitles: ["Fixture Task Alpha"] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
+            ]);
+            expect(moveTaskStub.calls).toHaveLength(1);
         });
 
         /* D-11: the mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */
