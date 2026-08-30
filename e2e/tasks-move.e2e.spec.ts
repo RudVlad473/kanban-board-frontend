@@ -19,10 +19,21 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 const SIGN_IN_TIMEOUT_MS = 20_000;
 const DRAG_MOVE_STEPS = 10;
 const TASK_TITLE = "Fixture Movable Task";
+const DESTINATION_TASK_TITLE = "Fixture Destination Task";
 
 /** A task's own drag handle, matched by its accessible name — never the content button beside it. */
 const taskDragHandle = ({ page, title }: { page: Page; title: string }): Locator =>
     page.getByRole("button", { name: `Reorder ${title}` });
+
+// comment-length-exempt: records the readiness signal each keyboard step waits on and the reason a timer would prove nothing, mirroring columns-reorder's own established pattern
+/*
+ * The library's own live region — waited on before every subsequent step, since a step or drop
+ * keyed straight onto the preceding one outruns the state update behind it (03-10's established
+ * pattern, `columns-reorder.e2e.spec.ts`'s own comment). Never a fixed-duration sleep.
+ */
+const expectAnnounced = async ({ page, text }: { page: Page; text: string }) => {
+    await expect(page.getByText(text)).toBeAttached();
+};
 
 /** One column's own `<section>`, matched by its heading — the scope every task-placement check reads from. */
 const columnSection = ({ page, name }: { page: Page; name: string }): Locator =>
@@ -44,6 +55,22 @@ const seedTwoColumnBoardWithOneTask = (): { account: SeededAccount; board: Seede
     const source = seedColumn({ account, boardId: board.id, name: "Alpha" });
     seedColumn({ account, boardId: board.id, name: "Bravo" });
     seedTask({ account, boardId: board.id, columnId: source.id, title: TASK_TITLE });
+
+    return { account, board };
+};
+
+/*
+ * Both columns populated — the keyboard path's own fixture, distinct from the pointer test's
+ * empty-Bravo one above. An empty destination resolves keyboard steps to a COLUMN/COLUMN_BODY
+ * id `resolveTask` cannot name, so no "moved to" text exists there to gate a step on.
+ */
+const seedTwoColumnBoardWithOneTaskEach = (): { account: SeededAccount; board: SeededBoard } => {
+    const account = seedAccount();
+    const board = seedBoard({ account, name: `E2E Task Keyboard Move ${randomUUID().slice(0, 8)}` });
+    const source = seedColumn({ account, boardId: board.id, name: "Alpha" });
+    const destination = seedColumn({ account, boardId: board.id, name: "Bravo" });
+    seedTask({ account, boardId: board.id, columnId: source.id, title: TASK_TITLE });
+    seedTask({ account, boardId: board.id, columnId: destination.id, title: DESTINATION_TASK_TITLE });
 
     return { account, board };
 };
@@ -97,6 +124,95 @@ test.describe("TASK-04: move a task between columns", () => {
         ).toBeVisible();
         await expect(
             columnSection({ page, name: "Alpha" }).getByRole("button", { name: TASK_TITLE, exact: true }),
+        ).toHaveCount(0);
+    });
+
+    test("task move: moves a task into another column by keyboard and keeps it there across a reload", async ({
+        page,
+    }) => {
+        // Arrange — one task in each of Alpha and Bravo, signed in through the real form.
+        const { account, board } = seedTwoColumnBoardWithOneTaskEach();
+        await signIn({ page, account, board });
+        const handle = taskDragHandle({ page, title: TASK_TITLE });
+        await expect(handle).toBeVisible();
+
+        // Act — focus the handle, lift it, step it right into Bravo, and drop it.
+        await handle.focus();
+        await page.keyboard.press("Space");
+        await expect(handle).toHaveAttribute("aria-pressed", "true");
+        await expectAnnounced({
+            page,
+            text: `Picked up ${TASK_TITLE} from Alpha, position 1 of 1. Use arrow keys to move, space to drop, escape to cancel.`,
+        });
+        await page.keyboard.press("ArrowRight");
+        await expectAnnounced({ page, text: `${TASK_TITLE} moved to Bravo, position 1 of 1.` });
+        /* Created before the drop that issues the write, per createServerActionSettled's contract. */
+        const settled = createServerActionSettled(page);
+        await page.keyboard.press("Space");
+
+        // Assert — the card rendered in Bravo before the request settled, and left Alpha empty.
+        await expect(
+            columnSection({ page, name: "Bravo" }).getByRole("button", { name: TASK_TITLE, exact: true }),
+        ).toBeVisible();
+        await expect(
+            columnSection({ page, name: "Alpha" }).getByRole("button", { name: TASK_TITLE, exact: true }),
+        ).toHaveCount(0);
+
+        // Act — let the write reach the server, then reload; the optimistic placement cannot answer for it.
+        await settled;
+        await page.reload();
+
+        // Assert — the move reached the server.
+        await expect(
+            columnSection({ page, name: "Bravo" }).getByRole("button", { name: TASK_TITLE, exact: true }),
+        ).toBeVisible();
+        await expect(
+            columnSection({ page, name: "Alpha" }).getByRole("button", { name: TASK_TITLE, exact: true }),
+        ).toHaveCount(0);
+    });
+
+    test("task move: writes nothing when a lifted task is moved and then cancelled", async ({ page }) => {
+        // Arrange — one task in each of Alpha and Bravo, signed in through the real form.
+        const { account, board } = seedTwoColumnBoardWithOneTaskEach();
+        await signIn({ page, account, board });
+        const handle = taskDragHandle({ page, title: TASK_TITLE });
+        await expect(handle).toBeVisible();
+
+        // Act — lift, step right into Bravo, then abandon the move with escape.
+        await handle.focus();
+        await page.keyboard.press("Space");
+        await expect(handle).toHaveAttribute("aria-pressed", "true");
+        await expectAnnounced({
+            page,
+            text: `Picked up ${TASK_TITLE} from Alpha, position 1 of 1. Use arrow keys to move, space to drop, escape to cancel.`,
+        });
+        await page.keyboard.press("ArrowRight");
+        /* Waited on here for a second reason: an escape that outran the step would cancel nothing. */
+        await expectAnnounced({ page, text: `${TASK_TITLE} moved to Bravo, position 1 of 1.` });
+        await page.keyboard.press("Escape");
+
+        // Assert — the lift is over and the card is still in Alpha, where it started.
+        await expect(handle).not.toHaveAttribute("aria-pressed", "true");
+        await expect(
+            columnSection({ page, name: "Alpha" }).getByRole("button", { name: TASK_TITLE, exact: true }),
+        ).toBeVisible();
+        await expect(
+            columnSection({ page, name: "Bravo" }).getByRole("button", { name: TASK_TITLE, exact: true }),
+        ).toHaveCount(0);
+
+        /*
+         * Deliberately no settle-wait before this reload: a cancelled lift issues no Server Action,
+         * so there is no response to wait for and waiting would hang until the test timed out.
+         */
+        // Act — reload, the only way to tell a local revert from a write that was never issued.
+        await page.reload();
+
+        // Assert — an intermediate step is local: nothing was persisted, so the seeded placement stands.
+        await expect(
+            columnSection({ page, name: "Alpha" }).getByRole("button", { name: TASK_TITLE, exact: true }),
+        ).toBeVisible();
+        await expect(
+            columnSection({ page, name: "Bravo" }).getByRole("button", { name: TASK_TITLE, exact: true }),
         ).toHaveCount(0);
     });
 });
