@@ -300,6 +300,43 @@ describe("createTaskMoveAnnouncements", () => {
         );
     });
 
+    /** A minimal `Active`/`Over` pair — only the fields `resolveTask` and the drag-event shape need. */
+    const createActive = (id: string) => ({
+        id,
+        data: { current: undefined },
+        rect: { current: { initial: null, translated: null } },
+    });
+    const OVER_RECT = { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 };
+    const createOver = (id: string) => ({ id, rect: OVER_RECT, disabled: false, data: { current: undefined } });
+
+    it("announces a within-column move in the contract's own wording, naming the column last", () => {
+        // Arrange
+        const announcements = createTaskMoveAnnouncements({
+            columns: createBoardColumns(),
+            fallback: createRecordingFallback(),
+        });
+
+        // Act — S1 hovers over S2, both in "Source".
+        const spoken = announcements.onDragOver({ active: createActive("s1"), over: createOver("s2") });
+
+        // Assert
+        expect(spoken).toBe("S1 moved to position 2 of 2 in Source.");
+    });
+
+    it("announces a cross-column move in the contract's own wording, naming the column first", () => {
+        // Arrange
+        const announcements = createTaskMoveAnnouncements({
+            columns: createBoardColumns(),
+            fallback: createRecordingFallback(),
+        });
+
+        // Act — S1 (in "Source") hovers over D1, in "Destination".
+        const spoken = announcements.onDragOver({ active: createActive("s1"), over: createOver("d1") });
+
+        // Assert
+        expect(spoken).toBe("S1 moved to Destination, position 1 of 2.");
+    });
+
     /* One `DndContext` takes one announcements object, so a column id must still reach Phase 3's strings. */
     it("delegates an id this board holds no task for to the column reorder's own announcements", () => {
         // Arrange
