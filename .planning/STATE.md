@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-13 complete — wave 8 done, wave 9 (04-14) next
-last_updated: "2026-08-30T11:45:00.000Z"
+stopped_at: Plan 04-14 complete — wave 9 done, wave 10 next
+last_updated: "2026-08-30T10:52:00.000Z"
 last_activity: 2026-08-30
-last_activity_desc: Completed 04-13-PLAN.md (keyboard task move, within-column reorder, announcements)
-state_head: a275885f374f94c316a070196570a7dd917c4878
+last_activity_desc: Completed 04-14-PLAN.md (empty-column drop target, drag-surface visuals, SYNC-01 conflict branch)
+state_head: 293f1cc345e0e998498585d57c5e1d28e0def4d2
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 114
-  completed_plans: 105
+  completed_plans: 106
 milestone_name: milestone
 ---
 
@@ -31,18 +31,22 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 
 ## Current Position
 
-Phase: 04 (Task & Subtask Workflow) — EXECUTING, wave 8 of 17 complete
-Plan: 04-13 (keyboard task move) — complete, all 3 tasks done
+Phase: 04 (Task & Subtask Workflow) — EXECUTING, wave 9 of 17 complete
+Plan: 04-14 (empty-column drop target, drag-surface visuals, SYNC-01) — complete, all 3 tasks done
 Status: Executing Phase 04
-Last activity: 2026-08-30 — 04-13 executed: `useTaskDragSensors` (the tasks feature's own
-boundary-legal sensor hook), a genuine within/cross-column announcement wording bug found and
-fixed, comprehensive keyboard-path browser coverage (lift/step/drop/cancel/boundaries/
-single-request/dead-control), and two new e2e cases proving the keyboard move under contention.
-Most of the plan's described production work had already shipped in 04-12's task 3 rescue — see
-04-13-SUMMARY.md's Decisions Made for the full accounting.
+Last activity: 2026-08-30 — 04-14 resumed after a prior session died mid-Task-2 (Task 1 was
+already committed, `5b75d60`). Reviewed and completed the inherited Task 2 WIP (added the
+empty-column half of S-08's drop indicator to `sortable-column.tsx`; everything else — lifted
+opacity/clone, reduce-motion drop — was already shipped by 04-12), fixed a genuine MOBILE-only
+browser-test flake in the drag-hold helper (Pitfall 8 auto-scroll) and a real axe color-contrast
+defect the new `Lifted` story exposed. Task 3 (SYNC-01) found the production conflict branch
+already shipped (04-12) and added the missing browser + coverage proving revert/toast/no-client-
+re-read together. All gates green: `pnpm test` 1552/1552, `pnpm build`, visual 300/300, e2e 46/46
+(unintentionally ran the full e2e project instead of scoped — see 04-14-SUMMARY.md Issues
+Encountered). Full narrative: `04-14-SUMMARY.md`.
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
-Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 13/22 (in progress)
+Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 14/22 (in progress)
 
 ## Performance Metrics
 
@@ -74,6 +78,7 @@ Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 13/22 (in prog
 |------|----------|-------|-------|
 | Phase 02.1 P12 | 55min | 3 tasks | 13 files |
 | Phase 04 P13 | 55min | 3 tasks | 6 files |
+| Phase 04 P14 | 70min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -111,6 +116,17 @@ Recent decisions affecting current work:
   importing `use-column-drag-sensors.ts`'s guarded one — D-15 forbids the cross-feature import,
   and it is unneeded: that hook's guard already falls through to the plain library handler for a
   TASK drag. `board-view.tsx`'s shared `DndContext` keeps using `useColumnDragSensors()` alone.
+
+- [Phase 04, plan 14]: a browser test recovering a drag pointer's position after a hold-and-hover
+  MUST re-read the element's current position (`centerOf(source)`) rather than reuse a pre-drag
+  point — an intervening auto-scroll (Pitfall 8) moves the element on screen; reusing the stale
+  point produced a real, deterministic MOBILE-only flake in two new browser cases.
+
+- [Phase 04, plan 14]: a decorative Storybook backstop story (ADR tech/0025) that reproduces a
+  transient drag-only visual state (e.g. `opacity-50` lifted treatment) must narrow its OWN
+  fixture rather than suppress a resulting axe failure — D-21 forbids per-story a11y suppression.
+  The `Lifted` story's caption-contrast failure was a real, previously-unexercised defect in the
+  shipped `isDragging` treatment, not a testing artifact.
 
 ### Pending Todos
 
@@ -208,7 +224,7 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-08-30
-Stopped at: Plan 04-13 complete — wave 8 done, ready for wave 9 (04-14)
+Stopped at: Plan 04-14 complete — wave 9 done, ready for wave 10
 
 **2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
 cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
@@ -226,5 +242,18 @@ genuine announcement-wording bug (RED `0bfca21` → GREEN `b9f4e91`), and added 
 contention. All gates green: `pnpm test` 1529/1529, `pnpm lint`/`tsc`/`build` clean. Full
 narrative: `04-13-SUMMARY.md`.
 
-**Next:** `/gsd-execute-phase 04` from wave 9 (`04-14-PLAN.md` — empty-column droppable, drop
-indicator, lifted visuals, and SYNC-01 on the move path).
+**This session (2026-08-30, resumed):** Picked up `04-14-PLAN.md` mid-plan after a prior session
+died. Task 1 was already committed (`5b75d60`, test-only — production already shipped by 04-12).
+Task 2's WIP was uncommitted and green but incomplete: reviewed it, added the empty-column half of
+S-08's drop indicator (`isEmptyBodyInsertionPoint`), fixed a genuine MOBILE-only browser-test flake
+(Pitfall 8 auto-scroll not accounted for in the drag-hold-and-return test helper) and a real axe
+color-contrast defect the new `Lifted` story exposed in the shipped `isDragging` treatment,
+compressed several comment-length violations, then committed as `9d81673`. Task 3 (SYNC-01) found
+the production conflict branch already shipped (04-12); added the missing browser coverage proving
+revert/toast/no-client-re-read together, committed as `293f1cc`. All gates green: `pnpm test`
+1552/1552, `pnpm build`, `pnpm test:a11y` 217/217, visual 300/300 (no baseline changes — feature-
+ring, out of visual-regression scope), e2e 46/46 (the full project ran instead of the intended
+scoped `tasks-move.e2e.spec.ts` — a `--` filter-syntax mistake, harmless but noted). Full
+narrative: `04-14-SUMMARY.md`.
+
+**Next:** `/gsd-execute-phase 04` from wave 10.

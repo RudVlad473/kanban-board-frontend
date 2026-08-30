@@ -39,7 +39,7 @@ Requirements for initial release. Each maps to a roadmap phase.
   current column
 
 - [ ] **TASK-03**: User can edit a task's title and description
-- [ ] **TASK-04**: User can move a task between columns via drag-and-drop, applied
+- [x] **TASK-04**: User can move a task between columns via drag-and-drop, applied
   optimistically and reconciled against the server
 
 - [ ] **TASK-05**: User can delete a task (cascades to its subtasks)
@@ -59,7 +59,7 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Sync
 
-- [ ] **SYNC-01**: User sees an error and the affected change reverts when a move or edit is
+- [x] **SYNC-01**: User sees an error and the affected change reverts when a move or edit is
   rejected due to a version conflict
 
 ## v2 Requirements
@@ -111,13 +111,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TASK-01 | Phase 4 | Pending |
 | TASK-02 | Phase 4 | Pending |
 | TASK-03 | Phase 4 | Pending |
-| TASK-04 | Phase 4 | Pending |
+| TASK-04 | Phase 4 | Complete |
 | TASK-05 | Phase 4 | Pending |
 | SUBTASK-01 | Phase 4 | Pending |
 | SUBTASK-02 | Phase 4 | Pending |
 | SUBTASK-03 | Phase 4 | Pending |
 | SUBTASK-04 | Phase 4 | Pending |
-| SYNC-01 | Phase 4 | Pending |
+| SYNC-01 | Phase 4 | Complete |
 
 **Coverage:**
 
