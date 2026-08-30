@@ -42,6 +42,7 @@ const {
     ColumnsOutOfPositionOrder,
     FiveReorderableColumns,
     TasksAcrossColumns,
+    TaskIntoEmptyColumn,
     ReorderableTasks,
     SingleColumnSingleTask,
 } = composeStories(stories);
@@ -1545,6 +1546,46 @@ describeForEachDevice({
                 targetPosition: 0,
             });
             moveTaskStub.settle();
+        });
+
+        /*
+         * Pitfall 9 / UI-SPEC S-06: the empty column's card list is a real droppable, not a
+         * zero-height gap — the drop resolves to that column with the position naming its end.
+         */
+        it("moves a task into a column holding zero tasks, sending exactly one request naming it", async () => {
+            // Arrange
+            await render(<TaskIntoEmptyColumn />);
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Fixture Task Alpha",
+                    description: undefined,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
+            const target = document.querySelectorAll("section")[1].querySelector("ul");
+            if (target === null) {
+                throw new Error("the empty column's card list did not render");
+            }
+
+            // Act
+            await dragElementOntoElement({ source, target });
+
+            // Assert
+            await expect.poll(getColumnTaskTitles).toEqual([
+                { columnName: "Fixture Column 1", taskTitles: [] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Alpha"] },
+            ]);
+            expect(moveTaskStub.calls).toHaveLength(1);
+            expect(moveTaskStub.calls[0]).toEqual({
+                taskId: "00000000-0000-4000-8000-d10000000001",
+                targetColumnId: "00000000-0000-4000-8000-c00000000002",
+                version: 0,
+                targetPosition: 0,
+            });
         });
 
         /*

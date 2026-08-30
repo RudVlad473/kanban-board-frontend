@@ -274,6 +274,38 @@ export const TasksAcrossColumns: Story = {
 };
 
 /*
+ * UI-SPEC partial/empty/drag-drop-surface: one populated column, one holding zero tasks — the
+ * fixture a drop-into-an-empty-column test needs, distinct from `TasksAcrossColumns`' two-populated
+ * shape.
+ */
+export const TaskIntoEmptyColumn: Story = {
+    args: {
+        board: createBoardFull({
+            columns: [
+                createColumnFull({
+                    id: "00000000-0000-4000-8000-c00000000001",
+                    name: "Fixture Column 1",
+                    position: 0,
+                    tasks: [
+                        createTaskFull({
+                            id: "00000000-0000-4000-8000-d10000000001",
+                            title: "Fixture Task Alpha",
+                            position: 0,
+                        }),
+                    ],
+                }),
+                createColumnFull({
+                    id: "00000000-0000-4000-8000-c00000000002",
+                    name: "Fixture Column 2",
+                    position: 1,
+                    tasks: [],
+                }),
+            ],
+        }),
+    },
+};
+
+/*
  * D-11's own fixture: one column, four distinctly-titled tasks — the within-column keyboard
  * reorder needs enough cards that a multi-step move still lands inside the column, mirroring
  * `ReorderableColumns`'s four-column shape for the column path.

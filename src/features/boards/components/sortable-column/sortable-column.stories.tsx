@@ -177,3 +177,20 @@ export const OptimisticReorder: Story = {
         return <ReorderHost {...args} />;
     },
 };
+
+/*
+ * UI-SPEC partial/column-task-list: a column with zero tasks still gets a real 88px hit area and no
+ * copy or control inside it — `isReorderDisabled` renders it alone so `tasks: []` is what the browser
+ * measures, not `FIXTURE_COLUMNS`' own two-task shape.
+ */
+export const EmptyColumn: Story = {
+    args: {
+        isReorderDisabled: true,
+        column: createColumnFull({
+            id: "00000000-0000-4000-8000-c00000000010",
+            name: "Empty Column",
+            position: 0,
+            tasks: [],
+        }),
+    },
+};

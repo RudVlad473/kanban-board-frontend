@@ -16,7 +16,7 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import * as stories from "./sortable-column.stories";
 
-const { Default, Reordering, LoneColumn, OptimisticReorder } = composeStories(stories);
+const { Default, Reordering, LoneColumn, OptimisticReorder, EmptyColumn } = composeStories(stories);
 
 /*
  * One recorder, looked up off the imported binding — `queue` accepts only this action's own awaited
@@ -263,6 +263,34 @@ describeForEachDevice({
                     ["board-column-00000000-0000-4000-8000-c00000000004", "false"],
                 ]);
             reorderColumnStub.settle();
+        });
+
+        /*
+         * Pitfall 9 / UI-SPEC S-06: an empty `<ul>` is zero-height and unreachable by pointer — the
+         * 88px floor is the measured height of one card, so an empty column reads as its own space.
+         */
+        it("gives an empty column's card list a minimum 88px hit area", async () => {
+            // Act
+            await render(<EmptyColumn />);
+
+            // Assert
+            const body = document.querySelector("ul");
+            expect(body).not.toBeNull();
+            expect(body?.getBoundingClientRect().height).toBeGreaterThanOrEqual(88);
+        });
+
+        /*
+         * Copywriting Contract "Empty column body": no copy and no per-column create control — the
+         * header caption's `(0)` is the state's own signal, and the single create entry stays in it.
+         */
+        it("renders an empty column body with no button and no copy", async () => {
+            // Act
+            await render(<EmptyColumn />);
+
+            // Assert
+            const body = document.querySelector("ul");
+            expect(body?.children).toHaveLength(0);
+            expect(body?.textContent).toBe("");
         });
 
         /*
