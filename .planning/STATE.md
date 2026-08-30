@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-12 task 3 of 4 — keyboard-reorder regression open
-last_updated: "2026-08-29T00:00:00.000Z"
-last_activity: 2026-08-29
-last_activity_desc: 04-12 tasks 1-3 cherry-picked onto phase branch; regression open
-state_head: 4a5b4fc431f509b414604e4fdb94e052f2f6c858
+stopped_at: Plan 04-13 complete — wave 8 done, wave 9 (04-14) next
+last_updated: "2026-08-30T11:45:00.000Z"
+last_activity: 2026-08-30
+last_activity_desc: Completed 04-13-PLAN.md (keyboard task move, within-column reorder, announcements)
+state_head: a275885f374f94c316a070196570a7dd917c4878
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 114
-  completed_plans: 101
+  completed_plans: 105
 milestone_name: milestone
 ---
 
@@ -31,16 +31,18 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 
 ## Current Position
 
-Phase: 04 (Task & Subtask Workflow) — EXECUTING, wave 7 of 17
-Plan: 04-12 (the tracer slice) — task 3 of 4, partial and RED
+Phase: 04 (Task & Subtask Workflow) — EXECUTING, wave 8 of 17 complete
+Plan: 04-13 (keyboard task move) — complete, all 3 tasks done
 Status: Executing Phase 04
-Last activity: 2026-08-29 — quick task 260829-kyv (regenerate OpenAPI contract from backend,
-scope e2e reset cleanup to seeded user ids instead of full-db wipe) merged onto this branch;
-04-12 tasks 1-3 remain cherry-picked onto the phase branch with the keyboard-reorder regression
-still open
+Last activity: 2026-08-30 — 04-13 executed: `useTaskDragSensors` (the tasks feature's own
+boundary-legal sensor hook), a genuine within/cross-column announcement wording bug found and
+fixed, comprehensive keyboard-path browser coverage (lift/step/drop/cancel/boundaries/
+single-request/dead-control), and two new e2e cases proving the keyboard move under contention.
+Most of the plan's described production work had already shipped in 04-12's task 3 rescue — see
+04-13-SUMMARY.md's Decisions Made for the full accounting.
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
-Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 11/22 (in progress)
+Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 13/22 (in progress)
 
 ## Performance Metrics
 
@@ -71,6 +73,7 @@ Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 11/22 (in prog
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 02.1 P12 | 55min | 3 tasks | 13 files |
+| Phase 04 P13 | 55min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -98,6 +101,16 @@ Recent decisions affecting current work:
   Generalized into a durable convention (CONVENTIONS.md): any structured delimiter-joined string
   built from named fields goes through one named builder once a second call site needs the same
   shape, never a repeated inline template literal.
+
+- [Phase 04, plan 13]: `createTaskMoveAnnouncements`'s `onDragOver` was fixed to distinguish
+  within-column ("moved to position {i} of {N} in {Column}") from cross-column ("moved to
+  {Column}, position {i} of {N}") wording, per 04-UI-SPEC's Copywriting Contract — a real bug,
+  not a plan deviation, found while writing browser test coverage.
+
+- [Phase 04, plan 13]: `useTaskDragSensors` ships a plain, unguarded `KeyboardSensor` rather than
+  importing `use-column-drag-sensors.ts`'s guarded one — D-15 forbids the cross-feature import,
+  and it is unneeded: that hook's guard already falls through to the plain library handler for a
+  TASK drag. `board-view.tsx`'s shared `DndContext` keeps using `useColumnDragSensors()` alone.
 
 ### Pending Todos
 
@@ -154,16 +167,12 @@ verifying phase 03 wave 4) —
 - **RESOLVED 2026-08-29** — local `pnpm build` no longer fails on a missing `SESSION_SECRET`.
   Verified this session: `pnpm build` exit 0 against the current `.env.local`.
 
-- **PARTIALLY FIXED, still blocking plan 04-12** — 15 of 20 `board-view.test.tsx` failures fixed
-  in `eb1b80a`: `createTaskAwareCollisionDetection`'s column-drag branch called `closestCenter(args)`
-  unfiltered, so a column drag's `over` often resolved to a nearby task card instead of the
-  neighboring column once tasks shared the same `DndContext`. 5 failures remain, all MOBILE-only
-  keyboard reorders that need the row to scroll mid-drag — a separate, deeper root cause
-  (`sortableKeyboardCoordinates` ignores any `currentCoordinates` a caller passes and reads
-  dnd-kit's own stale `collisionRect` instead) diagnosed but not fixed; a first fix attempt
-  regressed further (dnd-kit's own `over` started double-advancing on scroll-needed steps) and was
-  reverted. Full diagnosis, the reverted attempt, and candidate directions:
-  `.planning/todos/pending/2026-08-29-mobile-keyboard-column-reorder-past-fold-still-broken.md`.
+- **RESOLVED 2026-08-29 (in 04-12)** — the 5 remaining MOBILE-only `board-view.test.tsx` keyboard
+  reorder failures (of the 20 first found; 15 were fixed in `eb1b80a`) were fixed by disabling the
+  column-body and task-card droppables outside their own drag kind, adopted from the stranded
+  worktree `worktree-agent-ae6e78084fa8fe8f8` and merged as `b0b141f`. `board-view.test.tsx` was
+  126/126 with zero skips as of 04-12's close, and remains so through 04-13 (now 148/148 with the
+  new keyboard-path coverage this plan added). The todo this entry pointed at is closed.
 
 - **RESOLVED 2026-08-29** — the sibling `kanban-board-backend` repo's targeted-user-delete reset
   route (commits `14dd89d`/`c29a32d`) was local-only, unpushed to its `origin/main`, when quick task
@@ -198,47 +207,24 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-29
-Stopped at: Plan 04-12 task 3 of 4 — cherry-pick complete, keyboard-reorder regression open
+Last session: 2026-08-30
+Stopped at: Plan 04-13 complete — wave 8 done, ready for wave 9 (04-14)
 
-**This session (2026-08-29, `/gsd-resume-work`):** Resumed from the 2026-08-28 `HANDOFF.json`
-pause at wave 7 / plan 04-12, task 3 of 4. Its blocking human action was the 04-12 resume strategy;
-the user chose cherry-pick-then-re-dispatch.
+**2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
+cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
+(root cause: `sortableKeyboardCoordinates` walks the droppable registry directly, so scoping only
+the collision function left cross-kind droppables enabled). Merged as `b0b141f`; also re-derived
+the project-wide radius scale after the tracer's checkpoint found a wrong DPI divisor. 04-12 closed
+at `159fef8` with `board-view.test.tsx` 126/126, zero skips. Full narrative: `04-12-SUMMARY.md`.
 
-Executed that path and verified each step rather than assuming it:
+**This session (2026-08-30):** Executed `04-13-PLAN.md`. Found most of its described production
+work already shipped as a side effect of 04-12's regression fix (the move action's
+`targetPosition`, T3's index math, within-column reorder wiring, the dead-control gate, and the
+Pitfall-8 keyboard-sensor guard). Added the missing artifact (`useTaskDragSensors`), fixed one
+genuine announcement-wording bug (RED `0bfca21` → GREEN `b9f4e91`), and added 21 browser cases plus
+2 e2e cases proving the keyboard path end to end, including under `--repeat-each=3 --workers=2`
+contention. All gates green: `pnpm test` 1529/1529, `pnpm lint`/`tsc`/`build` clean. Full
+narrative: `04-13-SUMMARY.md`.
 
-1. **Recovered the stranded work.** Three commits lived only on
-   `origin/worktree-agent-a89cf10a707dfba36` — `8edb3eb` (task 1: move Server Action + schema),
-   `92b3292` (task 2: task card, models, optimistic hook) and `d6e3664` (task 3, WIP). All three
-   cherry-picked onto `gsd/phase-04-task-subtask-workflow` with no conflicts, landing as `54dbb03`,
-   `1e43a9c`, `4a5b4fc`. Confirmed `git diff origin/worktree-agent-... HEAD -- src/` was empty
-   before deleting the remote branch, so nothing was traded away for tidiness. No worktrees remain.
-
-2. **Corrected a stale artifact.** The phase `.continue-here.md`'s `<current_state>` block still
-   claimed task 3's edits "were discarded and no longer exist" — commit `0a609a2` had corrected
-   `HANDOFF.json` and the Infrastructure State section but left that prose behind. It has been
-   rewritten. `HANDOFF.json` is retired; its decision is consumed.
-
-3. **Ran the gates.** `pnpm build` exit 0 — which also retires the long-carried "local build fails
-   without `SESSION_SECRET`" concern. `pnpm test` exit 1: **20 failed / 1474 passed**, all in one
-   file.
-
-4. **Diagnosed the regression rather than deferring it.** Every failure is a keyboard column
-   reorder in `board-view.test.tsx`, MOBILE and DESKTOP alike, with one signature — the announcement
-   never advances past "Picked up …", so `expect.poll(getAnnouncement).not.toBe(...)` times out at
-   line 193. Every pointer block still passes. This is precisely the regression 04-12's own
-   must-have #3 predicted ("column drag is the thing most likely to regress here"). Prime suspect:
-   `board-view.tsx` now wraps the announcer as `createTaskMoveAnnouncements({ columns, fallback:
-   createColumnReorderAnnouncements({ columns }) })`, and a COLUMN drag's `onDragOver` may not be
-   delegating to that fallback. Secondary: the new `active?.data.current?.type !==
-   DRAG_ITEM_TYPE.COLUMN` guard at `use-column-drag-sensors.ts:47` — it falls through to
-   `super.handleKeyDown`, so it should be harmless, but that assumes `props.context.current.active`
-   is populated when the coordinate getter runs. `sortable-column.tsx:53` does declare the COLUMN
-   data, so the plumbing itself is present.
-
-The phase branch is pushed and matches origin. The tree is deliberately red at a WIP boundary:
-task 3 is unfinished by definition and clearing these 20 tests is part of finishing it, not a
-separate cleanup.
-
-**Next:** finish 04-12 task 3 (fix the announcement regression, prove one cross-column drag end to
-end), then its task-4 human-verify checkpoint, then `/gsd-execute-phase 04` from wave 8.
+**Next:** `/gsd-execute-phase 04` from wave 9 (`04-14-PLAN.md` — empty-column droppable, drop
+indicator, lifted visuals, and SYNC-01 on the move path).
