@@ -71,7 +71,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
      */
     const { active } = useDndContext();
     const isTaskDragActive = active?.data.current?.type === DRAG_ITEM_TYPE.TASK;
-    const { setNodeRef: setTaskListNodeRef } = useDroppable({
+    const { isOver: isBodyOver, setNodeRef: setTaskListNodeRef } = useDroppable({
         id: buildColumnBodyDroppableId(column.id),
         data: { type: DRAG_ITEM_TYPE.COLUMN_BODY, columnId: column.id },
         disabled: !isTaskDragActive,
@@ -79,6 +79,11 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
 
     /* Read off the strategy's own indices, so the pointer path and the keyboard path indicate identically. */
     const isInsertionPoint = isSorting && overIndex === index && activeIndex !== index;
+    /*
+     * A hovered card carries its OWN insertion point (task-card.tsx); an empty column has no card to
+     * carry one, so the body itself draws S-08's bar the moment a task drag is over it directly.
+     */
+    const isEmptyBodyInsertionPoint = isTaskDragActive && isBodyOver && column.tasks.length === 0;
 
     return (
         <section
@@ -125,8 +130,19 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
                  * S-07: 20px between cards, measured twice on the mock, correcting the shipped 16px.
                  * `min-h-22` is the 88px one-card floor an empty column needs to stay droppable.
                  */}
-                <ul ref={setTaskListNodeRef} className="flex min-h-22 flex-col gap-5">
+                <ul ref={setTaskListNodeRef} className="relative flex min-h-22 flex-col gap-5">
                     {renderTasks()}
+
+                    {!isEmptyBodyInsertionPoint ? null : (
+                        /*
+                         * S-08's own bar, drawn at the body's own top edge rather than a card's gap —
+                         * an empty column has no gap to draw it inside.
+                         */
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-x-0 top-0 h-1 rounded-full bg-bg-primary"
+                        />
+                    )}
                 </ul>
             </div>
         </section>

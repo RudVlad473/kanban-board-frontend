@@ -194,3 +194,86 @@ export const EmptyColumn: Story = {
         }),
     },
 };
+
+/*
+ * UI-SPEC partial/drag-drop-surface (backstop): S-08's axis-flipped indicator bar, drawn between
+ * two stubbed cards — a decorative reproduction, no dnd-kit interaction (ADR tech/0025 bars play
+ * functions); `board-view.test.tsx` proves the real mechanism, indices and both input paths.
+ */
+export const TaskDropIndicator: Story = {
+    render: (args) => {
+        return (
+            <DndContext id="task-drop-indicator-story">
+                <SortableContext items={[FIXTURE_COLUMNS[0].id]} strategy={horizontalListSortingStrategy}>
+                    <div className="flex h-100 gap-6 bg-bg-app p-6">
+                        <SortableColumn
+                            {...args}
+                            isReorderDisabled
+                            column={FIXTURE_COLUMNS[0]}
+                            renderTasks={() => {
+                                const [first, second] = FIXTURE_COLUMNS[0].tasks;
+
+                                return (
+                                    <>
+                                        <li
+                                            data-testid="stubbed-task"
+                                            className="rounded-md bg-bg-surface px-4 py-6 shadow-sm"
+                                        >
+                                            {first.title}
+                                        </li>
+
+                                        <span aria-hidden="true" className="-mt-2.5 h-1 rounded-full bg-bg-primary" />
+
+                                        <li
+                                            data-testid="stubbed-task"
+                                            className="rounded-md bg-bg-surface px-4 py-6 shadow-sm"
+                                        >
+                                            {second.title}
+                                        </li>
+                                    </>
+                                );
+                            }}
+                        />
+                    </div>
+                </SortableContext>
+            </DndContext>
+        );
+    },
+};
+
+/*
+ * UI-SPEC partial/column-task-list and empty/drag-drop-surface (backstop): the same bar, drawn
+ * inside an empty column's own 88px body rather than a card's gap — Pitfall 9's own visual half.
+ */
+export const EmptyColumnDropIndicator: Story = {
+    args: {
+        isReorderDisabled: true,
+        column: createColumnFull({
+            id: "00000000-0000-4000-8000-c00000000011",
+            name: "Empty Column",
+            position: 0,
+            tasks: [],
+        }),
+    },
+    render: (args) => {
+        return (
+            <DndContext id="empty-column-drop-indicator-story">
+                <SortableContext items={[args.column.id]} strategy={horizontalListSortingStrategy}>
+                    <div className="flex h-100 gap-6 bg-bg-app p-6">
+                        <SortableColumn
+                            {...args}
+                            renderTasks={() => {
+                                return (
+                                    <span
+                                        aria-hidden="true"
+                                        className="absolute inset-x-0 top-0 h-1 rounded-full bg-bg-primary"
+                                    />
+                                );
+                            }}
+                        />
+                    </div>
+                </SortableContext>
+            </DndContext>
+        );
+    },
+};

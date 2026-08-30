@@ -209,18 +209,29 @@ const centerOf = (element: Element): Point => {
 
 const STEPS_PER_LEG = 10;
 
-/** A real mouse-driven drag through every waypoint in order, ending with a release at the last one. */
-const dragThroughPoints = async (waypoints: Point[]): Promise<void> => {
+/** The same host-letterboxing correction `dragThroughPoints`/`holdDragOver` both need. */
+const toPageMapper = (): ((point: Point) => Point) => {
     const frameRect = window.frameElement?.getBoundingClientRect();
     const offsetX = frameRect?.left ?? 0;
     const offsetY = frameRect?.top ?? 0;
     const scaleX = frameRect ? frameRect.width / window.innerWidth : 1;
     const scaleY = frameRect ? frameRect.height / window.innerHeight : 1;
-    const toPage = ({ x, y }: Point): Point => ({ x: offsetX + x * scaleX, y: offsetY + y * scaleY });
 
+    return ({ x, y }) => ({ x: offsetX + x * scaleX, y: offsetY + y * scaleY });
+};
+
+/*
+ * The lifted-state twin of `dragThroughPoints`: presses and moves through every waypoint but does
+ * NOT release, returning `moveTo` (more legs, for a caller that needs to inspect an intermediate
+ * hover before moving on) and `release` (releases wherever the pointer currently sits).
+ */
+const holdDragOver = async (
+    waypoints: Point[],
+): Promise<{ moveTo: (waypoints: Point[]) => Promise<void>; release: () => Promise<void> }> => {
+    const toPage = toPageMapper();
     const session = cdp();
-    const [start, ...rest] = waypoints;
-    const startPage = toPage(start);
+    let current = waypoints[0];
+    const startPage = toPage(current);
     await session.send("Input.dispatchMouseEvent", {
         type: "mousePressed",
         x: startPage.x,
@@ -229,30 +240,43 @@ const dragThroughPoints = async (waypoints: Point[]): Promise<void> => {
         clickCount: 1,
     });
 
-    let previous = start;
-    for (const waypoint of rest) {
-        for (let step = 1; step <= STEPS_PER_LEG; step += 1) {
-            const point = toPage({
-                x: previous.x + ((waypoint.x - previous.x) * step) / STEPS_PER_LEG,
-                y: previous.y + ((waypoint.y - previous.y) * step) / STEPS_PER_LEG,
-            });
-            await session.send("Input.dispatchMouseEvent", {
-                type: "mouseMoved",
-                x: point.x,
-                y: point.y,
-                button: "left",
-            });
+    const moveTo = async (nextWaypoints: Point[]): Promise<void> => {
+        for (const waypoint of nextWaypoints) {
+            for (let step = 1; step <= STEPS_PER_LEG; step += 1) {
+                const point = toPage({
+                    x: current.x + ((waypoint.x - current.x) * step) / STEPS_PER_LEG,
+                    y: current.y + ((waypoint.y - current.y) * step) / STEPS_PER_LEG,
+                });
+                await session.send("Input.dispatchMouseEvent", {
+                    type: "mouseMoved",
+                    x: point.x,
+                    y: point.y,
+                    button: "left",
+                });
+            }
+            current = waypoint;
         }
-        previous = waypoint;
-    }
+    };
 
-    const releasePage = toPage(previous);
-    await session.send("Input.dispatchMouseEvent", {
-        type: "mouseReleased",
-        x: releasePage.x,
-        y: releasePage.y,
-        button: "left",
-    });
+    await moveTo(waypoints.slice(1));
+
+    const release = async (): Promise<void> => {
+        const releasePage = toPage(current);
+        await session.send("Input.dispatchMouseEvent", {
+            type: "mouseReleased",
+            x: releasePage.x,
+            y: releasePage.y,
+            button: "left",
+        });
+    };
+
+    return { moveTo, release };
+};
+
+/** A real mouse-driven drag through every waypoint in order, ending with a release at the last one. */
+const dragThroughPoints = async (waypoints: Point[]): Promise<void> => {
+    const { release } = await holdDragOver(waypoints);
+    await release();
 };
 
 const dragElementOntoElement = async ({ source, target }: { source: Element; target: Element }): Promise<void> => {
@@ -1586,6 +1610,150 @@ describeForEachDevice({
                 version: 0,
                 targetPosition: 0,
             });
+        });
+
+        /* UI-SPEC populated/drag-drop-surface: the lifted treatment mirrors the shipped column one. */
+        it("fades the source card in place and shows a full-opacity clone following the pointer while lifted", async () => {
+            // Arrange
+            await render(<TasksAcrossColumns />);
+            const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
+            const sourceCard = source.closest("li");
+            if (sourceCard === null) {
+                throw new Error("the source task's card did not render");
+            }
+            const target = screen.getByRole("button", { name: /^Fixture Task Beta/ });
+            const origin = centerOf(source);
+
+            /* Held over the OTHER column — the lifted state is on screen to read while it hovers there. */
+            const { moveTo, release } = await holdDragOver([origin, centerOf(target)]);
+
+            // Assert
+            await expect.poll(() => sourceCard.className).toContain("opacity-50");
+            await expect.poll(() => document.querySelectorAll(".shadow-lg").length).toBeGreaterThan(0);
+            const clone = document.querySelector(".shadow-lg");
+            expect(clone?.className).not.toContain("opacity-50");
+            expect(clone?.textContent).toContain("Fixture Task Alpha");
+
+            /*
+             * Cleanup: walked back to origin, read FRESH off `source` rather than the pre-drag
+             * `origin` point — the cross-column hover above can auto-scroll the row (Pitfall 8), and
+             * a stale point would release wherever now sits there instead (a MOBILE-only flake).
+             */
+            await moveTo([centerOf(source)]);
+            await release();
+            expect(moveTaskStub.calls).toHaveLength(0);
+        });
+
+        /*
+         * S-08's axis-flipped twin of the column indicator: the bar reads from the sort strategy's
+         * own indices, so the pointer path and the keyboard path indicate at the same slot.
+         */
+        it("renders the insertion indicator at the hovered card while a pointer drag is over it", async () => {
+            // Arrange
+            await render(<ReorderableTasks />);
+            const source = screen.getByRole("button", { name: "Reorder Task One" });
+            const target = screen.getByRole("button", { name: "Reorder Task Three" });
+            const origin = centerOf(source);
+
+            // Act — held over the target, so the indicator it draws is on screen to read.
+            const { moveTo, release } = await holdDragOver([origin, centerOf(target)]);
+
+            // Assert
+            await expect
+                .poll(() => document.querySelectorAll('li [aria-hidden="true"].bg-bg-primary').length)
+                .toBeGreaterThan(0);
+
+            // Cleanup — walked back to origin before releasing (a no-op drop).
+            await moveTo([origin]);
+            await release();
+            expect(moveTaskStub.calls).toHaveLength(0);
+        });
+
+        it("renders the insertion indicator at the same index for a keyboard step as a pointer drag would", async () => {
+            // Arrange
+            await render(<ReorderableTasks />);
+            focusTaskHandle("Task One");
+
+            // Act
+            await userEvent.keyboard(" ");
+            const liftedAnnouncement = getAnnouncement();
+            await userEvent.keyboard("{ArrowDown}");
+            await expect.poll(getAnnouncement).not.toBe(liftedAnnouncement);
+
+            // Assert
+            expect(document.querySelectorAll('li [aria-hidden="true"].bg-bg-primary').length).toBeGreaterThan(0);
+
+            // Cleanup — stepped back to the original index before dropping, so the drop is a no-op.
+            await userEvent.keyboard("{ArrowUp}");
+            await userEvent.keyboard(" ");
+            expect(moveTaskStub.calls).toHaveLength(0);
+        });
+
+        /* Pitfall 9's own visual half: the empty body draws S-08's bar directly, having no card of its own to carry one. */
+        it("renders the insertion indicator inside an empty column's body while a task drag is over it", async () => {
+            // Arrange
+            await render(<TaskIntoEmptyColumn />);
+            const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
+            const origin = centerOf(source);
+            const target = document.querySelectorAll("section")[1].querySelector("ul");
+            if (target === null) {
+                throw new Error("the empty column's card list did not render");
+            }
+
+            // Act
+            const { moveTo, release } = await holdDragOver([origin, centerOf(target)]);
+
+            // Assert
+            await expect
+                .poll(() => target.querySelectorAll(':scope > [aria-hidden="true"].bg-bg-primary').length)
+                .toBeGreaterThan(0);
+
+            /*
+             * Cleanup — walked back to origin before releasing (a no-op drop). Read FRESH off
+             * `source` rather than reusing the pre-drag `origin` point — see the matching comment
+             * above on the lifted-state test for why the stale point flakes on MOBILE.
+             */
+            await moveTo([centerOf(source)]);
+            await release();
+            expect(moveTaskStub.calls).toHaveLength(0);
+        });
+
+        /*
+         * UI-SPEC partial/task-card: the follow transition is DROPPED entirely, never merely shortened.
+         * Emulated via CDP rather than a `window.matchMedia` stub — a real `prefers-reduced-motion`
+         * media-query change, not a fake of the platform API (ADR tech/0020 no-mocking policy).
+         */
+        it("drops the settle transition entirely under reduced motion, rather than shortening it", async () => {
+            // Arrange
+            const session = cdp();
+            await session.send("Emulation.setEmulatedMedia", {
+                features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+            });
+
+            try {
+                await render(<ReorderableTasks />);
+                focusTaskHandle("Task One");
+                await userEvent.keyboard(" ");
+                const liftedAnnouncement = getAnnouncement();
+                await userEvent.keyboard("{ArrowDown}");
+                await expect.poll(getAnnouncement).not.toBe(liftedAnnouncement);
+
+                // Assert — the shifted sibling settles into its new slot with no transition style at all.
+                const shiftedCard = screen.getByRole("button", { name: "Reorder Task Two" }).closest("li");
+                if (shiftedCard === null) {
+                    throw new Error("Task Two's card did not render");
+                }
+                await expect.poll(() => shiftedCard.style.transition).toBe("");
+
+                // Cleanup — stepped back to the original index before dropping, so the drop is a no-op.
+                await userEvent.keyboard("{ArrowUp}");
+                await userEvent.keyboard(" ");
+                expect(moveTaskStub.calls).toHaveLength(0);
+            } finally {
+                await session.send("Emulation.setEmulatedMedia", {
+                    features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
+                });
+            }
         });
 
         /*

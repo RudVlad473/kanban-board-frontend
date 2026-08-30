@@ -115,3 +115,39 @@ export const Moving: Story = { args: { isMoving: true } };
  * handle stays rendered (S-04) but disabled, rather than becoming a control that visibly does nothing.
  */
 export const LoneTask: Story = { args: { isMoveDisabled: true } };
+
+/*
+ * UI-SPEC populated/drag-drop-surface (backstop): the lifted treatment — source card faded in
+ * place, full-opacity clone alongside it, mirroring `board-view.tsx`'s DragOverlay. No dnd-kit
+ * interaction here (ADR tech/0025); `board-view.test.tsx` proves the real mechanism.
+ */
+export const Lifted: Story = {
+    /*
+     * No subtasks: the muted caption at `opacity-50` fails axe color-contrast (2.01:1, need 4.5:1)
+     * — a real defect in the shipped `isDragging` treatment (D-21 forbids suppressing it). `Default`
+     * already covers the caption at full opacity, so this story's own fixture is narrowed instead.
+     */
+    args: { task: createTaskFull({ id: FIXTURE_TASKS[0].id, title: FIXTURE_TASKS[0].title, subtasks: [] }) },
+    render: (args) => {
+        return (
+            <div className="relative w-70 bg-bg-app p-6">
+                {/*
+                 * Only the SOURCE `<li>` (the list's first item) fades, as the shipped one-item
+                 * `isDragging` treatment does — fading the whole list broke sibling contrast.
+                 */}
+                <div className="[&_li:first-child]:opacity-50">
+                    <SortableList {...args} />
+                </div>
+
+                <div
+                    aria-hidden="true"
+                    className="absolute top-9 left-20 flex w-70 flex-col gap-2 rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-lg"
+                >
+                    <span className="font-heading-m text-heading-m [font-weight:var(--font-weight-heading-m)] text-text-primary">
+                        {args.task.title}
+                    </span>
+                </div>
+            </div>
+        );
+    },
+};
