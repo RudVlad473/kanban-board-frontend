@@ -200,8 +200,34 @@ pointer rule reproduces exactly that failure, once per file.
 
 ## Data fetching & mutations (docs/adr/tech/0019, narrows docs/adr/tech/0002)
 
-- Every server entry point is either a React Server Component for reads (server-side fetch, zod-validated per docs/adr/tech/0024, passed to a Client Component as plain props — no client-side query for list/detail data) or a Server Action for writes (create/rename/delete/move/reorder), invoked directly by an RSC/form or wrapped as a TanStack Query `mutationFn` when client-side optimistic `onMutate`/`onError` rollback is needed. Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
+- Every server entry point is either a React Server Component for reads (server-side fetch, zod-validated per docs/adr/tech/0024, passed to a Client Component as plain props — no client-side query for list/detail data) or a Server Action for writes (create/rename/delete/move/reorder), invoked directly by an RSC/form or wrapped as a TanStack Query `mutationFn` for pending/error state. TanStack's own optimistic-update guide does NOT apply here: it writes to the query cache, and this ADR keeps reads out of it — see "Optimistic UI" below for what to use instead. Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
 - Every mutating Server Action calls `refresh()` (from `next/cache`) **inside the action itself**, as its last step once the write has succeeded — `app/(dashboard)/layout.tsx` is a persistent layout that does not re-render on ordinary navigation, so a mutation invoked deeper in the tree never reaches the sidebar's board list without it. The client caller does no cache work at all; adding a second `router.refresh()` in the hook would double-render every mutation. All eight shipped board and column mutations follow this, and `use-delete-board.ts` records the reasoning at its call site. The repository's only `router.refresh()` is `board-list.tsx`'s retry button, which is a re-read after a failed load, not a mutation. Enforcement: code review, plus the `e2e/*.e2e.spec.ts` specs, which assert the mutation's result is visible without a manual reload — the observable consequence of the refresh. There is deliberately no unit-level assertion: `refresh()` is Server-Action-only and unreachable from the Vitest `node` project, which is why each action's `*.integration.test.ts` exercises the upstream call rather than the action. docs/adr/tech/0019's Consequences names the anti-pattern this bullet exists to prevent.
+
+## Optimistic UI (extends docs/adr/tech/0019)
+
+- **Optimistic UI over server-owned data uses React's `useOptimistic`.** The board arrives as RSC
+  props, so there is no query cache to write to and TanStack's `onMutate`/rollback pattern cannot
+  apply. `useOptimistic` is the primitive built for exactly this: it layers the pending change over
+  the server value and drops it on its own when fresh props arrive. Enforcement: code review.
+- **Do not hand-roll retirement.** Phase 4 originally shipped `applyTaskMoveOverride` and its twin
+  `ColumnOrderOverride`: each snapshotted the server's task ids per column, diffed them on every
+  render to decide staleness, and signalled retirement by returning the props array itself so
+  reference equality meant "expired". That is a re-implementation of what `useOptimistic` does
+  natively, in two copies. If you find yourself tracking *when an optimistic value goes stale*, you
+  are rebuilding the primitive. Enforcement: code review.
+
+## Server data flows down, never sideways through a context
+
+- **A Client Component never publishes server-derived data into a context for a sibling to read.**
+  If two parts of the tree need the same server data, fetch it at a level that can reach both and
+  pass it down; `fetchBoardFull` and friends are request-deduplicated, so fetching in a nested
+  layout and its page costs one call. A nested `app/**/[param]/layout.tsx` receives the route param
+  and is usually that level. Enforcement: code review.
+- The counter-example this rule exists for: plan 04-15 gave the dashboard header the open board's
+  columns by having `BoardView` run an effect that pushed them into a client context the header
+  read, plus a null-publish on unmount to avoid a stale board leaking across navigation. It was a
+  client pub/sub bus carrying data the server already had, and the effect's cleanup ordering was a
+  latent bug. Enforcement: code review.
 
 ## Drag-and-drop (docs/adr/tech/0003)
 
@@ -259,6 +285,15 @@ Still unenforced, with the reason: the past-tense-verb-phrase rule for booleans 
 phrase from a past-participle compound noun, so the approximation would license the exact shape the
 rule exists to reject.
 
+## Two names in one feature must differ by more than word order
+
+- **A pair like `useCreateTask` / `useTaskCreation` is a naming defect, not a style preference.**
+  Names that are re-orderings or nominalisations of the same words give a reader no way to predict
+  which one does what, so every call site becomes a lookup. When two modules in a feature are that
+  close, either their names must say what actually distinguishes them (what each one *does*, not
+  what it is *about*), or — more often — the split itself is wrong and they should be one thing.
+  Enforcement: code review.
+
 ## Component props
 
 A component accepting props declares a named top-level type for them — conventionally `Props`
@@ -285,6 +320,28 @@ code review (no automated check exists yet).
   `useState`. The counter-example is `src/hooks/use-overflow-indicator.ts`'s `isOverflowing`, which
   is assigned from `scrollWidth > clientWidth` and never toggled, so `useBoolean` would only rename
   its setter and hand it four members no caller can meaningfully use.
+
+## One source of truth for "which thing is open"
+
+- **A conditionally-rendered component does not also take an `isOpen` prop.** Rendering it behind
+  `x === null ? null : <Modal isOpen .../>` states the same fact twice — the guard already decided
+  it is open, so `isOpen` is a constant `true` and the child's "closed" state is unreachable. Hold
+  the open item in one nullable state and give the child an `onClose` callback; a boolean
+  `onOpenChange` whose `true` branch is dead weight is the same redundancy seen from the callback
+  side. Enforcement: code review.
+- Resetting a child's internal state by changing its `key` when the target changes is correct and
+  should stay — that is React's documented reset mechanism, and it is unrelated to the redundancy
+  above. Enforcement: code review.
+
+## Extract a hook when a component holds a behaviour, not when it gets long
+
+- **The unit of extraction is one cohesive behaviour** — its state, its handlers and its effect
+  together — not an arbitrary line count. A hook that only relocates code, is called from exactly
+  one component, and leaves the caller passing five values back and forth has added a file and an
+  indirection without removing anything. Enforcement: code review.
+- The signal to extract: the component's own body no longer reads as "what this renders" because
+  two or more independent behaviours are interleaved in it. Extract until each one names a thing
+  the feature actually does, then stop. Enforcement: code review.
 
 ## What may live in a `.tsx` file
 

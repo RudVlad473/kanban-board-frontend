@@ -52,6 +52,37 @@ measure rather than eyeball, render at 600 DPI and divide by 6.25 for CSS px, th
 surface the conflict instead of following either silently — on 2026-08-27 the mock overruled
 `02-UI-SPEC.md`'s pinned-footer reading of `+ Create New Board`.
 
+## Reach for the platform's own primitive before building a mechanism
+
+Name the built-in you rejected, and why, before hand-rolling state machinery. This codebase has
+repeatedly grown a bespoke mechanism where React or Next already shipped one — a hand-rolled
+optimistic-move override with snapshot-and-compare staleness detection where `useOptimistic`
+does it natively; a client context populated by an effect to carry data the server already had.
+Each looked reasonable while being written and cost far more to read than the primitive would have.
+
+The trigger to stop and look it up: you are about to write code whose job is _bookkeeping about a
+mutation_ — tracking what was optimistic, when it goes stale, when to retire it — rather than code
+that does the mutation. That bookkeeping is the framework's job in almost every case.
+
+When an official pattern genuinely does not fit, say so and record the reason in an ADR rather than
+quietly diverging. TanStack Query's optimistic-updates guide, for instance, cannot apply to this
+app's board reads: they are RSC props, and docs/adr/tech/0019 keeps them out of the query cache, so
+there is nothing for `setQueryData` to write to. That is a real exception — and it is written down,
+which is what makes it one.
+
+## Verify a code review's claims before acting on them
+
+Findings from an external reviewer — another model, a CLI reviewer, a subagent — are claims, not
+facts, and one that is confidently wrong will cost more than the review saved. Check each against
+the compiler, the test suite, or the running app before changing anything.
+
+Found 2026-08-31: a Gemini 3.1 Pro review of plan 04-15 returned four findings. Two were false. Its
+"critical" one asserted `next/cache` does not export `refresh` — it does in Next 16.3, and acting on
+it would have replaced a working API in three Server Actions. Its second claimed an unreachable
+union branch, which `tsc` already rules out. Both were artifacts of a reviewer that could not see
+the repo. The two survivors were real and worth having, which is the point: verification is what
+separates them.
+
 ## CI green is the sign-off
 
 A wave, plan, or phase is done when CI says so. Block on the run rather than polling it:
