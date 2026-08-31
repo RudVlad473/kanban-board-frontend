@@ -17,10 +17,8 @@ type AuthenticatedResult<TResult extends StatusResult> = Exclude<
 /**
  * Send an expired session to sign-in, and hand back the result without its `UNAUTHENTICATED` arm.
  *
- * A plain function, not a `use*` hook: every caller is an async Server Component, where `redirect()`
- * is an ordinary call and no hook may run at all. Callers therefore write
- * `const result = requireAuthenticated(await fetchBoards())` and go straight to the branches that
- * remain — the narrowing is the point, not the two saved lines.
+ * A plain function, not a `use*` hook: every caller is an async Server Component, where no hook
+ * may run at all. The narrowing is the point, not the two saved lines.
  */
 export const requireAuthenticated = <TResult extends StatusResult>(result: TResult): AuthenticatedResult<TResult> => {
     if (result.status === RESULT_STATUS.UNAUTHENTICATED) {

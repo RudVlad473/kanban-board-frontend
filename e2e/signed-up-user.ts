@@ -22,9 +22,8 @@ type SignUpCredentials = {
 /**
  * Drive the sign-up form and submit it, asserting nothing about the outcome.
  *
- * The lower half of the UI sign-up path, for specs whose subject is a rejected submission
- * (a schema violation, a duplicate email). A spec expecting the account to be created wants
- * `signUpViaUi` instead, which also registers it for teardown.
+ * For specs whose subject is a rejected submission; a spec expecting the account to be
+ * created wants `signUpViaUi`, which also asserts arrival and registers it for teardown.
  */
 export const submitSignUpForm = async ({
     page,
