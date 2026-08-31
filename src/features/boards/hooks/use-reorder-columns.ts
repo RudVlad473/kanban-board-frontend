@@ -3,12 +3,12 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { startTransition, useOptimistic } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { reorderColumns } from "@/features/boards/column-drag-model";
-import { applyColumnOrderOverride, toReorderTargetPosition, type ColumnOrderOverride } from "@/features/boards/model";
+import { toReorderTargetPosition } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
@@ -41,82 +41,63 @@ const REORDER_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descri
 export type ReorderColumnsArgs = { boardId: string; fromIndex: number; toIndex: number };
 
 /**
- * COLUMN-03's optimistic reorder (U-05). The override is an ORDER rather than a field, but it is
- * retired by the same pure derivation the rename override uses, kept in `model.ts`. No query cache
- * to patch: column reads are RSC props (docs/adr/tech/0019).
+ * COLUMN-03's optimistic reorder (U-05). `useOptimistic` owns the pending order: no query cache to
+ * patch, since column reads are RSC props (docs/adr/tech/0019), and no staleness to track, since
+ * the pending order lives exactly as long as the write does.
  */
 export const useReorderColumns = ({ columns }: { columns: ColumnFull[] }) => {
     const toast = useToast();
-    const [override, setOverride] = useState<ColumnOrderOverride | null>(null);
-    const [movedColumnId, setMovedColumnId] = useState<string | null>(null);
-    const mutation = useMutation({ mutationFn: reorderColumnAction, retry: false });
-
-    const renderedColumns = applyColumnOrderOverride({ columns, override });
-
-    /*
-     * The helper hands back the props array ITSELF once the server's own order has moved on, so
-     * reference equality is the retirement signal — nothing has to clear this.
-     */
-    const isOverrideApplied = renderedColumns !== columns;
-
+    const [optimisticColumns, applyOptimisticReorder] = useOptimistic(
+        columns,
+        (current: ColumnFull[], move: { fromIndex: number; toIndex: number }) =>
+            reorderColumns({ columns: current, ...move }),
+    );
     /*
      * T-03-31: the moved column's version IS bumped (03-BACKEND-FACTS § R2), so its own rename and
-     * delete stay locked until the refreshed props land. R2 also observed that merely SHIFTED
-     * columns keep a valid version, which is what lets this stop at the one column that moved.
+     * delete stay locked until the write settles. R2 also observed that merely SHIFTED columns keep
+     * a valid version, which is what lets this stop at the one column that moved.
      */
-    const reorderingColumnId = mutation.isPending || isOverrideApplied ? movedColumnId : null;
+    const [reorderingColumnId, markColumnReordering] = useOptimistic<string | null, string>(
+        null,
+        (_current, columnId) => columnId,
+    );
+    const mutation = useMutation({ mutationFn: reorderColumnAction, retry: false });
 
-    const requestReorder = async ({
-        boardId,
-        fromIndex,
-        toIndex,
-    }: ReorderColumnsArgs): Promise<{ didReorder: boolean }> => {
-        const movedColumn = renderedColumns.at(fromIndex);
+    const requestReorder = ({ boardId, fromIndex, toIndex }: ReorderColumnsArgs): void => {
+        const movedColumn = optimisticColumns.at(fromIndex);
+
         if (movedColumn === undefined || fromIndex === toIndex) {
-            return { didReorder: false };
+            return;
         }
 
         /*
-         * `previousOrder` is the SERVER's order, never the rendered one — that is what the override
-         * compares itself against to know it has been superseded.
+         * One action, so dropping the optimistic order restores the WHOLE board's: the move shifted
+         * every column between the two indices, and the props still carry the order all of them had.
          */
-        setOverride({
-            previousOrder: columns.map((column) => column.id),
-            order: reorderColumns({ columns: renderedColumns, fromIndex, toIndex }).map((column) => column.id),
+        startTransition(async () => {
+            applyOptimisticReorder({ fromIndex, toIndex });
+            markColumnReordering(movedColumn.id);
+
+            // Exactly one request per completed move — intermediate arrow steps never reach here (T-03-12).
+            const result = await mutation
+                .mutateAsync({
+                    boardId,
+                    columnId: movedColumn.id,
+                    version: movedColumn.version,
+                    targetPosition: toReorderTargetPosition({ toIndex }),
+                })
+                .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
+
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                toast.add({ type: "danger", ...(REORDER_FAILURE_COPY[result.status] ?? GENERIC_REORDER_FAILURE) });
+            }
         });
-        setMovedColumnId(movedColumn.id);
-
-        // Exactly one request per completed move — intermediate arrow steps never reach here (T-03-12).
-        const result = await mutation
-            .mutateAsync({
-                boardId,
-                columnId: movedColumn.id,
-                version: movedColumn.version,
-                targetPosition: toReorderTargetPosition({ toIndex }),
-            })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
-
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            /*
-             * Dropping the override restores the WHOLE board's order, not just the dragged column:
-             * the move shifted every column between the two indices, and the raw props still carry
-             * the order all of them came in with.
-             */
-            setOverride(null);
-            setMovedColumnId(null);
-            toast.add({ type: "danger", ...(REORDER_FAILURE_COPY[result.status] ?? GENERIC_REORDER_FAILURE) });
-
-            return { didReorder: false };
-        }
-
-        // Left in place on success: it retires itself once the refreshed props carry the new order.
-        return { didReorder: true };
     };
 
     return {
         reorderColumns: requestReorder,
         isPending: mutation.isPending,
-        columns: renderedColumns,
+        columns: optimisticColumns,
         reorderingColumnId,
     };
 };

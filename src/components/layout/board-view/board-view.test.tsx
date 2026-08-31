@@ -1207,6 +1207,7 @@ describeForEachDevice({
                 status: RESULT_STATUS.SUCCESS,
                 column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 1 },
             });
+            reorderColumnStub.hold();
             await render(<ReorderableColumns />);
 
             // Act
@@ -1217,6 +1218,7 @@ describeForEachDevice({
                 .poll(getRenderedColumnNames)
                 .toEqual(["Fixture Column 2", "Fixture Column 1", "Fixture Column 3", "Fixture Column 4"]);
             expect(reorderColumnStub.calls).toHaveLength(1);
+            reorderColumnStub.settle();
         });
 
         /* D-06: the library's default lift keys are kept, so enter lifts exactly as space does. */
@@ -1226,6 +1228,7 @@ describeForEachDevice({
                 status: RESULT_STATUS.SUCCESS,
                 column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 1 },
             });
+            reorderColumnStub.hold();
             await render(<ReorderableColumns />);
 
             // Act
@@ -1236,6 +1239,7 @@ describeForEachDevice({
                 .poll(getRenderedColumnNames)
                 .toEqual(["Fixture Column 2", "Fixture Column 1", "Fixture Column 3", "Fixture Column 4"]);
             expect(reorderColumnStub.calls).toHaveLength(1);
+            reorderColumnStub.settle();
         });
 
         it("returns the column to its original index and issues nothing when the move is cancelled", async () => {
@@ -1265,6 +1269,7 @@ describeForEachDevice({
                 status: RESULT_STATUS.SUCCESS,
                 column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 3 },
             });
+            reorderColumnStub.hold();
             await render(<ReorderableColumns />);
 
             // Act
@@ -1276,6 +1281,7 @@ describeForEachDevice({
                 .toEqual(["Fixture Column 2", "Fixture Column 3", "Fixture Column 4", "Fixture Column 1"]);
             expect(reorderColumnStub.calls).toHaveLength(1);
             expect(reorderColumnStub.calls[0].targetPosition).toBe(3);
+            reorderColumnStub.settle();
         });
 
         /*
@@ -1388,12 +1394,9 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(getRaisedToastTexts).toEqual([GENERIC_REORDER_TOAST]);
-            expect(getRenderedColumnNames()).toEqual([
-                "Fixture Column 1",
-                "Fixture Column 2",
-                "Fixture Column 3",
-                "Fixture Column 4",
-            ]);
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 1", "Fixture Column 2", "Fixture Column 3", "Fixture Column 4"]);
         });
 
         /*
@@ -1441,6 +1444,7 @@ describeForEachDevice({
                 status: RESULT_STATUS.SUCCESS,
                 column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 2", version: 1, position: 1 },
             });
+            reorderColumnStub.hold();
             await render(<ReorderedServerOrder />);
 
             // Act
@@ -1452,6 +1456,7 @@ describeForEachDevice({
                 .toEqual(["Fixture Column 3", "Fixture Column 2", "Fixture Column 1", "Fixture Column 4"]);
             expect(reorderColumnStub.calls).toHaveLength(1);
             expect(reorderColumnStub.calls[0].targetPosition).toBe(1);
+            reorderColumnStub.settle();
         });
 
         /*
@@ -1508,6 +1513,7 @@ describeForEachDevice({
                 status: RESULT_STATUS.SUCCESS,
                 column: { id: STUB_WRITTEN_COLUMN_ID, name: "Fixture Column 1", version: 1, position: 4 },
             });
+            reorderColumnStub.hold();
             await render(<FiveReorderableColumns />);
 
             // Act
@@ -1525,6 +1531,7 @@ describeForEachDevice({
                 ]);
             expect(reorderColumnStub.calls[0].targetPosition).toBe(4);
             await expect.poll(getColumnsOverlappingTheVisibleBox).toContain("Fixture Column 1");
+            reorderColumnStub.settle();
         });
 
         /*

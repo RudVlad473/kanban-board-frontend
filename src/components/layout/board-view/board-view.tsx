@@ -244,7 +244,7 @@ export const BoardView = ({
             return;
         }
 
-        void requestMove({ taskId, targetColumnId, targetIndex });
+        requestMove({ taskId, targetColumnId, targetIndex });
     };
 
     /*
@@ -275,7 +275,7 @@ export const BoardView = ({
             return;
         }
 
-        void requestReorder({ boardId: board.id, fromIndex, toIndex });
+        requestReorder({ boardId: board.id, fromIndex, toIndex });
     };
 
     return (

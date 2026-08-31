@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import { reorderColumns } from "@/features/boards/column-drag-model";
 import {
-    applyColumnOrderOverride,
     createColumnReorderAnnouncements,
     buildColumnRowPath,
     COLUMN_COUNT_NUDGE_THRESHOLD,
@@ -236,68 +235,6 @@ describe("toColumnDotToken", () => {
 
         // Assert
         expect(after).toEqual(before.slice(1));
-    });
-});
-
-/*
- * 03-RESEARCH Pattern 2: the override retires itself by derivation once the server's own order moves,
- * so nothing ever clears state during render.
- */
-describe("applyColumnOrderOverride", () => {
-    it("returns the columns untouched when there is no override", () => {
-        // Arrange
-        const columns = createColumnsFull({ count: 3 });
-
-        // Act & Assert
-        expect(applyColumnOrderOverride({ columns, override: null })).toEqual(columns);
-    });
-
-    it("applies the override's order while the server order still matches previousOrder", () => {
-        // Arrange
-        const columns = createColumnsFull({ count: 3 });
-        const previousOrder = columns.map((column) => column.id);
-
-        // Act
-        const rendered = applyColumnOrderOverride({
-            columns,
-            override: { previousOrder, order: [previousOrder[2], previousOrder[0], previousOrder[1]] },
-        });
-
-        // Assert
-        expect(rendered).toEqual([columns[2], columns[0], columns[1]]);
-    });
-
-    it("returns the server's own columns once the server order no longer matches previousOrder", () => {
-        // Arrange
-        const columns = createColumnsFull({ count: 3 });
-        const previousOrder = columns.map((column) => column.id);
-        const settledColumns = [columns[2], columns[0], columns[1]];
-
-        // Act
-        const rendered = applyColumnOrderOverride({
-            columns: settledColumns,
-            override: { previousOrder, order: [previousOrder[2], previousOrder[0], previousOrder[1]] },
-        });
-
-        // Assert
-        expect(rendered).toEqual(settledColumns);
-    });
-
-    /* T-03-20: a column added or deleted underneath the override can never be synthesised or dropped. */
-    it("returns the server's own columns when a column was added or deleted underneath", () => {
-        // Arrange
-        const columns = createColumnsFull({ count: 3 });
-        const previousOrder = columns.map((column) => column.id);
-        const remaining = [columns[0], columns[1]];
-
-        // Act
-        const rendered = applyColumnOrderOverride({
-            columns: remaining,
-            override: { previousOrder, order: [previousOrder[2], previousOrder[0], previousOrder[1]] },
-        });
-
-        // Assert
-        expect(rendered).toEqual(remaining);
     });
 });
 

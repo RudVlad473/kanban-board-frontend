@@ -126,36 +126,6 @@ export const isColumnDestinationVisible = ({
     visibleBox: HorizontalBox;
 }): boolean => destination.left >= visibleBox.left && destination.right <= visibleBox.right;
 
-export type ColumnOrderOverride = { previousOrder: string[]; order: string[] };
-
-/**
- * The optimistic reorder as rendered, retiring itself the moment the server's own order stops
- * matching `previousOrder` — nothing ever clears it (03-RESEARCH Pattern 2).
- */
-export const applyColumnOrderOverride = ({
-    columns,
-    override,
-}: {
-    columns: ColumnFull[];
-    override: ColumnOrderOverride | null;
-}): ColumnFull[] => {
-    if (override === null) {
-        return columns;
-    }
-
-    const serverOrder = columns.map((column) => column.id);
-    const isStale =
-        serverOrder.length !== override.previousOrder.length ||
-        serverOrder.some((id, index) => id !== override.previousOrder[index]);
-
-    if (isStale) {
-        return columns;
-    }
-
-    /* `flatMap` with an empty-array fallback, so an id the server no longer has drops out rather than becoming `undefined`. */
-    return override.order.flatMap((id) => columns.find((column) => column.id === id) ?? []);
-};
-
 /*
  * 03-BACKEND-FACTS.md § R1 (probed 2026-08-26): `targetPosition` is the moved column's FINAL 0-based
  * index, so `reorderColumns`' own `toIndex` (column-drag-model.ts) goes out verbatim — no translation to get wrong.

@@ -86,7 +86,7 @@ const ReorderHost = ({ onRename, onDelete }: ComponentProps<typeof SortableColum
             <button
                 type="button"
                 onClick={() => {
-                    void requestReorder({ boardId: FIXTURE_BOARD_ID, fromIndex: 0, toIndex: 2 });
+                    requestReorder({ boardId: FIXTURE_BOARD_ID, fromIndex: 0, toIndex: 2 });
                 }}
             >
                 Move the first column to the third position
