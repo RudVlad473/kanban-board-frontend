@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { BoardsEmptyState } from "@/features/boards/components/boards-empty-state/boards-empty-state";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
-import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
+import { buildBoardDetailPath } from "@/lib/core/routing/routes";
+import { requireAuthenticated } from "@/lib/server/require-authenticated";
 
 /*
  * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule). D-11's
@@ -12,11 +13,7 @@ import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
  * never sees a flash of the wrong screen — the only option still consistent with docs/adr/tech/0019.
  */
 const BoardsPage = async () => {
-    const result = await fetchBoards();
-
-    if (result.status === RESULT_STATUS.UNAUTHENTICATED) {
-        redirect(ROUTE.SIGN_IN);
-    }
+    const result = requireAuthenticated(await fetchBoards());
 
     if (result.status !== RESULT_STATUS.SUCCESS) {
         return (

@@ -8,17 +8,14 @@ import { fetchBoardFull } from "@/features/boards/server/fetch-board-full";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
+import { requireAuthenticated } from "@/lib/server/require-authenticated";
 
 /*
  * Streamed behind its own `Suspense` boundary so the skeleton stands in for the board area while
  * the full-board read is in flight (02-UI-SPEC's loading backstop row).
  */
 const BoardContents = async ({ boardId }: { boardId: string }) => {
-    const result = await fetchBoardFull({ boardId });
-
-    if (result.status === RESULT_STATUS.UNAUTHENTICATED) {
-        redirect(ROUTE.SIGN_IN);
-    }
+    const result = requireAuthenticated(await fetchBoardFull({ boardId }));
 
     if (result.status !== RESULT_STATUS.SUCCESS) {
         return (
@@ -40,11 +37,7 @@ const BoardContents = async ({ boardId }: { boardId: string }) => {
  */
 const BoardDetailPage = async ({ params }: PageProps<"/boards/[boardId]">) => {
     const { boardId } = await params;
-    const boardsResult = await fetchBoards();
-
-    if (boardsResult.status === RESULT_STATUS.UNAUTHENTICATED) {
-        redirect(ROUTE.SIGN_IN);
-    }
+    const boardsResult = requireAuthenticated(await fetchBoards());
 
     if (boardsResult.status === RESULT_STATUS.SUCCESS && !boardsResult.boards.some((board) => board.id === boardId)) {
         const [firstBoard] = boardsResult.boards;
