@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 
 import {
     applyTaskMoveOverride,
+    buildSubtaskRowPath,
+    createEmptySubtaskRows,
     createTaskMoveAnnouncements,
+    toSubmittedSubtaskTitles,
     toSubtaskSummary,
     toTaskMoveTargetPosition,
     type NamedTaskColumn,
@@ -356,5 +359,59 @@ describe("createTaskMoveAnnouncements", () => {
 
         // Assert
         expect(spoken).toBe("fallback start");
+    });
+});
+
+describe("createEmptySubtaskRows", () => {
+    it("creates the requested number of blank rows", () => {
+        // Act
+        const rows = createEmptySubtaskRows(2);
+
+        // Assert
+        expect(rows).toEqual([{ value: "" }, { value: "" }]);
+    });
+
+    it("creates zero rows when asked for none", () => {
+        // Act
+        const rows = createEmptySubtaskRows(0);
+
+        // Assert
+        expect(rows).toEqual([]);
+    });
+});
+
+describe("buildSubtaskRowPath", () => {
+    it("builds the react-hook-form field path for a given row index", () => {
+        // Act & Assert
+        expect(buildSubtaskRowPath(0)).toBe("subtasks.0.value");
+        expect(buildSubtaskRowPath(3)).toBe("subtasks.3.value");
+    });
+});
+
+describe("toSubmittedSubtaskTitles", () => {
+    /* UI-SPEC empty/add-task-modal: a blank row is omitted from the fan-out, not validation-blocked. */
+    it("drops blank and whitespace-only rows", () => {
+        // Act
+        const titles = toSubmittedSubtaskTitles(["Make coffee", "", "   ", "Drink coffee & smile"]);
+
+        // Assert
+        expect(titles).toEqual(["Make coffee", "Drink coffee & smile"]);
+    });
+
+    it("trims the rows it keeps", () => {
+        // Act
+        const titles = toSubmittedSubtaskTitles(["  Make coffee  "]);
+
+        // Assert
+        expect(titles).toEqual(["Make coffee"]);
+    });
+
+    /* UI-SPEC empty/add-task-modal: removing every row is legal — a task with no subtasks is valid. */
+    it("returns an empty array when every row is blank", () => {
+        // Act
+        const titles = toSubmittedSubtaskTitles(["", "   "]);
+
+        // Assert
+        expect(titles).toEqual([]);
     });
 });

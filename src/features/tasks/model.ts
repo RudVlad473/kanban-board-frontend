@@ -204,3 +204,14 @@ export const createTaskMoveAnnouncements = ({
         },
     };
 };
+
+/* RED skeleton (04-15 Task 2) — type-checks so the pre-commit hook's type-aware lint can run. */
+export const createEmptySubtaskRows = (count: number): { value: string }[] =>
+    Array.from({ length: count }, () => ({ value: "" }));
+
+export type SubtaskRowPath = `subtasks.${number}.value`;
+
+export const buildSubtaskRowPath = (index: number): SubtaskRowPath =>
+    `subtasks.${String(index)}.wrong` as SubtaskRowPath;
+
+export const toSubmittedSubtaskTitles = (rows: string[]): string[] => rows;
