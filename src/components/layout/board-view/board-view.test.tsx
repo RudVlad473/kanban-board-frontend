@@ -234,10 +234,17 @@ const toPageMapper = (): ((point: Point) => Point) => {
  */
 const holdDragOver = async (
     waypoints: Point[],
-): Promise<{ moveTo: (waypoints: Point[]) => Promise<void>; release: () => Promise<void> }> => {
+): Promise<{
+    moveTo: (waypoints: Point[]) => Promise<void>;
+    release: () => Promise<void>;
+    releaseBackAtOrigin: () => Promise<void>;
+}> => {
     const toPage = toPageMapper();
     const session = cdp();
     let current = waypoints[0];
+    const origin = waypoints[0];
+    const scrollRow = document.querySelector<HTMLElement>("div.overflow-x-auto");
+    const scrollLeftAtPress = scrollRow?.scrollLeft ?? 0;
     const startPage = toPage(current);
     await session.send("Input.dispatchMouseEvent", {
         type: "mousePressed",
@@ -277,7 +284,35 @@ const holdDragOver = async (
         });
     };
 
-    return { moveTo, release };
+    // comment-length-exempt: records the two measured library behaviours a one-shot walk-back loses to, which a future reader would otherwise "simplify" back into the flake this replaced (docs/adr/tech/0023)
+    /*
+     * The no-op ending every "issues no request" spec needs: back over the lifted card's OWN slot,
+     * then release. Two library behaviours make that harder than re-reading the card's box. The card
+     * is displaced by the sort strategy while it hovers elsewhere, so its live centre is the DROP
+     * slot, not home — home is the press point, offset by whatever the row has auto-scrolled since
+     * (Pitfall 8), which is the same correction dnd-kit applies to the rects it measured on lift. And
+     * `handleDragEnd`'s `over` is read from a ref written a render behind the pointer, so a release
+     * dispatched on the next CDP tick can still carry the target the pointer already left. Measured
+     * 2026-08-31 at MOBILE: a walk-back to the card's live box released over the FAR column's card,
+     * issuing a real cross-column move. The insertion bar is drawn from that same `over`, so polling
+     * until none is left is what proves the library has followed the pointer home.
+     */
+    const releaseBackAtOrigin = async (): Promise<void> => {
+        await expect
+            .poll(
+                async () => {
+                    const scrolled = (scrollRow?.scrollLeft ?? 0) - scrollLeftAtPress;
+                    await moveTo([{ x: origin.x - scrolled, y: origin.y }]);
+
+                    return document.querySelectorAll('[aria-hidden="true"].bg-bg-primary').length;
+                },
+                { interval: 25, timeout: 5000 },
+            )
+            .toBe(0);
+        await release();
+    };
+
+    return { moveTo, release, releaseBackAtOrigin };
 };
 
 /** A real mouse-driven drag through every waypoint in order, ending with a release at the last one. */
@@ -297,7 +332,8 @@ const dragElementOntoElement = async ({ source, target }: { source: Element; tar
  */
 const dragElementOutAndBack = async (source: Element): Promise<void> => {
     const origin = centerOf(source);
-    await dragThroughPoints([origin, { x: origin.x, y: origin.y + 40 }, origin]);
+    const { releaseBackAtOrigin } = await holdDragOver([origin, { x: origin.x, y: origin.y + 40 }]);
+    await releaseBackAtOrigin();
 };
 
 /** U-02: the drag handle is the caption row itself, so its accessible name is the caption. */
@@ -1641,7 +1677,7 @@ describeForEachDevice({
             const origin = centerOf(source);
 
             /* Held over the OTHER column — the lifted state is on screen to read while it hovers there. */
-            const { moveTo, release } = await holdDragOver([origin, centerOf(target)]);
+            const { releaseBackAtOrigin } = await holdDragOver([origin, centerOf(target)]);
 
             // Assert
             await expect.poll(() => sourceCard.className).toContain("opacity-50");
@@ -1650,13 +1686,8 @@ describeForEachDevice({
             expect(clone?.className).not.toContain("opacity-50");
             expect(clone?.textContent).toContain("Fixture Task Alpha");
 
-            /*
-             * Cleanup: walked back to origin, read FRESH off `source` rather than the pre-drag
-             * `origin` point — the cross-column hover above can auto-scroll the row (Pitfall 8), and
-             * a stale point would release wherever now sits there instead (a MOBILE-only flake).
-             */
-            await moveTo([centerOf(source)]);
-            await release();
+            // Cleanup — a no-op drop back on the card's own slot.
+            await releaseBackAtOrigin();
             expect(moveTaskStub.calls).toHaveLength(0);
         });
 
@@ -1672,16 +1703,15 @@ describeForEachDevice({
             const origin = centerOf(source);
 
             // Act — held over the target, so the indicator it draws is on screen to read.
-            const { moveTo, release } = await holdDragOver([origin, centerOf(target)]);
+            const { releaseBackAtOrigin } = await holdDragOver([origin, centerOf(target)]);
 
             // Assert
             await expect
                 .poll(() => document.querySelectorAll('li [aria-hidden="true"].bg-bg-primary').length)
                 .toBeGreaterThan(0);
 
-            // Cleanup — walked back to origin before releasing (a no-op drop).
-            await moveTo([origin]);
-            await release();
+            // Cleanup — a no-op drop back on the card's own slot.
+            await releaseBackAtOrigin();
             expect(moveTaskStub.calls).toHaveLength(0);
         });
 
@@ -1717,20 +1747,15 @@ describeForEachDevice({
             }
 
             // Act
-            const { moveTo, release } = await holdDragOver([origin, centerOf(target)]);
+            const { releaseBackAtOrigin } = await holdDragOver([origin, centerOf(target)]);
 
             // Assert
             await expect
                 .poll(() => target.querySelectorAll(':scope > [aria-hidden="true"].bg-bg-primary').length)
                 .toBeGreaterThan(0);
 
-            /*
-             * Cleanup — walked back to origin before releasing (a no-op drop). Read FRESH off
-             * `source` rather than reusing the pre-drag `origin` point — see the matching comment
-             * above on the lifted-state test for why the stale point flakes on MOBILE.
-             */
-            await moveTo([centerOf(source)]);
-            await release();
+            // Cleanup — a no-op drop back on the card's own slot.
+            await releaseBackAtOrigin();
             expect(moveTaskStub.calls).toHaveLength(0);
         });
 
