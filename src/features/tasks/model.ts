@@ -57,61 +57,38 @@ export const toTaskMoveTargetPosition = ({
 };
 
 /**
- * One in-flight move, recorded against the SERVER's own task ids in each column it touches — the
- * task-level twin of `ColumnOrderOverride`, and the same retirement contract.
+ * The board as it reads with one move already applied — the reducer behind `useMoveTask`'s
+ * `useOptimistic`. A task id the board no longer holds yields the input untouched.
  */
-export type TaskMoveOverride = {
+export const moveTaskInColumns = <C extends TaskColumn>({
+    columns,
+    taskId,
+    targetColumnId,
+    targetIndex,
+}: {
+    columns: C[];
     taskId: string;
     targetColumnId: string;
     targetIndex: number;
-    previousTaskIds: { columnId: string; taskIds: string[] }[];
-};
-
-/**
- * The optimistic move as rendered, retiring itself the moment the server's own task order stops
- * matching `previousTaskIds` — nothing ever clears it (04-RESEARCH Pattern 5). Returns the props
- * array ITSELF when the override is stale, so reference equality is the retirement signal.
- */
-export const applyTaskMoveOverride = <C extends TaskColumn>({
-    columns,
-    override,
-}: {
-    columns: C[];
-    override: TaskMoveOverride | null;
 }): C[] => {
-    if (override === null) {
-        return columns;
-    }
+    const movedTask = columns.flatMap((column) => column.tasks).find((task) => task.id === taskId);
 
-    const isStale = override.previousTaskIds.some(({ columnId, taskIds }) => {
-        /* A column the server no longer has reads as an empty list, which is itself a change of order. */
-        const currentIds = (columns.find((column) => column.id === columnId)?.tasks ?? []).map((task) => task.id);
-
-        return currentIds.length !== taskIds.length || currentIds.some((id, index) => id !== taskIds[index]);
-    });
-
-    const movedTask = columns.flatMap((column) => column.tasks).find((task) => task.id === override.taskId);
-
-    if (isStale || movedTask === undefined) {
+    if (movedTask === undefined) {
         return columns;
     }
 
     return columns.map((column) => {
-        if (column.id === override.targetColumnId) {
-            const remaining = column.tasks.filter((task) => task.id !== override.taskId);
+        if (column.id === targetColumnId) {
+            const remaining = column.tasks.filter((task) => task.id !== taskId);
 
             return {
                 ...column,
-                tasks: [
-                    ...remaining.slice(0, override.targetIndex),
-                    movedTask,
-                    ...remaining.slice(override.targetIndex),
-                ],
+                tasks: [...remaining.slice(0, targetIndex), movedTask, ...remaining.slice(targetIndex)],
             };
         }
 
-        return column.tasks.some((task) => task.id === override.taskId)
-            ? { ...column, tasks: column.tasks.filter((task) => task.id !== override.taskId) }
+        return column.tasks.some((task) => task.id === taskId)
+            ? { ...column, tasks: column.tasks.filter((task) => task.id !== taskId) }
             : column;
     });
 };

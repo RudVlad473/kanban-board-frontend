@@ -83,7 +83,7 @@ export const BoardView = ({
         columns: reorderedColumns,
         reorderingColumnId,
     } = useReorderColumns({ columns: renamedColumns });
-    /* Last in the chain, so a task move renders on top of whatever the two column overrides produced. */
+    /* Last in the chain, so a task move renders on top of whatever the rename and the reorder produced. */
     const {
         moveTask: requestMove,
         columns: renderedColumns,

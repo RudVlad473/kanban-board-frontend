@@ -3,11 +3,11 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { startTransition, useOptimistic } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
-import { applyTaskMoveOverride, type TaskColumn, type TaskMoveOverride } from "@/features/tasks/model";
+import { moveTaskInColumns, type TaskColumn } from "@/features/tasks/model";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
 /*
@@ -40,84 +40,46 @@ export type MoveTaskArgs = { taskId: string; targetColumnId: string; targetIndex
 
 /**
  * TASK-04's optimistic move (U-05), and D-10's single implementation: the drag path and the detail
- * view's `Current Status` dropdown are two callers of this one hook. The override is retired by the
- * same pure derivation the column reorder uses, kept in `model.ts`.
+ * view's `Current Status` dropdown are two callers of this one hook. `useOptimistic` owns the
+ * pending move, so a failure and a landed refresh both retire it with no bookkeeping here.
  */
 export const useMoveTask = <C extends TaskColumn>({ columns }: { columns: C[] }) => {
     const toast = useToast();
-    const [override, setOverride] = useState<TaskMoveOverride | null>(null);
-    const [movedTaskId, setMovedTaskId] = useState<string | null>(null);
-    const mutation = useMutation({ mutationFn: moveTaskAction, retry: false });
-
-    const renderedColumns = applyTaskMoveOverride({ columns, override });
-
-    /*
-     * The helper hands back the props array ITSELF once the server's own order has moved on, so
-     * reference equality is the retirement signal — nothing has to clear this.
-     */
-    const isOverrideApplied = renderedColumns !== columns;
-
+    const [optimisticColumns, applyOptimisticMove] = useOptimistic(columns, (current: C[], move: MoveTaskArgs) =>
+        moveTaskInColumns({ columns: current, ...move }),
+    );
     /*
      * T5 observed only the MOVED task's version is bumped and a merely-shifted sibling's stays
      * usable, which is what lets this lock stop at the one card rather than the whole column.
      */
-    const movingTaskId = mutation.isPending || isOverrideApplied ? movedTaskId : null;
+    const [movingTaskId, markTaskMoving] = useOptimistic<string | null, string>(null, (_current, taskId) => taskId);
+    const mutation = useMutation({ mutationFn: moveTaskAction, retry: false });
 
-    const requestMove = async ({
-        taskId,
-        targetColumnId,
-        targetIndex,
-    }: MoveTaskArgs): Promise<{ didMove: boolean }> => {
-        const movedTask = renderedColumns.flatMap((column) => column.tasks).find((task) => task.id === taskId);
-        const sourceColumn = columns.find((column) => column.tasks.some((task) => task.id === taskId));
+    const requestMove = ({ taskId, targetColumnId, targetIndex }: MoveTaskArgs): void => {
+        const movedTask = optimisticColumns.flatMap((column) => column.tasks).find((task) => task.id === taskId);
 
-        if (movedTask === undefined || sourceColumn === undefined) {
-            return { didMove: false };
+        if (movedTask === undefined) {
+            return;
         }
 
         /*
-         * `previousTaskIds` records the SERVER's own order in each column this move touches, never
-         * the rendered one — that is what the override compares itself against to know it is stale.
+         * One action, so both optimistic values live exactly as long as the write does: dropping
+         * them restores BOTH columns the move touched, not just the dragged card.
          */
-        const affectedColumnIds =
-            sourceColumn.id === targetColumnId ? [sourceColumn.id] : [sourceColumn.id, targetColumnId];
+        startTransition(async () => {
+            applyOptimisticMove({ taskId, targetColumnId, targetIndex });
+            markTaskMoving(taskId);
 
-        setOverride({
-            taskId,
-            targetColumnId,
-            targetIndex,
-            previousTaskIds: affectedColumnIds.map((columnId) => ({
-                columnId,
-                taskIds: (columns.find((column) => column.id === columnId)?.tasks ?? []).map((task) => task.id),
-            })),
+            // Exactly one request per completed move — intermediate pointer and arrow steps never reach here.
+            const result = await mutation
+                .mutateAsync({ taskId, targetColumnId, version: movedTask.version, targetPosition: targetIndex })
+                .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
+
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                toast.add({ type: "danger", ...(MOVE_FAILURE_COPY[result.status] ?? GENERIC_MOVE_FAILURE) });
+            }
         });
-        setMovedTaskId(taskId);
-
-        // Exactly one request per completed move — intermediate pointer and arrow steps never reach here.
-        const result = await mutation
-            .mutateAsync({
-                taskId,
-                targetColumnId,
-                version: movedTask.version,
-                targetPosition: targetIndex,
-            })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
-
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            /*
-             * Dropping the override restores BOTH columns at once, not just the dragged card: the
-             * raw props still carry the order every task in them came in with.
-             */
-            setOverride(null);
-            setMovedTaskId(null);
-            toast.add({ type: "danger", ...(MOVE_FAILURE_COPY[result.status] ?? GENERIC_MOVE_FAILURE) });
-
-            return { didMove: false };
-        }
-
-        // Left in place on success: it retires itself once the refreshed props carry the new order.
-        return { didMove: true };
     };
 
-    return { moveTask: requestMove, isPending: mutation.isPending, columns: renderedColumns, movingTaskId };
+    return { moveTask: requestMove, isPending: mutation.isPending, columns: optimisticColumns, movingTaskId };
 };

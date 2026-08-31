@@ -2,7 +2,7 @@ import type { Announcements } from "@dnd-kit/core";
 import { describe, expect, it } from "vitest";
 
 import {
-    applyTaskMoveOverride,
+    moveTaskInColumns,
     buildSubtaskRowPath,
     createEmptySubtaskRows,
     createTaskMoveAnnouncements,
@@ -164,34 +164,17 @@ const createBoardColumns = (): NamedTaskColumn[] => [
 const toRenderedIds = (columns: NamedTaskColumn[]): string[][] =>
     columns.map((column) => column.tasks.map((task) => task.id));
 
-describe("applyTaskMoveOverride", () => {
-    it("returns the props array itself when there is no override", () => {
+describe("moveTaskInColumns", () => {
+    it("re-parents the task into the destination at the given index", () => {
         // Arrange
         const columns = createBoardColumns();
 
         // Act
-        const rendered = applyTaskMoveOverride({ columns, override: null });
-
-        // Assert — reference equality, which is what the hook reads as "no override applied".
-        expect(rendered).toBe(columns);
-    });
-
-    it("re-parents the task into the destination at the recorded index", () => {
-        // Arrange
-        const columns = createBoardColumns();
-
-        // Act
-        const rendered = applyTaskMoveOverride({
+        const rendered = moveTaskInColumns({
             columns,
-            override: {
-                taskId: "s1",
-                targetColumnId: "destination",
-                targetIndex: 1,
-                previousTaskIds: [
-                    { columnId: "source", taskIds: ["s1", "s2"] },
-                    { columnId: "destination", taskIds: ["d1", "d2"] },
-                ],
-            },
+            taskId: "s1",
+            targetColumnId: "destination",
+            targetIndex: 1,
         });
 
         // Assert
@@ -203,15 +186,7 @@ describe("applyTaskMoveOverride", () => {
         const columns = createBoardColumns();
 
         // Act
-        const rendered = applyTaskMoveOverride({
-            columns,
-            override: {
-                taskId: "s1",
-                targetColumnId: "source",
-                targetIndex: 1,
-                previousTaskIds: [{ columnId: "source", taskIds: ["s1", "s2"] }],
-            },
-        });
+        const rendered = moveTaskInColumns({ columns, taskId: "s1", targetColumnId: "source", targetIndex: 1 });
 
         // Assert
         expect(toRenderedIds(rendered)).toEqual([
@@ -220,56 +195,17 @@ describe("applyTaskMoveOverride", () => {
         ]);
     });
 
-    /*
-     * The retirement signal: once the refreshed props carry the move, the recorded server order no
-     * longer matches and the helper hands the props array back by reference — nothing clears state.
-     */
-    it("retires itself by reference once the server's own order has moved on", () => {
-        // Arrange — the board as it reads AFTER the move landed and the action's refresh returned.
-        const columns: NamedTaskColumn[] = [
-            { id: "source", name: "Source", tasks: [createTaskFull({ id: "s2", title: "S2" })] },
-            {
-                id: "destination",
-                name: "Destination",
-                tasks: [
-                    createTaskFull({ id: "d1", title: "D1" }),
-                    createTaskFull({ id: "s1", title: "S1" }),
-                    createTaskFull({ id: "d2", title: "D2" }),
-                ],
-            },
-        ];
-
-        // Act
-        const rendered = applyTaskMoveOverride({
-            columns,
-            override: {
-                taskId: "s1",
-                targetColumnId: "destination",
-                targetIndex: 1,
-                previousTaskIds: [
-                    { columnId: "source", taskIds: ["s1", "s2"] },
-                    { columnId: "destination", taskIds: ["d1", "d2"] },
-                ],
-            },
-        });
-
-        // Assert
-        expect(rendered).toBe(columns);
-    });
-
-    it("hands the props array back when the moved task is no longer on the board", () => {
+    /* A card the board no longer holds is never synthesised into the destination. */
+    it("hands the columns back untouched when the moved task is no longer on the board", () => {
         // Arrange
         const columns = createBoardColumns();
 
         // Act
-        const rendered = applyTaskMoveOverride({
+        const rendered = moveTaskInColumns({
             columns,
-            override: {
-                taskId: "deleted",
-                targetColumnId: "destination",
-                targetIndex: 0,
-                previousTaskIds: [{ columnId: "source", taskIds: ["s1", "s2"] }],
-            },
+            taskId: "deleted",
+            targetColumnId: "destination",
+            targetIndex: 0,
         });
 
         // Assert

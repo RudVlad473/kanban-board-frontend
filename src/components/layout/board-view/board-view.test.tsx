@@ -1603,6 +1603,7 @@ describeForEachDevice({
                     position: 0,
                 },
             });
+            moveTaskStub.hold();
             const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
             const target = document.querySelectorAll("section")[1].querySelector("ul");
             if (target === null) {
@@ -1624,6 +1625,7 @@ describeForEachDevice({
                 version: 0,
                 targetPosition: 0,
             });
+            moveTaskStub.settle();
         });
 
         /* UI-SPEC populated/drag-drop-surface: the lifted treatment mirrors the shipped column one. */
@@ -1787,6 +1789,7 @@ describeForEachDevice({
                     position: 0,
                 },
             });
+            moveTaskStub.hold();
             await render(<TasksAcrossColumns />);
             focusTaskHandle("Fixture Task Alpha");
 
@@ -1805,6 +1808,7 @@ describeForEachDevice({
             await expect.poll(() => getColumnTaskTitles()[1].taskTitles).toContain("Fixture Task Alpha");
             expect(getColumnTaskTitles()[0].taskTitles).not.toContain("Fixture Task Alpha");
             expect(moveTaskStub.calls).toHaveLength(1);
+            moveTaskStub.settle();
         });
 
         it("issues no request when a task is dropped back where it began", async () => {
@@ -1836,7 +1840,7 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(getRaisedToastTexts).toEqual([GENERIC_MOVE_TOAST]);
-            expect(getColumnTaskTitles()).toEqual([
+            await expect.poll(getColumnTaskTitles).toEqual([
                 { columnName: "Fixture Column 1", taskTitles: ["Fixture Task Alpha"] },
                 { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
             ]);
@@ -1860,7 +1864,7 @@ describeForEachDevice({
             // Assert — the two branches are proved different, not merely proved to raise something.
             await expect.poll(getRaisedToastTexts).toEqual([CONFLICT_MOVE_TOAST]);
             expect(CONFLICT_MOVE_TOAST).not.toBe(GENERIC_MOVE_TOAST);
-            expect(getColumnTaskTitles()).toEqual([
+            await expect.poll(getColumnTaskTitles).toEqual([
                 { columnName: "Fixture Column 1", taskTitles: ["Fixture Task Alpha"] },
                 { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
             ]);
@@ -1899,6 +1903,7 @@ describeForEachDevice({
                     position: 1,
                 },
             });
+            moveTaskStub.hold();
             await render(<ReorderableTasks />);
             focusTaskHandle("Task One");
 
@@ -1920,6 +1925,7 @@ describeForEachDevice({
                 version: 0,
                 targetPosition: 1,
             });
+            moveTaskStub.settle();
         });
 
         /* The Copywriting Contract's two distinct wordings — the column reads last within, first across. */
@@ -2008,6 +2014,7 @@ describeForEachDevice({
                     position: 2,
                 },
             });
+            moveTaskStub.hold();
             await render(<ReorderableTasks />);
             focusTaskHandle("Task One");
 
@@ -2025,6 +2032,7 @@ describeForEachDevice({
                 .poll(() => getColumnTaskTitles()[0].taskTitles)
                 .toEqual(["Task Two", "Task Three", "Task One", "Task Four"]);
             expect(moveTaskStub.calls).toHaveLength(1);
+            moveTaskStub.settle();
         });
 
         /* Boundary: nothing above the first index, so an up step there must issue no request. */
