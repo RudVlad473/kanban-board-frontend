@@ -1,72 +1,98 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-29T22:27:54.176Z",
+  "timestamp": "2026-08-31T20:56:53.215Z",
   "phase": "04",
   "phase_name": "Task & Subtask Workflow",
   "phase_dir": ".planning/phases/04-task-subtask-workflow",
-  "plan": 12,
+  "plan": 15,
   "task": 4,
   "total_tasks": 4,
   "status": "paused",
   "completed_tasks": [
-    { "id": 1, "name": "Move Server Action + input schema", "status": "done", "commit": "54dbb03" },
-    { "id": 2, "name": "Task card, tasks-feature models, optimistic move hook", "status": "done", "commit": "1e43a9c" },
-    { "id": 3, "name": "Multi-container drag wiring + cross-column proof", "status": "done", "commit": "b0b141f" },
-    { "id": 4, "name": "Checkpoint: tracer slice verified in app and against mock", "status": "in_progress", "progress": "All 6 steps driven headless and passed EXCEPT step 5's corner radius. User approved route 2 (project-wide radius re-derivation). Re-derivation is implemented and committed as WIP; visual-regression re-baseline is the one open item." }
+    {
+      "id": 1,
+      "name": "create-task/subtask actions + fan-out",
+      "status": "done",
+      "commit": "a2bb50b"
+    },
+    {
+      "id": 2,
+      "name": "Add New Task modal + useCreateTask",
+      "status": "done",
+      "commit": "2e1dda6"
+    },
+    {
+      "id": 3,
+      "name": "header create button + provider bridge",
+      "status": "done",
+      "commit": "6ad4857"
+    },
+    {
+      "id": 4,
+      "name": "checkpoint:human-verify (gate=blocking)",
+      "status": "in_progress",
+      "progress": "All 6 steps verified against the running app by the orchestrator; CI green on all 4 jobs. User chose to HOLD the checkpoint open until the review/refactor work lands, so 04-15-SUMMARY.md is deliberately not written yet."
+    }
   ],
   "remaining_tasks": [
-    { "id": 4, "name": "Close 04-12 task 4: settle visual baselines, then write 04-12-SUMMARY.md", "status": "in_progress" },
-    { "id": 13, "name": "Plans 04-13 .. 04-22 (waves 8-17, single-plan sequential)", "status": "not_started" },
-    { "id": 99, "name": "Phase tail gates: aggregate, code review, regression gate, verification, roadmap update", "status": "not_started" }
+    {
+      "id": 5,
+      "name": "Review item #5 - isOpen/conditional-render redundancy in board-view.tsx",
+      "status": "not_started"
+    },
+    {
+      "id": 6,
+      "name": "Review item #7 - extract cohesive behaviours out of board-view.tsx (464 lines)",
+      "status": "not_started"
+    },
+    {
+      "id": 7,
+      "name": "Confirm 6f33011: full-suite run 1 is green (1659/1659); do runs 2 and 3",
+      "status": "in_progress"
+    },
+    {
+      "id": 8,
+      "name": "Write 04-15-SUMMARY.md and close the blocking checkpoint",
+      "status": "not_started"
+    }
   ],
   "blockers": [
     {
-      "description": "The radius re-derivation invalidates an unknown share of the 388 tracked Playwright visual baselines in visual/__screenshots__/. The sanctioned regeneration workflow (.github/workflows/visual-baselines.yml) is hard-gated to `if: github.ref == 'refs/heads/main'`, so it CANNOT be dispatched for this change while it lives on the phase branch. CI's `visual` job will therefore go red on the phase branch, and CLAUDE.md makes a red job a hard blocker on advancing.",
+      "description": "Before 6f33011, `pnpm test` was red on 3 of 3 full runs (2, 2, 1 failures) while the same file passed 3 of 3 standalone. After 6f33011 the first full run is GREEN (1659/1659, exit 0); runs 2 and 3 were still in flight when the session paused. Confirm with two more runs before trusting it.",
       "type": "technical",
-      "workaround": "Undecided — needs a user call. Option A: record locally with `CI=1 pnpm exec playwright test --project visual --update-snapshots=all` and commit (playwright.config.ts's ignoreSnapshots:!CI means CI=1 is mandatory or it silently no-ops; ADR tech/0008 deliberately discourages off-CI baseline writes, though its stated concern is Windows renderers and this box is Linux like the runner). Option B: accept the visual job red on the phase branch and regenerate via the sanctioned workflow after the phase merges to main. A diagnostic `CI=1 playwright test --project visual` run (compare only, no writes) was about to be started when the session was paused — it would have measured how many baselines actually differ AND whether this box's renderer matches CI at all (if untouched components like switch/checkbox also differ, Option A is off the table)."
+      "workaround": "Run `pnpm test` twice more. A standalone `vitest run --project browser src/components/layout/board-view/board-view.test.tsx` does NOT reproduce the failure - it is load-dependent and only appears in a full run."
     }
   ],
   "async_jobs": [],
   "human_actions_pending": [
     {
-      "action": "Decide how to settle the visual baselines (Option A local re-record vs Option B defer to main)",
-      "context": "Blocks CI green for the rest of phase 04, not just plan 04-12.",
+      "action": "Approve or reject plan 04-15's blocking human-verify checkpoint",
+      "context": "Orchestrator verified all 6 steps against the running app (task create with/without subtasks, both validation messages with no network call, no-subtask create, disabled button on a zero-column board, mock comparison at 1440x1024). CI green. User elected to hold it open until the refactors land.",
       "blocking": true
-    },
-    {
-      "action": "Decide what to do with the untracked card-radius-live.png in the repo root",
-      "context": "Predates this session; left alone rather than deleting someone else's file.",
-      "blocking": false
     }
   ],
   "decisions": [
-    { "decision": "Adopted the stranded worktree's finished 04-12 task 3 (6470c0c) over the phase branch's narrower fix", "rationale": "Both scoped the column collision path to COLUMN droppables, but only the worktree's also disables the column-body and task-card droppables outside their own drag kind — which is what dnd-kit's sortableKeyboardCoordinates actually walks. It closed the 5 MOBILE keyboard-reorder cases the phase branch could only skip. User choice.", "phase": "04" },
-    { "decision": "Un-skipped the 5 MOBILE keyboard-reorder cases and closed their todo", "rationale": "Verified passing after the merge: board-view.test.tsx is 126/126 with zero skips.", "phase": "04" },
-    { "decision": "Re-derived the whole radius scale rather than re-applying tokens (todo route 2)", "rationale": "Every token had been converted with 600/96=6.25, but the mock is a 1440px-wide design needing 12000/1440=8.3333, so the scale read 1.333x too large; and two of its three slots were spent on pills (the mock's buttons are height/2, which CSS radius clamping made look correct). User choice among three presented options.", "phase": "04" },
-    { "decision": "Resolved 04-12's blocking human-verify checkpoint in-session, headless, rather than handing it to the user", "rationale": "Carried over from the previous session's recorded decision, and required by project CLAUDE.md.", "phase": "04" }
+    {
+      "decision": "Optimistic UI uses React useOptimistic, not TanStack Query's optimistic-updates guide",
+      "rationale": "The board arrives as RSC props and ADR tech/0019 keeps reads out of the query cache, so setQueryData has nothing to write to. Applied to BOTH the task-move and column-reorder overrides.",
+      "phase": "04"
+    },
+    {
+      "decision": "The add-task context bridge is KEPT, not deleted",
+      "rationale": "BoardView publishes renderedColumns - the optimistic tail of the rename/reorder/move chain - not the server's columns. A server-side feed would show a renamed column's OLD name in the Add Task Status list until refresh landed. The header also sits above the [boardId] segment and context does not flow upward. Renamed for clarity instead.",
+      "phase": "04"
+    },
+    {
+      "decision": "Hold 04-15's checkpoint open until the review work lands",
+      "rationale": "User's choice, so the plan's SUMMARY describes what actually shipped rather than what shipped first.",
+      "phase": "04"
+    }
   ],
-  "wip_committed_files": [
-    "tokens/radius.tokens.json",
-    "src/styles/tokens.css",
-    "src/components/ui/button/button-variants.ts",
-    "src/components/ui/icon-button/icon-button-variants.ts",
-    "src/components/ui/modal/modal.tsx",
-    "src/components/ui/toast/toast.tsx",
-    "src/components/ui/toast/toast-variants.ts",
-    "src/components/ui/dropdown/dropdown.test.tsx",
-    "src/components/layout/board-view/board-view.tsx",
-    "src/components/layout/error-fallback/error-fallback.tsx",
-    "src/components/layout/sidebar/sidebar.tsx",
-    "src/features/auth/components/auth-card/auth-card.tsx",
-    "src/features/tasks/components/task-card/task-card.tsx",
-    "src/features/theme/components/theme-toggle/theme-toggle.tsx",
-    "src/features/boards/components/add-column-placeholder/add-column-placeholder.tsx",
-    "src/features/boards/components/add-column-placeholder/add-column-placeholder.stories.tsx",
-    "src/features/boards/components/sortable-column/sortable-column.stories.tsx",
-    ".planning/phases/03-column-management/03-UI-SPEC.md",
-    ".planning/todos/completed/2026-08-27-container-corner-radii-use-the-primary-button-pill-radius.md",
-    ".planning/config.json (pre-existing, NOT mine and NOT included in the WIP commit — adds review.default_reviewers)"
+  "uncommitted_files": [
+    ".planning/STATE.md",
+    ".planning/config.json",
+    ".planning/state.json (untracked)"
   ],
-  "next_action": "Decide the visual-baseline route (see blockers[0]). The cheapest first move is the diagnostic that was interrupted: `pnpm build-storybook` is already current, so run `CI=1 pnpm exec playwright test --project visual --reporter=list` (compare only, writes nothing) and read how many of the 388 baselines differ and which components. Then write 04-12-SUMMARY.md and continue /gsd-execute-phase 04 from wave 8. The radius code itself is already committed.",
-  "context_notes": "The radius work is complete and green on every gate that does not involve screenshots (pnpm test 1503/1503, build 0, lint 0, tsc --noEmit 0), verified AFTER the change. Only the visual baselines are unsettled. Do not re-derive the radius reasoning from scratch — it is fully written up in the closed todo at .planning/todos/completed/2026-08-27-container-corner-radii-use-the-primary-button-pill-radius.md, including the measurement table and the 8.3333 divisor derivation. The user chose 'run straight through, stop only on failure' for waves 8-17, so after 04-12 closes, do not stop at the 04-15/04-16/04-22 checkpoints — drive them headless as was done for 04-12."
+  "next_action": "Run `pnpm test` twice more to complete the 3-run confirmation of 6f33011 (run 1 was green). Then start review item #5 in board-view.tsx. If a run is red, read 6f33011's commit message - it documents the measured root cause.",
+  "context_notes": "This session was a review-driven refactor batch on top of plan 04-15, not new feature work. Seven user review comments plus a Gemini 3.1 Pro code review were triaged; 2 of the 4 Gemini findings were FALSE and verified so against the compiler and the running app. Two orchestration lessons were paid for in rework and are recorded as blocking constraints."
 }
