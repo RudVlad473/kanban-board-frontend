@@ -13,3 +13,30 @@ export const moveTaskInputSchema = z.object({
 });
 
 export type MoveTaskInput = z.infer<typeof moveTaskInputSchema>;
+
+/*
+ * RED skeleton (04-15 Task 1) — type-checks so the pre-commit hook's type-aware lint pass can run
+ * against the new failing tests; the real bounds land in the GREEN commit.
+ */
+export const subtaskTitleRowSchema = z.string();
+
+export const createTaskInputSchema = z.object({
+    boardId: z.string(),
+    columnId: z.string(),
+    title: z.string(),
+    description: z.string().optional(),
+});
+
+export const createSubtaskInputSchema = z.object({
+    boardId: z.string(),
+    columnId: z.string(),
+    taskId: z.string(),
+    title: z.string(),
+});
+
+export const createTaskSubtasksInputSchema = z.object({
+    boardId: z.string(),
+    columnId: z.string(),
+    taskId: z.string(),
+    titles: z.array(z.string()),
+});

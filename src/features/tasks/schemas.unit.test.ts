@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { moveTaskInputSchema } from "@/features/tasks/schemas";
+import {
+    createSubtaskInputSchema,
+    createTaskInputSchema,
+    createTaskSubtasksInputSchema,
+    moveTaskInputSchema,
+    subtaskTitleRowSchema,
+} from "@/features/tasks/schemas";
 
 /** The one shape every case below varies a single field of, so a rejection names its own cause. */
 const createValidMoveInput = () => ({
@@ -90,5 +96,173 @@ describe("moveTaskInputSchema", () => {
 
         // Assert
         expect(result.success).toBe(false);
+    });
+});
+
+const createValidTaskInput = () => ({
+    boardId: "00000000-0000-4000-8000-00000000000a",
+    columnId: "00000000-0000-4000-8000-00000000000c",
+    title: "Take coffee break",
+    description: "Recharge for fifteen minutes",
+});
+
+describe("createTaskInputSchema", () => {
+    it("accepts a well-formed create and yields typed data", () => {
+        // Arrange
+        const input = createValidTaskInput();
+
+        // Act
+        const result = createTaskInputSchema.safeParse(input);
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual(input);
+    });
+
+    /* Pipes through taskTitleRowSchema — TASK-01's own required-field copy, not re-derived here. */
+    it("reports the required-field message for a blank title", () => {
+        // Act
+        const result = createTaskInputSchema.safeParse({ ...createValidTaskInput(), title: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("reports the length message for a 2-character title", () => {
+        // Act
+        const result = createTaskInputSchema.safeParse({ ...createValidTaskInput(), title: "Do" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe(
+            "Task title must be between 3 and 32 characters.",
+        );
+    });
+
+    /* T9: the backend refuses an explicit `""` description (400) — this app never sends one. */
+    it("normalises a blank description to undefined", () => {
+        // Act
+        const result = createTaskInputSchema.safeParse({ ...createValidTaskInput(), description: "" });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.description).toBeUndefined();
+    });
+
+    it("accepts a payload with no description at all", () => {
+        // Arrange
+        const { description: _description, ...rest } = createValidTaskInput();
+
+        // Act
+        const result = createTaskInputSchema.safeParse(rest);
+
+        // Assert
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects an empty column id", () => {
+        // Act
+        const result = createTaskInputSchema.safeParse({ ...createValidTaskInput(), columnId: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+});
+
+describe("subtaskTitleRowSchema", () => {
+    it("reports the required-field message for a blank subtask title", () => {
+        // Act
+        const empty = subtaskTitleRowSchema.safeParse("");
+        const whitespace = subtaskTitleRowSchema.safeParse("   ");
+
+        // Assert
+        expect(empty.success).toBe(false);
+        expect(empty.error?.issues[0]?.message).toBe("Can't be empty");
+        expect(whitespace.success).toBe(false);
+    });
+
+    /* SaveSubtaskRequestDTO declares no maximum on create — only the required-field floor applies. */
+    it("accepts a one-character subtask title", () => {
+        // Act
+        const result = subtaskTitleRowSchema.safeParse("x");
+
+        // Assert
+        expect(result.success).toBe(true);
+    });
+
+    it("accepts a subtask title far longer than a task title would allow", () => {
+        // Act
+        const result = subtaskTitleRowSchema.safeParse("x".repeat(64));
+
+        // Assert
+        expect(result.success).toBe(true);
+    });
+});
+
+describe("createSubtaskInputSchema", () => {
+    const createValidSubtaskInput = () => ({
+        boardId: "00000000-0000-4000-8000-00000000000a",
+        columnId: "00000000-0000-4000-8000-00000000000c",
+        taskId: "00000000-0000-4000-8000-00000000000d",
+        title: "Make coffee",
+    });
+
+    it("accepts a well-formed subtask create", () => {
+        // Act
+        const result = createSubtaskInputSchema.safeParse(createValidSubtaskInput());
+
+        // Assert
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects an empty task id", () => {
+        // Act
+        const result = createSubtaskInputSchema.safeParse({ ...createValidSubtaskInput(), taskId: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+});
+
+describe("createTaskSubtasksInputSchema", () => {
+    const createValidFanOutInput = () => ({
+        boardId: "00000000-0000-4000-8000-00000000000a",
+        columnId: "00000000-0000-4000-8000-00000000000c",
+        taskId: "00000000-0000-4000-8000-00000000000d",
+        titles: ["Make coffee", "Drink coffee & smile"],
+    });
+
+    it("accepts a well-formed fan-out payload, including an empty titles array", () => {
+        // Act
+        const withTitles = createTaskSubtasksInputSchema.safeParse(createValidFanOutInput());
+        const withNone = createTaskSubtasksInputSchema.safeParse({ ...createValidFanOutInput(), titles: [] });
+
+        // Assert
+        expect(withTitles.success).toBe(true);
+        expect(withNone.success).toBe(true);
+    });
+
+    /* T-04-04: the boundary cap mirrors createBoardColumnsInputSchema's own — no call is made past it. */
+    it("rejects a titles array over the fifty-item cap", () => {
+        // Act
+        const result = createTaskSubtasksInputSchema.safeParse({
+            ...createValidFanOutInput(),
+            titles: Array.from({ length: 51 }, (_, index) => `Subtask ${String(index)}`),
+        });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+
+    it("accepts a titles array at exactly the fifty-item cap", () => {
+        // Act
+        const result = createTaskSubtasksInputSchema.safeParse({
+            ...createValidFanOutInput(),
+            titles: Array.from({ length: 50 }, (_, index) => `Subtask ${String(index)}`),
+        });
+
+        // Assert
+        expect(result.success).toBe(true);
     });
 });
