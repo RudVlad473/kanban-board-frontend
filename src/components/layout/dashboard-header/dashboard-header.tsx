@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button/button";
 import { SignOutButton } from "@/features/auth/components/sign-out-button/sign-out-button";
 import { applyRenameOverride, useRenameOverride } from "@/features/boards/hooks/use-rename-board";
 import type { Board } from "@/features/boards/schemas";
-import { useTaskCreation } from "@/features/tasks/hooks/use-task-creation";
+import { useAddTaskTarget } from "@/features/tasks/hooks/use-add-task-target";
 import { toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /**
@@ -34,7 +34,7 @@ export const DashboardHeader = ({ displayName, boards }: Props) => {
      * S-06: this button is the ONE task-creation entry point. Disabled with no board open or a
      * board with zero columns — `addTaskByColumnId` is column-scoped, so there is nowhere to post.
      */
-    const { columns, openModal } = useTaskCreation();
+    const { columns, openModal } = useAddTaskTarget();
     const isCreateDisabled = openBoard === undefined || columns.length === 0;
 
     return (

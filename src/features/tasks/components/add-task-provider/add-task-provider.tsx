@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useState, type PropsWithChildren } from "react";
+import { useCallback, useMemo, useState, type PropsWithChildren } from "react";
 import { useBoolean } from "usehooks-ts";
 
 import { AddTaskModal } from "@/features/tasks/components/add-task-modal/add-task-modal";
-import { useCreateTask } from "@/features/tasks/hooks/use-create-task";
 import {
-    TaskCreationContext,
-    type TaskCreationState,
-    type TaskCreationStore,
-} from "@/features/tasks/hooks/use-task-creation";
+    AddTaskTargetContext,
+    type AddTaskTarget,
+    type AddTaskTargetStore,
+} from "@/features/tasks/hooks/use-add-task-target";
+import { useCreateTask } from "@/features/tasks/hooks/use-create-task";
 import type { AddTaskSubmitValues } from "@/features/tasks/schemas";
 
 /**
@@ -17,8 +17,8 @@ import type { AddTaskSubmitValues } from "@/features/tasks/schemas";
  * state, and nothing else — mirrors `RenameOverrideProvider`'s deliberate narrowness, mounted in
  * the dashboard layout beside it so it spans both the header's and the board's streaming boundary.
  */
-export const TaskCreationProvider = ({ children }: PropsWithChildren) => {
-    const [state, setState] = useState<TaskCreationState>(null);
+export const AddTaskProvider = ({ children }: PropsWithChildren) => {
+    const [target, setTarget] = useState<AddTaskTarget>(null);
     const { value: isOpen, setValue: setIsOpen, setFalse: closeModal } = useBoolean(false);
     /*
      * Bumped on every fresh open and used as the modal's `key`, so each open starts from empty
@@ -27,27 +27,34 @@ export const TaskCreationProvider = ({ children }: PropsWithChildren) => {
     const [openCount, setOpenCount] = useState(0);
     const { createTask, isPending, errorMessage, clearError } = useCreateTask();
 
-    const publish = useCallback((next: TaskCreationState) => {
-        setState(next);
+    const reportTarget = useCallback((next: AddTaskTarget) => {
+        setTarget(next);
     }, []);
 
-    const handleOpenChange = (nextIsOpen: boolean): void => {
-        setIsOpen(nextIsOpen);
-        clearError();
+    const handleOpenChange = useCallback(
+        (nextIsOpen: boolean): void => {
+            setIsOpen(nextIsOpen);
+            clearError();
 
-        if (nextIsOpen) {
-            setOpenCount((count) => count + 1);
-        }
-    };
+            if (nextIsOpen) {
+                setOpenCount((count) => count + 1);
+            }
+        },
+        [clearError, setIsOpen],
+    );
+
+    const openModal = useCallback((): void => {
+        handleOpenChange(true);
+    }, [handleOpenChange]);
 
     /* Closed as soon as the task itself lands — the subtask fan-out runs behind it (D-07). */
     const handleSubmit = (values: AddTaskSubmitValues): void => {
-        if (state === null) {
+        if (target === null) {
             return;
         }
 
         void createTask({
-            boardId: state.boardId,
+            boardId: target.boardId,
             columnId: values.columnId,
             title: values.title,
             description: values.description,
@@ -59,24 +66,21 @@ export const TaskCreationProvider = ({ children }: PropsWithChildren) => {
         });
     };
 
-    /* Not memoized: `clearError` (from `useCreateTask`) is a fresh function every render anyway. */
-    const store: TaskCreationStore = {
-        state,
-        openModal: () => {
-            handleOpenChange(true);
-        },
-        publish,
-    };
+    /* Memoised down to its three stable members, so a create's `isPending` toggle never re-renders the header. */
+    const store: AddTaskTargetStore = useMemo(
+        () => ({ target, openModal, reportTarget }),
+        [target, openModal, reportTarget],
+    );
 
     return (
-        <TaskCreationContext value={store}>
+        <AddTaskTargetContext value={store}>
             {children}
 
             {/*
              * Mounted only once columns exist — the header's button is disabled until then, and
              * mounting earlier would fix `useForm`'s defaultValues against an empty column list.
              */}
-            {state === null ? null : (
+            {target === null ? null : (
                 <AddTaskModal
                     key={openCount}
                     isOpen={isOpen}
@@ -84,9 +88,9 @@ export const TaskCreationProvider = ({ children }: PropsWithChildren) => {
                     onSubmit={handleSubmit}
                     isPending={isPending}
                     errorMessage={errorMessage}
-                    columns={state.columns}
+                    columns={target.columns}
                 />
             )}
-        </TaskCreationContext>
+        </AddTaskTargetContext>
     );
 };

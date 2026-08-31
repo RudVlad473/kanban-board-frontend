@@ -19,8 +19,8 @@ import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
 import { createColumnReorderAnnouncements, toColumnCaption, toColumnDotToken } from "@/features/boards/model";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 import { TaskCard } from "@/features/tasks/components/task-card/task-card";
+import { useReportAddTaskTarget } from "@/features/tasks/hooks/use-add-task-target";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
-import { usePublishTaskCreationColumns } from "@/features/tasks/hooks/use-task-creation";
 import { createTaskMoveAnnouncements, toSubtaskSummary, toTaskMoveTargetPosition } from "@/features/tasks/model";
 import { createTaskAwareCollisionDetection, toDragItemData } from "@/features/tasks/task-drag-model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
@@ -94,26 +94,26 @@ export const BoardView = ({
 
     const sensors = useColumnDragSensors();
 
-    const publishTaskCreationColumns = usePublishTaskCreationColumns();
+    const reportAddTaskTarget = useReportAddTaskTarget();
     /* A primitive key, not the array itself, so the effect below re-fires on real content changes only. */
     const columnOptionsKey = renderedColumns.map((column) => `${column.id}:${column.name}`).join("|");
 
     /*
-     * S-06: this is the component that HAS the open board's columns, so it is the one that publishes
-     * them. Cleared on unmount — navigating away from every board must not leave the header reading
-     * a stale board's columns as though one were still open.
+     * S-06: this is the component that HAS the open board's columns — already carrying the rename
+     * override the header's modal must show — so it is the one that reports them upward. Cleared on
+     * unmount, or navigating away from every board would leave the header on a stale board's columns.
      */
     useEffect(() => {
-        publishTaskCreationColumns({
+        reportAddTaskTarget({
             boardId: board.id,
             columns: renderedColumns.map((column) => ({ id: column.id, name: column.name })),
         });
 
         return () => {
-            publishTaskCreationColumns(null);
+            reportAddTaskTarget(null);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- columnOptionsKey is the derived primitive that gates a real re-publish; renderedColumns/publishTaskCreationColumns are fresh every render
-    }, [board.id, columnOptionsKey]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- columnOptionsKey is the derived primitive that gates a real re-report; renderedColumns is fresh every render
+    }, [board.id, columnOptionsKey, reportAddTaskTarget]);
 
     const liftedColumn = renderedColumns.find((column) => column.id === liftedColumnId) ?? null;
     const liftedTask =

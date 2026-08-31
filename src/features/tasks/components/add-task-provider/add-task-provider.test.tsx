@@ -16,7 +16,7 @@ import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
 
-import * as stories from "./task-creation-provider.stories";
+import * as stories from "./add-task-provider.stories";
 
 /*
  * Matches `createBoards(3)[0].id` exactly (that factory's ids are positionally deterministic) —
@@ -51,7 +51,7 @@ const openCreateTaskModal = async (): Promise<void> => {
 };
 
 describeForEachDevice({
-    name: "TaskCreationProvider",
+    name: "AddTaskProvider",
     body: () => {
         it("renders the create button enabled when the open board has columns", async () => {
             // Act
@@ -186,6 +186,55 @@ describeForEachDevice({
             });
             expect(createTaskSubtasksStub.calls).toHaveLength(2);
             expect(createTaskSubtasksStub.calls[1]).toMatchObject({ titles: ["Drink coffee & smile"] });
+        });
+
+        /* An expired session is the one fan-out failure a Retry cannot fix — say so instead of a count. */
+        it("names an expired session instead of offering a retry that can only fail again", async () => {
+            // Arrange
+            await render(<WithColumns />);
+            createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.UNAUTHENTICATED });
+            await openCreateTaskModal();
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+
+            // Assert
+            const region = await screen.findByRole("region", { name: "Notifications" });
+            await expect
+                .element(within(region).getByText("Your session has expired. Sign in again to add these subtasks."))
+                .toBeVisible();
+            expect(within(region).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+        });
+
+        /* The toast never auto-dismisses, so its Retry stays clickable mid-retry — a second click must be inert. */
+        it("fans the same titles out once when Retry is clicked twice while the first retry is in flight", async () => {
+            // Arrange
+            await render(<WithColumns />);
+            createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Make coffee"] });
+            await openCreateTaskModal();
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            const region = await screen.findByRole("region", { name: "Notifications" });
+            await expect.element(within(region).getByText("Couldn't create 1 subtask(s).")).toBeVisible();
+
+            // Act — the retry is held unresolved, so the button is still mounted for the second click.
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: [] });
+            createTaskSubtasksStub.hold();
+            const retryButton = within(region).getByRole("button", { name: "Retry" });
+            await userEvent.click(retryButton);
+            await userEvent.click(retryButton);
+            createTaskSubtasksStub.settle();
+
+            // Assert — the create's own fan-out plus exactly one retry, never two.
+            await vi.waitFor(() => {
+                expect(within(region).queryByText("Couldn't create 1 subtask(s).")).not.toBeInTheDocument();
+            });
+            expect(createTaskSubtasksStub.calls).toHaveLength(2);
         });
     },
 });

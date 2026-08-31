@@ -1,9 +1,9 @@
 "use client";
 
-// Covered by: `src/features/tasks/components/task-creation-provider/task-creation-provider.test.tsx`
+// Covered by: `src/features/tasks/components/add-task-provider/add-task-provider.test.tsx`
 
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createTaskAction } from "@/features/tasks/actions/create-task-action";
@@ -19,6 +19,8 @@ const GENERIC_CREATE_FAILURE_MESSAGE = "Couldn't create task. Try again.";
 const CREATE_FAILURE_MESSAGE: Partial<Record<ResultStatus, string>> = {
     [RESULT_STATUS.UNAUTHENTICATED]: "Your session has expired. Sign in again to create a task.",
 };
+
+const SUBTASK_SESSION_EXPIRED_MESSAGE = "Your session has expired. Sign in again to add these subtasks.";
 
 const RETRY_ACTION_LABEL = "Retry";
 
@@ -44,6 +46,11 @@ export type CreateTaskArgs = {
     subtaskTitles: string[];
 };
 
+/** What one fan-out attempt leaves behind: the titles still missing, and whether retrying can help. */
+type SubtaskFanOutOutcome = { failedTitles: string[]; isSessionExpired: boolean };
+
+type SubtaskFanOutArgs = { boardId: string; columnId: string; taskId: string; titles: string[] };
+
 /**
  * TASK-01's create orchestration, in the request-response shape `useCreateColumn` uses: a task
  * failure is reported inline, never a toast (D-05). D-07's subtask fan-out runs after the task
@@ -52,32 +59,36 @@ export type CreateTaskArgs = {
 export const useCreateTask = () => {
     const toast = useToast();
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    /*
+     * The failure toast has no auto-dismiss, so its Retry stays mounted and clickable for the whole
+     * retry — without this, a second click fans the same titles out twice and duplicates subtasks.
+     */
+    const taskIdsBeingRetried = useRef(new Set<string>());
 
     const createTaskMutation = useMutation({ mutationFn: createTaskAction, retry: false });
     const createSubtasksMutation = useMutation({ mutationFn: createTaskSubtasksAction, retry: false });
 
-    const clearError = (): void => {
+    const clearError = useCallback((): void => {
         setErrorMessage(null);
-    };
+    }, []);
 
-    /** Runs the subtask phase for exactly the titles given, returning the ones that still failed. */
+    /** Runs the subtask phase for exactly the titles given, reporting what still failed and why. */
     const createSubtasks = async ({
         boardId,
         columnId,
         taskId,
         titles,
-    }: {
-        boardId: string;
-        columnId: string;
-        taskId: string;
-        titles: string[];
-    }): Promise<string[]> => {
+    }: SubtaskFanOutArgs): Promise<SubtaskFanOutOutcome> => {
         const result = await createSubtasksMutation
             .mutateAsync({ boardId, columnId, taskId, titles })
             .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
+        if (result.status === RESULT_STATUS.SUCCESS) {
+            return { failedTitles: result.failedTitles, isSessionExpired: false };
+        }
+
         // A wholesale failure leaves the set unchanged rather than reporting fewer failures than there are.
-        return result.status === RESULT_STATUS.SUCCESS ? result.failedTitles : titles;
+        return { failedTitles: titles, isSessionExpired: result.status === RESULT_STATUS.UNAUTHENTICATED };
     };
 
     const raiseSubtaskFailureToast = ({
@@ -85,47 +96,48 @@ export const useCreateTask = () => {
         columnId,
         taskId,
         failedTitles,
-    }: {
-        boardId: string;
-        columnId: string;
-        taskId: string;
-        failedTitles: string[];
-    }): void => {
+        isSessionExpired,
+    }: Omit<SubtaskFanOutArgs, "titles"> & SubtaskFanOutOutcome): void => {
         toast.add({
             id: buildSubtaskFailureToastId(taskId),
             type: "danger",
-            title: buildSubtaskFailureTitle(failedTitles.length),
+            /* An expired session names itself: the generic count would send the user to a Retry that can only fail again. */
+            title: isSessionExpired ? SUBTASK_SESSION_EXPIRED_MESSAGE : buildSubtaskFailureTitle(failedTitles.length),
             // No auto-dismiss: a kept-but-incomplete create must stay visible until acted on.
             timeout: 0,
-            actionProps: {
-                children: RETRY_ACTION_LABEL,
-                onClick: () => {
-                    void retrySubtasks({ boardId, columnId, taskId, titles: failedTitles });
-                },
-            },
+            ...(isSessionExpired
+                ? {}
+                : {
+                      actionProps: {
+                          children: RETRY_ACTION_LABEL,
+                          onClick: () => {
+                              void retrySubtasks({ boardId, columnId, taskId, titles: failedTitles });
+                          },
+                      },
+                  }),
         });
     };
 
     /** Re-runs the subtask phase for exactly the still-failing titles, upserting the same toast id. */
-    const retrySubtasks = async ({
-        boardId,
-        columnId,
-        taskId,
-        titles,
-    }: {
-        boardId: string;
-        columnId: string;
-        taskId: string;
-        titles: string[];
-    }): Promise<void> => {
-        const stillFailingTitles = await createSubtasks({ boardId, columnId, taskId, titles });
-
-        if (stillFailingTitles.length === 0) {
-            toast.close(buildSubtaskFailureToastId(taskId));
+    const retrySubtasks = async ({ boardId, columnId, taskId, titles }: SubtaskFanOutArgs): Promise<void> => {
+        if (taskIdsBeingRetried.current.has(taskId)) {
             return;
         }
 
-        raiseSubtaskFailureToast({ boardId, columnId, taskId, failedTitles: stillFailingTitles });
+        taskIdsBeingRetried.current.add(taskId);
+
+        try {
+            const outcome = await createSubtasks({ boardId, columnId, taskId, titles });
+
+            if (outcome.failedTitles.length === 0) {
+                toast.close(buildSubtaskFailureToastId(taskId));
+                return;
+            }
+
+            raiseSubtaskFailureToast({ boardId, columnId, taskId, ...outcome });
+        } finally {
+            taskIdsBeingRetried.current.delete(taskId);
+        }
     };
 
     const createTask = async ({
@@ -154,9 +166,9 @@ export const useCreateTask = () => {
          * real, and D-07 keeps whatever fan-out lands regardless of when the caller stops watching.
          */
         if (subtaskTitles.length > 0) {
-            void createSubtasks({ boardId, columnId, taskId, titles: subtaskTitles }).then((failedTitles) => {
-                if (failedTitles.length > 0) {
-                    raiseSubtaskFailureToast({ boardId, columnId, taskId, failedTitles });
+            void createSubtasks({ boardId, columnId, taskId, titles: subtaskTitles }).then((outcome) => {
+                if (outcome.failedTitles.length > 0) {
+                    raiseSubtaskFailureToast({ boardId, columnId, taskId, ...outcome });
                 }
             });
         }
