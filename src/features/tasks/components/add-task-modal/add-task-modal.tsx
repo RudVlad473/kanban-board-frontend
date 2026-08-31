@@ -77,6 +77,12 @@ export const AddTaskModal = ({
     const titleErrorMessage = forceTitleError ?? errors.title?.message;
 
     /*
+     * Without this, Base UI's `Select.Value` shows the raw id ("todo") until the popup has been
+     * opened once — passing `items` is what lets it resolve the label up front (Base UI docs).
+     */
+    const columnLabelsById = Object.fromEntries(columns.map((column) => [column.id, column.name]));
+
+    /*
      * Both guards are required together: Base UI's Dialog fires `onOpenChange(false)` on Escape
      * regardless of the backdrop-dismissal prop (documented in `modal.tsx` itself).
      */
@@ -182,7 +188,11 @@ export const AddTaskModal = ({
                             name="columnId"
                             render={({ field }) => {
                                 return (
-                                    <Dropdown.Root value={field.value} onValueChange={field.onChange}>
+                                    <Dropdown.Root
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                        items={columnLabelsById}
+                                    >
                                         <Dropdown.Trigger placeholder="Select a status" />
 
                                         <Dropdown.Content>

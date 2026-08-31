@@ -20,6 +20,7 @@ import { createColumnReorderAnnouncements, toColumnCaption, toColumnDotToken } f
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 import { TaskCard } from "@/features/tasks/components/task-card/task-card";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
+import { usePublishTaskCreationColumns } from "@/features/tasks/hooks/use-task-creation";
 import { createTaskMoveAnnouncements, toSubtaskSummary, toTaskMoveTargetPosition } from "@/features/tasks/model";
 import { createTaskAwareCollisionDetection, toDragItemData } from "@/features/tasks/task-drag-model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
@@ -92,6 +93,27 @@ export const BoardView = ({
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
 
     const sensors = useColumnDragSensors();
+
+    const publishTaskCreationColumns = usePublishTaskCreationColumns();
+    /* A primitive key, not the array itself, so the effect below re-fires on real content changes only. */
+    const columnOptionsKey = renderedColumns.map((column) => `${column.id}:${column.name}`).join("|");
+
+    /*
+     * S-06: this is the component that HAS the open board's columns, so it is the one that publishes
+     * them. Cleared on unmount — navigating away from every board must not leave the header reading
+     * a stale board's columns as though one were still open.
+     */
+    useEffect(() => {
+        publishTaskCreationColumns({
+            boardId: board.id,
+            columns: renderedColumns.map((column) => ({ id: column.id, name: column.name })),
+        });
+
+        return () => {
+            publishTaskCreationColumns(null);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- columnOptionsKey is the derived primitive that gates a real re-publish; renderedColumns/publishTaskCreationColumns are fresh every render
+    }, [board.id, columnOptionsKey]);
 
     const liftedColumn = renderedColumns.find((column) => column.id === liftedColumnId) ?? null;
     const liftedTask =
