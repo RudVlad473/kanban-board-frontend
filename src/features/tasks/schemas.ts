@@ -85,9 +85,7 @@ export const addTaskFormSchema = z.object({
 export type AddTaskFormValues = z.infer<typeof addTaskFormSchema>;
 
 /**
- * What the create-task submit handler receives — the validated fields plus the subtask rows
- * already reduced to non-blank, trimmed titles (`toSubmittedSubtaskTitles`). Lives here rather
- * than beside the modal because it is the contract between that modal and its caller, and neither
- * should import the other's component module.
+ * What the create-task submit handler receives — validated fields plus subtask rows already
+ * reduced to non-blank, trimmed titles. Lives here, the contract between the modal and its caller.
  */
 export type AddTaskSubmitValues = { columnId: string; title: string; description: string; subtasks: string[] };
