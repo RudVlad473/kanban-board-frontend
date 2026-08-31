@@ -69,3 +69,15 @@ export const createTaskSubtasksInputSchema = z.object({
 });
 
 export type CreateTaskSubtasksInput = z.infer<typeof createTaskSubtasksInputSchema>;
+
+/* RED skeleton (04-15 Task 2) — type-checks so the pre-commit hook's type-aware lint can run. */
+export const addTaskFormSchema = z.object({
+    title: z.string(),
+    description: z.string(),
+    columnId: z.string(),
+    subtasks: z.array(z.object({ value: z.string() })),
+});
+
+export type AddTaskFormValues = z.infer<typeof addTaskFormSchema>;
+
+export type AddTaskSubmitValues = { columnId: string; title: string; description: string; subtasks: string[] };

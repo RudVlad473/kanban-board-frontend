@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    addTaskFormSchema,
     createSubtaskInputSchema,
     createTaskInputSchema,
     createTaskSubtasksInputSchema,
@@ -261,6 +262,50 @@ describe("createTaskSubtasksInputSchema", () => {
             ...createValidFanOutInput(),
             titles: Array.from({ length: 50 }, (_, index) => `Subtask ${String(index)}`),
         });
+
+        // Assert
+        expect(result.success).toBe(true);
+    });
+});
+
+describe("addTaskFormSchema", () => {
+    const createValidFormInput = () => ({
+        title: "Take coffee break",
+        description: "",
+        columnId: "00000000-0000-4000-8000-00000000000c",
+        subtasks: [{ value: "Make coffee" }, { value: "" }],
+    });
+
+    it("accepts a well-formed form, including a blank subtask row", () => {
+        // Act
+        const result = addTaskFormSchema.safeParse(createValidFormInput());
+
+        // Assert
+        expect(result.success).toBe(true);
+    });
+
+    it("reports the required-field message for a blank title", () => {
+        // Act
+        const result = addTaskFormSchema.safeParse({ ...createValidFormInput(), title: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    /* S-06: the create endpoint is column-scoped, so a destination must always be chosen. */
+    it("reports the required-field message for a blank column id", () => {
+        // Act
+        const result = addTaskFormSchema.safeParse({ ...createValidFormInput(), columnId: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("accepts every subtask row blank — removing both seeded rows is legal", () => {
+        // Act
+        const result = addTaskFormSchema.safeParse({ ...createValidFormInput(), subtasks: [] });
 
         // Assert
         expect(result.success).toBe(true);
