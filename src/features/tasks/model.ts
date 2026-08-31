@@ -205,13 +205,26 @@ export const createTaskMoveAnnouncements = ({
     };
 };
 
-/* RED skeleton (04-15 Task 2) — type-checks so the pre-commit hook's type-aware lint can run. */
+/** UI-SPEC "populated/Add New Task modal": the mock's own two seeded draft rows. */
+export const DEFAULT_SUBTASK_ROW_COUNT = 2;
+
 export const createEmptySubtaskRows = (count: number): { value: string }[] =>
     Array.from({ length: count }, () => ({ value: "" }));
 
+/** The exact template type React Hook Form's `register` needs for a subtask row's field path. */
 export type SubtaskRowPath = `subtasks.${number}.value`;
 
+/*
+ * A bare numeric interpolation trips `restrict-template-expressions`, so the index is stringified
+ * and the result asserted back onto the template type, mirroring `buildColumnRowPath`.
+ */
 export const buildSubtaskRowPath = (index: number): SubtaskRowPath =>
-    `subtasks.${String(index)}.wrong` as SubtaskRowPath;
+    `subtasks.${String(index)}.value` as SubtaskRowPath;
 
-export const toSubmittedSubtaskTitles = (rows: string[]): string[] => rows;
+/**
+ * The draft subtask rows as the fan-out will POST them: trimmed, and a blank row DROPPED rather
+ * than blocking submission (UI-SPEC empty/add-task-modal) — the opposite of the board modal's own
+ * column rows, which a blank one blocks.
+ */
+export const toSubmittedSubtaskTitles = (rows: string[]): string[] =>
+    rows.map((row) => row.trim()).filter((row) => row !== "");
