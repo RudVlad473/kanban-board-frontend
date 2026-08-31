@@ -47,7 +47,7 @@
     },
     {
       "id": 7,
-      "name": "Confirm 6f33011: full-suite run 1 is green (1659/1659); do runs 2 and 3",
+      "name": "Resolve the suite: confirm 6f33011, and investigate the sortable-column reorder-rollback failure",
       "status": "in_progress"
     },
     {
@@ -58,9 +58,14 @@
   ],
   "blockers": [
     {
-      "description": "Before 6f33011, `pnpm test` was red on 3 of 3 full runs (2, 2, 1 failures) while the same file passed 3 of 3 standalone. After 6f33011 the first full run is GREEN (1659/1659, exit 0); runs 2 and 3 were still in flight when the session paused. Confirm with two more runs before trusting it.",
+      "description": "Suite is NOT confirmed green. Three post-6f33011 full runs gave exit 0 / 1 / 1. Run 1: 1659/1659. Run 2: one failure in sortable-column.test.tsx 'restores the whole board's order and raises the rollback toast when a reorder fails' - expected the original order, got the reordered one. Run 3: environmental only (Vite 'Failed to fetch dynamically imported module' on Storybook setup files; 1653 passed, no assertion failed).",
       "type": "technical",
-      "workaround": "Run `pnpm test` twice more. A standalone `vitest run --project browser src/components/layout/board-view/board-view.test.tsx` does NOT reproduce the failure - it is load-dependent and only appears in a full run."
+      "workaround": "Re-run `pnpm test` several times. Treat run 3's import error as infrastructure noise, not a code defect."
+    },
+    {
+      "description": "SUSPECTED REGRESSION, unproven: the sortable-column reorder-ROLLBACK failure is in exactly the path 81568db rewrote (useOptimistic for column reorder, where 'dropping the action IS the rollback'). It appeared in 1 of 5 post-refactor runs and in 0 of 3 pre-refactor runs - suggestive but not conclusive, since pre-refactor only had 3 samples.",
+      "type": "technical",
+      "workaround": "Run `pnpm exec vitest run --project browser src/features/boards/components/sortable-column/sortable-column.test.tsx` repeatedly, and under full-suite load. If it reproduces, inspect the failure path in src/features/boards/hooks/use-reorder-columns.ts - specifically whether the optimistic value is actually dropped when mutateAsync rejects or returns a non-SUCCESS status."
     }
   ],
   "async_jobs": [],
@@ -93,6 +98,6 @@
     ".planning/config.json",
     ".planning/state.json (untracked)"
   ],
-  "next_action": "Run `pnpm test` twice more to complete the 3-run confirmation of 6f33011 (run 1 was green). Then start review item #5 in board-view.tsx. If a run is red, read 6f33011's commit message - it documents the measured root cause.",
+  "next_action": "Re-run `pnpm test` several times. 6f33011 appears to have fixed what it targeted - the board-view MOBILE drag failures did NOT recur in any of the 3 runs. The open question is the sortable-column reorder-rollback failure (1 of 5 runs), which sits in the path 81568db rewrote. Settle that before starting review items #5 and #7.",
   "context_notes": "This session was a review-driven refactor batch on top of plan 04-15, not new feature work. Seven user review comments plus a Gemini 3.1 Pro code review were triaged; 2 of the 4 Gemini findings were FALSE and verified so against the compiler and the running app. Two orchestration lessons were paid for in rework and are recorded as blocking constraints."
 }
