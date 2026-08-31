@@ -216,18 +216,24 @@ pointer rule reproduces exactly that failure, once per file.
   natively, in two copies. If you find yourself tracking *when an optimistic value goes stale*, you
   are rebuilding the primitive. Enforcement: code review.
 
-## Server data flows down, never sideways through a context
+## Server data flows down; a context bus must carry something the server does not have
 
-- **A Client Component never publishes server-derived data into a context for a sibling to read.**
-  If two parts of the tree need the same server data, fetch it at a level that can reach both and
-  pass it down; `fetchBoardFull` and friends are request-deduplicated, so fetching in a nested
-  layout and its page costs one call. A nested `app/**/[param]/layout.tsx` receives the route param
-  and is usually that level. Enforcement: code review.
-- The counter-example this rule exists for: plan 04-15 gave the dashboard header the open board's
-  columns by having `BoardView` run an effect that pushed them into a client context the header
-  read, plus a null-publish on unmount to avoid a stale board leaking across navigation. It was a
-  client pub/sub bus carrying data the server already had, and the effect's cleanup ordering was a
-  latent bug. Enforcement: code review.
+- **A Client Component never publishes plain server-derived data into a context for a sibling to
+  read.** If two parts of the tree need the same server data, fetch it at a level that can reach
+  both and pass it down; `fetchBoardFull` is `cache()`-wrapped, so fetching in a nested layout and
+  its page costs one call. Enforcement: code review.
+- **The exception, and the test that distinguishes it: what is published must be state the server
+  does not have.** `AddTaskProvider` is the live case. The header lives in
+  `app/(dashboard)/layout.tsx`, above the `[boardId]` segment, so no server component that could
+  learn the board sits high enough to feed it — and React context does not flow upward. More
+  decisively, `BoardView` publishes `renderedColumns`, the tail of the optimistic
+  rename/reorder/move chain, not the server's columns: fed from the server instead, the Add Task
+  modal's Status list would show a renamed column's OLD name until the refresh landed. A bridge
+  carrying optimistic client state earns its place; a bridge carrying a copy of the server's own
+  response does not. Enforcement: code review.
+- Ask which of the two you have before deleting or adding one. Established 2026-08-31, after the
+  first reading of this rule ("the 04-15 bridge is a client pub/sub bus, delete it") turned out to
+  be wrong on exactly this distinction.
 
 ## Drag-and-drop (docs/adr/tech/0003)
 
