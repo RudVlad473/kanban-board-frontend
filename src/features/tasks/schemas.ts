@@ -70,14 +70,24 @@ export const createTaskSubtasksInputSchema = z.object({
 
 export type CreateTaskSubtasksInput = z.infer<typeof createTaskSubtasksInputSchema>;
 
-/* RED skeleton (04-15 Task 2) — type-checks so the pre-commit hook's type-aware lint can run. */
+/*
+ * The Add New Task form's own shape. `subtasks` rows carry no bound of their own — a blank row is
+ * DROPPED at submit (`toSubmittedSubtaskTitles`), not blocked, so the row schema never rejects one.
+ * `columnId` is required because the create endpoint is column-scoped (S-06).
+ */
 export const addTaskFormSchema = z.object({
-    title: z.string(),
+    title: taskTitleRowSchema,
     description: z.string(),
-    columnId: z.string(),
+    columnId: z.string().min(1, REQUIRED_FIELD_MESSAGE),
     subtasks: z.array(z.object({ value: z.string() })),
 });
 
 export type AddTaskFormValues = z.infer<typeof addTaskFormSchema>;
 
+/**
+ * What the create-task submit handler receives — the validated fields plus the subtask rows
+ * already reduced to non-blank, trimmed titles (`toSubmittedSubtaskTitles`). Lives here rather
+ * than beside the modal because it is the contract between that modal and its caller, and neither
+ * should import the other's component module.
+ */
 export type AddTaskSubmitValues = { columnId: string; title: string; description: string; subtasks: string[] };
