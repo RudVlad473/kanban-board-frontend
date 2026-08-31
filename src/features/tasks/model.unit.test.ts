@@ -7,6 +7,7 @@ import {
     createEmptySubtaskRows,
     createTaskMoveAnnouncements,
     toSubmittedSubtaskTitles,
+    toSubtaskRowPlaceholder,
     toSubtaskSummary,
     toTaskMoveTargetPosition,
     type NamedTaskColumn,
@@ -413,5 +414,19 @@ describe("toSubmittedSubtaskTitles", () => {
 
         // Assert
         expect(titles).toEqual([]);
+    });
+});
+
+describe("toSubtaskRowPlaceholder", () => {
+    it("returns each seeded row's own placeholder for the first two rows", () => {
+        // Act & Assert
+        expect(toSubtaskRowPlaceholder(0)).toBe("e.g. Make coffee");
+        expect(toSubtaskRowPlaceholder(1)).toBe("e.g. Drink coffee & smile");
+    });
+
+    it("repeats the first row's placeholder for every row after the seeded two", () => {
+        // Act
+        expect(toSubtaskRowPlaceholder(2)).toBe("e.g. Make coffee");
+        expect(toSubtaskRowPlaceholder(5)).toBe("e.g. Make coffee");
     });
 });
