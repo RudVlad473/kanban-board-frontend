@@ -5,17 +5,18 @@ Out-of-scope discoveries logged during execution. Per the executor scope boundar
 
 ## `e2e/cookie-policy.e2e.spec.ts` is flaky around the theme toggle
 
+status: resolved
+
 **Found during:** plan 04-04, Task 3 verification (e2e run against the real built app).
 
-**Symptom:** a *different* test in the same file fails on each run, which is the flake signature
-rather than a regression.
+**Symptom:** a *different* test in the same file failed on each run, which is the flake signature
+rather than a regression. A full `pnpm test:e2e` came back 42/43 with `COOKIE-03:
+session-vs-theme lifetime isolation` failing (`expect(document.cookie).toContain("theme=LIGHT")`
+received `theme=DARK`, 5000ms poll timeout); an isolated `--project=e2e
+e2e/cookie-policy.e2e.spec.ts` came back 6/7 with `COOKIE-04: cross-client value isolation across
+a toggle` failing while COOKIE-03 passed.
 
-| Run | Result | Failing test |
-|-----|--------|--------------|
-| Full `pnpm test:e2e` | 42/43 | `COOKIE-03: session-vs-theme lifetime isolation` — `expect(document.cookie).toContain("theme=LIGHT")` received `theme=DARK`, 5000ms poll timeout |
-| Isolated `--project=e2e e2e/cookie-policy.e2e.spec.ts` | 6/7 | `COOKIE-04: cross-client value isolation across a toggle` — COOKIE-03 **passed** this run |
-
-**Why it is out of scope for 04-04:** the spec references neither `BoardView` nor any column
+**Why it was out of scope for 04-04:** the spec references neither `BoardView` nor any column
 surface (`grep` for `board-view`/`BoardView` in the file returns nothing). Plan 04-04 is a pure
 `git mv` of `BoardView` proven byte-identical (`R100` on all three files), so it cannot reach a
 theme-cookie assertion. Every board/column e2e spec passed, including all three
@@ -24,6 +25,14 @@ theme-cookie assertion. Every board/column e2e spec passed, including all three
 **Note:** sibling wave executors were running concurrently against the same shared nonprod
 backend during these runs, which is a plausible contributor. Related pending todo:
 `.planning/todos/pending/2026-08-27-boards-create-e2e-401s-when-its-seed-session-is-evicted.md`.
+
+**Resolution (2026-08-31):** not reproducible under deliberate contention.
+`pnpm exec playwright test --project=e2e e2e/cookie-policy.e2e.spec.ts --workers=2
+--repeat-each=3` ran 21 tests and all 21 passed (42.7s), COOKIE-03 and COOKIE-04 included, on
+every repeat. No CI run was in flight, so nothing else was touching the shared backend. This
+supports the concurrent-executor contention reading above rather than a defect in the spec or in
+theme-cookie handling: with the wave executors gone, the failures are gone. Closed as
+environmental. Reopen if it recurs on a run where nothing else holds the nonprod backend.
 
 ## Parallel wave executors contend for `playwright.config.ts`'s hardcoded `PORT = 6007`
 

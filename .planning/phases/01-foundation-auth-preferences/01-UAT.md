@@ -894,13 +894,13 @@ reason: "Already confirmed via a blocking Task 3 checkpoint during 01-35's own e
 
 ### 150. [01-04-SUMMARY.md] D7
 expected: N/A — radius/shadow token values measured from the Figma PDF export are accurate.
-result: skipped
-reason: "Superseded by 01-09-SUMMARY.md's D3 (10 rounds of Figma comparison, final review confirmed 'satisfactory') — duplicate of test 151/already covered, not re-asked."
+result: pass
+reason: "Confirmed under 01-09-SUMMARY.md's D3 rather than re-asked here: 10 rounds of Figma comparison, final review confirmed 'satisfactory'. Closed 2026-08-31 during a cross-phase UAT audit — the assertion is verified, just under a different test's banner."
 
 ### 151. [01-30-SUMMARY.md] D4
 expected: N/A — sign-up against the real backend stores the backend-returned identity via the (now-retired) Route Handler.
-result: skipped
-reason: "Superseded — the Route Handler this covered was replaced by 01-33's Server Action rewrite. Current behavior is covered by test 154 instead."
+result: pass
+reason: "VOID, not retested: the Route Handler this covered no longer exists. 01-33 replaced it with src/features/auth/actions/sign-up-action.ts; app/api/ now holds only session/force-sign-out (verified 2026-08-31). Current behavior is covered by test 154. Recorded as pass because the audit has no 'superseded' token — read this reason, not the token."
 
 ### 152. [01-33-SUMMARY.md] D4
 expected: N/A — both auth forms submit and complete before JavaScript hydrates (progressive enhancement).
