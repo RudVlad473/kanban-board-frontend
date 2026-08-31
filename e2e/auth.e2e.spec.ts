@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 import { decodeJwt } from "jose";
 
 import { seedAccount } from "./seed";
-import { registerSignedUpUser } from "./signed-up-user";
+import { signUpViaUi, submitSignUpForm } from "./signed-up-user";
 import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
 
@@ -21,16 +21,7 @@ test.describe("AUTH-01: sign up", () => {
         const freshEmail = `e2e-${randomUUID()}@example.com`;
 
         // Act
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(freshEmail);
-        /*
-         * "Letters and spaces" only (GC-02) — a digit-bearing fixture name like "E2E Tester" now
-         * fails the sign-up form's own name validation, so this fixture must satisfy the same
-         * rules as the password fixture below.
-         */
-        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
-        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
+        await signUpViaUi({ page, email: freshEmail, password: FRESH_PASSWORD });
 
         // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
@@ -140,11 +131,7 @@ test.describe("AUTH-06: sign-up rejects a payload failing the shared schema", ()
          * A digit-bearing name (charset) and an 8-char-under password (length, chained before
          * complexity per schemas.ts's own comment, so "short" reports length only).
          */
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill("User123");
-        await page.getByLabel("Password", { exact: true }).fill("short");
-        await page.getByRole("button", { name: "Create Account" }).click();
+        await submitSignUpForm({ page, email, displayName: "User123", password: "short" });
 
         // Assert
         /*
@@ -168,13 +155,7 @@ test.describe("AUTH-07: sign-up rejects a duplicate email", () => {
         const email = `e2e-signup-dup-${randomUUID()}@example.com`;
 
         // Act — first sign-up succeeds and signs the account in.
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
-        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
-        await registerSignedUpUser(page);
+        await signUpViaUi({ page, email, password: FRESH_PASSWORD });
 
         /*
          * Sign out first — proxy.ts redirects a signed-in visitor away from /register entirely, so
@@ -185,11 +166,7 @@ test.describe("AUTH-07: sign-up rejects a duplicate email", () => {
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
 
         // Act — second sign-up, same email.
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
-        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
+        await submitSignUpForm({ page, email, password: FRESH_PASSWORD });
 
         // Assert
         /*

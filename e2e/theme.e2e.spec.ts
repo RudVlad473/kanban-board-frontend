@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedAccount } from "./seed";
-import { registerSignedUpUser } from "./signed-up-user";
+import { signUpViaUi } from "./signed-up-user";
 import { E2E_CONFIG } from "./test-env";
 import { EXTERNAL_PATH } from "../src/lib/core/api-contract/external-paths";
 import { ROUTE } from "../src/lib/core/routing/routes";
@@ -62,13 +62,7 @@ test.describe("THEME-01: theme persistence", () => {
     }) => {
         // Arrange
         const email = `e2e-theme-${randomUUID()}@example.com`;
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill(ACCOUNT_DISPLAY_NAME);
-        await page.getByLabel("Password", { exact: true }).fill(ACCOUNT_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
-        await registerSignedUpUser(page);
+        await signUpViaUi({ page, email, displayName: ACCOUNT_DISPLAY_NAME, password: ACCOUNT_PASSWORD });
 
         const toggle = page.getByRole("switch", { name: TOGGLE_NAME });
         const initialChecked = await toggle.getAttribute("aria-checked");
@@ -147,12 +141,7 @@ test.describe("THEME-02: unauthenticated toggle writes only the client-side cook
     test("leaves the signed-in account's stored theme preference untouched", async ({ page }) => {
         // Arrange — a fresh account via sign-up (session slot 1 of 2).
         const email = `e2e-theme-unauth-${randomUUID()}@example.com`;
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill(ACCOUNT_DISPLAY_NAME);
-        await page.getByLabel("Password", { exact: true }).fill(ACCOUNT_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await signUpViaUi({ page, email, displayName: ACCOUNT_DISPLAY_NAME, password: ACCOUNT_PASSWORD });
 
         const initialChecked = await page.getByRole("switch", { name: TOGGLE_NAME }).getAttribute("aria-checked");
 

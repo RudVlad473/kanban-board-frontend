@@ -1,8 +1,43 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { decodeJwt } from "jose";
 
 import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
+import { ROUTE } from "../src/lib/core/routing/routes";
 import { recordSeededUserId, SEED_SCOPE } from "../src/test-utils/seeded-user-registry";
+
+/*
+ * "Letters and spaces" only (GC-02) — a digit-bearing name like "E2E Tester" fails the sign-up
+ * form's own name validation, so every default fixture value here satisfies the shared schema.
+ */
+export const SIGN_UP_DISPLAY_NAME = "End To End Tester";
+
+type SignUpCredentials = {
+    page: Page;
+    email: string;
+    password: string;
+    /** Override only to exercise the name field's own validation. */
+    displayName?: string;
+};
+
+/**
+ * Drive the sign-up form and submit it, asserting nothing about the outcome.
+ *
+ * The lower half of the UI sign-up path, for specs whose subject is a rejected submission
+ * (a schema violation, a duplicate email). A spec expecting the account to be created wants
+ * `signUpViaUi` instead, which also registers it for teardown.
+ */
+export const submitSignUpForm = async ({
+    page,
+    email,
+    password,
+    displayName = SIGN_UP_DISPLAY_NAME,
+}: SignUpCredentials): Promise<void> => {
+    await page.goto(ROUTE.SIGN_UP);
+    await page.getByLabel("Email", { exact: true }).fill(email);
+    await page.getByLabel("Name", { exact: true }).fill(displayName);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Create Account" }).click();
+};
 
 /**
  * Registers a UI sign-up's backend user id for teardown, read from the session cookie's own JWT
@@ -25,4 +60,16 @@ export const registerSignedUpUser = async (page: Page): Promise<string> => {
 
     recordSeededUserId({ scope: SEED_SCOPE.PLAYWRIGHT, id: payload.id });
     return payload.id;
+};
+
+/**
+ * Create an account through the real sign-up form and return its backend id.
+ *
+ * Waits for the board list the successful sign-up lands on, so a caller can assert on the
+ * signed-in surface directly, and records the new account for teardown.
+ */
+export const signUpViaUi = async (credentials: SignUpCredentials): Promise<string> => {
+    await submitSignUpForm(credentials);
+    await expect(credentials.page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+    return registerSignedUpUser(credentials.page);
 };
