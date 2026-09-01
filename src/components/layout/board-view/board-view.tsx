@@ -3,7 +3,7 @@
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useBoolean, useMediaQuery } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
@@ -20,7 +20,6 @@ import { toColumnCaption, toColumnDotToken } from "@/features/boards/model";
 import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 import { TaskCard } from "@/features/tasks/components/task-card/task-card";
-import { useReportAddTaskTarget } from "@/features/tasks/hooks/use-add-task-target";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
 import { toSubtaskSummary } from "@/features/tasks/model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
@@ -98,27 +97,6 @@ export const BoardView = ({
         reorderColumns: requestReorder,
     });
     const { ghostColumnRef, revealOnNextGrowth } = useNewColumnReveal({ columnCount });
-
-    const reportAddTaskTarget = useReportAddTaskTarget();
-    /* A primitive key, not the array itself, so the effect below re-fires on real content changes only. */
-    const columnOptionsKey = renderedColumns.map((column) => `${column.id}:${column.name}`).join("|");
-
-    /*
-     * S-06: this is the component that HAS the open board's columns — already carrying the rename
-     * override the header's modal must show — so it is the one that reports them upward. Cleared on
-     * unmount, or navigating away from every board would leave the header on a stale board's columns.
-     */
-    useEffect(() => {
-        reportAddTaskTarget({
-            boardId: board.id,
-            columns: renderedColumns.map((column) => ({ id: column.id, name: column.name })),
-        });
-
-        return () => {
-            reportAddTaskTarget(null);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- columnOptionsKey is the derived primitive that gates a real re-report; renderedColumns is fresh every render
-    }, [board.id, columnOptionsKey, reportAddTaskTarget]);
 
     const handleOpenChange = (nextIsOpen: boolean): void => {
         setIsAddColumnOpen(nextIsOpen);

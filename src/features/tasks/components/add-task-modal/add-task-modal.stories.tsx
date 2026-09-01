@@ -18,10 +18,9 @@ const meta: Meta<typeof AddTaskModal> = {
     component: AddTaskModal,
     parameters: { nextjs: { appDirectory: true } },
     args: {
-        isOpen: true,
         isPending: false,
         columns: FIXTURE_COLUMNS,
-        onOpenChange: fn(),
+        onClose: fn(),
         onSubmit: fn(),
     },
 };
@@ -82,11 +81,16 @@ const FailingSubmitHost = (props: ComponentProps<typeof AddTaskModal>) => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(true);
 
+    if (!isOpen) {
+        return null;
+    }
+
     return (
         <AddTaskModal
             {...props}
-            isOpen={isOpen}
-            onOpenChange={setIsOpen}
+            onClose={() => {
+                setIsOpen(false);
+            }}
             errorMessage={errorMessage}
             onSubmit={(values) => {
                 props.onSubmit(values);

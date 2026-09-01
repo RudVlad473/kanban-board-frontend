@@ -1,6 +1,6 @@
 "use client";
 
-// Covered by: `src/features/tasks/components/add-task-provider/add-task-provider.test.tsx`
+// Covered by: `src/features/tasks/components/add-task-button/add-task-button.test.tsx`
 
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";

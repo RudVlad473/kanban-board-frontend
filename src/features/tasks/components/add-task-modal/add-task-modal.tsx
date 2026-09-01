@@ -20,8 +20,8 @@ import {
 import { addTaskFormSchema, type AddTaskFormValues, type AddTaskSubmitValues } from "@/features/tasks/schemas";
 
 type Props = {
-    isOpen: boolean;
-    onOpenChange: (isOpen: boolean) => void;
+    /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
+    onClose: () => void;
     onSubmit: (values: AddTaskSubmitValues) => void;
     isPending: boolean;
     /** Board order — the Status control lists these verbatim, in the order given. */
@@ -42,8 +42,7 @@ type Props = {
  * instead of a module mock, which is banned outside stories (docs/adr/tech/0020).
  */
 export const AddTaskModal = ({
-    isOpen,
-    onOpenChange,
+    onClose,
     onSubmit,
     isPending,
     columns,
@@ -87,15 +86,15 @@ export const AddTaskModal = ({
      * regardless of the backdrop-dismissal prop (documented in `modal.tsx` itself).
      */
     const handleOpenChange = (nextIsOpen: boolean): void => {
-        if (isPending) {
+        if (isPending || nextIsOpen) {
             return;
         }
 
-        onOpenChange(nextIsOpen);
+        onClose();
     };
 
     return (
-        <Modal.Root isOpen={isOpen} onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
+        <Modal.Root isOpen onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
             <Modal.Content>
                 <form
                     noValidate

@@ -16,7 +16,7 @@ import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
 
-import * as stories from "./add-task-provider.stories";
+import * as stories from "./add-task-button.stories";
 
 /*
  * Matches `createBoards(3)[0].id` exactly (that factory's ids are positionally deterministic) —
@@ -51,7 +51,7 @@ const openCreateTaskModal = async (): Promise<void> => {
 };
 
 describeForEachDevice({
-    name: "AddTaskProvider",
+    name: "AddTaskButton",
     body: () => {
         it("renders the create button enabled when the open board has columns", async () => {
             // Act

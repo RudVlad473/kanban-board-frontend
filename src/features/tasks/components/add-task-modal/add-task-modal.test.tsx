@@ -270,7 +270,7 @@ describeForEachDevice({
 
             // Assert
             await expect.element(screen.getByRole("dialog")).toBeVisible();
-            expect(Submitting.args.onOpenChange).not.toHaveBeenCalled();
+            expect(Submitting.args.onClose).not.toHaveBeenCalled();
         });
 
         /*

@@ -3,11 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 
-import { Button } from "@/components/ui/button/button";
 import { SignOutButton } from "@/features/auth/components/sign-out-button/sign-out-button";
 import { createBoardsQueryOptions } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
-import { useAddTaskTarget } from "@/features/tasks/hooks/use-add-task-target";
+import { AddTaskButton } from "@/features/tasks/components/add-task-button/add-task-button";
 import { toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /**
@@ -32,13 +31,6 @@ export const DashboardHeader = ({ displayName, boards: seedBoards }: Props) => {
         (board) => board.id === openBoardId,
     );
 
-    /*
-     * S-06: this button is the ONE task-creation entry point. Disabled with no board open or a
-     * board with zero columns — `addTaskByColumnId` is column-scoped, so there is nowhere to post.
-     */
-    const { columns, openModal } = useAddTaskTarget();
-    const isCreateDisabled = openBoard === undefined || columns.length === 0;
-
     return (
         <header className="flex shrink-0 items-center gap-4 border-b border-border-default bg-bg-surface px-6 py-4">
             {openBoard ? (
@@ -48,9 +40,7 @@ export const DashboardHeader = ({ displayName, boards: seedBoards }: Props) => {
             ) : null}
 
             <div className="ml-auto flex shrink-0 items-center gap-4">
-                <Button type="button" variant="primary" isDisabled={isCreateDisabled} onClick={openModal}>
-                    + Add New Task
-                </Button>
+                <AddTaskButton />
 
                 <span className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
                     {displayName}

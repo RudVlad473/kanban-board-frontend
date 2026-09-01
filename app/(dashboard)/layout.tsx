@@ -10,7 +10,6 @@ import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { BoardList } from "@/features/boards/components/board-list/board-list";
 import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton/board-list-skeleton";
 import { dehydrateBoards } from "@/features/boards/server/dehydrate-boards";
-import { AddTaskProvider } from "@/features/tasks/components/add-task-provider/add-task-provider";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
@@ -63,32 +62,25 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
     const cookieTheme = await themeCookie.read();
     const initialTheme = cookieTheme ?? identity.theme;
 
-    /*
-     * S-06's bridge wraps both Suspense boundaries so the header can read the open board's columns
-     * reported from inside `children` (`app/(dashboard)/boards/[boardId]`). D-15's optimistic
-     * rename needs no provider: it is read from the mutation itself (`usePendingBoardRenames`).
-     */
     return (
-        <AddTaskProvider>
-            <div className="flex min-h-full bg-bg-app">
-                <Sidebar initialTheme={initialTheme}>
-                    <Suspense fallback={<BoardListSkeleton />}>
-                        <SidebarBoards />
-                    </Suspense>
-                </Sidebar>
+        <div className="flex min-h-full bg-bg-app">
+            <Sidebar initialTheme={initialTheme}>
+                <Suspense fallback={<BoardListSkeleton />}>
+                    <SidebarBoards />
+                </Suspense>
+            </Sidebar>
 
-                {/* `h-dvh` (not `flex-1`) is what bounds the board area, so a column scrolls
+            {/* `h-dvh` (not `flex-1`) is what bounds the board area, so a column scrolls
                         internally instead of growing the page (mirrors the sidebar's own pinning). */}
-                <div className="flex h-dvh min-w-0 flex-1 flex-col">
-                    {/* Chrome and controls paint immediately, only the board title waits on the read. */}
-                    <Suspense fallback={<DashboardHeaderSkeleton displayName={identity.displayName} />}>
-                        <HeaderBoards displayName={identity.displayName} />
-                    </Suspense>
+            <div className="flex h-dvh min-w-0 flex-1 flex-col">
+                {/* Chrome and controls paint immediately, only the board title waits on the read. */}
+                <Suspense fallback={<DashboardHeaderSkeleton displayName={identity.displayName} />}>
+                    <HeaderBoards displayName={identity.displayName} />
+                </Suspense>
 
-                    <main className="flex min-h-0 flex-1 flex-col">{children}</main>
-                </div>
+                <main className="flex min-h-0 flex-1 flex-col">{children}</main>
             </div>
-        </AddTaskProvider>
+        </div>
     );
 };
 

@@ -245,18 +245,20 @@ pointer rule reproduces exactly that failure, once per file.
   read.** If two parts of the tree need the same server data, fetch it at a level that can reach
   both and pass it down; `fetchBoardFull` is `cache()`-wrapped, so fetching in a nested layout and
   its page costs one call. Enforcement: code review.
-- **The exception, and the test that distinguishes it: what is published must be state the server
-  does not have.** `AddTaskProvider` is the live case. The header lives in
-  `app/(dashboard)/layout.tsx`, above the `[boardId]` segment, so no server component that could
-  learn the board sits high enough to feed it — and React context does not flow upward. More
-  decisively, `BoardView` publishes `renderedColumns`, the tail of the optimistic
-  rename/reorder/move chain, not the server's columns: fed from the server instead, the Add Task
-  modal's Status list would show a renamed column's OLD name until the refresh landed. A bridge
-  carrying optimistic client state earns its place; a bridge carrying a copy of the server's own
-  response does not. Enforcement: code review.
-- Ask which of the two you have before deleting or adding one. Established 2026-08-31, after the
-  first reading of this rule ("the 04-15 bridge is a client pub/sub bus, delete it") turned out to
-  be wrong on exactly this distinction.
+- **Before reaching for a bridge at all, check whether the query cache already owns the state.**
+  Since docs/adr/tech/0030 every column and task write lands in the shared `["board", boardId]`
+  entry, so "optimistic client state a sibling needs" is usually already readable by both of them —
+  a component that can compute the key can read it, with `queryFn: skipToken` when it must not
+  fetch. `DashboardHeader` reads the board title that way, and `AddTaskButton` reads the open
+  board's columns that way. Enforcement: code review.
+- **The exception, and the test that distinguishes it: what is published must be state neither the
+  server nor the query cache has.** There is no live case in the tree today. `AddTaskProvider` was
+  one until 2026-09-01: it published `renderedColumns` upward because that was the tail of an
+  optimistic override chain private to `BoardView`. Commit `3089a6a` moved that chain into the cache
+  entry, which retired the reason, and the provider, the `AddTaskTargetContext` and `BoardView`'s
+  report effect were deleted. Established 2026-08-31 and corrected 2026-09-01 — the original
+  reading ("the 04-15 bridge is a client pub/sub bus, delete it") was wrong when written and right
+  after the cache migration, so re-check the premise against tech/0030 rather than the verdict.
 
 ## Drag-and-drop (docs/adr/tech/0003)
 
