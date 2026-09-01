@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-15 migration + review items #5/#7 + an empty-column a11y fix all done and CI-green (7939718); only 04-15-SUMMARY.md and the blocking checkpoint remain
-last_updated: "2026-08-31T12:45:20.374Z"
+stopped_at: Plan 04-15 migration + review items
+last_updated: "2026-09-01T17:11:43.663Z"
 last_activity: 2026-09-01
-last_activity_desc: Board-detail read moved onto the query cache; ADR tech/0030 written; CI green on all four jobs
-state_head: 8aecd206eed44409e22976d59dff034251878ba9
+last_activity_desc: Phase 04 execution resumed (wave continue)
+state_head: 90afbe6783d4b1549c55f7304ec15e40f5136557
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 114
-  completed_plans: 106
+  completed_plans: 107
 milestone_name: milestone
 ---
 
@@ -36,7 +36,7 @@ Plan: 04-15 (create task/subtask actions, Add New Task modal, header create butt
 implementation tasks committed; task 4 is a `checkpoint:human-verify` (gate=blocking) held OPEN by
 user choice so the SUMMARY describes the review-driven refactor batch that followed.
 Status: Executing Phase 04
-Last activity: 2026-09-01 — suite settled; suspected useOptimistic regression disproved
+Last activity: 2026-09-01 — Phase 04 execution resumed (wave continue)
 already committed, `5b75d60`). Reviewed and completed the inherited Task 2 WIP (added the
 empty-column half of S-08's drop indicator to `sortable-column.tsx`; everything else — lifted
 opacity/clone, reduce-motion drop — was already shipped by 04-12), fixed a genuine MOBILE-only
