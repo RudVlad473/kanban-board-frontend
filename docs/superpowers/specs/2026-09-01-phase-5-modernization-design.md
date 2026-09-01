@@ -338,9 +338,26 @@ are static and unaffected.
 
 ## Reduced motion
 
-Everything is dropped, not shortened, under `prefers-reduced-motion: reduce`, matching the existing
-`useMediaQuery` pattern in `task-card.tsx` and `sortable-column.tsx`. View transitions additionally
-need:
+**Open decision, and a more consequential one than it looks.** The current policy, documented in
+`task-card.tsx`, is that motion is *"dropped entirely under reduce-motion rather than shortened."*
+Phase 5's entire value is motion, so under that policy a reduced-motion user receives **none of this
+phase** — no drag choreography, no settle, no rollback reversal, no card morph, no staggered load.
+The optimistic-state work in particular reverts to exactly the defect it was written to fix
+(`isMoving` painting nothing).
+
+Discovered 2026-09-01 the hard way: a prototype screen that honoured the setting appeared completely
+broken on the reviewer's own machine, because Windows had animations disabled. The person driving
+this phase is in the population it is switched off for.
+
+**Recommendation: "reduce, don't remove."** Drop large movement — drag travel, the card→modal morph,
+staggers, directional slides — but keep short (≤120ms) opacity and colour changes, so the pending
+tint, the settle confirmation, the skeleton→content crossfade and the rollback (as a fade rather
+than a journey) all survive. That is the mainstream reading of the spec: the setting asks for less
+vestibular motion, not a static app. Cost: a second set of behaviours to define and test per
+animation, rather than one guard.
+
+Until that is decided, the sections above assume everything is dropped. View transitions
+additionally need:
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -376,10 +393,13 @@ Baseline impact:
 
 1. **Landing copy.** The headline and sub-copy are placeholders; the Copywriting Contract does not
    cover this surface and should be extended to it.
-2. Sign off the entry / empty / loading prototype (built 2026-09-01).
-3. Confirm the 12px columns/modals radius, which was inferred rather than reviewed.
-4. Look at buttons-at-4px inside inputs-at-6px during planning.
-5. Write three ADRs: source-of-truth re-pointing; rejection of experimental React for route
+2. Sign off the entry / empty / loading prototype (built 2026-09-01): drop zone is settled as
+   "whisper"; the skeleton→content handoff timing (stagger / fade-out / fade-in) is still open.
+3. **Decide the reduced-motion policy** — see that section. Blocks nothing structurally but
+   changes the acceptance criteria of every animation in the phase.
+4. Confirm the 12px columns/modals radius, which was inferred rather than reviewed.
+5. Look at buttons-at-4px inside inputs-at-6px during planning.
+6. Write three ADRs: source-of-truth re-pointing; rejection of experimental React for route
    transitions; frontend-invented password policy.
-6. Confirm the dropped "wire" under Optimistic state.
-7. These auth screens need their own UI-SPEC — Phase 1's is what produced the current state.
+7. Confirm the dropped "wire" under Optimistic state.
+8. These auth screens need their own UI-SPEC — Phase 1's is what produced the current state.
