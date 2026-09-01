@@ -41,15 +41,15 @@ describeForEachDevice({
         });
 
         /*
-         * UI-SPEC empty/detail-view: no description ELEMENT at all, not an empty one — the only
-         * paragraph left is the (non-empty) subtasks caption this fixture also carries.
+         * UI-SPEC empty/detail-view: no description ELEMENT at all, not an empty one — the two
+         * paragraphs left are the (non-empty) subtasks caption and the Current Status label.
          */
         it("renders no description paragraph when the task has none", async () => {
             // Act
             await render(<NoDescription />);
 
             // Assert
-            expect(document.querySelectorAll("p")).toHaveLength(1);
+            expect(document.querySelectorAll("p")).toHaveLength(2);
         });
 
         /* UI-SPEC empty/detail-view: the two authored lines, and no "Subtasks (N of M)" caption. */
@@ -162,6 +162,23 @@ describeForEachDevice({
 
             // Assert
             expect(screen.getByRole("button", { name: `Task actions for ${LONG_TASK_TITLE}` })).toBeInTheDocument();
+        });
+
+        /*
+         * D-10: the Current Status control lists the board's columns in board order, with the
+         * task's own column pre-selected — the move itself is proved at board level, where the
+         * query cache `useMoveTask` reads from is actually populated.
+         */
+        it("shows the Current Status control listing the board's columns, the task's own column selected", async () => {
+            // Arrange
+            await render(<Default />);
+
+            // Act
+            await userEvent.click(screen.getByRole("combobox", { name: "Todo" }));
+
+            // Assert
+            const options = await screen.findAllByRole("option");
+            expect(options.map((option) => option.textContent)).toEqual(["Todo", "Doing", "Done"]);
         });
     },
 });

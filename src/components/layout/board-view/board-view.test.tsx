@@ -1937,6 +1937,124 @@ describeForEachDevice({
             expect(moveTaskStub.calls).toHaveLength(1);
         });
 
+        /* D-13's split, proved at the integration point rather than only in the card's own test. */
+        it("opens the task detail view on a card click, and not on a handle click", async () => {
+            // Arrange
+            await render(<TasksAcrossColumns />);
+
+            // Act
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Fixture Task Alpha" })).toBeInTheDocument();
+
+            // Act — dismiss, then click the sibling card's HANDLE.
+            await userEvent.keyboard("{Escape}");
+            await userEvent.click(screen.getByRole("button", { name: "Reorder Fixture Task Beta" }));
+
+            // Assert — no modal opened.
+            expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        });
+
+        /*
+         * D-10: the detail view's Current Status control is the move mutation's SECOND caller —
+         * same hook, same optimistic apply, so the board re-parents the card behind the modal.
+         */
+        it("moves a task through the Current Status control, issuing exactly one request naming the chosen column", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Fixture Task Alpha",
+                    description: undefined,
+                    version: 1,
+                    position: 1,
+                },
+            });
+            await render(<TasksAcrossColumns />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+
+            // Act
+            await userEvent.click(screen.getByRole("combobox", { name: "Fixture Column 1" }));
+            await userEvent.click(await screen.findByRole("option", { name: "Fixture Column 2" }));
+
+            // Assert
+            expect(moveTaskStub.calls).toHaveLength(1);
+            expect(moveTaskStub.calls[0]).toEqual({
+                taskId: "00000000-0000-4000-8000-d10000000001",
+                targetColumnId: "00000000-0000-4000-8000-c00000000002",
+                version: 0,
+                targetPosition: 1,
+            });
+            await expect.poll(getColumnTaskTitles).toEqual([
+                { columnName: "Fixture Column 1", taskTitles: [] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta", "Fixture Task Alpha"] },
+            ]);
+        });
+
+        /* The dropdown's own loading axis is the ONLY pending signal — the card behind it stays idle. */
+        it("marks the status control busy and disabled while its own move is in flight, without a second pending signal on the card", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Fixture Task Alpha",
+                    description: undefined,
+                    version: 1,
+                    position: 1,
+                },
+            });
+            moveTaskStub.hold();
+            await render(<TasksAcrossColumns />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+            await userEvent.click(screen.getByRole("combobox", { name: "Fixture Column 1" }));
+
+            // Act
+            await userEvent.click(await screen.findByRole("option", { name: "Fixture Column 2" }));
+
+            // Assert
+            const trigger = screen.getByRole("combobox");
+            await expect.poll(() => trigger.getAttribute("aria-busy")).toBe("true");
+            expect(trigger).toBeDisabled();
+            /*
+             * Read off the DOM rather than by role: Base UI marks the tree outside the open dialog
+             * `aria-hidden`, so a role query finds nothing while the modal is open.
+             */
+            const alphaCard = Array.from(document.querySelectorAll("li")).find((item) =>
+                item.textContent.startsWith("Fixture Task Alpha"),
+            );
+            expect(alphaCard).not.toBeUndefined();
+            expect(alphaCard?.getAttribute("aria-busy")).toBe("false");
+
+            // Cleanup
+            moveTaskStub.settle();
+        });
+
+        /*
+         * SYNC-01/T-04-06's twin for the second entry point: revert and toast proved TOGETHER, and
+         * the SAME mechanism the drag path uses, since both are the same hook.
+         */
+        it("reverts both the status control's value and the card's column on a status-control move failure, raising the drag path's own toast", async () => {
+            // Arrange
+            moveTaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await render(<TasksAcrossColumns />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+
+            // Act
+            await userEvent.click(screen.getByRole("combobox", { name: "Fixture Column 1" }));
+            await userEvent.click(await screen.findByRole("option", { name: "Fixture Column 2" }));
+
+            // Assert
+            await expect.poll(getRaisedToastTexts).toEqual([GENERIC_MOVE_TOAST]);
+            await expect.poll(getColumnTaskTitles).toEqual([
+                { columnName: "Fixture Column 1", taskTitles: ["Fixture Task Alpha"] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
+            ]);
+            await expect.poll(() => screen.getByRole("combobox").textContent).toBe("Fixture Column 1");
+        });
+
         /* D-11: the mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */
         it("announces the lift, naming the task's column and 1-based position", async () => {
             // Arrange
