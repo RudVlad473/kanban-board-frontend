@@ -4,7 +4,7 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-15 board-detail cache migration COMPLETE and CI-green (22f87d2); remaining: review items #5 and #7, then 04-15-SUMMARY.md and the blocking checkpoint
+stopped_at: Plan 04-15 migration + review items #5/#7 + an empty-column a11y fix all done and CI-green (7939718); only 04-15-SUMMARY.md and the blocking checkpoint remain
 last_updated: "2026-08-31T12:45:20.374Z"
 last_activity: 2026-09-01
 last_activity_desc: Board-detail read moved onto the query cache; ADR tech/0030 written; CI green on all four jobs
@@ -285,6 +285,15 @@ by the conversion (the sidebar now settles before the client navigation, so BOAR
 URL) and was fixed test-side. Commits `3089a6a`, `8395348`, `22f87d2`; CI run 33512659945 green on
 quality/secrets/e2e/visual.
 
-**Next:** review item #5 (`board-view.tsx` `isOpen`/conditional-render redundancy, keep the `key`),
-then item #7 (extract behaviours from the component), then write `04-15-SUMMARY.md` and close the
-blocking checkpoint.
+**This session, part 2:** Fixed a real a11y defect found by driving the app — a task moved into an
+EMPTY column announced nothing on either the keyboard or the pointer path, because
+`createTaskMoveAnnouncements` resolved its target by searching for a TASK and an empty column is
+handed over as its BODY droppable. No test caught it: every keyboard cross-column case uses
+`TasksAcrossColumns` (Column 2 holds a card), and the one empty-destination fixture was only ever
+driven by the pointer test, which never asserts the announcement (`5212cc7`). Then review item #5
+(both column modals take `onClose`; `isOpen` was always `true` and `onOpenChange`'s `true` branch
+unreachable — `022e04e`) and item #7 (`board-view.tsx` 466 -> 321 via `useBoardDragSession` and
+`useNewColumnReveal`, both in the layout ring because the drag session needs both features —
+`7939718`). CI run 33518793528 green on all four jobs.
+
+**Next:** write `04-15-SUMMARY.md` and close the blocking checkpoint.
