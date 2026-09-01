@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { PanelLeft } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,15 +13,17 @@ import { EditBoardModal } from "@/features/boards/components/edit-board-modal/ed
 import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
 import { useDeleteBoard } from "@/features/boards/hooks/use-delete-board";
 import { useRenameBoard, type RenameBoardArgs } from "@/features/boards/hooks/use-rename-board";
+import { createBoardsQueryOptions } from "@/features/boards/queries/boards-query";
 import type { AddBoardSubmitValues, Board } from "@/features/boards/schemas";
 import { buildBoardDetailPath, toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /*
- * The sidebar's board list, RSC-fed via props (not `useBoards()`, per docs/adr/tech/0019). Split
+ * The sidebar's board list, reading the `boards` cache entry the layout hydrates (tech/0030). Split
  * out of the old combined `Sidebar` (plan 02-09) so the panel chrome paints immediately while
  * this streams in behind `Suspense`; renders only the caption and scroll region, never a `nav`.
  */
 type Props = {
+    /** The RSC read's result, used to seed the shared `boards` cache entry — not read directly. */
     boards: Board[];
     loadFailed?: boolean;
     /** Storybook-only staging for the create modal's open state — no real caller passes this (see Sidebar's `defaultIsExpanded`). */
@@ -32,12 +35,19 @@ type Props = {
 };
 
 export const BoardList = ({
-    boards,
+    boards: seedBoards,
     loadFailed = false,
     defaultIsAddBoardOpen = false,
     defaultRenameTargetIndex,
     defaultDeleteTargetIndex,
 }: Props) => {
+    /* A known-failed read seeds nothing and fetches nothing; `Try again.` re-runs the RSC read. */
+    const { data } = useQuery({
+        ...createBoardsQueryOptions(),
+        initialData: loadFailed ? undefined : seedBoards,
+        enabled: !loadFailed,
+    });
+    const boards = data ?? [];
     const pathname = usePathname();
     const router = useRouter();
     const {
@@ -61,10 +71,9 @@ export const BoardList = ({
      * Scoped to the sidebar deliberately: D-15 names the sidebar, and the dashboard header's board
      * title updates when the refreshed server render lands (raised at plan 02-12's checkpoint).
      */
-    const { renameBoard, isPending: isRenamePending, boards: renderedBoards } = useRenameBoard({ boards });
+    const { renameBoard, isPending: isRenamePending } = useRenameBoard();
     /* The same path the selected-row treatment already reads, so both agree on "the open board". */
     const { deleteBoard, isPending: isDeletePending } = useDeleteBoard({
-        boards,
         currentBoardId: toBoardIdFromPath(pathname),
     });
     /*
@@ -138,7 +147,7 @@ export const BoardList = ({
                     </div>
                 ) : (
                     <ul className="flex flex-col gap-2">
-                        {renderedBoards.map((board) => {
+                        {boards.map((board) => {
                             return (
                                 <BoardCard
                                     key={board.id}

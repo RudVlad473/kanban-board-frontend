@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-01T09:05:14.017465Z",
+  "timestamp": "2026-09-01T12:28:36.089010Z",
   "phase": "04",
   "phase_name": "Task & Subtask Workflow",
   "phase_dir": ".planning/phases/04-task-subtask-workflow",
@@ -36,33 +36,36 @@
   ],
   "remaining_tasks": [
     {
-      "id": 5,
-      "name": "Review item #5 - isOpen/conditional-render redundancy in board-view.tsx",
+      "id": 10,
+      "name": "FINISH OR REVERT the half-migrated column-rename hook \u2014 tree does not compile",
+      "status": "in_progress"
+    },
+    {
+      "id": 11,
+      "name": "Convert use-reorder-columns and use-move-task to the board cache entry",
       "status": "not_started"
     },
     {
-      "id": 6,
-      "name": "Review item #7 - extract cohesive behaviours out of board-view.tsx (464 lines)",
+      "id": 12,
+      "name": "Write ADR tech/0030 \u2014 7 comments cite it and it does not exist",
       "status": "not_started"
     },
     {
-      "id": 8,
+      "id": 13,
+      "name": "Review item #5 (board-view isOpen redundancy) and #7 (extract behaviours)",
+      "status": "not_started"
+    },
+    {
+      "id": 14,
       "name": "Write 04-15-SUMMARY.md and close the blocking checkpoint",
       "status": "not_started"
-    },
-    {
-      "id": 9,
-      "name": "Unify all four optimistic writes on TanStack 'via the UI'",
-      "status": "done",
-      "commit": "9fc3d88",
-      "resolution": "All four now read pending values from mutation variables via useOptimisticVariables. RenameOverrideProvider deleted. Two defects found and fixed: refused writes (actions return non-SUCCESS rather than throwing, so TanStack calls them successes) and a measured 114ms settle-to-refresh gap, bridged with the submitted version as the retirement signal. ADR docs/adr/tech/0029."
     }
   ],
   "blockers": [
     {
-      "description": "RESOLVED 2026-09-01 (252c5b3). The sortable-column reorder-rollback failure was a test-side race, not a regression from 81568db. useReorderColumns raises the toast inside the transition's async body, but useOptimistic drops the optimistic order only when the transition completes; the test asserted order synchronously right after polling for the toast. board-view.test.tsx:1423 covers the same production path, already polls, and has never flaked. Both rollback cases (ERROR and CONFLICT) now poll. Six consecutive full runs green (3 pre-fix, 3 post-fix), 1659/1659 each; tsc/lint/comments:check clean; negative control fails by timeout in both device variants.",
+      "description": "THE WORKING TREE DOES NOT COMPILE. 3 tsc errors, mid-conversion of use-rename-column.ts to the cache-based optimistic pattern. board-view.tsx:79 still destructures `columns` from useRenameColumn and passes `{ columns }`, but the hook now takes `{ boardId }` and returns only { renameColumn, isPending }. use-rename-column.ts:96 has a setQueryData updater whose return type does not match BoardFull. Nothing is committed, so `git checkout -- src/features/boards/hooks/use-rename-column.ts` plus deleting the three new board-query files reverts cleanly to the last green state.",
       "type": "technical",
-      "workaround": "None needed \u2014 resolved."
+      "workaround": "Either finish the conversion (board-view must read the board from useQuery and stop chaining the three hooks' `columns` returns) or revert the column-rename hook and the board-detail query files."
     }
   ],
   "async_jobs": [],
@@ -100,6 +103,6 @@
     ".planning/config.json",
     ".planning/state.json (untracked)"
   ],
-  "next_action": "Review items #5 and #7 remain (board-view.tsx isOpen/conditional redundancy, then extracting behaviours from the 464-line component), then write 04-15-SUMMARY.md and close the blocking checkpoint. Branch is 15 commits ahead of origin and unpushed.",
-  "context_notes": "This session was a review-driven refactor batch on top of plan 04-15, not new feature work. Seven user review comments plus a Gemini 3.1 Pro code review were triaged; 2 of the 4 Gemini findings were FALSE and verified so against the compiler and the running app. Two orchestration lessons were paid for in rework and are recorded as blocking constraints."
+  "next_action": "Decide finish-or-revert on the half-migrated column rename. The board-list slice (board rename, create, delete) is COMPLETE and was green at 1648/1648 with all 10 gates passing before this conversion started.",
+  "context_notes": "Session moved the Board LIST read into the TanStack Query cache (via-the-cache), replacing the via-the-UI approach committed in 9fc3d88. That part is done and verified. The Board DETAIL read (columns/tasks) conversion was started and is unfinished."
 }

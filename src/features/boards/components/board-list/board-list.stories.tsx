@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { useState, type ComponentProps } from "react";
 
-import type { Board } from "@/features/boards/schemas";
 import { createBoards } from "@/test-utils/factories/board";
 
 import { BoardList } from "./board-list";
@@ -49,53 +47,3 @@ export const DeleteOpen: Story = { args: { boards: createBoards(3), defaultDelet
 
 /** The last-board case: deleting this one leaves none, which is D-08's empty-state branch. */
 export const SingleBoard: Story = { args: { boards: createBoards(1) } };
-
-/* Duplicated verbatim in `board-list.test.tsx` — a non-story export here would break `composeStories`. */
-const SERVER_RENAMED_NAME = "Renamed On The Server";
-const SERVER_CHANGED_NAME = "Changed Somewhere Else";
-
-/*
- * Owns the board array the RSC would otherwise supply, so a test can land a refreshed server render
- * and then a later server-side change — the two steps the self-clearing override is proved by.
- */
-const ServerPropsHost = (props: ComponentProps<typeof BoardList>) => {
-    const [boards, setBoards] = useState<Board[]>(props.boards);
-
-    /* A real rename bumps the row's version, and that bump is what retires the optimistic name. */
-    const replaceFirstName = (name: string): void => {
-        setBoards((current) =>
-            current.map((board, index) => (index === 0 ? { ...board, name, version: board.version + 1 } : board)),
-        );
-    };
-
-    return (
-        <>
-            <button
-                type="button"
-                onClick={() => {
-                    replaceFirstName(SERVER_RENAMED_NAME);
-                }}
-            >
-                Land the refreshed server render
-            </button>
-
-            <button
-                type="button"
-                onClick={() => {
-                    replaceFirstName(SERVER_CHANGED_NAME);
-                }}
-            >
-                Land a later server change
-            </button>
-
-            <BoardList {...props} boards={boards} />
-        </>
-    );
-};
-
-export const ServerPropsAdvance: Story = {
-    args: { boards: createBoards(3) },
-    render: (args) => {
-        return <ServerPropsHost {...args} />;
-    },
-};

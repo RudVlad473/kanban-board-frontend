@@ -2,7 +2,7 @@
 
 // Covered by: `src/features/boards/components/board-list/board-list.test.tsx` and `src/features/boards/components/boards-empty-state/boards-empty-state.test.tsx`
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
 import { toSubmittedColumnNames } from "@/features/boards/model";
+import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
+import type { Board } from "@/features/boards/schemas";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
@@ -54,6 +56,7 @@ export type CreateBoardOutcome =
 export const useCreateBoard = () => {
     const router = useRouter();
     const toast = useToast();
+    const queryClient = useQueryClient();
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const createBoardMutation = useMutation({ mutationFn: createBoardAction, retry: false });
@@ -125,6 +128,13 @@ export const useCreateBoard = () => {
             setErrorMessage(CREATE_FAILURE_MESSAGE[result.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
             return { didCreate: false };
         }
+
+        /*
+         * The sidebar reads this cache entry, not the RSC props, so the action's `refresh()` cannot
+         * reach it — the created board has to be written here or the panel keeps its old list
+         * (docs/adr/tech/0030). Newest-first, matching `fetchBoards`'s own reversal.
+         */
+        queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) => [result.board, ...(current ?? [])]);
 
         const boardId = result.board.id;
         const names = toSubmittedColumnNames(columnRows);

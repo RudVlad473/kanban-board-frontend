@@ -46,12 +46,7 @@ vi.mock("next/navigation", () =>
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
-const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, DeleteOpen, SingleBoard, ServerPropsAdvance } =
-    composeStories(stories);
-
-/* Duplicated verbatim from `board-list.stories.tsx`'s own host — see the comment beside them there. */
-const SERVER_RENAMED_NAME = "Renamed On The Server";
-const SERVER_CHANGED_NAME = "Changed Somewhere Else";
+const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, DeleteOpen, SingleBoard } = composeStories(stories);
 
 /** The id every create-board success below queues, and so the id a landed create navigates to. */
 const STUB_BOARD_ID = "stub-board-id";
@@ -747,34 +742,6 @@ describeForEachDevice({
             // Assert
             await vi.waitFor(() => {
                 expect(screen.queryByRole("heading", { name: "Delete this board?" })).not.toBeInTheDocument();
-            });
-        });
-
-        /*
-         * T-02-63: the override must not outlive the value it stands in for, or a change made in
-         * another tab would sit behind a stale local name indefinitely.
-         */
-        it("clears the override once the refreshed props carry it, so a later server change is rendered", async () => {
-            // Arrange
-            await render(<ServerPropsAdvance />);
-            renameBoardStub.queue({
-                status: RESULT_STATUS.SUCCESS,
-                board: createBoard({ name: SERVER_RENAMED_NAME, version: 1 }),
-            });
-
-            // Act — rename optimistically, then land the refreshed server render carrying that name.
-            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: SERVER_RENAMED_NAME });
-            await vi.waitFor(() => {
-                expect(getRenderedBoardNames()[0]).toBe(SERVER_RENAMED_NAME);
-            });
-            await userEvent.click(screen.getByRole("button", { name: "Land the refreshed server render" }));
-
-            // Act — a later server-side change to that same row.
-            await userEvent.click(screen.getByRole("button", { name: "Land a later server change" }));
-
-            // Assert — rendered, not masked by the override that stood in for the earlier value.
-            await vi.waitFor(() => {
-                expect(getRenderedBoardNames()[0]).toBe(SERVER_CHANGED_NAME);
             });
         });
     },

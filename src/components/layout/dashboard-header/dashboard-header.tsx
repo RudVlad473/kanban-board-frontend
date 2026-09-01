@@ -1,10 +1,11 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button/button";
 import { SignOutButton } from "@/features/auth/components/sign-out-button/sign-out-button";
-import { applyPendingBoardRenames, usePendingBoardRenames } from "@/features/boards/hooks/use-rename-board";
+import { createBoardsQueryOptions } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
 import { useAddTaskTarget } from "@/features/tasks/hooks/use-add-task-target";
 import { toBoardIdFromPath } from "@/lib/core/routing/routes";
@@ -18,14 +19,15 @@ type Props = {
     boards: Board[];
 };
 
-export const DashboardHeader = ({ displayName, boards }: Props) => {
+export const DashboardHeader = ({ displayName, boards: seedBoards }: Props) => {
+    const { data: boards } = useQuery({ ...createBoardsQueryOptions(), initialData: seedBoards });
     const pathname = usePathname();
     const openBoardId = toBoardIdFromPath(pathname);
     /*
-     * The same pending rename the sidebar row applies (D-15), read off the mutation itself — so the
-     * title changes on submit, not a beat later on the refreshed render, and with no shared owner.
+     * The same cache entry the sidebar row renders (D-15), so an optimistic rename reaches the title
+     * in the same instant — no provider, because the QueryClient is the shared owner.
      */
-    const openBoard = applyPendingBoardRenames({ boards, pending: usePendingBoardRenames() }).find(
+    const openBoard = boards.find(
         // A path naming no board, or one absent from this list, renders no title rather than a stale one.
         (board) => board.id === openBoardId,
     );

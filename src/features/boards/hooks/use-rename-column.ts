@@ -2,11 +2,12 @@
 
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
-import type { ColumnFull } from "@/features/boards/schemas";
+import { buildBoardQueryKey } from "@/features/boards/queries/board-query";
+import type { BoardFull } from "@/features/boards/schemas";
 import { useOptimisticVariables } from "@/lib/client/optimistic-mutation";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
@@ -38,77 +39,76 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 
 export type RenameColumnArgs = { boardId: string; columnId: string; name: string; version: number };
 
-/**
- * Names this mutation so its in-flight variables can be read back as the optimistic name, the same
- * shape `use-rename-board.ts` uses. Kept here even though one container consumes it, so every
- * optimistic surface in the app reads the same way.
- */
-export const RENAME_COLUMN_MUTATION_KEY = ["renameColumn"] as const;
-
-/** The variables of every column rename still in flight, newest last. */
-export const usePendingColumnRenames = (): RenameColumnArgs[] =>
-    useOptimisticVariables<RenameColumnArgs>(RENAME_COLUMN_MUTATION_KEY);
+/** Carries the refusal discriminant across the throw that routes it into `onError`. */
+class ColumnRenameRefused extends Error {}
 
 /**
- * Return `columns` with every pending rename applied, last submission winning per column. The
- * `version` guard is the retirement: once a `refresh()` bumps the column past the version the
- * rename was submitted against, the entry stops matching (T-03-29).
+ * COLUMN-02's optimistic rename (U-05), written into the open board's cache entry so every reader
+ * of that board sees it at once (docs/adr/tech/0029).
  */
-export const applyPendingColumnRenames = ({
-    columns,
-    pending,
-}: {
-    columns: ColumnFull[];
-    pending: RenameColumnArgs[];
-}): ColumnFull[] => {
-    if (pending.length === 0) {
-        return columns;
-    }
-
-    return columns.map((column) => {
-        const rename = pending.findLast(
-            (candidate) => candidate.columnId === column.id && candidate.version === column.version,
-        );
-
-        return rename === undefined ? column : { ...column, name: rename.name };
-    });
-};
-
-/**
- * COLUMN-02's optimistic rename (U-05), read off the mutation's own variables rather than a cache
- * entry, since column reads are RSC props (docs/adr/tech/0019, and tech/0029 for the mechanism).
- */
-export const useRenameColumn = ({ columns }: { columns: ColumnFull[] }) => {
+export const useRenameColumn = ({ boardId }: { boardId: string }) => {
     const toast = useToast();
+    const queryClient = useQueryClient();
+    const queryKey = buildBoardQueryKey(boardId);
+
     const mutation = useMutation({
-        mutationFn: renameColumnAction,
+        mutationFn: async (args: RenameColumnArgs) => {
+            const result = await renameColumnAction(args);
+
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                throw new ColumnRenameRefused(result.status);
+            }
+
+            return result;
+        },
         retry: false,
-        mutationKey: RENAME_COLUMN_MUTATION_KEY,
+
+        onMutate: async ({ columnId, name }: RenameColumnArgs) => {
+            await queryClient.cancelQueries({ queryKey });
+            const previousBoard = queryClient.getQueryData<BoardFull>(queryKey);
+
+            queryClient.setQueryData<BoardFull>(queryKey, (current) =>
+                current === undefined
+                    ? current
+                    : {
+                          ...current,
+                          columns: current.columns.map((column) =>
+                              column.id === columnId ? { ...column, name } : column,
+                          ),
+                      },
+            );
+
+            return { previousBoard };
+        },
+
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
+        onError: (error: unknown, _variables, context) => {
+            if (context?.previousBoard !== undefined) {
+                queryClient.setQueryData(queryKey, context.previousBoard);
+            }
+
+            const status = error instanceof ColumnRenameRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[status] ?? GENERIC_RENAME_FAILURE) });
+        },
+
+        /* The action returns the written column, version included, so this IS the settled value. */
+        onSuccess: ({ column }) => {
+            queryClient.setQueryData<BoardFull>(queryKey, (current) =>
+                current === undefined
+                    ? current
+                    : {
+                          ...current,
+                          columns: current.columns.map((entry) => (entry.id === column.id ? column : entry)),
+                      },
+            );
+        },
     });
-    const pending = usePendingColumnRenames();
 
-    const renameColumn = async ({
-        boardId,
-        columnId,
-        name,
-        version,
-    }: RenameColumnArgs): Promise<{ didRename: boolean }> => {
-        const result = await mutation
-            .mutateAsync({ boardId, columnId, name, version })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
+    const renameColumn = async (args: RenameColumnArgs): Promise<{ didRename: boolean }> =>
+        mutation
+            .mutateAsync(args)
+            .then(() => ({ didRename: true }))
+            .catch(() => ({ didRename: false }));
 
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[result.status] ?? GENERIC_RENAME_FAILURE) });
-
-            return { didRename: false };
-        }
-
-        return { didRename: true };
-    };
-
-    return {
-        renameColumn,
-        isPending: mutation.isPending,
-        columns: applyPendingColumnRenames({ columns, pending }),
-    };
+    return { renameColumn, isPending: mutation.isPending };
 };

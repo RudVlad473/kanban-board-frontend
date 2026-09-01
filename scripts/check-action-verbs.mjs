@@ -14,11 +14,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
 /*
- * The closed set CONVENTIONS.md records. `create`/`update`/`delete` come from the HTTP methods they
- * ride; `rename`/`reorder`/`move` are the narrower domain verbs kept deliberately over a generic
- * `update`; `sign` covers the non-CRUD auth actions, which have no HTTP verb to derive from.
+ * The closed set CONVENTIONS.md records: HTTP-derived `create`/`update`/`delete`, the narrower
+ * domain verbs `rename`/`reorder`/`move`, `sign` for auth, and `get` for a client-callable read.
  */
-export const ALLOWED_ACTION_VERBS = ["create", "update", "delete", "rename", "reorder", "move", "sign"];
+export const ALLOWED_ACTION_VERBS = ["create", "update", "delete", "rename", "reorder", "move", "sign", "get"];
 
 const toExpectedExport = ({ fileStem }) => {
     const camel = fileStem.replace(/-([a-z0-9])/g, (_, character) => character.toUpperCase());

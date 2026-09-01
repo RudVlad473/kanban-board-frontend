@@ -2,12 +2,13 @@
 
 // Covered by: `src/features/boards/components/board-list/board-list.test.tsx`
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { deleteBoardAction } from "@/features/boards/actions/delete-board-action";
 import { removeBoard, resolveDestinationAfterDelete } from "@/features/boards/model";
+import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 
@@ -23,7 +24,8 @@ const DELETE_FAILURE_COPY = { title: "Couldn't delete board.", description: "Try
  * stay in the sidebar until the delete succeeds, or a failed delete would make a board look gone
  * for as long as the request took, with no undo behind it (ADR domain/0002, T-02-66).
  */
-export const useDeleteBoard = ({ boards, currentBoardId }: { boards: Board[]; currentBoardId: string | null }) => {
+export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | null }) => {
+    const queryClient = useQueryClient();
     const router = useRouter();
     const toast = useToast();
     const mutation = useMutation({ mutationFn: deleteBoardAction, retry: false });
@@ -39,11 +41,16 @@ export const useDeleteBoard = ({ boards, currentBoardId }: { boards: Board[]; cu
         }
 
         /*
-         * No cache work on success: `refresh()` inside the action is what removes the row from the
-         * persistent sidebar layout (docs/adr/tech/0019). Moving the user is the only client job.
+         * The sidebar reads this cache entry, not the RSC props, so the action's `refresh()` cannot
+         * reach it. `setQueryData` returns the written list, which is the post-delete state.
          */
+        const remainingBoards =
+            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+                removeBoard({ boards: current ?? [], boardId }),
+            ) ?? [];
+
         const destination = resolveDestinationAfterDelete({
-            remainingBoards: removeBoard({ boards, boardId }),
+            remainingBoards,
             deletedBoardId: boardId,
             currentBoardId,
         });

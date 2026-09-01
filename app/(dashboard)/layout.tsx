@@ -1,31 +1,27 @@
 // Covered by: `e2e/boards-list.e2e.spec.ts`
+import { HydrationBoundary } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import type { PropsWithChildren } from "react";
 
 import { DashboardHeader } from "@/components/layout/dashboard-header/dashboard-header";
+import { DashboardHeaderSkeleton } from "@/components/layout/dashboard-header-skeleton/dashboard-header-skeleton";
 import { Sidebar } from "@/components/layout/sidebar/sidebar";
 import { BoardList } from "@/features/boards/components/board-list/board-list";
 import { BoardListSkeleton } from "@/features/boards/components/board-list-skeleton/board-list-skeleton";
-import { fetchBoards } from "@/features/boards/server/fetch-boards";
+import { dehydrateBoards } from "@/features/boards/server/dehydrate-boards";
 import { AddTaskProvider } from "@/features/tasks/components/add-task-provider/add-task-provider";
-import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { verifySession } from "@/lib/server/dal";
 
-/*
- * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule) — awaits
- * `fetchBoards()` (D-02: an RSC read, no client-side query) and maps its discriminated-union result
- * onto `BoardList`'s plain `boards`/`loadFailed` props.
- */
 const SidebarBoards = async () => {
-    const result = await fetchBoards();
+    const { state, boards, loadFailed } = await dehydrateBoards();
+
     return (
-        <BoardList
-            boards={result.status === RESULT_STATUS.SUCCESS ? result.boards : []}
-            loadFailed={result.status !== RESULT_STATUS.SUCCESS}
-        />
+        <HydrationBoundary state={state}>
+            <BoardList boards={boards} loadFailed={loadFailed} />
+        </HydrationBoundary>
     );
 };
 
@@ -34,12 +30,17 @@ const SidebarBoards = async () => {
  * `fetchBoards`'s `cache` wrapper means both awaits share one upstream call rather than costing two.
  */
 const HeaderBoards = async ({ displayName }: { displayName: string }) => {
-    const result = await fetchBoards();
+    const { state, boards, loadFailed } = await dehydrateBoards();
+
+    // A failed read has no board to title, and seeding the header's query with `[]` would poison it.
+    if (loadFailed) {
+        return <DashboardHeaderSkeleton displayName={displayName} />;
+    }
+
     return (
-        <DashboardHeader
-            displayName={displayName}
-            boards={result.status === RESULT_STATUS.SUCCESS ? result.boards : []}
-        />
+        <HydrationBoundary state={state}>
+            <DashboardHeader displayName={displayName} boards={boards} />
+        </HydrationBoundary>
     );
 };
 
@@ -79,9 +80,8 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
                 {/* `h-dvh` (not `flex-1`) is what bounds the board area, so a column scrolls
                         internally instead of growing the page (mirrors the sidebar's own pinning). */}
                 <div className="flex h-dvh min-w-0 flex-1 flex-col">
-                    {/* The fallback is the same header with an empty list — chrome and controls
-                            paint immediately, only the board title waits on the read. */}
-                    <Suspense fallback={<DashboardHeader displayName={identity.displayName} boards={[]} />}>
+                    {/* Chrome and controls paint immediately, only the board title waits on the read. */}
+                    <Suspense fallback={<DashboardHeaderSkeleton displayName={identity.displayName} />}>
                         <HeaderBoards displayName={identity.displayName} />
                     </Suspense>
 
