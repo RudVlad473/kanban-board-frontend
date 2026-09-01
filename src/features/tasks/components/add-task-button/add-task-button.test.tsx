@@ -12,6 +12,7 @@ import { render } from "vitest-browser-react";
 import { createTaskAction } from "@/features/tasks/actions/create-task-action";
 import { createTaskSubtasksAction } from "@/features/tasks/actions/create-task-subtasks-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
@@ -31,7 +32,7 @@ const openBoardId = "00000000-0000-4000-8000-000000000001";
 const routerState = vi.hoisted(() => ({ pathname: "/boards/00000000-0000-4000-8000-000000000001" }));
 
 beforeEach(() => {
-    routerState.pathname = `/boards/${openBoardId}`;
+    routerState.pathname = buildBoardDetailPath(openBoardId);
 });
 
 // eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
@@ -88,7 +89,7 @@ describeForEachDevice({
 
         it("renders the create button disabled with no board open", async () => {
             // Arrange
-            routerState.pathname = "/boards";
+            routerState.pathname = ROUTE.BOARDS;
 
             // Act
             await render(<NoBoardOpen />);
