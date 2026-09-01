@@ -1,10 +1,11 @@
 // Covered by: `e2e/boards-detail.e2e.spec.ts`
+import { HydrationBoundary } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { BoardView } from "@/components/layout/board-view/board-view";
 import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton/board-view-skeleton";
-import { fetchBoardFull } from "@/features/boards/server/fetch-board-full";
+import { dehydrateBoard } from "@/features/boards/server/dehydrate-board";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
@@ -15,9 +16,10 @@ import { requireAuthenticated } from "@/lib/server/require-authenticated";
  * the full-board read is in flight (02-UI-SPEC's loading backstop row).
  */
 const BoardContents = async ({ boardId }: { boardId: string }) => {
-    const result = requireAuthenticated(await fetchBoardFull({ boardId }));
+    const { state, result } = await dehydrateBoard({ boardId });
+    const authenticated = requireAuthenticated(result);
 
-    if (result.status !== RESULT_STATUS.SUCCESS) {
+    if (authenticated.status !== RESULT_STATUS.SUCCESS) {
         return (
             <div className="flex min-h-0 flex-1 items-center justify-center bg-bg-app p-6">
                 <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
@@ -27,7 +29,15 @@ const BoardContents = async ({ boardId }: { boardId: string }) => {
         );
     }
 
-    return <BoardView board={result.board} />;
+    /*
+     * A cache entry, not props: `refresh()` re-runs this render, and hydrating the newer entry is
+     * what retires an optimistic write — `initialData` alone would never overwrite it (tech/0030).
+     */
+    return (
+        <HydrationBoundary state={state}>
+            <BoardView board={authenticated.board} />
+        </HydrationBoundary>
+    );
 };
 
 /*

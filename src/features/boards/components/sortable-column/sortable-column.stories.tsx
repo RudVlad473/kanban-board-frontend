@@ -1,12 +1,19 @@
 import { DndContext } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { useQuery } from "@tanstack/react-query";
 import type { ComponentProps, ReactNode } from "react";
 import { fn } from "storybook/test";
 
 import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
+import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { ColumnFull } from "@/features/boards/schemas";
-import { createColumnFull, createColumnsFull, createTasksFull } from "@/test-utils/factories/board-full";
+import {
+    createBoardFull,
+    createColumnFull,
+    createColumnsFull,
+    createTasksFull,
+} from "@/test-utils/factories/board-full";
 
 import { SortableColumn } from "./sortable-column";
 
@@ -75,18 +82,20 @@ const SortableRow = ({
  * harness asserts only what the override, the rollback and the in-flight lock do.
  */
 const ReorderHost = ({ onRename, onDelete }: ComponentProps<typeof SortableColumn>) => {
-    const {
-        reorderColumns: requestReorder,
-        columns: renderedColumns,
-        reorderingColumnId,
-    } = useReorderColumns({ columns: FIXTURE_COLUMNS });
+    /* Seeds and reads the same cache entry the hook writes, exactly as `BoardView` does. */
+    const { data: board } = useQuery({
+        ...createBoardQueryOptions({ boardId: FIXTURE_BOARD_ID }),
+        initialData: createBoardFull({ id: FIXTURE_BOARD_ID, columns: FIXTURE_COLUMNS }),
+    });
+    const renderedColumns = board.columns;
+    const { reorderColumns: requestReorder, reorderingColumnId } = useReorderColumns({ boardId: FIXTURE_BOARD_ID });
 
     return (
         <>
             <button
                 type="button"
                 onClick={() => {
-                    requestReorder({ boardId: FIXTURE_BOARD_ID, fromIndex: 0, toIndex: 2 });
+                    requestReorder({ fromIndex: 0, toIndex: 2 });
                 }}
             >
                 Move the first column to the third position

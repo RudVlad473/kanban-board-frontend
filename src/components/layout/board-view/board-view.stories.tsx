@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { useState, type ComponentProps } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { type ComponentProps } from "react";
 
 import type { BoardFull } from "@/features/boards/schemas";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 import {
     createBoardFull,
     createColumnFull,
@@ -113,16 +115,24 @@ const SERVER_CHANGED_NAME = "Changed Somewhere Else";
  * then a later server-side change — the two steps the self-retiring override is proved by.
  */
 const ServerPropsHost = (props: ComponentProps<typeof BoardView>) => {
-    const [board, setBoard] = useState<BoardFull>(props.board);
+    const queryClient = useQueryClient();
+    const queryKey = buildBoardQueryKey(props.board.id);
 
-    /* A real rename bumps the column's version, and that bump is what retires the optimistic name. */
+    /*
+     * Written into the cache entry, not passed as a new prop: a refreshed render reaches the client
+     * as a rehydrated entry (tech/0030). The version bump is what a real rename response carries.
+     */
     const replaceFirstColumnName = (name: string): void => {
-        setBoard((current) => ({
-            ...current,
-            columns: current.columns.map((column, index) =>
-                index === 0 ? { ...column, name, version: column.version + 1 } : column,
-            ),
-        }));
+        queryClient.setQueryData<BoardFull>(queryKey, (current) =>
+            current === undefined
+                ? current
+                : {
+                      ...current,
+                      columns: current.columns.map((column, index) =>
+                          index === 0 ? { ...column, name, version: column.version + 1 } : column,
+                      ),
+                  },
+        );
     };
 
     return (
@@ -145,7 +155,7 @@ const ServerPropsHost = (props: ComponentProps<typeof BoardView>) => {
                 Land a later server change
             </button>
 
-            <BoardView {...props} board={board} />
+            <BoardView {...props} />
         </>
     );
 };
@@ -162,23 +172,25 @@ export const ServerColumnsAdvance: Story = {
  * container never removes one itself, so this is the only way its post-delete order can be read.
  */
 const ServerDeleteHost = (props: ComponentProps<typeof BoardView>) => {
-    const [board, setBoard] = useState<BoardFull>(props.board);
+    const queryClient = useQueryClient();
+    const queryKey = buildBoardQueryKey(props.board.id);
 
     return (
         <>
             <button
                 type="button"
                 onClick={() => {
-                    setBoard((current) => ({
-                        ...current,
-                        columns: current.columns.filter((_, index) => index !== 1),
-                    }));
+                    queryClient.setQueryData<BoardFull>(queryKey, (current) =>
+                        current === undefined
+                            ? current
+                            : { ...current, columns: current.columns.filter((_, index) => index !== 1) },
+                    );
                 }}
             >
                 Land the refreshed render without the middle column
             </button>
 
-            <BoardView {...props} board={board} />
+            <BoardView {...props} />
         </>
     );
 };

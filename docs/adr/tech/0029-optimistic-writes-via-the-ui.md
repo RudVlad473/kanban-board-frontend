@@ -1,5 +1,9 @@
 # 0029 — Optimistic writes read the mutation's variables, retired by the submitted version
 
+> **⊘ Superseded by [`docs/adr/tech/0030`](./0030-optimistic-writes-via-the-query-cache.md)** — all
+> four writes now go through the query cache instead. Kept for its Decision Drivers, which record why
+> the hand-rolled providers and `useOptimistic` were removed, and for the measurement in rule 2.
+
 ## Decision Drivers
 
 - Phase 4 grew four optimistic writes — board rename, column rename, column reorder, task move —

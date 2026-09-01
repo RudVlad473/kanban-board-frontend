@@ -4,9 +4,9 @@ import "server-only";
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { cache } from "react";
 
-import { buildBoardQueryKey } from "@/features/boards/queries/board-query";
 import { fetchBoardFull } from "@/features/boards/server/fetch-board-full";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
 /**
  * The open board's read, handed to the client as a dehydrated cache entry rather than props.

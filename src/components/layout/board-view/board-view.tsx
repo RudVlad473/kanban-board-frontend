@@ -2,6 +2,7 @@
 
 import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useBoolean, useMediaQuery } from "usehooks-ts";
 
@@ -17,6 +18,7 @@ import { useDeleteColumn, type DeleteColumnArgs } from "@/features/boards/hooks/
 import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";
 import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
 import { createColumnReorderAnnouncements, toColumnCaption, toColumnDotToken } from "@/features/boards/model";
+import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 import { TaskCard } from "@/features/tasks/components/task-card/task-card";
 import { useReportAddTaskTarget } from "@/features/tasks/hooks/use-add-task-target";
@@ -33,6 +35,7 @@ import { cn } from "@/lib/core/styling/cn";
  * passes them DOWN into the boards feature's column as a render prop.
  */
 type Props = {
+    /** The RSC read's result, used to seed the shared `board` cache entry — not read directly. */
     board: BoardFull;
     /** Storybook-only staging for the Add Column modal's open state — no real caller passes this. */
     defaultIsAddColumnOpen?: boolean;
@@ -48,12 +51,22 @@ type Props = {
 };
 
 export const BoardView = ({
-    board,
+    board: seedBoard,
     defaultIsAddColumnOpen = false,
     defaultRenameColumnTargetIndex,
     defaultDeleteColumnTargetIndex,
     onOpenTaskDetail,
 }: Props) => {
+    /*
+     * The one entry the rename, the reorder and the task move all write, so what this renders is
+     * already optimistic and no override chain is needed (docs/adr/tech/0030). `initialData` is what
+     * makes a story or a test that renders this bare still show its own fixture.
+     */
+    const { data: board } = useQuery({
+        ...createBoardQueryOptions({ boardId: seedBoard.id }),
+        initialData: seedBoard,
+    });
+    const renderedColumns = board.columns;
     const {
         value: isAddColumnOpen,
         setValue: setIsAddColumnOpen,
@@ -73,22 +86,11 @@ export const BoardView = ({
     );
     const [liftedColumnId, setLiftedColumnId] = useState<string | null>(null);
     const [liftedTaskId, setLiftedTaskId] = useState<string | null>(null);
-    const columnCount = board.columns.length;
+    const columnCount = renderedColumns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
-    /* The DERIVED columns, not the raw props — that array is what carries the optimistic name. */
-    const { renameColumn, columns: renamedColumns } = useRenameColumn({ columns: board.columns });
-    /* Chained onto the rename's own output, so a column can be renamed and moved in the same session. */
-    const {
-        reorderColumns: requestReorder,
-        columns: reorderedColumns,
-        reorderingColumnId,
-    } = useReorderColumns({ columns: renamedColumns });
-    /* Last in the chain, so a task move renders on top of whatever the rename and the reorder produced. */
-    const {
-        moveTask: requestMove,
-        columns: renderedColumns,
-        movingTaskId,
-    } = useMoveTask({ columns: reorderedColumns });
+    const { renameColumn } = useRenameColumn({ boardId: board.id });
+    const { reorderColumns: requestReorder, reorderingColumnId } = useReorderColumns({ boardId: board.id });
+    const { moveTask: requestMove, movingTaskId } = useMoveTask({ boardId: board.id });
     const { deleteColumn, isPending: isDeletePending } = useDeleteColumn();
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
 
@@ -275,7 +277,7 @@ export const BoardView = ({
             return;
         }
 
-        requestReorder({ boardId: board.id, fromIndex, toIndex });
+        requestReorder({ fromIndex, toIndex });
     };
 
     return (

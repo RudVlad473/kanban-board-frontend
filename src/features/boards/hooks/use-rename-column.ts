@@ -6,10 +6,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
-import { buildBoardQueryKey } from "@/features/boards/queries/board-query";
 import type { BoardFull } from "@/features/boards/schemas";
-import { useOptimisticVariables } from "@/lib/client/optimistic-mutation";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
 /*
  * Authored copy only — the action returns bare discriminants, so nothing the backend said can
@@ -44,7 +43,7 @@ class ColumnRenameRefused extends Error {}
 
 /**
  * COLUMN-02's optimistic rename (U-05), written into the open board's cache entry so every reader
- * of that board sees it at once (docs/adr/tech/0029).
+ * of that board sees it at once (docs/adr/tech/0030).
  */
 export const useRenameColumn = ({ boardId }: { boardId: string }) => {
     const toast = useToast();
@@ -91,14 +90,20 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
             toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[status] ?? GENERIC_RENAME_FAILURE) });
         },
 
-        /* The action returns the written column, version included, so this IS the settled value. */
+        /*
+         * The action returns the written column, version included, so this IS the settled value.
+         * MERGED, never assigned: `renameColumnAction` answers with a tasks-less `Column`, and
+         * replacing the entry wholesale would drop every task on the renamed column.
+         */
         onSuccess: ({ column }) => {
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
                 current === undefined
                     ? current
                     : {
                           ...current,
-                          columns: current.columns.map((entry) => (entry.id === column.id ? column : entry)),
+                          columns: current.columns.map((entry) =>
+                              entry.id === column.id ? { ...entry, ...column } : entry,
+                          ),
                       },
             );
         },

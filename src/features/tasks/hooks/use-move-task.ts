@@ -2,13 +2,19 @@
 
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
 import { moveTaskInColumns, type TaskColumn } from "@/features/tasks/model";
-import { useOptimisticVariables } from "@/lib/client/optimistic-mutation";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+
+/*
+ * Only the part of the board entry a move touches. Structural rather than the boards feature's own
+ * `BoardFull`, which D-18 forbids importing — the spread below preserves the fields not named here.
+ */
+type MovableBoard = { columns: TaskColumn[] };
 
 /*
  * Authored copy only — the action returns bare discriminants, so nothing the backend said can
@@ -38,50 +44,93 @@ const MOVE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descripti
 
 export type MoveTaskArgs = { taskId: string; targetColumnId: string; targetIndex: number };
 
-/** What `moveTaskAction` is called with, and therefore what the optimistic board is read from. */
+/** What `moveTaskAction` is called with, resolved from the cache rather than from the caller. */
 type MoveTaskVariables = { taskId: string; targetColumnId: string; version: number; targetPosition: number };
 
-/** Names this mutation so its in-flight variables can be read back as the optimistic board. */
-export const MOVE_TASK_MUTATION_KEY = ["moveTask"] as const;
-
-/** The variables of every task move still in flight, oldest first — fold order matters. */
-export const usePendingTaskMoves = (): MoveTaskVariables[] =>
-    useOptimisticVariables<MoveTaskVariables>(MOVE_TASK_MUTATION_KEY);
-
-/**
- * Return `columns` with every pending move applied in submission order, each move reading the board
- * the one before it produced. `targetPosition` is the destination index directly.
- */
-export const applyPendingTaskMoves = <C extends TaskColumn>({
-    columns,
-    pending,
-}: {
-    columns: C[];
-    pending: MoveTaskVariables[];
-}): C[] =>
-    pending.reduce((current, { taskId, version, targetColumnId, targetPosition }) => {
-        // The version guard is the retirement: a landed `refresh()` bumps it and this stops matching.
-        const isStillPending = current
-            .flatMap((column) => column.tasks)
-            .some((task) => task.id === taskId && task.version === version);
-
-        return isStillPending
-            ? moveTaskInColumns({ columns: current, taskId, targetColumnId, targetIndex: targetPosition })
-            : current;
-    }, columns);
+/** Carries the refusal discriminant across the throw that routes it into `onError`. */
+class TaskMoveRefused extends Error {}
 
 /**
  * TASK-04's optimistic move (U-05), and D-10's single implementation: the drag path and the detail
- * view's `Current Status` dropdown are two callers of this one hook. Mechanism: tech/0029.
+ * view's `Current Status` dropdown are two callers of this one hook. Mechanism: docs/adr/tech/0030.
  */
-export const useMoveTask = <C extends TaskColumn>({ columns }: { columns: C[] }) => {
+export const useMoveTask = ({ boardId }: { boardId: string }) => {
     const toast = useToast();
-    const mutation = useMutation({ mutationFn: moveTaskAction, retry: false, mutationKey: MOVE_TASK_MUTATION_KEY });
-    const pending = usePendingTaskMoves();
-    const optimisticColumns = applyPendingTaskMoves({ columns, pending });
+    const queryClient = useQueryClient();
+    const queryKey = buildBoardQueryKey(boardId);
+
+    const mutation = useMutation({
+        mutationFn: async (args: MoveTaskVariables) => {
+            const result = await moveTaskAction(args);
+
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                throw new TaskMoveRefused(result.status);
+            }
+
+            return result;
+        },
+        retry: false,
+
+        onMutate: async ({ taskId, targetColumnId, targetPosition }: MoveTaskVariables) => {
+            // Or an in-flight read could land on top of the optimistic board and undo it.
+            await queryClient.cancelQueries({ queryKey });
+            const previousBoard = queryClient.getQueryData<MovableBoard>(queryKey);
+
+            queryClient.setQueryData<MovableBoard>(queryKey, (current) =>
+                current === undefined
+                    ? current
+                    : {
+                          ...current,
+                          columns: moveTaskInColumns({
+                              columns: current.columns,
+                              taskId,
+                              targetColumnId,
+                              targetIndex: targetPosition,
+                          }),
+                      },
+            );
+
+            return { previousBoard };
+        },
+
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
+        onError: (error: unknown, _variables, context) => {
+            if (context?.previousBoard !== undefined) {
+                queryClient.setQueryData(queryKey, context.previousBoard);
+            }
+
+            const status = error instanceof TaskMoveRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            toast.add({ type: "danger", ...(MOVE_FAILURE_COPY[status] ?? GENERIC_MOVE_FAILURE) });
+        },
+
+        /*
+         * The optimistic board already stands; this settles the moved task's own version. MERGED,
+         * never assigned — `TaskResponseDTO` carries no `subtasks`, so assigning would empty the
+         * card's checklist (Pitfall 3).
+         */
+        onSuccess: ({ task }) => {
+            queryClient.setQueryData<MovableBoard>(queryKey, (current) =>
+                current === undefined
+                    ? current
+                    : {
+                          ...current,
+                          columns: current.columns.map((column) => ({
+                              ...column,
+                              tasks: column.tasks.map((entry) =>
+                                  entry.id === task.id ? { ...entry, ...task } : entry,
+                              ),
+                          })),
+                      },
+            );
+        },
+    });
 
     const requestMove = ({ taskId, targetColumnId, targetIndex }: MoveTaskArgs): void => {
-        const movedTask = optimisticColumns.flatMap((column) => column.tasks).find((task) => task.id === taskId);
+        /* Read from the entry the drag itself rendered, so the version cannot be a render behind. */
+        const movedTask = queryClient
+            .getQueryData<MovableBoard>(queryKey)
+            ?.columns.flatMap((column) => column.tasks)
+            .find((task) => task.id === taskId);
 
         if (movedTask === undefined) {
             return;
@@ -90,18 +139,14 @@ export const useMoveTask = <C extends TaskColumn>({ columns }: { columns: C[] })
         // Exactly one request per completed move — intermediate pointer and arrow steps never reach here.
         void mutation
             .mutateAsync({ taskId, targetColumnId, version: movedTask.version, targetPosition: targetIndex })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const)
-            .then((result) => {
-                if (result.status !== RESULT_STATUS.SUCCESS) {
-                    toast.add({ type: "danger", ...(MOVE_FAILURE_COPY[result.status] ?? GENERIC_MOVE_FAILURE) });
-                }
+            .catch(() => {
+                /* The rollback and the toast both live in `onError`; nothing is left to report. */
             });
     };
 
     return {
         moveTask: requestMove,
         isPending: mutation.isPending,
-        columns: optimisticColumns,
         /*
          * T5 observed only the MOVED task's version is bumped and a merely-shifted sibling's stays
          * usable, which is what lets this lock stop at the one card rather than the whole column.
