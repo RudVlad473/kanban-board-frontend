@@ -292,7 +292,7 @@ describeForEachDevice({
              */
             const screen = await render(
                 <div style={{ marginLeft: `${String(window.innerWidth - 220)}px`, width: "200px" }}>
-                    <Dropdown.Root defaultOpen>
+                    <Dropdown.Root defaultOpen={true}>
                         <Dropdown.Trigger placeholder="Select a board" />
 
                         <Dropdown.Content>
@@ -318,7 +318,7 @@ describeForEachDevice({
              * owns the scroll — see dropdown.tsx's Content comment for the regression this guards.
              */
             const screen = await render(
-                <Dropdown.Root defaultOpen>
+                <Dropdown.Root defaultOpen={true}>
                     <Dropdown.Trigger placeholder="Select a board" />
 
                     <Dropdown.Content>
@@ -364,7 +364,7 @@ describeForEachDevice({
                     <Dropdown.Content>
                         <Dropdown.Item value="todo">Todo</Dropdown.Item>
 
-                        <Dropdown.Item value="doing" isDisabled>
+                        <Dropdown.Item value="doing" isDisabled={true}>
                             Doing
                         </Dropdown.Item>
 

@@ -125,7 +125,7 @@ export const DragHandleFocused: Story = {
         (Story) => {
             return (
                 <>
-                    <span id={DRAG_INSTRUCTIONS_ID} hidden>
+                    <span id={DRAG_INSTRUCTIONS_ID} hidden={true}>
                         To pick up a column, press space or enter.
                     </span>
 

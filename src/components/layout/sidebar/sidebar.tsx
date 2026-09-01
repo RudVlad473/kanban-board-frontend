@@ -66,7 +66,7 @@ export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Pr
             <div className="flex min-h-0 flex-1 flex-col">{children}</div>
 
             <div className="flex flex-col gap-4 p-6">
-                <ThemeToggle initialTheme={initialTheme} isAuthenticated />
+                <ThemeToggle initialTheme={initialTheme} isAuthenticated={true} />
 
                 <button
                     type="button"

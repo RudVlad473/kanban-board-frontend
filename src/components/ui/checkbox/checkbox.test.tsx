@@ -172,7 +172,9 @@ describeForEachDevice({
         it("fires onCheckedChange with the new boolean on each toggle and does not fire when disabled", async () => {
             // Arrange
             const onCheckedChange = vi.fn();
-            const screen = await render(<Checkbox label="Remember me" isDisabled onCheckedChange={onCheckedChange} />);
+            const screen = await render(
+                <Checkbox label="Remember me" isDisabled={true} onCheckedChange={onCheckedChange} />,
+            );
             const checkbox = screen.getByRole("checkbox", { name: "Remember me" });
 
             // Act
@@ -200,7 +202,7 @@ describeForEachDevice({
 
         it("renders the danger border using the same semantic token as TextField when hasError", async () => {
             // Arrange
-            const screen = await render(<Checkbox label="Terms" hasError />);
+            const screen = await render(<Checkbox label="Terms" hasError={true} />);
             const checkbox = screen.getByRole("checkbox", { name: "Terms" });
 
             // Act
@@ -232,7 +234,9 @@ describeForEachDevice({
         it("is not focusable by pointer activation and does not toggle when isDisabled", async () => {
             // Arrange
             const onCheckedChange = vi.fn();
-            const screen = await render(<Checkbox label="Remember me" isDisabled onCheckedChange={onCheckedChange} />);
+            const screen = await render(
+                <Checkbox label="Remember me" isDisabled={true} onCheckedChange={onCheckedChange} />,
+            );
             const checkbox = screen.getByRole("checkbox", { name: "Remember me" });
 
             // Act — a real pointer click, not a programmatic focus() call.
@@ -250,7 +254,7 @@ describeForEachDevice({
          */
         it("propagates Field.Root's disabled prop to Checkbox.Root's hidden native input as a real DOM disabled property", async () => {
             // Arrange
-            const screen = await render(<Checkbox label="Remember me" isDisabled />);
+            const screen = await render(<Checkbox label="Remember me" isDisabled={true} />);
             const hiddenInput = screen.container.querySelector<HTMLInputElement>('input[type="checkbox"]');
 
             // Assert — the real DOM property, not only aria-disabled/data-disabled on the visible span.
@@ -262,9 +266,9 @@ describeForEachDevice({
             // Arrange
             const onCheckedChange = vi.fn();
             const loadingScreen = await render(
-                <Checkbox label="Loading checkbox" isLoading onCheckedChange={onCheckedChange} />,
+                <Checkbox label="Loading checkbox" isLoading={true} onCheckedChange={onCheckedChange} />,
             );
-            const disabledScreen = await render(<Checkbox label="Disabled checkbox" isDisabled />);
+            const disabledScreen = await render(<Checkbox label="Disabled checkbox" isDisabled={true} />);
             const loadingCheckbox = loadingScreen.getByRole("checkbox", { name: "Loading checkbox" });
             const disabledCheckbox = disabledScreen.getByRole("checkbox", { name: "Disabled checkbox" });
 
@@ -291,9 +295,9 @@ describeForEachDevice({
             // Arrange
             const onCheckedChange = vi.fn();
             const bothScreen = await render(
-                <Checkbox label="Both checkbox" isLoading isDisabled onCheckedChange={onCheckedChange} />,
+                <Checkbox label="Both checkbox" isLoading={true} isDisabled={true} onCheckedChange={onCheckedChange} />,
             );
-            const disabledScreen = await render(<Checkbox label="Disabled-only checkbox" isDisabled />);
+            const disabledScreen = await render(<Checkbox label="Disabled-only checkbox" isDisabled={true} />);
             const bothCheckbox = bothScreen.getByRole("checkbox", { name: "Both checkbox" });
             const disabledCheckbox = disabledScreen.getByRole("checkbox", { name: "Disabled-only checkbox" });
 

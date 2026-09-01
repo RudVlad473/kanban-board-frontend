@@ -84,7 +84,7 @@ describeForEachDevice({
             // Arrange
             const onCheckedChange = vi.fn();
             const screen = await render(
-                <Switch label="Toggle dark mode" isDisabled onCheckedChange={onCheckedChange} />,
+                <Switch label="Toggle dark mode" isDisabled={true} onCheckedChange={onCheckedChange} />,
             );
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 

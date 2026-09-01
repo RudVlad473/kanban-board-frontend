@@ -68,11 +68,11 @@ export const Sizes: Story = {
     render: (args) => {
         return (
             <div className="flex items-center gap-4">
-                <Switch {...args} size="sm" label="Small" defaultChecked />
+                <Switch {...args} size="sm" label="Small" defaultChecked={true} />
 
-                <Switch {...args} size="md" label="Medium" defaultChecked />
+                <Switch {...args} size="md" label="Medium" defaultChecked={true} />
 
-                <Switch {...args} size="lg" label="Large" defaultChecked />
+                <Switch {...args} size="lg" label="Large" defaultChecked={true} />
             </div>
         );
     },

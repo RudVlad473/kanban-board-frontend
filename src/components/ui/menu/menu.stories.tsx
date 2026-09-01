@@ -19,7 +19,7 @@ const meta: Meta<typeof Menu.Root> = {
                 <Menu.Content>
                     <Menu.Item>Edit Board</Menu.Item>
 
-                    <Menu.Item isDestructive>Delete Board</Menu.Item>
+                    <Menu.Item isDestructive={true}>Delete Board</Menu.Item>
                 </Menu.Content>
             </Menu.Root>
         );
@@ -54,9 +54,9 @@ export const WithDisabledItem: Story = {
                 <Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />
 
                 <Menu.Content>
-                    <Menu.Item isDisabled>Edit Board</Menu.Item>
+                    <Menu.Item isDisabled={true}>Edit Board</Menu.Item>
 
-                    <Menu.Item isDestructive>Delete Board</Menu.Item>
+                    <Menu.Item isDestructive={true}>Delete Board</Menu.Item>
                 </Menu.Content>
             </Menu.Root>
         );

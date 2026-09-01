@@ -189,7 +189,7 @@ export const BoardList = ({
                     /* Keyed on the target board, so reopening on another row seeds that row's own name. */
                     key={boardBeingRenamed.id}
                     board={boardBeingRenamed}
-                    isOpen
+                    isOpen={true}
                     onOpenChange={(nextIsOpen) => {
                         if (!nextIsOpen) {
                             setBoardBeingRenamed(null);
@@ -205,7 +205,7 @@ export const BoardList = ({
                     /* Keyed on the target board, so reopening on another row names that row's own board. */
                     key={boardBeingDeleted.id}
                     board={boardBeingDeleted}
-                    isOpen
+                    isOpen={true}
                     onOpenChange={(nextIsOpen) => {
                         if (!nextIsOpen) {
                             setBoardBeingDeleted(null);

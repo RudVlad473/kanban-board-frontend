@@ -86,7 +86,7 @@ export const BoardCard = ({
                     </Menu.Item>
 
                     <Menu.Item
-                        isDestructive
+                        isDestructive={true}
                         onClick={() => {
                             onDelete(board);
                         }}

@@ -13,7 +13,7 @@ export const DashboardHeaderSkeleton = ({ displayName }: { displayName: string }
         <header className="flex shrink-0 items-center gap-4 border-b border-border-default bg-bg-surface px-6 py-4">
             <div className="ml-auto flex shrink-0 items-center gap-4">
                 {/* Disabled until the board is known — there is nowhere to post a task to yet. */}
-                <Button type="button" variant="primary" isDisabled>
+                <Button type="button" variant="primary" isDisabled={true}>
                     + Add New Task
                 </Button>
 

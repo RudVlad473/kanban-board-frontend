@@ -129,7 +129,7 @@ export const ColumnHeader = ({
 
                     {/* `isDestructive` is the shared danger treatment, not a local colour choice. */}
                     <Menu.Item
-                        isDestructive
+                        isDestructive={true}
                         isDisabled={areMutationsDisabled}
                         onClick={() => {
                             onDelete(column);

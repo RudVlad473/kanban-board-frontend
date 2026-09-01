@@ -29,7 +29,7 @@ const renderMenu = async ({
             <Menu.Content>
                 <Menu.Item onClick={onRename}>Edit Board</Menu.Item>
 
-                <Menu.Item isDestructive onClick={onDelete}>
+                <Menu.Item isDestructive={true} onClick={onDelete}>
                     Delete Board
                 </Menu.Item>
             </Menu.Content>
@@ -180,7 +180,7 @@ describeForEachDevice({
                     <Menu.Trigger render={<IconButton label="Board actions" icon={<EllipsisVertical />} />} />
 
                     <Menu.Content>
-                        <Menu.Item isDisabled onClick={onArchive}>
+                        <Menu.Item isDisabled={true} onClick={onArchive}>
                             Archive Board
                         </Menu.Item>
                     </Menu.Content>

@@ -154,7 +154,7 @@ describeForEachDevice({
                 return <p key={position}>{`Activity entry ${position} — long content to force scrolling.`}</p>;
             });
             const screen = await render(
-                <Modal.Root defaultOpen>
+                <Modal.Root defaultOpen={true}>
                     <Modal.Content>
                         <Modal.Title>Task activity</Modal.Title>
 
@@ -185,7 +185,7 @@ describeForEachDevice({
              * must resolve to different real padding per viewport, not just both class names present.
              */
             const screen = await render(
-                <Modal.Root defaultOpen>
+                <Modal.Root defaultOpen={true}>
                     <Modal.Content>
                         <Modal.Title>Task activity</Modal.Title>
                     </Modal.Content>

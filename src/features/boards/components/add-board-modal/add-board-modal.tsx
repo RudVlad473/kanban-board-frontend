@@ -80,7 +80,7 @@ export const AddBoardModal = ({
         <Modal.Root isOpen={isOpen} onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
             <Modal.Content>
                 <form
-                    noValidate
+                    noValidate={true}
                     onSubmit={(event) => {
                         /*
                          * Wrapped rather than passed straight through: React Hook Form calls its

@@ -121,11 +121,11 @@ export const Submitting: Story = {
                     <Modal.Description>This action cannot be undone.</Modal.Description>
 
                     <Modal.Footer>
-                        <Button variant="secondary" isDisabled>
+                        <Button variant="secondary" isDisabled={true}>
                             Cancel
                         </Button>
 
-                        <Button variant="destructive" isLoading>
+                        <Button variant="destructive" isLoading={true}>
                             Delete
                         </Button>
                     </Modal.Footer>

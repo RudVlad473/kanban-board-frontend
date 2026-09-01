@@ -77,6 +77,17 @@ const eslintConfig = defineConfig([
         },
     },
 
+    /*
+     * 3c. A boolean prop is written in full — `isLabelHidden={true}`, never the bare shorthand
+     * (fixable), which hides which of the two states is being asked for. The half no rule can
+     * check — omit a prop whose value equals the component's default — is in CONVENTIONS.md.
+     */
+    {
+        rules: {
+            "react/jsx-boolean-value": ["error", "always"],
+        },
+    },
+
     // 4. Unused vars/args/caught-errors as error, with an underscore-prefix escape hatch (D-26o).
     {
         rules: {

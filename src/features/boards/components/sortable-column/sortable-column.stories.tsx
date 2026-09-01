@@ -217,7 +217,7 @@ export const TaskDropIndicator: Story = {
                     <div className="flex h-100 gap-6 bg-bg-app p-6">
                         <SortableColumn
                             {...args}
-                            isReorderDisabled
+                            isReorderDisabled={true}
                             column={FIXTURE_COLUMNS[0]}
                             renderTasks={() => {
                                 const [first, second] = FIXTURE_COLUMNS[0].tasks;

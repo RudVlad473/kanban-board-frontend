@@ -334,6 +334,19 @@ compound-export file (e.g. `dropdown.tsx`/`menu.tsx`/`modal.tsx`, matching `toas
 `ToastProviderProps`) — never an inline object type on the destructured parameter. Enforcement:
 code review (no automated check exists yet).
 
+**A boolean prop is passed in full, or not at all.** Write `isLabelHidden={true}` — never the bare
+`isLabelHidden` shorthand, which reads as "a prop with no value" and hides which of the two states
+is being asked for. Spelling the value makes `={true}` and `={false}` look alike at the call site.
+Enforcement: `react/jsx-boolean-value: ["error", "always"]` (fixable), added 2026-09-01.
+
+The other half is **not** lintable and is on you: when the value you would pass equals the
+component's own default, omit the prop entirely rather than restating it. No ESLint rule resolves a
+component's default parameter values from the call site, so nothing catches
+`isDisabled={false}` against `isDisabled = false`. The distinction that matters is whether the prop
+has a default at all — `Checkbox`/`Switch`'s `isChecked?: boolean` has none and passes straight
+through to `checked`, so `isChecked={false}` is a real controlled-false and must stay; a restated
+default is noise and must go.
+
 ## Boolean UI state (docs/adr/tech/0012's sibling case; 02-CONTEXT.md D-30)
 
 - **Boolean UI state that is toggled is held by `usehooks-ts`'s `useBoolean`, not a hand-rolled

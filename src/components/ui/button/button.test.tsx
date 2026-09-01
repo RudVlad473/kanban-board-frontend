@@ -105,7 +105,7 @@ describeForEachDevice({
             // Arrange
             const onClick = vi.fn();
             const screen = await render(
-                <Button isDisabled onClick={onClick}>
+                <Button isDisabled={true} onClick={onClick}>
                     Submit
                 </Button>,
             );
@@ -130,7 +130,7 @@ describeForEachDevice({
             // Arrange
             const onClick = vi.fn();
             const screen = await render(
-                <Button isLoading onClick={onClick}>
+                <Button isLoading={true} onClick={onClick}>
                     Sign In
                 </Button>,
             );
@@ -167,12 +167,12 @@ describeForEachDevice({
              * enabled (opacity alone signals disabled); see button.tsx's own token comment.
              */
             const primary = await render(
-                <Button variant="primary" isDisabled>
+                <Button variant="primary" isDisabled={true}>
                     Primary
                 </Button>,
             );
             const destructive = await render(
-                <Button variant="destructive" isDisabled>
+                <Button variant="destructive" isDisabled={true}>
                     Destructive
                 </Button>,
             );
@@ -219,7 +219,7 @@ describeForEachDevice({
              */
 
             // Arrange
-            const screen = await render(<Button isLoading>Sign In</Button>);
+            const screen = await render(<Button isLoading={true}>Sign In</Button>);
             const spinner = screen.container.querySelector("svg");
             const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

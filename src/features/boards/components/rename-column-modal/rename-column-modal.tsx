@@ -38,7 +38,7 @@ export const RenameColumnModal = ({ boardId, column, onClose, onSubmit, forceNam
 
     return (
         <Modal.Root
-            isOpen
+            isOpen={true}
             onOpenChange={(nextIsOpen) => {
                 if (!nextIsOpen) {
                     onClose();
@@ -47,7 +47,7 @@ export const RenameColumnModal = ({ boardId, column, onClose, onSubmit, forceNam
         >
             <Modal.Content>
                 <form
-                    noValidate
+                    noValidate={true}
                     onSubmit={(event) => {
                         /*
                          * Wrapped rather than passed straight through: React Hook Form calls its

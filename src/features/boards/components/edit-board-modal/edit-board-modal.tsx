@@ -52,7 +52,7 @@ export const EditBoardModal = ({ board, isOpen, onOpenChange, onSubmit, isPendin
         <Modal.Root isOpen={isOpen} onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
             <Modal.Content>
                 <form
-                    noValidate
+                    noValidate={true}
                     onSubmit={(event) => {
                         /*
                          * Wrapped rather than passed straight through: React Hook Form calls its

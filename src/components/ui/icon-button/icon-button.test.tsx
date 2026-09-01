@@ -94,7 +94,7 @@ describeForEachDevice({
             // Arrange
             const onClick = vi.fn();
             const screen = await render(
-                <IconButton label="Show password" icon={<Eye />} isDisabled onClick={onClick} />,
+                <IconButton label="Show password" icon={<Eye />} isDisabled={true} onClick={onClick} />,
             );
             const button = screen.getByRole("button", { name: "Show password" });
 
@@ -113,7 +113,7 @@ describeForEachDevice({
             // Arrange
             const onClick = vi.fn();
             const screen = await render(
-                <IconButton label="Show password" icon={<Eye />} isLoading onClick={onClick} />,
+                <IconButton label="Show password" icon={<Eye />} isLoading={true} onClick={onClick} />,
             );
             const button = screen.getByRole("button", { name: "Show password" });
 

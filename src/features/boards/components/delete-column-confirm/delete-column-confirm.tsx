@@ -40,7 +40,7 @@ export const DeleteColumnConfirm = ({ boardId, column, onClose, onSubmit, isPend
     };
 
     return (
-        <Modal.Root isOpen onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
+        <Modal.Root isOpen={true} onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
             <Modal.Content initialFocus={keepColumnRef}>
                 <div className="flex flex-col gap-6">
                     <Modal.Title className="text-text-danger">Delete this column?</Modal.Title>

@@ -70,7 +70,7 @@ export const DisabledItem: Story = {
                 <Dropdown.Content>
                     <Dropdown.Item value="todo">Todo</Dropdown.Item>
 
-                    <Dropdown.Item value="doing" isDisabled>
+                    <Dropdown.Item value="doing" isDisabled={true}>
                         Doing
                     </Dropdown.Item>
 
