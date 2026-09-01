@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-15 tasks 1-3 committed; tree does not compile (3 tsc errors, half-migrated use-rename-column); finishing the board-detail cache migration
+stopped_at: Plan 04-15 board-detail cache migration COMPLETE and CI-green (22f87d2); remaining: review items #5 and #7, then 04-15-SUMMARY.md and the blocking checkpoint
 last_updated: "2026-08-31T12:45:20.374Z"
 last_activity: 2026-09-01
-last_activity_desc: Suite settled — the sortable-column reorder-rollback failure was a test race, not an 81568db regression
+last_activity_desc: Board-detail read moved onto the query cache; ADR tech/0030 written; CI green on all four jobs
 state_head: 8aecd206eed44409e22976d59dff034251878ba9
 progress:
   total_phases: 6
@@ -273,6 +273,18 @@ test race, not a regression from `81568db`'s `useOptimistic` rewrite — proved 
 polled sibling in `board-view.test.tsx:1423`, by six consecutive green full runs, and by a negative
 control that fails by timeout. Fixed test-only in `252c5b3`.
 
+**This session (2026-09-01, `/gsd-resume-work`, 2nd):** Finished the board-detail migration the
+previous session paused half-done. `BoardView` reads one `["board", boardId]` entry hydrated by
+`dehydrateBoard()`, and the rename/reorder/move hooks all write it — the three-hook `columns` chain
+is gone, as are `useOptimisticVariables` and both `apply*Pending*` folds. Two real defects fixed
+rather than typed around: `onSuccess` was assigning tasks-less/subtask-less mutation responses over
+`ColumnFull`/`TaskFull` (dropping tasks and subtasks), and `buildBoardQueryKey` was `"use client"`
+where `dehydrateBoard()` calls it from the server — the latter found only by driving the running
+app. ADR `tech/0030` written; `tech/0029` marked superseded. One CI e2e failure was real and caused
+by the conversion (the sidebar now settles before the client navigation, so BOARD-02 read a stale
+URL) and was fixed test-side. Commits `3089a6a`, `8395348`, `22f87d2`; CI run 33512659945 green on
+quality/secrets/e2e/visual.
+
 **Next:** review item #5 (`board-view.tsx` `isOpen`/conditional-render redundancy, keep the `key`),
-then item #7 (extract behaviours from the 464-line component), then write `04-15-SUMMARY.md` and
-close the blocking checkpoint.
+then item #7 (extract behaviours from the component), then write `04-15-SUMMARY.md` and close the
+blocking checkpoint.
