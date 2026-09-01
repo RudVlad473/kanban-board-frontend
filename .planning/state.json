@@ -1,0 +1,38 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": "v1.0",
+  "phases": [
+    {
+      "number": "1",
+      "name": "Foundation, Auth & Preferences",
+      "status": "complete"
+    },
+    {
+      "number": "2",
+      "name": "Board Management",
+      "status": "complete"
+    },
+    {
+      "number": "02.1",
+      "name": "Testing strategy overhaul & code-quality retrofit",
+      "status": "complete"
+    },
+    {
+      "number": "3",
+      "name": "Column Management",
+      "status": "complete"
+    },
+    {
+      "number": "4",
+      "name": "Task & Subtask Workflow",
+      "status": "in_progress"
+    }
+  ],
+  "next": {
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 4 of 6 · executing"
+  },
+  "updated_at": "2026-08-31T12:45:20.397Z"
+}

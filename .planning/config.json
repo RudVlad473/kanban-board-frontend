@@ -35,5 +35,13 @@
   "fast_mode": {
     "enabled": true
   },
-  "model_profile": "balanced"
+  "model_profile": "balanced",
+  "review": {
+    "default_reviewers": [
+      "agy"
+    ],
+    "models": {
+      "agy": "gemini-3.1-pro-preview"
+    }
+  }
 }
