@@ -94,10 +94,10 @@ export const AddTaskModal = ({
     };
 
     return (
-        <Modal.Root isOpen onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
+        <Modal.Root isOpen={true} onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
             <Modal.Content>
                 <form
-                    noValidate
+                    noValidate={true}
                     onSubmit={(event) => {
                         /*
                          * Wrapped rather than passed straight through: React Hook Form calls its
@@ -131,7 +131,7 @@ export const AddTaskModal = ({
                         {...register("description")}
                     />
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3">
                         <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
                             Subtasks
                         </span>
@@ -144,9 +144,10 @@ export const AddTaskModal = ({
                                     : `Remove subtask '${rowValue}'`;
 
                             return (
-                                <div key={field.id} className="flex items-start gap-2">
+                                <div key={field.id} className="flex items-center gap-2">
                                     <TextField
                                         label={`Subtask ${String(index + 1)}`}
+                                        isLabelHidden={true}
                                         type="text"
                                         placeholder={toSubtaskRowPlaceholder(index)}
                                         {...register(buildSubtaskRowPath(index))}
@@ -157,7 +158,6 @@ export const AddTaskModal = ({
                                         variant="ghost"
                                         label={removeLabel}
                                         icon={<X />}
-                                        className="mt-6"
                                         onClick={() => {
                                             remove(index);
                                         }}

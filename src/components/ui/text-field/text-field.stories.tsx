@@ -20,6 +20,11 @@ type Story = StoryObj<typeof TextField>;
 
 export const Idle: Story = {};
 
+/* A row inside an already-labelled group: the label stays announced but takes no layout space. */
+export const HiddenLabel: Story = {
+    args: { isLabelHidden: true },
+};
+
 /*
  * Focus is staged via class application on a wrapping decorator, never a real `.focus()` call or
  * a play function (D-25 keeps stories visual-only).

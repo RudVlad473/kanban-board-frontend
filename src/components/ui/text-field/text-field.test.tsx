@@ -14,7 +14,7 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { TextField } from "./text-field";
 import * as stories from "./text-field.stories";
 
-const { Idle, Error, Disabled, Loading, Password } = composeStories(stories);
+const { Idle, HiddenLabel, Error, Disabled, Loading, Password } = composeStories(stories);
 
 /*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; the width test below
@@ -32,6 +32,18 @@ describeForEachDevice({
             expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
         });
 
+        /* isLabelHidden trades the label's layout box for nothing else — the accessible name stays. */
+        it("keeps the label as the accessible name but out of the layout when isLabelHidden", async () => {
+            // Act
+            await render(<HiddenLabel />);
+
+            // Assert
+            const input = screen.getByRole("textbox", { name: "Email" });
+            const label = document.querySelector<HTMLLabelElement>(`label[for="${input.id}"]`);
+            expect(label?.textContent).toBe("Email");
+            expect(label?.getBoundingClientRect().height).toBeLessThanOrEqual(1);
+        });
+
         it("renders the error message, marks the input invalid, and exposes the message as its accessible description when hasError", async () => {
             // Act
             await render(<Error />);
@@ -42,6 +54,23 @@ describeForEachDevice({
             expect(message).toBeVisible();
             expect(input).toHaveAttribute("aria-invalid", "true");
             expect(input.getAttribute("aria-describedby")).toContain(message.id);
+        });
+
+        /*
+         * An error must cost the field no height. In flow it grew the form by 23.5px mid-click, and
+         * a control's mousedown and mouseup then landed on different elements, silently losing the
+         * click (04-15-CHECKPOINT.md). Asserted as height, not as a class name.
+         */
+        it("shows its error message without extending the field below the input", async () => {
+            // Act
+            await render(<Error />);
+
+            // Assert — the message is shown, but sits outside the field's own box.
+            const input = screen.getByRole("textbox", { name: "Password" });
+            const root = input.closest<HTMLElement>("[class*='flex-col']");
+            const overhang = (root?.getBoundingClientRect().bottom ?? 0) - input.getBoundingClientRect().bottom;
+            expect(screen.getByText("Can't be empty")).toBeVisible();
+            expect(overhang).toBeLessThanOrEqual(1);
         });
 
         it("renders disabled when isDisabled", async () => {
@@ -103,7 +132,7 @@ describeForEachDevice({
 
         it("renders the danger border using the same semantic token as Checkbox when hasError", async () => {
             // Arrange
-            const screen = await render(<TextField label="Password" hasError errorMessage="Can't be empty" />);
+            const screen = await render(<TextField label="Password" hasError={true} errorMessage="Can't be empty" />);
             const input = screen.getByRole("textbox", { name: "Password" });
 
             // Act
@@ -127,7 +156,7 @@ describeForEachDevice({
         it("prevents typing when isDisabled", async () => {
             // Arrange
             const onValueChange = vi.fn();
-            const screen = await render(<TextField label="Email" isDisabled onValueChange={onValueChange} />);
+            const screen = await render(<TextField label="Email" isDisabled={true} onValueChange={onValueChange} />);
             const input = screen.getByRole("textbox", { name: "Email" });
 
             // Act — a disabled input never becomes the active element, proving suppression is real.
@@ -142,7 +171,7 @@ describeForEachDevice({
         it("refuses focus and typing when isLoading", async () => {
             // Arrange
             const onValueChange = vi.fn();
-            const screen = await render(<TextField label="Email" isLoading onValueChange={onValueChange} />);
+            const screen = await render(<TextField label="Email" isLoading={true} onValueChange={onValueChange} />);
             const input = screen.getByRole("textbox", { name: "Email" });
 
             // Act — isLoading composes into native disabled (GC-17), same suppression as isDisabled.
@@ -160,9 +189,9 @@ describeForEachDevice({
              * class always outranks isBusy's own class on specificity; cursor stays the sole
              * busy-vs-disabled differentiator (mirrors Checkbox's GC-14 precedent).
              */
-            const loading = await render(<TextField label="Loading field" isLoading />);
+            const loading = await render(<TextField label="Loading field" isLoading={true} />);
             const loadingInput = loading.getByRole("textbox", { name: "Loading field" });
-            const disabled = await render(<TextField label="Disabled field" isDisabled />);
+            const disabled = await render(<TextField label="Disabled field" isDisabled={true} />);
             const disabledInput = disabled.getByRole("textbox", { name: "Disabled field" });
 
             // Act

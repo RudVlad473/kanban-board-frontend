@@ -224,6 +224,23 @@ describeForEachDevice({
             await expect.element(screen.getByRole("button", { name: "Remove Subtask 2" })).toBeVisible();
         });
 
+        /*
+         * The mock (PDF p6) labels the subtask GROUP once and shows bare inputs under it; a visible
+         * per-row label repeats it and takes the 30px that pushed rows to a 36px pitch against the
+         * mock's 12px. Asserted geometrically — the design constrains that it takes no space, not how.
+         */
+        it("keeps each subtask row's label announced but out of the layout", async () => {
+            // Act
+            const screen = await render(<Default />);
+            await expect.element(screen.getByLabelText("Subtask 1", { exact: true })).toBeVisible();
+
+            // Assert — still associated (the query above resolves), but occupying no vertical space.
+            const input = document.querySelector<HTMLInputElement>('input[name="subtasks.0.value"]');
+            const label = document.querySelector<HTMLLabelElement>(`label[for="${input?.id ?? ""}"]`);
+            expect(label?.textContent).toBe("Subtask 1");
+            expect(label?.getBoundingClientRect().height).toBeLessThanOrEqual(1);
+        });
+
         it("renders every staged subtask row in the order supplied", async () => {
             // Act
             const screen = await render(<ManySubtasks />);

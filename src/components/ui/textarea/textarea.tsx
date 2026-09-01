@@ -36,7 +36,11 @@ export const Textarea = ({
          * Field.Root/Label/Control/Description/Error wire up label association, `aria-invalid` and
          * `aria-describedby` from the library, exactly as text-field.tsx does (D-15).
          */
-        <Field.Root invalid={hasError} disabled={isDisabled || isLoading} className="flex w-full flex-col gap-1">
+        <Field.Root
+            invalid={hasError}
+            disabled={isDisabled || isLoading}
+            className="relative flex w-full flex-col gap-1"
+        >
             <Field.Label className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
                 {label}
             </Field.Label>
@@ -59,12 +63,12 @@ export const Textarea = ({
                 </Field.Description>
             ) : null}
 
-            {/* `match` forced to `true` and mounted only when `hasError`, for the reason
-                text-field.tsx records: this primitive's error state is externally controlled. */}
+            {/* `match` forced to `true` and mounted only when `hasError`, and absolutely positioned
+                so appearing costs no height — both for the reason text-field.tsx records. */}
             {hasError && errorMessage ? (
                 <Field.Error
                     match={true}
-                    className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
+                    className="absolute top-full left-0 mt-1 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
                 >
                     {errorMessage}
                 </Field.Error>
