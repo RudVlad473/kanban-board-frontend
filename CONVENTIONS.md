@@ -200,29 +200,44 @@ pointer rule reproduces exactly that failure, once per file.
 
 ## Data fetching & mutations (docs/adr/tech/0019, narrows docs/adr/tech/0002)
 
-- Every server entry point is either a React Server Component for reads (server-side fetch, zod-validated per docs/adr/tech/0024, passed to a Client Component as plain props — no client-side query for list/detail data) or a Server Action for writes (create/rename/delete/move/reorder), invoked directly by an RSC/form or wrapped as a TanStack Query `mutationFn` for pending/error state. TanStack's own optimistic-update guide does NOT apply here: it writes to the query cache, and this ADR keeps reads out of it — see "Optimistic UI" below for what to use instead. Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
+- Every server entry point is either a React Server Component for reads (server-side fetch, zod-validated per docs/adr/tech/0024, passed to a Client Component as plain props — no client-side query for list/detail data) or a Server Action for writes (create/rename/delete/move/reorder), invoked directly by an RSC/form or wrapped as a TanStack Query `mutationFn` for pending/error state. TanStack's optimistic-update guide has two approaches and only the FIRST is ruled out here: "via the cache" writes to the query cache, which this ADR keeps reads out of. "Via the UI" reads the mutation's own variables, touches no cache, and is what this codebase uses — see "Optimistic UI" below. Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
 - Every mutating Server Action calls `refresh()` (from `next/cache`) **inside the action itself**, as its last step once the write has succeeded — `app/(dashboard)/layout.tsx` is a persistent layout that does not re-render on ordinary navigation, so a mutation invoked deeper in the tree never reaches the sidebar's board list without it. The client caller does no cache work at all; adding a second `router.refresh()` in the hook would double-render every mutation. All eight shipped board and column mutations follow this, and `use-delete-board.ts` records the reasoning at its call site. The repository's only `router.refresh()` is `board-list.tsx`'s retry button, which is a re-read after a failed load, not a mutation. Enforcement: code review, plus the `e2e/*.e2e.spec.ts` specs, which assert the mutation's result is visible without a manual reload — the observable consequence of the refresh. There is deliberately no unit-level assertion: `refresh()` is Server-Action-only and unreachable from the Vitest `node` project, which is why each action's `*.integration.test.ts` exercises the upstream call rather than the action. docs/adr/tech/0019's Consequences names the anti-pattern this bullet exists to prevent.
 
 ## Optimistic UI (extends docs/adr/tech/0019)
 
-- **Optimistic UI over server-owned data uses React's `useOptimistic`.** The board arrives as RSC
-  props, so there is no query cache to write to and TanStack's `onMutate`/rollback pattern cannot
-  apply. `useOptimistic` is the primitive built for exactly this: it layers the pending change over
-  the server value and drops it on its own when fresh props arrive. Enforcement: code review.
-- **Do not hand-roll retirement.** Phase 4 originally shipped `applyTaskMoveOverride` and its twin
-  `ColumnOrderOverride`: each snapshotted the server's task ids per column, diffed them on every
-  render to decide staleness, and signalled retirement by returning the props array itself so
-  reference equality meant "expired". That is a re-implementation of what `useOptimistic` does
-  natively, in two copies. If you find yourself tracking *when an optimistic value goes stale*, you
-  are rebuilding the primitive. Enforcement: code review.
+- **One mechanism for all four optimistic writes: TanStack Query's "via the UI" approach.** Board
+  rename, column rename, column reorder and task move all read their pending value off the
+  mutation's own variables through `useOptimisticVariables` (`src/lib/client/optimistic-mutation.ts`)
+  — never a cache entry, since reads are RSC props. Enforcement: code review.
+- **Why not `useOptimistic`.** It cannot serve the board rename: `app/(dashboard)/layout.tsx`
+  streams the sidebar and the header as two independent Suspense boundaries, so they have no common
+  client owner to hold the state. `useMutationState` reads from the QueryClient, which every
+  component is already under, so no provider is needed — this is what let
+  `RenameOverrideProvider` be deleted outright. Enforcement: code review.
+- **Filter on the RESULT, not the promise.** These Server Actions RETURN a non-`SUCCESS` `status`
+  rather than throwing, so TanStack records a refused write as a settled success. Filtering
+  `status: "error"` alone leaves every refused write applied forever. Enforcement:
+  the rollback cases in `board-list.test.tsx` and `sortable-column.test.tsx`.
+- **The submitted `version` is the retirement signal.** An optimistic value must outlive the
+  mutation settling: the authoritative value arrives on a LATER render, when the action's
+  `refresh()` lands. Filtering `status: "pending"` alone drops it in that gap — measured
+  2026-09-01 against the running app, a successful board rename showed the OLD name for 114ms.
+  Applying the change only while the entity still carries the version it was submitted against
+  spans the gap and retires by itself when the bump lands (T-02-63, T-03-29). Enforcement:
+  the "retires the override once the refreshed props carry it" cases.
+- **Do not hand-roll retirement beyond that guard.** Phase 4 originally shipped
+  `applyTaskMoveOverride` and its twin `ColumnOrderOverride`: each snapshotted the server's task ids
+  per column and diffed them on every render to decide staleness. The version guard is one
+  comparison against data the mutation already carries; a diff of server state against a snapshot is
+  the thing to refuse. Enforcement: code review.
 - **A test asserting reverted state must poll for it, never read it synchronously after the toast.**
-  A failure toast is raised *inside* the transition's async body, but `useOptimistic` drops the
-  optimistic value only when the transition **completes** — a render later. `await
-  expect.poll(getRenderedColumnNames)`, not `expect(getRenderedColumnNames())`. The synchronous form
-  passes alone and fails about 1 run in 8 under full-suite load, which reads as a production
-  regression in the hook. Found 2026-09-01 (`252c5b3`); the hand-rolled predecessor called
-  `setOverride(null)` before the toast, so this race did not exist before the refactor.
-  Enforcement: code review.
+  `await expect.poll(getRenderedColumnNames)`, not `expect(getRenderedColumnNames())`. The
+  synchronous form passes alone and fails about 1 run in 8 under full-suite load, which reads as a
+  production regression in the hook. Found 2026-09-01 (`252c5b3`). Enforcement: code review.
+- **A story that lands a "refreshed server render" must bump the version too.** A real rename bumps
+  it, and that bump is what retires the optimistic value; a fixture that changes only the name
+  models a server the backend cannot produce. Enforcement: the `ServerPropsAdvance` /
+  `ServerColumnsAdvance` hosts.
 
 ## Server data flows down; a context bus must carry something the server does not have
 

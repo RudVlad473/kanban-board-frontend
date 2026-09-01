@@ -65,10 +65,13 @@ mutation_ — tracking what was optimistic, when it goes stale, when to retire i
 that does the mutation. That bookkeeping is the framework's job in almost every case.
 
 When an official pattern genuinely does not fit, say so and record the reason in an ADR rather than
-quietly diverging. TanStack Query's optimistic-updates guide, for instance, cannot apply to this
-app's board reads: they are RSC props, and docs/adr/tech/0019 keeps them out of the query cache, so
-there is nothing for `setQueryData` to write to. That is a real exception — and it is written down,
-which is what makes it one.
+quietly diverging. But check the whole document before declaring it inapplicable. This file used to
+cite TanStack Query's optimistic-updates guide as a worked example of a real exception, on the
+grounds that board reads are RSC props and docs/adr/tech/0019 keeps them out of the query cache. That
+is true of the guide's FIRST approach only. Its second, "via the UI", reads the mutation's own
+variables and touches no cache — it fits this codebase so well that adopting it deleted a
+hand-rolled context provider outright (2026-09-01). The over-broad note is what kept it out of
+consideration for a whole phase, which is the more expensive failure of the two.
 
 ## Verify a code review's claims before acting on them
 

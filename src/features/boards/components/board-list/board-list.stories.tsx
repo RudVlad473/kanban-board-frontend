@@ -61,8 +61,11 @@ const SERVER_CHANGED_NAME = "Changed Somewhere Else";
 const ServerPropsHost = (props: ComponentProps<typeof BoardList>) => {
     const [boards, setBoards] = useState<Board[]>(props.boards);
 
+    /* A real rename bumps the row's version, and that bump is what retires the optimistic name. */
     const replaceFirstName = (name: string): void => {
-        setBoards((current) => current.map((board, index) => (index === 0 ? { ...board, name } : board)));
+        setBoards((current) =>
+            current.map((board, index) => (index === 0 ? { ...board, name, version: board.version + 1 } : board)),
+        );
     };
 
     return (

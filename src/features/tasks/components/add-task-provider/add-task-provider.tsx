@@ -14,7 +14,7 @@ import type { AddTaskSubmitValues } from "@/features/tasks/schemas";
 
 /**
  * S-06's bridge: a small client provider holding the open board's columns and the modal's open
- * state, and nothing else — mirrors `RenameOverrideProvider`'s deliberate narrowness, mounted in
+ * state, and nothing else — deliberately narrow, mounted in
  * the dashboard layout beside it so it spans both the header's and the board's streaming boundary.
  */
 export const AddTaskProvider = ({ children }: PropsWithChildren) => {

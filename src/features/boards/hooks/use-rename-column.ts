@@ -3,11 +3,11 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import type { ColumnFull } from "@/features/boards/schemas";
+import { useOptimisticVariables } from "@/lib/client/optimistic-mutation";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
 /*
@@ -39,43 +39,53 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 export type RenameColumnArgs = { boardId: string; columnId: string; name: string; version: number };
 
 /**
- * The one column whose name the UI is asserting ahead of the server. `previousName` is what the
- * header showed at submit time, and it is what retires the override: see `applyColumnRenameOverride`.
+ * Names this mutation so its in-flight variables can be read back as the optimistic name, the same
+ * shape `use-rename-board.ts` uses. Kept here even though one container consumes it, so every
+ * optimistic surface in the app reads the same way.
  */
-export type ColumnRenameOverride = { columnId: string; previousName: string; name: string };
+export const RENAME_COLUMN_MUTATION_KEY = ["renameColumn"] as const;
+
+/** The variables of every column rename still in flight, newest last. */
+export const usePendingColumnRenames = (): RenameColumnArgs[] =>
+    useOptimisticVariables<RenameColumnArgs>(RENAME_COLUMN_MUTATION_KEY);
 
 /**
- * Applies the override to a supplied column array, returning a new array in which only the matching
- * entry's name differs. The `previousName` guard retires a stale override by pure derivation
- * (T-03-29) — nothing needs clearing once the refreshed props carry the new name.
+ * Return `columns` with every pending rename applied, last submission winning per column. The
+ * `version` guard is the retirement: once a `refresh()` bumps the column past the version the
+ * rename was submitted against, the entry stops matching (T-03-29).
  */
-export const applyColumnRenameOverride = ({
+export const applyPendingColumnRenames = ({
     columns,
-    override,
+    pending,
 }: {
     columns: ColumnFull[];
-    override: ColumnRenameOverride | null;
+    pending: RenameColumnArgs[];
 }): ColumnFull[] => {
-    if (override === null) {
+    if (pending.length === 0) {
         return columns;
     }
 
-    return columns.map((column) =>
-        column.id === override.columnId && column.name === override.previousName
-            ? { ...column, name: override.name }
-            : column,
-    );
+    return columns.map((column) => {
+        const rename = pending.findLast(
+            (candidate) => candidate.columnId === column.id && candidate.version === column.version,
+        );
+
+        return rename === undefined ? column : { ...column, name: rename.name };
+    });
 };
 
 /**
- * COLUMN-02's optimistic rename (U-05). The apply and the rollback live in local state, never a
- * query cache — column reads are RSC props under docs/adr/tech/0019, so there is no cache entry to
- * patch. No context provider: exactly one container consumes this override.
+ * COLUMN-02's optimistic rename (U-05), read off the mutation's own variables rather than a cache
+ * entry, since column reads are RSC props (docs/adr/tech/0019, and tech/0029 for the mechanism).
  */
 export const useRenameColumn = ({ columns }: { columns: ColumnFull[] }) => {
     const toast = useToast();
-    const [override, setOverride] = useState<ColumnRenameOverride | null>(null);
-    const mutation = useMutation({ mutationFn: renameColumnAction, retry: false });
+    const mutation = useMutation({
+        mutationFn: renameColumnAction,
+        retry: false,
+        mutationKey: RENAME_COLUMN_MUTATION_KEY,
+    });
+    const pending = usePendingColumnRenames();
 
     const renameColumn = async ({
         boardId,
@@ -83,30 +93,22 @@ export const useRenameColumn = ({ columns }: { columns: ColumnFull[] }) => {
         name,
         version,
     }: RenameColumnArgs): Promise<{ didRename: boolean }> => {
-        const previousName = columns.find((column) => column.id === columnId)?.name ?? name;
-
-        // Optimistic: the header asserts the new name before the action is called.
-        setOverride({ columnId, previousName, name });
-
         const result = await mutation
             .mutateAsync({ boardId, columnId, name, version })
             .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
         if (result.status !== RESULT_STATUS.SUCCESS) {
-            // Dropping the override restores the previous name exactly — the raw props still carry it.
-            setOverride(null);
             toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[result.status] ?? GENERIC_RENAME_FAILURE) });
 
             return { didRename: false };
         }
 
-        // Left in place on success: it retires itself once the refreshed props carry the new name.
         return { didRename: true };
     };
 
     return {
         renameColumn,
         isPending: mutation.isPending,
-        columns: applyColumnRenameOverride({ columns, override }),
+        columns: applyPendingColumnRenames({ columns, pending }),
     };
 };

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button/button";
 import { SignOutButton } from "@/features/auth/components/sign-out-button/sign-out-button";
-import { applyRenameOverride, useRenameOverride } from "@/features/boards/hooks/use-rename-board";
+import { applyPendingBoardRenames, usePendingBoardRenames } from "@/features/boards/hooks/use-rename-board";
 import type { Board } from "@/features/boards/schemas";
 import { useAddTaskTarget } from "@/features/tasks/hooks/use-add-task-target";
 import { toBoardIdFromPath } from "@/lib/core/routing/routes";
@@ -22,10 +22,10 @@ export const DashboardHeader = ({ displayName, boards }: Props) => {
     const pathname = usePathname();
     const openBoardId = toBoardIdFromPath(pathname);
     /*
-     * The same override the sidebar row applies (D-15), read from the provider the dashboard layout
-     * wraps both in — so the title changes on submit, not a beat later on the refreshed render.
+     * The same pending rename the sidebar row applies (D-15), read off the mutation itself — so the
+     * title changes on submit, not a beat later on the refreshed render, and with no shared owner.
      */
-    const openBoard = applyRenameOverride({ boards, override: useRenameOverride() }).find(
+    const openBoard = applyPendingBoardRenames({ boards, pending: usePendingBoardRenames() }).find(
         // A path naming no board, or one absent from this list, renders no title rather than a stale one.
         (board) => board.id === openBoardId,
     );

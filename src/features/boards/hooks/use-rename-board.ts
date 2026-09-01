@@ -3,11 +3,11 @@
 // Covered by: `src/features/boards/components/board-list/board-list.test.tsx`
 
 import { useMutation } from "@tanstack/react-query";
-import { createContext, useContext, useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
 import type { Board } from "@/features/boards/schemas";
+import { useOptimisticVariables } from "@/lib/client/optimistic-mutation";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
 /*
@@ -40,86 +40,75 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 export type RenameBoardArgs = { boardId: string; name: string; version: number };
 
 /**
- * The one board whose name the UI is asserting ahead of the server. `previousName` is what the row
- * showed at submit time, and it is what retires the override: see `applyRenameOverride`.
+ * Names this mutation so any component under `QueryProvider` can read its in-flight variables,
+ * which is what lets the sidebar row and the dashboard header assert the new name in the same
+ * instant (D-15) with no shared owner — see `usePendingBoardRenames`.
  */
-export type RenameOverride = { boardId: string; previousName: string; name: string };
-
-type RenameOverrideStore = {
-    override: RenameOverride | null;
-    setOverride: (override: RenameOverride | null) => void;
-};
+export const RENAME_BOARD_MUTATION_KEY = ["renameBoard"] as const;
 
 /**
- * Shared so the sidebar row and the dashboard header assert the new name in the same instant. The
- * provider is optional: without one, `useRenameBoard` falls back to state local to its own caller.
+ * The variables of every rename still in flight, newest last. Readable from anywhere under
+ * `QueryProvider`: the sidebar and the header sit in separate Suspense boundaries of
+ * `app/(dashboard)/layout.tsx` and have no common client owner to hold this state.
  */
-export const RenameOverrideContext = createContext<RenameOverrideStore | null>(null);
-
-export const useRenameOverride = (): RenameOverride | null => useContext(RenameOverrideContext)?.override ?? null;
+export const usePendingBoardRenames = (): RenameBoardArgs[] =>
+    useOptimisticVariables<RenameBoardArgs>(RENAME_BOARD_MUTATION_KEY);
 
 /**
- * Applies the override to a supplied board array, returning a new array in which only the matching
- * entry's name differs. The `previousName` guard retires a stale override by pure derivation
- * (T-02-63) — see 02-12-SUMMARY.md for why derivation replaced clearing state during render.
+ * Return `boards` with every pending rename applied, last submission winning per board. The
+ * `version` guard is the retirement: once a `refresh()` bumps the board past the version the
+ * rename was submitted against, the entry stops matching (T-02-63).
  */
-export const applyRenameOverride = ({
+export const applyPendingBoardRenames = ({
     boards,
-    override,
+    pending,
 }: {
     boards: Board[];
-    override: RenameOverride | null;
+    pending: RenameBoardArgs[];
 }): Board[] => {
-    if (override === null) {
+    if (pending.length === 0) {
         return boards;
     }
 
-    return boards.map((board) =>
-        board.id === override.boardId && board.name === override.previousName
-            ? { ...board, name: override.name }
-            : board,
-    );
+    return boards.map((board) => {
+        const rename = pending.findLast(
+            (candidate) => candidate.boardId === board.id && candidate.version === board.version,
+        );
+
+        return rename === undefined ? board : { ...board, name: rename.name };
+    });
 };
 
 /**
- * BOARD-04's optimistic rename (D-15). The apply and the rollback live in local state, never a
- * query cache — reads never go through `useQuery` under docs/adr/tech/0019, so there is no cache
- * entry to patch; this is the shape `use-theme-preference.ts` already ships and that ADR names.
+ * BOARD-04's optimistic rename (D-15), read off the mutation's own variables rather than a cache
+ * entry, since reads are RSC props (docs/adr/tech/0019, and tech/0029 for the mechanism).
  */
 export const useRenameBoard = ({ boards }: { boards: Board[] }) => {
     const toast = useToast();
-    const sharedStore = useContext(RenameOverrideContext);
-    const [localOverride, setLocalOverride] = useState<RenameOverride | null>(null);
-    const mutation = useMutation({ mutationFn: renameBoardAction, retry: false });
-
-    const override = sharedStore ? sharedStore.override : localOverride;
-    const setOverride = sharedStore ? sharedStore.setOverride : setLocalOverride;
+    const mutation = useMutation({
+        mutationFn: renameBoardAction,
+        retry: false,
+        mutationKey: RENAME_BOARD_MUTATION_KEY,
+    });
+    const pending = usePendingBoardRenames();
 
     const renameBoard = async ({ boardId, name, version }: RenameBoardArgs): Promise<{ didRename: boolean }> => {
-        const previousName = boards.find((board) => board.id === boardId)?.name ?? name;
-
-        // Optimistic: the sidebar and the header both assert the new name before the action is called.
-        setOverride({ boardId, previousName, name });
-
         const result = await mutation
             .mutateAsync({ boardId, name, version })
             .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
         if (result.status !== RESULT_STATUS.SUCCESS) {
-            // Dropping the override restores the previous name exactly — the raw props still carry it.
-            setOverride(null);
             toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[result.status] ?? GENERIC_RENAME_FAILURE) });
 
             return { didRename: false };
         }
 
-        // Left in place on success: it retires itself once the refreshed props carry the new name.
         return { didRename: true };
     };
 
     return {
         renameBoard,
         isPending: mutation.isPending,
-        boards: applyRenameOverride({ boards, override }),
+        boards: applyPendingBoardRenames({ boards, pending }),
     };
 };

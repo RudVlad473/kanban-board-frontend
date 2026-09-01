@@ -115,10 +115,13 @@ const SERVER_CHANGED_NAME = "Changed Somewhere Else";
 const ServerPropsHost = (props: ComponentProps<typeof BoardView>) => {
     const [board, setBoard] = useState<BoardFull>(props.board);
 
+    /* A real rename bumps the column's version, and that bump is what retires the optimistic name. */
     const replaceFirstColumnName = (name: string): void => {
         setBoard((current) => ({
             ...current,
-            columns: current.columns.map((column, index) => (index === 0 ? { ...column, name } : column)),
+            columns: current.columns.map((column, index) =>
+                index === 0 ? { ...column, name, version: column.version + 1 } : column,
+            ),
         }));
     };
 
