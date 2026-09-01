@@ -11,8 +11,8 @@ import { renameColumnFormSchema, type ColumnFull, type RenameColumnFormValues } 
 type Props = {
     boardId: string;
     column: ColumnFull;
-    isOpen: boolean;
-    onOpenChange: (isOpen: boolean) => void;
+    /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
+    onClose: () => void;
     onSubmit: (values: { boardId: string; columnId: string; name: string; version: number }) => void;
     /** Storybook-only staging — renders the column-name field's error state without a real submit. */
     forceNameError?: string;
@@ -23,7 +23,7 @@ type Props = {
  * new name is already on screen when this closes and a later failure surfaces as rollback plus a
  * toast (03-UI-SPEC loading/Rename-submit). `onSubmit` is a prop so its tests need no module mock.
  */
-export const RenameColumnModal = ({ boardId, column, isOpen, onOpenChange, onSubmit, forceNameError }: Props) => {
+export const RenameColumnModal = ({ boardId, column, onClose, onSubmit, forceNameError }: Props) => {
     const {
         register,
         handleSubmit,
@@ -37,7 +37,14 @@ export const RenameColumnModal = ({ boardId, column, isOpen, onOpenChange, onSub
     const nameErrorMessage = forceNameError ?? errors.name?.message;
 
     return (
-        <Modal.Root isOpen={isOpen} onOpenChange={onOpenChange}>
+        <Modal.Root
+            isOpen
+            onOpenChange={(nextIsOpen) => {
+                if (!nextIsOpen) {
+                    onClose();
+                }
+            }}
+        >
             <Modal.Content>
                 <form
                     noValidate

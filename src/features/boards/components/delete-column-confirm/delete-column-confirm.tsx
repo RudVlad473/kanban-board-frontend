@@ -9,8 +9,8 @@ import type { ColumnFull } from "@/features/boards/schemas";
 type Props = {
     boardId: string;
     column: ColumnFull;
-    isOpen: boolean;
-    onOpenChange: (isOpen: boolean) => void;
+    /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
+    onClose: () => void;
     onSubmit: (values: { boardId: string; columnId: string }) => void;
     isPending: boolean;
 };
@@ -20,7 +20,7 @@ type Props = {
  * takes `onSubmit` as a prop rather than calling `useDeleteColumn()` itself, so its behavioural
  * tests drive it with a real local function instead of a module mock (docs/adr/tech/0020).
  */
-export const DeleteColumnConfirm = ({ boardId, column, isOpen, onOpenChange, onSubmit, isPending }: Props) => {
+export const DeleteColumnConfirm = ({ boardId, column, onClose, onSubmit, isPending }: Props) => {
     /*
      * The cascade has no undo (ADR domain/0002), so the irreversible action must not sit under a
      * reflexive Enter on an opening modal — initial focus goes to the non-destructive one (T-03-08).
@@ -32,15 +32,15 @@ export const DeleteColumnConfirm = ({ boardId, column, isOpen, onOpenChange, onS
      * regardless of the backdrop-dismissal prop (documented in `modal.tsx` itself).
      */
     const handleOpenChange = (nextIsOpen: boolean): void => {
-        if (isPending) {
+        if (isPending || nextIsOpen) {
             return;
         }
 
-        onOpenChange(nextIsOpen);
+        onClose();
     };
 
     return (
-        <Modal.Root isOpen={isOpen} onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
+        <Modal.Root isOpen onOpenChange={handleOpenChange} isDismissableOnBackdropClick={!isPending}>
             <Modal.Content initialFocus={keepColumnRef}>
                 <div className="flex flex-col gap-6">
                     <Modal.Title className="text-text-danger">Delete this column?</Modal.Title>

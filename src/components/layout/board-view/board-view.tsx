@@ -1,9 +1,9 @@
 "use client";
 
-import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useBoolean, useMediaQuery } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
@@ -12,22 +12,22 @@ import { AddColumnPlaceholder } from "@/features/boards/components/add-column-pl
 import { DeleteColumnConfirm } from "@/features/boards/components/delete-column-confirm/delete-column-confirm";
 import { RenameColumnModal } from "@/features/boards/components/rename-column-modal/rename-column-modal";
 import { SortableColumn } from "@/features/boards/components/sortable-column/sortable-column";
-import { useColumnDragSensors } from "@/features/boards/hooks/use-column-drag-sensors";
 import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
 import { useDeleteColumn, type DeleteColumnArgs } from "@/features/boards/hooks/use-delete-column";
 import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";
 import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
-import { createColumnReorderAnnouncements, toColumnCaption, toColumnDotToken } from "@/features/boards/model";
+import { toColumnCaption, toColumnDotToken } from "@/features/boards/model";
 import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 import { TaskCard } from "@/features/tasks/components/task-card/task-card";
 import { useReportAddTaskTarget } from "@/features/tasks/hooks/use-add-task-target";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
-import { createTaskMoveAnnouncements, toSubtaskSummary, toTaskMoveTargetPosition } from "@/features/tasks/model";
-import { createTaskAwareCollisionDetection, toDragItemData } from "@/features/tasks/task-drag-model";
+import { toSubtaskSummary } from "@/features/tasks/model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
-import { DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
 import { cn } from "@/lib/core/styling/cn";
+
+import { useBoardDragSession } from "./use-board-drag-session";
+import { useNewColumnReveal } from "./use-new-column-reveal";
 
 /*
  * COLUMN-01 and TASK-04 make this the board's client container, and D-18 makes it the composition
@@ -84,8 +84,6 @@ export const BoardView = ({
     const [columnBeingDeleted, setColumnBeingDeleted] = useState<ColumnFull | null>(
         defaultDeleteColumnTargetIndex === undefined ? null : (board.columns[defaultDeleteColumnTargetIndex] ?? null),
     );
-    const [liftedColumnId, setLiftedColumnId] = useState<string | null>(null);
-    const [liftedTaskId, setLiftedTaskId] = useState<string | null>(null);
     const columnCount = renderedColumns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
     const { renameColumn } = useRenameColumn({ boardId: board.id });
@@ -93,8 +91,13 @@ export const BoardView = ({
     const { moveTask: requestMove, movingTaskId } = useMoveTask({ boardId: board.id });
     const { deleteColumn, isPending: isDeletePending } = useDeleteColumn();
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
-
-    const sensors = useColumnDragSensors();
+    const { dndContextProps, liftedColumn, liftedTask, isTaskMoveDisabled } = useBoardDragSession({
+        boardId: board.id,
+        columns: renderedColumns,
+        moveTask: requestMove,
+        reorderColumns: requestReorder,
+    });
+    const { ghostColumnRef, revealOnNextGrowth } = useNewColumnReveal({ columnCount });
 
     const reportAddTaskTarget = useReportAddTaskTarget();
     /* A primitive key, not the array itself, so the effect below re-fires on real content changes only. */
@@ -117,41 +120,6 @@ export const BoardView = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps -- columnOptionsKey is the derived primitive that gates a real re-report; renderedColumns is fresh every render
     }, [board.id, columnOptionsKey, reportAddTaskTarget]);
 
-    const liftedColumn = renderedColumns.find((column) => column.id === liftedColumnId) ?? null;
-    const liftedTask =
-        renderedColumns.flatMap((column) => column.tasks).find((task) => task.id === liftedTaskId) ?? null;
-    /* Every column's own card ids, which is both the sortable item list and what narrows a collision. */
-    const columnTaskIds = renderedColumns.map((column) => ({
-        columnId: column.id,
-        taskIds: column.tasks.map((task) => task.id),
-    }));
-    const taskCount = renderedColumns.reduce((total, column) => total + column.tasks.length, 0);
-    /* UI-SPEC zero-one-many: one column holding one task is the only board a card cannot move on. */
-    const isTaskMoveDisabled = columnCount === 1 && taskCount === 1;
-
-    const ghostColumnRef = useRef<HTMLButtonElement>(null);
-    /** The column count when a create landed — a ref, so retiring the request costs no render. */
-    const scrollRequestedAtCount = useRef<number | null>(null);
-
-    /* No motion argument: the default resolves to the row's own CSS, which is what `motion-reduce` varies. */
-    const scrollGhostColumnIntoView = (): void => {
-        ghostColumnRef.current?.scrollIntoView({ inline: "end", block: "nearest" });
-    };
-
-    /*
-     * D-04's second pass. The row grows only once the action's own `refresh()` lands, so scrolling
-     * at the instant of success alone would move the row as it stood before the new column existed.
-     * Retired as it runs, so a later count change (a delete) cannot re-fire it (T-03-27).
-     */
-    useEffect(() => {
-        if (scrollRequestedAtCount.current === null || scrollRequestedAtCount.current === columnCount) {
-            return;
-        }
-
-        scrollRequestedAtCount.current = null;
-        scrollGhostColumnIntoView();
-    }, [columnCount]);
-
     const handleOpenChange = (nextIsOpen: boolean): void => {
         setIsAddColumnOpen(nextIsOpen);
         clearError();
@@ -166,9 +134,7 @@ export const BoardView = ({
         void createColumn({ boardId: board.id, name: values.name }).then((outcome) => {
             if (outcome.didCreate) {
                 closeAddColumn();
-                /* Confirms the create at once against the row as it stands; the effect finishes the job. */
-                scrollRequestedAtCount.current = columnCount;
-                scrollGhostColumnIntoView();
+                revealOnNextGrowth();
             }
         });
     };
@@ -198,88 +164,6 @@ export const BoardView = ({
         handleOpenChange(true);
     };
 
-    /* Branched on the item's DECLARED type, never on the id: an id lookup returns -1 for the other kind. */
-    const handleDragStart = ({ active }: DragStartEvent): void => {
-        if (toDragItemData(active.data.current)?.type === DRAG_ITEM_TYPE.TASK) {
-            setLiftedTaskId(String(active.id));
-
-            return;
-        }
-
-        setLiftedColumnId(String(active.id));
-    };
-
-    const handleDragCancel = (): void => {
-        setLiftedColumnId(null);
-        setLiftedTaskId(null);
-    };
-
-    /*
-     * TASK-04's one request per completed move. The destination comes from whatever the drop landed
-     * on — another card, or the column body itself, which is what makes an empty column reachable.
-     */
-    const moveDroppedTask = ({ active, over }: DragEndEvent): void => {
-        const overData = toDragItemData(over?.data.current);
-
-        if (over === null || overData?.columnId === undefined) {
-            return;
-        }
-
-        const targetColumnId = overData.columnId;
-
-        const destination = renderedColumns.find((column) => column.id === targetColumnId);
-        const source = renderedColumns.find((column) => column.tasks.some((task) => task.id === active.id));
-
-        if (destination === undefined || source === undefined) {
-            return;
-        }
-
-        const taskId = String(active.id);
-        const targetIndex = toTaskMoveTargetPosition({
-            destinationTaskIds: destination.tasks.map((task) => task.id),
-            taskId,
-            overTaskId: overData.type === DRAG_ITEM_TYPE.TASK ? String(over.id) : null,
-        });
-
-        /* A drop that ended exactly where it began is not a move, so it issues no request at all. */
-        if (source.id === targetColumnId && source.tasks.findIndex((task) => task.id === taskId) === targetIndex) {
-            return;
-        }
-
-        requestMove({ taskId, targetColumnId, targetIndex });
-    };
-
-    /*
-     * One completed move, one request (T-03-12). A drop with no target, or one that ended where it
-     * began, is not a move — every intermediate arrow step stayed inside the library.
-     */
-    const handleDragEnd = (event: DragEndEvent): void => {
-        const { active, over } = event;
-        const wasTaskLifted = toDragItemData(active.data.current)?.type === DRAG_ITEM_TYPE.TASK;
-        setLiftedColumnId(null);
-        setLiftedTaskId(null);
-
-        if (over === null || active.id === over.id) {
-            return;
-        }
-
-        if (wasTaskLifted) {
-            moveDroppedTask(event);
-
-            return;
-        }
-
-        /* Both indices come from the RENDERED array, which is the same order the sortable items are in. */
-        const fromIndex = renderedColumns.findIndex((column) => column.id === active.id);
-        const toIndex = renderedColumns.findIndex((column) => column.id === over.id);
-
-        if (fromIndex === -1 || toIndex === -1) {
-            return;
-        }
-
-        requestReorder({ fromIndex, toIndex });
-    };
-
     return (
         <>
             {columnCount === 0 ? (
@@ -298,30 +182,7 @@ export const BoardView = ({
                     </Button>
                 </div>
             ) : (
-                /*
-                 * The context id is derived from the board's own id, not left to the library: its
-                 * description ids come from a module-scope counter that drifts between the server
-                 * render and a fresh client, producing an `aria-describedby` hydration mismatch.
-                 */
-                <DndContext
-                    id={`board-columns-${board.id}`}
-                    sensors={sensors}
-                    /* Centre distance for a column, the nested-container strategy for a task (Pitfall 7). */
-                    collisionDetection={createTaskAwareCollisionDetection({ columnTaskIds })}
-                    /*
-                     * The library renders its own live region behind a mounted gate — separate from
-                     * the toast viewport by construction, which is what the UI-SPEC requires.
-                     */
-                    accessibility={{
-                        announcements: createTaskMoveAnnouncements({
-                            columns: renderedColumns,
-                            fallback: createColumnReorderAnnouncements({ columns: renderedColumns }),
-                        }),
-                    }}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragCancel={handleDragCancel}
-                >
+                <DndContext {...dndContextProps}>
                     {/*
                      * The column row scrolls horizontally; columns keep their width rather than
                      * wrapping. The one declaration governing D-04's motion and its opt-out lives here.
@@ -435,11 +296,8 @@ export const BoardView = ({
                     key={columnBeingRenamed.id}
                     boardId={board.id}
                     column={columnBeingRenamed}
-                    isOpen
-                    onOpenChange={(nextIsOpen) => {
-                        if (!nextIsOpen) {
-                            setColumnBeingRenamed(null);
-                        }
+                    onClose={() => {
+                        setColumnBeingRenamed(null);
                     }}
                     onSubmit={handleRenameSubmit}
                 />
@@ -451,11 +309,8 @@ export const BoardView = ({
                     key={columnBeingDeleted.id}
                     boardId={board.id}
                     column={columnBeingDeleted}
-                    isOpen
-                    onOpenChange={(nextIsOpen) => {
-                        if (!nextIsOpen) {
-                            setColumnBeingDeleted(null);
-                        }
+                    onClose={() => {
+                        setColumnBeingDeleted(null);
                     }}
                     onSubmit={handleDeleteSubmit}
                     isPending={isDeletePending}

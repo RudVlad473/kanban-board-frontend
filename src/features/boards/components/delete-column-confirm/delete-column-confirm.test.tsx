@@ -122,7 +122,7 @@ describeForEachDevice({
             await userEvent.click(screen.getByRole("button", { name: "Keep Column" }));
 
             // Assert
-            expect(Default.args.onOpenChange).toHaveBeenCalledWith(false);
+            expect(Default.args.onClose).toHaveBeenCalled();
             expect(Default.args.onSubmit).not.toHaveBeenCalled();
         });
 
@@ -134,7 +134,7 @@ describeForEachDevice({
             await userEvent.keyboard("{Escape}");
 
             // Assert
-            await expect.poll(() => Default.args.onOpenChange).toHaveBeenCalledWith(false);
+            await expect.poll(() => Default.args.onClose).toHaveBeenCalled();
             expect(screen.getByRole("button", { name: "Delete Column" })).toBeDefined();
             expect(Default.args.onSubmit).not.toHaveBeenCalled();
         });
@@ -147,7 +147,7 @@ describeForEachDevice({
             await page.elementLocator(getBackdropElement()).click({ position: { x: 4, y: 4 } });
 
             // Assert
-            await expect.poll(() => Default.args.onOpenChange).toHaveBeenCalledWith(false);
+            await expect.poll(() => Default.args.onClose).toHaveBeenCalled();
             expect(Default.args.onSubmit).not.toHaveBeenCalled();
         });
 
@@ -199,7 +199,7 @@ describeForEachDevice({
 
             // Assert
             await expect.element(screen.getByRole("dialog")).toBeVisible();
-            expect(Deleting.args.onOpenChange).not.toHaveBeenCalled();
+            expect(Deleting.args.onClose).not.toHaveBeenCalled();
         });
 
         /* Escape fires the close callback regardless of the backdrop-dismissal prop, so it is guarded too. */
@@ -212,7 +212,7 @@ describeForEachDevice({
 
             // Assert
             await expect.element(screen.getByRole("dialog")).toBeVisible();
-            expect(Deleting.args.onOpenChange).not.toHaveBeenCalled();
+            expect(Deleting.args.onClose).not.toHaveBeenCalled();
         });
 
         /* U-05: a failed delete closes the modal too — the failure is the hook's toast, not a banner here. */

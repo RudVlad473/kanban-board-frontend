@@ -16,8 +16,7 @@ const meta: Meta<typeof RenameColumnModal> = {
     args: {
         boardId: createBoardFull().id,
         column: createColumnFull({ name: "Todo", version: 3 }),
-        isOpen: true,
-        onOpenChange: fn(),
+        onClose: fn(),
         onSubmit: fn(),
     },
 };
@@ -36,20 +35,22 @@ export const LongColumnName: Story = {
 };
 
 /*
- * Holds the open state the modal itself does not own, so the closes-on-submit path is staged by the
- * stories file rather than by a host component declared in the test (docs/adr/tech/0025).
+ * Holds the mounted state the modal itself does not own, so the closes-on-submit path is staged by
+ * the stories file rather than by a host component declared in the test (docs/adr/tech/0025). It
+ * unmounts rather than toggling a prop, which is how `board-view.tsx` closes it in production.
  */
 const SettlingHost = (props: ComponentProps<typeof RenameColumnModal>) => {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isMounted, setIsMounted] = useState(true);
 
-    return (
+    return !isMounted ? null : (
         <RenameColumnModal
             {...props}
-            isOpen={isOpen}
-            onOpenChange={setIsOpen}
+            onClose={() => {
+                setIsMounted(false);
+            }}
             onSubmit={(values) => {
                 props.onSubmit(values);
-                setIsOpen(false);
+                setIsMounted(false);
             }}
         />
     );
