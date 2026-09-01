@@ -2,15 +2,20 @@
 
 import { EllipsisVertical } from "lucide-react";
 
+import { Dropdown } from "@/components/ui/dropdown/dropdown";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Menu } from "@/components/ui/menu/menu";
 import { Modal } from "@/components/ui/modal/modal";
 import { SubtaskChecklistRow } from "@/features/tasks/components/subtask-checklist-row/subtask-checklist-row";
-import { toSubtaskDetailCaption } from "@/features/tasks/model";
+import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
+import { toSubtaskDetailCaption, type NamedTaskColumn } from "@/features/tasks/model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 
 type Props = {
+    boardId: string;
     task: TaskFull;
+    /** Board order — the Current Status control lists these verbatim (mirrors AddTaskModal's Status). */
+    columns: NamedTaskColumn[];
     /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
     onClose: () => void;
     /** Toggles one subtask's completion — SUBTASK-02's mutation is a later plan (04-17). */
@@ -24,18 +29,37 @@ type Props = {
 };
 
 /**
- * TASK-02's detail view — a pure read off the already-parsed board, plus the kebab that opens
- * TASK-03/TASK-05's flows and the checklist SUBTASK-02 wires. Reuses the shipped `Modal.Content`
- * clamp unchanged (S-09: no visible close control; Esc/backdrop dismiss, focus returns to the card).
+ * TASK-02's detail view — a pure read off the already-parsed board, the kebab that opens
+ * TASK-03/TASK-05's flows, the checklist SUBTASK-02 wires, and D-10's Current Status control, a
+ * SECOND CALLER of the drag path's own `useMoveTask` (S-09: no visible close; Esc/backdrop dismiss).
  */
 export const TaskDetailModal = ({
+    boardId,
     task,
+    columns,
     onClose,
     onToggleSubtask,
     pendingSubtaskId = null,
     onEditTask,
     onDeleteTask,
 }: Props) => {
+    const { moveTask, isPending: isMoving } = useMoveTask({ boardId });
+    const currentColumnId = columns.find((column) => column.tasks.some((entry) => entry.id === task.id))?.id;
+    /*
+     * Without this, Base UI's `Select.Value` shows the raw id until the popup has opened once —
+     * passing `items` is what lets it resolve the label up front (Base UI docs).
+     */
+    const columnLabelsById = Object.fromEntries(columns.map((column) => [column.id, column.name]));
+
+    const handleColumnChange = (nextColumnId: string | null): void => {
+        const destination = columns.find((column) => column.id === nextColumnId);
+        if (destination === undefined || destination.id === currentColumnId) {
+            return;
+        }
+
+        moveTask({ taskId: task.id, targetColumnId: destination.id, targetIndex: destination.tasks.length });
+    };
+
     const handleOpenChange = (nextIsOpen: boolean): void => {
         if (nextIsOpen) {
             return;
@@ -128,6 +152,31 @@ export const TaskDetailModal = ({
                             </ul>
                         </>
                     )}
+                </div>
+
+                <div className="mt-6 flex flex-col gap-2">
+                    <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
+                        Current Status
+                    </p>
+
+                    <Dropdown.Root
+                        value={currentColumnId}
+                        onValueChange={handleColumnChange}
+                        items={columnLabelsById}
+                        isLoading={isMoving}
+                    >
+                        <Dropdown.Trigger />
+
+                        <Dropdown.Content>
+                            {columns.map((column) => {
+                                return (
+                                    <Dropdown.Item key={column.id} value={column.id}>
+                                        {column.name}
+                                    </Dropdown.Item>
+                                );
+                            })}
+                        </Dropdown.Content>
+                    </Dropdown.Root>
                 </div>
             </Modal.Content>
         </Modal.Root>

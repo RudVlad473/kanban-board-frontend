@@ -20,9 +20,9 @@ import { toColumnCaption, toColumnDotToken } from "@/features/boards/model";
 import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 import { TaskCard } from "@/features/tasks/components/task-card/task-card";
+import { TaskDetailModal } from "@/features/tasks/components/task-detail-modal/task-detail-modal";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
 import { toSubtaskSummary } from "@/features/tasks/model";
-import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { cn } from "@/lib/core/styling/cn";
 
 import { useBoardDragSession } from "./use-board-drag-session";
@@ -42,11 +42,8 @@ type Props = {
     defaultRenameColumnTargetIndex?: number;
     /** Storybook-only staging — seeds the delete confirmation open on the column at this index. */
     defaultDeleteColumnTargetIndex?: number;
-    /**
-     * Where a task card's open-detail activation lands. Absent in production for now: TASK-02's
-     * detail view is a later plan, and this is the seam it fills without changing the card's shape.
-     */
-    onOpenTaskDetail?: (task: TaskFull) => void;
+    /** Storybook-only staging — seeds the task detail view open on the task with this id. */
+    defaultOpenTaskId?: string;
 };
 
 export const BoardView = ({
@@ -54,7 +51,7 @@ export const BoardView = ({
     defaultIsAddColumnOpen = false,
     defaultRenameColumnTargetIndex,
     defaultDeleteColumnTargetIndex,
-    onOpenTaskDetail,
+    defaultOpenTaskId,
 }: Props) => {
     /*
      * The one entry the rename, the reorder and the task move all write, so what this renders is
@@ -83,6 +80,13 @@ export const BoardView = ({
     const [columnBeingDeleted, setColumnBeingDeleted] = useState<ColumnFull | null>(
         defaultDeleteColumnTargetIndex === undefined ? null : (board.columns[defaultDeleteColumnTargetIndex] ?? null),
     );
+    /*
+     * An ID, not a snapshot — a snapshot task/column pair would go stale the moment the Current
+     * Status control (or a later plan's edit/toggle) moves or edits it, so this re-derives from the
+     * live `renderedColumns` on every render instead (CONVENTIONS "one source of truth for open").
+     */
+    const [openTaskId, setOpenTaskId] = useState<string | null>(defaultOpenTaskId ?? null);
+    const openTask = renderedColumns.flatMap((column) => column.tasks).find((task) => task.id === openTaskId) ?? null;
     const columnCount = renderedColumns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
     const { renameColumn } = useRenameColumn({ boardId: board.id });
@@ -192,12 +196,9 @@ export const BoardView = ({
                                                                 key={task.id}
                                                                 task={task}
                                                                 columnId={column.id}
-                                                                onOpenDetail={
-                                                                    onOpenTaskDetail ??
-                                                                    (() => {
-                                                                        /* TASK-02's detail view is a later plan. */
-                                                                    })
-                                                                }
+                                                                onOpenDetail={(openedTask) => {
+                                                                    setOpenTaskId(openedTask.id);
+                                                                }}
                                                                 isMoveDisabled={isTaskMoveDisabled}
                                                                 isMoving={task.id === movingTaskId}
                                                             />
@@ -292,6 +293,28 @@ export const BoardView = ({
                     }}
                     onSubmit={handleDeleteSubmit}
                     isPending={isDeletePending}
+                />
+            )}
+
+            {openTask === null ? null : (
+                <TaskDetailModal
+                    /* Keyed on the target task, so reopening on another card starts from that task. */
+                    key={openTask.id}
+                    boardId={board.id}
+                    task={openTask}
+                    columns={renderedColumns}
+                    onClose={() => {
+                        setOpenTaskId(null);
+                    }}
+                    onToggleSubtask={() => {
+                        /* SUBTASK-02's toggle mutation is a later plan (04-17). */
+                    }}
+                    onEditTask={() => {
+                        /* TASK-03's edit flow is a later plan (04-18). */
+                    }}
+                    onDeleteTask={() => {
+                        /* TASK-05's delete flow is a later plan (04-20). */
+                    }}
                 />
             )}
         </>
