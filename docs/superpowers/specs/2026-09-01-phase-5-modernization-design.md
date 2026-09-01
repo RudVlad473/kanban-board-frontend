@@ -254,6 +254,21 @@ visitor sees.
 Deliberately not adopted: the blurred-product-backdrop treatment, which is the atmospheric
 vocabulary ruled out by the chosen direction.
 
+### The landing page
+
+**Kept, not deleted**, and rebuilt on the same split canvas — the form column is replaced by a
+pitch column: brand lockup, headline, sub-copy, and **one primary `Get started` with sign-in
+demoted to a link**. Chosen over two equal buttons: calmer, and it matches how the auth screens
+already cross-link to each other. The trade-off accepted is that returning users — the majority on
+a tool like this — reach sign-in through a link rather than a button.
+
+**Below the `md` breakpoint the board panel is dropped, not stacked.** A cropped board at 375px
+wide reads as a rendering bug. Mobile gets the lockup, headline, sub-copy and CTAs.
+
+Landing copy is **not yet decided**. The Phase 1 UI-SPEC's Copywriting Contract covers auth form
+strings and is silent on landing copy, so this is a gap rather than a departure; the prototype's
+headline is a placeholder that happens to read well, not an agreed string.
+
 ### The form
 
 The contract offers only email and password — no OAuth, no magic link. The form cannot be made
@@ -301,12 +316,25 @@ addresses only half the problem.
 
 ## Entry, empty and loading states
 
-In scope but **not yet visually reviewed** — the only section with no prototype behind it, and it
-should get one before planning:
+Prototyped 2026-09-01; awaiting sign-off.
 
-- Column and card entry stagger on first board load (shares the board→board mechanism).
-- Skeletons matching final layout rather than generic rows.
-- Designed empty column and empty board states.
+Today's board skeleton is **already layout-matched** (three columns, header bar, card blocks), so
+the gap is narrower than "skeletons don't match the layout". What changes:
+
+- **Skeleton blocks take the real card material** — 1px border, 8px radius, surface fill, with
+  interior lines where the title and progress bar will be — so they read as a card arriving rather
+  than a grey slab. Block count per column matches what is actually coming.
+- **One shimmer sweep per column replaces nine independently pulsing blocks.** Today every
+  `SkeletonRow` runs its own `animate-pulse`, so the whole screen throbs in unison.
+- **Skeleton crossfades out and columns land left-to-right**, the same stagger as a board switch.
+- **An empty column gets a dashed drop zone.** Today it is a header floating above nothing, which
+  reads as broken rather than empty — and it conceals that the column body *is* a drop target (the
+  code gives it a minimum height precisely so it stays reachable).
+- **The empty board list gets a ghosted preview** of what a board is, a heading in `text-primary`
+  rather than muted grey, and one line explaining the board→column→task model. Same button.
+
+Shimmer and stagger drop entirely under `prefers-reduced-motion`; the drop zone and ghost preview
+are static and unaffected.
 
 ## Reduced motion
 
@@ -346,10 +374,9 @@ Baseline impact:
 
 ## Open items for planning
 
-1. **Landing page: keep or delete?** Unanswered. It holds a title, one sentence and two links, and
-   costs a click; sign-in already links to Create Account. Redirecting `/` → `/login` is a
-   legitimate simplification and `PUBLIC_PATHS`/`proxy.ts` already handle the shape.
-2. Prototype the entry / empty / loading states before planning them.
+1. **Landing copy.** The headline and sub-copy are placeholders; the Copywriting Contract does not
+   cover this surface and should be extended to it.
+2. Sign off the entry / empty / loading prototype (built 2026-09-01).
 3. Confirm the 12px columns/modals radius, which was inferred rather than reviewed.
 4. Look at buttons-at-4px inside inputs-at-6px during planning.
 5. Write three ADRs: source-of-truth re-pointing; rejection of experimental React for route
