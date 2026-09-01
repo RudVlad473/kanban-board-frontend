@@ -512,7 +512,7 @@ register, and therefore that drift, as a side effect.
 
   8. No `*-action-storybook-stub.ts` file and no `serverActionStubAlias` entry exists for any
      Server Action this phase adds, and the full `browser` Vitest project passes without them.
-**Plans**: 16/22 plans executed
+**Plans**: 17/22 plans executed
 
 Plans:
 
@@ -573,7 +573,7 @@ to end on one path before any breadth is added.
 
 **Wave 12** *(blocked on 04-16)*
 
-- [ ] 04-17-PLAN.md — optimistic subtask completion toggle with its per-subtask lock and caption rollback (SUBTASK-02, D-08)
+- [x] 04-17-PLAN.md — optimistic subtask completion toggle with its per-subtask lock and caption rollback (SUBTASK-02, D-08)
 
 **Wave 13** *(blocked on 04-17)*
 
@@ -608,4 +608,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 14/14 | Complete    | 2026-08-27 |
-| 4. Task & Subtask Workflow | 16/22 | In Progress|  |
+| 4. Task & Subtask Workflow | 17/22 | In Progress|  |
