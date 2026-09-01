@@ -101,6 +101,14 @@ no-op and a fully green local visual run proves only that the specs executed. Pr
 compare against baselines locally — found 2026-08-27, after a 260/260 local run reported success on
 screenshots it never compared.
 
+`CI=1` is necessary but not sufficient. The `visual` project serves the prebuilt `storybook-static/`
+directory, which nothing rebuilds on its own and git does not track — a stale build renders old
+markup, so the run compares today's baselines against superseded code. Run `pnpm build-storybook`
+before recording baselines or trusting any visual result. Found 2026-09-01: `storybook-static` was
+two days older than `b4abc4c`, so a `--update-snapshots=all` re-record wrote pre-fix 86px images and
+then passed 300/300 against the very images it had just written, while CI — which always builds
+fresh — stayed red on those same snapshots.
+
 ## Set up every fresh worktree before running anything
 
 Three things a `git worktree add` does not bring across. Run all three first in any worktree-based
