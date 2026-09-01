@@ -307,9 +307,6 @@ export const BoardView = ({
                     onClose={() => {
                         setOpenTaskId(null);
                     }}
-                    onToggleSubtask={() => {
-                        /* SUBTASK-02's toggle mutation is a later plan (04-17). */
-                    }}
                     onEditTask={() => {
                         /* TASK-03's edit flow is a later plan (04-18). */
                     }}

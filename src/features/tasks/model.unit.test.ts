@@ -2,6 +2,7 @@ import type { Announcements } from "@dnd-kit/core";
 import { describe, expect, it } from "vitest";
 
 import {
+    applySubtaskCompletion,
     moveTaskInColumns,
     buildSubtaskRowPath,
     createEmptySubtaskRows,
@@ -13,7 +14,7 @@ import {
     toTaskMoveTargetPosition,
     type NamedTaskColumn,
 } from "@/features/tasks/model";
-import { createSubtasks, createTaskFull } from "@/test-utils/factories/board-full";
+import { createSubtask, createSubtasks, createTaskFull } from "@/test-utils/factories/board-full";
 
 describe("toSubtaskSummary", () => {
     it("reports the completed count out of the total", () => {
@@ -63,6 +64,70 @@ describe("toSubtaskDetailCaption", () => {
 
         // Assert
         expect(caption).toBe("Subtasks (0 of 0)");
+    });
+});
+
+describe("applySubtaskCompletion", () => {
+    const createColumnsWithSubtask = () => [
+        {
+            id: "column-1",
+            tasks: [createTaskFull({ id: "task-1", subtasks: [createSubtask({ id: "subtask-1" })] })],
+        },
+    ];
+
+    it("flips the named subtask's completion, leaving its other fields untouched", () => {
+        // Act
+        const columns = applySubtaskCompletion({
+            columns: createColumnsWithSubtask(),
+            taskId: "task-1",
+            subtaskId: "subtask-1",
+            isCompleted: true,
+        });
+
+        // Assert
+        expect(columns[0].tasks[0].subtasks[0]).toEqual(
+            expect.objectContaining({ id: "subtask-1", isCompleted: true }),
+        );
+    });
+
+    /* D-08's per-subtask key: a sibling task's own subtask is never touched by another task's toggle. */
+    it("leaves a different task's subtasks untouched", () => {
+        // Arrange
+        const columns = [
+            ...createColumnsWithSubtask(),
+            {
+                id: "column-2",
+                tasks: [createTaskFull({ id: "task-2", subtasks: [createSubtask({ id: "subtask-2" })] })],
+            },
+        ];
+
+        // Act
+        const rendered = applySubtaskCompletion({
+            columns,
+            taskId: "task-1",
+            subtaskId: "subtask-1",
+            isCompleted: true,
+        });
+
+        // Assert
+        expect(rendered[1].tasks[0].subtasks[0].isCompleted).toBe(false);
+    });
+
+    /* A subtask id the board no longer holds — e.g. a concurrent delete — yields the input untouched. */
+    it("hands the columns back untouched when the subtask is no longer on the board", () => {
+        // Arrange
+        const columns = createColumnsWithSubtask();
+
+        // Act
+        const rendered = applySubtaskCompletion({
+            columns,
+            taskId: "task-1",
+            subtaskId: "deleted",
+            isCompleted: true,
+        });
+
+        // Assert
+        expect(rendered).toEqual(columns);
     });
 });
 

@@ -4,24 +4,61 @@
  * (see docs/adr/tech/0025).
  */
 import { composeStories } from "@storybook/react";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import * as stories from "./task-detail-modal.stories";
 
-const { Default, NoDescription, NoSubtasks, LongTitle, SubtaskPending } = composeStories(stories);
+const { Default, NoDescription, NoSubtasks, LongTitle } = composeStories(stories);
+
+/*
+ * One recorder per action, looked up off the imported binding — `queue` accepts only that action's
+ * own awaited result and `calls` is typed as its first parameter (04-CONTEXT.md D-01).
+ */
+const updateSubtaskStub = actionStub(updateSubtaskAction);
+
+/** The board id every fixture below declares itself to belong to. */
+const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
 
 /** `createTaskFull()`'s own deterministic defaults, which `Default`'s fixture never overrides. */
+const DEFAULT_TASK_ID = "00000000-0000-4000-8000-00000000000b";
 const DEFAULT_TASK_TITLE = "Fixture Task";
 const DEFAULT_TASK_DESCRIPTION = "Fixture description";
-/* `createSubtasks({ count: 3, ... })`'s own deterministic first entry. */
+/* `FIXTURE_COLUMNS`'s own "Todo" entry — the only column the default task's own id sits in. */
+const DEFAULT_COLUMN_ID = "00000000-0000-4000-8000-c00000000001";
+/* `createSubtasks({ count: 3, completedCount: 1 })`'s own deterministic first (completed) entry. */
 const DEFAULT_SUBTASK_ID = "00000000-0000-4000-8000-a00000000001";
 const DEFAULT_SUBTASK_TITLE = "Fixture Subtask 1";
+/* Its own second (incomplete) sibling — the one used to prove a DIFFERENT row's toggle is independent. */
+const SECOND_SUBTASK_ID = "00000000-0000-4000-8000-a00000000002";
+const SECOND_SUBTASK_TITLE = "Fixture Subtask 2";
 const LONG_TASK_TITLE = "A task title long enough to wrap across several lines inside the detail view's panel";
+
+/** The two authored toast strings, as the user reads them — title and description run together. */
+const GENERIC_TOGGLE_TOAST = "Couldn't update subtask.Try again.";
+/* SYNC-01/C-08: the title matches the phase-wide conflict family exactly; only the description differs. */
+const CONFLICT_TOGGLE_TOAST = "This board changed somewhere else.Refreshing to show the latest.";
+
+/*
+ * Scoped to the notifications region, since the modal itself is a `dialog` too — an unscoped role
+ * query would report the modal and make "no toast was raised" pass for the wrong reason.
+ */
+const getRaisedToastTexts = (): (string | null)[] => {
+    const region = screen.queryByRole("region", { name: "Notifications" });
+
+    return region === null
+        ? []
+        : within(region)
+              .queryAllByRole("dialog")
+              .map((toast) => toast.textContent);
+};
 
 /*
  * ADR tech/0014: every component's suite runs at both viewports; this modal has no
@@ -109,29 +146,126 @@ describeForEachDevice({
             expect(Default.args.onDeleteTask).toHaveBeenCalledWith(Default.args.task);
         });
 
-        it("invokes onToggleSubtask with the clicked row's subtask id", async () => {
+        /*
+         * SUBTASK-02's own tracer proof: the checkbox flips before the write settles (optimistic),
+         * and issues exactly one call carrying every path segment plus the flipped completion flag.
+         */
+        it("flips the checkbox optimistically before the write settles, sending exactly one call", async () => {
             // Arrange
+            updateSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: { id: DEFAULT_SUBTASK_ID, title: DEFAULT_SUBTASK_TITLE, isCompleted: false, version: 1 },
+            });
+            updateSubtaskStub.hold();
+            await render(<Default />);
+            const checkbox = screen.getByRole("checkbox", { name: DEFAULT_SUBTASK_TITLE });
+            expect(checkbox.getAttribute("aria-checked")).toBe("true");
+
+            // Act
+            await userEvent.click(checkbox);
+
+            // Assert — flipped BEFORE the held write settles.
+            await expect.poll(() => checkbox.getAttribute("aria-checked")).toBe("false");
+            expect(updateSubtaskStub.calls).toHaveLength(1);
+            expect(updateSubtaskStub.calls[0]).toEqual({
+                boardId: FIXTURE_BOARD_ID,
+                columnId: DEFAULT_COLUMN_ID,
+                taskId: DEFAULT_TASK_ID,
+                subtaskId: DEFAULT_SUBTASK_ID,
+                version: 0,
+                isCompleted: false,
+            });
+
+            // Cleanup
+            updateSubtaskStub.settle();
+        });
+
+        /* D-08's in-flight lock: the composed disabled checkbox drops a same-row second press. */
+        it("marks the pending row's checkbox busy and drops a second press on the SAME row", async () => {
+            // Arrange
+            updateSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: { id: DEFAULT_SUBTASK_ID, title: DEFAULT_SUBTASK_TITLE, isCompleted: false, version: 1 },
+            });
+            updateSubtaskStub.hold();
+            await render(<Default />);
+            const checkbox = screen.getByRole("checkbox", { name: DEFAULT_SUBTASK_TITLE });
+
+            // Act — first press starts the in-flight write; the second targets the same row.
+            await userEvent.click(checkbox);
+            await expect.poll(() => checkbox.getAttribute("aria-busy")).toBe("true");
+            expect(checkbox).toHaveAttribute("aria-disabled", "true");
+            /*
+             * `force: true` bypasses Playwright's OWN actionability guard, which would otherwise hang
+             * waiting for the element to become enabled — this is what proves BASE UI'S own disabled
+             * check is the thing refusing the second press, not merely Playwright declining to try.
+             */
+            await userEvent.click(checkbox, { force: true });
+
+            // Assert — only one call ever reached the action.
+            expect(updateSubtaskStub.calls).toHaveLength(1);
+
+            // Cleanup
+            updateSubtaskStub.settle();
+        });
+
+        /* D-08: the lock is per-subtask, not per-task — a different row runs its own write independently. */
+        it("issues an independent call for a DIFFERENT row while the first is still in flight", async () => {
+            // Arrange
+            updateSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: { id: DEFAULT_SUBTASK_ID, title: DEFAULT_SUBTASK_TITLE, isCompleted: false, version: 1 },
+            });
+            updateSubtaskStub.hold();
+            await render(<Default />);
+            const firstCheckbox = screen.getByRole("checkbox", { name: DEFAULT_SUBTASK_TITLE });
+            const secondCheckbox = screen.getByRole("checkbox", { name: SECOND_SUBTASK_TITLE });
+
+            // Act
+            await userEvent.click(firstCheckbox);
+            await expect.poll(() => firstCheckbox.getAttribute("aria-busy")).toBe("true");
+            updateSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: { id: SECOND_SUBTASK_ID, title: SECOND_SUBTASK_TITLE, isCompleted: true, version: 1 },
+            });
+            await userEvent.click(secondCheckbox);
+
+            // Assert — the second row's own write went through while the first is still pending.
+            expect(updateSubtaskStub.calls).toHaveLength(2);
+            expect(updateSubtaskStub.calls[1]).toEqual(
+                expect.objectContaining({ subtaskId: SECOND_SUBTASK_ID, isCompleted: true }),
+            );
+
+            // Cleanup
+            updateSubtaskStub.settle();
+        });
+
+        /* UI-SPEC error/subtask-checklist-row: the checkbox AND the toast revert together, one case. */
+        it("reverts the checkbox and raises the authored toast on a toggle failure", async () => {
+            // Arrange
+            updateSubtaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await render(<Default />);
+            const checkbox = screen.getByRole("checkbox", { name: DEFAULT_SUBTASK_TITLE });
+
+            // Act
+            await userEvent.click(checkbox);
+
+            // Assert
+            await expect.poll(getRaisedToastTexts).toEqual([GENERIC_TOGGLE_TOAST]);
+            expect(checkbox.getAttribute("aria-checked")).toBe("true");
+        });
+
+        /* SYNC-01: the distinct version-conflict toast, matching the phase-wide title exactly (C-08). */
+        it("raises the version-conflict toast, matching the phase-wide title, on a stale-version toggle", async () => {
+            // Arrange
+            updateSubtaskStub.queue({ status: RESULT_STATUS.CONFLICT });
             await render(<Default />);
 
             // Act
-            screen.getByText(DEFAULT_SUBTASK_TITLE).click();
+            await userEvent.click(screen.getByRole("checkbox", { name: DEFAULT_SUBTASK_TITLE }));
 
             // Assert
-            expect(Default.args.onToggleSubtask).toHaveBeenCalledWith(DEFAULT_SUBTASK_ID);
-        });
-
-        /* D-08's in-flight lock: only the pending row's own checkbox is busy. */
-        it("marks only the pending subtask's checkbox busy", async () => {
-            // Act
-            await render(<SubtaskPending />);
-
-            // Assert
-            const checkboxes = screen.getAllByRole("checkbox");
-            expect(checkboxes.map((checkbox) => checkbox.getAttribute("aria-busy"))).toEqual([
-                "true",
-                "false",
-                "false",
-            ]);
+            await expect.poll(getRaisedToastTexts).toEqual([CONFLICT_TOGGLE_TOAST]);
         });
 
         /* S-09: no visible close control anywhere in this modal. */

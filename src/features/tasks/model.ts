@@ -104,6 +104,36 @@ export const moveTaskInColumns = <C extends TaskColumn>({
     });
 };
 
+/**
+ * The board as it reads with one subtask's completion already flipped — the reducer behind
+ * `useToggleSubtask`'s optimistic write. A subtask id the board no longer holds yields the input
+ * untouched, mirroring `moveTaskInColumns`.
+ */
+export const applySubtaskCompletion = <C extends TaskColumn>({
+    columns,
+    taskId,
+    subtaskId,
+    isCompleted,
+}: {
+    columns: C[];
+    taskId: string;
+    subtaskId: string;
+    isCompleted: boolean;
+}): C[] =>
+    columns.map((column) => ({
+        ...column,
+        tasks: column.tasks.map((task) =>
+            task.id === taskId
+                ? {
+                      ...task,
+                      subtasks: task.subtasks.map((subtask) =>
+                          subtask.id === subtaskId ? { ...subtask, isCompleted } : subtask,
+                      ),
+                  }
+                : task,
+        ),
+    }));
+
 /** A column as the announcement strings read it — its own name, plus the tasks they count against. */
 export type NamedTaskColumn = TaskColumn & { name: string };
 

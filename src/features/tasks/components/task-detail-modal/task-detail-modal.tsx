@@ -8,6 +8,7 @@ import { Menu } from "@/components/ui/menu/menu";
 import { Modal } from "@/components/ui/modal/modal";
 import { SubtaskChecklistRow } from "@/features/tasks/components/subtask-checklist-row/subtask-checklist-row";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
+import { useToggleSubtask } from "@/features/tasks/hooks/use-toggle-subtask";
 import { toSubtaskDetailCaption, type NamedTaskColumn } from "@/features/tasks/model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 
@@ -18,10 +19,6 @@ type Props = {
     columns: NamedTaskColumn[];
     /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
     onClose: () => void;
-    /** Toggles one subtask's completion — SUBTASK-02's mutation is a later plan (04-17). */
-    onToggleSubtask: (subtaskId: string) => void;
-    /** The one subtask currently mid-toggle, so its row alone reflects D-08's in-flight lock. */
-    pendingSubtaskId?: string | null;
     /** Opens the edit flow from the kebab — TASK-03's mutation is a later plan (04-18). */
     onEditTask: (task: TaskFull) => void;
     /** Opens the delete-confirmation flow from the kebab — TASK-05's mutation is a later plan (04-20). */
@@ -29,21 +26,13 @@ type Props = {
 };
 
 /**
- * TASK-02's detail view — a pure read off the already-parsed board, the kebab that opens
- * TASK-03/TASK-05's flows, the checklist SUBTASK-02 wires, and D-10's Current Status control, a
- * SECOND CALLER of the drag path's own `useMoveTask` (S-09: no visible close; Esc/backdrop dismiss).
+ * TASK-02's detail view: a pure read off the board, the kebab opening TASK-03/05's flows, D-10's
+ * Current Status control (a second `useMoveTask` caller), and SUBTASK-02's toggle, owned directly
+ * (S-09: no visible close; Esc/backdrop dismiss).
  */
-export const TaskDetailModal = ({
-    boardId,
-    task,
-    columns,
-    onClose,
-    onToggleSubtask,
-    pendingSubtaskId = null,
-    onEditTask,
-    onDeleteTask,
-}: Props) => {
+export const TaskDetailModal = ({ boardId, task, columns, onClose, onEditTask, onDeleteTask }: Props) => {
     const { moveTask, isPending: isMoving } = useMoveTask({ boardId });
+    const { subtasks, toggleSubtask, isSubtaskPending } = useToggleSubtask({ boardId, taskId: task.id, columns });
     const currentColumnId = columns.find((column) => column.tasks.some((entry) => entry.id === task.id))?.id;
     /*
      * Without this, Base UI's `Select.Value` shows the raw id until the popup has opened once —
@@ -120,7 +109,7 @@ export const TaskDetailModal = ({
                 ) : null}
 
                 <div className="mt-6">
-                    {task.subtasks.length === 0 ? (
+                    {subtasks.length === 0 ? (
                         <div className="flex flex-col gap-1">
                             {/* UI-SPEC empty/detail-view: the caption is SUPPRESSED, not "(0 of 0)". */}
                             <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
@@ -134,17 +123,17 @@ export const TaskDetailModal = ({
                     ) : (
                         <>
                             <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
-                                {toSubtaskDetailCaption(task.subtasks)}
+                                {toSubtaskDetailCaption(subtasks)}
                             </p>
 
                             <ul className="mt-4 flex flex-col gap-2">
-                                {task.subtasks.map((subtask) => {
+                                {subtasks.map((subtask) => {
                                     return (
                                         <li key={subtask.id}>
                                             <SubtaskChecklistRow
                                                 subtask={subtask}
-                                                onToggle={onToggleSubtask}
-                                                isPending={subtask.id === pendingSubtaskId}
+                                                onToggle={toggleSubtask}
+                                                isPending={isSubtaskPending(subtask.id)}
                                             />
                                         </li>
                                     );
