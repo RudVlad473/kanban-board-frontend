@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 /**
  * The backend's problem-response shape (RFC 7807-flavoured) and its named error codes — hand-
  * authored because the generated OpenAPI contract declares no error schema at all (Finding 4,
@@ -21,57 +23,30 @@ export type ProblemCode = (typeof PROBLEM_CODE)[keyof typeof PROBLEM_CODE];
  * The backend's problem-response body shape — every field its own error responses carry, verified
  * directly against the live backend (see 01-30-SUMMARY.md). `errors` is optional: only a
  * validation failure carries the per-field message map.
+ *
+ * `errors` catches to `undefined` rather than failing the parse. Every caller branches on `code`;
+ * letting a malformed side-channel map discard the whole problem would turn a specific backend
+ * error into a generic INTERNAL_ERROR at exactly the moment the specific one matters.
  */
-export type ProblemDetail = {
-    type: string;
-    title: string;
-    status: number;
-    detail: string;
-    instance: string;
-    code: ProblemCode;
-    errors?: Record<string, string>;
-};
+const problemDetailSchema = z.object({
+    type: z.string(),
+    title: z.string(),
+    status: z.number(),
+    detail: z.string(),
+    instance: z.string(),
+    code: z.enum(PROBLEM_CODE),
+    errors: z.record(z.string(), z.string()).optional().catch(undefined),
+});
 
-const PROBLEM_CODES: readonly string[] = Object.values(PROBLEM_CODE);
-
-const isProblemCode = (value: unknown): value is ProblemCode =>
-    typeof value === "string" && PROBLEM_CODES.includes(value);
+export type ProblemDetail = z.infer<typeof problemDetailSchema>;
 
 /**
- * Runtime guard for an unverified value claiming to be a `ProblemDetail` — shaped like
- * `isSessionPayload` (`session.ts`): every failure mode returns `null` rather than throwing.
- * A half-populated value (e.g. an unrecognised `code`) is never returned.
+ * Runtime guard for an unverified value claiming to be a `ProblemDetail` — every failure mode
+ * returns `null` rather than throwing. A half-populated value (e.g. an unrecognised `code`) is
+ * never returned.
  */
 export const parseProblemDetail = (value: unknown): ProblemDetail | null => {
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-        return null;
-    }
+    const parsed = problemDetailSchema.safeParse(value);
 
-    const candidate = value as Record<string, unknown>;
-
-    if (
-        typeof candidate.type !== "string" ||
-        typeof candidate.title !== "string" ||
-        typeof candidate.status !== "number" ||
-        typeof candidate.detail !== "string" ||
-        typeof candidate.instance !== "string" ||
-        !isProblemCode(candidate.code)
-    ) {
-        return null;
-    }
-
-    const problemDetail: ProblemDetail = {
-        type: candidate.type,
-        title: candidate.title,
-        status: candidate.status,
-        detail: candidate.detail,
-        instance: candidate.instance,
-        code: candidate.code,
-    };
-
-    if (typeof candidate.errors === "object" && candidate.errors !== null && !Array.isArray(candidate.errors)) {
-        problemDetail.errors = candidate.errors as Record<string, string>;
-    }
-
-    return problemDetail;
+    return parsed.success ? parsed.data : null;
 };
