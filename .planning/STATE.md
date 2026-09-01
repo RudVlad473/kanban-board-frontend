@@ -4,7 +4,7 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-15 tasks 1-3 committed; suite green; checkpoint held open pending review items #5 and #7
+stopped_at: Plan 04-15 tasks 1-3 committed; tree does not compile (3 tsc errors, half-migrated use-rename-column); finishing the board-detail cache migration
 last_updated: "2026-08-31T12:45:20.374Z"
 last_activity: 2026-09-01
 last_activity_desc: Suite settled — the sortable-column reorder-rollback failure was a test race, not an 81568db regression
@@ -235,7 +235,7 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-09-01
-Stopped at: Session resumed from HANDOFF.json; proceeding to settle the suite before review items #5 and #7
+Stopped at: Session resumed 2026-09-01 (2nd); tsc-broken tree confirmed (3 errors); user chose to FINISH the board-detail cache migration rather than revert
 
 **2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
 cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
