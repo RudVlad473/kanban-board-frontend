@@ -20,13 +20,9 @@ export const PROBLEM_CODE = {
 export type ProblemCode = (typeof PROBLEM_CODE)[keyof typeof PROBLEM_CODE];
 
 /**
- * The backend's problem-response body shape — every field its own error responses carry, verified
- * directly against the live backend (see 01-30-SUMMARY.md). `errors` is optional: only a
- * validation failure carries the per-field message map.
- *
- * `errors` catches to `undefined` rather than failing the parse. Every caller branches on `code`;
- * letting a malformed side-channel map discard the whole problem would turn a specific backend
- * error into a generic INTERNAL_ERROR at exactly the moment the specific one matters.
+ * The backend's problem-response body shape, verified against the live backend (01-30-SUMMARY.md);
+ * `errors` is carried only by a validation failure, and catches to `undefined` so a malformed
+ * side-channel map cannot discard the whole problem (rationale: 98bc6d2, docs/adr/tech/0024).
  */
 const problemDetailSchema = z.object({
     type: z.string(),

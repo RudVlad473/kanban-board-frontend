@@ -410,10 +410,8 @@ const eslintConfig = defineConfig([
                         "Return JSX with an explicit `return` inside a block body, never a concise body (docs/adr/tech/0028-jsx-return-style.md).",
                 },
                 /*
-                 * 8i: a ternary states the case that produces something, not the case that
-                 * produces nothing. `x === null ? null : <Thing/>` makes the reader hold a
-                 * negation to find the only branch that renders; `x !== null ? <Thing/> : null`
-                 * reads in the order it happens.
+                 * 8i: a leading `null` branch makes the reader hold a negation to reach the only
+                 * branch that renders; the message below states the fix (rationale: 8c750dc).
                  */
                 {
                     selector: 'ConditionalExpression[consequent.raw="null"]',
