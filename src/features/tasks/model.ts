@@ -17,6 +17,16 @@ export const toSubtaskSummary = (subtasks: { isCompleted: boolean }[]): string =
 };
 
 /**
+ * The detail view's own parenthesised caption (Copywriting Contract "Detail view subtasks
+ * caption"). Suppression at zero subtasks is the CALL SITE's decision, matching `toSubtaskSummary`.
+ */
+export const toSubtaskDetailCaption = (subtasks: { isCompleted: boolean }[]): string => {
+    const completedCount = subtasks.filter((subtask) => subtask.isCompleted).length;
+
+    return `Subtasks (${String(completedCount)} of ${String(subtasks.length)})`;
+};
+
+/**
  * The smallest column shape every derivation below reads. Declared structurally rather than as
  * `ColumnFull`, which lives in the boards feature this one may not import.
  */

@@ -7,6 +7,7 @@ import {
     createEmptySubtaskRows,
     createTaskMoveAnnouncements,
     toSubmittedSubtaskTitles,
+    toSubtaskDetailCaption,
     toSubtaskRowPlaceholder,
     toSubtaskSummary,
     toTaskMoveTargetPosition,
@@ -42,6 +43,26 @@ describe("toSubtaskSummary", () => {
 
         // Assert
         expect(summary).toBe("0 of 0 subtasks");
+    });
+});
+
+describe("toSubtaskDetailCaption", () => {
+    /* Copywriting Contract "Detail view subtasks caption": Subtasks ({N} of {M}), PDF p5 verbatim. */
+    it("reports the completed count out of the total in the parenthesised form", () => {
+        // Act
+        const caption = toSubtaskDetailCaption(createSubtasks({ count: 3, completedCount: 1 }));
+
+        // Assert
+        expect(caption).toBe("Subtasks (1 of 3)");
+    });
+
+    /* Suppression is the CALL SITE's decision — this stays total, matching `toSubtaskSummary`. */
+    it("still formats a zero-subtask task, leaving suppression to the call site", () => {
+        // Act
+        const caption = toSubtaskDetailCaption([]);
+
+        // Assert
+        expect(caption).toBe("Subtasks (0 of 0)");
     });
 });
 
