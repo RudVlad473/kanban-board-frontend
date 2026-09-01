@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-01T07:55:09.775602Z",
+  "timestamp": "2026-09-01T09:05:14.017465Z",
   "phase": "04",
   "phase_name": "Task & Subtask Workflow",
   "phase_dir": ".planning/phases/04-task-subtask-workflow",
@@ -46,15 +46,16 @@
       "status": "not_started"
     },
     {
-      "id": 7,
-      "name": "Resolve the suite: confirm 6f33011, and investigate the sortable-column reorder-rollback failure",
-      "status": "done",
-      "resolution": "Test-side race, not a regression. Fixed in 252c5b3."
-    },
-    {
       "id": 8,
       "name": "Write 04-15-SUMMARY.md and close the blocking checkpoint",
       "status": "not_started"
+    },
+    {
+      "id": 9,
+      "name": "Unify all four optimistic writes on TanStack 'via the UI'",
+      "status": "done",
+      "commit": "9fc3d88",
+      "resolution": "All four now read pending values from mutation variables via useOptimisticVariables. RenameOverrideProvider deleted. Two defects found and fixed: refused writes (actions return non-SUCCESS rather than throwing, so TanStack calls them successes) and a measured 114ms settle-to-refresh gap, bridged with the submitted version as the retirement signal. ADR docs/adr/tech/0029."
     }
   ],
   "blockers": [
@@ -87,6 +88,11 @@
       "decision": "Hold 04-15's checkpoint open until the review work lands",
       "rationale": "User's choice, so the plan's SUMMARY describes what actually shipped rather than what shipped first.",
       "phase": "04"
+    },
+    {
+      "decision": "All four optimistic writes use TanStack 'via the UI', not useOptimistic",
+      "rationale": "User's call, for one mechanism rather than two. useOptimistic cannot serve the board rename anyway: app/(dashboard)/layout.tsx streams the sidebar and header as independent Suspense boundaries with no common client owner. Recorded against advice for the two drag sites; see tech/0029 Consequences.",
+      "phase": "04"
     }
   ],
   "uncommitted_files": [
@@ -94,6 +100,6 @@
     ".planning/config.json",
     ".planning/state.json (untracked)"
   ],
-  "next_action": "Suite settled and green. Start review item #5 in src/components/layout/board-view/board-view.tsx (the isOpen/conditional-render redundancy, keeping the key={columnBeingRenamed.id}), then item #7, then write 04-15-SUMMARY.md and close the blocking checkpoint.",
+  "next_action": "Review items #5 and #7 remain (board-view.tsx isOpen/conditional redundancy, then extracting behaviours from the 464-line component), then write 04-15-SUMMARY.md and close the blocking checkpoint. Branch is 15 commits ahead of origin and unpushed.",
   "context_notes": "This session was a review-driven refactor batch on top of plan 04-15, not new feature work. Seven user review comments plus a Gemini 3.1 Pro code review were triaged; 2 of the 4 Gemini findings were FALSE and verified so against the compiler and the running app. Two orchestration lessons were paid for in rework and are recorded as blocking constraints."
 }
