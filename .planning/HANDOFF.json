@@ -1,108 +1,73 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-01T12:28:36.089010Z",
+  "timestamp": "2026-09-01T20:49:01.900Z",
   "phase": "04",
   "phase_name": "Task & Subtask Workflow",
   "phase_dir": ".planning/phases/04-task-subtask-workflow",
-  "plan": 15,
-  "task": 4,
-  "total_tasks": 4,
+  "plan": 18,
+  "task": 0,
+  "total_tasks": 3,
   "status": "paused",
   "completed_tasks": [
     {
-      "id": 1,
-      "name": "create-task/subtask actions + fan-out",
+      "id": "04-16",
+      "name": "Task detail view + status-control move (TASK-02, D-10)",
       "status": "done",
-      "commit": "a2bb50b"
+      "commit": "f6441d3",
+      "note": "3 impl tasks were already committed; this session verified the blocking checkpoint in the running app, user approved, SUMMARY written"
     },
     {
-      "id": 2,
-      "name": "Add New Task modal + useCreateTask",
+      "id": "04-17",
+      "name": "Subtask completion toggle, optimistic, per-subtask in-flight lock (SUBTASK-02, SYNC-01)",
       "status": "done",
-      "commit": "2e1dda6"
-    },
-    {
-      "id": 3,
-      "name": "header create button + provider bridge",
-      "status": "done",
-      "commit": "6ad4857"
-    },
-    {
-      "id": 4,
-      "name": "checkpoint:human-verify (gate=blocking)",
-      "status": "in_progress",
-      "progress": "All 6 steps verified against the running app by the orchestrator; CI green on all 4 jobs. User chose to HOLD the checkpoint open until the review/refactor work lands, so 04-15-SUMMARY.md is deliberately not written yet."
+      "commit": "4168cb6",
+      "note": "CI run 33556237763 green on all 4 jobs; orchestrator independently re-verified 3x full suite"
     }
   ],
   "remaining_tasks": [
-    {
-      "id": 10,
-      "name": "FINISH OR REVERT the half-migrated column-rename hook \u2014 tree does not compile",
-      "status": "in_progress"
-    },
-    {
-      "id": 11,
-      "name": "Convert use-reorder-columns and use-move-task to the board cache entry",
-      "status": "not_started"
-    },
-    {
-      "id": 12,
-      "name": "Write ADR tech/0030 \u2014 7 comments cite it and it does not exist",
-      "status": "not_started"
-    },
-    {
-      "id": 13,
-      "name": "Review item #5 (board-view isOpen redundancy) and #7 (extract behaviours)",
-      "status": "not_started"
-    },
-    {
-      "id": 14,
-      "name": "Write 04-15-SUMMARY.md and close the blocking checkpoint",
-      "status": "not_started"
-    }
+    {"id": "04-18", "name": "Edit task title and description from the kebab (TASK-03, SYNC-01)", "status": "not_started", "wave": 13, "autonomous": true},
+    {"id": "04-19", "name": "Add, inline rename, delete a subtask (SUBTASK-01/03/04)", "status": "not_started", "wave": 14, "autonomous": true},
+    {"id": "04-20", "name": "Delete a task behind a cascade-naming confirmation (TASK-05)", "status": "not_started", "wave": 15, "autonomous": true},
+    {"id": "04-21", "name": "Prove each phase success criterion in a real browser", "status": "not_started", "wave": 16, "autonomous": true},
+    {"id": "04-22", "name": "Close the phase: conventions + eight success criteria", "status": "not_started", "wave": 17, "autonomous": false}
   ],
-  "blockers": [
-    {
-      "description": "THE WORKING TREE DOES NOT COMPILE. 3 tsc errors, mid-conversion of use-rename-column.ts to the cache-based optimistic pattern. board-view.tsx:79 still destructures `columns` from useRenameColumn and passes `{ columns }`, but the hook now takes `{ boardId }` and returns only { renameColumn, isPending }. use-rename-column.ts:96 has a setQueryData updater whose return type does not match BoardFull. Nothing is committed, so `git checkout -- src/features/boards/hooks/use-rename-column.ts` plus deleting the three new board-query files reverts cleanly to the last green state.",
-      "type": "technical",
-      "workaround": "Either finish the conversion (board-view must read the board from useQuery and stop chaining the three hooks' `columns` returns) or revert the column-rename hook and the board-detail query files."
-    }
-  ],
+  "blockers": [],
   "async_jobs": [],
   "human_actions_pending": [
     {
-      "action": "Approve or reject plan 04-15's blocking human-verify checkpoint",
-      "context": "Orchestrator verified all 6 steps against the running app (task create with/without subtasks, both validation messages with no network call, no-subtask create, disabled button on a zero-column board, mock comparison at 1440x1024). CI green. User elected to hold it open until the refactors land.",
-      "blocking": true
+      "action": "Decide the fate of stash@{0} 'lint-staged automatic backup'",
+      "context": "Left by an earlier failed pre-commit hook run, predates this session. Not inspected or dropped because it may hold real work.",
+      "blocking": false
+    },
+    {
+      "action": "Optionally tidy nonprod test data",
+      "context": "Account verify-0415-a@example.com; boards 'Verify Board' + 'Empty Board'. This session added task 'Consolidate the pricing research' to Verify Board and could not delete it (task deletion is 04-20, not built yet).",
+      "blocking": false
     }
   ],
   "decisions": [
     {
-      "decision": "Optimistic UI uses React useOptimistic, not TanStack Query's optimistic-updates guide",
-      "rationale": "The board arrives as RSC props and ADR tech/0019 keeps reads out of the query cache, so setQueryData has nothing to write to. Applied to BOTH the task-move and column-reorder overrides.",
+      "decision": "Run the whole phase sequentially with ISOLATION=none instead of parallel worktrees",
+      "rationale": "worktree.base-check returns shouldDegrade=true: the Claude Code harness ignores worktree.baseRef:\"head\" and forks from origin/HEAD (6d0b8e4) while HEAD is on the unmerged phase branch (#48, upstream claude-code#44965). A worktree would silently start from main. Sequential also satisfies the prior session's one-agent-per-tree constraint.",
       "phase": "04"
     },
     {
-      "decision": "The add-task context bridge is KEPT, not deleted",
-      "rationale": "BoardView publishes renderedColumns - the optimistic tail of the rename/reorder/move chain - not the server's columns. A server-side feed would show a renamed column's OLD name in the Add Task Status list until refresh landed. The header also sits above the [boardId] segment and context does not flow upward. Renamed for clarity instead.",
+      "decision": "Approved 04-16's blocking checkpoint after orchestrator-side verification, not agent self-report",
+      "rationale": "All six steps driven headless through the project's own mcp__playwright__ server against a fresh dev server; mock compared numerically at 300 DPI. Row fills matched tokens exactly in both themes (light rgb(244,247,253), dark rgb(32,33,44)).",
       "phase": "04"
     },
     {
-      "decision": "Hold 04-15's checkpoint open until the review work lands",
-      "rationale": "User's choice, so the plan's SUMMARY describes what actually shipped rather than what shipped first.",
+      "decision": "Fixed a red comments:check at the branch tip that no plan owned",
+      "rationale": "eslint.config.mjs:412 and problem-detail.ts:22 exceeded PC-05's 3-prose-line cap, introduced by review-refactor commits 8c750dc/98bc6d2. CI would have been red. Compressed in 454c3dd with hooks running.",
       "phase": "04"
     },
     {
-      "decision": "All four optimistic writes use TanStack 'via the UI', not useOptimistic",
-      "rationale": "User's call, for one mechanism rather than two. useOptimistic cannot serve the board rename anyway: app/(dashboard)/layout.tsx streams the sidebar and header as independent Suspense boundaries with no common client owner. Recorded against advice for the two drag sites; see tech/0029 Consequences.",
+      "decision": "04-17's toggle follows ADR tech/0030 (query cache) rather than the deleted optimistic-mutation.ts helper",
+      "rationale": "ADR 0030 supersedes 0029 and 3089a6a deleted src/lib/client/optimistic-mutation.ts. All four existing hooks use setQueryData. The executor correctly ignored an orchestrator instruction that pointed at the removed file.",
       "phase": "04"
     }
   ],
-  "uncommitted_files": [
-    ".planning/STATE.md",
-    ".planning/config.json",
-    ".planning/state.json (untracked)"
-  ],
-  "next_action": "Decide finish-or-revert on the half-migrated column rename. The board-list slice (board rename, create, delete) is COMPLETE and was green at 1648/1648 with all 10 gates passing before this conversion started.",
-  "context_notes": "Session moved the Board LIST read into the TanStack Query cache (via-the-cache), replacing the via-the-UI approach committed in 9fc3d88. That part is done and verified. The Board DETAIL read (columns/tasks) conversion was started and is unfinished."
+  "uncommitted_files": [".planning/state.json"],
+  "next_action": "Force dispatch isolation to none, then dispatch plan 04-18 to a gsd-executor running sequentially on the main checkout. See .continue-here.md 'Dispatch recipe'.",
+  "context_notes": "Orchestrating /gsd-execute-phase 4. 17/22 plans complete; waves 13-17 remain, one plan per wave. Branch gsd/phase-04-task-subtask-workflow is at 4f85b7f, pushed, CI green through 4168cb6. Working method that is paying off: never trust an executor's own green claim - re-run the full suite three times plus all 12 gates from the orchestrator, and verify CI with gh run view before advancing a wave."
 }
