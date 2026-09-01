@@ -14,6 +14,7 @@ import { deleteColumnAction } from "@/features/boards/actions/delete-column-acti
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
+import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
@@ -56,6 +57,7 @@ const renameColumnStub = actionStub(renameColumnAction);
 const deleteColumnStub = actionStub(deleteColumnAction);
 const reorderColumnStub = actionStub(reorderColumnAction);
 const moveTaskStub = actionStub(moveTaskAction);
+const updateSubtaskStub = actionStub(updateSubtaskAction);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
@@ -90,6 +92,9 @@ const GENERIC_MOVE_TOAST = "Couldn't move task.Try again.";
  * the user to refresh, which is what the column phase's own wording still (correctly) says.
  */
 const CONFLICT_MOVE_TOAST = "This board changed somewhere else.Refreshing to show the latest.";
+
+/* SUBTASK-02's own generic failure copy, from `use-toggle-subtask.ts`'s `GENERIC_TOGGLE_FAILURE`. */
+const GENERIC_TOGGLE_TOAST = "Couldn't update subtask.Try again.";
 
 /*
  * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
@@ -168,6 +173,17 @@ const getColumnTaskTitles = (): { columnName: string | null | undefined; taskTit
             (item) => item.querySelector("button span")?.textContent ?? null,
         ),
     }));
+
+/*
+ * Read off the DOM rather than by role: Base UI marks the tree outside an open dialog `aria-hidden`,
+ * so a role query would report nothing while the detail modal a rollback test needs is open.
+ */
+const getCardCaption = (taskTitle: string): string | null => {
+    const card = Array.from(document.querySelectorAll("li")).find((item) => item.textContent.startsWith(taskTitle));
+
+    /* The content button's SECOND span, after the title's own first one (see `getColumnTaskTitles`). */
+    return card?.querySelectorAll("button span")[1]?.textContent ?? null;
+};
 
 /** Opens a column's kebab and activates its rename entry, leaving the modal open on that column. */
 const openRenameFor = async (columnName: string): Promise<void> => {
@@ -2053,6 +2069,56 @@ describeForEachDevice({
                 { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
             ]);
             await expect.poll(() => screen.getByRole("combobox").textContent).toBe("Fixture Column 1");
+        });
+
+        /*
+         * SUBTASK-02's own tracer proof at the board integration point: the checklist and the card's
+         * caption behind the modal derive from the SAME optimistic state, so a toggle updates both in
+         * the same instant — and the plural word never varies as the counts change (0 to 1).
+         */
+        it("changes the card's caption behind the modal in the same instant the checkbox flips", async () => {
+            // Arrange
+            updateSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: {
+                    id: "00000000-0000-4000-8000-00000000000a",
+                    title: "Fixture Subtask",
+                    isCompleted: true,
+                    version: 1,
+                },
+            });
+            await render(<TasksAcrossColumns />);
+            expect(getCardCaption("Fixture Task Alpha")).toBe("0 of 1 subtasks");
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+
+            // Act
+            await userEvent.click(await screen.findByRole("checkbox", { name: "Fixture Subtask" }));
+
+            // Assert — the checklist row and the card behind it, from one cache write.
+            await expect
+                .poll(() => screen.getByRole("checkbox", { name: "Fixture Subtask" }).getAttribute("aria-checked"))
+                .toBe("true");
+            expect(getCardCaption("Fixture Task Alpha")).toBe("1 of 1 subtasks");
+        });
+
+        /*
+         * UI-SPEC error/subtask-checklist-row: the checkbox and the card's caption revert TOGETHER,
+         * asserted as ONE behaviour — a caption-only rollback miss is the defect this case exists for.
+         */
+        it("reverts BOTH the checkbox and the card's caption together on a toggle failure", async () => {
+            // Arrange
+            updateSubtaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await render(<TasksAcrossColumns />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+            const checkbox = await screen.findByRole("checkbox", { name: "Fixture Subtask" });
+
+            // Act
+            await userEvent.click(checkbox);
+
+            // Assert
+            await expect.poll(getRaisedToastTexts).toEqual([GENERIC_TOGGLE_TOAST]);
+            expect(checkbox.getAttribute("aria-checked")).toBe("false");
+            expect(getCardCaption("Fixture Task Alpha")).toBe("0 of 1 subtasks");
         });
 
         /* D-11: the mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */
