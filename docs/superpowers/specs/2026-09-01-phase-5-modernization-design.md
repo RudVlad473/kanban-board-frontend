@@ -381,6 +381,62 @@ decoration imitating latency — the same argument that withdrew the password st
 
 These numbers apply to the board→board transition too, since it is the same mechanism.
 
+## Surfaces not yet examined
+
+Designed in this session: board material, drag, optimistic states, transitions, landing, auth, form,
+toast, loading and empty states. **Never opened**, and therefore carrying no decisions yet:
+
+### Sidebar (`src/components/layout/sidebar/sidebar.tsx`, `board-list.tsx`)
+
+On screen 100% of the time, and the largest uncovered geometric change in the app.
+
+- **Collapse/expand teleports.** `w-75` panel to a `fixed bottom-8 left-0` icon button, with no
+  transition on either direction. This is rule-2-licensed movement — something genuinely moved — and
+  it is the single most valuable motion still unspecified.
+- The collapsed trigger is a fifth entry on the UI-SPEC accent-reservation list; any restyling must
+  keep that reservation intact.
+- Active-board indication is `isSelected` on `BoardCard`, changing with no transition.
+- `Hide Sidebar` is `rounded-full` and becomes 4px under the app-wide button decision.
+- The board list is the panel's only scroll region and has no overflow affordance.
+
+### Dashboard header (`src/components/layout/dashboard-header/dashboard-header.tsx`)
+
+Not read. Note it is under active Phase 4 modification at time of writing.
+
+### Dropdown and Menu primitives
+
+`dropdown.tsx` and `menu.tsx` have no enter/exit transition. Base UI supplies the state attributes
+to drive one; the material rules already cover their surface.
+
+### Task detail modal — blocked
+
+**It does not exist yet.** `onOpenTaskDetail` is an optional prop on `board-view.tsx` with no
+caller; the view is delivered by plan `04-16`. The card→modal morph specified above therefore has
+no target until Phase 4 reaches that plan.
+
+## State changes with no visual consequence
+
+The filter, which does the work that brainstorming effects does not: *enumerate every state change
+the user causes that currently paints nothing.* Each qualifies under rule 2 by construction, because
+the user caused it.
+
+| Change | Status | Note |
+|--------|--------|------|
+| Sidebar collapse / expand | **built, instant** | Highest value; see above |
+| Card create | **built, instant** | Appears fully formed |
+| Board switch (active indicator) | **built, instant** | |
+| Column scrolled past overflow | **built, no affordance** | Nothing indicates more content below |
+| Column rename commit | **built, instant** | |
+| Subtask check | plan `04-17` | Tick, `2/3` caption and progress bar all jump |
+| Task delete | plan `04-20` | Should collapse — something genuinely moved |
+| Subtask add / rename / delete | plan `04-19` | |
+| Task edit save | plan `04-18` | |
+
+**The sequencing consequence is the important part.** Most of this list is not yet written. Phase 5
+can either retrofit motion onto code Phase 4 is about to produce, or Phase 4 can build it correctly
+once. Retrofitting is the more expensive of the two and touches the same files twice. This wants a
+decision before Phase 5 is planned, not during it.
+
 ## Reduced motion
 
 **Open decision, and a more consequential one than it looks.** The current policy, documented in
