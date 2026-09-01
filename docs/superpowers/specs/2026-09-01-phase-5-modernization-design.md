@@ -69,6 +69,22 @@ nothing else ever moves, movement *means* something.
 the only way a user learns their action was undone rather than that the board was always like
 this.
 
+**No exception for "decorative" surfaces.** A landing-page parallax was prototyped on the split
+canvas (2026-09-01) on the argument that the marketing surface is exempt because nothing is being
+operated there. It was rejected on review, and the reasoning generalises:
+
+- **No causal grounding.** Parallax reads as depth only where a spatial frame already exists —
+  scrolling through a scene, tilting a device. A cursor crossing a flat panel gives the board no
+  reason to move; the effect is arbitrary, which is rule 2's actual complaint, not a dosage problem.
+- **Not tunable.** Text translated at fractional pixels re-rasterises and reads soft, and the
+  interpolation that stops it feeling jittery is what makes it lag the cursor. There is no setting
+  that is both crisp and immediate.
+- The panel already carries motion that *is* caused by something — the drag choreography loop,
+  which shows the product performing a real action.
+
+So the exception was withdrawn: rule 2 holds on every surface, including the ones whose job is to
+impress.
+
 ### 3. State borders are derived per theme from `--border`, never borrowed from fill tokens
 
 `color.purple.500` and `color.red.500` are *fill* colours, darkened to carry white text at 4.5:1.
@@ -378,15 +394,16 @@ Discovered 2026-09-01 the hard way: a prototype screen that honoured the setting
 broken on the reviewer's own machine, because Windows had animations disabled. The person driving
 this phase is in the population it is switched off for.
 
-**Recommendation: "reduce, don't remove."** Drop large movement — drag travel, the card→modal morph,
+**Adopted provisionally as "reduce, don't remove" — assumed, not confirmed by the user.** Drop large movement — drag travel, the card→modal morph,
 staggers, directional slides — but keep short (≤120ms) opacity and colour changes, so the pending
 tint, the settle confirmation, the skeleton→content crossfade and the rollback (as a fade rather
 than a journey) all survive. That is the mainstream reading of the spec: the setting asks for less
 vestibular motion, not a static app. Cost: a second set of behaviours to define and test per
 animation, rather than one guard.
 
-Until that is decided, the sections above assume everything is dropped. View transitions
-additionally need:
+The sections above should be read against this policy rather than the old drop-everything one.
+Parallax is the one effect removed outright rather than reduced, since it carries no information.
+View transitions additionally need:
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -424,8 +441,9 @@ Baseline impact:
    cover this surface and should be extended to it.
 2. Empty-column drop zone is settled as "whisper" — a faint 56px outline with a quiet "No tasks",
    which brightens to a purple target only while a task drag is in progress. Nothing outstanding.
-3. **Decide the reduced-motion policy** — see that section. Blocks nothing structurally but
-   changes the acceptance criteria of every animation in the phase.
+3. **Confirm the reduced-motion policy.** "Reduce, don't remove" is currently an *assumption*, not
+   a decision. It changes the acceptance criteria of every animation in the phase, so it wants an
+   explicit yes before those criteria are written into plans.
 4. Confirm the 12px columns/modals radius, which was inferred rather than reviewed.
 5. Look at buttons-at-4px inside inputs-at-6px during planning.
 6. Write three ADRs: source-of-truth re-pointing; rejection of experimental React for route
