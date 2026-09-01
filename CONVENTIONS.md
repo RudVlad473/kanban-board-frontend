@@ -215,6 +215,14 @@ pointer rule reproduces exactly that failure, once per file.
   reference equality meant "expired". That is a re-implementation of what `useOptimistic` does
   natively, in two copies. If you find yourself tracking *when an optimistic value goes stale*, you
   are rebuilding the primitive. Enforcement: code review.
+- **A test asserting reverted state must poll for it, never read it synchronously after the toast.**
+  A failure toast is raised *inside* the transition's async body, but `useOptimistic` drops the
+  optimistic value only when the transition **completes** — a render later. `await
+  expect.poll(getRenderedColumnNames)`, not `expect(getRenderedColumnNames())`. The synchronous form
+  passes alone and fails about 1 run in 8 under full-suite load, which reads as a production
+  regression in the hook. Found 2026-09-01 (`252c5b3`); the hand-rolled predecessor called
+  `setOverride(null)` before the toast, so this race did not exist before the refactor.
+  Enforcement: code review.
 
 ## Server data flows down; a context bus must carry something the server does not have
 
