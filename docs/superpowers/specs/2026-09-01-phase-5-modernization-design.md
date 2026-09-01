@@ -228,9 +228,13 @@ The board is an RSC fetch behind Suspense, so there is a real wait we do not con
 on a slow one it finishes and leaves the user staring at nothing.
 
 So the transition **is** the load: a Suspense boundary per column, skeletons holding the column
-shape, each column landing as its data arrives, staggered ~180ms apart, entering *from* the
-navigated direction (down the sidebar → from below; up → from above). Plain CSS keyed on
-`boardId`. No experimental dependency.
+shape, and content replacing it when the data lands, entering *from* the navigated direction (down
+the sidebar → from below; up → from above). Plain CSS keyed on `boardId`. No experimental
+dependency.
+
+**No artificial stagger** (see Timing below). The per-column Suspense boundaries stay, so if columns
+genuinely resolve at different moments the user sees that ordering — but it is real data arrival,
+not a CSS delay imitating it.
 
 **Board title: masked slide.** The title well clips; old string leaves and new arrives from the
 navigated direction, so the two are never in the same place (rule 4). Chosen over an instant swap
@@ -326,15 +330,40 @@ the gap is narrower than "skeletons don't match the layout". What changes:
   than a grey slab. Block count per column matches what is actually coming.
 - **One shimmer sweep per column replaces nine independently pulsing blocks.** Today every
   `SkeletonRow` runs its own `animate-pulse`, so the whole screen throbs in unison.
-- **Skeleton crossfades out and columns land left-to-right**, the same stagger as a board switch.
+- **Skeleton hands off to content per column**, with no artificial stagger — see Timing below.
 - **An empty column gets a dashed drop zone.** Today it is a header floating above nothing, which
   reads as broken rather than empty — and it conceals that the column body *is* a drop target (the
   code gives it a minimum height precisely so it stays reachable).
 - **The empty board list gets a ghosted preview** of what a board is, a heading in `text-primary`
   rather than muted grey, and one line explaining the board→column→task model. Same button.
 
-Shimmer and stagger drop entirely under `prefers-reduced-motion`; the drop zone and ghost preview
-are static and unaffected.
+Shimmer and the handoff drop under `prefers-reduced-motion` (subject to open item 3); the drop
+zone and ghost preview are static and unaffected.
+
+### Timing
+
+| Value | Setting |
+|-------|---------|
+| Stagger between columns | **0ms** |
+| Skeleton fade-out | **70ms** |
+| Content fade-in | **110ms** |
+| Whole board settled | **180ms** |
+
+Content's `animation-delay` is `column-index × stagger + skeleton-out`, so **overlap is impossible
+by construction** — a column's content cannot begin before its own skeleton has finished. Verified
+across four candidate timings: worst simultaneous visibility 0.000 in every case, against 1.00 for
+the whole-layer crossfade this replaces, where a real card was painted at full opacity over a
+placeholder at full opacity.
+
+The rejected candidate took **880ms** for a board to settle. There is no rising `translateY` on
+entry either: content offset from the skeleton it replaced was the other half of the ghosting,
+since the two never lined up.
+
+An artificial stagger was prototyped at 180ms, 60ms and 35ms and **rejected**. Its justification was
+honesty about a real per-column wait; if the columns resolve in one RSC flush, a CSS cascade is
+decoration imitating latency — the same argument that withdrew the password strength meter.
+
+These numbers apply to the board→board transition too, since it is the same mechanism.
 
 ## Reduced motion
 
@@ -393,8 +422,8 @@ Baseline impact:
 
 1. **Landing copy.** The headline and sub-copy are placeholders; the Copywriting Contract does not
    cover this surface and should be extended to it.
-2. Sign off the entry / empty / loading prototype (built 2026-09-01): drop zone is settled as
-   "whisper"; the skeleton→content handoff timing (stagger / fade-out / fade-in) is still open.
+2. Empty-column drop zone is settled as "whisper" — a faint 56px outline with a quiet "No tasks",
+   which brightens to a purple target only while a task drag is in progress. Nothing outstanding.
 3. **Decide the reduced-motion policy** — see that section. Blocks nothing structurally but
    changes the acceptance criteria of every animation in the phase.
 4. Confirm the 12px columns/modals radius, which was inferred rather than reviewed.
