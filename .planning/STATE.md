@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-14 complete — wave 9 done, wave 10 next
-last_updated: "2026-08-30T10:52:00.000Z"
-last_activity: 2026-08-30
-last_activity_desc: Completed 04-14-PLAN.md (empty-column drop target, drag-surface visuals, SYNC-01 conflict branch)
-state_head: 293f1cc345e0e998498585d57c5e1d28e0def4d2
+stopped_at: Plan 04-15 tasks 1-3 committed; suite green; checkpoint held open pending review items #5 and #7
+last_updated: "2026-08-31T12:45:20.374Z"
+last_activity: 2026-09-01
+last_activity_desc: Suite settled — the sortable-column reorder-rollback failure was a test race, not an 81568db regression
+state_head: 8aecd206eed44409e22976d59dff034251878ba9
 progress:
   total_phases: 6
   completed_phases: 5
@@ -31,10 +31,12 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 
 ## Current Position
 
-Phase: 04 (Task & Subtask Workflow) — EXECUTING, wave 9 of 17 complete
-Plan: 04-14 (empty-column drop target, drag-surface visuals, SYNC-01) — complete, all 3 tasks done
+Phase: 04 (Task & Subtask Workflow) — EXECUTING
+Plan: 04-15 (create task/subtask actions, Add New Task modal, header create button) — 3/3
+implementation tasks committed; task 4 is a `checkpoint:human-verify` (gate=blocking) held OPEN by
+user choice so the SUMMARY describes the review-driven refactor batch that followed.
 Status: Executing Phase 04
-Last activity: 2026-08-30 — 04-14 resumed after a prior session died mid-Task-2 (Task 1 was
+Last activity: 2026-09-01 — suite settled; suspected useOptimistic regression disproved
 already committed, `5b75d60`). Reviewed and completed the inherited Task 2 WIP (added the
 empty-column half of S-08's drop indicator to `sortable-column.tsx`; everything else — lifted
 opacity/clone, reduce-motion drop — was already shipped by 04-12), fixed a genuine MOBILE-only
@@ -155,6 +157,15 @@ verifying phase 03 wave 4) —
 
 ### Blockers/Concerns
 
+- **RESOLVED 2026-09-01 (`252c5b3`)** — the `sortable-column.test.tsx` reorder-rollback failure that
+  put `81568db`'s `useOptimistic` column-reorder refactor "under suspicion" was a **test-side race**,
+  not a regression. `useReorderColumns` raises the toast inside the transition's async body, but
+  `useOptimistic` drops the optimistic order only when the transition *completes*; the test polled
+  for the toast then read the order synchronously. `board-view.test.tsx:1423` covers the same
+  production path, already polls, and has never flaked — that sibling is the proof. Both rollback
+  cases now poll. Six consecutive green full runs (3 pre-fix, 3 post-fix), 1659/1659 each;
+  tsc/lint/comments:check clean; negative control fails by timeout in both device variants.
+
 - **RESOLVED 2026-08-24** — `pnpm comments:check` was red on `main` and CI *does* gate on it, so
   the `quality` job had been failing since 2026-08-22 (4+ consecutive runs), short-circuiting every
   step after it: API-types drift, Build, Test, and the whole `visual` and `e2e` jobs. Both comment
@@ -223,8 +234,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-30
-Stopped at: Plan 04-14 complete — wave 9 done, ready for wave 10
+Last session: 2026-09-01
+Stopped at: Session resumed from HANDOFF.json; proceeding to settle the suite before review items #5 and #7
 
 **2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
 cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
@@ -256,4 +267,12 @@ ring, out of visual-regression scope), e2e 46/46 (the full project ran instead o
 scoped `tasks-move.e2e.spec.ts` — a `--` filter-syntax mistake, harmless but noted). Full
 narrative: `04-14-SUMMARY.md`.
 
-**Next:** `/gsd-execute-phase 04` from wave 10.
+**This session (2026-09-01, `/gsd-resume-work`):** Resumed from `HANDOFF.json`. Settled the one open
+correctness question from the previous session: the `sortable-column` reorder-rollback failure was a
+test race, not a regression from `81568db`'s `useOptimistic` rewrite — proved by the never-flaking
+polled sibling in `board-view.test.tsx:1423`, by six consecutive green full runs, and by a negative
+control that fails by timeout. Fixed test-only in `252c5b3`.
+
+**Next:** review item #5 (`board-view.tsx` `isOpen`/conditional-render redundancy, keep the `key`),
+then item #7 (extract behaviours from the 464-line component), then write `04-15-SUMMARY.md` and
+close the blocking checkpoint.

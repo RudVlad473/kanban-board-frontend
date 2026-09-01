@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-31T20:56:53.215Z",
+  "timestamp": "2026-09-01T07:55:09.775602Z",
   "phase": "04",
   "phase_name": "Task & Subtask Workflow",
   "phase_dir": ".planning/phases/04-task-subtask-workflow",
@@ -48,7 +48,8 @@
     {
       "id": 7,
       "name": "Resolve the suite: confirm 6f33011, and investigate the sortable-column reorder-rollback failure",
-      "status": "in_progress"
+      "status": "done",
+      "resolution": "Test-side race, not a regression. Fixed in 252c5b3."
     },
     {
       "id": 8,
@@ -58,14 +59,9 @@
   ],
   "blockers": [
     {
-      "description": "Suite is NOT confirmed green. Three post-6f33011 full runs gave exit 0 / 1 / 1. Run 1: 1659/1659. Run 2: one failure in sortable-column.test.tsx 'restores the whole board's order and raises the rollback toast when a reorder fails' - expected the original order, got the reordered one. Run 3: environmental only (Vite 'Failed to fetch dynamically imported module' on Storybook setup files; 1653 passed, no assertion failed).",
+      "description": "RESOLVED 2026-09-01 (252c5b3). The sortable-column reorder-rollback failure was a test-side race, not a regression from 81568db. useReorderColumns raises the toast inside the transition's async body, but useOptimistic drops the optimistic order only when the transition completes; the test asserted order synchronously right after polling for the toast. board-view.test.tsx:1423 covers the same production path, already polls, and has never flaked. Both rollback cases (ERROR and CONFLICT) now poll. Six consecutive full runs green (3 pre-fix, 3 post-fix), 1659/1659 each; tsc/lint/comments:check clean; negative control fails by timeout in both device variants.",
       "type": "technical",
-      "workaround": "Re-run `pnpm test` several times. Treat run 3's import error as infrastructure noise, not a code defect."
-    },
-    {
-      "description": "SUSPECTED REGRESSION, unproven: the sortable-column reorder-ROLLBACK failure is in exactly the path 81568db rewrote (useOptimistic for column reorder, where 'dropping the action IS the rollback'). It appeared in 1 of 5 post-refactor runs and in 0 of 3 pre-refactor runs - suggestive but not conclusive, since pre-refactor only had 3 samples.",
-      "type": "technical",
-      "workaround": "Run `pnpm exec vitest run --project browser src/features/boards/components/sortable-column/sortable-column.test.tsx` repeatedly, and under full-suite load. If it reproduces, inspect the failure path in src/features/boards/hooks/use-reorder-columns.ts - specifically whether the optimistic value is actually dropped when mutateAsync rejects or returns a non-SUCCESS status."
+      "workaround": "None needed \u2014 resolved."
     }
   ],
   "async_jobs": [],
@@ -98,6 +94,6 @@
     ".planning/config.json",
     ".planning/state.json (untracked)"
   ],
-  "next_action": "Re-run `pnpm test` several times. 6f33011 appears to have fixed what it targeted - the board-view MOBILE drag failures did NOT recur in any of the 3 runs. The open question is the sortable-column reorder-rollback failure (1 of 5 runs), which sits in the path 81568db rewrote. Settle that before starting review items #5 and #7.",
+  "next_action": "Suite settled and green. Start review item #5 in src/components/layout/board-view/board-view.tsx (the isOpen/conditional-render redundancy, keeping the key={columnBeingRenamed.id}), then item #7, then write 04-15-SUMMARY.md and close the blocking checkpoint.",
   "context_notes": "This session was a review-driven refactor batch on top of plan 04-15, not new feature work. Seven user review comments plus a Gemini 3.1 Pro code review were triaged; 2 of the 4 Gemini findings were FALSE and verified so against the compiler and the running app. Two orchestration lessons were paid for in rework and are recorded as blocking constraints."
 }
