@@ -26,5 +26,9 @@ export const useOpenBoardColumns = (): { boardId: string | null; columns: { id: 
         queryFn: skipToken,
     });
 
-    return { boardId, columns: board?.columns ?? [] };
+    /*
+     * `[]` on the no-board route by construction, never whatever sits under the `["board", ""]`
+     * key this must still subscribe to — a hook cannot be called conditionally.
+     */
+    return { boardId, columns: boardId === null ? [] : (board?.columns ?? []) };
 };

@@ -5,7 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen, within } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -24,10 +24,20 @@ import * as stories from "./add-task-button.stories";
  */
 const openBoardId = "00000000-0000-4000-8000-000000000001";
 
+/*
+ * A getter, not a fixed string: `useOpenBoardColumns` derives the board from the pathname, so a
+ * pinned one would make the no-board story assert nothing (mirrors `dashboard-header.test.tsx`).
+ */
+const routerState = vi.hoisted(() => ({ pathname: "/boards/00000000-0000-4000-8000-000000000001" }));
+
+beforeEach(() => {
+    routerState.pathname = `/boards/${openBoardId}`;
+});
+
 // eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
 vi.mock("next/navigation", () =>
     createNextNavigationShim({
-        pathname: "/boards/00000000-0000-4000-8000-000000000001",
+        pathname: () => routerState.pathname,
         refresh: () => undefined,
     }),
 );
@@ -77,6 +87,9 @@ describeForEachDevice({
         });
 
         it("renders the create button disabled with no board open", async () => {
+            // Arrange
+            routerState.pathname = "/boards";
+
             // Act
             await render(<NoBoardOpen />);
 
