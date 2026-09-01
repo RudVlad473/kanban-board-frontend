@@ -155,7 +155,7 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
     const resolveColumn = (id: UniqueIdentifier): { name: string; position: string } | null => {
         const index = columns.findIndex((column) => column.id === id);
 
-        return index === -1 ? null : { name: columns[index].name, position: String(index + 1) };
+        return index !== -1 ? { name: columns[index].name, position: String(index + 1) } : null;
     };
 
     return {
@@ -174,7 +174,7 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
          */
         onDragOver: ({ active, over }) => {
             const column = resolveColumn(active.id);
-            const target = over === null || over.id === active.id ? null : resolveColumn(over.id);
+            const target = over !== null && over.id !== active.id ? resolveColumn(over.id) : null;
 
             return column === null || target === null
                 ? undefined
@@ -183,7 +183,7 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
 
         onDragEnd: ({ active, over }) => {
             const column = resolveColumn(active.id);
-            const target = over === null ? null : resolveColumn(over.id);
+            const target = over !== null ? resolveColumn(over.id) : null;
 
             return column === null || target === null
                 ? undefined

@@ -53,7 +53,7 @@ export const LongColumnName: Story = {
 const SettlingHost = (props: ComponentProps<typeof DeleteColumnConfirm>) => {
     const [isMounted, setIsMounted] = useState(true);
 
-    return !isMounted ? null : (
+    return isMounted ? (
         <DeleteColumnConfirm
             {...props}
             onClose={() => {
@@ -64,7 +64,7 @@ const SettlingHost = (props: ComponentProps<typeof DeleteColumnConfirm>) => {
                 setIsMounted(false);
             }}
         />
-    );
+    ) : null;
 };
 
 /** U-05: the modal closes once the delete settles, whether it succeeded or failed. */

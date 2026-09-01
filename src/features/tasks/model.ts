@@ -151,13 +151,13 @@ export const createTaskMoveAnnouncements = ({
     const resolveColumnBody = (id: UniqueIdentifier): { column: string; position: string; total: string } | null => {
         const column = columns.find((entry) => buildColumnBodyDroppableId(entry.id) === String(id));
 
-        return column === undefined
-            ? null
-            : {
+        return column !== undefined
+            ? {
                   column: column.name,
                   position: String(column.tasks.length + 1),
                   total: String(column.tasks.length + 1),
-              };
+              }
+            : null;
     };
 
     /** Whatever the drag is over: another card, or an empty column's body. */
@@ -181,7 +181,7 @@ export const createTaskMoveAnnouncements = ({
 
             /* The library fires this once on the lift, over the item's own slot — announcing that would overwrite "Picked up …". */
             const target =
-                event.over === null || event.over.id === event.active.id ? null : resolveTarget(event.over.id);
+                event.over !== null && event.over.id !== event.active.id ? resolveTarget(event.over.id) : null;
             if (target === null) {
                 return undefined;
             }
@@ -198,7 +198,7 @@ export const createTaskMoveAnnouncements = ({
                 return fallback.onDragEnd(event);
             }
 
-            const target = event.over === null ? null : resolveTarget(event.over.id);
+            const target = event.over !== null ? resolveTarget(event.over.id) : null;
 
             return target === null
                 ? undefined

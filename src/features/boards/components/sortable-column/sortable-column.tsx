@@ -97,7 +97,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
             }}
             className={cn("relative flex w-70 shrink-0 flex-col rounded-sm", isDragging && "opacity-50")}
         >
-            {!isInsertionPoint ? null : (
+            {isInsertionPoint ? (
                 /*
                  * Drawn in the gutter rather than left to the reflow alone: with unequal column
                  * heights a shifted preview reads ambiguously about which side the drop lands on.
@@ -109,7 +109,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
                         activeIndex < index ? "-right-3.5" : "-left-3.5",
                     )}
                 />
-            )}
+            ) : null}
 
             {/*
              * The scroll region, holding the header so it has real focusable content — which is what
@@ -133,7 +133,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
                 <ul ref={setTaskListNodeRef} className="relative flex min-h-22 flex-col gap-5">
                     {renderTasks()}
 
-                    {!isEmptyBodyInsertionPoint ? null : (
+                    {isEmptyBodyInsertionPoint ? (
                         /*
                          * S-08's own bar, drawn at the body's own top edge rather than a card's gap —
                          * an empty column has no gap to draw it inside.
@@ -142,7 +142,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
                             aria-hidden="true"
                             className="pointer-events-none absolute inset-x-0 top-0 h-1 rounded-full bg-bg-primary"
                         />
-                    )}
+                    ) : null}
                 </ul>
             </div>
         </section>

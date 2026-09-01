@@ -113,11 +113,11 @@ export const TaskDetailModal = ({
                 </div>
 
                 {/* UI-SPEC empty/detail-view: no block at all when there is none — no placeholder line. */}
-                {task.description === undefined ? null : (
+                {task.description !== undefined ? (
                     <p className="mt-6 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
                         {task.description}
                     </p>
-                )}
+                ) : null}
 
                 <div className="mt-6">
                     {task.subtasks.length === 0 ? (

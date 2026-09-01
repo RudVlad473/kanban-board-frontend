@@ -156,7 +156,7 @@ const readResponse = async (response) => {
     const text = await response.text();
 
     try {
-        return { status: response.status, text, json: text === "" ? null : JSON.parse(text) };
+        return { status: response.status, text, json: text !== "" ? JSON.parse(text) : null };
     } catch {
         return { status: response.status, text, json: null };
     }

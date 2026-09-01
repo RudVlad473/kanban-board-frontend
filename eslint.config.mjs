@@ -409,6 +409,17 @@ const eslintConfig = defineConfig([
                     message:
                         "Return JSX with an explicit `return` inside a block body, never a concise body (docs/adr/tech/0028-jsx-return-style.md).",
                 },
+                /*
+                 * 8i: a ternary states the case that produces something, not the case that
+                 * produces nothing. `x === null ? null : <Thing/>` makes the reader hold a
+                 * negation to find the only branch that renders; `x !== null ? <Thing/> : null`
+                 * reads in the order it happens.
+                 */
+                {
+                    selector: 'ConditionalExpression[consequent.raw="null"]',
+                    message:
+                        "Put the branch that produces a value first: write `cond ? value : null`, not `cond ? null : value` — invert the condition. If both branches are genuinely empty (e.g. `null` vs `undefined` for a library default), add a `// eslint-disable-next-line no-restricted-syntax` with a one-line reason.",
+                },
             ],
         },
     },

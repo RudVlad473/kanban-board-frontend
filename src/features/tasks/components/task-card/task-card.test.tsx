@@ -36,7 +36,7 @@ const getContentButton = (card: Element): HTMLElement => {
 const getCaption = (card: Element): string | null => {
     const spans = getContentButton(card).querySelectorAll(":scope > span");
 
-    return spans.length < 2 ? null : spans[1].textContent;
+    return spans.length >= 2 ? spans[1].textContent : null;
 };
 
 describeForEachDevice({

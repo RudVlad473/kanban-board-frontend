@@ -42,7 +42,7 @@ export const LongColumnName: Story = {
 const SettlingHost = (props: ComponentProps<typeof RenameColumnModal>) => {
     const [isMounted, setIsMounted] = useState(true);
 
-    return !isMounted ? null : (
+    return isMounted ? (
         <RenameColumnModal
             {...props}
             onClose={() => {
@@ -53,7 +53,7 @@ const SettlingHost = (props: ComponentProps<typeof RenameColumnModal>) => {
                 setIsMounted(false);
             }}
         />
-    );
+    ) : null;
 };
 
 /** U-05: the modal closes on submit rather than holding a spinner — the rename is optimistic. */

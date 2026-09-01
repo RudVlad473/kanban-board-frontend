@@ -73,7 +73,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
      * shipped `toSubtaskSummary` stays total and the board agrees with the detail view's own
      * `Subtasks (0 of 0)` suppression.
      */
-    const subtaskSummary = task.subtasks.length === 0 ? null : toSubtaskSummary(task.subtasks);
+    const subtaskSummary = task.subtasks.length > 0 ? toSubtaskSummary(task.subtasks) : null;
 
     return (
         <li
@@ -89,7 +89,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
                 isDragging && "opacity-50",
             )}
         >
-            {!isInsertionPoint ? null : (
+            {isInsertionPoint ? (
                 /*
                  * S-08's axis-flipped twin of the column indicator: a full-width bar drawn in the
                  * 20px inter-card gap, so the insertion point reads without waiting for a reflow.
@@ -101,7 +101,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
                         isInsertionBelow ? "-bottom-2.5" : "-top-2.5",
                     )}
                 />
-            )}
+            ) : null}
 
             {/*
              * D-13: the content button carries neither the activator ref nor the listeners, and stops
@@ -123,11 +123,11 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
                 </span>
 
                 {/* UI-SPEC empty/task-card: at zero subtasks there is no caption element at all. */}
-                {subtaskSummary === null ? null : (
+                {subtaskSummary !== null ? (
                     <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
                         {subtaskSummary}
                     </span>
-                )}
+                ) : null}
             </button>
 
             {/*

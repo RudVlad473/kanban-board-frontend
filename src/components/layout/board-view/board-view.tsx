@@ -75,10 +75,10 @@ export const BoardView = ({
      */
     const [openCount, setOpenCount] = useState(0);
     const [columnBeingRenamed, setColumnBeingRenamed] = useState<ColumnFull | null>(
-        defaultRenameColumnTargetIndex === undefined ? null : (board.columns[defaultRenameColumnTargetIndex] ?? null),
+        defaultRenameColumnTargetIndex !== undefined ? (board.columns[defaultRenameColumnTargetIndex] ?? null) : null,
     );
     const [columnBeingDeleted, setColumnBeingDeleted] = useState<ColumnFull | null>(
-        defaultDeleteColumnTargetIndex === undefined ? null : (board.columns[defaultDeleteColumnTargetIndex] ?? null),
+        defaultDeleteColumnTargetIndex !== undefined ? (board.columns[defaultDeleteColumnTargetIndex] ?? null) : null,
     );
     /*
      * An ID, not a snapshot — a snapshot task/column pair would go stale the moment the Current
@@ -222,23 +222,24 @@ export const BoardView = ({
 
                     {/* The full-opacity preview that follows the pointer while the column itself stays
                         in place at reduced opacity; the settle is dropped entirely under reduce-motion. */}
+                    {/* eslint-disable-next-line no-restricted-syntax -- null disables dnd-kit's drop animation and undefined means "use its default"; both branches are empty, so inverting only adds a negation */}
                     <DragOverlay dropAnimation={prefersReducedMotion ? null : undefined}>
-                        {liftedTask === null ? null : (
+                        {liftedTask !== null ? (
                             /* The card's own anatomy minus its controls — a preview, not a second interactive copy. */
                             <div className="flex w-70 flex-col gap-2 rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-lg">
                                 <span className="font-heading-m text-heading-m [font-weight:var(--font-weight-heading-m)] break-words text-text-primary">
                                     {liftedTask.title}
                                 </span>
 
-                                {liftedTask.subtasks.length === 0 ? null : (
+                                {liftedTask.subtasks.length > 0 ? (
                                     <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
                                         {toSubtaskSummary(liftedTask.subtasks)}
                                     </span>
-                                )}
+                                ) : null}
                             </div>
-                        )}
+                        ) : null}
 
-                        {liftedColumn === null ? null : (
+                        {liftedColumn !== null ? (
                             <div className="flex w-70 items-center gap-4 rounded-sm bg-bg-surface px-2 py-3 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase shadow-lg">
                                 <span
                                     aria-hidden="true"
@@ -255,7 +256,7 @@ export const BoardView = ({
                                     })}
                                 </span>
                             </div>
-                        )}
+                        ) : null}
                     </DragOverlay>
                 </DndContext>
             )}
@@ -269,7 +270,7 @@ export const BoardView = ({
                 errorMessage={errorMessage}
             />
 
-            {columnBeingRenamed === null ? null : (
+            {columnBeingRenamed !== null ? (
                 <RenameColumnModal
                     /* Keyed on the target column, so reopening on another header seeds that column's name. */
                     key={columnBeingRenamed.id}
@@ -280,9 +281,9 @@ export const BoardView = ({
                     }}
                     onSubmit={handleRenameSubmit}
                 />
-            )}
+            ) : null}
 
-            {columnBeingDeleted === null ? null : (
+            {columnBeingDeleted !== null ? (
                 <DeleteColumnConfirm
                     /* Keyed on the target column, so reopening on another header names that column. */
                     key={columnBeingDeleted.id}
@@ -294,9 +295,9 @@ export const BoardView = ({
                     onSubmit={handleDeleteSubmit}
                     isPending={isDeletePending}
                 />
-            )}
+            ) : null}
 
-            {openTask === null ? null : (
+            {openTask !== null ? (
                 <TaskDetailModal
                     /* Keyed on the target task, so reopening on another card starts from that task. */
                     key={openTask.id}
@@ -316,7 +317,7 @@ export const BoardView = ({
                         /* TASK-05's delete flow is a later plan (04-20). */
                     }}
                 />
-            )}
+            ) : null}
         </>
     );
 };

@@ -27,7 +27,7 @@ const BOARD_DETAIL_PATH_PATTERN = new RegExp(`^${ROUTE.BOARDS}/([^/]+)$`);
 export const toBoardIdFromPath = (pathname: string): string | null => {
     const match = BOARD_DETAIL_PATH_PATTERN.exec(pathname);
 
-    return match === null ? null : match[1];
+    return match !== null ? match[1] : null;
 };
 
 /**

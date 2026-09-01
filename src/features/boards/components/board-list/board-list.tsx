@@ -56,7 +56,7 @@ export const BoardList = ({
         setFalse: closeAddBoard,
     } = useBoolean(defaultIsAddBoardOpen);
     const [boardBeingRenamed, setBoardBeingRenamed] = useState<Board | null>(
-        defaultRenameTargetIndex === undefined ? null : (boards[defaultRenameTargetIndex] ?? null),
+        defaultRenameTargetIndex !== undefined ? (boards[defaultRenameTargetIndex] ?? null) : null,
     );
     /*
      * WR-01/WR-02 (02-REVIEW.md): scopes `useRenameBoard`'s shared `isPending` flag to the
@@ -65,7 +65,7 @@ export const BoardList = ({
      */
     const [pendingRenameBoardId, setPendingRenameBoardId] = useState<string | null>(null);
     const [boardBeingDeleted, setBoardBeingDeleted] = useState<Board | null>(
-        defaultDeleteTargetIndex === undefined ? null : (boards[defaultDeleteTargetIndex] ?? null),
+        defaultDeleteTargetIndex !== undefined ? (boards[defaultDeleteTargetIndex] ?? null) : null,
     );
     /*
      * Scoped to the sidebar deliberately: D-15 names the sidebar, and the dashboard header's board
@@ -184,7 +184,7 @@ export const BoardList = ({
                 errorMessage={errorMessage}
             />
 
-            {boardBeingRenamed === null ? null : (
+            {boardBeingRenamed !== null ? (
                 <EditBoardModal
                     /* Keyed on the target board, so reopening on another row seeds that row's own name. */
                     key={boardBeingRenamed.id}
@@ -198,9 +198,9 @@ export const BoardList = ({
                     onSubmit={handleRenameSubmit}
                     isPending={isRenamePending && pendingRenameBoardId === boardBeingRenamed.id}
                 />
-            )}
+            ) : null}
 
-            {boardBeingDeleted === null ? null : (
+            {boardBeingDeleted !== null ? (
                 <DeleteBoardConfirm
                     /* Keyed on the target board, so reopening on another row names that row's own board. */
                     key={boardBeingDeleted.id}
@@ -214,7 +214,7 @@ export const BoardList = ({
                     onSubmit={handleDeleteSubmit}
                     isPending={isDeletePending}
                 />
-            )}
+            ) : null}
         </>
     );
 };
