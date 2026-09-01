@@ -67,6 +67,12 @@ test.describe("BOARD-02: create a board", () => {
         await expect(sidebar.getByRole("link", { name: secondBoardName })).toBeVisible();
         await expect(sidebar.getByRole("link", { name: boardName })).toBeVisible();
 
+        /*
+         * The sidebar now settles off the optimistic cache write, which lands BEFORE the client
+         * navigation (tech/0030) — so the new board's URL has to be waited on, not assumed from the
+         * assertions above. Without this the id read below is still the first board's.
+         */
+        await expect(page).not.toHaveURL(new RegExp(`${ROUTE.BOARDS}/${boardId}$`));
         const secondBoardId = new URL(page.url()).pathname.split("/").pop() ?? "";
         expect(readBoardFull({ account, boardId: secondBoardId }).columns).toEqual([]);
     });
