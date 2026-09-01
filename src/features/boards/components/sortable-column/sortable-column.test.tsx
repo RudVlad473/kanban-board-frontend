@@ -194,7 +194,7 @@ describeForEachDevice({
 
         /*
          * U-05: the WHOLE board's order comes back, not just the dragged column — the move shifted
-         * every column between the two indices, and dropping the override restores all of them.
+         * every column between the two indices, and dropping the optimistic order restores all of them.
          */
         it("restores the whole board's order and raises the rollback toast when a reorder fails", async () => {
             // Arrange
@@ -206,12 +206,9 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(getRaisedToastTexts).toEqual([GENERIC_REORDER_TOAST]);
-            expect(getRenderedColumnNames()).toEqual([
-                "Fixture Column 1",
-                "Fixture Column 2",
-                "Fixture Column 3",
-                "Fixture Column 4",
-            ]);
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 1", "Fixture Column 2", "Fixture Column 3", "Fixture Column 4"]);
         });
 
         /*
@@ -228,12 +225,9 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(getRaisedToastTexts).toEqual([CONFLICT_REORDER_TOAST]);
-            expect(getRenderedColumnNames()).toEqual([
-                "Fixture Column 1",
-                "Fixture Column 2",
-                "Fixture Column 3",
-                "Fixture Column 4",
-            ]);
+            await expect
+                .poll(getRenderedColumnNames)
+                .toEqual(["Fixture Column 1", "Fixture Column 2", "Fixture Column 3", "Fixture Column 4"]);
         });
 
         it("reports the moved column as busy while its own request is still in flight", async () => {
