@@ -58,6 +58,23 @@ export const createSubtaskInputSchema = z.object({
 export type CreateSubtaskInput = z.infer<typeof createSubtaskInputSchema>;
 
 /*
+ * `PUT .../subtasks/{subtaskId}` carries BOTH mutable fields behind one `version`, so this is the
+ * ONE action file the toggle (04-17) and the rename (04-19) both call. Both fields are optional,
+ * mirroring `UpdateSubtaskRequestDTO` itself — a toggle sends only `isCompleted`, a rename only `title`.
+ */
+export const updateSubtaskInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+    taskId: z.string().min(1),
+    subtaskId: z.string().min(1),
+    version: z.number().int(),
+    title: subtaskTitleRowSchema.optional(),
+    isCompleted: z.boolean().optional(),
+});
+
+export type UpdateSubtaskInput = z.infer<typeof updateSubtaskInputSchema>;
+
+/*
  * `titles` is length-capped at the same limit `createBoardColumnsInputSchema` uses (T-04-04) — a
  * forged wire payload cannot drive an unbounded sequential fan-out.
  */

@@ -7,6 +7,7 @@ import {
     createTaskSubtasksInputSchema,
     moveTaskInputSchema,
     subtaskTitleRowSchema,
+    updateSubtaskInputSchema,
 } from "@/features/tasks/schemas";
 
 /** The one shape every case below varies a single field of, so a rejection names its own cause. */
@@ -265,6 +266,61 @@ describe("createTaskSubtasksInputSchema", () => {
 
         // Assert
         expect(result.success).toBe(true);
+    });
+});
+
+describe("updateSubtaskInputSchema", () => {
+    const createValidUpdateInput = () => ({
+        boardId: "00000000-0000-4000-8000-00000000000a",
+        columnId: "00000000-0000-4000-8000-00000000000c",
+        taskId: "00000000-0000-4000-8000-00000000000d",
+        subtaskId: "00000000-0000-4000-8000-00000000000e",
+        version: 0,
+    });
+
+    /* The toggle's own payload — only `isCompleted`, no `title` at all. */
+    it("accepts a completion-only payload", () => {
+        // Act
+        const result = updateSubtaskInputSchema.safeParse({ ...createValidUpdateInput(), isCompleted: true });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.title).toBeUndefined();
+    });
+
+    /* The rename's own payload — only `title`, no `isCompleted` at all. */
+    it("accepts a title-only payload", () => {
+        // Act
+        const result = updateSubtaskInputSchema.safeParse({ ...createValidUpdateInput(), title: "Renamed" });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.isCompleted).toBeUndefined();
+    });
+
+    it("rejects an empty subtask id", () => {
+        // Act
+        const result = updateSubtaskInputSchema.safeParse({ ...createValidUpdateInput(), subtaskId: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects a blank title when one is supplied", () => {
+        // Act
+        const result = updateSubtaskInputSchema.safeParse({ ...createValidUpdateInput(), title: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("rejects a fractional version", () => {
+        // Act
+        const result = updateSubtaskInputSchema.safeParse({ ...createValidUpdateInput(), version: 0.5 });
+
+        // Assert
+        expect(result.success).toBe(false);
     });
 });
 
