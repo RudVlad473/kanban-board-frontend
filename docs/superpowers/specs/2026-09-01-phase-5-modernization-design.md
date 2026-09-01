@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-01
 **Status:** Design agreed; not yet planned
-**Supersedes for the surfaces it touches:** the mock's material treatment (see "The source-of-truth
-problem" below)
+**Supersedes for the surfaces it touches:** the mock's material, typography and control geometry
+(see "The source-of-truth problem")
 
 ## Problem
 
@@ -18,12 +18,16 @@ board/task CRUD is stable"; Phase 4 is that trigger.
 
 ## Scope
 
-**Motion plus surface modernization.** Palette, typography and layout stay as the mock defines
-them. What changes is the *material* — how elevation, density, state and movement are expressed —
-and the motion layer, which barely exists.
+**One phase covering material, motion and visual identity.** Layout and palette stay as the mock
+defines them. Everything else — material, motion, typography, control geometry — is governed by
+this document.
 
-Explicitly out of scope: new palette, new type scale, new layout language. That is a milestone,
-not a phase, and it would invalidate the token pipeline's PDF-derived provenance.
+The identity work (typeface, button geometry) was considered as a separate Phase 6 and
+**deliberately folded in**: one baseline rewrite instead of two, and the app never sits in an
+in-between state where new material meets old typography. The cost accepted is a longer phase
+whose motion work cannot ship ahead of the font migration.
+
+Out of scope: new palette, new layout language.
 
 ## Direction
 
@@ -38,43 +42,39 @@ else is what makes them land.
 
 ## The four rules
 
-These were derived during design review and each one is falsifiable. They matter more than any
-individual animation, because they are what keeps the phase coherent as it grows.
+Derived during design review; each is falsifiable and each outlives any specific animation.
 
 ### 1. Hover and focus change colour only
 
 Never position, never size, never shadow.
 
-Found by review: a `transform: translateY(-1px)` on card hover. Measured, the neighbours never
-moved (`box-sizing: border-box`, constant 1px border, height constant at 73.5px) — but the hovered
-card shifting 1px grew the gap above it and shrank the gap below, and the eye reads that as the
-card swelling and shoving its neighbours. A perceptual bug is worse than a layout bug because you
+Found by review: a `transform: translateY(-1px)` on card hover. Measured, neighbours never moved
+(`box-sizing: border-box`, constant border, height constant at 73.5px) — but the hovered card
+shifting 1px grew the gap above it and shrank the one below, and the eye reads that as the card
+swelling and shoving its neighbours. A perceptual bug is worse than a layout bug because you
 cannot point at it.
 
-Colour-only transitions also never invalidate layout or paint on neighbours.
+**Carve-out: focus rings.** A focus indicator is an accessibility affordance, not elevation. It is
+drawn with `outline` and `outline-offset` (never `box-shadow`), which paints outside the border
+box and cannot shift layout. This matches what the primitives already do
+(`focus-visible:ring-2 ring-ring-focus ring-offset-2`). The exception is written down rather than
+left as a rule the codebase visibly violates.
 
 ### 2. Geometry is reserved for movement that actually happened
 
 Drag, reorder, insert, delete. Nothing else moves. This is what gives rule 1 its payoff: if
-nothing else in the app ever moves, then movement *means something*, and a card lifting under the
-cursor during a real drag reads as physics rather than decoration.
+nothing else ever moves, movement *means* something.
 
-**One licensed exception: rollback.** In a rollback something genuinely *un*moved, and animating
-the reversal is the only way a user learns their action was undone rather than that the board was
-always like this. See "Optimistic state" below.
+**One licensed exception: rollback.** Something genuinely *un*moved, and animating the reversal is
+the only way a user learns their action was undone rather than that the board was always like
+this.
 
 ### 3. State borders are derived per theme from `--border`, never borrowed from fill tokens
 
-`color.purple.500` and `color.red.500` are *fill* colours, darkened specifically to carry white
-text at 4.5:1 (see their token descriptions). Borrowing them for a 1px hairline imports a contrast
-obligation that does not apply and produces shouting.
+`color.purple.500` and `color.red.500` are *fill* colours, darkened to carry white text at 4.5:1.
+Borrowing them for a 1px hairline imports a contrast obligation that does not apply.
 
-A hairline on a resting card has no contrast obligation at all. It is decoration, and every state
-it hints at is also carried by something with real affordance — the toast, `aria-busy`, the card's
-position.
-
-Measured contrast against each theme's own surface, where the **resting** border sits at 1.20
-(light) / 1.33 (dark):
+Contrast against each theme's own surface, resting border at 1.20 (light) / 1.33 (dark):
 
 | | light hover | light in-flight | light rolled-back | dark hover | dark in-flight | dark rolled-back |
 |---|---|---|---|---|---|---|
@@ -82,9 +82,7 @@ Measured contrast against each theme's own surface, where the **resting** border
 | **Adopted** | 1.34 | 1.44 | 1.81 | 1.69 | 1.68 | 1.63 |
 
 The rejected row is incoherent as well as loud: the same `#C93F3C` reads 4.93 in light and 2.81 in
-dark, so the state looked like two different severities depending on theme.
-
-Adopted values:
+dark, so one state looked like two different severities depending on theme.
 
 | State | Light | Dark |
 |-------|-------|------|
@@ -93,80 +91,98 @@ Adopted values:
 | in flight | `#D1D6F2` | `#4B4A78` |
 | rolled back | `#DCB7C1` | `#6F3F48` |
 
-Derivation: hover is one step from `--border`; in-flight is `--border` blended ~15% toward
-`purple.500`; rolled-back is `--border` blended ~30% toward `red.500`. Same step size for all
-three states.
+Hover is one step from `--border`; in-flight is `--border` blended ~15% toward `purple.500`;
+rolled-back ~30% toward `red.500`. Same step for all three.
 
 ### 4. Text never crossfades
 
-It swaps in one frame, or it moves behind a mask so only one string is ever visible.
-
-A card can crossfade because it is a rectangle at every intermediate frame. Two strings cannot —
-different widths and different glyphs mean every intermediate frame is noise. Measured on the
-rejected board-title crossfade: 8 sampled frames (~160ms) with both strings inked at `dy = 0`,
+It swaps in one frame, or moves behind a mask so only one string is ever visible. A card can
+crossfade because it is a rectangle at every intermediate frame; two strings cannot. Measured on
+the rejected board-title crossfade: 8 sampled frames (~160ms) with both strings inked at `dy = 0`,
 worst case both at 45% opacity.
 
-Applies to the board name, column names after a rename, count pills, and the subtask `2/3` caption.
+Applies to the board name, column names after a rename, count pills, and the `2/3` caption.
 
 ## Material
 
-Same palette, same type, same layout. What changes:
-
 - **Hairline border replaces shadow as the primary edge.** Works identically in both themes, which
-  the current single diffuse shadow does not. Shadow demoted to a 1px ambient hint
-  (`0 1px 2px rgba(16,18,32,.04)`), and dropped entirely in dark mode.
-- **Density.** Card padding 14px (from 23px vertical), 10px gutter (from 20px). Roughly 40% more
-  cards visible per column.
-- **Hover is a real affordance.** Border `#E4EBFA → #D6DFEF`, surface `#FFFFFF → #FAFBFE`, plus a
-  2px purple grab-rail on the left edge. 130ms. No geometry (rule 1).
-- **Subtask progress becomes glanceable** — a 3px bar plus tabular-numeral `2/3`, replacing the
-  prose caption. Note the call site's existing zero-subtask suppression stays as is.
-- **Radius scale grows to three steps** — *proposed, not yet reviewed*: 4px controls (unchanged),
-  8px cards (unchanged), 12px columns and modals. Buttons stay `rounded-full` per the existing
-  token note. Every prototype in this design used the current two-step scale, so this one is an
-  inference from the direction rather than something that was looked at; treat it as an open item.
+  the current single diffuse shadow does not. Shadow demoted to `0 1px 2px rgba(16,18,32,.04)`,
+  dropped entirely in dark mode.
+- **Density.** Card padding 14px (from 23px vertical), 10px gutter (from 20px) — ~40% more cards
+  visible per column.
+- **Hover.** Border `#E4EBFA → #D6DFEF`, surface `#FFFFFF → #FAFBFE`, plus a 2px purple grab-rail
+  on the card's left edge. 130ms, no geometry.
+- **Subtask progress** becomes a 3px bar plus tabular-numeral `2/3`, replacing the prose caption.
+  The call site's existing zero-subtask suppression stays.
+
+### Control geometry
+
+| Element | Radius | Note |
+|---------|--------|------|
+| Buttons | **4px** | Replaces `rounded-full`. One line in `button-variants.ts`, app-wide. |
+| Inputs, dropdowns | 6px | |
+| Toast | 6px | Follows inputs, preserving the relationship `toast-variants.ts` documents. |
+| Cards | 8px | Unchanged |
+| Columns, modals | 12px | **Proposed, never reviewed** — see open items |
+
+Buttons at 4px sit inside inputs at 6px. That is the recorded choice, not an oversight, but it is
+the one place the scale disagrees with itself; worth a look during planning.
+
+### Focus treatment
+
+**A single 2px border that exists at rest; only its colour changes on focus.** No ring, no halo,
+so there is nothing to double.
+
+The rejected alternative was a purple 1px border plus a 2px outline at `outline-offset: 1px` —
+which renders as three concentric edges in one colour and reads as a doubled border. Resting
+border is `#DCE3F2` (slightly lighter than the card's `#E4EBFA`) to offset the extra weight of
+2px.
+
+## Typography
+
+**Inter**, replacing Plus Jakarta Sans. Chosen for small-size legibility — most of this app's text
+is 11–13px — and for real tabular figures, which carry the column counts and `2/3` captions.
+
+Migration cost, all of it required:
+
+- New self-hosted woff2 files under `public/fonts/inter/`. Self-hosting is not optional: Storybook's
+  Vite builder resolves `next/font` without erroring but emits no `@font-face`, which once shipped
+  the wrong typeface to a screenshot review. The reasoning is recorded in `src/styles/fonts.css`
+  and must be carried across, not dropped.
+- Rewritten `src/styles/fonts.css`.
+- `fontFamily` in all eight `tokens/typography.tokens.json` entries.
+- Every visual baseline in the app re-recorded.
 
 ## Drag choreography
 
-What is already good and is **not** being replaced: `useSortable`'s default transition is passed
-through, so neighbours already animate; the insertion bar is already drawn in the gutter so it
-does not wait on reflow; motion is dropped entirely (not shortened) under
-`prefers-reduced-motion`; the keyboard drag path is carefully built and its two
-`comment-length-exempt` dnd-kit notes must survive this phase untouched.
-
-Four changes:
+Already good and **not** being replaced: `useSortable`'s default transition is passed through so
+neighbours animate; the insertion bar is drawn in the gutter so it does not wait on reflow; motion
+is dropped entirely under `prefers-reduced-motion`; the keyboard path is carefully built and its
+two `comment-length-exempt` dnd-kit notes must survive untouched.
 
 1. **`DragOverlay`.** The card leaves the list and is carried above it. Today it stays in place at
-   `opacity-50` and moves by transform, so the user is smearing a translucent copy rather than
-   holding a card.
-2. **Lift: `scale(1.03)` plus a real shadow. No rotation.** A tilt was prototyped and rejected —
-   it is soft-depth vocabulary and does not belong in a precision language.
-3. **Source slot collapses** to a dashed ghost over ~180ms, so the column visibly makes room.
-4. **Drop settles** — scale and shadow release over ~160ms on a decelerate curve
-   (`cubic-bezier(.2,0,0,1)`) instead of the transform snapping. This is the single largest
-   perceived-quality change in the phase.
+   `opacity-50`, so the user smears a translucent copy rather than holding a card.
+2. **Lift: `scale(1.03)` plus a real shadow. No rotation.** A tilt was prototyped and rejected as
+   soft-depth vocabulary.
+3. **Source slot collapses** to a dashed ghost over ~180ms.
+4. **Drop settles** — scale and shadow release over ~160ms on `cubic-bezier(.2,0,0,1)` rather than
+   the transform snapping. The single largest perceived-quality change in the phase.
 
 ## Optimistic state
 
-`useMoveTask` already reads pending moves back from in-flight mutation variables and folds them
-onto the server columns (the TanStack "via the UI" pattern adopted 2026-09-01). The pending state
-is therefore already available to render — it simply is not rendered. `isMoving` and
-`isReordering` are threaded from `board-view.tsx` down into `TaskCard`/`SortableColumn` and their
-entire visual effect is `aria-busy` plus disabling the handle. Both are invisible.
+`useMoveTask` already reads pending moves back from in-flight mutation variables (TanStack "via the
+UI", adopted 2026-09-01), so the state is available to render — it simply is not.
+`isMoving`/`isReordering` are threaded down into `TaskCard`/`SortableColumn` and their entire
+visual effect is `aria-busy` plus disabling the handle. Both invisible.
 
 | Moment | Treatment |
 |--------|-----------|
-| In flight | Border tint to the in-flight value (rule 3). Colour only. |
+| In flight | Border tint to the in-flight value. Colour only. |
 | Settled | Tint releases over ~200ms; single confirmation ring pulse. |
-| Rolled back | Card **travels back** along the reverse path (~220ms), border flashes the rolled-back value and decays over ~500ms. Existing toast unchanged. |
+| Rolled back | Card **travels back** along the reverse path (~220ms), border flashes rolled-back and decays over ~500ms. Toast unchanged. |
 
-**Decided, flag on review:** the 2px indeterminate "wire" along the card's bottom edge is
-**dropped**. Most of these PATCHes resolve in under 200ms, so it would usually flash and vanish,
-which reads worse than nothing. The border tint carries the state alone.
-
-The rollback is rule 2's licensed exception and is the highest-value item in this section: today
-the card vanishes from where the user put it and reappears elsewhere in the same frame, with the
-toast as the only evidence a move was attempted.
+**Decided, flag on review:** the 2px indeterminate "wire" is **dropped** — most of these PATCHes
+resolve under 200ms, so it would flash and vanish, which reads worse than nothing.
 
 ## Transitions
 
@@ -179,72 +195,124 @@ next 16.3.0    no `viewTransition` key in the config schema
                (present only inside bundled react-dom-experimental)
 ```
 
-React's `<ViewTransition>` route morph would require the React experimental channel plus a Next
-canary. For a repo with pinned dependencies, required CI status checks and committed visual
-baselines, that is a foundation change disguised as polish. **Rejected.** This needs its own ADR
-so a future reader does not re-open it.
+React's `<ViewTransition>` route morph needs the React experimental channel plus a Next canary —
+a foundation change disguised as polish. **Rejected**; needs its own ADR so it is not re-opened.
 
 ### Card → task detail: native morph
 
-Task detail is local state, not a route, so this is a same-document
-`document.startViewTransition()` and needs no framework support.
+Task detail is local state, not a route, so this is a same-document `document.startViewTransition()`
+needing no framework support.
 
-Verified against the real API with a 12-task scrollable column: **the column does not reflow.**
-The card's box is never mutated; the browser animates a snapshot of the card's rect toward a
-snapshot of the modal's rect in the view-transition overlay layer above the page.
+Verified against the real API with a 12-task scrollable column — **the column does not reflow**,
+because the card's box is never mutated; the browser animates a snapshot of the card's rect toward
+a snapshot of the modal's in the overlay layer above the page.
 
 ```
-open  (card #3)                scrollHeight 918→918  scrollTop 0→0    card#9 y 896→896  identical
+open  (card #3)                scrollHeight 918→918  scrollTop 0→0     card#9 y 896→896  identical
 close (after scrolling to 588) scrollHeight 918→918  scrollTop 588→588 card#9 y 308→308  identical
 ```
 
-This is precisely why the native API is right and a hand-rolled FLIP morph is wrong — a
-hand-rolled one really would have to pull the card out of flow and leave a placeholder.
+Two required guards:
 
-Two guards, both required:
+- **Name uniqueness.** `view-transition-name` goes on the *clicked* card only. Naming every card
+  breaks the transition and costs real snapshot time.
+- **Closing after a scroll.** Check the card's rect against the list viewport at close time and
+  skip the morph if it is not visible, falling back to the plain fade. Verified working.
 
-- **Name uniqueness.** `view-transition-name` must be unique per document state, so it is applied
-  to the *clicked* card only, never to every card. Naming all of them breaks the transition and
-  costs real snapshot time.
-- **Closing after a scroll.** If the column is scrolled while the modal is open, the card's rect
-  may be off-screen at close and the morph would animate toward nothing. Check the card's rect
-  against the list viewport at close time and skip the morph if not visible, falling back to the
-  plain fade. Verified working.
-
-Duration 320ms, `cubic-bezier(.2,0,0,1)`. Feature-detected: where unsupported the modal opens
-exactly as it does today.
+320ms, `cubic-bezier(.2,0,0,1)`, feature-detected — where unsupported the modal opens as today.
 
 ### Board → board: directional + streaming
 
-The board is an RSC fetch behind Suspense, so there is a real wait whose length we do not control.
-Animating *over* it means the animation and the wait fight each other — on a fast connection the
-flourish is gratuitous, on a slow one it finishes and leaves the user staring at nothing.
+The board is an RSC fetch behind Suspense, so there is a real wait we do not control. Animating
+*over* it means the animation and the wait fight: on a fast connection the flourish is gratuitous,
+on a slow one it finishes and leaves the user staring at nothing.
 
 So the transition **is** the load: a Suspense boundary per column, skeletons holding the column
-shape, and each column landing as its data arrives, staggered ~180ms apart, entering *from* the
-direction navigated (down the sidebar → columns rise from below; up → from above). Plain CSS enter
-animation keyed on `boardId`. No experimental dependency.
+shape, each column landing as its data arrives, staggered ~180ms apart, entering *from* the
+navigated direction (down the sidebar → from below; up → from above). Plain CSS keyed on
+`boardId`. No experimental dependency.
 
-**Board title: masked slide.** The title well clips; the old string leaves and the new arrives
-from the navigated direction, so the two are never in the same place (rule 4). Chosen over an
-instant swap to keep the header part of the same gesture as the columns, accepting ~180ms of
-movement on a value that was not actually pending.
+**Board title: masked slide.** The title well clips; old string leaves and new arrives from the
+navigated direction, so the two are never in the same place (rule 4). Chosen over an instant swap
+to keep the header part of the same gesture as the columns.
+
+## Landing and auth
+
+These are the only surfaces with **no mock behind them** — the Frontend Mentor design has no auth
+screens, so the Phase 1 UI-SPEC specified them from tokens alone ("the auth card is the sole focal
+point — everything else deliberately quiet"). With nothing to be quiet around, that produced a
+369×160 card occupying **4.5% of a 1440×900 viewport**, zero `svg`/`img` brand marks, and two CTAs
+that are bare text links (`background: rgba(0,0,0,0)`, `border-width: 0px`).
+
+No ADR is needed to depart here. There is no source of truth to depart *from*; this fills a gap.
+
+**Composition: split canvas.** Form in a left column (~44%) with a brand lockup; right panel shows
+a real board in the app's own material, cropped behind a fade at the right edge, playing this
+phase's drag choreography on a loop. The interaction the app is best at is the first thing a
+visitor sees.
+
+Deliberately not adopted: the blurred-product-backdrop treatment, which is the atmospheric
+vocabulary ruled out by the chosen direction.
+
+### The form
+
+The contract offers only email and password — no OAuth, no magic link. The form cannot be made
+less plain by adding content; only by craft on what exists.
+
+| Change | Detail |
+|--------|--------|
+| Focus | The 2px single-edge treatment above. Today's border-colour-only focus is nearly invisible. |
+| Reserved message line | `min-height:17px`, opacity-toggled. Measured: today's error shifts the password field **22px**; reserved shifts **0px**. |
+| Caps-lock hint | Shares that same reserved line — a field shows an error or a caps hint, never both. Measured: today **23px** shift, reserved **0px**. |
+| Password rules | **Chips on one row** — `8+ chars` / `letter` / `number`, ticking green as satisfied, occupying the one reserved row. |
+| Icons and placeholders | Leading icon per field; real `autocomplete` values. |
+| Server errors | Bordered block at the top of the form, not a bare red sentence between field and button. |
+| Button states | Idle → loading (spinner, changed label) → briefly confirmed. |
+
+A vertical requirements checklist was prototyped and **rejected**: measured at **+42px** of form
+region for three short strings, against 0px for the chips row.
+
+A password **strength meter** was proposed and **withdrawn**. The contract is explicit —
+`SignupRequestDTO.password = { "type": "string" }`, no `minLength`, no `pattern`. The backend
+declares no policy at all, so "Strong" is a verdict nobody authorised, and a backend rejection
+after that verdict would make the app a liar. The chips state rules *this app* enforces, which is
+honest. **Needs an ADR** recording that the policy is frontend-invented and the backend may accept
+weaker passwords.
+
+## Toast
+
+Today: `rounded-sm` (4px) with `border-l-4` (4px). The radius equals the stripe width, so the
+accent curves through its whole top and bottom — a tapered wedge, not a bar. And
+`border-l-transparent` on the default variant still reserves its 4px, so **every** toast, danger or
+not, has 20px left / 16px right content inset.
+
+**Adopted: inset pill stripe.** A 3px pill at `left: 6px`, 12px clear of top and bottom, living
+*inside* the existing 16px padding rather than adding a gutter. Uniform 6px radius.
+
+```
+today         content inset  L 20  R 16   off by 4px
+adopted       content inset  L 16  R 16   symmetric
+stripe        left 6px · width 3px · radius 2px · 7px gap to text
+```
+
+The accent costs no layout, nothing touches a corner, and the asymmetry is gone. Squaring the left
+corners was also prototyped; it fixes the bending stripe but leaves the 20/16 asymmetry, so it
+addresses only half the problem.
 
 ## Entry, empty and loading states
 
-Agreed in scope but **not yet visually reviewed** — this is the one section of the phase with no
-prototype behind it, and it should get one before planning:
+In scope but **not yet visually reviewed** — the only section with no prototype behind it, and it
+should get one before planning:
 
-- Column and card entry stagger on first board load (shares the mechanism with the board→board
-  transition above).
-- Skeletons that match final layout rather than generic rows.
+- Column and card entry stagger on first board load (shares the board→board mechanism).
+- Skeletons matching final layout rather than generic rows.
 - Designed empty column and empty board states.
 
 ## Reduced motion
 
-Everything above is dropped, not shortened, under `prefers-reduced-motion: reduce` — matching the
-existing `useMediaQuery` pattern in `task-card.tsx` and `sortable-column.tsx`. View transitions
-additionally need:
+Everything is dropped, not shortened, under `prefers-reduced-motion: reduce`, matching the existing
+`useMediaQuery` pattern in `task-card.tsx` and `sortable-column.tsx`. View transitions additionally
+need:
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -256,31 +324,35 @@ additionally need:
 
 ## The source-of-truth problem
 
-This is the phase's biggest non-visual risk and it needs an ADR before any implementation.
+The repo's notion of "correct UI" is anchored to `docs/kanban-task-management-web-app.pdf`.
+`CLAUDE.md` mandates comparing every surface against it; there are Playwright baselines, per-phase
+`UI-SPEC.md` contracts, and token descriptions citing PDF pages and DPI math.
 
-The repo's entire notion of "correct UI" is anchored to `docs/kanban-task-management-web-app.pdf`.
-`CLAUDE.md` mandates comparing every surface against it; there are Playwright screenshot baselines,
-per-phase `UI-SPEC.md` contracts, and token descriptions citing PDF page numbers and DPI math.
-
-Phase 5 is a deliberate departure from that anchor. Without re-pointing it explicitly, every gate
-in the repo will read these improvements as regressions, and the phase will be spent re-baselining
-screenshots and arguing with its own conventions.
+Phase 5 departs from that anchor deliberately. Without re-pointing it, every gate will read these
+improvements as regressions.
 
 The ADR should record: for the surfaces Phase 5 touches, the mock is demoted to a **layout and
-brand** reference; material and motion are governed by this document. Palette, typography and
-layout remain mock-governed, so the existing comparison discipline still applies to them.
+palette** reference. Material, motion, typography and control geometry are governed by this
+document. (Typography and control geometry were mock-governed until this phase; folding identity in
+is what moved them.)
 
 Baseline impact:
 
-- **Material changes rewrite visual baselines wholesale.** Expected, and must be done with
-  `CI=1` locally, since `playwright.config.ts` sets `ignoreSnapshots: !process.env.CI` (ADR
-  tech/0008) and an off-CI run silently compares nothing.
-- **The card→modal morph needs no baseline change.** Verified: it starts at the card's exact rect
-  and ends at the identical rect today's modal occupies. Only the 300ms between them differs.
+- **Material, typeface and button geometry rewrite baselines wholesale**, app-wide. Must be done
+  with `CI=1` locally, since `playwright.config.ts` sets `ignoreSnapshots: !process.env.CI`
+  (ADR tech/0008) and an off-CI run silently compares nothing.
+- **The card→modal morph needs no baseline change** — it starts at the card's exact rect and ends
+  at the identical rect the modal occupies today. Only the 300ms between differs.
 
 ## Open items for planning
 
-1. Prototype the entry / empty / loading states before they are planned.
-2. Write the two ADRs (source-of-truth re-pointing; rejection of experimental React for route
-   transitions).
-3. Confirm the dropped "wire" decision under Optimistic state.
+1. **Landing page: keep or delete?** Unanswered. It holds a title, one sentence and two links, and
+   costs a click; sign-in already links to Create Account. Redirecting `/` → `/login` is a
+   legitimate simplification and `PUBLIC_PATHS`/`proxy.ts` already handle the shape.
+2. Prototype the entry / empty / loading states before planning them.
+3. Confirm the 12px columns/modals radius, which was inferred rather than reviewed.
+4. Look at buttons-at-4px inside inputs-at-6px during planning.
+5. Write three ADRs: source-of-truth re-pointing; rejection of experimental React for route
+   transitions; frontend-invented password policy.
+6. Confirm the dropped "wire" under Optimistic state.
+7. These auth screens need their own UI-SPEC — Phase 1's is what produced the current state.
