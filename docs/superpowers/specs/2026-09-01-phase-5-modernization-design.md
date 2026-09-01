@@ -1,7 +1,7 @@
 # Phase 5 — Visual and Motion Modernization
 
 **Date:** 2026-09-01 (second session same day: the three remaining surfaces, rule 5, sequencing)
-**Status:** Design agreed; not yet planned. One open decision — reduced-motion policy (open item 3)
+**Status:** Design agreed and complete; not yet planned
 **Supersedes for the surfaces it touches:** the mock's material, typography and control geometry
 (see "The source-of-truth problem")
 
@@ -692,7 +692,7 @@ edit.
 
 ## Reduced motion
 
-**Open decision, and a more consequential one than it looks.** The current policy, documented in
+**Decided 2026-09-01: "reduce, don't remove".** More consequential than it looks. The current policy, documented in
 `task-card.tsx`, is that motion is *"dropped entirely under reduce-motion rather than shortened."*
 Phase 5's entire value is motion, so under that policy a reduced-motion user receives **none of this
 phase** — no drag choreography, no settle, no rollback reversal, no card morph, no staggered load.
@@ -703,7 +703,8 @@ Discovered 2026-09-01 the hard way: a prototype screen that honoured the setting
 broken on the reviewer's own machine, because Windows had animations disabled. The person driving
 this phase is in the population it is switched off for.
 
-**Adopted provisionally as "reduce, don't remove" — assumed, not confirmed by the user.** Drop large movement — drag travel, the card→modal morph,
+**Adopted, and confirmed by the user on 2026-09-01** — this is a decision, not the assumption it
+was first recorded as. Drop large movement — drag travel, the card→modal morph,
 staggers, directional slides — but keep short (≤120ms) opacity and colour changes, so the pending
 tint, the settle confirmation, the skeleton→content crossfade and the rollback (as a fade rather
 than a journey) all survive. That is the mainstream reading of the spec: the setting asks for less
@@ -758,10 +759,9 @@ Baseline impact:
    cover this surface and should be extended to it.
 2. Empty-column drop zone is settled as "whisper" — a faint 56px outline with a quiet "No tasks",
    which brightens to a purple target only while a task drag is in progress. Nothing outstanding.
-3. **Confirm the reduced-motion policy.** "Reduce, don't remove" is currently an *assumption*, not
-   a decision. It changes the acceptance criteria of every animation in the phase, so it wants an
-   explicit yes before those criteria are written into plans. **Still open after the 2026-09-01
-   second session** — raised again, still unanswered.
+3. ~~Confirm the reduced-motion policy.~~ **Settled 2026-09-01: "reduce, don't remove", confirmed
+   explicitly.** Every animation in the phase therefore carries two acceptance criteria — its full
+   behaviour and its reduced one — rather than a single drop-everything guard. See "Reduced motion".
 4. Confirm the 12px columns/modals radius, which was inferred rather than reviewed.
 5. Look at buttons-at-4px inside inputs-at-6px during planning.
 6. Write three ADRs: source-of-truth re-pointing; rejection of experimental React for route
