@@ -1,6 +1,7 @@
 import type { Announcements, UniqueIdentifier } from "@dnd-kit/core";
 
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
+import { buildColumnBodyDroppableId } from "@/lib/core/drag/drag-items";
 
 /*
  * D-16's promotion rule covers contract SHAPES, and a caption formatter is presentation rather than
@@ -132,6 +133,27 @@ export const createTaskMoveAnnouncements = ({
         return null;
     };
 
+    /*
+     * An empty column is the one destination with no card to resolve — the collision detection hands
+     * back its BODY droppable instead, which `resolveTask` cannot name. The counts are the column as
+     * it will read once the drop lands, so the wording matches every other destination.
+     */
+    const resolveColumnBody = (id: UniqueIdentifier): { column: string; position: string; total: string } | null => {
+        const column = columns.find((entry) => buildColumnBodyDroppableId(entry.id) === String(id));
+
+        return column === undefined
+            ? null
+            : {
+                  column: column.name,
+                  position: String(column.tasks.length + 1),
+                  total: String(column.tasks.length + 1),
+              };
+    };
+
+    /** Whatever the drag is over: another card, or an empty column's body. */
+    const resolveTarget = (id: UniqueIdentifier): { column: string; position: string; total: string } | null =>
+        resolveTask(id) ?? resolveColumnBody(id);
+
     return {
         onDragStart: (event) => {
             const task = resolveTask(event.active.id);
@@ -148,7 +170,8 @@ export const createTaskMoveAnnouncements = ({
             }
 
             /* The library fires this once on the lift, over the item's own slot — announcing that would overwrite "Picked up …". */
-            const target = event.over === null || event.over.id === event.active.id ? null : resolveTask(event.over.id);
+            const target =
+                event.over === null || event.over.id === event.active.id ? null : resolveTarget(event.over.id);
             if (target === null) {
                 return undefined;
             }
@@ -165,7 +188,7 @@ export const createTaskMoveAnnouncements = ({
                 return fallback.onDragEnd(event);
             }
 
-            const target = event.over === null ? null : resolveTask(event.over.id);
+            const target = event.over === null ? null : resolveTarget(event.over.id);
 
             return target === null
                 ? undefined

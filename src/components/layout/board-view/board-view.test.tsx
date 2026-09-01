@@ -1836,6 +1836,47 @@ describeForEachDevice({
             moveTaskStub.settle();
         });
 
+        /*
+         * The keyboard twin of the pointer case above it. `sortableKeyboardCoordinates` picks its
+         * candidate from `droppableRects`, which is measured at drag start — and the column body is
+         * disabled until a TASK drag is active, so an empty column has no card to stand in for it.
+         */
+        it("moves a task into a column holding zero tasks when arrowed right and dropped by keyboard", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Fixture Task Alpha",
+                    description: undefined,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            moveTaskStub.hold();
+            await render(<TaskIntoEmptyColumn />);
+            focusTaskHandle("Fixture Task Alpha");
+
+            // Act
+            await userEvent.keyboard(" ");
+            const liftedAnnouncement = getAnnouncement();
+            await userEvent.keyboard("{ArrowRight}");
+            await expect.poll(getAnnouncement).not.toBe(liftedAnnouncement);
+            await userEvent.keyboard(" ");
+
+            // Assert
+            await expect.poll(() => getColumnTaskTitles()[1].taskTitles).toContain("Fixture Task Alpha");
+            expect(getColumnTaskTitles()[0].taskTitles).not.toContain("Fixture Task Alpha");
+            expect(moveTaskStub.calls).toHaveLength(1);
+            expect(moveTaskStub.calls[0]).toEqual({
+                taskId: "00000000-0000-4000-8000-d10000000001",
+                targetColumnId: "00000000-0000-4000-8000-c00000000002",
+                version: 0,
+                targetPosition: 0,
+            });
+            moveTaskStub.settle();
+        });
+
         it("issues no request when a task is dropped back where it began", async () => {
             // Arrange
             await render(<TasksAcrossColumns />);
@@ -1991,6 +2032,37 @@ describeForEachDevice({
                 },
             });
             await render(<TasksAcrossColumns />);
+            focusTaskHandle("Fixture Task Alpha");
+
+            // Act & Assert
+            await userEvent.keyboard(" ");
+            await userEvent.keyboard("{ArrowRight}");
+            await expect.poll(getAnnouncement).toBe("Fixture Task Alpha moved to Fixture Column 2, position 1 of 1.");
+
+            await userEvent.keyboard(" ");
+            await expect
+                .poll(getAnnouncement)
+                .toBe("Fixture Task Alpha dropped in Fixture Column 2 at position 1 of 1.");
+        });
+
+        /*
+         * The Copywriting Contract makes no exception for a destination holding no cards, but the
+         * resolver could not name one: an empty column is handed over as its BODY droppable, which
+         * has no task behind it, so both announcements silently returned nothing.
+         */
+        it("announces a move and a drop into a column holding zero tasks the same way as any other", async () => {
+            // Arrange
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Fixture Task Alpha",
+                    description: undefined,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            await render(<TaskIntoEmptyColumn />);
             focusTaskHandle("Fixture Task Alpha");
 
             // Act & Assert
