@@ -72,17 +72,23 @@ export const seedColumn = ({
 
 export type SeededTask = { id: string; title: string; version: number; position: number };
 
-/** Creates one task on an already-seeded column — the same "one call at a time" rule as `seedColumn`. */
+/**
+ * Creates one task on an already-seeded column — the same "one call at a time" rule as
+ * `seedColumn`. `description` is optional and omitted from the wire body entirely when unset
+ * (T9: an explicit `""` is refused with 400), for specs that need a task with real description text.
+ */
 export const seedTask = ({
     account,
     boardId,
     columnId,
     title,
+    description,
 }: {
     account: SeededAccount;
     boardId: string;
     columnId: string;
     title: string;
+    description?: string;
 }): SeededTask =>
     JSON.parse(
         runSeedScript([
@@ -97,6 +103,47 @@ export const seedTask = ({
             columnId,
             "--title",
             title,
+            ...(description !== undefined ? ["--description", description] : []),
+        ]),
+    ) as SeededTask;
+
+/**
+ * SYNC-01's out-of-band write: bumps a task's `version` through the SAME seeded session that
+ * created it (never a second sign-in), so a conflict spec can make the UI's already-loaded
+ * `version` stale without spending the account's other session slot.
+ */
+export const updateTaskOutOfBand = ({
+    account,
+    boardId,
+    columnId,
+    taskId,
+    title,
+    version,
+}: {
+    account: SeededAccount;
+    boardId: string;
+    columnId: string;
+    taskId: string;
+    title: string;
+    version: number;
+}): SeededTask =>
+    JSON.parse(
+        runSeedScript([
+            "task-update",
+            "--jsession",
+            account.jsessionId,
+            "--user",
+            account.id,
+            "--board",
+            boardId,
+            "--column",
+            columnId,
+            "--task",
+            taskId,
+            "--title",
+            title,
+            "--version",
+            String(version),
         ]),
     ) as SeededTask;
 

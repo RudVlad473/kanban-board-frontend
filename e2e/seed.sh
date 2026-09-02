@@ -3,13 +3,21 @@
 # See docs/adr/tech/0022 for the full reasoning.
 set -euo pipefail
 
+# Split from `usage()` so `--help`/`-h` can print the identical text to STDOUT and exit 0 (04-21
+# Task 1's own acceptance check runs `seed.sh --help`, which must succeed) without also duplicating
+# every subcommand line a second time.
+print_usage() {
+    echo "usage: seed.sh account | seed.sh board --jsession <id> --user <id> --name <name> |"
+    echo "       seed.sh column --jsession <id> --user <id> --board <id> --name <name> |"
+    echo "       seed.sh task --jsession <id> --user <id> --board <id> --column <id> --title <title> [--description <description>] |"
+    echo "       seed.sh task-update --jsession <id> --user <id> --board <id> --column <id> --task <id> --title <title> --version <version> |"
+    echo "       seed.sh subtask --jsession <id> --user <id> --board <id> --column <id> --task <id> --title <title> |"
+    echo "       seed.sh board-full --jsession <id> --user <id> --board <id> |"
+    echo "       seed.sh cleanup [--users <id,id,...>] | seed.sh reset-all"
+}
+
 usage() {
-    echo "usage: seed.sh account | seed.sh board --jsession <id> --user <id> --name <name> |" >&2
-    echo "       seed.sh column --jsession <id> --user <id> --board <id> --name <name> |" >&2
-    echo "       seed.sh task --jsession <id> --user <id> --board <id> --column <id> --title <title> |" >&2
-    echo "       seed.sh subtask --jsession <id> --user <id> --board <id> --column <id> --task <id> --title <title> |" >&2
-    echo "       seed.sh board-full --jsession <id> --user <id> --board <id> |" >&2
-    echo "       seed.sh cleanup [--users <id,id,...>] | seed.sh reset-all" >&2
+    print_usage >&2
     exit 2
 }
 
@@ -39,6 +47,15 @@ build_json() {
 build_json_array() {
     node -e '
         console.log(JSON.stringify({ userIds: process.argv.slice(1) }));
+    ' "$@"
+}
+
+# build_json's own numeric field is a shell string, so JSON.stringify would quote it as
+# `"version":"1"` and fail UpdateTaskRequestDTO's number check — this coerces it explicitly.
+build_task_update_json() {
+    node -e '
+        const [title, version] = process.argv.slice(1);
+        console.log(JSON.stringify({ title, version: Number(version) }));
     ' "$@"
 }
 
@@ -156,7 +173,7 @@ cmd_column() {
 # `/tasks` segment — the sibling path that does name one is GET-only (external-paths.ts's own
 # comment on COLUMN_DETAIL records the same trap for the app's own client).
 cmd_task() {
-    local jsession="" user="" board="" column="" title=""
+    local jsession="" user="" board="" column="" title="" description=""
     while [ $# -gt 0 ]; do
         case "$1" in
             --jsession) jsession="$2"; shift 2 ;;
@@ -164,6 +181,7 @@ cmd_task() {
             --board) board="$2"; shift 2 ;;
             --column) column="$2"; shift 2 ;;
             --title) title="$2"; shift 2 ;;
+            --description) description="$2"; shift 2 ;;
             *) usage ;;
         esac
     done
@@ -173,7 +191,13 @@ cmd_task() {
     fi
 
     local task_body raw status body_out
-    task_body=$(build_json title "$title")
+    # An omitted (not blank) `description` field is the create path's own "no description" shape
+    # (T9: an explicit `""` is refused with 400), so it is left out of the body entirely when unset.
+    if [ -n "$description" ]; then
+        task_body=$(build_json title "$title" description "$description")
+    else
+        task_body=$(build_json title "$title")
+    fi
     raw=$(curl -sS -w '\n%{http_code}' -X POST "$EXTERNAL_API_BASE_URL/boards/$board/columns/$column?userId=$user" \
         -H "Cookie: JSESSIONID=$jsession" -H "Content-Type: application/json" -d "$task_body")
     status="${raw##*$'\n'}"
@@ -181,6 +205,44 @@ cmd_task() {
 
     if [[ "$status" != 2* ]]; then
         echo "seed.sh task: task creation returned $status: $body_out" >&2
+        exit 1
+    fi
+
+    echo "$body_out"
+}
+
+# 04-21's own fixture: an out-of-band task write, issued through the SAME seeded session that
+# created the board (never a second sign-in), so a spec can make its own held `version` stale
+# without spending the account's other session slot (SYNC-01's conflict specs).
+cmd_task_update() {
+    local jsession="" user="" board="" column="" task="" title="" version=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --jsession) jsession="$2"; shift 2 ;;
+            --user) user="$2"; shift 2 ;;
+            --board) board="$2"; shift 2 ;;
+            --column) column="$2"; shift 2 ;;
+            --task) task="$2"; shift 2 ;;
+            --title) title="$2"; shift 2 ;;
+            --version) version="$2"; shift 2 ;;
+            *) usage ;;
+        esac
+    done
+
+    if [ -z "$jsession" ] || [ -z "$user" ] || [ -z "$board" ] || [ -z "$column" ] || [ -z "$task" ] || \
+        [ -z "$title" ] || [ -z "$version" ]; then
+        usage
+    fi
+
+    local task_body raw status body_out
+    task_body=$(build_task_update_json "$title" "$version")
+    raw=$(curl -sS -w '\n%{http_code}' -X PUT "$EXTERNAL_API_BASE_URL/boards/$board/columns/$column/tasks/$task?userId=$user" \
+        -H "Cookie: JSESSIONID=$jsession" -H "Content-Type: application/json" -d "$task_body")
+    status="${raw##*$'\n'}"
+    body_out="${raw%$'\n'*}"
+
+    if [[ "$status" != 2* ]]; then
+        echo "seed.sh task-update: task update returned $status: $body_out" >&2
         exit 1
     fi
 
@@ -314,6 +376,10 @@ cmd_reset_all() {
 }
 
 case "${1:-}" in
+    --help|-h)
+        print_usage
+        exit 0
+        ;;
     account)
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
         shift
@@ -333,6 +399,11 @@ case "${1:-}" in
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
         shift
         cmd_task "$@"
+        ;;
+    task-update)
+        : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
+        shift
+        cmd_task_update "$@"
         ;;
     subtask)
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
