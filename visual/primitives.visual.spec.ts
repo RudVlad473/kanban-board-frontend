@@ -37,6 +37,11 @@ const storyIds = [
     "components-ui-text-field--sizes",
     "components-ui-text-field--long-value",
     "components-ui-text-field--loading", // plan 01-16, Task 1
+    // The in-box character counter — the slot's only visual-regression cover.
+    "components-ui-text-field--character-counter",
+    "components-ui-text-field--character-counter-filled",
+    "components-ui-text-field--character-counter-length-invalid",
+    "components-ui-text-field--character-counter-required-empty",
     // Textarea (plan 04-05, Task 2) — nine stories.
     "components-ui-textarea--idle",
     "components-ui-textarea--focused",
