@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-21 complete; awaiting the non-autonomous 04-22 phase-close checkpoint
-last_updated: "2026-09-02T07:57:53.839Z"
+stopped_at: Plan 04-22 tasks complete; awaiting the blocking human phase sign-off checkpoint
+last_updated: "2026-09-02T12:32:39.074Z"
 last_activity: 2026-09-02
-last_activity_desc: Phase 04 execution resumed (wave continue)
-state_head: 765e4d1a647f30389766ba03ebb182e7e27bf053
+last_activity_desc: Plan 04-22 close-out complete; awaiting human phase sign-off
+state_head: c0ab07e41dd5ce9d946af6210940848ecf15f2b8
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 114
-  completed_plans: 109
+  completed_plans: 114
 milestone_name: milestone
 ---
 
@@ -32,13 +32,13 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 ## Current Position
 
 Phase: 04 (Task & Subtask Workflow) — EXECUTING
-Plan: 04-21 complete — real-backend browser coverage and contention verification recorded in
-`04-21-SUMMARY.md`. Plan 04-22 is a non-autonomous phase-close checkpoint.
-Status: Awaiting phase-close checkpoint
-Last activity: 2026-09-02 — 171/171 e2e executions passed at `--repeat-each=3 --workers=2`.
+Plan: 22 of 22 — all three tasks complete; `04-22-SUMMARY.md` written.
+Plan 04-22's final `checkpoint:human-verify` gate is open and blocking.
+Status: Awaiting human phase sign-off
+Last activity: 2026-09-02 — Plan 04-22 close-out complete; awaiting human phase sign-off
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
-Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 21/22 (in progress)
+Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 22/22 (awaiting sign-off)
 
 ## Performance Metrics
 
@@ -169,11 +169,11 @@ verifying phase 03 wave 4) —
   `onValueChange` receiving `"x"` instead of `"a"`). Count cut to 60 against a measured 41-char
   overflow threshold; 0 failures in 8 full runs, from 2-in-6 before.
 
-- `toast.test.tsx` races Base UI's 5s auto-dismiss — 1 failure in 8 `pnpm test` runs.
-  `renderToastHarness` renders a bare `<ToastProvider>` while the `Default` story sets `timeout: 0`,
-  so harness toasts vanish mid-test under load. Diagnosed but **not yet fixed** — one-line change
-  plus a verification loop. See
-  `.planning/todos/pending/2026-08-24-toast-harness-races-the-5s-auto-dismiss-under-load.md`.
+- **RESOLVED (confirmed 2026-09-02 in 04-22)** — `toast.test.tsx`'s race with Base UI's 5s
+  auto-dismiss is fixed: `toast.test.tsx:52` renders `<ToastProvider timeout={0}>`, matching the
+  `Default` story, so harness toasts no longer vanish mid-test under load. The todo is in
+  `.planning/todos/completed/`, alongside the dropdown `Disabled` hang. This entry had read "not yet
+  fixed" since 2026-08-24; the close-out audit found the fix already shipped.
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
   `formAction` wraps `useActionState`'s `dispatch` in a plain client closure, so React can't
@@ -225,7 +225,7 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-09-02
-Stopped at: Plan 04-21 completed and committed; 04-22 is the non-autonomous phase-close checkpoint
+Stopped at: Plan 04-22's three tasks complete; the blocking human sign-off checkpoint is open
 
 **2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
 cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
@@ -286,4 +286,19 @@ unreachable — `022e04e`) and item #7 (`board-view.tsx` 466 -> 321 via `useBoar
 `useNewColumnReveal`, both in the layout ring because the drag session needs both features —
 `7939718`). CI run 33518793528 green on all four jobs.
 
-**Next:** write `04-15-SUMMARY.md` and close the blocking checkpoint.
+**This session (2026-09-02, `/gsd-execute-phase 04`):** Manual close-out recovery of plan 04-22.
+`c0ab07e` (Task 1) was preserved and verified rather than re-run, per the `.continue-here.md`
+blocking constraint. Task 2 ran the full gate — `pnpm test` 1909/1909, `CI=1 pnpm test:visual`
+300/300 against a freshly built `storybook-static`, e2e 57/57, contention `--repeat-each=3
+--workers=2` 171/171 with zero flaky, build/build-storybook/lint/tsc/format and all nine check
+scripts exit 0 — and reconciled `04-VALIDATION.md` (Wave 0 resolved item by item, 20 map rows
+updated, sign-off answered; `nyquist_compliant` deliberately left `false` because
+`/gsd-validate-phase` was never run). Task 3 measured all six rendered surfaces in both themes
+against mock pages p4/p5/p6/p7/p11 and p14/p15/p16/p17/p21 through this project's own headless
+Playwright MCP. Two NEW divergences surfaced, not fixed: the Edit modal's subtask remove control
+sits 26px below its field centre (`subtask-editor-row.tsx:105`'s `mt-6` against
+`isLabelHidden={true}`), and the design line-heights reach no rendered element project-wide (the
+`leading-*` utility appears in zero `.tsx` files, so all 59 `text-*` token usages render at 1.5).
+Full narrative: `04-22-SUMMARY.md`.
+
+**Next:** the blocking human phase sign-off checkpoint at the end of 04-22.
