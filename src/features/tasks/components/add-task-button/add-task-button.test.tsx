@@ -46,7 +46,7 @@ vi.mock("next/navigation", () =>
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
-const { WithColumns, NoColumns, NoBoardOpen } = composeStories(stories);
+const { WithColumns, NoColumns, NoBoardOpen, WithBoardBelow } = composeStories(stories);
 
 /*
  * Looked up off the imported binding, so `queue` accepts only that action's own awaited result and
@@ -60,6 +60,17 @@ const NEW_TASK = { id: "new-task-id", title: "Take coffee break", description: u
 const openCreateTaskModal = async (): Promise<void> => {
     await userEvent.click(screen.getByRole("button", { name: "+ Add New Task" }));
 };
+
+/*
+ * Read off the DOM rather than by role: Base UI marks the tree outside an open dialog `aria-hidden`,
+ * so a role query would report no cards exactly when the optimistic insert needs reading. Scoped to
+ * the first column, which is the one the modal's status control defaults to.
+ */
+const getFirstColumnTaskTitles = (): (string | null)[] =>
+    Array.from(document.querySelectorAll("section")[0].querySelectorAll("li")).map(
+        /* The content button's own first span, matched before the drag handle's sibling button. */
+        (item) => item.querySelector("button span")?.textContent ?? null,
+    );
 
 describeForEachDevice({
     name: "AddTaskButton",
@@ -131,6 +142,69 @@ describeForEachDevice({
             });
             expect(createTaskStub.calls).toHaveLength(1);
             expect(createTaskStub.calls[0]).toMatchObject({ boardId: openBoardId, title: "Take coffee break" });
+        });
+
+        /*
+         * TASK-01's optimistic insert (docs/adr/tech/0030): the card is on the board while the action
+         * is demonstrably still unresolved, which a settle-then-assert test cannot show.
+         */
+        it("renders the new card in its column before the create resolves", async () => {
+            // Arrange — the one story that renders the board the header writes into.
+            await render(<WithBoardBelow />);
+            const titlesBefore = getFirstColumnTaskTitles();
+            createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
+            createTaskStub.hold();
+            await openCreateTaskModal();
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            await vi.waitFor(() => {
+                expect(createTaskStub.calls).toHaveLength(1);
+            });
+
+            // Assert — appended to the column the modal was submitted against, modal still open.
+            expect(getFirstColumnTaskTitles()).toEqual([...titlesBefore, "Take coffee break"]);
+            expect(screen.getByRole("heading", { name: "Add New Task" })).toBeInTheDocument();
+
+            // Act — let the write land.
+            createTaskStub.settle();
+
+            // Assert — the placeholder is SWAPPED for the server's task, never appended beside it.
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Add New Task" })).not.toBeInTheDocument();
+            });
+            expect(getFirstColumnTaskTitles()).toEqual([...titlesBefore, "Take coffee break"]);
+        });
+
+        /* The other half of the same mechanism: a refusal must leave no trace of the optimistic card. */
+        it("removes the optimistic card and reports the failure inline when the create fails", async () => {
+            // Arrange
+            await render(<WithBoardBelow />);
+            const titlesBefore = getFirstColumnTaskTitles();
+            createTaskStub.queue({ status: RESULT_STATUS.ERROR });
+            createTaskStub.hold();
+            await openCreateTaskModal();
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            await vi.waitFor(() => {
+                expect(createTaskStub.calls).toHaveLength(1);
+            });
+
+            // Assert — the optimistic card stands while the refusal is still in flight.
+            expect(getFirstColumnTaskTitles()).toEqual([...titlesBefore, "Take coffee break"]);
+
+            // Act
+            createTaskStub.settle();
+
+            // Assert — D-05 keeps nothing-was-created inline, so the rollback raises no toast.
+            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create task. Try again.");
+            expect(getFirstColumnTaskTitles()).toEqual(titlesBefore);
+            expect(within(screen.getByRole("region", { name: "Notifications" })).queryAllByRole("dialog")).toHaveLength(
+                0,
+            );
         });
 
         it("keeps the modal open with an inline error when the create fails", async () => {

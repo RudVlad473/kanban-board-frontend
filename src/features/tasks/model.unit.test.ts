@@ -6,6 +6,8 @@ import {
     withSubtaskInsert,
     withSubtaskRemove,
     withSubtaskRename,
+    withTaskInsert,
+    withTaskReplace,
     withTaskUpdate,
     moveTaskInColumns,
     buildSubtaskRowPath,
@@ -132,6 +134,69 @@ describe("withSubtaskCompletion", () => {
 
         // Assert
         expect(rendered).toEqual(columns);
+    });
+});
+
+describe("withTaskInsert", () => {
+    it("appends the task to the named column only", () => {
+        // Arrange
+        const columns = [
+            { id: "column-1", tasks: [createTaskFull({ id: "task-1" })] },
+            { id: "column-2", tasks: [] },
+        ];
+        const task = createTaskFull({ id: "task-2" });
+
+        // Act
+        const next = withTaskInsert({ columns, columnId: "column-1", task });
+
+        // Assert
+        expect(next[0].tasks.map((entry) => entry.id)).toEqual(["task-1", "task-2"]);
+        expect(next[1].tasks).toEqual([]);
+    });
+
+    it("returns an equivalent board when the id names no column on it", () => {
+        // Arrange
+        const columns = [{ id: "column-1", tasks: [createTaskFull({ id: "task-1" })] }];
+
+        // Act & Assert
+        expect(withTaskInsert({ columns, columnId: "no-such-column", task: createTaskFull({ id: "task-2" }) })).toEqual(
+            columns,
+        );
+    });
+});
+
+describe("withTaskReplace", () => {
+    /* docs/adr/tech/0030 rule 2: the response carries no subtasks, so an assign would empty the card. */
+    it("merges the server's task over the placeholder, keeping the subtasks it already held", () => {
+        // Arrange
+        const columns = [
+            { id: "column-1", tasks: [createTaskFull({ id: "placeholder", subtasks: [createSubtask()] })] },
+        ];
+
+        // Act
+        const [merged] = withTaskReplace({
+            columns,
+            taskId: "placeholder",
+            task: { id: "real-task", title: "Take coffee break", description: undefined, version: 2, position: 4 },
+        })[0].tasks;
+
+        // Assert
+        expect(merged).toMatchObject({ id: "real-task", title: "Take coffee break", version: 2, position: 4 });
+        expect(merged.subtasks).toEqual(columns[0].tasks[0].subtasks);
+    });
+
+    it("returns an equivalent board when the id names no task on it", () => {
+        // Arrange
+        const columns = [{ id: "column-1", tasks: [createTaskFull({ id: "task-1" })] }];
+
+        // Act & Assert
+        expect(
+            withTaskReplace({
+                columns,
+                taskId: "no-such-task",
+                task: { id: "real-task", title: "Take coffee break", description: undefined, version: 0, position: 0 },
+            }),
+        ).toEqual(columns);
     });
 });
 

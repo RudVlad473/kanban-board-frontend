@@ -2,13 +2,21 @@
 
 // Covered by: `src/features/tasks/components/add-task-button/add-task-button.test.tsx`
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createTaskAction } from "@/features/tasks/actions/create-task-action";
 import { createTaskSubtasksAction } from "@/features/tasks/actions/create-task-subtasks-action";
+import { withTaskInsert, withTaskReplace, type TaskColumn } from "@/features/tasks/model";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+
+/*
+ * Only the part of the board entry a create touches. Structural rather than the boards feature's own
+ * `BoardFull`, which D-18 forbids importing — the spread below preserves the fields not named here.
+ */
+type CreatableBoard = { columns: TaskColumn[] };
 
 /*
  * Authored copy only — the actions return bare discriminants, so nothing the backend said can
@@ -46,6 +54,16 @@ export type CreateTaskArgs = {
     subtaskTitles: string[];
 };
 
+/** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
+type CreateTaskVariables = { boardId: string; columnId: string; title: string; description: string; clientId: string };
+
+/** Carries the refusal discriminant across the throw that routes it into `onError` (docs/adr/tech/0030). */
+class TaskCreateRefused extends Error {
+    constructor(readonly status: ResultStatus) {
+        super(status);
+    }
+}
+
 /** What one fan-out attempt leaves behind: the titles still missing, and whether retrying can help. */
 type SubtaskFanOutOutcome = { failedTitles: string[]; isSessionExpired: boolean };
 
@@ -65,7 +83,76 @@ export const useCreateTask = () => {
      */
     const taskIdsBeingRetried = useRef(new Set<string>());
 
-    const createTaskMutation = useMutation({ mutationFn: createTaskAction, retry: false });
+    const queryClient = useQueryClient();
+
+    /*
+     * TASK-01's optimistic insert (docs/adr/tech/0030). Only the task itself is staged: the subtask
+     * fan-out below runs behind a closed modal and against a task the server already owns, so its
+     * rows land through the action's own `refresh()` rather than through a second placeholder.
+     */
+    const createTaskMutation = useMutation({
+        mutationFn: async ({ boardId, columnId, title, description }: CreateTaskVariables) => {
+            const result = await createTaskAction({ boardId, columnId, title, description });
+
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                throw new TaskCreateRefused(result.status);
+            }
+
+            return result;
+        },
+        retry: false,
+
+        onMutate: async ({ boardId, columnId, clientId, title, description }: CreateTaskVariables) => {
+            const queryKey = buildBoardQueryKey(boardId);
+            // Or an in-flight read could land on top of the optimistic board and undo it.
+            await queryClient.cancelQueries({ queryKey });
+            const previousBoard = queryClient.getQueryData<CreatableBoard>(queryKey);
+
+            /* `version` is inert placeholder filler — the server owns it, and success replaces it. */
+            queryClient.setQueryData<CreatableBoard>(queryKey, (current) =>
+                current === undefined
+                    ? current
+                    : {
+                          ...current,
+                          columns: withTaskInsert({
+                              columns: current.columns,
+                              columnId,
+                              task: {
+                                  id: clientId,
+                                  title,
+                                  description: description === "" ? undefined : description,
+                                  version: 0,
+                                  position: current.columns.find((column) => column.id === columnId)?.tasks.length ?? 0,
+                                  subtasks: [],
+                              },
+                          }),
+                      },
+            );
+
+            return { previousBoard };
+        },
+
+        /*
+         * No toast here, unlike every other rollback in this repo: nothing was created, so D-05 keeps
+         * the failure inline in the still-open modal — `createTask` below sets that copy.
+         */
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
+        onError: (_error: unknown, { boardId }: CreateTaskVariables, context) => {
+            if (context?.previousBoard !== undefined) {
+                queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
+            }
+        },
+
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)
+        onSuccess: ({ task }, { boardId, clientId }) => {
+            /* MERGED, never assigned — `TaskResponseDTO` carries no `subtasks` (docs/adr/tech/0030 rule 2). */
+            queryClient.setQueryData<CreatableBoard>(buildBoardQueryKey(boardId), (current) =>
+                current === undefined
+                    ? current
+                    : { ...current, columns: withTaskReplace({ columns: current.columns, taskId: clientId, task }) },
+            );
+        },
+    });
     const createSubtasksMutation = useMutation({ mutationFn: createTaskSubtasksAction, retry: false });
 
     const clearError = useCallback((): void => {
@@ -147,16 +234,21 @@ export const useCreateTask = () => {
     }: CreateTaskArgs): Promise<CreateTaskOutcome> => {
         setErrorMessage(null);
 
-        const result = await createTaskMutation
-            .mutateAsync({ boardId, columnId, title, description })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
+        const outcome = await createTaskMutation
+            .mutateAsync({ boardId, columnId, title, description, clientId: crypto.randomUUID() })
+            .then((result) => ({ didCreate: true as const, task: result.task }))
+            .catch((error: unknown) => ({
+                didCreate: false as const,
+                status: error instanceof TaskCreateRefused ? error.status : RESULT_STATUS.ERROR,
+            }));
 
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            setErrorMessage(CREATE_FAILURE_MESSAGE[result.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
+        if (!outcome.didCreate) {
+            setErrorMessage(CREATE_FAILURE_MESSAGE[outcome.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
             return { didCreate: false };
         }
 
-        const taskId = result.task.id;
+        /* The SERVER's id, never the placeholder's — the fan-out below posts children against it. */
+        const taskId = outcome.task.id;
 
         /*
          * Fire-and-forget: the caller closes the modal on `didCreate: true` without waiting for
