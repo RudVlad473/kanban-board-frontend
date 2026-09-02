@@ -72,6 +72,22 @@ describeForEachDevice({
             await expect.element(rendered.getByRole("status")).toHaveTextContent("");
         });
 
+        it("animates its themed colours rather than snapping them when the theme changes", async () => {
+            /*
+             * Deep: computed style. Asserts the declaration, never the colour itself — reading a
+             * transitioning colour back returns the mid-flight interpolated value.
+             */
+            const rendered = await render(<Light />);
+
+            // Act
+            const style = getComputedStyle(rendered.getByRole("status").element());
+
+            // Assert
+            expect(style.transitionProperty).toContain("background-color");
+            expect(style.transitionProperty).toContain("color");
+            expect(style.transitionDuration).not.toBe("0s");
+        });
+
         it("toggles the interface on click and settles with no message on success", async () => {
             // Arrange
             const rendered = await render(<Light />);

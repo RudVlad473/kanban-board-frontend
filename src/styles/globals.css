@@ -5,3 +5,20 @@
 @source not "../../.planning";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+    /*
+     * A theme switch swaps every colour token at once, so without this it snaps. Colour properties
+     * only — transforms and enter/exit animations are untouched, and a Tailwind `transition-*`
+     * utility overrides this base rule rather than stacking with it.
+     */
+    @media (prefers-reduced-motion: no-preference) {
+        *,
+        *::before,
+        *::after {
+            transition-property: color, background-color, border-color, outline-color, fill, stroke;
+            transition-duration: 200ms;
+            transition-timing-function: ease;
+        }
+    }
+}
