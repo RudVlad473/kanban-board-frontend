@@ -1,73 +1,103 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-01T20:49:01.900Z",
+  "timestamp": "2026-09-02T11:08:30.284Z",
   "phase": "04",
   "phase_name": "Task & Subtask Workflow",
   "phase_dir": ".planning/phases/04-task-subtask-workflow",
-  "plan": 18,
-  "task": 0,
+  "plan": 21,
+  "task": 2,
   "total_tasks": 3,
   "status": "paused",
   "completed_tasks": [
     {
-      "id": "04-16",
-      "name": "Task detail view + status-control move (TASK-02, D-10)",
+      "id": "04-18",
+      "name": "Edit task title and description from the kebab (TASK-03, SYNC-01)",
       "status": "done",
-      "commit": "f6441d3",
-      "note": "3 impl tasks were already committed; this session verified the blocking checkpoint in the running app, user approved, SUMMARY written"
+      "commit": "ba82503",
+      "note": "Orchestrator gate green; CI run 33512-series green on all 4 jobs at 6aabd3a"
     },
     {
-      "id": "04-17",
-      "name": "Subtask completion toggle, optimistic, per-subtask in-flight lock (SUBTASK-02, SYNC-01)",
+      "id": "04-19",
+      "name": "Add, inline rename, delete a subtask (SUBTASK-01/03/04)",
       "status": "done",
-      "commit": "4168cb6",
-      "note": "CI run 33556237763 green on all 4 jobs; orchestrator independently re-verified 3x full suite"
+      "commit": "1abf7b2",
+      "note": "CI green at 823fb8e (all 4 jobs). Its own plan asked for e2e --repeat-each=3 --workers=2, which was never run."
+    },
+    {
+      "id": "04-20",
+      "name": "Delete a task behind a cascade-naming confirmation (TASK-05)",
+      "status": "done-but-CI-RED",
+      "commit": "2ec70e6",
+      "note": "Local gate fully green (1909/1909). CI at daaf5fa FAILED: its own e2e/tasks-delete.e2e.spec.ts has 2 real failures. Spec was written but never executed by its executor."
+    },
+    {
+      "id": "04-21-task-1",
+      "name": "Extend the seeding CLI with task description + out-of-band update",
+      "status": "done",
+      "commit": "1806bda",
+      "note": "UNPUSHED. seedTask() takes optional description; updateTaskOutOfBand() added."
+    },
+    {
+      "id": "04-21-task-2",
+      "name": "The four behavioural e2e specs",
+      "status": "in_progress",
+      "progress": "5 spec files written and UNCOMMITTED, never executed: tasks-create (2 tests), tasks-detail (2), tasks-edit (1), subtasks (2), tasks-conflict (2). Completeness unverified — the executor was stopped mid-plan."
     }
   ],
   "remaining_tasks": [
-    {"id": "04-18", "name": "Edit task title and description from the kebab (TASK-03, SYNC-01)", "status": "not_started", "wave": 13, "autonomous": true},
-    {"id": "04-19", "name": "Add, inline rename, delete a subtask (SUBTASK-01/03/04)", "status": "not_started", "wave": 14, "autonomous": true},
-    {"id": "04-20", "name": "Delete a task behind a cascade-naming confirmation (TASK-05)", "status": "not_started", "wave": 15, "autonomous": true},
-    {"id": "04-21", "name": "Prove each phase success criterion in a real browser", "status": "not_started", "wave": 16, "autonomous": true},
+    {"id": "04-21-task-2", "name": "Finish + commit the four behavioural e2e specs, then RUN them", "status": "in_progress", "wave": 16},
+    {"id": "04-21-task-3", "name": "Prove SYNC-01 against a real stale-version rejection, verify under contention", "status": "not_started", "wave": 16},
     {"id": "04-22", "name": "Close the phase: conventions + eight success criteria", "status": "not_started", "wave": 17, "autonomous": false}
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "description": "CI RED at daaf5fa: 2 failures in e2e/tasks-delete.e2e.spec.ts (04-20's spec). Both fail at line 112 — after seedTaskWithSubtasks() and signIn(), getByRole('button', {name: 'Fixture Deletable Task', exact: true}) is never visible (5s timeout, element not found). 46 of 48 e2e tests PASSED, so this is NOT a /admin/reset backend-wipe collision — it is a genuine defect in the one spec that was never executed.",
+      "type": "technical",
+      "workaround": "None. Must be fixed before the phase can close. Likely causes to check in order: (1) the task card may not expose role=button with the title as accessible name — check how a passing spec locates a task card; (2) seedTaskWithSubtasks() may not attach the task to the board/column the test then opens; (3) the seed may succeed but the board page may need an explicit wait."
+    }
+  ],
   "async_jobs": [],
   "human_actions_pending": [
     {
       "action": "Decide the fate of stash@{0} 'lint-staged automatic backup'",
-      "context": "Left by an earlier failed pre-commit hook run, predates this session. Not inspected or dropped because it may hold real work.",
+      "context": "Left by an earlier failed pre-commit hook run; predates this session and the previous one. Still not inspected or dropped because it may hold real work. Carried across three sessions now.",
       "blocking": false
     },
     {
       "action": "Optionally tidy nonprod test data",
-      "context": "Account verify-0415-a@example.com; boards 'Verify Board' + 'Empty Board'. This session added task 'Consolidate the pricing research' to Verify Board and could not delete it (task deletion is 04-20, not built yet).",
+      "context": "Account verify-0415-a@example.com; boards 'Verify Board' + 'Empty Board'; task 'Consolidate the pricing research'. Task deletion now EXISTS (04-20), so this leftover can finally be removed.",
       "blocking": false
     }
   ],
   "decisions": [
     {
-      "decision": "Run the whole phase sequentially with ISOLATION=none instead of parallel worktrees",
-      "rationale": "worktree.base-check returns shouldDegrade=true: the Claude Code harness ignores worktree.baseRef:\"head\" and forks from origin/HEAD (6d0b8e4) while HEAD is on the unmerged phase branch (#48, upstream claude-code#44965). A worktree would silently start from main. Sequential also satisfies the prior session's one-agent-per-tree constraint.",
+      "decision": "Phase-04 plan files carried stale ADR-0029 language; corrected 04-18/19/20 and CLAUDE.md rather than relying on executor judgment",
+      "rationale": "Plans instructed executors to build deleted machinery ('guard the override on the server's previous value', 'retired by reference equality', pattern: 'Override'); 04-18 even pointed at rename-override-provider.tsx, deleted in 3089a6a. Two executors in a row produced correct 0030 code only by IGNORING their plan. Fixed in 4240136.",
       "phase": "04"
     },
     {
-      "decision": "Approved 04-16's blocking checkpoint after orchestrator-side verification, not agent self-report",
-      "rationale": "All six steps driven headless through the project's own mcp__playwright__ server against a fresh dev server; mock compared numerically at 300 DPI. Row fills matched tokens exactly in both themes (light rgb(244,247,253), dark rgb(32,33,44)).",
+      "decision": "Renamed model.ts cache reducers applyTaskUpdate/applySubtaskCompletion -> withTaskUpdate/withSubtaskCompletion",
+      "rationale": "The apply* prefix collided with ADR 0029's deleted render-time apply*Pending* folds and caused a false 'the dead pattern is back' review. Commit 833517c; rationale recorded above the definitions.",
       "phase": "04"
     },
     {
-      "decision": "Fixed a red comments:check at the branch tip that no plan owned",
-      "rationale": "eslint.config.mjs:412 and problem-detail.ts:22 exceeded PC-05's 3-prose-line cap, introduced by review-refactor commits 8c750dc/98bc6d2. CI would have been red. Compressed in 454c3dd with hooks running.",
+      "decision": "Dropped per-wave CI blocking, then per-wave 3x test runs, at user request",
+      "rationale": "Speed. Evidence supported the 3x drop (04-18 and 04-19 both 3/3 identical across six runs). The CI drop is what let daaf5fa's red e2e job go unnoticed until pause — visual and e2e are CI-only, since ignoreSnapshots:!CI makes local visual a no-op and local e2e wipes the shared backend.",
       "phase": "04"
     },
     {
-      "decision": "04-17's toggle follows ADR tech/0030 (query cache) rather than the deleted optimistic-mutation.ts helper",
-      "rationale": "ADR 0030 supersedes 0029 and 3089a6a deleted src/lib/client/optimistic-mutation.ts. All four existing hooks use setQueryData. The executor correctly ignored an orchestrator instruction that pointed at the removed file.",
+      "decision": "Added rule 7 to ~/.claude/CODE_COMMENTS.md (global)",
+      "rationale": "Name another identifier in a comment only when load-bearing; naming an internal sibling for similarity ('mirroring X') is pure sync cost and is what rots. Measured: 717 identifier-naming comments, 331 distinct, 0 accidentally stale, both rot sites that day were sibling cross-references. Deliberately NOT mechanized — an 'identifier must resolve' gate would fire on all 18 dangling refs here, and all 18 are correct.",
       "phase": "04"
     }
   ],
-  "uncommitted_files": [".planning/state.json"],
-  "next_action": "Force dispatch isolation to none, then dispatch plan 04-18 to a gsd-executor running sequentially on the main checkout. See .continue-here.md 'Dispatch recipe'.",
-  "context_notes": "Orchestrating /gsd-execute-phase 4. 17/22 plans complete; waves 13-17 remain, one plan per wave. Branch gsd/phase-04-task-subtask-workflow is at 4f85b7f, pushed, CI green through 4168cb6. Working method that is paying off: never trust an executor's own green claim - re-run the full suite three times plus all 12 gates from the orchestrator, and verify CI with gh run view before advancing a wave."
+  "uncommitted_files": [
+    "e2e/subtasks.e2e.spec.ts",
+    "e2e/tasks-conflict.e2e.spec.ts",
+    "e2e/tasks-create.e2e.spec.ts",
+    "e2e/tasks-detail.e2e.spec.ts",
+    "e2e/tasks-edit.e2e.spec.ts"
+  ],
+  "next_action": "Fix the 2 failing tests in e2e/tasks-delete.e2e.spec.ts (CI run 33621713026, --log-failed shows both). Do this BEFORE resuming 04-21, because 04-21's own specs use the same seed helpers and will likely inherit the same defect. Then finish 04-21 task 2.",
+  "context_notes": "Orchestrating /gsd-execute-phase 4 sequentially with ISOLATION=none (worktree base-check shouldDegrade=true; harness forks from origin/HEAD, #48). 20/22 plans have SUMMARYs; 04-21 is mid-plan and 04-22 remains. Working method that kept paying off: never trust an executor's green claim — re-run the gate from the orchestrator. It caught a red comments:check on the orchestrator's OWN comment, and a negative control proved 04-20's key-collision test genuinely fails without its fix (54 tests). The one thing that gate CANNOT catch is visual + e2e, which are CI-only — and that is precisely where daaf5fa went red."
 }
