@@ -232,8 +232,13 @@ const eslintConfig = defineConfig([
                             ],
                         },
                         {
+                            /*
+                             * `ui -> ui` is allowed (docs/adr/tech/0031); the acyclicity it used to
+                             * buy by construction is now bought by `import-x/no-cycle` in 7c.
+                             */
                             from: { element: { type: "ui" } },
                             allow: [
+                                { to: { element: { type: "ui" } } },
                                 { to: { element: { type: "lib-core" } } },
                                 { to: { element: { type: "lib-client" } } },
                             ],
@@ -285,6 +290,29 @@ const eslintConfig = defineConfig([
         files: ["src/components/ui/**/*.stories.tsx", "src/components/ui/**/*.test.tsx"],
         rules: {
             "boundaries/dependencies": "off",
+        },
+    },
+
+    /*
+     * 7c. Primitives stay acyclic (docs/adr/tech/0031). Graph traversal is the expensive part of
+     * this rule, so it is scoped to the one element type whose blanket sibling-import ban was
+     * lifted rather than run repository-wide.
+     */
+    {
+        files: ["src/components/ui/**/*.{ts,tsx}"],
+        plugins: {
+            "import-x": importX,
+        },
+        /*
+         * `import-x/parsers` is what makes this rule see anything: without it import-x cannot parse
+         * a `.tsx` dependency, so it walks an empty graph and reports a real cycle as clean.
+         */
+        settings: {
+            "import-x/parsers": { "@typescript-eslint/parser": [".ts", ".tsx", ".cts", ".mts"] },
+            "import-x/resolver": { typescript: true },
+        },
+        rules: {
+            "import-x/no-cycle": ["error", { maxDepth: Infinity, ignoreExternal: true }],
         },
     },
 
