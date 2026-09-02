@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast/use-toast";
 import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
 import { withColumnRemove } from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -40,13 +41,6 @@ const DELETE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 
 export type DeleteColumnArgs = { boardId: string; columnId: string };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class ColumnDeleteRefused extends Error {
-    constructor(readonly status: ResultStatus) {
-        super(status);
-    }
-}
-
 /*
  * Decisions ─────────────────────────────────────────────────────────────────────────────────────
  * comment-length-exempt: records a reversal of this hook's own previous decision, which a reader comparing it against ADR domain/0002 would otherwise re-open (docs/adr/tech/0023)
@@ -72,7 +66,7 @@ export const useDeleteColumn = () => {
             const result = await deleteColumnAction({ boardId, columnId });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new ColumnDeleteRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -101,7 +95,7 @@ export const useDeleteColumn = () => {
                 queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
             }
 
-            const status = error instanceof ColumnDeleteRefused ? error.status : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(DELETE_FAILURE_COPY[status] ?? GENERIC_DELETE_FAILURE) });
         },
     });

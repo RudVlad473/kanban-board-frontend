@@ -9,6 +9,7 @@ import { reorderColumnAction } from "@/features/boards/actions/reorder-column-ac
 import { reorderColumns } from "@/features/boards/column-drag-model";
 import { toReorderTargetPosition } from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -43,9 +44,6 @@ export type ReorderColumnsArgs = { fromIndex: number; toIndex: number };
 /** What `reorderColumnAction` is called with, resolved from the cache rather than from the caller. */
 type ReorderColumnVariables = { boardId: string; columnId: string; version: number; targetPosition: number };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class ColumnReorderRefused extends Error {}
-
 /**
  * COLUMN-03's optimistic reorder (U-05), written into the open board's cache entry so every reader
  * of that board sees it at once (docs/adr/tech/0030).
@@ -60,7 +58,7 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
             const result = await reorderColumnAction(args);
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new ColumnReorderRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -96,8 +94,7 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status =
-                error instanceof ColumnReorderRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(REORDER_FAILURE_COPY[status] ?? GENERIC_REORDER_FAILURE) });
         },
 

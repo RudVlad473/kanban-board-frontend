@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
 import { moveTaskInColumns, type TaskColumn } from "@/features/tasks/model";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -47,9 +48,6 @@ export type MoveTaskArgs = { taskId: string; targetColumnId: string; targetIndex
 /** What `moveTaskAction` is called with, resolved from the cache rather than from the caller. */
 type MoveTaskVariables = { taskId: string; targetColumnId: string; version: number; targetPosition: number };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class TaskMoveRefused extends Error {}
-
 /**
  * TASK-04's optimistic move (U-05), and D-10's single implementation: the drag path and the detail
  * view's `Current Status` dropdown are two callers of this one hook. Mechanism: docs/adr/tech/0030.
@@ -64,7 +62,7 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
             const result = await moveTaskAction(args);
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new TaskMoveRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -99,7 +97,7 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof TaskMoveRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(MOVE_FAILURE_COPY[status] ?? GENERIC_MOVE_FAILURE) });
         },
 

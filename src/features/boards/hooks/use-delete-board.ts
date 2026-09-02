@@ -10,6 +10,7 @@ import { deleteBoardAction } from "@/features/boards/actions/delete-board-action
 import { removeBoard, resolveDestinationAfterDelete } from "@/features/boards/model";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
@@ -19,9 +20,6 @@ import { buildBoardDetailPath } from "@/lib/core/routing/routes";
  * D-09 has nothing distinct to explain because nothing was changed (see `use-rename-board.ts`).
  */
 const DELETE_FAILURE_COPY = { title: "Couldn't delete board.", description: "Try again." };
-
-/** Carries the refusal across the throw that routes it into `onError` (docs/adr/tech/0030). */
-class BoardDeleteRefused extends Error {}
 
 /*
  * Decisions ─────────────────────────────────────────────────────────────────────────────────────
@@ -49,7 +47,7 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
             const result = await deleteBoardAction({ boardId });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new BoardDeleteRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;

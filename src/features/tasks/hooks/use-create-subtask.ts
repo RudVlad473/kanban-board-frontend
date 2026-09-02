@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createSubtaskAction } from "@/features/tasks/actions/create-subtask-action";
 import { withSubtaskInsert, withSubtaskRemove, type TaskColumn } from "@/features/tasks/model";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import type { Subtask } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
@@ -34,9 +35,6 @@ const CREATE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
         description: "Refresh to see this board's current tasks.",
     },
 };
-
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class SubtaskCreateRefused extends Error {}
 
 // comment-length-exempt: records why this hook subscribes to the shared cache rather than trusting its caller's props — a settled design decision a future reader would otherwise "simplify" back into a prop read (docs/adr/tech/0023)
 /**
@@ -82,7 +80,7 @@ export const useCreateSubtask = ({
             const result = await createSubtaskAction({ boardId, columnId, taskId, title: args.title });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new SubtaskCreateRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -119,8 +117,7 @@ export const useCreateSubtask = ({
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status =
-                error instanceof SubtaskCreateRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(CREATE_FAILURE_COPY[status] ?? GENERIC_CREATE_FAILURE) });
         },
 

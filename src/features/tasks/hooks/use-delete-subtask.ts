@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { deleteSubtaskAction } from "@/features/tasks/actions/delete-subtask-action";
 import { withSubtaskRemove, type TaskColumn } from "@/features/tasks/model";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -38,9 +39,6 @@ const DELETE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
     },
 };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class SubtaskDeleteRefused extends Error {}
-
 // comment-length-exempt: records why this hook follows the optimistic-rename analog rather than the wait-for-server delete one, and why no index-restore path exists — a settled design decision a future reader would otherwise "fix" by adding one (docs/adr/tech/0023)
 /**
  * SUBTASK-04's immediate, optimistic, no-confirm delete (D-09/S-05) — following the optimistic
@@ -60,7 +58,7 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
             const result = await deleteSubtaskAction({ ...args, boardId, taskId });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new SubtaskDeleteRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -89,8 +87,7 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status =
-                error instanceof SubtaskDeleteRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(DELETE_FAILURE_COPY[status] ?? GENERIC_DELETE_FAILURE) });
         },
 

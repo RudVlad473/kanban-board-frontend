@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
 import { withSubtaskCompletion, type TaskColumn } from "@/features/tasks/model";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import type { Subtask } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
@@ -43,9 +44,6 @@ const TOGGLE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
         description: "Refresh to see this board's current tasks.",
     },
 };
-
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class SubtaskToggleRefused extends Error {}
 
 // comment-length-exempt: records why this hook subscribes to the shared cache rather than trusting its caller's props — a settled design decision a future reader would otherwise "simplify" back into a prop read (docs/adr/tech/0023)
 /**
@@ -89,7 +87,7 @@ export const useToggleSubtask = ({
             const result = await updateSubtaskAction({ ...args, boardId, columnId, taskId });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new SubtaskToggleRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -120,8 +118,7 @@ export const useToggleSubtask = ({
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status =
-                error instanceof SubtaskToggleRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(TOGGLE_FAILURE_COPY[status] ?? GENERIC_TOGGLE_FAILURE) });
         },
 

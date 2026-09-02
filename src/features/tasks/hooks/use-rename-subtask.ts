@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
 import { withSubtaskRename, type TaskColumn } from "@/features/tasks/model";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -43,9 +44,6 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
     },
 };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class SubtaskRenameRefused extends Error {}
-
 // comment-length-exempt: records why this is a SECOND hook on an already-shared action rather than a new one, and where the current-value read happens — a settled design decision a future reader would otherwise "simplify" by splitting an action or trusting a stale prop (docs/adr/tech/0023)
 /**
  * SUBTASK-03's inline rename (S-03) — the SECOND caller of `updateSubtaskAction`, the SAME action
@@ -66,7 +64,7 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
             const result = await updateSubtaskAction({ ...args, boardId, taskId });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new SubtaskRenameRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -106,8 +104,7 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status =
-                error instanceof SubtaskRenameRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[status] ?? GENERIC_RENAME_FAILURE) });
         },
 

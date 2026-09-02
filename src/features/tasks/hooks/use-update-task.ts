@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
 import { withTaskUpdate, type TaskColumn } from "@/features/tasks/model";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -53,9 +54,6 @@ type UpdateTaskVariables = {
     version: number;
 };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class TaskUpdateRefused extends Error {}
-
 /**
  * TASK-03's title/description save (S-01: one call on one entity). The modal has already CLOSED by
  * the time this settles, so the write — and its rollback — reach the CARD, the only surface left to
@@ -71,7 +69,7 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
             const result = await updateTaskAction({ boardId, ...args });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new TaskUpdateRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -101,7 +99,7 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof TaskUpdateRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(UPDATE_FAILURE_COPY[status] ?? GENERIC_UPDATE_FAILURE) });
         },
 

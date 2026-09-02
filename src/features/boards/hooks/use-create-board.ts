@@ -12,6 +12,7 @@ import { createBoardColumnsAction } from "@/features/boards/actions/create-board
 import { toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
@@ -45,13 +46,6 @@ export const buildColumnFailureToastId = (boardId: string): string => `board-col
 /** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
 type CreateBoardVariables = { clientId: string; name: string };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError` (docs/adr/tech/0030). */
-class BoardCreateRefused extends Error {
-    constructor(readonly status: ResultStatus) {
-        super(status);
-    }
-}
-
 export type CreateBoardOutcome =
     /** The board itself was created; `failedNames` is empty when every column landed too. */
     | { didCreate: true; boardId: string; failedNames: string[] }
@@ -79,7 +73,7 @@ export const useCreateBoard = () => {
             const result = await createBoardAction({ name });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new BoardCreateRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -181,7 +175,7 @@ export const useCreateBoard = () => {
             .then((result) => ({ didCreate: true as const, board: result.board }))
             .catch((error: unknown) => ({
                 didCreate: false as const,
-                status: error instanceof BoardCreateRefused ? error.status : RESULT_STATUS.ERROR,
+                status: error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR,
             }));
 
         if (!outcome.didCreate) {

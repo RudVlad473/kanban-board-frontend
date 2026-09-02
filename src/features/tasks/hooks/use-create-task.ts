@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast/use-toast";
 import { createTaskAction } from "@/features/tasks/actions/create-task-action";
 import { createTaskSubtasksAction } from "@/features/tasks/actions/create-task-subtasks-action";
 import { withTaskInsert, withTaskReplace, type TaskColumn } from "@/features/tasks/model";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -57,13 +58,6 @@ export type CreateTaskArgs = {
 /** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
 type CreateTaskVariables = { boardId: string; columnId: string; title: string; description: string; clientId: string };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError` (docs/adr/tech/0030). */
-class TaskCreateRefused extends Error {
-    constructor(readonly status: ResultStatus) {
-        super(status);
-    }
-}
-
 /** What one fan-out attempt leaves behind: the titles still missing, and whether retrying can help. */
 type SubtaskFanOutOutcome = { failedTitles: string[]; isSessionExpired: boolean };
 
@@ -95,7 +89,7 @@ export const useCreateTask = () => {
             const result = await createTaskAction({ boardId, columnId, title, description });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new TaskCreateRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -239,7 +233,7 @@ export const useCreateTask = () => {
             .then((result) => ({ didCreate: true as const, task: result.task }))
             .catch((error: unknown) => ({
                 didCreate: false as const,
-                status: error instanceof TaskCreateRefused ? error.status : RESULT_STATUS.ERROR,
+                status: error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR,
             }));
 
         if (!outcome.didCreate) {

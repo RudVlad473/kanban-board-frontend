@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast/use-toast";
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
 import { shouldNudgeOnColumnCount, withColumnInsert, withColumnReplace } from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -43,13 +44,6 @@ export type CreateColumnArgs = { boardId: string; name: string };
 /** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
 type CreateColumnVariables = CreateColumnArgs & { clientId: string };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError` (docs/adr/tech/0030). */
-class ColumnCreateRefused extends Error {
-    constructor(readonly status: ResultStatus) {
-        super(status);
-    }
-}
-
 /**
  * COLUMN-01's optimistic create (docs/adr/tech/0030). A failure is reported inline rather than as a
  * toast: the rollback puts the board back as it was, so there is nothing left to reconcile and the
@@ -65,7 +59,7 @@ export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
             const result = await createColumnAction({ boardId, name });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new ColumnCreateRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -137,7 +131,7 @@ export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
             .then(() => ({ didCreate: true as const }))
             .catch((error: unknown) => ({
                 didCreate: false as const,
-                status: error instanceof ColumnCreateRefused ? error.status : RESULT_STATUS.ERROR,
+                status: error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR,
             }));
 
         if (!outcome.didCreate) {

@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast/use-toast";
 import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 
 /*
@@ -39,16 +40,6 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 
 export type RenameBoardArgs = { boardId: string; name: string; version: number };
 
-/*
- * These Server Actions RETURN a refusal rather than throwing, so TanStack would record one as a
- * settled success and never run `onError`. Rethrowing as this carries the discriminant across.
- */
-class BoardRenameRefused extends Error {
-    constructor(readonly status: ResultStatus) {
-        super(status);
-    }
-}
-
 /**
  * BOARD-04's optimistic rename (D-15), as TanStack Query's cache-based optimistic update: the
  * pending name is written into the `boards` entry both the sidebar and the header read, so they
@@ -63,7 +54,7 @@ export const useRenameBoard = () => {
             const result = await renameBoardAction(args);
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new BoardRenameRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -88,7 +79,7 @@ export const useRenameBoard = () => {
                 queryClient.setQueryData(BOARDS_QUERY_KEY, context.previousBoards);
             }
 
-            const status = error instanceof BoardRenameRefused ? error.status : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[status] ?? GENERIC_RENAME_FAILURE) });
         },
 

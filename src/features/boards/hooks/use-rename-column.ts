@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import type { BoardFull } from "@/features/boards/schemas";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -38,9 +39,6 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 
 export type RenameColumnArgs = { boardId: string; columnId: string; name: string; version: number };
 
-/** Carries the refusal discriminant across the throw that routes it into `onError`. */
-class ColumnRenameRefused extends Error {}
-
 /**
  * COLUMN-02's optimistic rename (U-05), written into the open board's cache entry so every reader
  * of that board sees it at once (docs/adr/tech/0030).
@@ -55,7 +53,7 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
             const result = await renameColumnAction(args);
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
-                throw new ColumnRenameRefused(result.status);
+                throw new ActionRefusedError(result.status);
             }
 
             return result;
@@ -86,7 +84,7 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ColumnRenameRefused ? (error.message as ResultStatus) : RESULT_STATUS.ERROR;
+            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
             toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[status] ?? GENERIC_RENAME_FAILURE) });
         },
 
