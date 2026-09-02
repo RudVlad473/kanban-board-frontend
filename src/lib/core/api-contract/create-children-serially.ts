@@ -1,3 +1,4 @@
+import { isNil } from "es-toolkit";
 import type { ZodType } from "zod";
 
 /**
@@ -27,7 +28,7 @@ export const createChildrenSerially = async ({
 
         const { error } = await createChild(validValue.data);
 
-        if (error !== undefined) {
+        if (!isNil(error)) {
             failedValues.push(value);
         }
     }

@@ -3,6 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteTaskAction } from "@/features/tasks/actions/delete-task-action";
@@ -81,7 +82,7 @@ export const useDeleteTask = () => {
             const previousBoard = queryClient.getQueryData<DeletableBoard>(queryKey);
 
             queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
-                current !== undefined
+                !isNil(current)
                     ? { ...current, columns: withTaskRemove({ columns: current.columns, taskId }) }
                     : current,
             );
@@ -92,7 +93,7 @@ export const useDeleteTask = () => {
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { boardId }: DeleteTaskArgs, context) => {
             /* Restoring the whole-board snapshot is what brings the task and its subtasks back. */
-            if (context?.previousBoard !== undefined) {
+            if (!isNil(context?.previousBoard)) {
                 queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
             }
 
