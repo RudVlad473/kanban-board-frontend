@@ -150,7 +150,7 @@ components does not, and follows the eight-homes decision above.
 repo-relative path in backticks, not a description:
 
 ```ts
-// Covered by: `src/features/boards/components/board-view/board-view.test.tsx`
+// Covered by: `src/components/layout/board-view/board-view.test.tsx`
 ```
 
 Name each file when more than one covers it. When a file genuinely needs no test — a generated
@@ -200,51 +200,24 @@ pointer rule reproduces exactly that failure, once per file.
 
 ## Data fetching & mutations (docs/adr/tech/0019, narrows docs/adr/tech/0002)
 
-- Every server entry point is either a React Server Component for reads (server-side fetch, zod-validated per docs/adr/tech/0024, passed to a Client Component as plain props — no client-side query for list/detail data) or a Server Action for writes (create/rename/delete/move/reorder), invoked directly by an RSC/form or wrapped as a TanStack Query `mutationFn` for pending/error state. TanStack's optimistic-update guide has two approaches and only the FIRST is ruled out here: "via the cache" writes to the query cache, which this ADR keeps reads out of. "Via the UI" reads the mutation's own variables, touches no cache, and is what this codebase uses — see "Optimistic UI" below. Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
+- Every server entry point is either a React Server Component for reads (server-side fetch and zod validation per docs/adr/tech/0024) or a Server Action for writes (create/rename/delete/move/reorder). RSC reads seed the relevant TanStack Query entry through `HydrationBoundary`; client components read that hydrated entry, and mutation hooks write optimistic updates to it. Route Handlers (`app/**/route.ts`) are banned as a data-access mechanism. Enforcement: `pnpm handlers:check` (`scripts/check-no-route-handlers.mjs`), wired into CI's `quality` job.
 - Every mutating Server Action calls `refresh()` (from `next/cache`) **inside the action itself**, as its last step once the write has succeeded — `app/(dashboard)/layout.tsx` is a persistent layout that does not re-render on ordinary navigation, so a mutation invoked deeper in the tree never reaches the sidebar's board list without it. The client caller does no cache work at all; adding a second `router.refresh()` in the hook would double-render every mutation. All eight shipped board and column mutations follow this, and `use-delete-board.ts` records the reasoning at its call site. The repository's only `router.refresh()` is `board-list.tsx`'s retry button, which is a re-read after a failed load, not a mutation. Enforcement: code review, plus the `e2e/*.e2e.spec.ts` specs, which assert the mutation's result is visible without a manual reload — the observable consequence of the refresh. There is deliberately no unit-level assertion: `refresh()` is Server-Action-only and unreachable from the Vitest `node` project, which is why each action's `*.integration.test.ts` exercises the upstream call rather than the action. docs/adr/tech/0019's Consequences names the anti-pattern this bullet exists to prevent.
 
 ## Optimistic UI (extends docs/adr/tech/0019)
 
-- **One mechanism for all four optimistic writes: TanStack Query's "via the UI" approach.** Board
-  rename, column rename, column reorder and task move all read their pending value off the
-  mutation's own variables through `useOptimisticVariables` (`src/lib/client/optimistic-mutation.ts`)
-  — never a cache entry, since reads are RSC props. Enforcement: code review.
-- **Why not `useOptimistic`.** It cannot serve the board rename: `app/(dashboard)/layout.tsx`
-  streams the sidebar and the header as two independent Suspense boundaries, so they have no common
-  client owner to hold the state. `useMutationState` reads from the QueryClient, which every
-  component is already under, so no provider is needed — this is what let
-  `RenameOverrideProvider` be deleted outright. Enforcement: code review.
-- **Filter on the RESULT, not the promise.** These Server Actions RETURN a non-`SUCCESS` `status`
-  rather than throwing, so TanStack records a refused write as a settled success. Filtering
-  `status: "error"` alone leaves every refused write applied forever. Enforcement:
-  the rollback cases in `board-list.test.tsx` and `sortable-column.test.tsx`.
-- **The submitted `version` is the retirement signal.** An optimistic value must outlive the
-  mutation settling: the authoritative value arrives on a LATER render, when the action's
-  `refresh()` lands. Filtering `status: "pending"` alone drops it in that gap — measured
-  2026-09-01 against the running app, a successful board rename showed the OLD name for 114ms.
-  Applying the change only while the entity still carries the version it was submitted against
-  spans the gap and retires by itself when the bump lands (T-02-63, T-03-29). Enforcement:
-  the "retires the override once the refreshed props carry it" cases.
-- **Do not hand-roll retirement beyond that guard.** Phase 4 originally shipped
-  `applyTaskMoveOverride` and its twin `ColumnOrderOverride`: each snapshotted the server's task ids
-  per column and diffed them on every render to decide staleness. The version guard is one
-  comparison against data the mutation already carries; a diff of server state against a snapshot is
-  the thing to refuse. Enforcement: code review.
+- **One mechanism for every optimistic write: TanStack Query's cache-based approach.** Every mutation hook cancels the matching query, snapshots its entry, applies `setQueryData` in `onMutate`, restores the snapshot in `onError`, and merges the action response in `onSuccess` (docs/adr/tech/0030). The two entries are `["boards"]` for the board list and `["board", boardId]` for an open board; task hooks structurally type the latter instead of importing boards-feature types.
+- **Hydration, not mutation state, settles optimistic values.** The refreshed RSC response reaches the client through `HydrationBoundary` and replaces the cached entry. `initialData` is only a bare-story/component-test fallback; it does not retire a live optimistic update. `useOptimistic`, override stores, `useOptimisticVariables`, and version-based retirement are retired 0029 mechanisms and must not be reintroduced.
+- **Turn a refused result into an error before `onError`.** Server Actions return a non-`SUCCESS` status rather than throwing; each mutation function must throw a typed refusal for that result so TanStack rolls back the snapshot and displays the authored status-specific toast. Action responses are merged, never assigned, because their DTOs omit nested board data.
 - **A test asserting reverted state must poll for it, never read it synchronously after the toast.**
   `await expect.poll(getRenderedColumnNames)`, not `expect(getRenderedColumnNames())`. The
   synchronous form passes alone and fails about 1 run in 8 under full-suite load, which reads as a
   production regression in the hook. Found 2026-09-01 (`252c5b3`). Enforcement: code review.
-- **A story that lands a "refreshed server render" must bump the version too.** A real rename bumps
-  it, and that bump is what retires the optimistic value; a fixture that changes only the name
-  models a server the backend cannot produce. Enforcement: the `ServerPropsAdvance` /
-  `ServerColumnsAdvance` hosts.
 
 ## Server data flows down; a context bus must carry something the server does not have
 
 - **A Client Component never publishes plain server-derived data into a context for a sibling to
-  read.** If two parts of the tree need the same server data, fetch it at a level that can reach
-  both and pass it down; `fetchBoardFull` is `cache()`-wrapped, so fetching in a nested layout and
-  its page costs one call. Enforcement: code review.
+  read.** If two parts of the tree need the same server data, seed it at the RSC composition point
+  through `HydrationBoundary` and read the shared query entry. Enforcement: code review.
 - **Before reaching for a bridge at all, check whether the query cache already owns the state.**
   Since docs/adr/tech/0030 every column and task write lands in the shared `["board", boardId]`
   entry, so "optimistic client state a sibling needs" is usually already readable by both of them —
@@ -263,7 +236,7 @@ pointer rule reproduces exactly that failure, once per file.
 ## Drag-and-drop (docs/adr/tech/0003)
 
 - All card/column dragging goes through the stable `@dnd-kit/core`/`@dnd-kit/sortable` line, not the pre-1.0 `@dnd-kit/react` rewrite. Enforcement: `package.json` dependency pinned accordingly; code review.
-- Every drag interaction remains keyboard-operable (dnd-kit's `KeyboardSensor` enabled). Enforcement, now that a drag surface exists: the keyboard lift/step/drop path is asserted directly in `src/features/boards/components/board-view/board-view.test.tsx` (`browser` project) and end to end in `e2e/columns-reorder.e2e.spec.ts`, and `src/features/boards/components/sortable-column/sortable-column.stories.tsx` runs through the Storybook + axe-core "no new violations" gate. A pointer drag is not automatable here — `dragTo`/`userEvent.dragAndDrop` emit one intermediate move, which dnd-kit's sensors do not register as a drag — so the pointer path's coverage is a low-level `page.mouse` e2e with `{ steps: 10 }` plus a human check; the keyboard path carries the assertion load deliberately, not incidentally.
+- Every drag interaction remains keyboard-operable (dnd-kit's `KeyboardSensor` enabled). Enforcement: the keyboard lift/step/drop path is asserted in `src/components/layout/board-view/board-view.test.tsx` (`browser` project) and end to end in `e2e/columns-reorder.e2e.spec.ts`; `src/features/boards/components/sortable-column/sortable-column.stories.tsx` runs through the Storybook + axe-core gate. Pointer paths use low-level `page.mouse` e2e events with `{ steps: 10 }`, because `dragTo`/`userEvent.dragAndDrop` do not create enough intermediate moves for dnd-kit sensors.
 
 ## No fake HTTP layer (docs/adr/tech/0018, supersedes docs/adr/tech/0004)
 
