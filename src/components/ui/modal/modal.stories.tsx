@@ -80,7 +80,9 @@ export const LongContent: Story = {
                     <Modal.Title>Task activity</Modal.Title>
 
                     <div className="flex flex-col gap-4">
-                        {Array.from({ length: 12 }, (_, index) => {
+                        {/* 20 entries, not 12: at 1440x900 twelve fit inside the panel's max height,
+                            so the story named for scrolling did not actually scroll there. */}
+                        {Array.from({ length: 20 }, (_, index) => {
                             const position = String(index + 1);
                             return (
                                 <p key={position} className="font-body-l text-body-l text-text-primary">
@@ -91,7 +93,7 @@ export const LongContent: Story = {
                     </div>
 
                     <Modal.Footer>
-                        <Button variant="secondary">Close</Button>
+                        <Button variant="secondary">Done</Button>
                     </Modal.Footer>
                 </Modal.Content>
             </Modal.Root>

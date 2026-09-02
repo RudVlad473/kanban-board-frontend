@@ -7,8 +7,10 @@ import type {
     DialogTitleProps,
     DialogTriggerProps,
 } from "@base-ui/react/dialog";
+import { X } from "lucide-react";
 import type { ComponentProps, PropsWithChildren } from "react";
 
+import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
@@ -80,6 +82,19 @@ const Content = ({ className, children, ...props }: ContentProps) => {
                 {...props}
             >
                 <div className="max-h-[calc(100vh-6rem)] overflow-y-auto p-4 md:p-6">{children}</div>
+
+                {/* Sibling of the scroll region, not a child: inside it the control would scroll
+                    away with the content. Last, so it stays last in the tab order. */}
+                <Dialog.Close
+                    render={
+                        <IconButton
+                            type="button"
+                            label="Close"
+                            icon={<X />}
+                            className="absolute top-1 right-1 md:top-2 md:right-2"
+                        />
+                    }
+                />
             </Dialog.Popup>
         </Dialog.Portal>
     );

@@ -226,17 +226,6 @@ export const AddTaskModal = ({
                         </Button>
                     </Modal.Footer>
                 </form>
-
-                <Modal.Close
-                    render={
-                        <IconButton
-                            type="button"
-                            label="Close"
-                            icon={<X />}
-                            className="absolute top-1 right-1 md:top-2 md:right-2"
-                        />
-                    }
-                />
             </Modal.Content>
         </Modal.Root>
     );

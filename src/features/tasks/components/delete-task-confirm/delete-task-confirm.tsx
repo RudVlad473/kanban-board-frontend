@@ -1,10 +1,8 @@
 "use client";
 
-import { X } from "lucide-react";
 import { useRef } from "react";
 
 import { Button } from "@/components/ui/button/button";
-import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Modal } from "@/components/ui/modal/modal";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 
@@ -87,17 +85,6 @@ export const DeleteTaskConfirm = ({ boardId, columnId, task, onClose, onSubmit, 
                         </Button>
                     </Modal.Footer>
                 </div>
-
-                <Modal.Close
-                    render={
-                        <IconButton
-                            type="button"
-                            label="Close"
-                            icon={<X />}
-                            className="absolute top-1 right-1 md:top-2 md:right-2"
-                        />
-                    }
-                />
             </Modal.Content>
         </Modal.Root>
     );

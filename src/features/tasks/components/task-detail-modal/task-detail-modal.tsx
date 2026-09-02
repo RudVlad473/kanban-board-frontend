@@ -1,6 +1,6 @@
 "use client";
 
-import { EllipsisVertical, X } from "lucide-react";
+import { EllipsisVertical } from "lucide-react";
 import { useState } from "react";
 
 import { Dropdown } from "@/components/ui/dropdown/dropdown";
@@ -194,17 +194,6 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
                         </Dropdown.Content>
                     </Dropdown.Root>
                 </div>
-
-                <Modal.Close
-                    render={
-                        <IconButton
-                            type="button"
-                            label="Close"
-                            icon={<X />}
-                            className="absolute top-1 right-1 md:top-2 md:right-2"
-                        />
-                    }
-                />
             </Modal.Content>
         </Modal.Root>
     );
