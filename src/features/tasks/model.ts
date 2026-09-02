@@ -69,7 +69,7 @@ export const toTaskMoveTargetPosition = ({
 
 /**
  * The board as it reads with one move already applied — the reducer behind `useMoveTask`'s
- * `useOptimistic`. A task id the board no longer holds yields the input untouched.
+ * optimistic write. A task id the board no longer holds yields the input untouched.
  */
 export const moveTaskInColumns = <C extends TaskColumn>({
     columns,
