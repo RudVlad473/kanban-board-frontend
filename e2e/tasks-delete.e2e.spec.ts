@@ -26,6 +26,13 @@ const TASK_TITLE = "Fixture Deletable Task";
 
 type SeededTaskWithSubtasks = { account: SeededAccount; board: SeededBoard; taskId: string; subtaskIds: string[] };
 
+/** A task card names its title followed by its subtask caption, when one exists. */
+const taskCard = ({ page, title }: { page: Page; title: string }) =>
+    page.getByRole("button", { name: new RegExp(`^${title}`) });
+
+/** The confirmation is nested over the still-open task detail dialog. */
+const deleteConfirmation = (page: Page) => page.getByRole("dialog", { name: "Delete this task?" });
+
 /** A task with two subtasks, on a board with a single column — the cascade this spec proves. */
 const seedTaskWithSubtasks = (): SeededTaskWithSubtasks => {
     const account = seedAccount();
@@ -61,7 +68,7 @@ const signIn = async ({ page, account, board }: { page: Page; account: SeededAcc
 
 /** Opens the task's detail view and its kebab's destructive entry, leaving the confirmation open. */
 const openDeleteConfirmationFor = async ({ page, title }: { page: Page; title: string }) => {
-    await page.getByRole("button", { name: title, exact: true }).click();
+    await taskCard({ page, title }).click();
     await page.getByRole("button", { name: `Task actions for ${title}` }).click();
     await page.getByRole("menuitem", { name: "Delete Task" }).click();
 };
@@ -77,24 +84,24 @@ test.describe("TASK-05: delete a task", () => {
         // Arrange — a task holding two subtasks, so the cascade this test proves has real scope.
         const { account, board, taskId } = seedTaskWithSubtasks();
         await signIn({ page, account, board });
-        await expect(page.getByRole("button", { name: TASK_TITLE, exact: true })).toBeVisible();
+        await expect(taskCard({ page, title: TASK_TITLE })).toBeVisible();
 
         // Act — the real destructive path: detail view, kebab, confirm.
         await openDeleteConfirmationFor({ page, title: TASK_TITLE });
         /* Created before the click that issues the write, per createServerActionSettled's contract. */
         const settled = createServerActionSettled(page);
-        await page.getByRole("dialog").getByRole("button", { name: "Delete Task" }).click();
+        await deleteConfirmation(page).getByRole("button", { name: "Delete Task" }).click();
         await settled;
 
         // Assert — both the confirmation and the detail view are gone, and so is the card.
-        await expect(page.getByRole("dialog")).toBeHidden();
-        await expect(page.getByRole("button", { name: TASK_TITLE, exact: true })).toBeHidden();
+        await expect(deleteConfirmation(page)).toBeHidden();
+        await expect(taskCard({ page, title: TASK_TITLE })).toBeHidden();
 
         // Act — reload, so nothing on screen can be standing in for the server's own state.
         await page.reload();
 
         // Assert — the card stays gone after a real reload.
-        await expect(page.getByRole("button", { name: TASK_TITLE, exact: true })).toBeHidden();
+        await expect(taskCard({ page, title: TASK_TITLE })).toBeHidden();
 
         /*
          * Assert — the cascade, read from the BACKEND rather than inferred from the card's own
@@ -109,21 +116,26 @@ test.describe("TASK-05: delete a task", () => {
         // Arrange
         const { account, board, taskId } = seedTaskWithSubtasks();
         await signIn({ page, account, board });
-        await expect(page.getByRole("button", { name: TASK_TITLE, exact: true })).toBeVisible();
+        await expect(taskCard({ page, title: TASK_TITLE })).toBeVisible();
 
         // Act — reach the confirmation, then take its non-destructive way out.
         await openDeleteConfirmationFor({ page, title: TASK_TITLE });
-        await page.getByRole("dialog").getByRole("button", { name: "Keep Task" }).click();
+        await deleteConfirmation(page).getByRole("button", { name: "Keep Task" }).click();
 
-        // Assert — the confirmation is gone and the card is exactly as it was.
-        await expect(page.getByRole("dialog")).toBeHidden();
-        await expect(page.getByRole("button", { name: TASK_TITLE, exact: true })).toBeVisible();
+        // Assert — the confirmation is gone while the unchanged detail view stays open.
+        await expect(deleteConfirmation(page)).toBeHidden();
+        await expect(page.getByRole("dialog", { name: TASK_TITLE })).toBeVisible();
+
+        // Act — close the unchanged detail view; its modal semantics hide the card from the accessibility tree.
+        await page.keyboard.press("Escape");
+        await expect(page.getByRole("dialog", { name: TASK_TITLE })).toBeHidden();
+        await expect(taskCard({ page, title: TASK_TITLE })).toBeVisible();
 
         // Act — reload, the only way to tell a declined delete from one that was issued anyway.
         await page.reload();
 
         // Assert — nothing was written, on screen or on the backend.
-        await expect(page.getByRole("button", { name: TASK_TITLE, exact: true })).toBeVisible();
+        await expect(taskCard({ page, title: TASK_TITLE })).toBeVisible();
         expect(readAllTaskIds({ account, boardId: board.id })).toContain(taskId);
     });
 });
