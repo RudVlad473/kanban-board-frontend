@@ -1,6 +1,8 @@
 // Covered by: `src/components/ui/text-field/text-field.test.tsx`
 import { cva } from "class-variance-authority";
 
+import { formStateVariants } from "@/lib/core/styling/form-state-variants";
+
 /*
  * Two cva's, because the box and the input are no longer the same element: the box is a flex row
  * holding the input beside PDF page 1's right-aligned error message. Focus and disabled are
@@ -20,11 +22,7 @@ export const textFieldBoxVariants = cva(
                 md: "h-10",
                 lg: "h-12",
             },
-            // D-17 names these two semantic tokens explicitly for the form-primitive error visual.
-            state: {
-                default: "border-border-default",
-                error: "border-border-danger",
-            },
+            state: formStateVariants,
             hasTrailing: {
                 true: "pr-11",
                 false: "",

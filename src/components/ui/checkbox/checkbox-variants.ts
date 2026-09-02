@@ -1,6 +1,8 @@
 // Covered by: `src/components/ui/checkbox/checkbox.test.tsx`
 import { cva } from "class-variance-authority";
 
+import { formStateVariants } from "@/lib/core/styling/form-state-variants";
+
 /*
  * D-18: 16/20/24px boxes, glyph inset 4px on every side; `peer` lets the sibling Field.Label react
  * to `data-checked`. Base classes use `data-[disabled]:*`, not `disabled:*` — GC-14 found the
@@ -15,14 +17,7 @@ export const checkboxVariants = cva(
                 md: "size-5 [&_svg]:size-3",
                 lg: "size-6 [&_svg]:size-4",
             },
-            /*
-             * D-17: the same danger border token TextField uses, so the two form primitives are
-             * visually consistent by construction.
-             */
-            state: {
-                default: "border-border-default",
-                error: "border-border-danger",
-            },
+            state: formStateVariants,
             /*
              * GC-14: mirrors `text-field.tsx`'s `isBusy` axis — the grayed-out look already comes
              * from base `data-[disabled]:opacity-50`, this axis only adds the cursor affordance
