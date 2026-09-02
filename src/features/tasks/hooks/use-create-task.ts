@@ -103,8 +103,6 @@ export const useCreateTask = () => {
             type: "danger",
             /* An expired session names itself: the generic count would send the user to a Retry that can only fail again. */
             title: isSessionExpired ? SUBTASK_SESSION_EXPIRED_MESSAGE : buildSubtaskFailureTitle(failedTitles.length),
-            // No auto-dismiss: a kept-but-incomplete create must stay visible until acted on.
-            timeout: 0,
             ...(isSessionExpired
                 ? {}
                 : {

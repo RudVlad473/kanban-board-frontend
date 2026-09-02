@@ -100,8 +100,6 @@ export const useCreateBoard = () => {
             id: buildColumnFailureToastId(boardId),
             type: "danger",
             title: buildColumnFailureTitle(failedNames.length),
-            // No auto-dismiss: a kept-but-incomplete create must stay visible until acted on.
-            timeout: 0,
             actionProps: {
                 children: RETRY_ACTION_LABEL,
                 onClick: () => {

@@ -335,6 +335,32 @@ describeForEachDevice({
             expect(mockPush).not.toHaveBeenCalled();
         });
 
+        it("auto-dismisses the column-failure toast rather than leaving it on screen indefinitely", async () => {
+            // Arrange
+            await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Doing"] });
+            await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing"] });
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create 1 column(s).");
+            });
+
+            /*
+             * Base UI pauses every toast timer while the stack is hovered or the window is unfocused
+             * (`expandedOrOutOfFocus`), and the driver leaves the pointer over the viewport after the
+             * click. Resume explicitly so this asserts the timeout rather than the driver's focus state.
+             */
+            window.dispatchEvent(new FocusEvent("focus"));
+
+            // Assert — past Base UI's 5000ms default, which this toast must now inherit.
+            await vi.waitFor(
+                () => {
+                    expect(getRaisedToastTexts()).toHaveLength(0);
+                },
+                { timeout: 9000, interval: 250 },
+            );
+        });
+
         /*
          * The load-bearing case: asserting only that "a toast was raised" would pass whether the
          * second replaced the first or piled on top of it, which is the ambiguity this removes.

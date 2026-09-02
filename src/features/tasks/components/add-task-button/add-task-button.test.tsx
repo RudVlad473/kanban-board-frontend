@@ -223,7 +223,35 @@ describeForEachDevice({
             expect(within(region).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
         });
 
-        /* The toast never auto-dismisses, so its Retry stays clickable mid-retry — a second click must be inert. */
+        it("auto-dismisses the partial-failure toast rather than leaving it on screen indefinitely", async () => {
+            // Arrange — real timers, so the create and its subtask fan-out settle normally.
+            await render(<WithColumns />);
+            createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Make coffee"] });
+            await openCreateTaskModal();
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            const region = await screen.findByRole("region", { name: "Notifications" });
+            await expect.element(within(region).getByText("Couldn't create 1 subtask(s).")).toBeVisible();
+
+            /*
+             * Base UI pauses every toast timer while the stack is hovered or the window is unfocused
+             * (`expandedOrOutOfFocus`), and the driver leaves the pointer over the viewport after the
+             * click. Resume explicitly so this asserts the timeout rather than the driver's focus state.
+             */
+            window.dispatchEvent(new FocusEvent("focus"));
+
+            // Act — past Base UI's 5000ms default, which this toast must now inherit.
+            await vi.waitFor(
+                () => {
+                    expect(within(region).queryByText("Couldn't create 1 subtask(s).")).not.toBeInTheDocument();
+                },
+                { timeout: 9000, interval: 250 },
+            );
+        });
+
+        /* The retry is held unresolved, so the Retry button is still mounted for a second click. */
         it("fans the same titles out once when Retry is clicked twice while the first retry is in flight", async () => {
             // Arrange
             await render(<WithColumns />);
