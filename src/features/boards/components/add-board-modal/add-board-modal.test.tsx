@@ -250,10 +250,10 @@ describeForEachDevice({
         });
 
         /*
-         * D-02a: a blank row left on screen blocks submission rather than being silently dropped,
-         * so what gets created can never differ from what the user is looking at.
+         * A blank row is omitted from the create sequence rather than blocking the submit — the
+         * rule the task form's own subtask rows already follow.
          */
-        it("blocks submission on a blank row sitting alongside a filled one", async () => {
+        it("submits a blank row alongside a filled one, carrying the blank through to be dropped", async () => {
             // Arrange
             const screen = await render(<BlankRowBesideFilledRow />);
 
@@ -261,13 +261,17 @@ describeForEachDevice({
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
-            // Assert — the board name is filled, so this required-field message is the row's own.
-            await expect.element(screen.getByText("Can't be empty")).toBeVisible();
-            expect(BlankRowBesideFilledRow.args.onSubmit).not.toHaveBeenCalled();
+            // Assert
+            await vi.waitFor(() => {
+                expect(BlankRowBesideFilledRow.args.onSubmit).toHaveBeenCalledWith({
+                    name: "Launch",
+                    columns: ["Todo", ""],
+                });
+            });
         });
 
-        /* The default state itself: one untouched row must be named or removed, never ignored. */
-        it("blocks submission on the single default row when it is left untouched", async () => {
+        /* The default state itself: one untouched row is dropped, never a reason to refuse. */
+        it("submits with the single default row left untouched", async () => {
             // Arrange
             const screen = await render(<Default />);
 
@@ -276,8 +280,9 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
             // Assert
-            await expect.element(screen.getByText("Can't be empty")).toBeVisible();
-            expect(Default.args.onSubmit).not.toHaveBeenCalled();
+            await vi.waitFor(() => {
+                expect(Default.args.onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [""] });
+            });
         });
 
         /* Removing that row instead of naming it is the sanctioned way to create with no columns. */

@@ -5,11 +5,12 @@ import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 
 /**
- * The create-board form's column rows reduced to the names sent, in the order typed. Trims but
- * never drops: a blank row is blocked at validation (D-02a), so silently omitting one here would
- * make the created board differ from what was on screen. Pure, per CONVENTIONS.md's `model.ts` rule.
+ * The create-board form's column rows reduced to the names sent, in the order typed: trimmed, and a
+ * blank row DROPPED rather than blocking submission — the same rule `toSubmittedSubtaskTitles`
+ * applies to the task form's rows. Pure, per CONVENTIONS.md's `model.ts` rule.
  */
-export const toSubmittedColumnNames = (rows: string[]): string[] => rows.map((row) => row.trim());
+export const toSubmittedColumnNames = (rows: string[]): string[] =>
+    rows.map((row) => row.trim()).filter((row) => row !== "");
 
 /** D-01a: one row, so the user is never made to clear rows they did not ask for. */
 export const DEFAULT_COLUMN_ROW_COUNT = 1;

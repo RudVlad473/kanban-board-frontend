@@ -114,12 +114,22 @@ export const columnNameSchema = z
 export const columnNameRowSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).pipe(columnNameSchema);
 
 /*
- * Rows are validated with `columnNameRowSchema`, not `columnNameSchema` — a blank row blocks
- * submission with the required-field copy rather than the length copy (D-02a).
+ * The create FORM's own row rule, distinct from `columnNameRowSchema`'s: a blank row is dropped
+ * from the create sequence rather than blocking the submit. Reuses `columnNameSchema` for the
+ * non-blank case, so a 1- or 2-character row still reports the length copy.
+ */
+export const columnNameFormRowSchema = z
+    .string()
+    .trim()
+    .refine((value) => value === "" || columnNameSchema.safeParse(value).success, COLUMN_NAME_LENGTH_MESSAGE);
+
+/*
+ * Rows are validated with `columnNameFormRowSchema`, not `columnNameRowSchema` — this form drops a
+ * blank row, while every single-field column form still requires its one field.
  */
 export const addBoardFormSchema = z.object({
     name: boardNameSchema,
-    columns: z.array(z.object({ value: columnNameRowSchema })),
+    columns: z.array(z.object({ value: columnNameFormRowSchema })),
 });
 
 export type AddBoardFormValues = z.infer<typeof addBoardFormSchema>;

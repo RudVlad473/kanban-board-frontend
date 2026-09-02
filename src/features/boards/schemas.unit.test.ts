@@ -5,6 +5,7 @@ import {
     boardNameSchema,
     boardsSchema,
     columnFullSchema,
+    columnNameFormRowSchema,
     columnNameRowSchema,
     columnNameSchema,
     columnSchema,
@@ -237,6 +238,31 @@ describe("columnNameSchema", () => {
         // Act & Assert
         expect(columnNameSchema.safeParse("").success).toBe(false);
         expect(columnNameSchema.safeParse("   ").success).toBe(false);
+    });
+});
+
+/*
+ * The create FORM's row rule, as opposed to `columnNameRowSchema`'s single-field one: blank is
+ * accepted here because such a row is dropped from the create sequence, never sent.
+ */
+describe("columnNameFormRowSchema", () => {
+    it("accepts an empty and a whitespace-only row", () => {
+        // Act & Assert
+        expect(columnNameFormRowSchema.safeParse("").success).toBe(true);
+        expect(columnNameFormRowSchema.safeParse("   ").success).toBe(true);
+    });
+
+    /* Dropping blank rows must not also drop the bound a named row still has to clear. */
+    it("still reports the length copy for a one-, two- and thirty-three-character row", () => {
+        // Act
+        const results = ["A", "To", "x".repeat(33)].map((value) => columnNameFormRowSchema.safeParse(value));
+
+        // Assert
+        for (const result of results) {
+            expect(result.success).toBe(false);
+            expect(result.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
+        }
+        expect(columnNameFormRowSchema.safeParse("Fix").success).toBe(true);
     });
 });
 

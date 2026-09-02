@@ -97,7 +97,7 @@ const submitNewBoard = async ({ name, columns }: { name: string; columns: string
         }
     }
 
-    // Zero requested columns means the default row has to go — a blank row would block (D-02a).
+    // Zero requested columns means the default row has to go, so no blank one is left to drop.
     if (columns.length === 0) {
         await userEvent.click(screen.getByRole("button", { name: "Remove Column 1" }));
     }
@@ -265,24 +265,27 @@ describeForEachDevice({
         });
 
         /*
-         * D-02a reversed D-02: a blank row is no longer dropped on the way to the create sequence,
-         * it stops the submit outright, so the create never starts at all.
+         * A blank row left on screen is dropped on the way to the create sequence rather than
+         * blocking the submit, matching how the task form treats a blank subtask row.
          */
-        it("starts no create at all when a blank column row is left on screen", async () => {
+        it("drops a blank column row from the create sequence instead of blocking the submit", async () => {
             // Arrange
             await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [] });
 
             // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo", "", "Done"] });
 
-            // Assert — the modal is still open, reporting the row, and nothing was sent.
-            expect(await screen.findByText("Can't be empty")).toBeInTheDocument();
-            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
-            expect(createBoardColumnsStub.calls).toHaveLength(0);
-            expect(mockPush).not.toHaveBeenCalled();
+            // Assert — the two named rows are sent, the blank one is not, and the modal closes.
+            await vi.waitFor(() => {
+                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
+            });
+            expect(createBoardColumnsStub.calls).toEqual([{ boardId: STUB_BOARD_ID, names: ["Todo", "Done"] }]);
+            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
         });
 
-        /* The other half of D-02a: removing every row is still a valid, column-less create. */
+        /* Removing every row is still a valid, column-less create. */
         it("creates a board with no columns when every row is removed", async () => {
             // Arrange
             await render(<Empty />);

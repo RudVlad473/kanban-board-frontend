@@ -35,18 +35,27 @@ describe("toSubmittedColumnNames", () => {
     });
 
     /*
-     * D-02a: a blank row is blocked at validation, so one reaching here is a real name the user
-     * can see on screen — dropping it would understate what the create attempted.
+     * A row left blank is omitted from the create sequence rather than blocking the submit, the
+     * rule the task form's own subtask rows already follow.
      */
-    it("keeps a blank row rather than dropping it", () => {
+    it("drops a blank and a whitespace-only row", () => {
         // Act
-        const names = toSubmittedColumnNames(["Todo", "  ", "Done"]);
+        const names = toSubmittedColumnNames(["Todo", "  ", "", "Done"]);
 
         // Assert
-        expect(names).toEqual(["Todo", "", "Done"]);
+        expect(names).toEqual(["Todo", "Done"]);
     });
 
-    /* D-02a keeps 0 rows valid: removing every row still creates a board with no columns. */
+    /* Dropping every row is legal: a board with no columns is a supported state, not a failure. */
+    it("returns an empty array when every row is blank", () => {
+        // Act
+        const names = toSubmittedColumnNames(["", "   "]);
+
+        // Assert
+        expect(names).toEqual([]);
+    });
+
+    /* Removing every row still creates a board with no columns. */
     it("returns an empty array when there are no rows at all", () => {
         // Act
         const names = toSubmittedColumnNames([]);

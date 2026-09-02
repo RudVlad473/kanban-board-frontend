@@ -46,16 +46,11 @@ export const ManyColumns: Story = {
     },
 };
 
-/** D-02a keeps zero rows valid, so a form with every row removed is a real state to render. */
+/** Zero rows is valid, so a form with every row removed is a real state to render. */
 export const NoColumns: Story = { args: { defaultValues: { name: "Platform Launch" }, defaultColumns: [] } };
 
 export const ColumnNameError: Story = {
     args: { defaultColumns: ["To"], forceColumnError: "Column name must be between 3 and 32 characters." },
-};
-
-/** D-02a's own state: a row left blank now reports the required-field copy instead of being dropped. */
-export const ColumnRequiredError: Story = {
-    args: { defaultValues: { name: "Platform Launch" }, defaultColumns: [""], forceColumnError: "Can't be empty" },
 };
 
 /*
@@ -78,7 +73,7 @@ export const BlankNameOneNamedColumn: Story = { args: { defaultColumns: ["Todo"]
  */
 export const ShortColumnRow: Story = { args: { defaultColumns: ["To"] } };
 
-/** D-02a's blocking case: a row left blank beside a filled one, neither of them staged as an error. */
+/** The mixed case: a row left blank beside a filled one, which submits with only the filled name. */
 export const BlankRowBesideFilledRow: Story = { args: { defaultColumns: ["Todo", ""] } };
 
 /*
