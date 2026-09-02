@@ -10,6 +10,8 @@ import preferArrowFunctions from "eslint-plugin-prefer-arrow-functions";
 import tailwindcss from "eslint-plugin-tailwindcss";
 import tseslint from "typescript-eslint";
 
+import { localRulesPlugin } from "./eslint-rules/prefer-is-nil.mjs";
+
 /** The esquery alternatives matching a ternary branch that yields nothing, for rule 8i below. */
 const emptyBranchSelectors = (branch) =>
     [
@@ -36,7 +38,7 @@ const eslintConfig = defineConfig([
                  * instead (see docs/adr/tech/0007).
                  */
                 projectService: {
-                    allowDefaultProject: ["*.config.mjs", "*.config.js", "scripts/*.mjs"],
+                    allowDefaultProject: ["*.config.mjs", "*.config.js", "scripts/*.mjs", "eslint-rules/*.mjs"],
                 },
                 tsconfigRootDir: import.meta.dirname,
             },
@@ -48,7 +50,7 @@ const eslintConfig = defineConfig([
      * tooling scripts, so it's turned off for just these (see docs/adr/tech/0007).
      */
     {
-        files: ["*.config.mjs", "*.config.js", "scripts/*.mjs"],
+        files: ["*.config.mjs", "*.config.js", "scripts/*.mjs", "eslint-rules/*.mjs"],
         ...tseslint.configs.disableTypeChecked,
     },
 
@@ -654,6 +656,17 @@ const eslintConfig = defineConfig([
                 },
             ],
         },
+    },
+
+    /*
+     * 11. Prefer `isNil` over a raw null/undefined comparison. WARN on purpose: ~167 pre-existing
+     * sites are frozen behind the todo named in the rule's own doc comment, so erroring would fail
+     * the build immediately. Promoting it to "error" is that todo's finish line.
+     */
+    {
+        files: ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "e2e/**/*.ts", "visual/**/*.ts"],
+        plugins: { local: localRulesPlugin },
+        rules: { "local/prefer-is-nil": "warn" },
     },
 
     // 9. Generated/vendored trees are never hand-edited or worth linting.
