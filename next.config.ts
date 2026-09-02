@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
      * repository's own project-governance CLAUDE.md (managed outside this scaffold).
      */
     agentRules: false,
+    experimental: { staleTimes: { dynamic: 300 } },
 };
 
 export default nextConfig;
