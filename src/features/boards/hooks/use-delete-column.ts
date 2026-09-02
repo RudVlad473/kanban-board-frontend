@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
 import { withColumnRemove } from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
@@ -58,7 +58,7 @@ export type DeleteColumnArgs = { boardId: string; columnId: string };
  * back, tasks included, from the whole-board snapshot. Mechanism: docs/adr/tech/0030.
  */
 export const useDeleteColumn = () => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: DELETE_FAILURE_COPY, fallback: GENERIC_DELETE_FAILURE });
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
@@ -95,8 +95,7 @@ export const useDeleteColumn = () => {
                 queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(DELETE_FAILURE_COPY[status] ?? GENERIC_DELETE_FAILURE) });
+            raiseFailureToast(error);
         },
     });
 

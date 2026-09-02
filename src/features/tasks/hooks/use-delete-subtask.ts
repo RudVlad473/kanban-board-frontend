@@ -5,7 +5,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteSubtaskAction } from "@/features/tasks/actions/delete-subtask-action";
 import { withSubtaskRemove, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -48,7 +48,7 @@ const DELETE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
  * path is written. Mechanism: docs/adr/tech/0030. The in-flight lock is keyed on the subtask id.
  */
 export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId: string }) => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: DELETE_FAILURE_COPY, fallback: GENERIC_DELETE_FAILURE });
     const queryClient = useQueryClient();
     const queryKey = buildBoardQueryKey(boardId);
     const [pendingSubtaskIds, setPendingSubtaskIds] = useState<ReadonlySet<string>>(new Set());
@@ -87,8 +87,7 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(DELETE_FAILURE_COPY[status] ?? GENERIC_DELETE_FAILURE) });
+            raiseFailureToast(error);
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSettled positionally (ADR tech/0016 exemption)

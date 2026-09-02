@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import type { BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -44,7 +44,7 @@ export type RenameColumnArgs = { boardId: string; columnId: string; name: string
  * of that board sees it at once (docs/adr/tech/0030).
  */
 export const useRenameColumn = ({ boardId }: { boardId: string }) => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: RENAME_FAILURE_COPY, fallback: GENERIC_RENAME_FAILURE });
     const queryClient = useQueryClient();
     const queryKey = buildBoardQueryKey(boardId);
 
@@ -84,8 +84,7 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[status] ?? GENERIC_RENAME_FAILURE) });
+            raiseFailureToast(error);
         },
 
         /*

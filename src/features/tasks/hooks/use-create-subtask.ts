@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { createSubtaskAction } from "@/features/tasks/actions/create-subtask-action";
 import { withSubtaskInsert, withSubtaskRemove, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -56,7 +56,7 @@ export const useCreateSubtask = ({
     taskId: string;
     columns: TaskColumn[];
 }) => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: CREATE_FAILURE_COPY, fallback: GENERIC_CREATE_FAILURE });
     const queryClient = useQueryClient();
     const queryKey = buildBoardQueryKey(boardId);
     const [pendingClientIds, setPendingClientIds] = useState<ReadonlySet<string>>(new Set());
@@ -117,8 +117,7 @@ export const useCreateSubtask = ({
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(CREATE_FAILURE_COPY[status] ?? GENERIC_CREATE_FAILURE) });
+            raiseFailureToast(error);
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)

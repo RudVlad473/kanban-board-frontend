@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
 import { moveTaskInColumns, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -53,7 +53,7 @@ type MoveTaskVariables = { taskId: string; targetColumnId: string; version: numb
  * view's `Current Status` dropdown are two callers of this one hook. Mechanism: docs/adr/tech/0030.
  */
 export const useMoveTask = ({ boardId }: { boardId: string }) => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: MOVE_FAILURE_COPY, fallback: GENERIC_MOVE_FAILURE });
     const queryClient = useQueryClient();
     const queryKey = buildBoardQueryKey(boardId);
 
@@ -97,8 +97,7 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(MOVE_FAILURE_COPY[status] ?? GENERIC_MOVE_FAILURE) });
+            raiseFailureToast(error);
         },
 
         /*

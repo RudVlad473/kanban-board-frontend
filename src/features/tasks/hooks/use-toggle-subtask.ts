@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
 import { withSubtaskCompletion, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -65,7 +65,7 @@ export const useToggleSubtask = ({
     taskId: string;
     columns: TaskColumn[];
 }) => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: TOGGLE_FAILURE_COPY, fallback: GENERIC_TOGGLE_FAILURE });
     const queryClient = useQueryClient();
     const queryKey = buildBoardQueryKey(boardId);
     const [pendingSubtaskIds, setPendingSubtaskIds] = useState<ReadonlySet<string>>(new Set());
@@ -118,8 +118,7 @@ export const useToggleSubtask = ({
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(TOGGLE_FAILURE_COPY[status] ?? GENERIC_TOGGLE_FAILURE) });
+            raiseFailureToast(error);
         },
 
         /*

@@ -5,7 +5,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteBoardAction } from "@/features/boards/actions/delete-board-action";
 import { removeBoard, resolveDestinationAfterDelete } from "@/features/boards/model";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
@@ -40,7 +40,7 @@ const DELETE_FAILURE_COPY = { title: "Couldn't delete board.", description: "Try
 export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | null }) => {
     const queryClient = useQueryClient();
     const router = useRouter();
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ fallback: DELETE_FAILURE_COPY });
 
     const mutation = useMutation({
         mutationFn: async ({ boardId }: { boardId: string }) => {
@@ -79,7 +79,7 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
-        onError: (_error: unknown, { boardId }: { boardId: string }, context) => {
+        onError: (error: unknown, { boardId }: { boardId: string }, context) => {
             if (context?.previousBoards !== undefined) {
                 queryClient.setQueryData(BOARDS_QUERY_KEY, context.previousBoards);
             }
@@ -92,7 +92,7 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
                 router.replace(buildBoardDetailPath(boardId));
             }
 
-            toast.add({ type: "danger", ...DELETE_FAILURE_COPY });
+            raiseFailureToast(error);
         },
     });
 

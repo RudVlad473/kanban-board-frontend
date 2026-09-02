@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
@@ -46,7 +46,7 @@ export type RenameBoardArgs = { boardId: string; name: string; version: number }
  * change in the same instant with no shared owner and no provider (docs/adr/tech/0019).
  */
 export const useRenameBoard = () => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: RENAME_FAILURE_COPY, fallback: GENERIC_RENAME_FAILURE });
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
@@ -79,8 +79,7 @@ export const useRenameBoard = () => {
                 queryClient.setQueryData(BOARDS_QUERY_KEY, context.previousBoards);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[status] ?? GENERIC_RENAME_FAILURE) });
+            raiseFailureToast(error);
         },
 
         /*

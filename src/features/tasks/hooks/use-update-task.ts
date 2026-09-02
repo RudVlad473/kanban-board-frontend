@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
 import { withTaskUpdate, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -60,7 +60,7 @@ type UpdateTaskVariables = {
  * show it. Mechanism: docs/adr/tech/0030, the same shared-cache write `useMoveTask` uses.
  */
 export const useUpdateTask = ({ boardId }: { boardId: string }) => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: UPDATE_FAILURE_COPY, fallback: GENERIC_UPDATE_FAILURE });
     const queryClient = useQueryClient();
     const queryKey = buildBoardQueryKey(boardId);
 
@@ -99,8 +99,7 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(UPDATE_FAILURE_COPY[status] ?? GENERIC_UPDATE_FAILURE) });
+            raiseFailureToast(error);
         },
 
         /*

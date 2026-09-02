@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { reorderColumns } from "@/features/boards/column-drag-model";
 import { toReorderTargetPosition } from "@/features/boards/model";
@@ -49,7 +49,7 @@ type ReorderColumnVariables = { boardId: string; columnId: string; version: numb
  * of that board sees it at once (docs/adr/tech/0030).
  */
 export const useReorderColumns = ({ boardId }: { boardId: string }) => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: REORDER_FAILURE_COPY, fallback: GENERIC_REORDER_FAILURE });
     const queryClient = useQueryClient();
     const queryKey = buildBoardQueryKey(boardId);
 
@@ -94,8 +94,7 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(REORDER_FAILURE_COPY[status] ?? GENERIC_REORDER_FAILURE) });
+            raiseFailureToast(error);
         },
 
         /*

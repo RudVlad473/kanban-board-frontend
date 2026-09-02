@@ -5,7 +5,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
 import { withSubtaskRename, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -54,7 +54,7 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
  * version submitted is never a render behind. The in-flight lock is keyed on the subtask id.
  */
 export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId: string }) => {
-    const toast = useToast();
+    const raiseFailureToast = useFailureToast({ copy: RENAME_FAILURE_COPY, fallback: GENERIC_RENAME_FAILURE });
     const queryClient = useQueryClient();
     const queryKey = buildBoardQueryKey(boardId);
     const [pendingSubtaskIds, setPendingSubtaskIds] = useState<ReadonlySet<string>>(new Set());
@@ -104,8 +104,7 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                 queryClient.setQueryData(queryKey, context.previousBoard);
             }
 
-            const status = error instanceof ActionRefusedError ? error.status : RESULT_STATUS.ERROR;
-            toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[status] ?? GENERIC_RENAME_FAILURE) });
+            raiseFailureToast(error);
         },
 
         /*
