@@ -1796,6 +1796,36 @@ describeForEachDevice({
             expect(moveTaskStub.calls).toHaveLength(0);
         });
 
+        it("draws no column-reorder bar in the gutter while a TASK is being dragged", async () => {
+            // Arrange
+            await render(<TasksAcrossColumns />);
+            const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
+            /*
+             * The other column's own HEADER, not one of its cards: a card makes itself the `over`,
+             * and only a COLUMN `over` reaches the branch that drew the bar.
+             */
+            const target = screen.getByRole("button", { name: /^Fixture Column 2/ });
+
+            // Act
+            const { releaseBackAtOrigin } = await holdDragOver([centerOf(source), centerOf(target)]);
+
+            // Assert — geometry, not a class name: the column bar is the only TALLER-than-wide one.
+            await expect.poll(() => document.querySelectorAll(".shadow-lg").length).toBeGreaterThan(0);
+            const uprightBars = Array.from(document.querySelectorAll('[aria-hidden="true"].bg-bg-primary')).filter(
+                (bar) => {
+                    const rect = bar.getBoundingClientRect();
+
+                    return rect.height > rect.width;
+                },
+            );
+
+            expect(uprightBars).toHaveLength(0);
+
+            // Cleanup — a no-op drop back on the card's own slot.
+            await releaseBackAtOrigin();
+            expect(moveTaskStub.calls).toHaveLength(0);
+        });
+
         /*
          * S-08's axis-flipped twin of the column indicator: the bar reads from the sort strategy's
          * own indices, so the pointer path and the keyboard path indicate at the same slot.

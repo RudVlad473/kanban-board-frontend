@@ -77,8 +77,12 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
         disabled: !isTaskDragActive,
     });
 
-    /* Read off the strategy's own indices, so the pointer path and the keyboard path indicate identically. */
-    const isInsertionPoint = isSorting && overIndex === index && activeIndex !== index;
+    /*
+     * Read off the strategy's own indices, so the pointer path and the keyboard path indicate
+     * identically — and gated on the drag kind, since one DndContext serves both: a TASK drag also
+     * reports `isSorting` here, which drew this column-reorder bar in the gutter mid-task-drag.
+     */
+    const isInsertionPoint = !isTaskDragActive && isSorting && overIndex === index && activeIndex !== index;
     /*
      * A hovered card carries its OWN insertion point (task-card.tsx); an empty column has no card to
      * carry one, so the body itself draws S-08's bar the moment a task drag is over it directly.
