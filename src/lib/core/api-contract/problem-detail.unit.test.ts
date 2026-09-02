@@ -85,6 +85,30 @@ describe("parseProblemDetail", () => {
     });
 
     /*
+     * T6: the double-delete body a real 404 carries, quoted verbatim so the enum entry is pinned to
+     * an observation (04-BACKEND-FACTS.md T6).
+     */
+    it("parses the entity-not-found body the backend returns for a missing or already-deleted entity", () => {
+        // Arrange
+        const body: unknown = {
+            type: "about:blank",
+            title: "Not Found",
+            status: 404,
+            detail: "Task was not found",
+            instance: "/api/boards/8okxhwo6oq2o/columns/8okxhwo6oq2p/tasks/8okxhwo6oq2q",
+            code: "ENTITY_NOT_FOUND",
+        };
+
+        // Act
+        const result = parseProblemDetail(body);
+
+        // Assert
+        expect(result).not.toBeNull();
+        expect(result?.code).toBe(PROBLEM_CODE.ENTITY_NOT_FOUND);
+        expect(result?.status).toBe(404);
+    });
+
+    /*
      * Parametrised over the rejection-case families (D-26y) rather than a near-identical `it()`
      * per shape — each case isolates exactly one reason a value is not a well-formed problem
      * response.

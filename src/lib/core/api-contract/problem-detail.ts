@@ -15,6 +15,8 @@ export const PROBLEM_CODE = {
     INTERNAL_ERROR: "INTERNAL_ERROR",
     /* The 409 a stale-version update is refused with, observed verbatim in 02-BACKEND-FACTS.md P3. */
     OPTIMISTIC_LOCK_CONFLICT: "OPTIMISTIC_LOCK_CONFLICT",
+    /* The 404 a missing/already-deleted entity is refused with, observed verbatim in 04-BACKEND-FACTS.md T6. */
+    ENTITY_NOT_FOUND: "ENTITY_NOT_FOUND",
 } as const;
 
 export type ProblemCode = (typeof PROBLEM_CODE)[keyof typeof PROBLEM_CODE];

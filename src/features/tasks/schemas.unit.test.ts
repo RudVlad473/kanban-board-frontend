@@ -6,6 +6,7 @@ import {
     createTaskInputSchema,
     createTaskSubtasksInputSchema,
     deleteSubtaskInputSchema,
+    deleteTaskInputSchema,
     editTaskFormSchema,
     moveTaskInputSchema,
     subtaskTitleRowSchema,
@@ -432,6 +433,45 @@ describe("updateTaskInputSchema", () => {
     it("rejects an empty task id", () => {
         // Act
         const result = updateTaskInputSchema.safeParse({ ...createValidUpdateInput(), taskId: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+});
+
+describe("deleteTaskInputSchema", () => {
+    const createValidDeleteInput = () => ({
+        boardId: "00000000-0000-4000-8000-00000000000a",
+        columnId: "00000000-0000-4000-8000-00000000000c",
+        taskId: "00000000-0000-4000-8000-00000000000d",
+    });
+
+    it("accepts a well-formed delete and yields typed data", () => {
+        // Arrange
+        const input = createValidDeleteInput();
+
+        // Act
+        const result = deleteTaskInputSchema.safeParse(input);
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual(input);
+    });
+
+    it("rejects an empty task id", () => {
+        // Act
+        const result = deleteTaskInputSchema.safeParse({ ...createValidDeleteInput(), taskId: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects a payload missing its column id entirely", () => {
+        // Arrange
+        const { columnId: _columnId, ...rest } = createValidDeleteInput();
+
+        // Act
+        const result = deleteTaskInputSchema.safeParse(rest);
 
         // Assert
         expect(result.success).toBe(false);

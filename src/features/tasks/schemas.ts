@@ -150,3 +150,16 @@ export type EditTaskFormValues = z.infer<typeof editTaskFormSchema>;
 
 /** What `EditTaskModal`'s submit handler receives — the contract between the modal and its caller. */
 export type EditTaskSubmitValues = { title: string; description: string };
+
+/*
+ * `DELETE .../tasks/{taskId}` carries no body — no `version` field, mirroring
+ * `deleteColumnInputSchema` and `deleteSubtaskInputSchema` exactly (the endpoint takes no version
+ * to be stale against; T6's cascade is unconditional).
+ */
+export const deleteTaskInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+    taskId: z.string().min(1),
+});
+
+export type DeleteTaskInput = z.infer<typeof deleteTaskInputSchema>;
