@@ -1,14 +1,17 @@
 "use client";
 
 import { EllipsisVertical } from "lucide-react";
+import { useState } from "react";
 
 import { Dropdown } from "@/components/ui/dropdown/dropdown";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Menu } from "@/components/ui/menu/menu";
 import { Modal } from "@/components/ui/modal/modal";
+import { EditTaskModal } from "@/features/tasks/components/edit-task-modal/edit-task-modal";
 import { SubtaskChecklistRow } from "@/features/tasks/components/subtask-checklist-row/subtask-checklist-row";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
 import { useToggleSubtask } from "@/features/tasks/hooks/use-toggle-subtask";
+import { useUpdateTask } from "@/features/tasks/hooks/use-update-task";
 import { toSubtaskDetailCaption, type NamedTaskColumn } from "@/features/tasks/model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 
@@ -19,20 +22,20 @@ type Props = {
     columns: NamedTaskColumn[];
     /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
     onClose: () => void;
-    /** Opens the edit flow from the kebab — TASK-03's mutation is a later plan (04-18). */
-    onEditTask: (task: TaskFull) => void;
     /** Opens the delete-confirmation flow from the kebab — TASK-05's mutation is a later plan (04-20). */
     onDeleteTask: (task: TaskFull) => void;
 };
 
 /**
- * TASK-02's detail view: a pure read off the board, the kebab opening TASK-03/05's flows, D-10's
- * Current Status control (a second `useMoveTask` caller), and SUBTASK-02's toggle, owned directly
- * (S-09: no visible close; Esc/backdrop dismiss).
+ * TASK-02's detail view: a pure read off the board, the kebab opening TASK-03's edit flow (owned
+ * directly, the same single-caller reasoning `useToggleSubtask` already follows) and TASK-05's
+ * delete flow (still bubbled — a later plan), D-10's Current Status control, and SUBTASK-02's toggle.
  */
-export const TaskDetailModal = ({ boardId, task, columns, onClose, onEditTask, onDeleteTask }: Props) => {
+export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask }: Props) => {
     const { moveTask, isPending: isMoving } = useMoveTask({ boardId });
     const { subtasks, toggleSubtask, isSubtaskPending } = useToggleSubtask({ boardId, taskId: task.id, columns });
+    const { updateTask, isPending: isSaving } = useUpdateTask({ boardId });
+    const [isEditing, setIsEditing] = useState(false);
     const currentColumnId = columns.find((column) => column.tasks.some((entry) => entry.id === task.id))?.id;
     /*
      * Without this, Base UI's `Select.Value` shows the raw id until the popup has opened once —
@@ -56,6 +59,27 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onEditTask, o
 
         onClose();
     };
+
+    /*
+     * S-01: the edit modal closes on submit rather than holding a spinner (matching the shipped
+     * rename-modal decision), so this returns to the DETAIL view rather than fully closing — the
+     * user was mid-inspection, and the title it now shows is the one the save just applied.
+     */
+    if (isEditing) {
+        return (
+            <EditTaskModal
+                task={task}
+                isPending={isSaving}
+                onClose={() => {
+                    setIsEditing(false);
+                }}
+                onSubmit={(values) => {
+                    updateTask({ taskId: task.id, title: values.title, description: values.description || undefined });
+                    setIsEditing(false);
+                }}
+            />
+        );
+    }
 
     return (
         <Modal.Root isOpen={true} onOpenChange={handleOpenChange}>
@@ -83,7 +107,7 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onEditTask, o
                         <Menu.Content>
                             <Menu.Item
                                 onClick={() => {
-                                    onEditTask(task);
+                                    setIsEditing(true);
                                 }}
                             >
                                 Edit Task

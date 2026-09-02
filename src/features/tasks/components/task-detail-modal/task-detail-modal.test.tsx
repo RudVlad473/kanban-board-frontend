@@ -5,11 +5,12 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen, within } from "@testing-library/react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
+import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
@@ -23,6 +24,7 @@ const { Default, NoDescription, NoSubtasks, LongTitle } = composeStories(stories
  * own awaited result and `calls` is typed as its first parameter (04-CONTEXT.md D-01).
  */
 const updateSubtaskStub = actionStub(updateSubtaskAction);
+const updateTaskStub = actionStub(updateTaskAction);
 
 /** The board id every fixture below declares itself to belong to. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
@@ -122,7 +124,8 @@ describeForEachDevice({
             expect(items[1]).toHaveClass("text-text-danger");
         });
 
-        it("invokes onEditTask with the task when Edit Task is chosen", async () => {
+        /* TASK-03: the kebab's first item opens the edit flow, owned directly (single caller). */
+        it("opens the Edit Task modal prefilled with the task's current title and description when Edit Task is chosen", async () => {
             // Arrange
             await render(<Default />);
             await userEvent.click(screen.getByRole("button", { name: `Task actions for ${DEFAULT_TASK_TITLE}` }));
@@ -131,7 +134,41 @@ describeForEachDevice({
             await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Task" }));
 
             // Assert
-            expect(Default.args.onEditTask).toHaveBeenCalledWith(Default.args.task);
+            expect(screen.getByRole("heading", { name: "Edit Task" })).toBeInTheDocument();
+            expect(screen.getByLabelText("Title")).toHaveValue(DEFAULT_TASK_TITLE);
+            expect(screen.getByLabelText("Description")).toHaveValue(DEFAULT_TASK_DESCRIPTION);
+        });
+
+        /*
+         * S-01: submitting returns to the detail view — the CARD showing the new title is proved at
+         * board level (board-view.test.tsx), where a real query-cache-seeded parent exists to read it
+         * from; this component test only has the static `task` prop the story supplied.
+         */
+        it("closes the edit modal and returns to the detail view once a save settles", async () => {
+            // Arrange
+            updateTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: DEFAULT_TASK_ID,
+                    title: "Renamed Task",
+                    description: DEFAULT_TASK_DESCRIPTION,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            await render(<Default />);
+            await userEvent.click(screen.getByRole("button", { name: `Task actions for ${DEFAULT_TASK_TITLE}` }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Task" }));
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Title"), "Renamed Task");
+            await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+            // Assert — the Edit modal is gone; the kebab (only rendered in the detail view) is back.
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Edit Task" })).not.toBeInTheDocument();
+            });
+            expect(screen.getByRole("button", { name: `Task actions for ${DEFAULT_TASK_TITLE}` })).toBeInTheDocument();
         });
 
         it("invokes onDeleteTask with the task when Delete Task is chosen", async () => {

@@ -307,9 +307,6 @@ export const BoardView = ({
                     onClose={() => {
                         setOpenTaskId(null);
                     }}
-                    onEditTask={() => {
-                        /* TASK-03's edit flow is a later plan (04-18). */
-                    }}
                     onDeleteTask={() => {
                         /* TASK-05's delete flow is a later plan (04-20). */
                     }}

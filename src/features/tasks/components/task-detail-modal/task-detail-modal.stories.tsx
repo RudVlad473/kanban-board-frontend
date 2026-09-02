@@ -39,7 +39,6 @@ const meta: Meta<typeof TaskDetailModal> = {
         task: DEFAULT_TASK,
         columns: createFixtureColumns(DEFAULT_TASK),
         onClose: fn(),
-        onEditTask: fn(),
         onDeleteTask: fn(),
     },
 };

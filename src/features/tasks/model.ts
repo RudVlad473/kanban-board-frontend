@@ -134,6 +134,27 @@ export const applySubtaskCompletion = <C extends TaskColumn>({
         ),
     }));
 
+/**
+ * The board as it reads with one task's title and description already applied — the reducer behind
+ * `useUpdateTask`'s optimistic write. A task id the board no longer holds yields the input untouched,
+ * mirroring `moveTaskInColumns` and `applySubtaskCompletion`.
+ */
+export const applyTaskUpdate = <C extends TaskColumn>({
+    columns,
+    taskId,
+    title,
+    description,
+}: {
+    columns: C[];
+    taskId: string;
+    title: string;
+    description?: string;
+}): C[] =>
+    columns.map((column) => ({
+        ...column,
+        tasks: column.tasks.map((task) => (task.id === taskId ? { ...task, title, description } : task)),
+    }));
+
 /** A column as the announcement strings read it — its own name, plus the tasks they count against. */
 export type NamedTaskColumn = TaskColumn & { name: string };
 

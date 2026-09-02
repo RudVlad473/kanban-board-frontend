@@ -15,6 +15,7 @@ import { renameColumnAction } from "@/features/boards/actions/rename-column-acti
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
+import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
@@ -58,6 +59,7 @@ const deleteColumnStub = actionStub(deleteColumnAction);
 const reorderColumnStub = actionStub(reorderColumnAction);
 const moveTaskStub = actionStub(moveTaskAction);
 const updateSubtaskStub = actionStub(updateSubtaskAction);
+const updateTaskStub = actionStub(updateTaskAction);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
@@ -95,6 +97,11 @@ const CONFLICT_MOVE_TOAST = "This board changed somewhere else.Refreshing to sho
 
 /* SUBTASK-02's own generic failure copy, from `use-toggle-subtask.ts`'s `GENERIC_TOGGLE_FAILURE`. */
 const GENERIC_TOGGLE_TOAST = "Couldn't update subtask.Try again.";
+
+/* TASK-03's own generic failure copy, from `use-update-task.ts`'s `GENERIC_UPDATE_FAILURE`. */
+const GENERIC_UPDATE_TASK_TOAST = "Couldn't save task.Try again.";
+/* SYNC-01/C-08: the phase-wide conflict title, matching every other conflict toast in this suite. */
+const CONFLICT_UPDATE_TASK_TOAST = "This board changed somewhere else.Refreshing to show the latest.";
 
 /*
  * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
@@ -2119,6 +2126,78 @@ describeForEachDevice({
             await expect.poll(getRaisedToastTexts).toEqual([GENERIC_TOGGLE_TOAST]);
             expect(checkbox.getAttribute("aria-checked")).toBe("false");
             expect(getCardCaption("Fixture Task Alpha")).toBe("0 of 1 subtasks");
+        });
+
+        /*
+         * TASK-03's own tracer proof at the board integration point: the card is the only surface
+         * left to show the save once the modal has closed (S-01), so this is where it must be proved.
+         */
+        it("shows the new title on the card immediately and returns to the detail view once the edit modal closes", async () => {
+            // Arrange
+            updateTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Renamed Task",
+                    description: undefined,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            await render(<TasksAcrossColumns />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+            await userEvent.click(screen.getByRole("button", { name: "Task actions for Fixture Task Alpha" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Task" }));
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Title"), "Renamed Task");
+            await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+            // Assert — the card carries the new title, and the Edit modal is gone (back on the detail view).
+            await expect.poll(getColumnTaskTitles).toEqual([
+                { columnName: "Fixture Column 1", taskTitles: ["Renamed Task"] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
+            ]);
+            expect(screen.queryByRole("heading", { name: "Edit Task" })).not.toBeInTheDocument();
+            expect(screen.getByRole("heading", { name: "Renamed Task" })).toBeInTheDocument();
+        });
+
+        /* UI-SPEC error/edit-task-modal: the failure is a TOAST, since the modal has already closed. */
+        it("reverts the card's title and raises the authored toast on a save failure", async () => {
+            // Arrange
+            updateTaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await render(<TasksAcrossColumns />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+            await userEvent.click(screen.getByRole("button", { name: "Task actions for Fixture Task Alpha" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Task" }));
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Title"), "Renamed Task");
+            await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+            // Assert
+            await expect.poll(getRaisedToastTexts).toEqual([GENERIC_UPDATE_TASK_TOAST]);
+            expect(getColumnTaskTitles()).toEqual([
+                { columnName: "Fixture Column 1", taskTitles: ["Fixture Task Alpha"] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
+            ]);
+        });
+
+        /* SYNC-01/C-08: the distinct version-conflict toast, matching the phase-wide title (D-12). */
+        it("raises the version-conflict toast, matching the phase-wide title, on a stale-version save", async () => {
+            // Arrange
+            updateTaskStub.queue({ status: RESULT_STATUS.CONFLICT });
+            await render(<TasksAcrossColumns />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+            await userEvent.click(screen.getByRole("button", { name: "Task actions for Fixture Task Alpha" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Task" }));
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Title"), "Renamed Task");
+            await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+            // Assert
+            await expect.poll(getRaisedToastTexts).toEqual([CONFLICT_UPDATE_TASK_TOAST]);
         });
 
         /* D-11: the mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */

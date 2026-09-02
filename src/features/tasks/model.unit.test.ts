@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
     applySubtaskCompletion,
+    applyTaskUpdate,
     moveTaskInColumns,
     buildSubtaskRowPath,
     createEmptySubtaskRows,
@@ -125,6 +126,67 @@ describe("applySubtaskCompletion", () => {
             subtaskId: "deleted",
             isCompleted: true,
         });
+
+        // Assert
+        expect(rendered).toEqual(columns);
+    });
+});
+
+describe("applyTaskUpdate", () => {
+    const createColumnsWithTask = () => [
+        { id: "column-1", tasks: [createTaskFull({ id: "task-1", title: "Old Title", description: "Old desc" })] },
+    ];
+
+    it("applies the new title and description, leaving other fields untouched", () => {
+        // Act
+        const columns = applyTaskUpdate({
+            columns: createColumnsWithTask(),
+            taskId: "task-1",
+            title: "New Title",
+            description: "New desc",
+        });
+
+        // Assert
+        expect(columns[0].tasks[0]).toEqual(
+            expect.objectContaining({ id: "task-1", title: "New Title", description: "New desc" }),
+        );
+    });
+
+    /* T9: a save that leaves the description untouched by the server still updates the client's own view of it. */
+    it("applies an undefined description, clearing the client's own copy", () => {
+        // Act
+        const columns = applyTaskUpdate({
+            columns: createColumnsWithTask(),
+            taskId: "task-1",
+            title: "New Title",
+            description: undefined,
+        });
+
+        // Assert
+        expect(columns[0].tasks[0].description).toBeUndefined();
+    });
+
+    it("leaves a different task's title and description untouched", () => {
+        // Arrange
+        const columns = [
+            ...createColumnsWithTask(),
+            { id: "column-2", tasks: [createTaskFull({ id: "task-2", title: "Sibling Title" })] },
+        ];
+
+        // Act
+        const rendered = applyTaskUpdate({ columns, taskId: "task-1", title: "New Title", description: undefined });
+
+        // Assert
+        expect(rendered[1].tasks[0].title).toBe("Sibling Title");
+    });
+
+    /* A task id the board no longer holds — e.g. a concurrent delete — yields the input untouched. */
+    it("hands the columns back untouched when the task is no longer on the board", () => {
+        // Arrange
+        const columns = createColumnsWithTask();
+
+        // Act
+        const rendered = applyTaskUpdate({ columns, taskId: "deleted", title: "New Title", description: undefined });
 
         // Assert
         expect(rendered).toEqual(columns);
