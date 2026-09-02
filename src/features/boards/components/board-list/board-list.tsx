@@ -114,11 +114,14 @@ export const BoardList = ({
         setBoardBeingRenamed(null);
     };
 
-    /* D-09: the modal closes either way — a failure is announced by the hook's toast, not in here. */
+    /*
+     * D-09: closed on submit, not on settle — `deleteBoard` removed the row optimistically before
+     * this line runs, so there is no in-flight state left for the modal to report. A failure still
+     * restores the row and raises the hook's own toast, modal or no modal.
+     */
     const handleDeleteSubmit = (values: { boardId: string }): void => {
-        void deleteBoard(values).finally(() => {
-            setBoardBeingDeleted(null);
-        });
+        void deleteBoard(values);
+        setBoardBeingDeleted(null);
     };
 
     return (

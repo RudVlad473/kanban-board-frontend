@@ -800,27 +800,68 @@ describeForEachDevice({
         });
 
         /*
-         * D-09's whole point: nothing was removed, so there is nowhere to move the user to — and a
-         * navigation here would be the app acting as though the delete had landed.
+         * BOARD-05's optimistic removal (docs/adr/tech/0030): the row is gone while the action is
+         * demonstrably still unresolved, which is the claim a settle-then-assert test cannot make.
          */
-        it("navigates nowhere and announces the failure when the delete fails", async () => {
+        it("removes the row from the sidebar before the delete resolves", async () => {
             // Arrange
-            const boards = Populated.args.boards ?? [];
-            currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
-            deleteBoardStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
+            deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
+            deleteBoardStub.hold();
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 2");
+            await vi.waitFor(() => {
+                expect(deleteBoardStub.calls).toHaveLength(1);
+            });
+
+            // Assert — and the confirmation is already closed, since nothing is left to wait on.
+            expect(getRenderedBoardNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Board 2"));
+            expect(screen.queryByRole("heading", { name: "Delete this board?" })).not.toBeInTheDocument();
+
+            // Act — let the write land.
+            deleteBoardStub.settle();
+
+            // Assert — nothing flashes back, and the removal is not applied a second time.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(0);
+            });
+            expect(getRenderedBoardNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Board 2"));
+        });
+
+        /*
+         * D-09: a refusal restores BOTH halves of the optimistic write — the row and the address that
+         * named it — or the sidebar would show a board the user can no longer navigate back to.
+         */
+        it("restores the row and returns the viewer to the board when the delete fails", async () => {
+            // Arrange — the first board is the one being viewed, so the delete moves the user too.
+            const boards = Populated.args.boards ?? [];
+            currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            deleteBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            deleteBoardStub.hold();
 
             // Act
             await deleteBoardFromRow("Fixture Board 1");
-
-            // Assert — the row is exactly where it was, the toast says so, and nobody moved.
             await vi.waitFor(() => {
-                expect(getRaisedToastTexts()).toHaveLength(1);
+                expect(deleteBoardStub.calls).toHaveLength(1);
             });
-            expect(getRaisedToastTexts()[0]).toBe("Couldn't delete board.Try again.");
+
+            // Assert — removed and moved off optimistically, before anything has been refused.
+            expect(getRenderedBoardNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Board 1"));
+            expect(mockReplace).toHaveBeenCalledWith(buildBoardDetailPath(boards[1]?.id ?? ""));
+
+            // Act
+            deleteBoardStub.settle();
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toEqual(["Couldn't delete board.Try again."]);
+            });
             expect(getRenderedBoardNames()).toEqual(namesBefore);
-            expect(mockReplace).not.toHaveBeenCalled();
+            expect(mockReplace).toHaveBeenLastCalledWith(buildBoardDetailPath(boards[0]?.id ?? ""));
             expect(mockPush).not.toHaveBeenCalled();
         });
 
