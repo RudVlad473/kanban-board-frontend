@@ -9,11 +9,20 @@ import { expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { createSubtaskAction } from "@/features/tasks/actions/create-subtask-action";
+import { deleteSubtaskAction } from "@/features/tasks/actions/delete-subtask-action";
+import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 
 import * as stories from "./edit-task-modal.stories";
 
-const { Default, NoDescription, Submitting, TitleError } = composeStories(stories);
+const { Default, NoDescription, Populated, SingleSubtask, Submitting, TitleError } = composeStories(stories);
+
+const createSubtaskStub = actionStub(createSubtaskAction);
+const updateSubtaskStub = actionStub(updateSubtaskAction);
+const deleteSubtaskStub = actionStub(deleteSubtaskAction);
 
 /*
  * Base UI renders the backdrop as a sibling of the popup with no role of its own, so it is reached
@@ -73,12 +82,27 @@ describeForEachDevice({
             expect(label.element().nextElementSibling).toBe(hint.element());
         });
 
-        it("renders the add-a-subtask-row control with no rows", async () => {
+        /* UI-SPEC empty/edit-task-modal: the label, the hint and the add-a-row button — no rows. */
+        it("renders the add-a-subtask-row control with no rows when the task has none", async () => {
             // Act
             const screen = await render(<Default />);
 
             // Assert
             await expect.element(screen.getByRole("button", { name: "+ Add New Subtask" })).toBeVisible();
+            expect(domScreen.queryByRole("button", { name: /^Remove subtask/ })).not.toBeInTheDocument();
+        });
+
+        it("renders one live row per existing subtask", async () => {
+            // Act
+            const screen = await render(<Populated />);
+
+            // Assert
+            await expect
+                .element(screen.getByRole("button", { name: "Remove subtask 'Fixture Subtask 1'" }))
+                .toBeVisible();
+            await expect
+                .element(screen.getByRole("button", { name: "Remove subtask 'Fixture Subtask 2'" }))
+                .toBeVisible();
         });
 
         it("shows the loading treatment on the submit control while a submit is pending", async () => {
@@ -180,6 +204,77 @@ describeForEachDevice({
 
             // Assert
             expect(domScreen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument();
+        });
+
+        /*
+         * The tracer proof this modal exists for (S-01): add a row, rename an existing row and
+         * remove a row, each WITHOUT the submit ever being pressed, and each one persists.
+         */
+        it("adds, renames and removes a subtask row, none of it behind the submit", async () => {
+            // Arrange
+            const screen = await render(<Populated />);
+
+            // Act — rename the first existing row.
+            updateSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: {
+                    id: "00000000-0000-4000-8000-a00000000001",
+                    title: "Renamed Subtask",
+                    isCompleted: true,
+                    version: 1,
+                },
+            });
+            await userEvent.fill(screen.getByRole("textbox", { name: "Subtask 1" }), "Renamed Subtask");
+            await userEvent.tab();
+
+            // Assert — the rename persisted with no submit pressed.
+            await expect
+                .element(screen.getByRole("button", { name: "Remove subtask 'Renamed Subtask'" }))
+                .toBeVisible();
+
+            // Act — remove the second existing row.
+            deleteSubtaskStub.queue({ status: RESULT_STATUS.SUCCESS });
+            await screen.getByRole("button", { name: "Remove subtask 'Fixture Subtask 2'" }).click();
+
+            // Assert
+            await expect
+                .element(screen.getByRole("button", { name: "Remove subtask 'Fixture Subtask 2'" }))
+                .not.toBeInTheDocument();
+
+            // Act — add a new row via the seeded "+ Add New Subtask" control.
+            createSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: {
+                    id: "00000000-0000-4000-8000-a00000000099",
+                    title: "New Subtask",
+                    isCompleted: false,
+                    version: 0,
+                },
+            });
+            await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
+            await userEvent.fill(screen.getByRole("textbox", { name: "Subtask 2" }), "New Subtask");
+            await userEvent.tab();
+
+            // Assert — all three persisted with the submit never pressed.
+            await expect.element(screen.getByRole("button", { name: "Remove subtask 'New Subtask'" })).toBeVisible();
+            expect(Populated.args.onSubmit).not.toHaveBeenCalled();
+        });
+
+        /* UI-SPEC zero-one-many/edit-task-modal: removing the last row returns to the empty shape. */
+        it("returns to the empty shape when the last row is removed", async () => {
+            // Arrange
+            const screen = await render(<SingleSubtask />);
+            const removeButton = screen.getByRole("button", { name: /^Remove subtask/ });
+
+            // Act
+            deleteSubtaskStub.queue({ status: RESULT_STATUS.SUCCESS });
+            await removeButton.click();
+
+            // Assert
+            await expect.element(screen.getByRole("button", { name: "+ Add New Subtask" })).toBeVisible();
+            await vi.waitFor(() => {
+                expect(domScreen.queryByRole("button", { name: /^Remove subtask/ })).not.toBeInTheDocument();
+            });
         });
     },
 });

@@ -13,6 +13,7 @@ import { createColumnAction } from "@/features/boards/actions/create-column-acti
 import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
+import { deleteSubtaskAction } from "@/features/tasks/actions/delete-subtask-action";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
 import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
@@ -47,6 +48,7 @@ const {
     TaskIntoEmptyColumn,
     ReorderableTasks,
     SingleColumnSingleTask,
+    TaskWithMultipleSubtasks,
 } = composeStories(stories);
 
 /*
@@ -60,6 +62,7 @@ const reorderColumnStub = actionStub(reorderColumnAction);
 const moveTaskStub = actionStub(moveTaskAction);
 const updateSubtaskStub = actionStub(updateSubtaskAction);
 const updateTaskStub = actionStub(updateTaskAction);
+const deleteSubtaskStub = actionStub(deleteSubtaskAction);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
@@ -97,6 +100,9 @@ const CONFLICT_MOVE_TOAST = "This board changed somewhere else.Refreshing to sho
 
 /* SUBTASK-02's own generic failure copy, from `use-toggle-subtask.ts`'s `GENERIC_TOGGLE_FAILURE`. */
 const GENERIC_TOGGLE_TOAST = "Couldn't update subtask.Try again.";
+
+/* SUBTASK-04's own generic failure copy, from `use-delete-subtask.ts`'s `GENERIC_DELETE_FAILURE`. */
+const GENERIC_DELETE_SUBTASK_TOAST = "Couldn't delete subtask.Try again.";
 
 /* TASK-03's own generic failure copy, from `use-update-task.ts`'s `GENERIC_UPDATE_FAILURE`. */
 const GENERIC_UPDATE_TASK_TOAST = "Couldn't save task.Try again.";
@@ -2198,6 +2204,35 @@ describeForEachDevice({
 
             // Assert
             await expect.poll(getRaisedToastTexts).toEqual([CONFLICT_UPDATE_TASK_TOAST]);
+        });
+
+        /*
+         * SUBTASK-04's own tracer proof: a failed delete reinstates the row at its ORIGINAL index
+         * (not appended to the end) and reverts the card's caption together, proving the toggle
+         * case's caption-only-rollback-miss regression is covered for the delete path too.
+         */
+        it("reverts a failed subtask delete to its ORIGINAL index and reverts the card's caption", async () => {
+            // Arrange
+            deleteSubtaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await render(<TaskWithMultipleSubtasks />);
+            expect(getCardCaption("Fixture Task Alpha")).toBe("0 of 2 subtasks");
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+            await userEvent.click(screen.getByRole("button", { name: "Task actions for Fixture Task Alpha" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Task" }));
+
+            // Act — delete the FIRST of two rows.
+            await userEvent.click(await screen.findByRole("button", { name: "Remove subtask 'Fixture Subtask 1'" }));
+
+            // Assert — reinstated at index 0 (before Subtask 2), never appended to the end.
+            await expect.poll(getRaisedToastTexts).toEqual([GENERIC_DELETE_SUBTASK_TOAST]);
+            await expect
+                .poll(() =>
+                    Array.from(document.querySelectorAll("button[aria-label^='Remove subtask']")).map((button) =>
+                        button.getAttribute("aria-label"),
+                    ),
+                )
+                .toEqual(["Remove subtask 'Fixture Subtask 1'", "Remove subtask 'Fixture Subtask 2'"]);
+            expect(getCardCaption("Fixture Task Alpha")).toBe("0 of 2 subtasks");
         });
 
         /* D-11: the mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */

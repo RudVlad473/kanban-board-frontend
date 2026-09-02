@@ -69,6 +69,8 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
         return (
             <EditTaskModal
                 task={task}
+                boardId={boardId}
+                columns={columns}
                 isPending={isSaving}
                 onClose={() => {
                     setIsEditing(false);

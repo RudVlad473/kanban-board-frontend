@@ -8,6 +8,7 @@ import {
     createBoardFull,
     createColumnFull,
     createColumnsFull,
+    createSubtasks,
     createTaskFull,
 } from "@/test-utils/factories/board-full";
 
@@ -280,6 +281,32 @@ export const TasksAcrossColumns: Story = {
                             id: "00000000-0000-4000-8000-d20000000001",
                             title: "Fixture Task Beta",
                             position: 0,
+                        }),
+                    ],
+                }),
+            ],
+        }),
+    },
+};
+
+/*
+ * SUBTASK-04's own fixture: one task holding TWO subtasks, so a delete-rollback test can prove the
+ * removed row reinstates at its ORIGINAL index rather than merely "somewhere".
+ */
+export const TaskWithMultipleSubtasks: Story = {
+    args: {
+        board: createBoardFull({
+            columns: [
+                createColumnFull({
+                    id: "00000000-0000-4000-8000-c00000000001",
+                    name: "Fixture Column 1",
+                    position: 0,
+                    tasks: [
+                        createTaskFull({
+                            id: "00000000-0000-4000-8000-d10000000001",
+                            title: "Fixture Task Alpha",
+                            position: 0,
+                            subtasks: createSubtasks({ count: 2 }),
                         }),
                     ],
                 }),

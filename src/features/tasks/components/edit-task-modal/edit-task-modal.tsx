@@ -1,47 +1,45 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ReactNode } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button/button";
 import { Modal } from "@/components/ui/modal/modal";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { Textarea } from "@/components/ui/textarea/textarea";
+import { SubtaskEditorRow } from "@/features/tasks/components/subtask-editor-row/subtask-editor-row";
+import { useCreateSubtask } from "@/features/tasks/hooks/use-create-subtask";
+import { useDeleteSubtask } from "@/features/tasks/hooks/use-delete-subtask";
+import { useRenameSubtask } from "@/features/tasks/hooks/use-rename-subtask";
+import { type TaskColumn } from "@/features/tasks/model";
 import { editTaskFormSchema, type EditTaskFormValues, type EditTaskSubmitValues } from "@/features/tasks/schemas";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 
 type Props = {
     task: TaskFull;
+    boardId: string;
+    /** The open board's columns — seeds this modal's own reactive subtask read (docs/adr/tech/0030). */
+    columns: TaskColumn[];
     /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
     onClose: () => void;
     onSubmit: (values: EditTaskSubmitValues) => void;
     isPending: boolean;
-    /**
-     * The subtask rows themselves — left as a prop by plan 04-18 for plan 04-19 to fill with live
-     * `SubtaskEditorRow` entries. Rendering the section here (label, autosave hint, add-a-row
-     * button) with no rows keeps this component's own shape unchanged once the slot is filled.
-     */
-    subtaskRows?: ReactNode;
-    onAddSubtaskRow?: () => void;
     /** Storybook-only staging — renders the title field's error state without a real submit. */
     forceTitleError?: string;
 };
 
+// comment-length-exempt: records the one deliberate break from the presentational-by-prop rule every sibling modal follows, and why it is scoped to subtasks only — a settled design decision a future reader would otherwise "fix" by lifting the hooks (docs/adr/tech/0023)
 /**
- * TASK-03's edit form (S-01). Deliberately takes `onSubmit` as a prop rather than calling its own
- * save hook — that is what lets its behavioural tests drive it with a real local function instead
- * of a module mock (docs/adr/tech/0020), matching every sibling modal's own rule.
+ * TASK-03's edit form (S-01) plus SUBTASK-01/03/04's per-item add/rename/delete (D-06). Takes
+ * `onSubmit` as a prop for the title/description save, matching every sibling modal's
+ * presentational-by-prop rule (docs/adr/tech/0020) — but the subtask rows are the one place this
+ * modal owns its own mutation hooks directly, because each row saves the instant it is edited, and
+ * there is no other single caller for `useCreateSubtask`/`useRenameSubtask`/`useDeleteSubtask` to
+ * live in. A newly added row is a local DRAFT (a client id, no server call yet) until its first
+ * commit, at which point it becomes a LIVE row read reactively off the shared board cache.
  */
-export const EditTaskModal = ({
-    task,
-    onClose,
-    onSubmit,
-    isPending,
-    subtaskRows,
-    onAddSubtaskRow,
-    forceTitleError,
-}: Props) => {
+export const EditTaskModal = ({ task, boardId, columns, onClose, onSubmit, isPending, forceTitleError }: Props) => {
     const {
         register,
         handleSubmit,
@@ -51,6 +49,11 @@ export const EditTaskModal = ({
         mode: "onTouched",
         defaultValues: { title: task.title, description: task.description ?? "" },
     });
+
+    const { subtasks, createSubtask, isCreatingSubtask } = useCreateSubtask({ boardId, taskId: task.id, columns });
+    const { renameSubtask, isSubtaskPending: isRenamePending } = useRenameSubtask({ boardId, taskId: task.id });
+    const { deleteSubtask, isSubtaskPending: isDeletePending } = useDeleteSubtask({ boardId, taskId: task.id });
+    const [draftRowIds, setDraftRowIds] = useState<string[]>([]);
 
     const titleErrorMessage = forceTitleError ?? errors.title?.message;
 
@@ -113,9 +116,53 @@ export const EditTaskModal = ({
                             Subtask changes save as you make them.
                         </p>
 
-                        {subtaskRows}
+                        {subtasks.map((subtask, index) => {
+                            return (
+                                <SubtaskEditorRow
+                                    key={subtask.id}
+                                    title={subtask.title}
+                                    isDraft={false}
+                                    rowLabel={`Subtask ${String(index + 1)}`}
+                                    isPending={isRenamePending(subtask.id) || isDeletePending(subtask.id)}
+                                    onCommit={(title) => renameSubtask({ subtaskId: subtask.id, title })}
+                                    onRemove={() => {
+                                        deleteSubtask(subtask.id);
+                                    }}
+                                />
+                            );
+                        })}
 
-                        <Button type="button" variant="secondary" onClick={onAddSubtaskRow}>
+                        {draftRowIds.map((draftId, index) => {
+                            return (
+                                <SubtaskEditorRow
+                                    key={draftId}
+                                    title=""
+                                    isDraft={true}
+                                    rowLabel={`Subtask ${String(subtasks.length + index + 1)}`}
+                                    isPending={isCreatingSubtask(draftId)}
+                                    onCommit={async (title) => {
+                                        const { didCreate } = await createSubtask({ clientId: draftId, title });
+
+                                        if (didCreate) {
+                                            setDraftRowIds((current) => current.filter((id) => id !== draftId));
+                                        }
+
+                                        return didCreate;
+                                    }}
+                                    onRemove={() => {
+                                        setDraftRowIds((current) => current.filter((id) => id !== draftId));
+                                    }}
+                                />
+                            );
+                        })}
+
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                                setDraftRowIds((current) => [...current, crypto.randomUUID()]);
+                            }}
+                        >
                             + Add New Subtask
                         </Button>
                     </div>
