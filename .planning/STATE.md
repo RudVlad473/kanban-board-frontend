@@ -5,15 +5,15 @@ current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
 stopped_at: Plan 04-15 migration + review items
-last_updated: "2026-09-01T17:11:43.663Z"
-last_activity: 2026-09-01
+last_updated: "2026-09-02T07:57:53.839Z"
+last_activity: 2026-09-02
 last_activity_desc: Phase 04 execution resumed (wave continue)
-state_head: 90afbe6783d4b1549c55f7304ec15e40f5136557
+state_head: 765e4d1a647f30389766ba03ebb182e7e27bf053
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 114
-  completed_plans: 107
+  completed_plans: 109
 milestone_name: milestone
 ---
 
@@ -36,7 +36,7 @@ Plan: 04-15 (create task/subtask actions, Add New Task modal, header create butt
 implementation tasks committed; task 4 is a `checkpoint:human-verify` (gate=blocking) held OPEN by
 user choice so the SUMMARY describes the review-driven refactor batch that followed.
 Status: Executing Phase 04
-Last activity: 2026-09-01 — Phase 04 execution resumed (wave continue)
+Last activity: 2026-09-02 — Phase 04 execution resumed (wave continue)
 already committed, `5b75d60`). Reviewed and completed the inherited Task 2 WIP (added the
 empty-column half of S-08's drop indicator to `sortable-column.tsx`; everything else — lifted
 opacity/clone, reduce-motion drop — was already shipped by 04-12), fixed a genuine MOBILE-only
