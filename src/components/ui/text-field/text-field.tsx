@@ -1,5 +1,6 @@
 import { Field } from "@base-ui/react/field";
 import { type VariantProps } from "class-variance-authority";
+import { isNil } from "es-toolkit";
 import { useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 
 import { textFieldBoxVariants, textFieldControlVariants } from "@/components/ui/text-field/text-field-variants";
@@ -65,7 +66,7 @@ export const TextField = ({
      */
     useLayoutEffect(() => {
         const input = boxRef.current?.querySelector("input");
-        if (input !== null && input !== undefined) {
+        if (!isNil(input)) {
             setTypedLength(input.value.length);
         }
     }, []);
