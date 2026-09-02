@@ -18,11 +18,13 @@ import {
     toColumnDotToken,
     toReorderTargetPosition,
     toSubmittedColumnNames,
+    withBoardInsert,
+    withBoardReplace,
 } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
-import { createBoards } from "@/test-utils/factories/board";
+import { createBoard, createBoards } from "@/test-utils/factories/board";
 import { createColumnsFull, createTasksFull } from "@/test-utils/factories/board-full";
 
 describe("toSubmittedColumnNames", () => {
@@ -108,6 +110,43 @@ describe("buildColumnRowPath", () => {
         // Act & Assert
         expect(buildColumnRowPath(0)).toBe("columns.0.value");
         expect(buildColumnRowPath(4)).toBe("columns.4.value");
+    });
+});
+
+describe("withBoardInsert", () => {
+    it("prepends the board, leaving the input untouched", () => {
+        // Arrange
+        const boards = createBoards(2);
+        const board = createBoard({ id: "new-board", name: "Launch" });
+
+        // Act
+        const next = withBoardInsert({ boards, board });
+
+        // Assert
+        expect(next).toEqual([board, ...boards]);
+        expect(boards).toHaveLength(2);
+    });
+});
+
+describe("withBoardReplace", () => {
+    it("merges the server's row over the placeholder at that id", () => {
+        // Arrange
+        const boards = [createBoard({ id: "placeholder", name: "Launch", version: 0 })];
+        const board = createBoard({ id: "real-board", name: "Launch", version: 3 });
+
+        // Act & Assert
+        expect(withBoardReplace({ boards, boardId: "placeholder", board })).toEqual([board]);
+    });
+
+    /* A rejected write must not resurrect a row something else already dropped. */
+    it("returns an equivalent list when the id names no board in it", () => {
+        // Arrange
+        const boards = createBoards(2);
+
+        // Act & Assert
+        expect(
+            withBoardReplace({ boards, boardId: "no-such-board", board: createBoard({ id: "real-board" }) }),
+        ).toEqual(boards);
     });
 });
 

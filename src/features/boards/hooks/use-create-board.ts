@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
-import { toSubmittedColumnNames } from "@/features/boards/model";
+import { toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
@@ -42,6 +42,16 @@ const buildColumnFailureTitle = (failedCount: number): string => `Couldn't creat
  */
 export const buildColumnFailureToastId = (boardId: string): string => `board-columns-failed:${boardId}`;
 
+/** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
+type CreateBoardVariables = { clientId: string; name: string };
+
+/** Carries the refusal discriminant across the throw that routes it into `onError` (docs/adr/tech/0030). */
+class BoardCreateRefused extends Error {
+    constructor(readonly status: ResultStatus) {
+        super(status);
+    }
+}
+
 export type CreateBoardOutcome =
     /** The board itself was created; `failedNames` is empty when every column landed too. */
     | { didCreate: true; boardId: string; failedNames: string[] }
@@ -59,7 +69,55 @@ export const useCreateBoard = () => {
     const queryClient = useQueryClient();
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const createBoardMutation = useMutation({ mutationFn: createBoardAction, retry: false });
+    /*
+     * The sidebar's row appears on submit, not on settle — the panel reads this cache entry rather
+     * than the RSC props, so the action's `refresh()` cannot reach it (docs/adr/tech/0030). The
+     * placeholder's `clientId` never leaves the cache; `createBoard` below navigates with the server's.
+     */
+    const createBoardMutation = useMutation({
+        mutationFn: async ({ name }: CreateBoardVariables) => {
+            const result = await createBoardAction({ name });
+
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                throw new BoardCreateRefused(result.status);
+            }
+
+            return result;
+        },
+        retry: false,
+
+        onMutate: async ({ clientId, name }: CreateBoardVariables) => {
+            // Or an in-flight read could land on top of the optimistic list and undo it.
+            await queryClient.cancelQueries({ queryKey: BOARDS_QUERY_KEY });
+            const previousBoards = queryClient.getQueryData<Board[]>(BOARDS_QUERY_KEY);
+
+            /* `version: 0` is inert placeholder filler — the server owns it, and success replaces it. */
+            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+                withBoardInsert({ boards: current ?? [], board: { id: clientId, name, version: 0 } }),
+            );
+
+            return { previousBoards };
+        },
+
+        /*
+         * No toast here, unlike every other rollback in this repo: nothing was created, so D-05 keeps
+         * the failure inline in the still-open modal — `createBoard` below sets that copy.
+         */
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
+        onError: (_error: unknown, _variables, context) => {
+            if (context?.previousBoards !== undefined) {
+                queryClient.setQueryData(BOARDS_QUERY_KEY, context.previousBoards);
+            }
+        },
+
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)
+        onSuccess: ({ board }, { clientId }) => {
+            /* The placeholder row is swapped for the server's real id and version — never inserted twice. */
+            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+                withBoardReplace({ boards: current ?? [], boardId: clientId, board }),
+            );
+        },
+    });
     const createColumnsMutation = useMutation({ mutationFn: createBoardColumnsAction, retry: false });
 
     const clearError = (): void => {
@@ -118,23 +176,21 @@ export const useCreateBoard = () => {
     }): Promise<CreateBoardOutcome> => {
         setErrorMessage(null);
 
-        const result = await createBoardMutation
-            .mutateAsync({ name })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
+        const outcome = await createBoardMutation
+            .mutateAsync({ clientId: crypto.randomUUID(), name })
+            .then((result) => ({ didCreate: true as const, board: result.board }))
+            .catch((error: unknown) => ({
+                didCreate: false as const,
+                status: error instanceof BoardCreateRefused ? error.status : RESULT_STATUS.ERROR,
+            }));
 
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            setErrorMessage(CREATE_FAILURE_MESSAGE[result.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
+        if (!outcome.didCreate) {
+            setErrorMessage(CREATE_FAILURE_MESSAGE[outcome.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
             return { didCreate: false };
         }
 
-        /*
-         * The sidebar reads this cache entry, not the RSC props, so the action's `refresh()` cannot
-         * reach it — the created board has to be written here or the panel keeps its old list
-         * (docs/adr/tech/0030). Newest-first, matching `fetchBoards`'s own reversal.
-         */
-        queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) => [result.board, ...(current ?? [])]);
-
-        const boardId = result.board.id;
+        /* The SERVER's id, never the placeholder's — a client-generated id in the URL is a 404. */
+        const boardId = outcome.board.id;
         const names = toSubmittedColumnNames(columnRows);
         const failedNames = names.length > 0 ? await createColumns({ boardId, names }) : [];
 

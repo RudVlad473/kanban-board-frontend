@@ -42,6 +42,27 @@ export const removeBoard = ({ boards, boardId }: { boards: Board[]; boardId: str
     boards.filter((board) => board.id !== boardId);
 
 /**
+ * The board list with one board already prepended — the reducer behind `useCreateBoard`'s optimistic
+ * insert. Newest-first, matching the order `fetchBoards` reverses the upstream list into.
+ */
+export const withBoardInsert = ({ boards, board }: { boards: Board[]; board: Board }): Board[] => [board, ...boards];
+
+/**
+ * The board list with the row at `boardId` MERGED with `board` — how `useCreateBoard` swaps its
+ * placeholder for the server's real id and version. A boardId the list no longer holds yields the
+ * input untouched, so a rejected write cannot resurrect a row something else already dropped.
+ */
+export const withBoardReplace = ({
+    boards,
+    boardId,
+    board,
+}: {
+    boards: Board[];
+    boardId: string;
+    board: Board;
+}): Board[] => boards.map((entry) => (entry.id === boardId ? { ...entry, ...board } : entry));
+
+/**
  * D-08's post-delete destination, or `null` when the user was not looking at the board that went
  * away and so should not be moved at all. Pure, so all three branches are assertable without a
  * router (CONVENTIONS.md's `model.ts` rule).

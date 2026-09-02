@@ -248,6 +248,70 @@ describeForEachDevice({
             expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
         });
 
+        /*
+         * BOARD-02's optimistic insert (docs/adr/tech/0030): the row is on screen while the action is
+         * demonstrably still unresolved, which is the claim a settle-then-assert test cannot make.
+         */
+        it("shows the new board in the sidebar before the create resolves", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            createBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ id: STUB_BOARD_ID, name: "Launch" }),
+            });
+            createBoardStub.hold();
+
+            // Act
+            await submitNewBoard({ name: "Launch", columns: [] });
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(1);
+            });
+
+            // Assert — newest-first, and nobody has been navigated anywhere yet.
+            expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
+            expect(mockPush).not.toHaveBeenCalled();
+
+            // Act — let the write land.
+            createBoardStub.settle();
+
+            /*
+             * Assert — the placeholder is SWAPPED, not appended beside the server's row, and the
+             * navigation carries the id the server returned rather than the client-generated one.
+             */
+            await vi.waitFor(() => {
+                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
+            });
+            expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
+        });
+
+        /* The other half of the same mechanism: a refusal must leave no trace of the optimistic row. */
+        it("removes the optimistic row and reports the failure inline when the create fails", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            createBoardStub.hold();
+
+            // Act
+            await submitNewBoard({ name: "Launch", columns: [] });
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(1);
+            });
+
+            // Assert — the optimistic row stands while the refusal is still in flight.
+            expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
+
+            // Act
+            createBoardStub.settle();
+
+            // Assert — D-05 keeps nothing-was-created inline, so the rollback raises no toast.
+            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create board. Try again.");
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+            expect(getRaisedToastTexts()).toHaveLength(0);
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
         it("still closes the modal and navigates when some columns failed — whatever landed is kept", async () => {
             // Arrange
             await render(<Empty />);
