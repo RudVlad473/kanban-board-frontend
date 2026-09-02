@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
-import { applyTaskUpdate, type TaskColumn } from "@/features/tasks/model";
+import { withTaskUpdate, type TaskColumn } from "@/features/tasks/model";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
@@ -88,7 +88,7 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
                     ? current
                     : {
                           ...current,
-                          columns: applyTaskUpdate({ columns: current.columns, taskId, title, description }),
+                          columns: withTaskUpdate({ columns: current.columns, taskId, title, description }),
                       },
             );
 

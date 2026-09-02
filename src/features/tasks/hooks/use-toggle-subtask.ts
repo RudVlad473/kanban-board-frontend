@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
-import { applySubtaskCompletion, type TaskColumn } from "@/features/tasks/model";
+import { withSubtaskCompletion, type TaskColumn } from "@/features/tasks/model";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import type { Subtask } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
@@ -107,7 +107,7 @@ export const useToggleSubtask = ({
                     ? current
                     : {
                           ...current,
-                          columns: applySubtaskCompletion({ columns: current.columns, taskId, subtaskId, isCompleted }),
+                          columns: withSubtaskCompletion({ columns: current.columns, taskId, subtaskId, isCompleted }),
                       },
             );
 

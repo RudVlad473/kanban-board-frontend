@@ -104,12 +104,17 @@ export const moveTaskInColumns = <C extends TaskColumn>({
     });
 };
 
+/*
+ * Prefixed `with`, never `apply`: the `apply*` name made a reviewer read these live `setQueryData`
+ * reducers as ADR 0029's deleted render-time `apply*Pending*` folds (docs/adr/tech/0030).
+ */
+
 /**
  * The board as it reads with one subtask's completion already flipped — the reducer behind
  * `useToggleSubtask`'s optimistic write. A subtask id the board no longer holds yields the input
  * untouched, mirroring `moveTaskInColumns`.
  */
-export const applySubtaskCompletion = <C extends TaskColumn>({
+export const withSubtaskCompletion = <C extends TaskColumn>({
     columns,
     taskId,
     subtaskId,
@@ -137,9 +142,9 @@ export const applySubtaskCompletion = <C extends TaskColumn>({
 /**
  * The board as it reads with one task's title and description already applied — the reducer behind
  * `useUpdateTask`'s optimistic write. A task id the board no longer holds yields the input untouched,
- * mirroring `moveTaskInColumns` and `applySubtaskCompletion`.
+ * mirroring `moveTaskInColumns` and `withSubtaskCompletion`.
  */
-export const applyTaskUpdate = <C extends TaskColumn>({
+export const withTaskUpdate = <C extends TaskColumn>({
     columns,
     taskId,
     title,

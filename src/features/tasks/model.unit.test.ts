@@ -2,8 +2,8 @@ import type { Announcements } from "@dnd-kit/core";
 import { describe, expect, it } from "vitest";
 
 import {
-    applySubtaskCompletion,
-    applyTaskUpdate,
+    withSubtaskCompletion,
+    withTaskUpdate,
     moveTaskInColumns,
     buildSubtaskRowPath,
     createEmptySubtaskRows,
@@ -68,7 +68,7 @@ describe("toSubtaskDetailCaption", () => {
     });
 });
 
-describe("applySubtaskCompletion", () => {
+describe("withSubtaskCompletion", () => {
     const createColumnsWithSubtask = () => [
         {
             id: "column-1",
@@ -78,7 +78,7 @@ describe("applySubtaskCompletion", () => {
 
     it("flips the named subtask's completion, leaving its other fields untouched", () => {
         // Act
-        const columns = applySubtaskCompletion({
+        const columns = withSubtaskCompletion({
             columns: createColumnsWithSubtask(),
             taskId: "task-1",
             subtaskId: "subtask-1",
@@ -103,7 +103,7 @@ describe("applySubtaskCompletion", () => {
         ];
 
         // Act
-        const rendered = applySubtaskCompletion({
+        const rendered = withSubtaskCompletion({
             columns,
             taskId: "task-1",
             subtaskId: "subtask-1",
@@ -120,7 +120,7 @@ describe("applySubtaskCompletion", () => {
         const columns = createColumnsWithSubtask();
 
         // Act
-        const rendered = applySubtaskCompletion({
+        const rendered = withSubtaskCompletion({
             columns,
             taskId: "task-1",
             subtaskId: "deleted",
@@ -132,14 +132,14 @@ describe("applySubtaskCompletion", () => {
     });
 });
 
-describe("applyTaskUpdate", () => {
+describe("withTaskUpdate", () => {
     const createColumnsWithTask = () => [
         { id: "column-1", tasks: [createTaskFull({ id: "task-1", title: "Old Title", description: "Old desc" })] },
     ];
 
     it("applies the new title and description, leaving other fields untouched", () => {
         // Act
-        const columns = applyTaskUpdate({
+        const columns = withTaskUpdate({
             columns: createColumnsWithTask(),
             taskId: "task-1",
             title: "New Title",
@@ -155,7 +155,7 @@ describe("applyTaskUpdate", () => {
     /* T9: a save that leaves the description untouched by the server still updates the client's own view of it. */
     it("applies an undefined description, clearing the client's own copy", () => {
         // Act
-        const columns = applyTaskUpdate({
+        const columns = withTaskUpdate({
             columns: createColumnsWithTask(),
             taskId: "task-1",
             title: "New Title",
@@ -174,7 +174,7 @@ describe("applyTaskUpdate", () => {
         ];
 
         // Act
-        const rendered = applyTaskUpdate({ columns, taskId: "task-1", title: "New Title", description: undefined });
+        const rendered = withTaskUpdate({ columns, taskId: "task-1", title: "New Title", description: undefined });
 
         // Assert
         expect(rendered[1].tasks[0].title).toBe("Sibling Title");
@@ -186,7 +186,7 @@ describe("applyTaskUpdate", () => {
         const columns = createColumnsWithTask();
 
         // Act
-        const rendered = applyTaskUpdate({ columns, taskId: "deleted", title: "New Title", description: undefined });
+        const rendered = withTaskUpdate({ columns, taskId: "deleted", title: "New Title", description: undefined });
 
         // Assert
         expect(rendered).toEqual(columns);
