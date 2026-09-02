@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 
 import { createTaskSubtasksInputSchema, subtaskTitleRowSchema } from "@/features/tasks/schemas";
 import type { ActionResult } from "@/lib/core/api-contract/action-result";
+import { createChildrenSerially } from "@/lib/core/api-contract/create-children-serially";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
@@ -17,9 +18,8 @@ import { externalApi } from "@/lib/server/server-client";
 export type CreateTaskSubtasksResult = ActionResult<{ failedTitles: string[] }>;
 
 /**
- * Creates one subtask per title, in order, exactly as `createBoardColumnsAction` creates one
- * column per name. `userId` comes only from the verified session record, never from this
- * function's argument (T-04-02).
+ * Creates one subtask per title, in order. `userId` comes only from the verified session record,
+ * never from this function's argument (T-04-02).
  */
 export const createTaskSubtasksAction = async ({
     boardId,
@@ -42,37 +42,18 @@ export const createTaskSubtasksAction = async ({
         return { status: RESULT_STATUS.INVALID, fieldErrors: zodErrorToFieldErrors(parsed.error) };
     }
 
-    const failedTitles: string[] = [];
-
-    /*
-     * Serial by requirement, never `Promise.all`: the children cannot exist before the task does,
-     * and the mock's own initial-subtask rows have no ordering guarantee otherwise.
-     */
-    for (const title of parsed.data.titles) {
-        const validTitle = subtaskTitleRowSchema.safeParse(title);
-        if (!validTitle.success) {
-            // A malformed title never leaves this app's server — recorded as failed, no call made.
-            failedTitles.push(title);
-            continue;
-        }
-
-        const { error } = await externalApi.POST(EXTERNAL_PATH.TASK_SUBTASKS, {
-            params: {
-                path: { boardId: parsed.data.boardId, columnId: parsed.data.columnId, taskId: parsed.data.taskId },
-                query: { userId: record.id },
-            },
-            body: { title: validTitle.data },
-        });
-
-        /*
-         * Widened through `unknown` before testing, mirroring `createBoardColumnsAction`; a
-         * refusal records this one title and does NOT abort the rest (ADR domain/0003).
-         */
-        const upstreamError: unknown = error;
-        if (upstreamError !== undefined) {
-            failedTitles.push(title);
-        }
-    }
+    const failedTitles = await createChildrenSerially({
+        values: parsed.data.titles,
+        valueSchema: subtaskTitleRowSchema,
+        createChild: (title) =>
+            externalApi.POST(EXTERNAL_PATH.TASK_SUBTASKS, {
+                params: {
+                    path: { boardId: parsed.data.boardId, columnId: parsed.data.columnId, taskId: parsed.data.taskId },
+                    query: { userId: record.id },
+                },
+                body: { title },
+            }),
+    });
 
     /* The refresh belongs inside the action, not in the calling hook (docs/adr/tech/0019). */
     refresh();
