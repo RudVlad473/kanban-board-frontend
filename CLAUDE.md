@@ -47,8 +47,10 @@ render pages with `pdftoppm -f N -l N -r <dpi> -png [-x -y -W -H] <pdf> <out>` a
 Open the mock for every surface visible in the screenshots you are about to present, not only the
 ones your change touched; a surface you never opened in the mock is unverified. Compare placement,
 spacing, and corner radii specifically — those are what "it works and looks plausible" misses. To
-measure rather than eyeball, render at 600 DPI and divide by 6.25 for CSS px, the method
-`tokens/radius.tokens.json` records for every radius token. When the mock and a UI-SPEC disagree,
+measure rather than eyeball, render at 600 DPI and divide by 8.3333 for CSS px — equivalently, 300 DPI
+and divide by 4.16667, since the design is 1440 wide. (This file long carried ÷6.25, which over-reads
+by 1.333×; `tokens/radius.tokens.json`'s radii were re-derived against the correct divisor on
+2026-08-29.) When the mock and a UI-SPEC disagree,
 surface the conflict instead of following either silently — on 2026-08-27 the mock overruled
 `02-UI-SPEC.md`'s pinned-footer reading of `+ Create New Board`.
 
@@ -65,13 +67,21 @@ mutation_ — tracking what was optimistic, when it goes stale, when to retire i
 that does the mutation. That bookkeeping is the framework's job in almost every case.
 
 When an official pattern genuinely does not fit, say so and record the reason in an ADR rather than
-quietly diverging. But check the whole document before declaring it inapplicable. This file used to
-cite TanStack Query's optimistic-updates guide as a worked example of a real exception, on the
-grounds that board reads are RSC props and docs/adr/tech/0019 keeps them out of the query cache. That
-is true of the guide's FIRST approach only. Its second, "via the UI", reads the mutation's own
-variables and touches no cache — it fits this codebase so well that adopting it deleted a
-hand-rolled context provider outright (2026-09-01). The over-broad note is what kept it out of
-consideration for a whole phase, which is the more expensive failure of the two.
+quietly diverging. But check the whole document before declaring it inapplicable: an over-broad
+"doesn't apply here" note once kept TanStack Query's optimistic-updates guide out of consideration
+for a whole phase, which is more expensive than the divergence it was guarding against.
+
+**The current optimistic mechanism is `docs/adr/tech/0030` — optimistic writes via the query cache.**
+Every mutation hook reads and writes the one `["board", boardId]` entry: `onMutate` cancels queries,
+snapshots the entry into context and calls `setQueryData`; `onError` restores the snapshot; `onSuccess`
+merges the server response. Copy a shipped hook — `use-toggle-subtask.ts` or `use-move-task.ts` — rather
+than deriving a new shape.
+
+ADR 0029 is **superseded**, and `3089a6a` deleted the `src/lib/client/optimistic-mutation.ts` helper it
+described along with `useOptimistic` and the render-time override folds. Do not reintroduce any of them:
+an override store, a staleness guard comparing against the server's previous value, or an override
+"retired by reference equality" are all 0029 shapes. Phase 04's plan files still describe that machinery
+in places; the ADR wins over the plan, and a plan that asks for it is stale — say so rather than building it.
 
 ## Verify a code review's claims before acting on them
 
