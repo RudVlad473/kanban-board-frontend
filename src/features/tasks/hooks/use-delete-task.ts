@@ -2,21 +2,24 @@
 
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteTaskAction } from "@/features/tasks/actions/delete-task-action";
+import { withTaskRemove, type TaskColumn } from "@/features/tasks/model";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
 /*
  * Authored copy only — the action returns bare discriminants, so nothing the backend said can
- * reach these strings (04-UI-SPEC Copywriting Contract, T-04-40).
+ * reach these strings (04-UI-SPEC Copywriting Contract).
  */
 const GENERIC_DELETE_FAILURE = { title: "Couldn't delete task.", description: "Try again." };
 
 /*
- * `NOT_FOUND` earns its own entry, matching `use-delete-column.ts`: a double submit lands there
- * (T6), and generic retry copy would tell the user to retry something that can never succeed again.
+ * `NOT_FOUND` earns its own entry: a double submit lands there, and generic retry copy would tell
+ * the user to retry something that can never succeed again.
  */
 const DELETE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; description: string }>> = {
     [RESULT_STATUS.UNAUTHENTICATED]: {
@@ -29,35 +32,80 @@ const DELETE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
     },
 };
 
+/*
+ * Only the part of the board entry a delete touches. Structural rather than the boards feature's
+ * own `BoardFull`, which the boundaries policy forbids importing — the spread below preserves the
+ * fields not named here.
+ */
+type DeletableBoard = { columns: TaskColumn[] };
+
 export type DeleteTaskArgs = { boardId: string; columnId: string; taskId: string };
 
+/*
+ * Decisions ─────────────────────────────────────────────────────────────────────────────────────
+ * comment-length-exempt: records a reversal of this hook's own previous decision, which a reader comparing it against ADR domain/0002 would otherwise re-open (docs/adr/tech/0023)
+ * This hook read "deliberately NOT optimistic (ADR domain/0002)" until 2026-09-02, on the argument
+ * that the cascade to the task's subtasks is irreversible so there would be nothing to roll back
+ * to. That is false of the client: the snapshot `onError` restores holds the task WITH its
+ * subtasks, and the ADR is about the server having no trash to recover from, not about staging.
+ * The second reason to reverse it: leaving this hook dependent on `refresh()` alone made the board
+ * segment uncacheable — a cached navigation replayed a payload predating the delete and the task
+ * came back. Every sibling mutation already writes the cache; this one was the outlier.
+ * ───────────────────────────────────────────────────────────────────────────────────────────────
+ */
+
 /**
- * TASK-05's delete (D-09). Deliberately NOT optimistic, unlike every other mutation this phase
- * ships: the task stays on the board until the server agrees, because the cascade to its subtasks
- * is irreversible (ADR domain/0002) and there would be nothing to roll back to if the delete failed.
+ * TASK-05's optimistic delete: the task leaves the board on submit and a refusal puts it back,
+ * subtasks included, from the whole-board snapshot. Mechanism: docs/adr/tech/0030.
  */
 export const useDeleteTask = () => {
-    const toast = useToast();
-    const mutation = useMutation({ mutationFn: deleteTaskAction, retry: false });
+    const raiseFailureToast = useFailureToast({ copy: DELETE_FAILURE_COPY, fallback: GENERIC_DELETE_FAILURE });
+    const queryClient = useQueryClient();
 
-    const deleteTask = async ({ boardId, columnId, taskId }: DeleteTaskArgs): Promise<{ didDelete: boolean }> => {
-        const result = await mutation
+    const mutation = useMutation({
+        mutationFn: async ({ boardId, columnId, taskId }: DeleteTaskArgs) => {
+            const result = await deleteTaskAction({ boardId, columnId, taskId });
+
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                throw new ActionRefusedError(result.status);
+            }
+
+            return result;
+        },
+        retry: false,
+
+        onMutate: async ({ boardId, taskId }: DeleteTaskArgs) => {
+            const queryKey = buildBoardQueryKey(boardId);
+            // Or an in-flight read could land on top of the optimistic board and undo it.
+            await queryClient.cancelQueries({ queryKey });
+            const previousBoard = queryClient.getQueryData<DeletableBoard>(queryKey);
+
+            queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
+                current !== undefined
+                    ? { ...current, columns: withTaskRemove({ columns: current.columns, taskId }) }
+                    : current,
+            );
+
+            return { previousBoard };
+        },
+
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
+        onError: (error: unknown, { boardId }: DeleteTaskArgs, context) => {
+            /* Restoring the whole-board snapshot is what brings the task and its subtasks back. */
+            if (context?.previousBoard !== undefined) {
+                queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
+            }
+
+            raiseFailureToast(error);
+        },
+    });
+
+    /* The rollback and the toast both live in `onError`; this reports the outcome only. */
+    const deleteTask = async ({ boardId, columnId, taskId }: DeleteTaskArgs): Promise<{ didDelete: boolean }> =>
+        mutation
             .mutateAsync({ boardId, columnId, taskId })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
-
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            // Nothing to undo — the board was never changed, so the toast is the whole response.
-            toast.add({ type: "danger", ...(DELETE_FAILURE_COPY[result.status] ?? GENERIC_DELETE_FAILURE) });
-
-            return { didDelete: false };
-        }
-
-        /*
-         * No cache work here: `refresh()` inside the action is what removes the task from the
-         * board's own RSC-seeded query-cache entry (docs/adr/tech/0030), same as `useDeleteColumn`.
-         */
-        return { didDelete: true };
-    };
+            .then(() => ({ didDelete: true }))
+            .catch(() => ({ didDelete: false }));
 
     return { deleteTask, isPending: mutation.isPending };
 };

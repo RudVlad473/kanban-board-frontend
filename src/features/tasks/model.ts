@@ -268,6 +268,13 @@ export const withSubtaskRemove = <C extends TaskColumn>({
         ),
     }));
 
+/**
+ * The board as it reads with one task already gone — the reducer behind `useDeleteTask`'s
+ * optimistic write. A task id the board no longer holds yields the input untouched.
+ */
+export const withTaskRemove = <C extends TaskColumn>({ columns, taskId }: { columns: C[]; taskId: string }): C[] =>
+    columns.map((column) => ({ ...column, tasks: column.tasks.filter((task) => task.id !== taskId) }));
+
 /** A column as the announcement strings read it — its own name, plus the tasks they count against. */
 export type NamedTaskColumn = TaskColumn & { name: string };
 

@@ -2352,11 +2352,7 @@ describeForEachDevice({
             });
         });
 
-        /*
-         * The cascade is irreversible (ADR domain/0002), so nothing may leave the screen before the
-         * server has agreed — there is nothing to roll back to if it refuses.
-         */
-        it("still renders the card while the delete is in flight, removing nothing optimistically", async () => {
+        it("removes the card while the delete is still in flight", async () => {
             // Arrange
             await render(<TasksAcrossColumns />);
             const titlesBefore = getColumnTaskTitles();
@@ -2369,21 +2365,28 @@ describeForEachDevice({
                 expect(deleteTaskStub.calls).toHaveLength(1);
             });
 
-            // Assert — the whole board is untouched, not merely the target task still present.
-            expect(getColumnTaskTitles()).toEqual(titlesBefore);
+            // Assert — gone before the server agreed, and only that task left.
+            const withoutAlpha = titlesBefore.map((column) => ({
+                ...column,
+                taskTitles: column.taskTitles.filter((title) => title !== "Fixture Task Alpha"),
+            }));
+
+            await vi.waitFor(() => {
+                expect(getColumnTaskTitles()).toEqual(withoutAlpha);
+            });
 
             // Act — let the write land.
             deleteTaskStub.settle();
 
-            // Assert — still nothing removed here: the refreshed props are what remove it.
+            // Assert — it stays gone, with no failure raised.
             await vi.waitFor(() => {
                 expect(screen.queryByRole("heading", { name: "Delete this task?" })).not.toBeInTheDocument();
             });
-            expect(getColumnTaskTitles()).toEqual(titlesBefore);
+            expect(getColumnTaskTitles()).toEqual(withoutAlpha);
             expect(getRaisedToastCount()).toBe(0);
         });
 
-        it("closes the modal, leaves the task on the board and announces a generic delete failure", async () => {
+        it("closes the modal, puts the task back and announces a generic delete failure", async () => {
             // Arrange — held, so the pre-settle state is observed before the failure lands.
             await render(<TasksAcrossColumns />);
             const titlesBefore = getColumnTaskTitles();
