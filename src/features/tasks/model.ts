@@ -369,6 +369,9 @@ export const buildSubtaskRowPath = (index: number): SubtaskRowPath =>
 export const toSubmittedSubtaskTitles = (rows: string[]): string[] =>
     rows.map((row) => row.trim()).filter((row) => row !== "");
 
+/** S-03's inline row, and the create/rename schemas' own row-level required-field copy. */
+export const SUBTASK_ROW_REQUIRED_FIELD_MESSAGE = "Can't be empty";
+
 /** The two seeded rows' own placeholders (PDF p6); every row after them repeats the first. */
 const SUBTASK_ROW_PLACEHOLDERS = ["e.g. Make coffee", "e.g. Drink coffee & smile"];
 
