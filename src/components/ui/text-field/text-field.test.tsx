@@ -14,7 +14,19 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { TextField } from "./text-field";
 import * as stories from "./text-field.stories";
 
-const { Idle, HiddenLabel, Error, Disabled, Loading, Password } = composeStories(stories);
+const { Idle, HiddenLabel, Error: ErrorState, Disabled, Loading, Password } = composeStories(stories);
+
+/*
+ * The field's visual box — a flex row wrapping the input and, on error, the message. It carries the
+ * border, the size and the disabled treatment, so anything asserting those reads it, not the input.
+ */
+const getFieldBox = (input: Element): HTMLElement => {
+    const box = input.parentElement;
+    if (box === null) {
+        throw new Error("Field box not found — is the input still wrapped?");
+    }
+    return box;
+};
 
 /*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; the width test below
@@ -46,7 +58,7 @@ describeForEachDevice({
 
         it("renders the error message, marks the input invalid, and exposes the message as its accessible description when hasError", async () => {
             // Act
-            await render(<Error />);
+            await render(<ErrorState />);
 
             // Assert
             const input = screen.getByRole("textbox", { name: "Password" });
@@ -63,14 +75,36 @@ describeForEachDevice({
          */
         it("shows its error message without extending the field below the input", async () => {
             // Act
-            await render(<Error />);
+            await render(<ErrorState />);
 
             // Assert — the message is shown, but sits outside the field's own box.
             const input = screen.getByRole("textbox", { name: "Password" });
             const root = input.closest<HTMLElement>("[class*='flex-col']");
-            const overhang = (root?.getBoundingClientRect().bottom ?? 0) - input.getBoundingClientRect().bottom;
+            const overhang =
+                (root?.getBoundingClientRect().bottom ?? 0) - getFieldBox(input).getBoundingClientRect().bottom;
             expect(screen.getByText("Can't be empty")).toBeVisible();
             expect(overhang).toBeLessThanOrEqual(1);
+        });
+
+        /*
+         * PDF p1's "Text Field (Error)" renders the message INSIDE the field box, right-aligned and
+         * vertically centred — the placement that lets the slot cost no layout height and overlap no
+         * sibling control. Asserted as measured geometry, not as a class name.
+         */
+        it("renders its error message inside the input's own box rather than beneath it", async () => {
+            // Act
+            await render(<ErrorState />);
+
+            // Assert
+            const input = screen.getByRole("textbox", { name: "Password" });
+            const boxRect = getFieldBox(input).getBoundingClientRect();
+            const inputRect = input.getBoundingClientRect();
+            const messageRect = screen.getByText("Can't be empty").getBoundingClientRect();
+            expect(messageRect.top).toBeGreaterThanOrEqual(boxRect.top - 1);
+            expect(messageRect.bottom).toBeLessThanOrEqual(boxRect.bottom + 1);
+            expect(messageRect.right).toBeLessThanOrEqual(boxRect.right - 1);
+            // Beside the value, never over it — the input's own box ends where the message begins.
+            expect(messageRect.left).toBeGreaterThanOrEqual(inputRect.right);
         });
 
         it("renders disabled when isDisabled", async () => {
@@ -136,7 +170,7 @@ describeForEachDevice({
             const input = screen.getByRole("textbox", { name: "Password" });
 
             // Act
-            const borderColor = getComputedStyle(input.element()).borderColor;
+            const borderColor = getComputedStyle(getFieldBox(input.element())).borderColor;
 
             // Assert — border-border-danger (#C93F3C), same as Checkbox.
             expect(borderColor).toBe("rgb(201, 63, 60)");
@@ -198,9 +232,12 @@ describeForEachDevice({
             const loadingStyle = getComputedStyle(loadingInput.element());
             const disabledStyle = getComputedStyle(disabledInput.element());
 
-            // Assert — loading visually matches disabled (same opacity), but a distinct cursor.
-            expect(loadingStyle.opacity).toBe("0.5");
-            expect(disabledStyle.opacity).toBe("0.5");
+            /*
+             * Assert — loading visually matches disabled (same opacity, dimmed on the box that owns
+             * the border), but a distinct cursor.
+             */
+            expect(getComputedStyle(getFieldBox(loadingInput.element())).opacity).toBe("0.5");
+            expect(getComputedStyle(getFieldBox(disabledInput.element())).opacity).toBe("0.5");
             expect(loadingStyle.cursor).toBe("progress");
             expect(disabledStyle.cursor).not.toBe("progress");
         });
@@ -307,10 +344,10 @@ describeForEachDevice({
             const input = screen.getByRole("textbox", { name: "Email" });
 
             // Act
-            const inputWidth = input.element().getBoundingClientRect().width;
+            const boxWidth = getFieldBox(input.element()).getBoundingClientRect().width;
 
             // Assert — within a small tolerance of the real viewport width.
-            expect(inputWidth).toBeGreaterThan(window.innerWidth - 20);
+            expect(boxWidth).toBeGreaterThan(window.innerWidth - 20);
         });
     },
 });

@@ -2,12 +2,12 @@ import { Field } from "@base-ui/react/field";
 import { type VariantProps } from "class-variance-authority";
 import type { ComponentProps, ReactNode } from "react";
 
-import { textFieldVariants } from "@/components/ui/text-field/text-field-variants";
+import { textFieldBoxVariants, textFieldControlVariants } from "@/components/ui/text-field/text-field-variants";
 import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
 type Props = Omit<ComponentProps<typeof Field.Control>, "className" | "disabled" | "size" | "children"> &
-    Pick<VariantProps<typeof textFieldVariants>, "size"> &
+    Pick<VariantProps<typeof textFieldBoxVariants>, "size"> &
     ClassNameProp & {
         /** Required — an unlabelled input must not be constructible. */
         label: string;
@@ -54,7 +54,12 @@ export const TextField = ({
         <Field.Root
             invalid={hasError}
             disabled={isDisabled || isLoading}
-            className="relative flex w-full flex-col gap-1"
+            /*
+             * `min-w-0` because a nowrap error message makes the field's min-content width its own
+             * width: without it a field sitting in a flex row refuses to shrink and pushes the
+             * row's remove control off the panel.
+             */
+            className="flex w-full min-w-0 flex-col gap-1"
         >
             <Field.Label
                 className={cn(
@@ -65,47 +70,50 @@ export const TextField = ({
                 {label}
             </Field.Label>
 
-            <div className="relative">
+            <div
+                className={textFieldBoxVariants({
+                    size,
+                    state: hasError ? "error" : "default",
+                    hasTrailing: Boolean(trailing),
+                    isBusy: isLoading,
+                })}
+            >
                 <Field.Control
                     type={type}
                     aria-busy={isLoading}
-                    className={cn(
-                        textFieldVariants({
-                            size,
-                            state: hasError ? "error" : "default",
-                            hasTrailing: Boolean(trailing),
-                            isBusy: isLoading,
-                        }),
-                        className,
-                    )}
+                    className={cn(textFieldControlVariants({ size, isBusy: isLoading }), className)}
                     {...props}
                 />
 
                 {trailing ? <span className="absolute inset-y-0 right-3 flex items-center">{trailing}</span> : null}
+
+                {/* `match` forced to `true` (rather than left to native/Form validity) because this
+                    primitive's error state is fully externally controlled via `hasError`/`errorMessage`
+                    — not native constraint validation or a Base UI <Form>. Conditionally mounting only
+                    when `hasError` keeps "no error element when valid" true without relying on the
+                    library's own async mount/unmount transition. */}
+                {/* A sibling of the input INSIDE the field's box, right-aligned — PDF page 1's "Text
+                    Field (Error)" state. Owning a slot in the box is what keeps the message from
+                    costing the field height in any container: below the field in flow it grew the
+                    form by 23.5px mid-click, between a control's mousedown and mouseup, silently
+                    losing the click (04-15-CHECKPOINT.md), and below the field out of flow it
+                    covered the next control by 9.5px, the 24px inter-field gap it assumed being
+                    more than a row group leaves. A message wider than the slot truncates rather
+                    than pushing the input away; `aria-describedby` still carries it in full. */}
+                {hasError && errorMessage ? (
+                    <Field.Error
+                        match={true}
+                        className="min-w-0 truncate font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
+                    >
+                        {errorMessage}
+                    </Field.Error>
+                ) : null}
             </div>
 
             {description ? (
                 <Field.Description className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
                     {description}
                 </Field.Description>
-            ) : null}
-
-            {/* `match` forced to `true` (rather than left to native/Form validity) because this
-                primitive's error state is fully externally controlled via `hasError`/`errorMessage`
-                — not native constraint validation or a Base UI <Form>. Conditionally mounting only
-                when `hasError` keeps "no error element when valid" true without relying on the
-                library's own async mount/unmount transition. */}
-            {/* Absolutely positioned, so appearing costs the field no height. In flow it grew the
-                form by 23.5px mid-click — between a control's mousedown and mouseup, which land on
-                different elements after a reflow, silently losing the click (04-15-CHECKPOINT.md).
-                It renders into the 24px inter-field gap the form already leaves. */}
-            {hasError && errorMessage ? (
-                <Field.Error
-                    match={true}
-                    className="absolute top-full left-0 mt-1 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
-                >
-                    {errorMessage}
-                </Field.Error>
             ) : null}
         </Field.Root>
     );

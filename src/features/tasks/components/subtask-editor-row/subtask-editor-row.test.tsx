@@ -22,6 +22,27 @@ const { Default, Draft, Pending, EmptyError } = composeStories(stories);
 describeForEachDevice({
     name: "SubtaskEditorRow",
     body: () => {
+        /*
+         * PDF p7 centres the row's ✕ on its field. A `mt-6` written to clear a label the row never
+         * renders pushed it 26px down instead. Asserted as measured centres, not as a class name.
+         */
+        it("centres the remove control on the field it belongs to", async () => {
+            // Arrange
+            const screenInstance = await render(<Default />);
+
+            // Act
+            const inputRect = screenInstance.getByRole("textbox").element().getBoundingClientRect();
+            const removeRect = screenInstance
+                .getByRole("button", { name: "Remove subtask 'Make coffee'" })
+                .element()
+                .getBoundingClientRect();
+
+            // Assert
+            const inputCentre = inputRect.top + inputRect.height / 2;
+            const removeCentre = removeRect.top + removeRect.height / 2;
+            expect(Math.abs(removeCentre - inputCentre)).toBeLessThanOrEqual(1);
+        });
+
         it("commits a rename on blur when the value changed and is non-empty", async () => {
             // Arrange
             const screenInstance = await render(<Default />);

@@ -223,6 +223,33 @@ describeForEachDevice({
         });
 
         /*
+         * The user-reported overlap: with the message out of flow beneath the field, it covered
+         * "+ Add New Column" by 9.5px vertically and 95.6px horizontally. Asserted as an
+         * intersection of measured rects — a class-name assertion would survive the regression.
+         */
+        it("keeps a column row's error message clear of the add-row control", async () => {
+            // Arrange
+            const screen = await render(<ColumnNameError />);
+
+            // Act
+            const messageRect = screen
+                .getByText("Column name must be between 3 and 32 characters.")
+                .element()
+                .getBoundingClientRect();
+            const addRowRect = screen
+                .getByRole("button", { name: "+ Add New Column" })
+                .element()
+                .getBoundingClientRect();
+
+            // Assert — no intersection means at least one axis has no positive overlap.
+            const verticalOverlap =
+                Math.min(messageRect.bottom, addRowRect.bottom) - Math.max(messageRect.top, addRowRect.top);
+            const horizontalOverlap =
+                Math.min(messageRect.right, addRowRect.right) - Math.max(messageRect.left, addRowRect.left);
+            expect(Math.min(verticalOverlap, horizontalOverlap)).toBeLessThanOrEqual(0);
+        });
+
+        /*
          * D-02a: a blank row left on screen blocks submission rather than being silently dropped,
          * so what gets created can never differ from what the user is looking at.
          */

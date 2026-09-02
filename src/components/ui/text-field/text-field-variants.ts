@@ -2,28 +2,28 @@
 import { cva } from "class-variance-authority";
 
 /*
- * Typography workaround follows button.tsx's font-weight/font-family collision fix (01-06-SUMMARY.md).
- * Truncation uses native `truncate`, not a DOM overlay, with `focus:text-clip` disabling the
- * ellipsis while focused — a cross-browser caret-scroll rendering bug, Firefox gap included (01-09-SUMMARY.md).
+ * Two cva's, because the box and the input are no longer the same element: the box is a flex row
+ * holding the input beside PDF page 1's right-aligned error message. Focus and disabled are
+ * therefore projected onto it with `has-[]`, the states themselves still landing on the input.
  */
-export const textFieldVariants = cva(
+export const textFieldBoxVariants = cva(
     /*
      * `rounded-sm` (radius.sm, 4px) — tokens/radius.tokens.json documents this token as the
      * measured "Text Field / Dropdown corner radius" from the Figma source; `rounded-md` (24px,
      * "Button Secondary corner radius") was wired in by mistake in plan 01-07 and never caught.
      */
-    "w-full truncate rounded-sm border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus:text-clip focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
+    "relative flex w-full items-center gap-2 rounded-sm border bg-bg-surface px-4 transition-colors has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring-focus has-[:focus-visible]:ring-offset-2",
     {
         variants: {
             size: {
-                sm: "h-8 text-sm",
+                sm: "h-8",
                 md: "h-10",
                 lg: "h-12",
             },
             // D-17 names these two semantic tokens explicitly for the form-primitive error visual.
             state: {
-                default: "border-border-default text-text-primary placeholder:text-text-muted",
-                error: "border-border-danger text-text-primary",
+                default: "border-border-default",
+                error: "border-border-danger",
             },
             hasTrailing: {
                 true: "pr-11",
@@ -31,11 +31,11 @@ export const textFieldVariants = cva(
             },
             /*
              * Driven internally by `isLoading`, not a standalone prop — composes into `disabled`
-             * per GC-17 (mirroring Checkbox/Button); scoped to the same `disabled:` modifier so
-             * tailwind-merge's conflict-group resolution picks it deterministically (01-29-SUMMARY.md).
+             * per GC-17 (mirroring Checkbox/Button); scoped to the same `has-[:disabled]:` modifier
+             * so tailwind-merge's conflict-group resolution picks it deterministically.
              */
             isBusy: {
-                true: "disabled:cursor-progress",
+                true: "has-[:disabled]:cursor-progress",
                 false: "",
             },
         },
@@ -43,6 +43,32 @@ export const textFieldVariants = cva(
             size: "md",
             state: "default",
             hasTrailing: false,
+            isBusy: false,
+        },
+    },
+);
+
+/*
+ * Typography workaround follows button.tsx's font-weight/font-family collision fix (01-06-SUMMARY.md).
+ * Truncation uses native `truncate`, not a DOM overlay, with `focus:text-clip` disabling the
+ * ellipsis while focused — a cross-browser caret-scroll rendering bug, Firefox gap included (01-09-SUMMARY.md).
+ */
+export const textFieldControlVariants = cva(
+    "min-w-16 flex-1 self-stretch truncate bg-transparent font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary transition-colors placeholder:text-text-muted focus:text-clip focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted",
+    {
+        variants: {
+            size: {
+                sm: "text-sm",
+                md: "",
+                lg: "",
+            },
+            isBusy: {
+                true: "disabled:cursor-progress",
+                false: "",
+            },
+        },
+        defaultVariants: {
+            size: "md",
             isBusy: false,
         },
     },

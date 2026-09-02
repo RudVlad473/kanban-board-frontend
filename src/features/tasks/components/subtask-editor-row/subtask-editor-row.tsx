@@ -67,7 +67,7 @@ export const SubtaskEditorRow = ({
     const removeLabel = value.trim() === "" ? `Remove ${rowLabel}` : `Remove subtask '${value}'`;
 
     return (
-        <div className="flex items-start gap-2">
+        <div className="flex items-center gap-2">
             <TextField
                 key={retryToken}
                 label={rowLabel}
@@ -102,7 +102,6 @@ export const SubtaskEditorRow = ({
                 label={removeLabel}
                 icon={<X />}
                 isLoading={isPending}
-                className="mt-6"
                 onClick={onRemove}
             />
         </div>
