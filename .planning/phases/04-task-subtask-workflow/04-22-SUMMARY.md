@@ -188,7 +188,18 @@ wiring, not Phase 4; it is surfaced here because Phase 4's surfaces are where it
 
 ## CI
 
-Recorded in the phase-close commit; see the checkpoint hand-off for each job's conclusion.
+Blocked on with `gh run watch 33635694954 --exit-status` (exit 0), not polled. Run
+[33635694954](https://github.com/RudVlad473/kanban-board-frontend/actions/runs/33635694954) at
+`d6311c0`, branch `gsd/phase-04-task-subtask-workflow`. Overall conclusion **success**.
+
+| Job | Conclusion | Duration |
+| --- | ---------- | -------- |
+| `secrets` | **success** | 13:26:12 → 13:26:19 (7s) |
+| `quality` | **success** | 13:26:13 → 13:30:20 (4m07s) |
+| `e2e` | **success** | 13:30:23 → 13:33:18 (2m55s) |
+| `visual` | **success** | 13:30:24 → 13:35:51 (5m27s) |
+
+All four green. CI is the sign-off, and it agrees with the local gate.
 
 ## Deviations from the plan
 
