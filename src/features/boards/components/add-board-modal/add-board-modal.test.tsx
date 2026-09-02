@@ -45,6 +45,29 @@ const getBackdropElement = (): HTMLElement => {
 describeForEachDevice({
     name: "AddBoard modal",
     body: () => {
+        it("offers a labelled, enabled close control so dismissal is not Escape-or-backdrop only", async () => {
+            // Act
+            const rendered = await render(<Default />);
+
+            // Assert
+            const close = rendered.getByRole("button", { name: "Close" });
+            await expect.element(close).toBeVisible();
+            await expect.element(close).toBeEnabled();
+            // A real <button>, so it is in the tab order without a tabindex of its own.
+            expect(close.element().tagName).toBe("BUTTON");
+        });
+
+        it("asks to close when the close control is pressed", async () => {
+            // Arrange
+            const rendered = await render(<Default />);
+
+            // Act
+            await rendered.getByRole("button", { name: "Close" }).click();
+
+            // Assert
+            expect(Default.args.onOpenChange).toHaveBeenCalledWith(false);
+        });
+
         it("renders the Copywriting Contract's title, board-name field and submit label", async () => {
             // Act
             const screen = await render(<Default />);

@@ -20,6 +20,18 @@ const getPanelWidthCeiling = (): number => Math.min(window.innerWidth * 0.9, 448
 describeForEachDevice({
     name: "RenameColumn modal",
     body: () => {
+        it("offers a labelled, enabled close control so dismissal is not Escape-or-backdrop only", async () => {
+            // Act
+            const rendered = await render(<Default />);
+
+            // Assert
+            const close = rendered.getByRole("button", { name: "Close" });
+            await expect.element(close).toBeVisible();
+            await expect.element(close).toBeEnabled();
+            // A real <button>, so it is in the tab order without a tabindex of its own.
+            expect(close.element().tagName).toBe("BUTTON");
+        });
+
         it("renders the Copywriting Contract's title, field label and save label", async () => {
             // Act
             const screen = await render(<Default />);

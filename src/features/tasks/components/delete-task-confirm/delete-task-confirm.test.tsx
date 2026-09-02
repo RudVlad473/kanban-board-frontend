@@ -37,6 +37,18 @@ const getBackdropElement = (): HTMLElement => {
 describeForEachDevice({
     name: "DeleteTaskConfirm modal",
     body: () => {
+        it("offers a labelled, enabled close control so dismissal is not Escape-or-backdrop only", async () => {
+            // Act
+            const rendered = await render(<Default />);
+
+            // Assert
+            const close = rendered.getByRole("button", { name: "Close" });
+            await expect.element(close).toBeVisible();
+            await expect.element(close).toBeEnabled();
+            // A real <button>, so it is in the tab order without a tabindex of its own.
+            expect(close.element().tagName).toBe("BUTTON");
+        });
+
         it("renders the Copywriting Contract's confirmation title", async () => {
             // Act
             const screen = await render(<Default />);
@@ -85,9 +97,10 @@ describeForEachDevice({
 
             // Assert — the panel's two controls are named outcomes, neither of them a bare Cancel.
             await expect.element(screen.getByRole("button", { name: "Keep Task" })).toBeVisible();
-            const labels = Array.from(document.querySelectorAll('[role="dialog"] button')).map(
-                (control) => control.textContent,
-            );
+            // The close control is icon-only — its name is an aria-label, so it contributes no text here.
+            const labels = Array.from(document.querySelectorAll('[role="dialog"] button'))
+                .map((control) => control.textContent)
+                .filter(Boolean);
             expect(labels).toEqual(["Delete Task", "Keep Task"]);
         });
 

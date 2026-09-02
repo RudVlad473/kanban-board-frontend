@@ -1,9 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { X } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button/button";
+import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Modal } from "@/components/ui/modal/modal";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { addColumnFormSchema, type AddColumnFormValues } from "@/features/boards/schemas";
@@ -101,6 +103,17 @@ export const AddColumnModal = ({
                         </Button>
                     </Modal.Footer>
                 </form>
+
+                <Modal.Close
+                    render={
+                        <IconButton
+                            type="button"
+                            label="Close"
+                            icon={<X />}
+                            className="absolute top-1 right-1 md:top-2 md:right-2"
+                        />
+                    }
+                />
             </Modal.Content>
         </Modal.Root>
     );
