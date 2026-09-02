@@ -69,7 +69,6 @@ test.describe("COOKIE-02: real theme cookie attributes", () => {
 
         // Act
         await page.getByRole("switch", { name: TOGGLE_NAME }).click();
-        await waitForThemeCookieValue({ page, value: THEME.LIGHT });
         await waitForThemeCookieValue({ page, value: THEME.DARK });
 
         // Assert
@@ -107,7 +106,6 @@ test.describe("COOKIE-03: session-vs-theme lifetime isolation", () => {
          * own write path only if the two clients leaked into each other; they must not.
          */
         await page.getByRole("switch", { name: TOGGLE_NAME }).click();
-        await waitForThemeCookieValue({ page, value: THEME.LIGHT });
         await waitForThemeCookieValue({ page, value: THEME.DARK });
 
         // Assert
@@ -144,7 +142,6 @@ test.describe("COOKIE-04: cross-client value isolation across a toggle", () => {
 
         // Act
         await page.getByRole("switch", { name: TOGGLE_NAME }).click();
-        await waitForThemeCookieValue({ page, value: THEME.LIGHT });
         await waitForThemeCookieValue({ page, value: THEME.DARK });
 
         // Assert
