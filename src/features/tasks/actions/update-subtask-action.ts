@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { updateSubtaskInputSchema, type UpdateSubtaskInput } from "@/features/tasks/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -17,13 +18,10 @@ import { externalApi } from "@/lib/server/server-client";
  * toggle (04-17) and the rename (04-19): one endpoint, one action file per operation, differing hooks
  * (04-RESEARCH.md Open Questions #3).
  */
-export type UpdateSubtaskResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; subtask: Subtask }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.CONFLICT }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type UpdateSubtaskResult = ActionResult<
+    { subtask: Subtask },
+    typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.NOT_FOUND
+>;
 
 /**
  * SUBTASK-02's write path (toggle) and SUBTASK-03's (rename), ordered exactly as

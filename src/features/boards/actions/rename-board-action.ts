@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { boardSchema, renameBoardInputSchema, type Board } from "@/features/boards/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -15,14 +16,10 @@ import { externalApi } from "@/lib/server/server-client";
  * `renameBoardAction`'s own result — every failure branch carries this project's own discriminant
  * and nothing else, so no upstream response text can reach the rollback toast (T-02-61, D-21).
  */
-export type RenameBoardResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; board: Board }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.CONFLICT }
-    | { status: typeof RESULT_STATUS.DUPLICATE }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type RenameBoardResult = ActionResult<
+    { board: Board },
+    typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.DUPLICATE | typeof RESULT_STATUS.NOT_FOUND
+>;
 
 /**
  * BOARD-04's write path, ordered exactly as `createBoardAction` orders its own: session, then

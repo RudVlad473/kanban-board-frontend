@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { createTaskSubtasksInputSchema, subtaskTitleRowSchema } from "@/features/tasks/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
@@ -13,11 +14,7 @@ import { externalApi } from "@/lib/server/server-client";
  * `createTaskSubtasksAction`'s own result — `SUCCESS` carries the titles that did NOT land, empty
  * when everything did. A partial result is kept, never rolled back (ADR domain/0003, D-07).
  */
-export type CreateTaskSubtasksResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; failedTitles: string[] }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type CreateTaskSubtasksResult = ActionResult<{ failedTitles: string[] }>;
 
 /**
  * Creates one subtask per title, in order, exactly as `createBoardColumnsAction` creates one

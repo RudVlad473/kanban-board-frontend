@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { updateTaskInputSchema } from "@/features/tasks/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -17,13 +18,10 @@ import { externalApi } from "@/lib/server/server-client";
  * unlike the create path, since this call carries a `version`; no `DUPLICATE`, since a task title
  * carries no uniqueness rule this UI authors copy for (matches `createTaskAction`'s own result).
  */
-export type UpdateTaskResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; task: Task }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.CONFLICT }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type UpdateTaskResult = ActionResult<
+    { task: Task },
+    typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.NOT_FOUND
+>;
 
 /**
  * TASK-03's write path, ordered exactly as `renameColumnAction`/`moveTaskAction` order their own:

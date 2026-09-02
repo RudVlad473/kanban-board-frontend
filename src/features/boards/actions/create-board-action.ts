@@ -5,6 +5,7 @@
 import { refresh } from "next/cache";
 
 import { boardSchema, createBoardInputSchema, type Board } from "@/features/boards/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -14,22 +15,14 @@ import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
 
 /**
- * `createBoardAction`'s own result — the failure branches carry this project's own discriminant and
- * nothing else, so no upstream response text can reach the modal (T-02-47, D-21).
+ * `createBoardAction`'s own result (T-02-47, D-21). `CONFLICT`/`NOT_FOUND` are declared for parity
+ * with `mapProblemCodeToStatus`'s return type, not because a create can reach them — it carries no
+ * version and targets no existing id, and narrowing them away would trap a future create contract.
  */
-export type CreateBoardResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; board: Board }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    /*
-     * `CONFLICT`/`NOT_FOUND` are here for parity with `mapProblemCodeToStatus`'s return type, not
-     * because a create can reach them today — it carries no version and targets no existing id. Kept
-     * rather than narrowed away, so a future create contract cannot fall through a too-narrow type.
-     */
-    | { status: typeof RESULT_STATUS.CONFLICT }
-    | { status: typeof RESULT_STATUS.DUPLICATE }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type CreateBoardResult = ActionResult<
+    { board: Board },
+    typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.DUPLICATE | typeof RESULT_STATUS.NOT_FOUND
+>;
 
 /**
  * BOARD-02's first write path, ordered exactly as `updateThemeAction` orders its own: session,

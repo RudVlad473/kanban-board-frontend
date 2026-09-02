@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { columnSchema, createColumnInputSchema, type Column } from "@/features/boards/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -16,13 +17,10 @@ import { externalApi } from "@/lib/server/server-client";
  * reach the modal's inline copy (T-03-03). `DUPLICATE` is carried from the start because plan
  * 03-07 wires its user-facing branch, and adding it later would mean re-editing this file.
  */
-export type CreateColumnResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; column: Column }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.DUPLICATE }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type CreateColumnResult = ActionResult<
+    { column: Column },
+    typeof RESULT_STATUS.DUPLICATE | typeof RESULT_STATUS.NOT_FOUND
+>;
 
 /**
  * COLUMN-01's write path, ordered exactly as `renameBoardAction` orders its own: session, then

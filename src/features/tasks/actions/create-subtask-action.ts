@@ -5,6 +5,7 @@
 import { refresh } from "next/cache";
 
 import { createSubtaskInputSchema } from "@/features/tasks/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -19,12 +20,7 @@ import { externalApi } from "@/lib/server/server-client";
  * add-a-subtask-to-an-existing-task path; the fan-out `createTaskSubtasksAction` runs its own
  * loop rather than calling this per item, mirroring `createBoardColumnsAction`'s own precedent.
  */
-export type CreateSubtaskResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; subtask: Subtask }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type CreateSubtaskResult = ActionResult<{ subtask: Subtask }, typeof RESULT_STATUS.NOT_FOUND>;
 
 /** SUBTASK-01's write path, ordered exactly as `createTaskAction` orders its own. */
 export const createSubtaskAction = async ({

@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { columnSchema, reorderColumnInputSchema, type Column } from "@/features/boards/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -16,13 +17,10 @@ import { externalApi } from "@/lib/server/server-client";
  * reach the rollback toast (T-03-33). No `DUPLICATE` branch: a reorder carries no name, so the one
  * uniqueness the contract could complain about is unreachable from here.
  */
-export type ReorderColumnResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; column: Column }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.CONFLICT }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type ReorderColumnResult = ActionResult<
+    { column: Column },
+    typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.NOT_FOUND
+>;
 
 /**
  * COLUMN-03's write path, ordered exactly as `renameColumnAction` orders its own: session, then

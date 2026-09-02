@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { moveTaskInputSchema, type MoveTaskInput } from "@/features/tasks/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -17,13 +18,10 @@ import { externalApi } from "@/lib/server/server-client";
  * rollback toast (T-04-05). No `DUPLICATE` branch: a move carries no name, so the one uniqueness the
  * contract could complain about is unreachable from here.
  */
-export type MoveTaskResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; task: Task }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.CONFLICT }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type MoveTaskResult = ActionResult<
+    { task: Task },
+    typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.NOT_FOUND
+>;
 
 /**
  * TASK-04's write path, ordered exactly as `reorderColumnAction` orders its own: session, then

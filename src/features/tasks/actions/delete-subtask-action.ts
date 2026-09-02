@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { deleteSubtaskInputSchema, type DeleteSubtaskInput } from "@/features/tasks/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -16,13 +17,7 @@ import { externalApi } from "@/lib/server/server-client";
  * `deleteColumnAction`. `CONFLICT` stays a real branch for symmetry with the other two subtask
  * writes even though the endpoint takes no `version` to be stale against.
  */
-export type DeleteSubtaskResult =
-    | { status: typeof RESULT_STATUS.SUCCESS }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.CONFLICT }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type DeleteSubtaskResult = ActionResult<unknown, typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.NOT_FOUND>;
 
 /**
  * SUBTASK-04's write path (D-09/S-05), ordered exactly as `deleteColumnAction` orders its own:

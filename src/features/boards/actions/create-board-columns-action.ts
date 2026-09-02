@@ -5,6 +5,7 @@
 import { refresh } from "next/cache";
 
 import { columnNameSchema, createBoardColumnsInputSchema } from "@/features/boards/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
@@ -15,11 +16,7 @@ import { externalApi } from "@/lib/server/server-client";
  * `createBoardColumnsAction`'s own result — `SUCCESS` carries the names that did NOT land, empty
  * when everything did. A partial result is kept, never rolled back (ADR domain/0003).
  */
-export type CreateBoardColumnsResult =
-    | { status: typeof RESULT_STATUS.SUCCESS; failedNames: string[] }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type CreateBoardColumnsResult = ActionResult<{ failedNames: string[] }>;
 
 /**
  * Creates one column per name, in order. `userId` comes only from the verified session record,

@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { deleteColumnInputSchema } from "@/features/boards/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { mapProblemCodeToStatus } from "@/lib/core/api-contract/map-problem-code";
 import { parseProblemDetail } from "@/lib/core/api-contract/problem-detail";
@@ -16,13 +17,7 @@ import { externalApi } from "@/lib/server/server-client";
  * reach the failure toast (T-03-03). `CONFLICT` is a real branch here, unlike `deleteBoardAction`'s
  * single generic failure, because the UI-SPEC needs a distinct stale-version message.
  */
-export type DeleteColumnResult =
-    | { status: typeof RESULT_STATUS.SUCCESS }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.CONFLICT }
-    | { status: typeof RESULT_STATUS.NOT_FOUND }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type DeleteColumnResult = ActionResult<unknown, typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.NOT_FOUND>;
 
 /**
  * COLUMN-04's write path, ordered exactly as `deleteBoardAction` orders its own: session, then

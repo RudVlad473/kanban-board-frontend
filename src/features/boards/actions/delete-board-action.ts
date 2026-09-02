@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 
 import { deleteBoardInputSchema } from "@/features/boards/schemas";
+import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
@@ -14,11 +15,7 @@ import { externalApi } from "@/lib/server/server-client";
  * response text can reach the failure toast (T-02-69, D-21). D-09 wants one generic failure here,
  * deliberately unlike rename's per-code branches: nothing was changed, so there is nothing to explain.
  */
-export type DeleteBoardResult =
-    | { status: typeof RESULT_STATUS.SUCCESS }
-    | { status: typeof RESULT_STATUS.UNAUTHENTICATED }
-    | { status: typeof RESULT_STATUS.INVALID; fieldErrors: Record<string, string> }
-    | { status: typeof RESULT_STATUS.ERROR };
+export type DeleteBoardResult = ActionResult;
 
 /**
  * BOARD-05's write path, ordered exactly as `renameBoardAction` orders its own: session, then parse,
