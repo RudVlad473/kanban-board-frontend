@@ -658,6 +658,8 @@ const eslintConfig = defineConfig([
         "storybook-static/**",
         "coverage/**",
         "test-results/**",
+        // Playwright's HTML reporter output; gitignored, but lint walked it after a failed run.
+        "playwright-report/**",
         "out/**",
         "build/**",
         "next-env.d.ts",

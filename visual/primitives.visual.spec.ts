@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { DEVICE_TYPE, VIEWPORT_SIZES } from "../src/lib/core/viewport/viewport-breakpoints";
 
@@ -126,6 +126,16 @@ const PORTAL_SELECTOR_BY_PREFIX = [
 /* Bounded so a deliberately-closed story (`menu--closed`) falls back to its trigger, not a failure. */
 const PORTAL_WAIT_MS = 5_000;
 
+/* Without this, modal--long-content screenshots wherever focus left it scrolled: 2 failures in 3 runs. */
+const resetScrollPositions = async (target: Locator): Promise<void> => {
+    await target.evaluate((element) => {
+        for (const node of [element, ...element.querySelectorAll("*")]) {
+            node.scrollTop = 0;
+            node.scrollLeft = 0;
+        }
+    });
+};
+
 const gotoStory = async ({ page, url, storyId }: { page: Page; url: string; storyId: string }) => {
     await page.goto(url);
     /*
@@ -144,11 +154,13 @@ const gotoStory = async ({ page, url, storyId }: { page: Page; url: string; stor
         const candidate = page.locator(`${portal[1]} >> visible=true`).first();
         try {
             await candidate.waitFor({ state: "visible", timeout: PORTAL_WAIT_MS });
+            await resetScrollPositions(candidate);
             return candidate;
         } catch {
             return root;
         }
     }
+    await resetScrollPositions(root);
     return root;
 };
 
