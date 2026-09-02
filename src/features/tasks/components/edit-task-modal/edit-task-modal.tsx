@@ -30,8 +30,8 @@ type Props = {
 
 /**
  * TASK-03's edit form (S-01). Deliberately takes `onSubmit` as a prop rather than calling its own
- * `useUpdateTask` — that is what lets its behavioural tests drive it with a real local function
- * instead of a module mock (docs/adr/tech/0020), matching every sibling modal's own rule.
+ * save hook — that is what lets its behavioural tests drive it with a real local function instead
+ * of a module mock (docs/adr/tech/0020), matching every sibling modal's own rule.
  */
 export const EditTaskModal = ({
     task,
