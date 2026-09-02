@@ -9,6 +9,7 @@ import { render } from "vitest-browser-react";
 
 import { DEVICE_TYPE } from "@/lib/core/viewport/viewport-breakpoints";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { getBackdropElement } from "@/test-utils/modal-backdrop";
 
 import { Modal } from "./modal";
 import * as stories from "./modal.stories";
@@ -42,21 +43,6 @@ const renderModal = (props: RootProps = {}) =>
             </Modal.Root>
         </div>,
     );
-
-/*
- * The floating backdrop `<div>` (no ARIA role of its own) rendered by `Modal.Content` — the
- * dialog's own popup gets `role="dialog"`, so filtering it out unambiguously isolates the backdrop
- * regardless of DOM order.
- */
-const getBackdropElement = () => {
-    const backdrop = Array.from(document.querySelectorAll<HTMLElement>("[data-open]")).find(
-        (el) => el.getAttribute("role") !== "dialog",
-    );
-    if (!backdrop) {
-        throw new Error("Modal backdrop element not found — is the dialog open?");
-    }
-    return backdrop;
-};
 
 /*
  * ADR tech/0014: every primitive's whole suite runs at both viewports; the padding test below

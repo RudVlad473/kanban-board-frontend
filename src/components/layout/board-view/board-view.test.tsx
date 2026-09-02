@@ -4,7 +4,7 @@
  * the Vite plugin for (see docs/adr/tech/0021).
  */
 import { composeStories } from "@storybook/react";
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { cdp, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -21,6 +21,7 @@ import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { getRaisedToastCount, getRaisedToasts, getRaisedToastTexts } from "@/test-utils/raised-toasts";
 
 import * as stories from "./board-view.stories";
 
@@ -115,18 +116,6 @@ const CONFLICT_UPDATE_TASK_TOAST = "This board changed somewhere else.Refreshing
 /* TASK-05's own generic failure copy, from `use-delete-task.ts`'s `GENERIC_DELETE_FAILURE`. */
 const GENERIC_DELETE_TASK_TOAST = "Couldn't delete task.Try again.";
 
-/*
- * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
- * query would report the modal and make "no toast was raised" pass for the wrong reason.
- */
-const getRaisedToasts = (): HTMLElement[] => {
-    const region = screen.queryByRole("region", { name: "Notifications" });
-
-    return region === null ? [] : within(region).queryAllByRole("dialog");
-};
-
-const getRaisedToastCount = (): number => getRaisedToasts().length;
-
 /** The horizontal column row — the scrolling box D-04's `scrollIntoView` actually moves. */
 const getScrollRow = (): HTMLElement => {
     const row = document.querySelector<HTMLElement>("div.overflow-x-auto");
@@ -177,8 +166,6 @@ const getRenderedColumnNames = (): (string | null | undefined)[] =>
         /* The heading's single child is the drag handle, or a plain span on a lone column. */
         (heading) => heading.firstElementChild?.children[1]?.textContent,
     );
-
-const getRaisedToastTexts = (): (string | null)[] => getRaisedToasts().map((toast) => toast.textContent);
 
 /**
  * Each rendered column's own task titles, in list order — the rollback assertion's ground truth,

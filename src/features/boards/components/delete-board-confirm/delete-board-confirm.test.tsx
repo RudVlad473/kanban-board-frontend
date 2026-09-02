@@ -9,6 +9,7 @@ import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { getBackdropElement } from "@/test-utils/modal-backdrop";
 
 import * as stories from "./delete-board-confirm.stories";
 
@@ -17,20 +18,6 @@ const { Default, Deleting, LongBoardName, SubmitSettles } = composeStories(stori
 const CONFIRM_BODY =
     "Are you sure you want to delete the 'Platform Launch' board? " +
     "This action will remove all columns and tasks and cannot be reversed.";
-
-/*
- * Base UI renders the backdrop as a sibling of the popup with no role of its own, so it is reached
- * by attribute rather than by role — the same lookup `edit-board-modal.test.tsx` uses.
- */
-const getBackdropElement = (): HTMLElement => {
-    const backdrop = Array.from(document.querySelectorAll<HTMLElement>("[data-open]")).find(
-        (element) => element.getAttribute("role") !== "dialog",
-    );
-    if (!backdrop) {
-        throw new Error("Modal backdrop element not found — is the dialog open?");
-    }
-    return backdrop;
-};
 
 describeForEachDevice({
     name: "DeleteBoardConfirm modal",

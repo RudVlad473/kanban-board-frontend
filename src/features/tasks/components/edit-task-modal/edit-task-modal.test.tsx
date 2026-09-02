@@ -15,6 +15,7 @@ import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-act
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { getBackdropElement } from "@/test-utils/modal-backdrop";
 
 import * as stories from "./edit-task-modal.stories";
 
@@ -23,20 +24,6 @@ const { Default, NoDescription, Populated, SingleSubtask, Submitting, TitleError
 const createSubtaskStub = actionStub(createSubtaskAction);
 const updateSubtaskStub = actionStub(updateSubtaskAction);
 const deleteSubtaskStub = actionStub(deleteSubtaskAction);
-
-/*
- * Base UI renders the backdrop as a sibling of the popup with no role of its own, so it is reached
- * by attribute rather than by role — the same lookup `add-task-modal.test.tsx` uses.
- */
-const getBackdropElement = (): HTMLElement => {
-    const backdrop = Array.from(document.querySelectorAll<HTMLElement>("[data-open]")).find(
-        (element) => element.getAttribute("role") !== "dialog",
-    );
-    if (!backdrop) {
-        throw new Error("Modal backdrop element not found — is the dialog open?");
-    }
-    return backdrop;
-};
 
 describeForEachDevice({
     name: "EditTask modal",

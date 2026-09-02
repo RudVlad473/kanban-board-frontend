@@ -4,7 +4,7 @@
  * (see docs/adr/tech/0025).
  */
 import { composeStories } from "@storybook/react";
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -14,6 +14,7 @@ import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { getRaisedToastTexts } from "@/test-utils/raised-toasts";
 
 import * as stories from "./task-detail-modal.stories";
 
@@ -47,20 +48,6 @@ const LONG_TASK_TITLE = "A task title long enough to wrap across several lines i
 const GENERIC_TOGGLE_TOAST = "Couldn't update subtask.Try again.";
 /* SYNC-01/C-08: the title matches the phase-wide conflict family exactly; only the description differs. */
 const CONFLICT_TOGGLE_TOAST = "This board changed somewhere else.Refreshing to show the latest.";
-
-/*
- * Scoped to the notifications region, since the modal itself is a `dialog` too — an unscoped role
- * query would report the modal and make "no toast was raised" pass for the wrong reason.
- */
-const getRaisedToastTexts = (): (string | null)[] => {
-    const region = screen.queryByRole("region", { name: "Notifications" });
-
-    return region === null
-        ? []
-        : within(region)
-              .queryAllByRole("dialog")
-              .map((toast) => toast.textContent);
-};
 
 /*
  * ADR tech/0014: every component's suite runs at both viewports; this modal has no

@@ -13,6 +13,7 @@ import { reorderColumnAction } from "@/features/boards/actions/reorder-column-ac
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { getRaisedToastTexts } from "@/test-utils/raised-toasts";
 
 import * as stories from "./sortable-column.stories";
 
@@ -42,16 +43,6 @@ const getRenderedColumnNames = (): (string | null | undefined)[] =>
     Array.from(document.querySelectorAll("section h2")).map(
         (heading) => heading.firstElementChild?.children[1]?.textContent,
     );
-
-const getRaisedToastTexts = (): (string | null)[] => {
-    const region = screen.queryByRole("region", { name: "Notifications" });
-
-    return region === null
-        ? []
-        : within(region)
-              .queryAllByRole("dialog")
-              .map((toast) => toast.textContent);
-};
 
 const moveFirstColumnToThirdPosition = async (): Promise<void> => {
     await userEvent.click(screen.getByRole("button", { name: "Move the first column to the third position" }));

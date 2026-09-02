@@ -4,7 +4,7 @@
  * load the Vite plugin for (see docs/adr/tech/0021).
  */
 import { composeStories } from "@storybook/react";
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -19,6 +19,7 @@ import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createBoard } from "@/test-utils/factories/board";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
+import { getRaisedToastTexts } from "@/test-utils/raised-toasts";
 
 import * as stories from "./board-list.stories";
 
@@ -59,21 +60,6 @@ const createBoardStub = actionStub(createBoardAction);
 const createBoardColumnsStub = actionStub(createBoardColumnsAction);
 const renameBoardStub = actionStub(renameBoardAction);
 const deleteBoardStub = actionStub(deleteBoardAction);
-
-/*
- * Scoped to the notifications region, since the create modal is a `dialog` too. Reading the
- * rendered text is what proves the count the user actually sees, not the manager's own bookkeeping.
- */
-const getRaisedToastTexts = (): string[] => {
-    const region = screen.queryByRole("region", { name: "Notifications" });
-    if (!region) {
-        return [];
-    }
-
-    return within(region)
-        .queryAllByRole("dialog")
-        .map((toast) => toast.textContent);
-};
 
 /*
  * Opens the create modal, fills the board name, then adds and fills a row per requested column.

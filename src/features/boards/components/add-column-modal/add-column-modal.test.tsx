@@ -4,26 +4,16 @@
  * load the Vite plugin for (see docs/adr/tech/0025).
  */
 import { composeStories } from "@storybook/react";
-import { screen, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { getRaisedToastCount } from "@/test-utils/raised-toasts";
 
 import * as stories from "./add-column-modal.stories";
 
 const { Default, Submitting, NameError, CreateFailed, ShortColumnName, LongColumnName } = composeStories(stories);
-
-/*
- * Scoped to the notifications region, since the modal itself is a `dialog` too — an unscoped role
- * query would report the modal and make "no toast was raised" pass for the wrong reason.
- */
-const getRaisedToastCount = (): number => {
-    const region = screen.queryByRole("region", { name: "Notifications" });
-
-    return region === null ? 0 : within(region).queryAllByRole("dialog").length;
-};
 
 describeForEachDevice({
     name: "AddColumn modal",
