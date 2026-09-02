@@ -1,0 +1,98 @@
+{
+    "version": "1.0",
+    "timestamp": "2026-09-02T18:28:42.144Z",
+    "phase": "04",
+    "phase_name": "Task & Subtask Workflow",
+    "phase_dir": ".planning/phases/04-task-subtask-workflow",
+    "plan": 22,
+    "task": 4,
+    "total_tasks": 4,
+    "status": "paused",
+    "completed_tasks": [
+        { "id": 1, "name": "Correct CONVENTIONS.md against the shipped code", "status": "done", "commit": "c0ab07e" },
+        { "id": 2, "name": "Verify all eight success criteria and run the full gate", "status": "done", "commit": "d6311c0" },
+        { "id": 3, "name": "Compare every rendered surface against the design source", "status": "done", "commit": "d6311c0" },
+        {
+            "id": 4,
+            "name": "Blocking human phase sign-off checkpoint",
+            "status": "in_progress",
+            "progress": "User did NOT approve. They returned 13 defects plus a simplification audit; 10 of 13 are fixed and pushed. The checkpoint stays open until the remainder land and CI is green."
+        }
+    ],
+    "remaining_tasks": [
+        { "id": 5, "name": "Item 10 — board switching refetches every time (3 navigations, 3 RSC fetches)", "status": "not_started" },
+        { "id": 6, "name": "Item 1 — sign-in/sign-up full page reload (plain <a href>, test-env workaround)", "status": "not_started" },
+        { "id": 7, "name": "Item 9 — phantom drop zone between columns (needs a live drag to confirm first)", "status": "not_started" },
+        { "id": 8, "name": "Audit row 4 — test helpers getBackdropElement x8 + getRaisedToast* x5", "status": "not_started" },
+        { "id": 9, "name": "Audit row 7 — cva `state` axis, 3 byte-identical", "status": "not_started" },
+        { "id": 10, "name": "Audit row 5 — batch-create action clones (serial await is load-bearing)", "status": "not_started" },
+        { "id": 11, "name": "Audit row 6 — toast failure dispatch mechanism only, never the copy tables", "status": "not_started" },
+        { "id": 12, "name": "N-2 + typography collapse — one @utility per type token, 58 sites, 30 files", "status": "not_started" },
+        { "id": 13, "name": "Comment cleanup (579 planning IDs, 188 files) + 2 new gate rules", "status": "not_started" },
+        { "id": 14, "name": "Full local gate, push, block on CI, then re-present the checkpoint", "status": "not_started" }
+    ],
+    "blockers": [],
+    "async_jobs": [],
+    "human_actions_pending": [
+        {
+            "action": "Approve or reject Phase 04 at the 04-22 checkpoint",
+            "context": "Only the user can clear it. Do not mark Phase 04 complete in ROADMAP.md and do not run /gsd-verify-work until they answer.",
+            "blocking": true
+        },
+        {
+            "action": "Decide whether to delete the now-dead Modal.Close export",
+            "context": "Nothing consumes it since Modal.Content renders the control itself. Removing it is a public-API change to a primitive.",
+            "blocking": false
+        }
+    ],
+    "decisions": [
+        {
+            "decision": "Fix all 13 reported defects before sealing Phase 04, rather than filing the out-of-phase ones",
+            "rationale": "User chose this over a Phase 05 remediation phase, knowing most items are Phase 01-03 code.",
+            "phase": "04"
+        },
+        {
+            "decision": "All toasts auto-dismiss at 5s; no timeout: 0 exceptions",
+            "rationale": "User overruled the 'a kept-but-incomplete create must stay until acted on' rationale on the two partial-success toasts.",
+            "phase": "04"
+        },
+        {
+            "decision": "Blank column rows are dropped from the create sequence, not blocked",
+            "rationale": "User chose to make the column form match the task form. Note the min(3) length error still renders, so the error slot still had to be fixed.",
+            "phase": "04"
+        },
+        {
+            "decision": "Every modal gets a close control, detail modal included — S-09 fully overruled",
+            "rationale": "S-09's authority was 'matching every shipped modal in this codebase', which is the precedent the user rejected. Recorded in 04-UI-SPEC.md. This diverges from the mock, which shows no close control on any page.",
+            "phase": "04"
+        },
+        {
+            "decision": "es-toolkit + isNil, never isEmpty",
+            "rationale": "isEmpty(0) and isEmpty(false) are true; targetPosition is z.number().min(0), so isEmpty would read a valid zero as absent. Only ONE genuine two-sided site exists in the repo.",
+            "phase": "04"
+        },
+        {
+            "decision": "Allow ui -> ui imports, guarded by import-x/no-cycle, recorded in ADR tech/0031",
+            "rationale": "The ban was never a recorded decision and cost 10 duplicated close controls plus menu.tsx copying dropdown's class string.",
+            "phase": "04"
+        },
+        {
+            "decision": "Optimistic delete for boards and columns, reversing two recorded 'deliberately NOT optimistic' decisions",
+            "rationale": "ADR domain/0002 governs SERVER-side recovery ('nowhere to recover a deleted record from'); it says nothing about staging a delete in the client cache with a snapshot rollback. User asked for it directly (items 11, 13).",
+            "phase": "04"
+        },
+        {
+            "decision": "Comment cleanup runs LAST, after all functional work",
+            "rationale": "Cleaning 188 files first, then letting later agents write fresh comments into them, would rebuild the pile. The rule goes in every remaining agent brief instead.",
+            "phase": "04"
+        },
+        {
+            "decision": "The comment density cap's threshold is set AFTER the cleanup, from the measured result",
+            "rationale": "Setting it first would fail the build on day one; setting it after ratchets what was actually achieved.",
+            "phase": "04"
+        }
+    ],
+    "uncommitted_files": [],
+    "next_action": "Dispatch a general-purpose agent for the test-helper consolidation + cva `state` axis (audit rows 4 and 7) — lowest risk of the remainder. Run agents STRICTLY ONE AT A TIME in the main checkout; worktree isolation is unusable here because the harness forks worktrees from origin/HEAD (main), which has none of this branch's work.",
+    "context_notes": "Phase 04 was CI-green and at its sign-off checkpoint when the user rejected it with 13 defects found by using the app. Everything since is checkpoint-response work. 18 commits landed this session, all pushed, tree clean, full suite 1993/1993 and visual 316/316 as of a361d5c. Every agent brief must carry: (1) the comment rule — a comment is a luxury, never cite planning tokens like D-21/T-02-47/S-09, (2) pin each fix with a test proven to fail without it and report which direction was checked, (3) do not push, do not touch .planning/, do not run e2e/visual or re-record baselines — those run centrally."
+}
