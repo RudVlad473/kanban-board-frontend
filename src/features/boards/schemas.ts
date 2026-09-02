@@ -54,14 +54,20 @@ export type Column = z.infer<typeof columnSchema>;
  * import another feature (CONVENTIONS.md), and this is the UI-SPEC Copywriting Contract's wording.
  */
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
-const BOARD_NAME_LENGTH_MESSAGE = "Board name must be 64 characters or fewer.";
+/* Exported so a TextField's `characterLimit` and the rule it counts against stay one number. */
+export const BOARD_NAME_MAX_LENGTH = 64;
+const BOARD_NAME_LENGTH_MESSAGE = `Board name must be ${String(BOARD_NAME_MAX_LENGTH)} characters or fewer.`;
 
 /*
  * 64 is the backend's own measured ceiling, binary-searched against the real nonprod backend on
  * 2026-08-25 — 64 accepted, 65 rejected — closing 02-BACKEND-FACTS.md P4's Escalate item, which
  * only knew the limit lay between 1 and 1000 and left a conservative 100 in its place.
  */
-export const boardNameSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).max(64, BOARD_NAME_LENGTH_MESSAGE);
+export const boardNameSchema = z
+    .string()
+    .trim()
+    .min(1, REQUIRED_FIELD_MESSAGE)
+    .max(BOARD_NAME_MAX_LENGTH, BOARD_NAME_LENGTH_MESSAGE);
 
 /** The object shape `createBoardAction` parses — never the raw argument it was handed. */
 export const createBoardInputSchema = z.object({ name: boardNameSchema });
@@ -97,14 +103,15 @@ export const editBoardFormSchema = z.object({ name: boardNameSchema });
 
 export type EditBoardFormValues = z.infer<typeof editBoardFormSchema>;
 
-const COLUMN_NAME_LENGTH_MESSAGE = "Column name must be between 3 and 32 characters.";
+export const COLUMN_NAME_MAX_LENGTH = 32;
+const COLUMN_NAME_LENGTH_MESSAGE = `Column name must be between 3 and ${String(COLUMN_NAME_MAX_LENGTH)} characters.`;
 
 /** The backend's own enforced bounds, mirrored verbatim (02-BACKEND-FACTS.md P6). */
 export const columnNameSchema = z
     .string()
     .trim()
     .min(3, COLUMN_NAME_LENGTH_MESSAGE)
-    .max(32, COLUMN_NAME_LENGTH_MESSAGE);
+    .max(COLUMN_NAME_MAX_LENGTH, COLUMN_NAME_LENGTH_MESSAGE);
 
 /*
  * Deliberately separate from `columnNameSchema`, not a relaxation of it: a blank row is now a user

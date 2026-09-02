@@ -209,8 +209,12 @@ describeForEachDevice({
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
-            // Assert
-            await expect.element(screen.getByText("Column name must be between 3 and 32 characters.")).toBeVisible();
+            // Assert — the slot shows the counter; the prose it replaces stays the accessible description.
+            await expect.element(screen.getByText("2/32")).toBeVisible();
+            expect(
+                screen.getByText("Column name must be between 3 and 32 characters.").element().getBoundingClientRect()
+                    .width,
+            ).toBeLessThanOrEqual(1);
             expect(ShortColumnRow.args.onSubmit).not.toHaveBeenCalled();
         });
 
@@ -218,24 +222,25 @@ describeForEachDevice({
             // Act
             const screen = await render(<ColumnNameError />);
 
-            // Assert
-            await expect.element(screen.getByText("Column name must be between 3 and 32 characters.")).toBeVisible();
+            // Assert — the slot shows the counter; the prose it replaces stays the accessible description.
+            await expect.element(screen.getByText("2/32")).toBeVisible();
+            expect(
+                screen.getByText("Column name must be between 3 and 32 characters.").element().getBoundingClientRect()
+                    .width,
+            ).toBeLessThanOrEqual(1);
         });
 
         /*
          * The user-reported overlap: with the message out of flow beneath the field, it covered
-         * "+ Add New Column" by 9.5px vertically and 95.6px horizontally. Asserted as an
-         * intersection of measured rects — a class-name assertion would survive the regression.
+         * "+ Add New Column" by 9.5px vertically and 95.6px horizontally. Measured on whatever
+         * occupies the slot — now the counter — since that is what a regression would move.
          */
-        it("keeps a column row's error message clear of the add-row control", async () => {
+        it("keeps a column row's error slot clear of the add-row control", async () => {
             // Arrange
             const screen = await render(<ColumnNameError />);
 
             // Act
-            const messageRect = screen
-                .getByText("Column name must be between 3 and 32 characters.")
-                .element()
-                .getBoundingClientRect();
+            const messageRect = screen.getByText("2/32").element().getBoundingClientRect();
             const addRowRect = screen
                 .getByRole("button", { name: "+ Add New Column" })
                 .element()

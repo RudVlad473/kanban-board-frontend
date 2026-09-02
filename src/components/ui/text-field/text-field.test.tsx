@@ -14,7 +14,18 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { TextField } from "./text-field";
 import * as stories from "./text-field.stories";
 
-const { Idle, HiddenLabel, Error: ErrorState, Disabled, Loading, Password } = composeStories(stories);
+const {
+    Idle,
+    HiddenLabel,
+    Error: ErrorState,
+    Disabled,
+    Loading,
+    Password,
+    CharacterCounter,
+    CharacterCounterFilled,
+    CharacterCounterLengthInvalid,
+    CharacterCounterRequiredEmpty,
+} = composeStories(stories);
 
 /*
  * The field's visual box — a flex row wrapping the input and, on error, the message. It carries the
@@ -336,6 +347,121 @@ describeForEachDevice({
 
             // Assert
             expect(filledWidth).toBe(emptyWidth);
+        });
+
+        /*
+         * The counter's own copy is the whole point of the slot: a limit the user can see before
+         * they cross it, in ~30px that cannot truncate at any field width.
+         */
+        it("counts the typed characters against the limit inside the message slot", async () => {
+            // Arrange
+            const screen = await render(<CharacterCounter />);
+            const input = screen.getByRole("textbox", { name: "Column Name" });
+
+            // Act
+            await userEvent.type(input.element(), "ab");
+
+            // Assert
+            await expect.element(screen.getByText("2/32")).toBeVisible();
+        });
+
+        /* An always-on counter on an untouched empty field is noise, so it waits for a first character. */
+        it("shows no counter while the value is empty", async () => {
+            // Act
+            const screen = await render(<CharacterCounter />);
+
+            // Assert
+            expect(screen.container.textContent).not.toContain("0/32");
+        });
+
+        /*
+         * Precedence, half one: an empty value is the required-field case and keeps its prose, which
+         * already fits the slot. A "0/32" there would lose the only word the user needs.
+         */
+        it("keeps the required-empty prose in the slot instead of a counter when the value is empty", async () => {
+            // Act
+            const screen = await render(<CharacterCounterRequiredEmpty />);
+
+            // Assert
+            await expect.element(screen.getByText("Can't be empty")).toBeVisible();
+            expect(screen.container.textContent).not.toContain("0/32");
+        });
+
+        /*
+         * Precedence, half two: a non-empty value is a length case, so the slot shows the counter and
+         * the prose that truncated to "Column name must be between 3 and…" there moves out of sight
+         * without leaving `aria-describedby`.
+         */
+        it("replaces the length prose with a red counter once the value is non-empty, keeping the prose as the accessible description", async () => {
+            // Arrange
+            const screen = await render(<CharacterCounterLengthInvalid />);
+            const input = screen.getByRole("textbox", { name: "Column Name" });
+
+            // Act
+            const counter = screen.getByText("2/32").element() as HTMLElement;
+
+            // Assert — the counter is what the eye gets, and it fits the slot whole.
+            await expect.element(screen.getByText("2/32")).toBeVisible();
+            expect(counter.scrollWidth).toBeLessThanOrEqual(counter.clientWidth + 1);
+
+            // Assert — the prose is still what assistive tech gets, in full and out of the layout.
+            const describedById = input.element().getAttribute("aria-describedby") ?? "";
+            const message = screen.container.querySelector(`[id="${describedById}"]`);
+            expect(message?.textContent).toBe("Column name must be between 3 and 32 characters.");
+            expect(message?.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+
+            // Assert — polled past globals.css's 200ms colour transition, which reads mid-flight.
+            await expect.poll(() => getComputedStyle(counter).color).toBe("rgb(201, 63, 60)");
+        });
+
+        /*
+         * The rule the slot exists for. Below the field in flow the message grew the form 23.5px
+         * mid-click and swallowed the click (04-15-CHECKPOINT.md); the counter costs the same zero.
+         */
+        it("costs the field no height when the counter appears, valid or invalid", async () => {
+            // Arrange
+            const quiet = await render(<CharacterCounter />);
+            const quietInput = quiet.getByRole("textbox", { name: "Column Name" });
+            const quietRoot = quietInput.element().closest<HTMLElement>("[class*='flex-col']");
+            const baselineRootHeight = quietRoot?.getBoundingClientRect().height ?? 0;
+            const baselineBoxHeight = getFieldBox(quietInput.element()).getBoundingClientRect().height;
+
+            // Act — the counter appears on the first character.
+            await userEvent.type(quietInput.element(), "ab");
+            await expect.element(quiet.getByText("2/32")).toBeVisible();
+
+            // Assert
+            expect(quietRoot?.getBoundingClientRect().height).toBe(baselineRootHeight);
+            expect(getFieldBox(quietInput.element()).getBoundingClientRect().height).toBe(baselineBoxHeight);
+
+            /*
+             * Arrange — the same field length-invalid. Reached through this render's own container,
+             * not a role locator: both fields carry the same label and the locator is page-wide.
+             */
+            const invalid = await render(<CharacterCounterLengthInvalid />);
+            const invalidInput = invalid.container.querySelector("input");
+            const invalidRoot = invalidInput?.closest<HTMLElement>("[class*='flex-col']");
+
+            // Assert
+            expect(invalidRoot?.getBoundingClientRect().height).toBe(baselineRootHeight);
+            expect(getFieldBox(invalidInput as Element).getBoundingClientRect().height).toBe(baselineBoxHeight);
+        });
+
+        /* Same slot as the message: inside the box, right-aligned, never over the value. */
+        it("renders the counter inside the input's own box rather than beneath it", async () => {
+            // Arrange
+            const screen = await render(<CharacterCounterFilled />);
+            const input = screen.getByRole("textbox", { name: "Column Name" });
+
+            // Act
+            const boxRect = getFieldBox(input.element()).getBoundingClientRect();
+            const counterRect = screen.getByText("2/32").element().getBoundingClientRect();
+
+            // Assert
+            expect(counterRect.top).toBeGreaterThanOrEqual(boxRect.top - 1);
+            expect(counterRect.bottom).toBeLessThanOrEqual(boxRect.bottom + 1);
+            expect(counterRect.right).toBeLessThanOrEqual(boxRect.right - 1);
+            expect(counterRect.left).toBeGreaterThanOrEqual(input.element().getBoundingClientRect().right);
         });
 
         it("fills its container's width at any viewport, with no fixed desktop-only width", async () => {

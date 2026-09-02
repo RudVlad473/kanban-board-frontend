@@ -1,6 +1,6 @@
 import { Field } from "@base-ui/react/field";
 import { type VariantProps } from "class-variance-authority";
-import type { ComponentProps, ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 
 import { textFieldBoxVariants, textFieldControlVariants } from "@/components/ui/text-field/text-field-variants";
 import { cn } from "@/lib/core/styling/cn";
@@ -27,6 +27,12 @@ type Props = Omit<ComponentProps<typeof Field.Control>, "className" | "disabled"
          * (GC-17, see 01-29-SUMMARY.md). Still independently sets `aria-busy`.
          */
         isLoading?: boolean;
+        /**
+         * Opt in to a live `12/32` counter in the message slot, passing the same upper bound the
+         * field's schema enforces. Supplied per call site, never derived: parsing a zod schema at
+         * runtime to recover a bound would couple this primitive to every form that uses it.
+         */
+        characterLimit?: number;
         /** Rendered inside the field's visual box, absolutely positioned — e.g. a password-visibility IconButton. */
         trailing?: ReactNode;
     };
@@ -39,12 +45,39 @@ export const TextField = ({
     hasError = false,
     isDisabled = false,
     isLoading = false,
+    characterLimit,
     size,
     trailing,
     className,
     type = "text",
+    value,
+    onValueChange,
     ...props
 }: Props) => {
+    const boxRef = useRef<HTMLDivElement>(null);
+    const [typedLength, setTypedLength] = useState(0);
+    const valueLength = value === undefined ? typedLength : String(value).length;
+
+    /*
+     * One post-mount DOM read, because `register()` writes a form's default value straight through
+     * the ref and fires no change event: without this a pre-filled field would open its counter at
+     * 0. Every later change arrives as `onValueChange` below.
+     */
+    useLayoutEffect(() => {
+        const input = boxRef.current?.querySelector("input");
+        if (input !== null && input !== undefined) {
+            setTypedLength(input.value.length);
+        }
+    }, []);
+
+    /*
+     * Precedence, stated once here rather than per call site: an empty value is the required-field
+     * case and keeps its prose, which already fits; a non-empty one is a length case and gets the
+     * counter, which fits at any width. The prose stays mounted for `aria-describedby` either way.
+     */
+    const counterText =
+        characterLimit !== undefined && valueLength > 0 ? `${String(valueLength)}/${String(characterLimit)}` : null;
+
     return (
         /*
          * Field.Root/Label/Control/Description/Error wire up label association, `aria-invalid`
@@ -71,6 +104,7 @@ export const TextField = ({
             </Field.Label>
 
             <div
+                ref={boxRef}
                 className={textFieldBoxVariants({
                     size,
                     state: hasError ? "error" : "default",
@@ -81,6 +115,11 @@ export const TextField = ({
                 <Field.Control
                     type={type}
                     aria-busy={isLoading}
+                    value={value}
+                    onValueChange={(nextValue, event) => {
+                        setTypedLength(nextValue.length);
+                        onValueChange?.(nextValue, event);
+                    }}
                     className={cn(textFieldControlVariants({ size, isBusy: isLoading }), className)}
                     {...props}
                 />
@@ -100,13 +139,34 @@ export const TextField = ({
                     covered the next control by 9.5px, the 24px inter-field gap it assumed being
                     more than a row group leaves. A message wider than the slot truncates rather
                     than pushing the input away; `aria-describedby` still carries it in full. */}
+                {/* `sr-only` while a counter owns the slot, never unmounted: the prose is the only
+                    carrier of WHICH bound was crossed, and `sr-only` keeps it out of the layout
+                    without taking it out of `aria-describedby`. */}
                 {hasError && errorMessage ? (
                     <Field.Error
                         match={true}
-                        className="min-w-0 truncate font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
+                        className={cn(
+                            "min-w-0 truncate font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger",
+                            counterText !== null && "sr-only",
+                        )}
                     >
                         {errorMessage}
                     </Field.Error>
+                ) : null}
+
+                {/* `aria-hidden` because the fragment "12/32" states no bound on its own; the prose
+                    above is what carries the constraint to assistive tech, in full, whenever the
+                    field is invalid. */}
+                {counterText !== null ? (
+                    <span
+                        aria-hidden="true"
+                        className={cn(
+                            "shrink-0 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] whitespace-nowrap tabular-nums",
+                            hasError ? "text-text-danger" : "text-text-muted",
+                        )}
+                    >
+                        {counterText}
+                    </span>
                 ) : null}
             </div>
 

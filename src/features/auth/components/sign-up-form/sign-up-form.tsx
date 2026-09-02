@@ -12,7 +12,12 @@ import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signUpAction } from "@/features/auth/actions/sign-up-action";
 import { readFormField } from "@/features/auth/model";
-import { REQUIRED_FIELD_MESSAGE, signUpSchema, type SignUpInput } from "@/features/auth/schemas";
+import {
+    DISPLAY_NAME_MAX_LENGTH,
+    REQUIRED_FIELD_MESSAGE,
+    signUpSchema,
+    type SignUpInput,
+} from "@/features/auth/schemas";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
 
@@ -125,6 +130,7 @@ export const SignUpForm = ({
             <TextField
                 label="Name"
                 type="text"
+                characterLimit={DISPLAY_NAME_MAX_LENGTH}
                 description="Optional"
                 isLoading={isPending}
                 hasError={Boolean(nameErrorMessage)}

@@ -50,14 +50,20 @@ export type Task = z.infer<typeof taskSchema>;
  * core ring may not import a feature (CONVENTIONS.md), and this is the Copywriting Contract's wording.
  */
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
-const TASK_TITLE_LENGTH_MESSAGE = "Task title must be between 3 and 32 characters.";
+/* Exported so a TextField's `characterLimit` and the rule it counts against stay one number. */
+export const TASK_TITLE_MAX_LENGTH = 32;
+const TASK_TITLE_LENGTH_MESSAGE = `Task title must be between 3 and ${String(TASK_TITLE_MAX_LENGTH)} characters.`;
 
 /*
  * `SaveTaskRequestDTO`'s own declared bounds, re-enforced on UPDATE too: `UpdateTaskRequestDTO`
  * declares none at all, so without this a title that could never have been created becomes savable
  * (04-RESEARCH.md Pitfall 4).
  */
-export const taskTitleSchema = z.string().trim().min(3, TASK_TITLE_LENGTH_MESSAGE).max(32, TASK_TITLE_LENGTH_MESSAGE);
+export const taskTitleSchema = z
+    .string()
+    .trim()
+    .min(3, TASK_TITLE_LENGTH_MESSAGE)
+    .max(TASK_TITLE_MAX_LENGTH, TASK_TITLE_LENGTH_MESSAGE);
 
 /*
  * Deliberately separate from `taskTitleSchema`, not a relaxation of it: a blank field earns the

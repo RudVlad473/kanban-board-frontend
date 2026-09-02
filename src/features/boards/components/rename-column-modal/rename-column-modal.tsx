@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Modal } from "@/components/ui/modal/modal";
 import { TextField } from "@/components/ui/text-field/text-field";
-import { renameColumnFormSchema, type ColumnFull, type RenameColumnFormValues } from "@/features/boards/schemas";
+import {
+    COLUMN_NAME_MAX_LENGTH,
+    renameColumnFormSchema,
+    type ColumnFull,
+    type RenameColumnFormValues,
+} from "@/features/boards/schemas";
 
 type Props = {
     boardId: string;
@@ -67,6 +72,7 @@ export const RenameColumnModal = ({ boardId, column, onClose, onSubmit, forceNam
                     <TextField
                         label="Column Name"
                         type="text"
+                        characterLimit={COLUMN_NAME_MAX_LENGTH}
                         placeholder="e.g. Todo"
                         hasError={Boolean(nameErrorMessage)}
                         errorMessage={nameErrorMessage}

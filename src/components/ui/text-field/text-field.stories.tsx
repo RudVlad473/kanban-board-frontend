@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Eye } from "lucide-react";
 
 import { TextField } from "./text-field";
@@ -57,6 +57,53 @@ export const Error: Story = {
         hasError: true,
         errorMessage: "Can't be empty",
     },
+};
+
+/*
+ * The counter states the bound before it is crossed, in ~30px that cannot truncate at any field
+ * width — unlike the length prose, which the 348px board-modal field cuts at "…between 3 and".
+ * That 348px is staged here rather than at each test's call site.
+ */
+const inBoardModalField: Decorator = (Story) => {
+    return (
+        <div style={{ width: "348px" }}>
+            <Story />
+        </div>
+    );
+};
+
+/** Empty and untouched: the counter stays quiet until the first character. */
+export const CharacterCounter: Story = {
+    args: { label: "Column Name", characterLimit: 32 },
+    decorators: [inBoardModalField],
+};
+
+export const CharacterCounterFilled: Story = {
+    args: { label: "Column Name", characterLimit: 32, defaultValue: "ab" },
+    decorators: [inBoardModalField],
+};
+
+/* Length-invalid: the counter turns red and the prose it replaces goes to aria-describedby. */
+export const CharacterCounterLengthInvalid: Story = {
+    args: {
+        label: "Column Name",
+        characterLimit: 32,
+        defaultValue: "ab",
+        hasError: true,
+        errorMessage: "Column name must be between 3 and 32 characters.",
+    },
+    decorators: [inBoardModalField],
+};
+
+/* Empty and invalid: the required-field copy already fits the slot, so it keeps it. */
+export const CharacterCounterRequiredEmpty: Story = {
+    args: {
+        label: "Column Name",
+        characterLimit: 32,
+        hasError: true,
+        errorMessage: "Can't be empty",
+    },
+    decorators: [inBoardModalField],
 };
 
 export const Disabled: Story = {

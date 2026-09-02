@@ -9,7 +9,9 @@ const EMAIL_FORMAT_MESSAGE = "Enter a valid email address.";
 const PASSWORD_LENGTH_MESSAGE = "Password must be between 8 and 64 characters.";
 const PASSWORD_COMPLEXITY_MESSAGE =
     "Password must include an uppercase letter, a lowercase letter, a number, and a special character.";
-const DISPLAY_NAME_LENGTH_MESSAGE = "Name must be between 3 and 32 characters.";
+/* Exported so a TextField's `characterLimit` and the rule it counts against stay one number. */
+export const DISPLAY_NAME_MAX_LENGTH = 32;
+const DISPLAY_NAME_LENGTH_MESSAGE = `Name must be between 3 and ${String(DISPLAY_NAME_MAX_LENGTH)} characters.`;
 const DISPLAY_NAME_CHARSET_MESSAGE = "Name can only contain letters and spaces.";
 
 /*
@@ -26,7 +28,7 @@ export const signUpSchema = z.object({
             z
                 .string()
                 .min(3, DISPLAY_NAME_LENGTH_MESSAGE)
-                .max(32, DISPLAY_NAME_LENGTH_MESSAGE)
+                .max(DISPLAY_NAME_MAX_LENGTH, DISPLAY_NAME_LENGTH_MESSAGE)
                 /*
                  * Unicode letters and spaces only — HANDOFF.json's "letters and spaces" read as any
                  * Unicode letter, not ASCII-only (flagged assumption, see the plan's rationale).

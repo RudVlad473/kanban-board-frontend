@@ -16,7 +16,7 @@ import { useDeleteSubtask } from "@/features/tasks/hooks/use-delete-subtask";
 import { useRenameSubtask } from "@/features/tasks/hooks/use-rename-subtask";
 import { type TaskColumn } from "@/features/tasks/model";
 import { editTaskFormSchema, type EditTaskFormValues, type EditTaskSubmitValues } from "@/features/tasks/schemas";
-import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
+import { TASK_TITLE_MAX_LENGTH, type TaskFull } from "@/lib/core/api-contract/task-schemas";
 
 type Props = {
     task: TaskFull;
@@ -92,6 +92,7 @@ export const EditTaskModal = ({ task, boardId, columns, onClose, onSubmit, isPen
                     <TextField
                         label="Title"
                         type="text"
+                        characterLimit={TASK_TITLE_MAX_LENGTH}
                         placeholder="e.g. Take coffee break"
                         hasError={Boolean(titleErrorMessage)}
                         errorMessage={titleErrorMessage}

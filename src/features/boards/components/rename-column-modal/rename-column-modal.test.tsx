@@ -92,8 +92,12 @@ describeForEachDevice({
             await userEvent.fill(screen.getByLabelText("Column Name"), "Ab");
             await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-            // Assert
-            await expect.element(screen.getByText("Column name must be between 3 and 32 characters.")).toBeVisible();
+            // Assert — the slot shows the counter; the prose it replaces stays the accessible description.
+            await expect.element(screen.getByText("2/32")).toBeVisible();
+            expect(
+                screen.getByText("Column name must be between 3 and 32 characters.").element().getBoundingClientRect()
+                    .width,
+            ).toBeLessThanOrEqual(1);
             expect(Default.args.onSubmit).not.toHaveBeenCalled();
         });
 

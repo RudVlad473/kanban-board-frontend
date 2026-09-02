@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Modal } from "@/components/ui/modal/modal";
 import { TextField } from "@/components/ui/text-field/text-field";
-import { editBoardFormSchema, type Board, type EditBoardFormValues } from "@/features/boards/schemas";
+import {
+    BOARD_NAME_MAX_LENGTH,
+    editBoardFormSchema,
+    type Board,
+    type EditBoardFormValues,
+} from "@/features/boards/schemas";
 
 type Props = {
     board: Board;
@@ -71,6 +76,7 @@ export const EditBoardModal = ({ board, isOpen, onOpenChange, onSubmit, isPendin
                     <TextField
                         label="Board Name"
                         type="text"
+                        characterLimit={BOARD_NAME_MAX_LENGTH}
                         placeholder="e.g. Web Design"
                         hasError={Boolean(nameErrorMessage)}
                         errorMessage={nameErrorMessage}

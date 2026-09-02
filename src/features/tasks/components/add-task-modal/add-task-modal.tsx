@@ -18,6 +18,7 @@ import {
     toSubtaskRowPlaceholder,
 } from "@/features/tasks/model";
 import { addTaskFormSchema, type AddTaskFormValues, type AddTaskSubmitValues } from "@/features/tasks/schemas";
+import { TASK_TITLE_MAX_LENGTH } from "@/lib/core/api-contract/task-schemas";
 
 type Props = {
     /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
@@ -119,6 +120,7 @@ export const AddTaskModal = ({
                     <TextField
                         label="Title"
                         type="text"
+                        characterLimit={TASK_TITLE_MAX_LENGTH}
                         placeholder="e.g. Take coffee break"
                         hasError={Boolean(titleErrorMessage)}
                         errorMessage={titleErrorMessage}

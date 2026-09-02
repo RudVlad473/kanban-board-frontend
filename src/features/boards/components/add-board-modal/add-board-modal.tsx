@@ -9,7 +9,13 @@ import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Modal } from "@/components/ui/modal/modal";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { buildColumnRowPath, createEmptyColumnRows, DEFAULT_COLUMN_ROW_COUNT } from "@/features/boards/model";
-import { addBoardFormSchema, type AddBoardFormValues, type AddBoardSubmitValues } from "@/features/boards/schemas";
+import {
+    addBoardFormSchema,
+    BOARD_NAME_MAX_LENGTH,
+    COLUMN_NAME_MAX_LENGTH,
+    type AddBoardFormValues,
+    type AddBoardSubmitValues,
+} from "@/features/boards/schemas";
 
 type Props = {
     isOpen: boolean;
@@ -97,6 +103,7 @@ export const AddBoardModal = ({
                     <TextField
                         label="Board Name"
                         type="text"
+                        characterLimit={BOARD_NAME_MAX_LENGTH}
                         placeholder="e.g. Web Design"
                         hasError={Boolean(nameErrorMessage)}
                         errorMessage={nameErrorMessage}
@@ -114,6 +121,7 @@ export const AddBoardModal = ({
                                     <TextField
                                         label={rowLabel}
                                         type="text"
+                                        characterLimit={COLUMN_NAME_MAX_LENGTH}
                                         placeholder="e.g. Todo"
                                         hasError={Boolean(rowErrorMessage)}
                                         errorMessage={rowErrorMessage}
