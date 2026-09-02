@@ -20,6 +20,9 @@ import {
     toSubmittedColumnNames,
     withBoardInsert,
     withBoardReplace,
+    withColumnInsert,
+    withColumnRemove,
+    withColumnReplace,
 } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
@@ -147,6 +150,73 @@ describe("withBoardReplace", () => {
         expect(
             withBoardReplace({ boards, boardId: "no-such-board", board: createBoard({ id: "real-board" }) }),
         ).toEqual(boards);
+    });
+});
+
+describe("withColumnInsert", () => {
+    it("appends the column, leaving the input untouched", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 2 });
+        const [column] = createColumnsFull({ count: 1 });
+
+        // Act
+        const next = withColumnInsert({ columns, column });
+
+        // Assert
+        expect(next).toEqual([...columns, column]);
+        expect(columns).toHaveLength(2);
+    });
+});
+
+describe("withColumnRemove", () => {
+    it("drops the named column, leaving the rest in order", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+
+        // Act & Assert
+        expect(withColumnRemove({ columns, columnId: columns[1].id })).toEqual([columns[0], columns[2]]);
+    });
+
+    it("returns an equivalent list when the id names no column in it", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 2 });
+
+        // Act & Assert
+        expect(withColumnRemove({ columns, columnId: "no-such-column" })).toEqual(columns);
+    });
+});
+
+describe("withColumnReplace", () => {
+    /* docs/adr/tech/0030 rule 2: the response carries no tasks, so an assign would empty the column. */
+    it("merges the server's column over the placeholder, keeping the tasks it already held", () => {
+        // Arrange
+        const [placeholder] = createColumnsFull({ count: 1 });
+        const columns = [{ ...placeholder, id: "placeholder", tasks: createTasksFull(2) }];
+
+        // Act
+        const [merged] = withColumnReplace({
+            columns,
+            columnId: "placeholder",
+            column: { id: "real-column", name: "Backlog", version: 4, position: 7 },
+        });
+
+        // Assert
+        expect(merged).toMatchObject({ id: "real-column", name: "Backlog", version: 4, position: 7 });
+        expect(merged.tasks).toEqual(columns[0].tasks);
+    });
+
+    it("returns an equivalent list when the id names no column in it", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 2 });
+
+        // Act & Assert
+        expect(
+            withColumnReplace({
+                columns,
+                columnId: "no-such-column",
+                column: { id: "real-column", name: "Backlog", version: 0, position: 0 },
+            }),
+        ).toEqual(columns);
     });
 });
 

@@ -1,6 +1,6 @@
 import type { Announcements, UniqueIdentifier } from "@dnd-kit/core";
 
-import type { Board, ColumnFull } from "@/features/boards/schemas";
+import type { Board, Column, ColumnFull } from "@/features/boards/schemas";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 
@@ -88,6 +88,37 @@ export const resolveDestinationAfterDelete = ({
 
     return remainingBoards.length === 0 ? ROUTE.BOARDS : buildBoardDetailPath(firstRemaining.id);
 };
+
+/**
+ * The board's columns with one already appended — the reducer behind `useCreateColumn`'s optimistic
+ * insert. Appended, never sorted: D-01 puts a new column at the end of the row.
+ */
+export const withColumnInsert = ({ columns, column }: { columns: ColumnFull[]; column: ColumnFull }): ColumnFull[] => [
+    ...columns,
+    column,
+];
+
+/**
+ * The board's columns with one already removed — the reducer behind `useDeleteColumn`'s optimistic
+ * write. A columnId the board no longer holds yields the input untouched.
+ */
+export const withColumnRemove = ({ columns, columnId }: { columns: ColumnFull[]; columnId: string }): ColumnFull[] =>
+    columns.filter((column) => column.id !== columnId);
+
+/**
+ * The board's columns with the one at `columnId` MERGED with `column` — how `useCreateColumn` swaps
+ * its placeholder for the server's real id, version and position. Merged rather than assigned
+ * because `ColumnResponseDTO` carries no `tasks` (docs/adr/tech/0030 rule 2).
+ */
+export const withColumnReplace = ({
+    columns,
+    columnId,
+    column,
+}: {
+    columns: ColumnFull[];
+    columnId: string;
+    column: Column;
+}): ColumnFull[] => columns.map((entry) => (entry.id === columnId ? { ...entry, ...column } : entry));
 
 /*
  * Whole literal class names, never assembled by interpolation — Tailwind v4's source scanner only

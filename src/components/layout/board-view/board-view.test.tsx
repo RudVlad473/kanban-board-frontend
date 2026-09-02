@@ -683,6 +683,65 @@ describeForEachDevice({
             });
         });
 
+        /*
+         * COLUMN-01's optimistic insert (docs/adr/tech/0030): the column is on the board while the
+         * action is demonstrably still unresolved, which a settle-then-assert test cannot show.
+         */
+        it("renders the new column on the board before the create resolves", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: namesBefore.length },
+            });
+            createColumnStub.hold();
+
+            // Act
+            await submitNewColumn("Backlog");
+            await vi.waitFor(() => {
+                expect(createColumnStub.calls).toHaveLength(1);
+            });
+
+            // Assert — appended at the end of the row, where D-01 puts a new column.
+            expect(getRenderedColumnNames()).toEqual([...namesBefore, "Backlog"]);
+
+            // Act — let the write land.
+            createColumnStub.settle();
+
+            // Assert — the placeholder is SWAPPED for the server's column, never appended beside it.
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Add New Column" })).not.toBeInTheDocument();
+            });
+            expect(getRenderedColumnNames()).toEqual([...namesBefore, "Backlog"]);
+        });
+
+        /* The other half of the same mechanism: a refusal must leave no trace of the optimistic column. */
+        it("removes the optimistic column and reports the failure inline when the create fails", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            createColumnStub.queue({ status: RESULT_STATUS.ERROR });
+            createColumnStub.hold();
+
+            // Act
+            await submitNewColumn("Backlog");
+            await vi.waitFor(() => {
+                expect(createColumnStub.calls).toHaveLength(1);
+            });
+
+            // Assert — the optimistic column stands while the refusal is still in flight.
+            expect(getRenderedColumnNames()).toEqual([...namesBefore, "Backlog"]);
+
+            // Act
+            createColumnStub.settle();
+
+            // Assert — nothing was created, so the rollback is silent and the copy stays inline.
+            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create column. Try again.");
+            expect(getRenderedColumnNames()).toEqual(namesBefore);
+            expect(getRaisedToastCount()).toBe(0);
+        });
+
         /* UI-SPEC error/Add-Column-generic: nothing was created, so the failure lands inline. */
         it("keeps the modal open with inline copy and no toast when the create fails", async () => {
             // Arrange

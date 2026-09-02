@@ -2,13 +2,15 @@
 
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
-import { shouldNudgeOnColumnCount } from "@/features/boards/model";
+import { shouldNudgeOnColumnCount, withColumnInsert, withColumnReplace } from "@/features/boards/model";
+import type { BoardFull } from "@/features/boards/schemas";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 
 /*
  * Authored copy only — the action returns bare discriminants, so nothing the backend said can
@@ -38,15 +40,90 @@ const COLUMN_COUNT_NUDGE_COPY = {
 
 export type CreateColumnArgs = { boardId: string; name: string };
 
+/** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
+type CreateColumnVariables = CreateColumnArgs & { clientId: string };
+
+/** Carries the refusal discriminant across the throw that routes it into `onError` (docs/adr/tech/0030). */
+class ColumnCreateRefused extends Error {
+    constructor(readonly status: ResultStatus) {
+        super(status);
+    }
+}
+
 /**
- * COLUMN-01's create orchestration. A failure is reported inline rather than as a toast: nothing
- * was created, so there is nothing to reconcile and the modal stays open holding the typed name
- * (03-UI-SPEC error/Add-Column-generic). The refresh is the action's own, not this hook's.
+ * COLUMN-01's optimistic create (docs/adr/tech/0030). A failure is reported inline rather than as a
+ * toast: the rollback puts the board back as it was, so there is nothing left to reconcile and the
+ * modal stays open holding the typed name. The refresh is the action's own, not this hook's.
  */
 export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
     const toast = useToast();
+    const queryClient = useQueryClient();
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const mutation = useMutation({ mutationFn: createColumnAction, retry: false });
+
+    const mutation = useMutation({
+        mutationFn: async ({ boardId, name }: CreateColumnVariables) => {
+            const result = await createColumnAction({ boardId, name });
+
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                throw new ColumnCreateRefused(result.status);
+            }
+
+            return result;
+        },
+        retry: false,
+
+        onMutate: async ({ boardId, clientId, name }: CreateColumnVariables) => {
+            const queryKey = buildBoardQueryKey(boardId);
+            // Or an in-flight read could land on top of the optimistic board and undo it.
+            await queryClient.cancelQueries({ queryKey });
+            const previousBoard = queryClient.getQueryData<BoardFull>(queryKey);
+
+            /* `version` is inert placeholder filler — the server owns it, and success replaces it. */
+            queryClient.setQueryData<BoardFull>(queryKey, (current) =>
+                current === undefined
+                    ? current
+                    : {
+                          ...current,
+                          columns: withColumnInsert({
+                              columns: current.columns,
+                              column: {
+                                  id: clientId,
+                                  name,
+                                  version: 0,
+                                  position: current.columns.length,
+                                  tasks: [],
+                              },
+                          }),
+                      },
+            );
+
+            return { previousBoard };
+        },
+
+        /*
+         * No toast here, unlike every other rollback in this repo: nothing was created, so the
+         * failure stays inline in the still-open modal (03-UI-SPEC error/Add-Column-generic).
+         */
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
+        onError: (_error: unknown, { boardId }: CreateColumnVariables, context) => {
+            if (context?.previousBoard !== undefined) {
+                queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
+            }
+        },
+
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)
+        onSuccess: ({ column }, { boardId, clientId }) => {
+            /* MERGED, never assigned — `ColumnResponseDTO` carries no `tasks` (docs/adr/tech/0030 rule 2). */
+            queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
+                current === undefined
+                    ? current
+                    : {
+                          ...current,
+                          columns: withColumnReplace({ columns: current.columns, columnId: clientId, column }),
+                      },
+            );
+        },
+    });
 
     const clearError = (): void => {
         setErrorMessage(null);
@@ -55,12 +132,16 @@ export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
     const createColumn = async ({ boardId, name }: CreateColumnArgs): Promise<{ didCreate: boolean }> => {
         setErrorMessage(null);
 
-        const result = await mutation
-            .mutateAsync({ boardId, name })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
+        const outcome = await mutation
+            .mutateAsync({ boardId, name, clientId: crypto.randomUUID() })
+            .then(() => ({ didCreate: true as const }))
+            .catch((error: unknown) => ({
+                didCreate: false as const,
+                status: error instanceof ColumnCreateRefused ? error.status : RESULT_STATUS.ERROR,
+            }));
 
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            setErrorMessage(CREATE_FAILURE_MESSAGE[result.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
+        if (!outcome.didCreate) {
+            setErrorMessage(CREATE_FAILURE_MESSAGE[outcome.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
             return { didCreate: false };
         }
 
