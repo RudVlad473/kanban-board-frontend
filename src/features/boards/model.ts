@@ -215,9 +215,9 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
         onDragStart: ({ active }) => {
             const column = resolveColumn(active.id);
 
-            return column === null
-                ? undefined
-                : `Picked up ${column.name}, position ${column.position} of ${total}. Use left and right arrow keys to move, space to drop, escape to cancel.`;
+            return column !== null
+                ? `Picked up ${column.name}, position ${column.position} of ${total}. Use left and right arrow keys to move, space to drop, escape to cancel.`
+                : undefined;
         },
 
         /*
@@ -229,26 +229,26 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
             const column = resolveColumn(active.id);
             const target = over !== null && over.id !== active.id ? resolveColumn(over.id) : null;
 
-            return column === null || target === null
-                ? undefined
-                : `${column.name} moved to position ${target.position} of ${total}.`;
+            return column !== null && target !== null
+                ? `${column.name} moved to position ${target.position} of ${total}.`
+                : undefined;
         },
 
         onDragEnd: ({ active, over }) => {
             const column = resolveColumn(active.id);
             const target = over !== null ? resolveColumn(over.id) : null;
 
-            return column === null || target === null
-                ? undefined
-                : `${column.name} dropped at position ${target.position} of ${total}.`;
+            return column !== null && target !== null
+                ? `${column.name} dropped at position ${target.position} of ${total}.`
+                : undefined;
         },
 
         onDragCancel: ({ active }) => {
             const column = resolveColumn(active.id);
 
-            return column === null
-                ? undefined
-                : `Move cancelled. ${column.name} returned to position ${column.position} of ${total}.`;
+            return column !== null
+                ? `Move cancelled. ${column.name} returned to position ${column.position} of ${total}.`
+                : undefined;
         },
     };
 };

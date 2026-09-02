@@ -42,7 +42,7 @@ export const createTaskInputSchema = z.object({
         .string()
         .trim()
         .optional()
-        .transform((value) => (value === "" ? undefined : value)),
+        .transform((value) => (value !== "" ? value : undefined)),
 });
 
 export type CreateTaskInput = z.infer<typeof createTaskInputSchema>;
@@ -135,7 +135,7 @@ export const updateTaskInputSchema = z.object({
         .string()
         .trim()
         .optional()
-        .transform((value) => (value === "" ? undefined : value)),
+        .transform((value) => (value !== "" ? value : undefined)),
 });
 
 export type UpdateTaskInput = z.infer<typeof updateTaskInputSchema>;

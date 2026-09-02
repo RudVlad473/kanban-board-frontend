@@ -44,7 +44,7 @@ export const BoardList = ({
     /* A known-failed read seeds nothing and fetches nothing; `Try again.` re-runs the RSC read. */
     const { data } = useQuery({
         ...createBoardsQueryOptions(),
-        initialData: loadFailed ? undefined : seedBoards,
+        initialData: !loadFailed ? seedBoards : undefined,
         enabled: !loadFailed,
     });
     const boards = data ?? [];

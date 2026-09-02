@@ -23,7 +23,7 @@ export const signUpSchema = z.object({
     displayName: z
         .string()
         .optional()
-        .transform((value) => (value === undefined || value.trim() === "" ? undefined : value))
+        .transform((value) => (value !== undefined && value.trim() !== "" ? value : undefined))
         .pipe(
             z
                 .string()

@@ -253,7 +253,7 @@ export const BoardView = ({
 
                     {/* The full-opacity preview that follows the pointer while the column itself stays
                         in place at reduced opacity; the settle is dropped entirely under reduce-motion. */}
-                    {/* eslint-disable-next-line no-restricted-syntax -- null disables dnd-kit's drop animation and undefined means "use its default"; both branches are empty, so inverting only adds a negation */}
+                    {/* null disables dnd-kit's drop animation; undefined means "use its default". */}
                     <DragOverlay dropAnimation={prefersReducedMotion ? null : undefined}>
                         {liftedTask !== null ? (
                             /* The card's own anatomy minus its controls — a preview, not a second interactive copy. */

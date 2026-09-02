@@ -32,4 +32,4 @@ const UPSTREAM_CODE_TO_STATUS: Partial<Record<ProblemCode, UpstreamFailureStatus
  * Takes `undefined` directly, since `parseProblemDetail` returns null for anything it cannot read.
  */
 export const mapProblemCodeToStatus = (code: ProblemCode | undefined): UpstreamFailureStatus =>
-    (code === undefined ? undefined : UPSTREAM_CODE_TO_STATUS[code]) ?? RESULT_STATUS.ERROR;
+    (code !== undefined ? UPSTREAM_CODE_TO_STATUS[code] : undefined) ?? RESULT_STATUS.ERROR;

@@ -93,7 +93,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
             style={{
                 transform: CSS.Transform.toString(transform),
                 /* The one motion the drag has; dropped entirely under reduce-motion rather than shortened. */
-                transition: prefersReducedMotion ? undefined : transition,
+                transition: !prefersReducedMotion ? transition : undefined,
             }}
             className={cn("relative flex w-70 shrink-0 flex-col rounded-sm", isDragging && "opacity-50")}
         >
@@ -119,7 +119,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
                 <ColumnHeader
                     column={column}
                     handleProps={
-                        isReorderDisabled ? undefined : { setNode: setActivatorNodeRef, attributes, listeners }
+                        !isReorderDisabled ? { setNode: setActivatorNodeRef, attributes, listeners } : undefined
                     }
                     areMutationsDisabled={isReordering}
                     onRename={onRename}

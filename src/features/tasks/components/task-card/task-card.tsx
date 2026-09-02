@@ -82,7 +82,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
             style={{
                 transform: CSS.Transform.toString(transform),
                 /* The one motion the drag has; dropped entirely under reduce-motion rather than shortened. */
-                transition: prefersReducedMotion ? undefined : transition,
+                transition: !prefersReducedMotion ? transition : undefined,
             }}
             className={cn(
                 "relative flex items-center rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-sm",

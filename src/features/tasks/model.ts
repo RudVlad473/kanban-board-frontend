@@ -364,9 +364,9 @@ export const createTaskMoveAnnouncements = ({
 
             const target = event.over !== null ? resolveTarget(event.over.id) : null;
 
-            return target === null
-                ? undefined
-                : `${task.title} dropped in ${target.column} at position ${target.position} of ${target.total}.`;
+            return target !== null
+                ? `${task.title} dropped in ${target.column} at position ${target.position} of ${target.total}.`
+                : undefined;
         },
 
         onDragCancel: (event) => {

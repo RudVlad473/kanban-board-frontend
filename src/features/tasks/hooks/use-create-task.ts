@@ -114,7 +114,7 @@ export const useCreateTask = () => {
                               task: {
                                   id: clientId,
                                   title,
-                                  description: description === "" ? undefined : description,
+                                  description: description !== "" ? description : undefined,
                                   version: 0,
                                   position: current.columns.find((column) => column.id === columnId)?.tasks.length ?? 0,
                                   subtasks: [],

@@ -14,6 +14,8 @@ import tseslint from "typescript-eslint";
 const emptyBranchSelectors = (branch) =>
     [
         `[${branch}.raw="null"]`,
+        `[${branch}.type="Identifier"][${branch}.name="undefined"]`,
+        `[${branch}.type="Literal"][${branch}.value=""]`,
         `[${branch}.type="ArrayExpression"][${branch}.elements.length=0]`,
         `[${branch}.type="ObjectExpression"][${branch}.properties.length=0]`,
     ].join(", ");
@@ -446,14 +448,14 @@ const eslintConfig = defineConfig([
                         "Return JSX with an explicit `return` inside a block body, never a concise body (docs/adr/tech/0028-jsx-return-style.md).",
                 },
                 /*
-                 * 8i: a leading empty branch — `null`, `[]` or `{}` — makes the reader hold a
+                 * 8i: a leading empty branch — `null`, `undefined`, `""`, `[]` or `{}` — makes the reader hold a
                  * negation to reach the only branch that produces a value (rationale: 8c750dc). A
                  * pair of empty branches carries no such negation, so the selector excludes it.
                  */
                 {
                     selector: `ConditionalExpression:matches(${emptyBranchSelectors("consequent")}):not(:matches(${emptyBranchSelectors("alternate")}))`,
                     message:
-                        "Put the branch that produces a value first: write `cond ? value : empty`, not `cond ? empty : value` — invert the condition. `empty` here is `null`, `[]` or `{}`. If both branches are genuinely empty (e.g. `null` vs `undefined` for a library default), add a `// eslint-disable-next-line no-restricted-syntax` with a one-line reason.",
+                        'Put the branch that produces a value first: write `cond ? value : empty`, not `cond ? empty : value` — invert the condition. `empty` here is `null`, `undefined`, `""`, `[]` or `{}`. If both branches are genuinely empty (e.g. `null` vs `undefined` for a library default), the selector already exempts it.',
                 },
             ],
         },
