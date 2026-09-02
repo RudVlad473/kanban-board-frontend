@@ -5,9 +5,11 @@ import {
     createSubtaskInputSchema,
     createTaskInputSchema,
     createTaskSubtasksInputSchema,
+    editTaskFormSchema,
     moveTaskInputSchema,
     subtaskTitleRowSchema,
     updateSubtaskInputSchema,
+    updateTaskInputSchema,
 } from "@/features/tasks/schemas";
 
 /** The one shape every case below varies a single field of, so a rejection names its own cause. */
@@ -321,6 +323,118 @@ describe("updateSubtaskInputSchema", () => {
 
         // Assert
         expect(result.success).toBe(false);
+    });
+});
+
+describe("updateTaskInputSchema", () => {
+    const createValidUpdateInput = () => ({
+        boardId: "00000000-0000-4000-8000-00000000000a",
+        columnId: "00000000-0000-4000-8000-00000000000c",
+        taskId: "00000000-0000-4000-8000-00000000000b",
+        version: 0,
+        title: "Take coffee break",
+        description: "Recharge for fifteen minutes",
+    });
+
+    it("accepts a well-formed update and yields typed data", () => {
+        // Arrange
+        const input = createValidUpdateInput();
+
+        // Act
+        const result = updateTaskInputSchema.safeParse(input);
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual(input);
+    });
+
+    /* RESEARCH Pitfall 4/T-04-23: piped through taskTitleRowSchema, same as the create path. */
+    it("reports the required-field message for a blank title", () => {
+        // Act
+        const result = updateTaskInputSchema.safeParse({ ...createValidUpdateInput(), title: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    /* The update DTO declares NO bounds at all — the client re-enforces them regardless. */
+    it("reports the length message for a 2-character title", () => {
+        // Act
+        const result = updateTaskInputSchema.safeParse({ ...createValidUpdateInput(), title: "Do" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe(
+            "Task title must be between 3 and 32 characters.",
+        );
+    });
+
+    it("reports the length message for a 33-character title", () => {
+        // Act
+        const result = updateTaskInputSchema.safeParse({ ...createValidUpdateInput(), title: "x".repeat(33) });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe(
+            "Task title must be between 3 and 32 characters.",
+        );
+    });
+
+    /* T9: clearing a description round-trips to the same absent value the read normalises to. */
+    it("normalises a blank description to undefined", () => {
+        // Act
+        const result = updateTaskInputSchema.safeParse({ ...createValidUpdateInput(), description: "" });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data.description).toBeUndefined();
+    });
+
+    it("rejects a fractional version", () => {
+        // Act
+        const result = updateTaskInputSchema.safeParse({ ...createValidUpdateInput(), version: 0.5 });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+
+    it("rejects an empty task id", () => {
+        // Act
+        const result = updateTaskInputSchema.safeParse({ ...createValidUpdateInput(), taskId: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+});
+
+describe("editTaskFormSchema", () => {
+    it("accepts a well-formed form", () => {
+        // Act
+        const result = editTaskFormSchema.safeParse({ title: "Take coffee break", description: "" });
+
+        // Assert
+        expect(result.success).toBe(true);
+    });
+
+    it("reports the required-field message for a blank title", () => {
+        // Act
+        const result = editTaskFormSchema.safeParse({ title: "", description: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("reports the length message for a 2-character title", () => {
+        // Act
+        const result = editTaskFormSchema.safeParse({ title: "Do", description: "" });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe(
+            "Task title must be between 3 and 32 characters.",
+        );
     });
 });
 

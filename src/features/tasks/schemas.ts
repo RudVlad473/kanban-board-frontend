@@ -106,3 +106,34 @@ export type AddTaskFormValues = z.infer<typeof addTaskFormSchema>;
  * reduced to non-blank, trimmed titles. Lives here, the contract between the modal and its caller.
  */
 export type AddTaskSubmitValues = { columnId: string; title: string; description: string; subtasks: string[] };
+
+/*
+ * `UpdateTaskRequestDTO` declares NO title bounds — re-enforced via the create path's own
+ * `taskTitleRowSchema` (RESEARCH Pitfall 4, T-04-23). `description` mirrors `createTaskInputSchema`'s
+ * blank-to-`undefined` transform: T9 found `""` refused and `null`/omitted a silent no-op.
+ */
+export const updateTaskInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+    taskId: z.string().min(1),
+    version: z.number().int(),
+    title: taskTitleRowSchema,
+    description: z
+        .string()
+        .trim()
+        .optional()
+        .transform((value) => (value === "" ? undefined : value)),
+});
+
+export type UpdateTaskInput = z.infer<typeof updateTaskInputSchema>;
+
+/** The Edit Task modal's own form shape — title and description only, S-02 drops Status entirely. */
+export const editTaskFormSchema = z.object({
+    title: taskTitleRowSchema,
+    description: z.string(),
+});
+
+export type EditTaskFormValues = z.infer<typeof editTaskFormSchema>;
+
+/** What `EditTaskModal`'s submit handler receives — the contract between the modal and its caller. */
+export type EditTaskSubmitValues = { title: string; description: string };
