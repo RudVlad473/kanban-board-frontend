@@ -1203,10 +1203,10 @@ describeForEachDevice({
         });
 
         /*
-         * U-05's whole point: the cascade is irreversible (ADR domain/0002), so nothing may leave
-         * the screen before the server has agreed — there is nothing to roll back to if it refuses.
+         * COLUMN-04's optimistic removal (docs/adr/tech/0030): the column is off the board while the
+         * action is demonstrably still unresolved, which a settle-then-assert test cannot show.
          */
-        it("still renders the column while the delete is in flight, removing nothing optimistically", async () => {
+        it("removes the column from the board before the delete resolves", async () => {
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
@@ -1219,24 +1219,29 @@ describeForEachDevice({
                 expect(deleteColumnStub.calls).toHaveLength(1);
             });
 
-            // Assert — the whole set is untouched, not merely the target still present.
-            expect(getRenderedColumnNames()).toEqual(namesBefore);
+            // Assert — gone, and the confirmation is already closed, since nothing is left to wait on.
+            expect(getRenderedColumnNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Column 1"));
+            expect(screen.queryByRole("heading", { name: "Delete this column?" })).not.toBeInTheDocument();
 
             // Act — let the write land.
             deleteColumnStub.settle();
 
-            // Assert — still nothing removed here: the refreshed props are what remove it.
+            // Assert — nothing flashes back, and no toast is raised on a delete that worked.
             await vi.waitFor(() => {
-                expect(screen.queryByRole("heading", { name: "Delete this column?" })).not.toBeInTheDocument();
+                expect(getRaisedToastCount()).toBe(0);
             });
-            expect(getRenderedColumnNames()).toEqual(namesBefore);
-            expect(getRaisedToastCount()).toBe(0);
+            expect(getRenderedColumnNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Column 1"));
         });
 
-        it("closes the modal, leaves the column on the board and announces a generic delete failure", async () => {
+        /*
+         * The other half of the same mechanism: the whole-board snapshot is what brings the column
+         * back WITH the tasks the cascade would have taken, which is why nothing bespoke undoes it.
+         */
+        it("puts the column and its tasks back and announces a generic delete failure", async () => {
             // Arrange — held, so the pre-settle state is observed before the failure lands.
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
+            const tasksBefore = getColumnTaskTitles();
             deleteColumnStub.queue({ status: RESULT_STATUS.ERROR });
             deleteColumnStub.hold();
 
@@ -1245,6 +1250,11 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(deleteColumnStub.calls).toHaveLength(1);
             });
+
+            // Assert — removed optimistically, before anything has been refused.
+            expect(getRenderedColumnNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Column 1"));
+
+            // Act
             deleteColumnStub.settle();
 
             // Assert
@@ -1253,6 +1263,7 @@ describeForEachDevice({
             });
             expect(screen.queryByRole("heading", { name: "Delete this column?" })).not.toBeInTheDocument();
             expect(getRenderedColumnNames()).toEqual(namesBefore);
+            expect(getColumnTaskTitles()).toEqual(tasksBefore);
         });
 
         /*

@@ -147,14 +147,13 @@ export const BoardView = ({
     };
 
     /*
-     * U-05, and the deliberate opposite of the rename handler above: closed when the mutation
-     * SETTLES, not when it is submitted. Nothing was removed optimistically, so the destructive
-     * button's own pending state is the only signal the user has that anything is happening.
+     * U-05, on the same terms as the rename handler above: closed on submit, because `deleteColumn`
+     * removed the column optimistically before this line runs. A refusal puts it back and raises the
+     * hook's own toast, modal or no modal.
      */
     const handleDeleteSubmit = (values: DeleteColumnArgs): void => {
-        void deleteColumn(values).finally(() => {
-            setColumnBeingDeleted(null);
-        });
+        void deleteColumn(values);
+        setColumnBeingDeleted(null);
     };
 
     /*
