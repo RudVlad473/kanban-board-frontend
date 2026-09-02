@@ -305,13 +305,28 @@ describeForEachDevice({
             await expect.poll(getRaisedToastTexts).toEqual([CONFLICT_TOGGLE_TOAST]);
         });
 
-        /* S-09: no visible close control anywhere in this modal. */
-        it("renders no visible close control", async () => {
+        /*
+         * S-09 barred a close control here on the grounds that no shipped modal rendered one. The
+         * user overruled that outright, so every modal now carries one and this asserts the reversal.
+         */
+        it("offers a labelled, enabled close control that does not sit on top of the kebab", async () => {
             // Act
             await render(<Default />);
 
             // Assert
-            expect(screen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument();
+            const closeControl = screen.getByRole("button", { name: "Close" });
+            expect(closeControl).toBeEnabled();
+
+            const kebab = screen.getByRole("button", { name: /^Task actions for/ });
+            const closeRect = closeControl.getBoundingClientRect();
+            const kebabRect = kebab.getBoundingClientRect();
+            const horizontalOverlap =
+                Math.min(closeRect.right, kebabRect.right) - Math.max(closeRect.left, kebabRect.left);
+            const verticalOverlap =
+                Math.min(closeRect.bottom, kebabRect.bottom) - Math.max(closeRect.top, kebabRect.top);
+
+            /* Geometry, not a class name: a class assertion passes through the exact overlap it guards. */
+            expect(Math.min(horizontalOverlap, verticalOverlap)).toBeLessThanOrEqual(0);
         });
 
         /* S-09: Esc dismisses, matching every other shipped modal's guaranteed mechanism. */

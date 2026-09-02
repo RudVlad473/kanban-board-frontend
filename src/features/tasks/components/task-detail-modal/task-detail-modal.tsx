@@ -1,6 +1,6 @@
 "use client";
 
-import { EllipsisVertical } from "lucide-react";
+import { EllipsisVertical, X } from "lucide-react";
 import { useState } from "react";
 
 import { Dropdown } from "@/components/ui/dropdown/dropdown";
@@ -86,7 +86,8 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
     return (
         <Modal.Root isOpen={true} onOpenChange={handleOpenChange}>
             <Modal.Content>
-                <div className="flex items-start justify-between gap-4">
+                {/* pr-11 clears the pinned close control below, so the kebab sits to its left. */}
+                <div className="flex items-start justify-between gap-4 pr-11">
                     {/* pr-6 reserves the kebab's own footprint so a long title never runs under it. */}
                     <Modal.Title className="min-w-0 flex-1 pr-6 break-words">{task.title}</Modal.Title>
 
@@ -193,6 +194,17 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
                         </Dropdown.Content>
                     </Dropdown.Root>
                 </div>
+
+                <Modal.Close
+                    render={
+                        <IconButton
+                            type="button"
+                            label="Close"
+                            icon={<X />}
+                            className="absolute top-1 right-1 md:top-2 md:right-2"
+                        />
+                    }
+                />
             </Modal.Content>
         </Modal.Root>
     );
