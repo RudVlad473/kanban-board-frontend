@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-09-02T12:50:44.592Z",
+  "phase": "04",
+  "phase_name": "Task & Subtask Workflow",
+  "phase_dir": ".planning/phases/04-task-subtask-workflow",
+  "plan": 22,
+  "task": 2,
+  "total_tasks": 3,
+  "status": "paused",
+  "completed_tasks": [
+    {
+      "id": 1,
+      "name": "Correct CONVENTIONS.md against the shipped code",
+      "status": "done",
+      "commit": "c0ab07e"
+    }
+  ],
+  "remaining_tasks": [
+    {
+      "id": 2,
+      "name": "Verify all eight success criteria and run the full gate",
+      "status": "not_started"
+    },
+    {
+      "id": 3,
+      "name": "Compare every rendered surface against the design source",
+      "status": "not_started"
+    },
+    {
+      "id": 4,
+      "name": "Blocking human phase sign-off checkpoint",
+      "status": "not_started"
+    }
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {
+      "decision": "Use manual close-out recovery for Plan 04-22",
+      "rationale": "The plan has production commit c0ab07e but no SUMMARY.md or async-job deferral; re-dispatching from scratch risks duplicating its Task 1 documentation work.",
+      "phase": "04"
+    }
+  ],
+  "uncommitted_files": [
+    ".planning/STATE.md",
+    ".planning/config.json",
+    ".planning/state.json"
+  ],
+  "next_action": "Read the phase handoff and Plan 04-22, preserve c0ab07e as completed Task 1, then execute Tasks 2 and 3 before presenting the blocking human sign-off checkpoint.",
+  "context_notes": "A sole sequential executor was launched for recovery but interrupted at the user's pause request before any persistent Task 2 or 3 work. The current dirty planning state predates the handoff commit and must be preserved."
+}
