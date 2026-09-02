@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { decodeJwt } from "jose";
 
 import { seedAccount } from "./seed";
@@ -220,4 +220,47 @@ test.describe("sign-out", () => {
      * 02.2-05-SUMMARY.md's coverage ledger for the reason (a proxy.ts/Server Action interaction),
      * restated in 02.2-09's ADR amendment.
      */
+});
+
+test.describe("AUTH-05: the sign-in and sign-up cross-links", () => {
+    /*
+     * A sentinel on `window` is the observable, not the URL: both a client navigation and a full
+     * document load end on the right route, and only a reload wipes the sentinel.
+     */
+    const navigatesWithoutReloading = async ({
+        page,
+        from,
+        linkName,
+        to,
+    }: {
+        page: Page;
+        from: string;
+        linkName: string;
+        to: string;
+    }): Promise<void> => {
+        await page.goto(from);
+        await page.evaluate(() => {
+            (window as unknown as { __didNotReload?: boolean }).__didNotReload = true;
+        });
+
+        await page.getByRole("link", { name: linkName }).click();
+
+        await expect(page).toHaveURL(new RegExp(`${to}$`));
+        expect(await page.evaluate(() => (window as unknown as { __didNotReload?: boolean }).__didNotReload)).toBe(
+            true,
+        );
+    };
+
+    test("moves from sign in to sign up without a full page load", async ({ page }) => {
+        await navigatesWithoutReloading({
+            page,
+            from: ROUTE.SIGN_IN,
+            linkName: "Create Account",
+            to: ROUTE.SIGN_UP,
+        });
+    });
+
+    test("moves from sign up to sign in without a full page load", async ({ page }) => {
+        await navigatesWithoutReloading({ page, from: ROUTE.SIGN_UP, linkName: "Sign In", to: ROUTE.SIGN_IN });
+    });
 });

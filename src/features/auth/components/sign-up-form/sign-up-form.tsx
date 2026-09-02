@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useBoolean } from "usehooks-ts";
@@ -178,16 +179,11 @@ export const SignUpForm = ({
             </Button>
 
             <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
-                {/*
-                 * A plain anchor, not next/link's `Link` — auth issues an httpOnly cookie (ADR tech/0001),
-                 * so router state isn't worth preserving; `next/link` needs `process.env`, unset in Vitest tests.
-                 */}
                 {"Already have an account? "}
 
-                {/* eslint-disable-next-line no-restricted-syntax -- see comment above: intentional full navigation, next/link unusable in this project's test environment */}
-                <a href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">
+                <Link href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">
                     Sign In
-                </a>
+                </Link>
             </p>
         </form>
     );

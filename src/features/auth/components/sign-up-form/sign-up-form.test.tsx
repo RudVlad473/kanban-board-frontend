@@ -1,6 +1,6 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
@@ -9,8 +9,12 @@ import { signUpAction } from "@/features/auth/actions/sign-up-action";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { flattenFormData } from "@/test-utils/flatten-form-data";
+import { createNextLinkShim } from "@/test-utils/next-router-shims";
 
 import * as signUpStories from "./sign-up-form.stories";
+
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode
+vi.mock("next/link", () => createNextLinkShim());
 
 const {
     Empty,
