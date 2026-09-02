@@ -4,7 +4,7 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-15 migration + review items
+stopped_at: Plan 04-21 complete; awaiting the non-autonomous 04-22 phase-close checkpoint
 last_updated: "2026-09-02T07:57:53.839Z"
 last_activity: 2026-09-02
 last_activity_desc: Phase 04 execution resumed (wave continue)
@@ -32,23 +32,13 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 ## Current Position
 
 Phase: 04 (Task & Subtask Workflow) — EXECUTING
-Plan: 04-15 (create task/subtask actions, Add New Task modal, header create button) — 3/3
-implementation tasks committed; task 4 is a `checkpoint:human-verify` (gate=blocking) held OPEN by
-user choice so the SUMMARY describes the review-driven refactor batch that followed.
-Status: Executing Phase 04
-Last activity: 2026-09-02 — Phase 04 execution resumed (wave continue)
-already committed, `5b75d60`). Reviewed and completed the inherited Task 2 WIP (added the
-empty-column half of S-08's drop indicator to `sortable-column.tsx`; everything else — lifted
-opacity/clone, reduce-motion drop — was already shipped by 04-12), fixed a genuine MOBILE-only
-browser-test flake in the drag-hold helper (Pitfall 8 auto-scroll) and a real axe color-contrast
-defect the new `Lifted` story exposed. Task 3 (SYNC-01) found the production conflict branch
-already shipped (04-12) and added the missing browser + coverage proving revert/toast/no-client-
-re-read together. All gates green: `pnpm test` 1552/1552, `pnpm build`, visual 300/300, e2e 46/46
-(unintentionally ran the full e2e project instead of scoped — see 04-14-SUMMARY.md Issues
-Encountered). Full narrative: `04-14-SUMMARY.md`.
+Plan: 04-21 complete — real-backend browser coverage and contention verification recorded in
+`04-21-SUMMARY.md`. Plan 04-22 is a non-autonomous phase-close checkpoint.
+Status: Awaiting phase-close checkpoint
+Last activity: 2026-09-02 — 171/171 e2e executions passed at `--repeat-each=3 --workers=2`.
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
-Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 14/22 (in progress)
+Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 21/22 (in progress)
 
 ## Performance Metrics
 
@@ -234,8 +224,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-01
-Stopped at: Session resumed 2026-09-01 (2nd); tsc-broken tree confirmed (3 errors); user chose to FINISH the board-detail cache migration rather than revert
+Last session: 2026-09-02
+Stopped at: Plan 04-21 completed and committed; 04-22 is the non-autonomous phase-close checkpoint
 
 **2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
 cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
