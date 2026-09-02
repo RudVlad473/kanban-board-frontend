@@ -14,6 +14,7 @@ import { deleteColumnAction } from "@/features/boards/actions/delete-column-acti
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { deleteSubtaskAction } from "@/features/tasks/actions/delete-subtask-action";
+import { deleteTaskAction } from "@/features/tasks/actions/delete-task-action";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
 import { updateSubtaskAction } from "@/features/tasks/actions/update-subtask-action";
 import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
@@ -37,6 +38,7 @@ const {
     RenameColumnOpen,
     ServerColumnsAdvance,
     DeleteColumnOpen,
+    DeleteTaskOpen,
     LoneColumn,
     ServerColumnRemoved,
     ReorderableColumns,
@@ -63,6 +65,7 @@ const moveTaskStub = actionStub(moveTaskAction);
 const updateSubtaskStub = actionStub(updateSubtaskAction);
 const updateTaskStub = actionStub(updateTaskAction);
 const deleteSubtaskStub = actionStub(deleteSubtaskAction);
+const deleteTaskStub = actionStub(deleteTaskAction);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
@@ -108,6 +111,9 @@ const GENERIC_DELETE_SUBTASK_TOAST = "Couldn't delete subtask.Try again.";
 const GENERIC_UPDATE_TASK_TOAST = "Couldn't save task.Try again.";
 /* SYNC-01/C-08: the phase-wide conflict title, matching every other conflict toast in this suite. */
 const CONFLICT_UPDATE_TASK_TOAST = "This board changed somewhere else.Refreshing to show the latest.";
+
+/* TASK-05's own generic failure copy, from `use-delete-task.ts`'s `GENERIC_DELETE_FAILURE`. */
+const GENERIC_DELETE_TASK_TOAST = "Couldn't delete task.Try again.";
 
 /*
  * Scoped to the notifications region, since the create modal is a `dialog` too — an unscoped role
@@ -214,6 +220,19 @@ const openDeleteFor = async (columnName: string): Promise<void> => {
 const deleteColumnFromHeader = async (columnName: string): Promise<void> => {
     await openDeleteFor(columnName);
     await userEvent.click(await screen.findByRole("button", { name: "Delete Column" }));
+};
+
+/** Opens a task's detail view, then its kebab's delete entry, leaving the confirmation on that task. */
+const openDeleteTaskFor = async (taskTitle: string): Promise<void> => {
+    await userEvent.click(screen.getByText(taskTitle));
+    await userEvent.click(screen.getByRole("button", { name: `Task actions for ${taskTitle}` }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete Task" }));
+};
+
+/** The whole TASK-05 entry path: detail view, kebab, delete entry, then the destructive confirmation. */
+const deleteTaskFromDetailView = async (taskTitle: string): Promise<void> => {
+    await openDeleteTaskFor(taskTitle);
+    await userEvent.click(await screen.findByRole("button", { name: "Delete Task" }));
 };
 
 /*
@@ -2233,6 +2252,102 @@ describeForEachDevice({
                 )
                 .toEqual(["Remove subtask 'Fixture Subtask 1'", "Remove subtask 'Fixture Subtask 2'"]);
             expect(getCardCaption("Fixture Task Alpha")).toBe("0 of 2 subtasks");
+        });
+
+        it("opens the confirmation naming that task when its delete entry is chosen", async () => {
+            // Arrange
+            await render(<TasksAcrossColumns />);
+
+            // Act
+            await openDeleteTaskFor("Fixture Task Alpha");
+
+            // Assert — that task is named, and nothing has been deleted yet.
+            expect(await screen.findByRole("heading", { name: "Delete this task?" })).toBeInTheDocument();
+            expect(screen.getByText(/'Fixture Task Alpha' task and its subtasks\?/)).toBeInTheDocument();
+            expect(deleteTaskStub.calls).toHaveLength(0);
+        });
+
+        it("renders the delete confirmation when staged open", async () => {
+            // Act
+            await render(<DeleteTaskOpen />);
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Delete this task?" })).toBeInTheDocument();
+            expect(screen.getByText(/'Fixture Task Alpha' task and its subtasks\?/)).toBeInTheDocument();
+        });
+
+        it("sends that task's own board id, column id and task id with the delete, exactly once", async () => {
+            // Arrange
+            deleteTaskStub.queue({ status: RESULT_STATUS.SUCCESS });
+            await render(<TasksAcrossColumns />);
+
+            // Act
+            await deleteTaskFromDetailView("Fixture Task Alpha");
+
+            // Assert — T-04-41: one call, never two.
+            await vi.waitFor(() => {
+                expect(deleteTaskStub.calls).toHaveLength(1);
+            });
+            expect(deleteTaskStub.calls[0]).toEqual({
+                boardId: FIXTURE_BOARD_ID,
+                columnId: "00000000-0000-4000-8000-c00000000001",
+                taskId: "00000000-0000-4000-8000-d10000000001",
+            });
+        });
+
+        /*
+         * The cascade is irreversible (ADR domain/0002), so nothing may leave the screen before the
+         * server has agreed — there is nothing to roll back to if it refuses.
+         */
+        it("still renders the card while the delete is in flight, removing nothing optimistically", async () => {
+            // Arrange
+            await render(<TasksAcrossColumns />);
+            const titlesBefore = getColumnTaskTitles();
+            deleteTaskStub.queue({ status: RESULT_STATUS.SUCCESS });
+            deleteTaskStub.hold();
+
+            // Act — submit, then observe while the action is still unresolved.
+            await deleteTaskFromDetailView("Fixture Task Alpha");
+            await vi.waitFor(() => {
+                expect(deleteTaskStub.calls).toHaveLength(1);
+            });
+
+            // Assert — the whole board is untouched, not merely the target task still present.
+            expect(getColumnTaskTitles()).toEqual(titlesBefore);
+
+            // Act — let the write land.
+            deleteTaskStub.settle();
+
+            // Assert — still nothing removed here: the refreshed props are what remove it.
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Delete this task?" })).not.toBeInTheDocument();
+            });
+            expect(getColumnTaskTitles()).toEqual(titlesBefore);
+            expect(getRaisedToastCount()).toBe(0);
+        });
+
+        it("closes the modal, leaves the task on the board and announces a generic delete failure", async () => {
+            // Arrange — held, so the pre-settle state is observed before the failure lands.
+            await render(<TasksAcrossColumns />);
+            const titlesBefore = getColumnTaskTitles();
+            deleteTaskStub.queue({ status: RESULT_STATUS.ERROR });
+            deleteTaskStub.hold();
+
+            // Act
+            await deleteTaskFromDetailView("Fixture Task Alpha");
+            await vi.waitFor(() => {
+                expect(deleteTaskStub.calls).toHaveLength(1);
+            });
+            deleteTaskStub.settle();
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toEqual([GENERIC_DELETE_TASK_TOAST]);
+            });
+            expect(screen.queryByRole("heading", { name: "Delete this task?" })).not.toBeInTheDocument();
+            expect(getColumnTaskTitles()).toEqual(titlesBefore);
+            /* The failure leaves the still-existing task's detail view open, not merely the card. */
+            expect(screen.getByRole("heading", { name: "Fixture Task Alpha" })).toBeInTheDocument();
         });
 
         /* D-11: the mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */

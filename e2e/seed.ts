@@ -100,7 +100,48 @@ export const seedTask = ({
         ]),
     ) as SeededTask;
 
-export type SeededBoardFull = SeededBoard & { columns: { id: string; name: string; position: number }[] };
+export type SeededSubtask = { id: string; title: string; isCompleted: boolean; version: number };
+
+/** Creates one subtask on an already-seeded task — the same "one call at a time" rule as `seedTask`. */
+export const seedSubtask = ({
+    account,
+    boardId,
+    columnId,
+    taskId,
+    title,
+}: {
+    account: SeededAccount;
+    boardId: string;
+    columnId: string;
+    taskId: string;
+    title: string;
+}): SeededSubtask =>
+    JSON.parse(
+        runSeedScript([
+            "subtask",
+            "--jsession",
+            account.jsessionId,
+            "--user",
+            account.id,
+            "--board",
+            boardId,
+            "--column",
+            columnId,
+            "--task",
+            taskId,
+            "--title",
+            title,
+        ]),
+    ) as SeededSubtask;
+
+/*
+ * `columns[].tasks` is widened here rather than in a second type: existing callers destructure
+ * only `id`/`name`/`position` and stay unaffected, while TASK-05's cascade specs need to read a
+ * task's own id back from the real backend — the "read the board, don't infer it" proof.
+ */
+export type SeededBoardFull = SeededBoard & {
+    columns: { id: string; name: string; position: number; tasks: { id: string; title: string }[] }[];
+};
 
 /**
  * Reads a board back through the real backend — the board-detail UI is Phase 3 scope, so a spec

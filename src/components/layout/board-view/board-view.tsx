@@ -19,8 +19,10 @@ import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
 import { toColumnCaption, toColumnDotToken } from "@/features/boards/model";
 import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
+import { DeleteTaskConfirm } from "@/features/tasks/components/delete-task-confirm/delete-task-confirm";
 import { TaskCard } from "@/features/tasks/components/task-card/task-card";
 import { TaskDetailModal } from "@/features/tasks/components/task-detail-modal/task-detail-modal";
+import { useDeleteTask, type DeleteTaskArgs } from "@/features/tasks/hooks/use-delete-task";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
 import { toSubtaskSummary } from "@/features/tasks/model";
 import { cn } from "@/lib/core/styling/cn";
@@ -44,6 +46,8 @@ type Props = {
     defaultDeleteColumnTargetIndex?: number;
     /** Storybook-only staging — seeds the task detail view open on the task with this id. */
     defaultOpenTaskId?: string;
+    /** Storybook-only staging — seeds the task delete confirmation open on the task with this id. */
+    defaultDeleteTaskTargetId?: string;
 };
 
 export const BoardView = ({
@@ -52,6 +56,7 @@ export const BoardView = ({
     defaultRenameColumnTargetIndex,
     defaultDeleteColumnTargetIndex,
     defaultOpenTaskId,
+    defaultDeleteTaskTargetId,
 }: Props) => {
     /*
      * The one entry the rename, the reorder and the task move all write, so what this renders is
@@ -87,12 +92,22 @@ export const BoardView = ({
      */
     const [openTaskId, setOpenTaskId] = useState<string | null>(defaultOpenTaskId ?? null);
     const openTask = renderedColumns.flatMap((column) => column.tasks).find((task) => task.id === openTaskId) ?? null;
+    /*
+     * An id, resolved to the live task/column below on every render — the same "no snapshot" reason
+     * `openTaskId` documents above, and it survives the task's own detail modal closing under it.
+     */
+    const [taskBeingDeletedId, setTaskBeingDeletedId] = useState<string | null>(defaultDeleteTaskTargetId ?? null);
+    const taskBeingDeletedColumn = renderedColumns.find((column) =>
+        column.tasks.some((task) => task.id === taskBeingDeletedId),
+    );
+    const taskBeingDeleted = taskBeingDeletedColumn?.tasks.find((task) => task.id === taskBeingDeletedId) ?? null;
     const columnCount = renderedColumns.length;
     const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
     const { renameColumn } = useRenameColumn({ boardId: board.id });
     const { reorderColumns: requestReorder, reorderingColumnId } = useReorderColumns({ boardId: board.id });
     const { moveTask: requestMove, movingTaskId } = useMoveTask({ boardId: board.id });
     const { deleteColumn, isPending: isDeletePending } = useDeleteColumn();
+    const { deleteTask, isPending: isDeleteTaskPending } = useDeleteTask();
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
     const { dndContextProps, liftedColumn, liftedTask, isTaskMoveDisabled } = useBoardDragSession({
         boardId: board.id,
@@ -140,6 +155,23 @@ export const BoardView = ({
         void deleteColumn(values).finally(() => {
             setColumnBeingDeleted(null);
         });
+    };
+
+    /*
+     * Deliberately not `.finally()` for the detail modal: the confirmation always closes once the
+     * delete settles (mirroring `handleDeleteSubmit` above), but the detail view closes only on
+     * SUCCESS — a failure leaves the still-existing task open behind the toast the hook raises.
+     */
+    const handleDeleteTaskSubmit = (values: DeleteTaskArgs): void => {
+        void deleteTask(values)
+            .then((outcome) => {
+                if (outcome.didDelete) {
+                    setOpenTaskId(null);
+                }
+            })
+            .finally(() => {
+                setTaskBeingDeletedId(null);
+            });
     };
 
     const openAddColumn = (): void => {
@@ -299,17 +331,36 @@ export const BoardView = ({
 
             {openTask !== null ? (
                 <TaskDetailModal
-                    /* Keyed on the target task, so reopening on another card starts from that task. */
-                    key={openTask.id}
+                    /*
+                     * Prefixed, not a bare id: `DeleteTaskConfirm` below is this modal's own sibling
+                     * and can carry the identical task id at once (confirming from the still-open
+                     * detail view) — an unprefixed collision between two element types corrupted the DOM.
+                     */
+                    key={`task-detail-${openTask.id}`}
                     boardId={board.id}
                     task={openTask}
                     columns={renderedColumns}
                     onClose={() => {
                         setOpenTaskId(null);
                     }}
-                    onDeleteTask={() => {
-                        /* TASK-05's delete flow is a later plan (04-20). */
+                    onDeleteTask={(task) => {
+                        setTaskBeingDeletedId(task.id);
                     }}
+                />
+            ) : null}
+
+            {taskBeingDeleted !== null && taskBeingDeletedColumn !== undefined ? (
+                <DeleteTaskConfirm
+                    /* Prefixed for the same reason as `TaskDetailModal`'s own key just above. */
+                    key={`delete-task-${taskBeingDeleted.id}`}
+                    boardId={board.id}
+                    columnId={taskBeingDeletedColumn.id}
+                    task={taskBeingDeleted}
+                    onClose={() => {
+                        setTaskBeingDeletedId(null);
+                    }}
+                    onSubmit={handleDeleteTaskSubmit}
+                    isPending={isDeleteTaskPending}
                 />
             ) : null}
         </>

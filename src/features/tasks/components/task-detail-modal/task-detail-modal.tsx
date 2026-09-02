@@ -22,14 +22,14 @@ type Props = {
     columns: NamedTaskColumn[];
     /** Mounted only while open, so there is no `isOpen` to pass — closing is this one callback. */
     onClose: () => void;
-    /** Opens the delete-confirmation flow from the kebab — TASK-05's mutation is a later plan (04-20). */
+    /** Opens the delete confirmation from the kebab — bubbled, since `board-view.tsx` owns it (04-20). */
     onDeleteTask: (task: TaskFull) => void;
 };
 
 /**
  * TASK-02's detail view: a pure read off the board, the kebab opening TASK-03's edit flow (owned
- * directly, the same single-caller reasoning `useToggleSubtask` already follows) and TASK-05's
- * delete flow (still bubbled — a later plan), D-10's Current Status control, and SUBTASK-02's toggle.
+ * directly, the same single-caller reasoning `useToggleSubtask` follows) and TASK-05's delete flow
+ * (bubbled to `board-view.tsx`), D-10's Current Status control, and SUBTASK-02's toggle.
  */
 export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask }: Props) => {
     const { moveTask, isPending: isMoving } = useMoveTask({ boardId });

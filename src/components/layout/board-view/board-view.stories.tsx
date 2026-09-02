@@ -315,6 +315,30 @@ export const TaskWithMultipleSubtasks: Story = {
     },
 };
 
+/** Seeds the delete confirmation open on the task the multi-subtask fixture holds. */
+export const DeleteTaskOpen: Story = {
+    args: {
+        board: createBoardFull({
+            columns: [
+                createColumnFull({
+                    id: "00000000-0000-4000-8000-c00000000001",
+                    name: "Fixture Column 1",
+                    position: 0,
+                    tasks: [
+                        createTaskFull({
+                            id: "00000000-0000-4000-8000-d10000000001",
+                            title: "Fixture Task Alpha",
+                            position: 0,
+                            subtasks: createSubtasks({ count: 2 }),
+                        }),
+                    ],
+                }),
+            ],
+        }),
+        defaultDeleteTaskTargetId: "00000000-0000-4000-8000-d10000000001",
+    },
+};
+
 /*
  * UI-SPEC partial/empty/drag-drop-surface: one populated column, one holding zero tasks — the
  * fixture a drop-into-an-empty-column test needs, distinct from `TasksAcrossColumns`' two-populated

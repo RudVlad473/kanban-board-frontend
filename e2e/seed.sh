@@ -7,6 +7,7 @@ usage() {
     echo "usage: seed.sh account | seed.sh board --jsession <id> --user <id> --name <name> |" >&2
     echo "       seed.sh column --jsession <id> --user <id> --board <id> --name <name> |" >&2
     echo "       seed.sh task --jsession <id> --user <id> --board <id> --column <id> --title <title> |" >&2
+    echo "       seed.sh subtask --jsession <id> --user <id> --board <id> --column <id> --task <id> --title <title> |" >&2
     echo "       seed.sh board-full --jsession <id> --user <id> --board <id> |" >&2
     echo "       seed.sh cleanup [--users <id,id,...>] | seed.sh reset-all" >&2
     exit 2
@@ -186,6 +187,42 @@ cmd_task() {
     echo "$body_out"
 }
 
+# TASK-05's own fixture: a subtask on an already-seeded task, following the same one-function-
+# per-entity shape as cmd_task, for 04-20/04-21's delete/cascade specs.
+cmd_subtask() {
+    local jsession="" user="" board="" column="" task="" title=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --jsession) jsession="$2"; shift 2 ;;
+            --user) user="$2"; shift 2 ;;
+            --board) board="$2"; shift 2 ;;
+            --column) column="$2"; shift 2 ;;
+            --task) task="$2"; shift 2 ;;
+            --title) title="$2"; shift 2 ;;
+            *) usage ;;
+        esac
+    done
+
+    if [ -z "$jsession" ] || [ -z "$user" ] || [ -z "$board" ] || [ -z "$column" ] || [ -z "$task" ] || [ -z "$title" ]; then
+        usage
+    fi
+
+    local subtask_body raw status body_out
+    subtask_body=$(build_json title "$title")
+    raw=$(curl -sS -w '\n%{http_code}' \
+        -X POST "$EXTERNAL_API_BASE_URL/boards/$board/columns/$column/tasks/$task/subtasks?userId=$user" \
+        -H "Cookie: JSESSIONID=$jsession" -H "Content-Type: application/json" -d "$subtask_body")
+    status="${raw##*$'\n'}"
+    body_out="${raw%$'\n'*}"
+
+    if [[ "$status" != 2* ]]; then
+        echo "seed.sh subtask: subtask creation returned $status: $body_out" >&2
+        exit 1
+    fi
+
+    echo "$body_out"
+}
+
 # Reads a board back through the real backend so a spec can assert what actually persisted —
 # the board-detail UI is Phase 3 scope, so there is nothing to read it from on screen yet.
 cmd_board_full() {
@@ -296,6 +333,11 @@ case "${1:-}" in
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
         shift
         cmd_task "$@"
+        ;;
+    subtask)
+        : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
+        shift
+        cmd_subtask "$@"
         ;;
     board-full)
         : "${EXTERNAL_API_BASE_URL:?EXTERNAL_API_BASE_URL must be set}"
