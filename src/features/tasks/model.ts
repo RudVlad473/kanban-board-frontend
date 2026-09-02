@@ -1,6 +1,6 @@
 import type { Announcements, UniqueIdentifier } from "@dnd-kit/core";
 
-import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
+import type { Subtask, TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildColumnBodyDroppableId } from "@/lib/core/drag/drag-items";
 
 /*
@@ -158,6 +158,80 @@ export const withTaskUpdate = <C extends TaskColumn>({
     columns.map((column) => ({
         ...column,
         tasks: column.tasks.map((task) => (task.id === taskId ? { ...task, title, description } : task)),
+    }));
+
+/**
+ * The board as it reads with one subtask already appended — the reducer behind `useCreateSubtask`'s
+ * optimistic insert (both the placeholder row on `onMutate` and the real-id swap on `onSuccess`). A
+ * task id the board no longer holds yields the input untouched, mirroring `withSubtaskCompletion`.
+ */
+export const withSubtaskInsert = <C extends TaskColumn>({
+    columns,
+    taskId,
+    subtask,
+}: {
+    columns: C[];
+    taskId: string;
+    subtask: Subtask;
+}): C[] =>
+    columns.map((column) => ({
+        ...column,
+        tasks: column.tasks.map((task) =>
+            task.id === taskId ? { ...task, subtasks: [...task.subtasks, subtask] } : task,
+        ),
+    }));
+
+/**
+ * The board as it reads with one subtask's title already changed — the reducer behind
+ * `useRenameSubtask`'s optimistic write. A subtask id the board no longer holds yields the input
+ * untouched, mirroring `withSubtaskCompletion`.
+ */
+export const withSubtaskRename = <C extends TaskColumn>({
+    columns,
+    taskId,
+    subtaskId,
+    title,
+}: {
+    columns: C[];
+    taskId: string;
+    subtaskId: string;
+    title: string;
+}): C[] =>
+    columns.map((column) => ({
+        ...column,
+        tasks: column.tasks.map((task) =>
+            task.id === taskId
+                ? {
+                      ...task,
+                      subtasks: task.subtasks.map((subtask) =>
+                          subtask.id === subtaskId ? { ...subtask, title } : subtask,
+                      ),
+                  }
+                : task,
+        ),
+    }));
+
+/**
+ * The board as it reads with one subtask already removed — behind `useDeleteSubtask`'s optimistic
+ * write, and reused by `useCreateSubtask`'s success handler to drop its own placeholder row first.
+ * A subtask id the board no longer holds yields the input untouched.
+ */
+export const withSubtaskRemove = <C extends TaskColumn>({
+    columns,
+    taskId,
+    subtaskId,
+}: {
+    columns: C[];
+    taskId: string;
+    subtaskId: string;
+}): C[] =>
+    columns.map((column) => ({
+        ...column,
+        tasks: column.tasks.map((task) =>
+            task.id === taskId
+                ? { ...task, subtasks: task.subtasks.filter((subtask) => subtask.id !== subtaskId) }
+                : task,
+        ),
     }));
 
 /** A column as the announcement strings read it — its own name, plus the tasks they count against. */

@@ -5,6 +5,7 @@ import {
     createSubtaskInputSchema,
     createTaskInputSchema,
     createTaskSubtasksInputSchema,
+    deleteSubtaskInputSchema,
     editTaskFormSchema,
     moveTaskInputSchema,
     subtaskTitleRowSchema,
@@ -320,6 +321,35 @@ describe("updateSubtaskInputSchema", () => {
     it("rejects a fractional version", () => {
         // Act
         const result = updateSubtaskInputSchema.safeParse({ ...createValidUpdateInput(), version: 0.5 });
+
+        // Assert
+        expect(result.success).toBe(false);
+    });
+});
+
+describe("deleteSubtaskInputSchema", () => {
+    const createValidDeleteInput = () => ({
+        boardId: "00000000-0000-4000-8000-00000000000a",
+        columnId: "00000000-0000-4000-8000-00000000000c",
+        taskId: "00000000-0000-4000-8000-00000000000d",
+        subtaskId: "00000000-0000-4000-8000-00000000000e",
+    });
+
+    it("accepts a well-formed delete and yields typed data", () => {
+        // Arrange
+        const input = createValidDeleteInput();
+
+        // Act
+        const result = deleteSubtaskInputSchema.safeParse(input);
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual(input);
+    });
+
+    it("rejects an empty subtask id", () => {
+        // Act
+        const result = deleteSubtaskInputSchema.safeParse({ ...createValidDeleteInput(), subtaskId: "" });
 
         // Assert
         expect(result.success).toBe(false);

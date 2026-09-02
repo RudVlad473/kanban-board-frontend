@@ -75,6 +75,19 @@ export const updateSubtaskInputSchema = z.object({
 export type UpdateSubtaskInput = z.infer<typeof updateSubtaskInputSchema>;
 
 /*
+ * `DELETE .../subtasks/{subtaskId}` carries no body — no `version` field, mirroring
+ * `deleteColumnInputSchema` exactly (the endpoint accepts no version to be stale against).
+ */
+export const deleteSubtaskInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+    taskId: z.string().min(1),
+    subtaskId: z.string().min(1),
+});
+
+export type DeleteSubtaskInput = z.infer<typeof deleteSubtaskInputSchema>;
+
+/*
  * `titles` is length-capped at the same limit `createBoardColumnsInputSchema` uses (T-04-04) — a
  * forged wire payload cannot drive an unbounded sequential fan-out.
  */

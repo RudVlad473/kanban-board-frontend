@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import {
     withSubtaskCompletion,
+    withSubtaskInsert,
+    withSubtaskRemove,
+    withSubtaskRename,
     withTaskUpdate,
     moveTaskInColumns,
     buildSubtaskRowPath,
@@ -126,6 +129,162 @@ describe("withSubtaskCompletion", () => {
             subtaskId: "deleted",
             isCompleted: true,
         });
+
+        // Assert
+        expect(rendered).toEqual(columns);
+    });
+});
+
+describe("withSubtaskInsert", () => {
+    const createColumnsWithOneSubtask = () => [
+        {
+            id: "column-1",
+            tasks: [createTaskFull({ id: "task-1", subtasks: [createSubtask({ id: "subtask-1" })] })],
+        },
+    ];
+
+    it("appends the new subtask after the task's existing ones", () => {
+        // Act
+        const columns = withSubtaskInsert({
+            columns: createColumnsWithOneSubtask(),
+            taskId: "task-1",
+            subtask: createSubtask({ id: "subtask-2", title: "New Subtask" }),
+        });
+
+        // Assert
+        expect(columns[0].tasks[0].subtasks.map((subtask) => subtask.id)).toEqual(["subtask-1", "subtask-2"]);
+    });
+
+    it("leaves a different task's subtasks untouched", () => {
+        // Arrange
+        const columns = [
+            ...createColumnsWithOneSubtask(),
+            { id: "column-2", tasks: [createTaskFull({ id: "task-2", subtasks: [] })] },
+        ];
+
+        // Act
+        const rendered = withSubtaskInsert({ columns, taskId: "task-1", subtask: createSubtask({ id: "new" }) });
+
+        // Assert
+        expect(rendered[1].tasks[0].subtasks).toEqual([]);
+    });
+
+    /* A task id the board no longer holds — e.g. a concurrent delete — yields the input untouched. */
+    it("hands the columns back untouched when the task is no longer on the board", () => {
+        // Arrange
+        const columns = createColumnsWithOneSubtask();
+
+        // Act
+        const rendered = withSubtaskInsert({ columns, taskId: "deleted", subtask: createSubtask({ id: "new" }) });
+
+        // Assert
+        expect(rendered).toEqual(columns);
+    });
+});
+
+describe("withSubtaskRename", () => {
+    const createColumnsWithSubtask = () => [
+        {
+            id: "column-1",
+            tasks: [createTaskFull({ id: "task-1", subtasks: [createSubtask({ id: "subtask-1", title: "Old" })] })],
+        },
+    ];
+
+    it("renames the named subtask, leaving its other fields untouched", () => {
+        // Act
+        const columns = withSubtaskRename({
+            columns: createColumnsWithSubtask(),
+            taskId: "task-1",
+            subtaskId: "subtask-1",
+            title: "New",
+        });
+
+        // Assert
+        expect(columns[0].tasks[0].subtasks[0]).toEqual(expect.objectContaining({ id: "subtask-1", title: "New" }));
+    });
+
+    it("leaves a different task's subtasks untouched", () => {
+        // Arrange
+        const columns = [
+            ...createColumnsWithSubtask(),
+            {
+                id: "column-2",
+                tasks: [
+                    createTaskFull({ id: "task-2", subtasks: [createSubtask({ id: "subtask-2", title: "Sibling" })] }),
+                ],
+            },
+        ];
+
+        // Act
+        const rendered = withSubtaskRename({ columns, taskId: "task-1", subtaskId: "subtask-1", title: "New" });
+
+        // Assert
+        expect(rendered[1].tasks[0].subtasks[0].title).toBe("Sibling");
+    });
+
+    /* A subtask id the board no longer holds — e.g. a concurrent delete — yields the input untouched. */
+    it("hands the columns back untouched when the subtask is no longer on the board", () => {
+        // Arrange
+        const columns = createColumnsWithSubtask();
+
+        // Act
+        const rendered = withSubtaskRename({ columns, taskId: "task-1", subtaskId: "deleted", title: "New" });
+
+        // Assert
+        expect(rendered).toEqual(columns);
+    });
+});
+
+describe("withSubtaskRemove", () => {
+    const createColumnsWithTwoSubtasks = () => [
+        {
+            id: "column-1",
+            tasks: [
+                createTaskFull({
+                    id: "task-1",
+                    subtasks: [createSubtask({ id: "subtask-1" }), createSubtask({ id: "subtask-2" })],
+                }),
+            ],
+        },
+    ];
+
+    /* D-09/S-05: the row the delete removed is gone; a sibling row keeps its own original position. */
+    it("removes only the named subtask, leaving a sibling subtask at its original index", () => {
+        // Act
+        const columns = withSubtaskRemove({
+            columns: createColumnsWithTwoSubtasks(),
+            taskId: "task-1",
+            subtaskId: "subtask-1",
+        });
+
+        // Assert
+        expect(columns[0].tasks[0].subtasks.map((subtask) => subtask.id)).toEqual(["subtask-2"]);
+    });
+
+    it("leaves a different task's subtasks untouched", () => {
+        // Arrange
+        const columns = [
+            ...createColumnsWithTwoSubtasks(),
+            {
+                id: "column-2",
+                tasks: [createTaskFull({ id: "task-2", subtasks: [createSubtask({ id: "subtask-3" })] })],
+            },
+        ];
+
+        // Act
+        const rendered = withSubtaskRemove({ columns, taskId: "task-1", subtaskId: "subtask-1" });
+
+        // Assert
+        expect(rendered[1].tasks[0].subtasks.map((subtask) => subtask.id)).toEqual(["subtask-3"]);
+    });
+
+    /* A subtask id the board no longer holds — e.g. a concurrent delete — yields the input untouched. */
+    it("hands the columns back untouched when the subtask is no longer on the board", () => {
+        // Arrange
+        const columns = createColumnsWithTwoSubtasks();
+
+        // Act
+        const rendered = withSubtaskRemove({ columns, taskId: "task-1", subtaskId: "deleted" });
 
         // Assert
         expect(rendered).toEqual(columns);
