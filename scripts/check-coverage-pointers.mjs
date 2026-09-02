@@ -132,15 +132,15 @@ export const findPointerViolations = ({ relativePath, source, exists }) => {
     }
 
     if (remainder.startsWith("nothing to test")) {
-        return NOTHING_TO_TEST_PATTERN.test(remainder)
-            ? []
-            : [
+        return !NOTHING_TO_TEST_PATTERN.test(remainder)
+            ? [
                   {
                       relativePath,
                       kind: "empty",
                       detail: "the escape hatch needs a reason: `Covered by: nothing to test — <one clause why>`",
                   },
-              ];
+              ]
+            : [];
     }
 
     const citedPaths = extractBacktickedPaths(remainder);

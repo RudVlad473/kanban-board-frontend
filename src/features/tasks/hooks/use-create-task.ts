@@ -184,16 +184,16 @@ export const useCreateTask = () => {
             type: "danger",
             /* An expired session names itself: the generic count would send the user to a Retry that can only fail again. */
             title: isSessionExpired ? SUBTASK_SESSION_EXPIRED_MESSAGE : buildSubtaskFailureTitle(failedTitles.length),
-            ...(isSessionExpired
-                ? {}
-                : {
+            ...(!isSessionExpired
+                ? {
                       actionProps: {
                           children: RETRY_ACTION_LABEL,
                           onClick: () => {
                               void retrySubtasks({ boardId, columnId, taskId, titles: failedTitles });
                           },
                       },
-                  }),
+                  }
+                : {}),
         });
     };
 

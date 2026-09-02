@@ -335,7 +335,7 @@ const probeT1 = async ({ cookie, userId, boardId, columns }) => {
     const created = await createTask({ cookie, userId, boardId, columnId, body: { title: "T1 Created Task" } });
     printResult({ label: "create", result: created });
 
-    const keys = created.json === null ? [] : Object.keys(created.json);
+    const keys = created.json !== null ? Object.keys(created.json) : [];
     console.log(`  response keys: ${JSON.stringify(keys)}`);
     console.log(
         `  echoes position: ${String(keys.includes("position"))}; carries subtasks: ${String(keys.includes("subtasks"))}; ` +

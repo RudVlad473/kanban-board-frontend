@@ -3,6 +3,7 @@
 // Covered by: `src/features/tasks/components/add-task-button/add-task-button.test.tsx`
 
 import { skipToken, useQuery } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { usePathname } from "next/navigation";
 
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
@@ -30,5 +31,5 @@ export const useOpenBoardColumns = (): { boardId: string | null; columns: { id: 
      * `[]` on the no-board route by construction, never whatever sits under the `["board", ""]`
      * key this must still subscribe to — a hook cannot be called conditionally.
      */
-    return { boardId, columns: boardId === null ? [] : (board?.columns ?? []) };
+    return { boardId, columns: !isNil(boardId) ? (board?.columns ?? []) : [] };
 };
