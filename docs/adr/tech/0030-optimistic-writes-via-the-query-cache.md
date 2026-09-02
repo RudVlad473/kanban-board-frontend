@@ -30,9 +30,9 @@ Two entries exist:
 | Entry | Key | Seeded by | Read by | Written by |
 |-------|-----|-----------|---------|------------|
 | Board list | `["boards"]` | `dehydrateBoards()` in `app/(dashboard)/layout.tsx` | `BoardList`, `DashboardHeader` | board create / rename / delete |
-| Open board | `["board", boardId]` | `dehydrateBoard()` in `app/(dashboard)/boards/[boardId]/page.tsx` | `BoardView` | column rename / reorder, task move |
+| Open board | `["board", boardId]` | `dehydrateBoard()` in `app/(dashboard)/boards/[boardId]/page.tsx` | `BoardView` | every column, task and subtask mutation (rule 4) |
 
-Three rules make it correct:
+Four rules make it correct:
 
 **1. Hydration, not `initialData`, is what retires an optimistic write.** `initialData` seeds an
 entry that does not exist and is ignored once one does — a refreshed server render would never
@@ -50,6 +50,20 @@ catches a violation is real, not a nuisance.
 **3. A failed RSC read seeds nothing.** An entry holding `[]` or a half-board reads as authoritative
 emptiness and never corrects itself. `dehydrateBoards()`/`dehydrateBoard()` seed only on success and
 report `loadFailed`, and the query's own `queryFn` covers the refetch.
+
+**4. Every mutation hook writes the cache. `refresh()` alone is not a retire path.** Rule 1 makes
+`refresh()` sufficient to land the authoritative value, which reads as licence to skip `onMutate`
+entirely — `useDeleteTask` did exactly that until 2026-09-02, on the argument that a delete has
+nothing to roll back to. The cost is invisible locally and paid somewhere else: a hook whose only
+update path is `refresh()` makes the whole board route **uncacheable**, because `refresh()`
+re-renders the route the user is on and updates *that* Router Cache entry, never a prefetched or
+previously-visited one. Measured that day: with `prefetch={true}` on the sidebar link, deleting a
+task and navigating away and back brought the task back on screen while the server had already
+dropped it.
+
+So a hook that skips cache work does not merely forgo an optimistic UI — it silently constrains
+navigation caching for every route that renders the entry. If a future mutation genuinely cannot
+stage its write, say so here and expect the caching to be re-litigated with it.
 
 ## Consequences
 
