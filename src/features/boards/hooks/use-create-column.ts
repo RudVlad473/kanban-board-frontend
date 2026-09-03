@@ -4,7 +4,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
 import { shouldNudgeOnColumnCount, withColumnInsert, withColumnReplace } from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
@@ -136,6 +136,7 @@ export const useCreateColumn = ({
         toast.add({
             id: toastId,
             type: "danger",
+            timeout: NO_AUTO_DISMISS,
             title: CREATE_FAILURE_MESSAGE[status] ?? GENERIC_CREATE_FAILURE_MESSAGE,
             /* An expired session names itself: a Retry there could only reopen a modal that fails again. */
             ...(!isSessionExpired

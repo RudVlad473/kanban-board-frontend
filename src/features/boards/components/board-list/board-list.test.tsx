@@ -410,6 +410,32 @@ describeForEachDevice({
             await expect.element(screen.getByLabelText("Column 2")).toHaveValue("Doing");
         });
 
+        /*
+         * The Retry is the ONLY route back to the typed name and rows, so a toast that expires
+         * takes the whole attempt with it. Fake timers reach Base UI's `setTimeout`.
+         */
+        it("keeps the create-failure toast on screen past the auto-dismiss window the column toast obeys", async () => {
+            // Arrange
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            try {
+                await render(<Empty />);
+                createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+                await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+                await vi.waitFor(() => {
+                    expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+                });
+
+                // Act — past the 5000ms provider default, with the stack neither hovered nor blurred.
+                window.dispatchEvent(new FocusEvent("focus"));
+                await vi.advanceTimersByTimeAsync(9000);
+
+                // Assert
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
         it("auto-dismisses the column-failure toast rather than leaving it on screen indefinitely", async () => {
             // Arrange
             await render(<Empty />);

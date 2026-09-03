@@ -5,7 +5,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createTaskAction } from "@/features/tasks/actions/create-task-action";
 import { createTaskSubtasksAction } from "@/features/tasks/actions/create-task-subtasks-action";
 import { withTaskInsert, withTaskReplace, type TaskColumn } from "@/features/tasks/model";
@@ -73,8 +73,8 @@ type SubtaskFanOutArgs = { boardId: string; columnId: string; taskId: string; ti
 export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => void }) => {
     const toast = useToast();
     /*
-     * The failure toast has no auto-dismiss, so its Retry stays mounted and clickable for the whole
-     * retry — without this, a second click fans the same titles out twice and duplicates subtasks.
+     * The subtask failure toast keeps the default auto-dismiss, so its Retry stays clickable for
+     * ~5s — without this, a second click fans the same titles out twice and duplicates subtasks.
      */
     const taskIdsBeingRetried = useRef(new Set<string>());
 
@@ -199,6 +199,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
         toast.add({
             id: toastId,
             type: "danger",
+            timeout: NO_AUTO_DISMISS,
             ...(isSessionExpired ? CREATE_SESSION_EXPIRED_COPY : CREATE_FAILURE_COPY),
             /* An expired session names itself: a Retry there could only reopen a modal that fails again. */
             ...(!isSessionExpired

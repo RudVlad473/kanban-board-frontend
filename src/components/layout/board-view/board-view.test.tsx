@@ -735,6 +735,32 @@ describeForEachDevice({
             expect(getRenderedColumnNames()).toEqual(namesBefore);
         });
 
+        /*
+         * The Retry is the ONLY route back to the typed name, so a toast that expires takes the
+         * attempt with it. Fake timers reach Base UI's `setTimeout` (see toast.test.tsx).
+         */
+        it("keeps the create-failure toast on screen past the auto-dismiss window every other toast obeys", async () => {
+            // Arrange
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            try {
+                createColumnStub.queue({ status: RESULT_STATUS.ERROR });
+                await render(<Populated />);
+                await submitNewColumn("Backlog");
+                await vi.waitFor(() => {
+                    expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
+                });
+
+                // Act — past the 5000ms provider default, with the stack neither hovered nor blurred.
+                window.dispatchEvent(new FocusEvent("focus"));
+                await vi.advanceTimersByTimeAsync(9000);
+
+                // Assert
+                expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
         /* UI-SPEC error/Add-Column-generic, as the reversal moved it: reported once, and not inline. */
         it("closes the modal and raises exactly one failure toast when the create fails", async () => {
             // Arrange

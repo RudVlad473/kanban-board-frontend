@@ -258,6 +258,34 @@ describeForEachDevice({
         });
 
         /*
+         * The Retry is the ONLY route back to the typed values, so a toast that expires takes the
+         * whole attempt with it. Fake timers reach Base UI's `setTimeout` (see toast.test.tsx).
+         */
+        it("keeps the create-failure toast on screen past the auto-dismiss window every other toast obeys", async () => {
+            // Arrange
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            try {
+                await render(<WithColumns />);
+                createTaskStub.queue({ status: RESULT_STATUS.ERROR });
+                await openCreateTaskModal();
+                await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+                await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+                const region = await screen.findByRole("region", { name: "Notifications" });
+                await expect.element(within(region).getByText("Couldn't create task.")).toBeVisible();
+
+                // Act — past the 5000ms provider default, with the stack neither hovered nor blurred.
+                window.dispatchEvent(new FocusEvent("focus"));
+                await vi.advanceTimersByTimeAsync(9000);
+
+                // Assert
+                await expect.element(within(region).getByText("Couldn't create task.")).toBeVisible();
+                await expect.element(within(region).getByRole("button", { name: "Retry" })).toBeVisible();
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        /*
          * The trade-off closing on submit was accepted on: a refused create may cost the user a
          * click, never what they typed. Every field, including the status chosen, comes back.
          */

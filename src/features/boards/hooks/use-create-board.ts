@@ -5,7 +5,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
-import { useToast } from "@/components/ui/toast/use-toast";
+import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
 import { toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
@@ -151,6 +151,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
         toast.add({
             id: toastId,
             type: "danger",
+            timeout: NO_AUTO_DISMISS,
             ...(CREATE_FAILURE_COPY[status] ?? GENERIC_CREATE_FAILURE_COPY),
             /* An expired session names itself: a Retry there could only reopen a modal that fails again. */
             ...(!isSessionExpired
