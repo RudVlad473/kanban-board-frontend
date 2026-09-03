@@ -161,8 +161,32 @@ match `tokens.css`, not the PDF's raw swatches, if the two ever disagree.
 | Rename rollback error toast (D-15) | **"Couldn't rename board."** / **"Try again."** (title/description — pattern from 02-RESEARCH.md's cited `useToastManager` example) |
 | Delete failure error toast (D-09) | **"Couldn't delete board."** / **"Try again."** |
 | Partial column-creation error toast (D-04) | **"Couldn't create {N} column(s)."** / **"Retry"** action scoped to the failed column(s) only |
-| Board-name creation failure (D-05) | Inline `TextField` error, not a toast — **"Can't be empty"** for the empty-name case (PDF verbatim, matches the existing `TextField` error-state pattern already shown on page 1 of the PDF); a generic backend-rejection copy ("Couldn't create board. Try again.") for any other create failure, staying inside the still-open modal |
+| Board-name creation failure (D-05, **amended 2026-09-03** — see below) | Client-side validation stays inline: **"Can't be empty"** for the empty-name case (PDF verbatim, matches the existing `TextField` error-state pattern already shown on page 1 of the PDF). A *backend* refusal no longer has a modal to report into — the modal closes at submit — so it is a rollback toast: **"Couldn't create board."** / **"Try again."** with a **"Retry"** action, or **"A board with that name already exists."** / **"Choose a different name."** for a duplicate, or **"Your session has expired."** / **"Sign in again to create a board."** with no Retry |
 | Board-list load failure | **"Couldn't load your boards."** / **"Try again."** (sidebar's own error state — see UI Considerations) |
+
+### D-05 amendment — create closes on submit (2026-09-03)
+
+**Superseded:** the create modal stayed open until the board POST answered, and a refusal showed an
+inline `TextField`/alert error inside it, explicitly "not a toast".
+
+**Now:** the modal closes *before* the create is issued. The optimistic sidebar row (tech/0030) is
+what the user sees next. A refusal rolls that row back and raises a danger toast whose **Retry**
+reopens the modal prefilled with exactly what was attempted — the board name and every column row.
+
+**Why:** the product owner drove the running app on 2026-09-03 and reported board creation as
+feeling non-optimistic — the optimistic row was invisible behind a dimmed backdrop held for the
+whole round trip, so the write read as blocking. Close-on-submit plus a rollback toast was chosen
+over keeping the modal open.
+
+**Trade-off accepted explicitly:** closing on submit puts the user's typed input at risk, which is
+why Retry-prefill is not a nicety but the condition the reversal was accepted on. It is pinned by
+tests in `board-list.test.tsx` and `add-task-button.test.tsx` ("reopens the modal prefilled with
+the whole attempt when the toast's Retry is clicked"); a create that loses input is a regression.
+
+**Known inconsistency, temporary:** the COLUMN create (`use-create-column`, driven from
+`src/components/layout/board-view/**`) still follows the original D-05 — its modal stays open and
+reports inline. That is being reversed separately; until then, board/task creates and column
+creates deliberately disagree.
 
 ---
 
@@ -175,10 +199,10 @@ Applicable state considerations resolved: 15 covered, 5 backstop, 0 unresolved.
 | empty | Sidebar board list (list-collection) | ✅ covered | D-10: zero boards renders a centered empty-state screen in the main content area (not an empty sidebar list) with the "Create your first board" CTA; the sidebar itself still renders its "+ Create New Board" link with no board rows above it. |
 | empty | Board detail / column view (list-collection, read-only display this phase) | ✅ covered | PDF verbatim empty-board copy + "+ Add New Column" (see Copywriting Contract) — renders whenever the open board has zero columns. |
 | loading | Sidebar board list (list-collection) | 🧪 backstop | No PDF mockup shows a loading/skeleton state for the board list. Recommend a skeleton row set (3 pulsing bars matching `BoardCard`'s height) rather than a spinner, consistent with GC-01's loading-state precedent for other primitives — lifts as a held-out visual-state test, not explicit PDF evidence. |
-| loading | Add/Edit Board modal submit buttons | ✅ covered | `Button isLoading` prop already implemented (GC-13/22) — "Create New Board"/"Save Changes" buttons show the existing spinner treatment while their mutation is in flight; no new component needed. |
+| loading | Add/Edit Board modal submit buttons | ✅ covered | `Button isLoading` prop already implemented (GC-13/22) — "Save Changes" shows the existing spinner treatment while its mutation is in flight. **"Create New Board" no longer has a pending state at all** (D-05 amendment, 2026-09-03): the modal is unmounted before the create is issued, so nothing outlives the submit to show a spinner. |
 | loading | Board detail view (initial full-board fetch, BOARD-03) | 🧪 backstop | No PDF mockup shows this state. Recommend the same skeleton pattern as the sidebar (column-header bars + card-shaped placeholders) — backstop, no explicit PDF evidence. |
 | error | Sidebar board list fetch failure | ✅ covered | Copywriting Contract row "Board-list load failure" — inline message + retry affordance inside the sidebar's board-list region, not a toast (a toast is for transient mutation failures per D-04/D-09/D-15, not a persistent load-failure state). |
-| error | Add Board modal — board-name POST fails (D-05) | ✅ covered | D-05: modal stays open, inline error, retry immediately — no toast (nothing to reconcile since nothing was created). |
+| error | Add Board modal — board-name POST fails (D-05, amended 2026-09-03) | ✅ covered | Modal closes at submit; the refusal rolls the optimistic sidebar row back and raises a danger toast whose Retry reopens the modal prefilled. See the D-05 amendment under the Copywriting Contract. |
 | error | Add Board modal — partial column-creation failure (D-04) | ✅ covered | D-04: modal closes, navigate to the new board, toast names the failed column(s) with a scoped retry. |
 | error | Edit Board modal — rename failure (D-15) | ✅ covered | Optimistic rollback + toast, per Copywriting Contract. |
 | error | Delete confirmation — delete failure (D-09) | ✅ covered | Modal closes, board stays in sidebar (no optimistic removal), error toast. |

@@ -331,7 +331,7 @@ this phase adds must match `tokens.css`, not the PDF's raw swatches, wherever th
 | Task title empty | **"Can't be empty"** (PDF verbatim; the existing `REQUIRED_FIELD_MESSAGE` in `schemas.ts`) |
 | Task title out of bounds | **"Task title must be between 3 and 32 characters."** (mirrors the shipped `COLUMN_NAME_LENGTH_MESSAGE` phrasing; `SaveTaskRequestDTO` declares `minLength: 3, maxLength: 32`. Note `UpdateTaskRequestDTO` declares **no** bounds — the client must enforce the same 3–32 on edit anyway, or a title that cannot be created becomes savable) |
 | Subtask title empty | **"Can't be empty"** (`SaveSubtaskRequestDTO` declares `minLength: 1` only — there is no upper bound to message) |
-| Task create failure (generic) | **"Couldn't create task."** / **"Try again."** — inline in the still-open modal (D-05's pattern: nothing was created, so there is nothing to reconcile and no toast) |
+| Task create failure (generic) | **"Couldn't create task."** / **"Try again."** with a **"Retry"** action — a danger toast, **not** inline (D-05's pattern, reversed 2026-09-03; see the amendment below). The session-expired branch is **"Your session has expired."** / **"Sign in again to create a task."** with no Retry, since a Retry there could only fail again |
 | Partial initial-subtask failure | **"Couldn't create {N} subtask(s)."** / **"Retry"** action scoped to the failed subtask(s) only — the exact shape 02-UI-SPEC.md locked for a board's initial columns, which is the same client-orchestrated fan-out (D-07, ADR domain/0003) |
 | Task edit failure toast | **"Couldn't save task."** / **"Try again."** |
 | Task move failure toast (both paths) | **"Couldn't move task."** / **"Try again."** |
@@ -343,6 +343,26 @@ this phase adds must match `tokens.css`, not the PDF's raw swatches, wherever th
 | Version-conflict toast (any task or subtask mutation) | **"This board changed somewhere else."** / **"Refreshing to show the latest."** — see **C-08**. The title matches Phase 3's string exactly so the two read as one family; only the description changes, because D-12 performs the re-read itself and "Refresh to see the latest." would instruct the user to do what is already happening. Phase 3's column strings are **not** retro-edited by this phase — column reorder still only reverts and toasts, so its "Refresh to see the latest." is still correct there |
 | Session-expired / not-found branches | Follow `use-rename-column.ts`'s existing per-status table shape verbatim, substituting the entity: **"Sign in again to move this task."**, **"That task is no longer available."** / **"Refresh to see this board's current tasks."** |
 | Keyboard-move live announcements | Lift: **"Picked up {Task Title} from {Column Name}, position {i} of {N}. Use arrow keys to move, space to drop, escape to cancel."** · Move within a column: **"{Task Title} moved to position {i} of {N} in {Column Name}."** · Move across columns: **"{Task Title} moved to {Column Name}, position {i} of {N}."** · Drop: **"{Task Title} dropped in {Column Name} at position {i} of {N}."** · Cancel: **"Move cancelled. {Task Title} returned to {Column Name}, position {i} of {N}."** (positions are 1-based for speech, even though `targetPosition` is 0-based on the wire) |
+
+### D-05 amendment — task create closes on submit (2026-09-03)
+
+**Superseded:** the Add New Task modal stayed open until the task POST answered and reported a
+refusal inline, inheriting 02-UI-SPEC.md's original D-05.
+
+**Now:** the modal closes *before* the create is issued, so the optimistic card (tech/0030) is what
+the user sees next. A refusal rolls that card back and raises a danger toast whose **Retry**
+reopens the modal prefilled with the whole attempt — title, description, subtask rows, and the
+status that was chosen.
+
+**Why:** the product owner drove the running app on 2026-09-03 and reported both the task and the
+board create as feeling non-optimistic — the optimistic card was hidden behind a dimmed backdrop
+held for the whole round trip. Close-on-submit plus a rollback toast was chosen over keeping the
+modal open. The full record, including the accepted input-loss trade-off, is in 02-UI-SPEC.md's own
+D-05 amendment; this phase follows it for tasks.
+
+**Known inconsistency, temporary:** the COLUMN create (`use-create-column`, driven from
+`src/components/layout/board-view/**`) still follows the original D-05 and reports inline in a
+still-open modal. Being reversed separately.
 
 ---
 
@@ -395,7 +415,7 @@ authored rather than cue-matched:
 | Column task list / body | zero-one-many | ✅ covered | With exactly 1 column, '+ Add New Task' is enabled and the Status dropdown renders that single option; cross-column drag is impossible but within-column reorder (D-11) still applies, so cards keep their handles. |
 | `Add New Task` modal | empty | ✅ covered | Opens with two blank subtask rows (PDF p6 seeds exactly two). A blank row is omitted from the POST sequence rather than validation-blocked, as AddBoardModal already treats blank column rows; removing both rows is legal. |
 | `Add New Task` modal | loading | ✅ covered | Button isLoading on the task POST; the modal stays open while it is in flight so an inline failure can land in it, with isDismissableOnBackdropClick={!isPending} and the Escape guard (add-board-modal.tsx:71-80). Once the task POST succeeds the modal closes and the subtask fan-out runs behind it (D-07). |
-| `Add New Task` modal | error | ✅ covered | Generic create failure is inline in the still-open modal ("Couldn't create task."/"Try again.", no toast, nothing was created). Field validation is inline via TextField's hasError/errorMessage. A partial subtask fan-out failure keeps the task and toasts a scoped Retry. |
+| `Add New Task` modal | error | ✅ covered | Generic create failure is a rollback toast carrying Retry ("Couldn't create task."/"Try again."), the modal having closed at submit — D-05 amendment, 2026-09-03. Field validation is still inline via TextField's hasError/errorMessage, since it runs before the modal closes. A partial subtask fan-out failure keeps the task and toasts a scoped Retry. |
 | `Add New Task` modal | populated | ✅ covered | PDF p6 — Title, Description, Subtasks rows with '+ Add New Subtask' full-width secondary, Status dropdown, 'Create Task' submit, inside the shipped Modal.Content (448px, md:p-6). |
 | `Add New Task` modal | partial | ✅ covered | Some subtask rows filled and some blank is the normal case: blank rows are dropped from the POST sequence, not blocked. If the task lands and some subtasks fail, both are kept and the toast names the failed count (D-07). |
 | `Add New Task` modal | overflow | ✅ covered | Many subtask rows scroll inside the shipped Modal.Content clamp (max-h-[calc(100vh-6rem)] with overflow-y-auto, modal.tsx:77,82). No second nested scroll container. |
