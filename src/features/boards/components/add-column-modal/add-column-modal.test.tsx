@@ -86,7 +86,7 @@ describeForEachDevice({
             expect(ShortColumnName.args.onSubmit).not.toHaveBeenCalled();
         });
 
-        /* UI-SPEC loading/Add-Column-submit: the modal stays OPEN while the POST is in flight. */
+        /* The pending treatment itself, staged — its own host closes the modal at submit now. */
         it("shows the submit control's loading treatment without closing the modal", async () => {
             // Act
             const screenResult = await render(<Submitting />);
@@ -99,10 +99,10 @@ describeForEachDevice({
         });
 
         /*
-         * UI-SPEC error/Add-Column-generic: nothing was created, so there is nothing to reconcile
-         * and the failure belongs inline in the still-open modal rather than in a toast.
+         * The prop's own contract, staged — production reports a refused create through a toast
+         * (`use-create-column.ts`), so nothing passes `errorMessage` outside Storybook.
          */
-        it("renders the generic create failure inline in the still-open modal and raises no toast", async () => {
+        it("renders a staged error message inline without closing the modal or raising a toast", async () => {
             // Act
             const screenResult = await render(<CreateFailed />);
 

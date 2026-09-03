@@ -4,7 +4,7 @@
  * the Vite plugin for (see docs/adr/tech/0021).
  */
 import { composeStories } from "@storybook/react";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { cdp, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -80,6 +80,10 @@ const STUB_WRITTEN_COLUMN_ID = "stub-written-column-id";
 /* Duplicated verbatim from `board-view.stories.tsx`'s own host — see the comment beside them there. */
 const SERVER_RENAMED_NAME = "Renamed On The Server";
 const SERVER_CHANGED_NAME = "Changed Somewhere Else";
+
+/* COLUMN-01's own create-failure copy, which the toast carries now that the modal closes at submit. */
+const GENERIC_CREATE_COLUMN_TOAST = "Couldn't create column. Try again.";
+const DUPLICATE_CREATE_COLUMN_TOAST = "A column with that name already exists on this board.";
 
 /** The two authored toast strings, as the user reads them — title and description run together. */
 const GENERIC_RENAME_TOAST = "Couldn't rename column.Try again.";
@@ -583,8 +587,8 @@ describeForEachDevice({
             expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
         });
 
-        /* UI-SPEC error/Add-Column-duplicate: its own copy, inline, and still never a toast. */
-        it("keeps the modal open with the duplicate-name copy when the name is refused as a duplicate", async () => {
+        /* UI-SPEC error/Add-Column-duplicate: its own copy, now carried to the user by the toast. */
+        it("names the clash in the failure toast when the column name is refused as a duplicate", async () => {
             // Arrange
             createColumnStub.queue({ status: RESULT_STATUS.DUPLICATE });
             await render(<DuplicateColumnName />);
@@ -593,15 +597,14 @@ describeForEachDevice({
             await submitOpenColumnForm("Fixture Column 1");
 
             // Assert
-            expect(await screen.findByRole("alert")).toHaveTextContent(
-                "A column with that name already exists on this board.",
-            );
-            expect(screen.getByRole("dialog")).toBeInTheDocument();
-            expect(getRaisedToastCount()).toBe(0);
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain(DUPLICATE_CREATE_COLUMN_TOAST);
+            });
+            expect(screen.queryByRole("heading", { name: "Add New Column" })).not.toBeInTheDocument();
         });
 
-        /* The new table entry must not swallow the fallback every other failure branch still uses. */
-        it("still renders the generic create-failure copy for a failure that is not a duplicate", async () => {
+        /* The table entry must not swallow the fallback every other failure branch still uses. */
+        it("still reports the generic create-failure copy for a failure that is not a duplicate", async () => {
             // Arrange
             createColumnStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<DuplicateColumnName />);
@@ -610,9 +613,10 @@ describeForEachDevice({
             await submitOpenColumnForm("Fixture Column 1");
 
             // Assert
-            const alert = await screen.findByRole("alert");
-            expect(alert).toHaveTextContent("Couldn't create column. Try again.");
-            expect(alert).not.toHaveTextContent("A column with that name already exists on this board.");
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
+            });
+            expect(getRaisedToastTexts()[0]).not.toContain(DUPLICATE_CREATE_COLUMN_TOAST);
         });
 
         it("renders a zero count and no task cards for a column holding no tasks", async () => {
@@ -704,7 +708,7 @@ describeForEachDevice({
         });
 
         /* The other half of the same mechanism: a refusal must leave no trace of the optimistic column. */
-        it("removes the optimistic column and reports the failure inline when the create fails", async () => {
+        it("removes the optimistic column and reports the failure in a toast when the create fails", async () => {
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedColumnNames();
@@ -717,20 +721,22 @@ describeForEachDevice({
                 expect(createColumnStub.calls).toHaveLength(1);
             });
 
-            // Assert — the optimistic column stands while the refusal is still in flight.
+            // Assert — the optimistic column stands, behind an already-closed modal, while the refusal flies.
             expect(getRenderedColumnNames()).toEqual([...namesBefore, "Backlog"]);
+            expect(screen.queryByRole("heading", { name: "Add New Column" })).not.toBeInTheDocument();
 
             // Act
             createColumnStub.settle();
 
-            // Assert — nothing was created, so the rollback is silent and the copy stays inline.
-            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create column. Try again.");
+            // Assert — the column is withdrawn and the refusal is reported in the toast stack.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
+            });
             expect(getRenderedColumnNames()).toEqual(namesBefore);
-            expect(getRaisedToastCount()).toBe(0);
         });
 
-        /* UI-SPEC error/Add-Column-generic: nothing was created, so the failure lands inline. */
-        it("keeps the modal open with inline copy and no toast when the create fails", async () => {
+        /* UI-SPEC error/Add-Column-generic, as the reversal moved it: reported once, and not inline. */
+        it("closes the modal and raises exactly one failure toast when the create fails", async () => {
             // Arrange
             createColumnStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<Populated />);
@@ -739,44 +745,65 @@ describeForEachDevice({
             await submitNewColumn("Backlog");
 
             // Assert
-            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create column. Try again.");
-            expect(screen.getByRole("dialog")).toBeInTheDocument();
-            expect(getRaisedToastCount()).toBe(0);
+            await vi.waitFor(() => {
+                expect(getRaisedToastCount()).toBe(1);
+            });
+            expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
+            expect(screen.queryByRole("heading", { name: "Add New Column" })).not.toBeInTheDocument();
+            expect(screen.queryByRole("alert")).not.toBeInTheDocument();
         });
 
         /*
-         * Both dismissal guards are needed together: Base UI's Dialog fires `onOpenChange(false)` on
-         * Escape regardless of the backdrop-dismissal prop (documented in `modal.tsx` itself).
+         * The reversal's own claim (D-05, reversed 2026-09-03): the modal is gone while the action is
+         * demonstrably still unresolved, which a settle-then-assert test cannot show.
          */
-        it("shows the pending treatment and refuses Escape while the create is in flight", async () => {
+        it("closes the modal at submit rather than holding it open until the create resolves", async () => {
             // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
             createColumnStub.queue({
                 status: RESULT_STATUS.SUCCESS,
-                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: 0 },
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: namesBefore.length },
             });
             createColumnStub.hold();
-            await render(<Populated />);
 
             // Act
             await submitNewColumn("Backlog");
-
-            // Assert — the modal holds the in-flight window open so an inline failure can land in it.
-            const submit = screen.getByRole("button", { name: "Create New Column" });
             await vi.waitFor(() => {
-                expect(submit).toBeDisabled();
+                expect(createColumnStub.calls).toHaveLength(1);
             });
-            expect(submit).toHaveAttribute("aria-busy", "true");
 
-            await userEvent.keyboard("{Escape}");
-            expect(screen.getByRole("dialog")).toBeInTheDocument();
+            // Assert — already dismissed, with nothing said either way yet.
+            expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+            expect(getRaisedToastCount()).toBe(0);
 
-            // Act — settling the held call is what finally closes it.
+            // Act — the write lands with the modal long gone.
             createColumnStub.settle();
 
             // Assert
             await vi.waitFor(() => {
-                expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+                expect(getRenderedColumnNames()).toEqual([...namesBefore, "Backlog"]);
             });
+            expect(getRaisedToastCount()).toBe(0);
+        });
+
+        /*
+         * The trade-off closing on submit was accepted on: a refused create may cost the user a
+         * click, never what they typed — the name comes back exactly as they left it.
+         */
+        it("reopens the modal prefilled with the typed name when the toast's Retry is clicked", async () => {
+            // Arrange
+            createColumnStub.queue({ status: RESULT_STATUS.ERROR });
+            await render(<Populated />);
+            await submitNewColumn("Backlog");
+            const region = await screen.findByRole("region", { name: "Notifications" });
+
+            // Act
+            await userEvent.click(await within(region).findByRole("button", { name: "Retry" }));
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Add New Column" })).toBeInTheDocument();
+            expect(await screen.findByLabelText("Column Name")).toHaveValue("Backlog");
         });
 
         /*
@@ -851,18 +878,25 @@ describeForEachDevice({
             expect(scrollRow).toHaveClass("motion-reduce:scroll-auto");
         });
 
-        /* T-03-27: the pending-scroll flag is set only in the success branch, so a failure is inert. */
+        /*
+         * The reveal is armed at submit now rather than on success, so this pins the end state
+         * instead of the branch: the rollback withdraws the column before the row ever reaches it.
+         */
         it("leaves the column row where it was when the create fails", async () => {
             // Arrange
             createColumnStub.queue({ status: RESULT_STATUS.ERROR });
             await render(<EightColumns />);
             const scrollRow = getScrollRow();
+            expect(scrollRow.scrollLeft).toBe(0);
 
             // Act
             await submitOpenColumnForm("Backlog");
 
-            // Assert
-            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create column. Try again.");
+            // Assert — the refusal is reported, the column is withdrawn and the row never moved.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
+            });
+            expect(getRenderedColumnNames()).not.toContain("Backlog");
             expect(scrollRow.scrollLeft).toBe(0);
         });
 
