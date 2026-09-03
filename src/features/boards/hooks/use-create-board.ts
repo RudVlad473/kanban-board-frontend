@@ -45,10 +45,14 @@ const buildColumnFailureTitle = (failedCount: number): string => `Couldn't creat
 export const buildColumnFailureToastId = (boardId: string): string => `board-columns-failed:${boardId}`;
 
 /**
- * One id per ATTEMPT, not per call — a retry of the same name upserts the one toast instead of
+ * One id per ATTEMPT, not per call — a retry of the same values upserts the one toast instead of
  * stacking a second beside it, while a different attempt gets its own.
+ *
+ * The column rows are in the id too, or two attempts sharing a name would share a toast and the
+ * earlier one's rows would be unreachable.
  */
-export const buildCreateFailureToastId = ({ name }: CreateBoardArgs): string => `board-create-failed:${name}`;
+export const buildCreateFailureToastId = ({ name, columnRows }: CreateBoardArgs): string =>
+    `board-create-failed:${JSON.stringify([name, columnRows])}`;
 
 /** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
 type CreateBoardVariables = { clientId: string; name: string };

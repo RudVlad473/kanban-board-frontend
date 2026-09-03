@@ -258,6 +258,34 @@ describeForEachDevice({
         });
 
         /*
+         * Base UI upserts on a repeated id, so an id that drops part of the payload silently
+         * replaces the earlier attempt's Retry — and with it the only route back to its values.
+         */
+        it("raises a second toast for a second attempt differing only in a field outside the toast id", async () => {
+            // Arrange — same board, column and title; only the description differs.
+            await render(<WithColumns />);
+            createTaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await openCreateTaskModal();
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.fill(screen.getByLabelText("Description"), "First attempt.");
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            const region = await screen.findByRole("region", { name: "Notifications" });
+            await expect.element(within(region).getByText("Couldn't create task.")).toBeVisible();
+
+            // Act
+            createTaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await openCreateTaskModal();
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.fill(screen.getByLabelText("Description"), "Second attempt.");
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+
+            // Assert — two recoverable attempts, so two Retries, not one that swallowed the first.
+            await vi.waitFor(() => {
+                expect(within(region).getAllByRole("button", { name: "Retry" })).toHaveLength(2);
+            });
+        });
+
+        /*
          * The Retry is the ONLY route back to the typed values, so a toast that expires takes the
          * whole attempt with it. Fake timers reach Base UI's `setTimeout` (see toast.test.tsx).
          */

@@ -13,6 +13,7 @@ import { createColumnAction } from "@/features/boards/actions/create-column-acti
 import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
+import { buildCreateFailureToastId } from "@/features/boards/hooks/use-create-column";
 import { deleteSubtaskAction } from "@/features/tasks/actions/delete-subtask-action";
 import { deleteTaskAction } from "@/features/tasks/actions/delete-task-action";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
@@ -70,6 +71,9 @@ const deleteTaskStub = actionStub(deleteTaskAction);
 
 /** The board id every `createBoardFull()` fixture carries, and so the id a create must report. */
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
+
+/** A second board id, used only to show the create-failure toast id separates two boards. */
+const OTHER_BOARD_ID = "00000000-0000-4000-8000-0000000000ff";
 
 /**
  * The id every queued success below states for the column it wrote. The deleted doubles derived one
@@ -733,6 +737,19 @@ describeForEachDevice({
                 expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
             });
             expect(getRenderedColumnNames()).toEqual(namesBefore);
+        });
+
+        /*
+         * The one collision no single-board render can stage: Base UI upserts on a repeated id, so
+         * a board-blind id lets board B's refusal swallow board A's still-unretried toast.
+         */
+        it("scopes the create-failure toast id to the board, so the same name refused on two boards cannot collide", () => {
+            // Act
+            const onBoardA = buildCreateFailureToastId({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
+            const onBoardB = buildCreateFailureToastId({ boardId: OTHER_BOARD_ID, name: "Backlog" });
+
+            // Assert
+            expect(onBoardA).not.toBe(onBoardB);
         });
 
         /*

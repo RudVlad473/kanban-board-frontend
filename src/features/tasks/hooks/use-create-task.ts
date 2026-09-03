@@ -45,9 +45,18 @@ export const buildSubtaskFailureToastId = (taskId: string): string => `task-subt
 /**
  * One id per ATTEMPT, not per call — a retry of the same values upserts the one toast instead of
  * stacking a second beside it, while a different attempt gets its own.
+ *
+ * Every field the Retry hands back is in the id, or two attempts differing only in a field left
+ * out would share a toast and the earlier one's typed values would be unreachable.
  */
-export const buildCreateFailureToastId = ({ boardId, columnId, title }: CreateTaskArgs): string =>
-    `task-create-failed:${boardId}:${columnId}:${title}`;
+export const buildCreateFailureToastId = ({
+    boardId,
+    columnId,
+    title,
+    description,
+    subtaskTitles,
+}: CreateTaskArgs): string =>
+    `task-create-failed:${JSON.stringify([boardId, columnId, title, description, subtaskTitles])}`;
 
 export type CreateTaskArgs = {
     boardId: string;

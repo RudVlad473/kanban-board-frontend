@@ -9,9 +9,13 @@ import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { createBoardAction } from "@/features/boards/actions/create-board-action";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
+import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
+import { getRaisedToastTexts } from "@/test-utils/raised-toasts";
 
 import * as stories from "./boards-empty-state.stories";
 
@@ -28,6 +32,24 @@ vi.mock("next/navigation", () =>
 vi.mock("next/link", () => createNextLinkShim());
 
 const { Default, ModalOpen } = composeStories(stories);
+
+const createBoardStub = actionStub(createBoardAction);
+
+/*
+ * Opens the call to action's modal, fills the name, then adds and fills one row per column name.
+ * The form seeds no rows, so each requested column is appended before it is filled.
+ */
+const submitNewBoard = async ({ name, columns }: { name: string; columns: string[] }): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: "Create your first board" }));
+    await userEvent.fill(await screen.findByLabelText("Board Name"), name);
+
+    for (const [index, columnName] of columns.entries()) {
+        await userEvent.click(screen.getByRole("button", { name: "+ Add New Column" }));
+        await userEvent.fill(screen.getByLabelText(`Column ${String(index + 1)}`), columnName);
+    }
+
+    await userEvent.click(screen.getByRole("button", { name: "Create New Board" }));
+};
 
 /*
  * ADR tech/0014: the whole body runs at both viewports. The empty state has no
@@ -64,6 +86,29 @@ describeForEachDevice({
             // Assert
             expect(await screen.findByRole("dialog")).toBeInTheDocument();
             expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+        });
+
+        /*
+         * Base UI upserts on a repeated id, so an id that drops the column rows silently replaces
+         * the earlier attempt's Retry — and with it the only route back to those rows.
+         */
+        it("raises a second toast for a second attempt sharing the board name but not the column rows", async () => {
+            // Arrange
+            await render(<Default />);
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+
+            // Act
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo", "Doing"] });
+
+            // Assert — two lost attempts, so two toasts, not one that swallowed the first.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(2);
+            });
         });
 
         it("renders the create-board modal when staged open", async () => {

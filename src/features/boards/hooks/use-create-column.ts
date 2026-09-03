@@ -40,8 +40,14 @@ const COLUMN_COUNT_NUDGE_COPY = {
 
 const RETRY_ACTION_LABEL = "Retry";
 
-/** Name-scoped so retrying one attempt upserts its own toast instead of stacking beside a stale first. */
-export const buildCreateFailureToastId = ({ name }: CreateColumnArgs): string => `column-create-failed:${name}`;
+/**
+ * One id per ATTEMPT, so retrying upserts its own toast instead of stacking beside a stale first.
+ *
+ * BOARD-scoped as well as name-scoped: without the board id, the same column name refused on two
+ * boards collides on one toast and the first board's Retry is unreachable.
+ */
+export const buildCreateFailureToastId = ({ boardId, name }: CreateColumnArgs): string =>
+    `column-create-failed:${JSON.stringify([boardId, name])}`;
 
 export type CreateColumnArgs = { boardId: string; name: string };
 
