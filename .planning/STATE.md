@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-22 tasks complete; awaiting the blocking human phase sign-off checkpoint
-last_updated: "2026-09-02T12:32:39.074Z"
-last_activity: 2026-09-02
-last_activity_desc: Plan 04-22 close-out complete; awaiting human phase sign-off
+stopped_at: Plan 04-22 task 4 — CI fully green at bea3986 (run 33756448713); the human phase sign-off checkpoint is presented and blocking
+last_updated: "2026-09-03T13:00:00.000Z"
+last_activity: 2026-09-03
+last_activity_desc: Four e2e defects fixed, CI green on all four jobs, checkpoint presented
 state_head: c0ab07e41dd5ce9d946af6210940848ecf15f2b8
 progress:
   total_phases: 6
@@ -224,9 +224,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-02
-Stopped at: Session resumed from HANDOFF.json; proceeding with checkpoint-response queue item 1
-(audit rows 4 + 7) — one agent dispatched in the main checkout
+Last session: 2026-09-03
+Stopped at: Session resumed from HANDOFF.json; remaining-work item 1 in flight — 22 commits pushed
+(`9b29c25..ab82611` on `gsd/phase-04-task-subtask-workflow`), blocking on CI run 33748811645
 
 **2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
 cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
@@ -302,4 +302,30 @@ sits 26px below its field centre (`subtask-editor-row.tsx:105`'s `mt-6` against
 `leading-*` utility appears in zero `.tsx` files, so all 59 `text-*` token usages render at 1.5).
 Full narrative: `04-22-SUMMARY.md`.
 
-**Next:** the blocking human phase sign-off checkpoint at the end of 04-22.
+**This session (2026-09-03, `/gsd-resume-work`):** Pushed the 24 waiting commits and drove CI to
+green. Four separate defects, three of them real product/config bugs rather than test issues:
+
+1. **THEME-01** had been red on CI for five consecutive runs since `07e7969` gave every element a
+   200ms colour transition — a single `getComputedStyle` read right after the toggle returns the
+   interpolated value, which at t=0 is the START colour. Both colour assertions now poll (`9ef39c0`).
+2. **The full-app smoke was running in CI** against the explicit decision that it must not, and
+   against its own header comment: it matched the `e2e` project's `**/*.e2e.spec.ts` and CI runs
+   `--project e2e`. `testIgnore` plus a `smoke` project and `pnpm test:smoke` (`941df11`).
+3. **`prefetch={true}` on the sidebar board link** (`956aa9a`) hid every `refresh()`-delivered
+   update: `refresh()` updates the Router Cache entry for the route you are ON, never a prefetched
+   one, and the subtask fan-out and post-conflict re-read are both still `refresh()`-only. `6206025`
+   had rejected the prop for exactly this reason four commits earlier. Bisected, and measured 7/12
+   failing with it against 12/12 without, with the last CI-green commit 12/12 as control (`bc4ba75`).
+4. **The create-task modal could mount against an unknown column list.** `a9efe4a` correctly stopped
+   disabling the button on an absent `["board", boardId]` entry, but the modal still mounted as
+   `columns ?? []`, and `AddTaskModal` reads `columns.at(0)` once in `useForm`'s `defaultValues` — so
+   `columnId` pinned to `""` for the modal's life and `Create Task` silently did nothing. Failed 3 CI
+   runs running, never locally; CI's own DOM snapshot named it. Pinned by a browser case falsified
+   against the unfixed component (`bea3986`).
+
+CI run 33756448713 green on quality/secrets/visual/e2e. Both mock divergences 04-22 surfaced were
+re-measured through the running app and are RESOLVED — the subtask remove control is 0px off its
+field centre (was 26px), and every type token on the boards surface renders its design line-height
+and weight, which `4b048b2` fixed after task 3 recorded the finding.
+
+**Next:** the blocking human phase sign-off checkpoint at the end of 04-22 — presented 2026-09-03.
