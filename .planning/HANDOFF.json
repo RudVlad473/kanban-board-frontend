@@ -42,41 +42,31 @@
         },
         {
             "id": 6,
-            "name": "Unresolved product-owner report: 'sign in sign up still causes full page reload' \u2014 could not reproduce; needs an incognito/extensions-off check",
-            "status": "not_started"
-        },
-        {
-            "id": 7,
             "name": "Verify or refute Finding B (cross-board column Retry writing to the wrong board) by driving the running app",
             "status": "not_started"
         },
         {
-            "id": 8,
+            "id": 7,
             "name": "use-create-task.ts and use-create-column.ts carry REVIEW-2's stale-snapshot defect, knowingly unfixed",
             "status": "not_started"
         },
         {
-            "id": 9,
+            "id": 8,
             "name": "Answer the 04-22 human sign-off checkpoint (product owner only)",
             "status": "not_started"
         },
         {
-            "id": 10,
+            "id": 9,
             "name": "Wire planning-tokens:check into CI once the 109 residual bare decision ids are cleared by hand",
             "status": "not_started"
         },
         {
-            "id": 11,
+            "id": 10,
             "name": "Diagnose the full-app smoke's unexplained intermittency, then decide on CI wiring",
             "status": "not_started"
         }
     ],
     "blockers": [
-        {
-            "description": "'sign in sign up still causes full page reload' is reported but not reproducible. Measured soft on every path: landing -> /login -> /register -> /login, both refusal paths, both success paths and sign-out all stayed on ONE document (navCount 1, a window marker survived every hop, RSC fetches 36-73ms). /login and /register share app/(auth)/layout.tsx so only the page segment swaps, and e2e already asserts this and passes. Only lead: the dev log shows a whole-tree hydration mismatch from a client-only `vc-init` class on <body> (Vercel Toolbar or a browser extension), which makes React discard the server HTML and re-render everything \u2014 visually identical to a reload, and absent under headless Playwright.",
-            "type": "human_action",
-            "workaround": "Ask the product owner to retry in an incognito window with extensions disabled. If it still reproduces there, the measurements above are wrong and the investigation restarts."
-        },
         {
             "description": "Finding B is unverified. A review agent claims BoardView never remounts across a board-to-board navigation, so retryColumnName survives and a column Retry writes board A's column name onto board B \u2014 a silent wrong write. Reading the code suggests it is REFUTED: app/(dashboard)/boards/[boardId]/page.tsx:65 renders <Suspense key={boardId}> around the subtree containing BoardView, which remounts on key change, and carries a comment saying exactly that. The agent said 'the page renders it unkeyed' \u2014 it is keyed one level up.",
             "type": "technical",
@@ -100,11 +90,6 @@
     ],
     "async_jobs": [],
     "human_actions_pending": [
-        {
-            "action": "Retry the 'full page reload' on sign in / sign up in an incognito window with extensions off",
-            "context": "Blocks the only product-owner report from this session that was not resolved. Four independent measurements say the navigation is soft; the extension hypothesis is the remaining explanation and only the product owner can test it.",
-            "blocking": false
-        },
         {
             "action": "Approve or reject Phase 04 at the 04-22 checkpoint",
             "context": "Presented 2026-09-03 and still unanswered. It is now answerable for the first time: the REVIEW-1 finding that negated the approved D-05 trade-off is fixed. Do not mark Phase 04 complete in ROADMAP.md and do not run /gsd-verify-work until they answer.",
@@ -140,6 +125,11 @@
         {
             "decision": "comments:check runs in the pre-commit hook, not only in CI",
             "rationale": "It failed three separate CI runs in one session, each time on a comment the hook had already let through, and each failure cost a full red run plus the skipped visual and e2e jobs behind it. The hook ran 2 of CI's 11 gate scripts; this closes the cheapest and most frequently hit part of that gap.",
+            "phase": "04"
+        },
+        {
+            "decision": "CLOSED, not reproducible: the reported 'sign in / sign up causes a full page reload'",
+            "rationale": "Measured soft on every path 2026-09-03: landing -> /login -> /register -> /login, both refusal paths, both success paths and sign-out all stayed on ONE document (navCount 1, a window marker survived every hop, RSC fetches 36-73ms). /login and /register share app/(auth)/layout.tsx so only the page segment swaps, and e2e/auth.e2e.spec.ts already asserts this and passes. The product owner then could not reproduce it either and ruled it out. Do NOT re-open without a fresh repro \u2014 the leading hypothesis was a whole-tree hydration mismatch from a client-only `vc-init` class on <body> (Vercel Toolbar or a browser extension), which re-renders everything and looks identical to a reload.",
             "phase": "04"
         }
     ],
