@@ -52,7 +52,7 @@ export const textFieldBoxVariants = cva(
  * ellipsis while focused — a cross-browser caret-scroll rendering bug, Firefox gap included (01-09-SUMMARY.md).
  */
 export const textFieldControlVariants = cva(
-    "min-w-16 flex-1 self-stretch truncate bg-transparent font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary transition-colors placeholder:text-text-muted focus:text-clip focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted",
+    "min-w-16 flex-1 self-stretch truncate bg-transparent font-body-l text-body-l text-text-primary transition-colors placeholder:text-text-muted focus:text-clip focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted",
     {
         variants: {
             size: {

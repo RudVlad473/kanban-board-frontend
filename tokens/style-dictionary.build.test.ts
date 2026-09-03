@@ -65,8 +65,8 @@ describe("style dictionary token pipeline (D-12)", () => {
             "--font-heading-xl: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;",
         );
         expect(css).toContain("--text-heading-xl: 24px;");
-        expect(css).toContain("--font-weight-heading-xl: 700;");
-        expect(css).toContain("--leading-heading-xl: 30px;");
+        expect(css).toContain("--text-heading-xl--font-weight: 700;");
+        expect(css).toContain("--text-heading-xl--line-height: 30px;");
     });
 
     /*
@@ -79,8 +79,8 @@ describe("style dictionary token pipeline (D-12)", () => {
         const declarations = [
             "--font-heading-m: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;",
             "--text-heading-m: 15px;",
-            "--font-weight-heading-m: 700;",
-            "--leading-heading-m: 19px;",
+            "--text-heading-m--font-weight: 700;",
+            "--text-heading-m--line-height: 19px;",
         ];
 
         // Act
@@ -99,20 +99,20 @@ describe("style dictionary token pipeline (D-12)", () => {
      * Kerning and case are the entire difference between heading-s and body-m at 12px; heading-m
      * carries neither, so a --tracking-* property here would mean the wrong role was copied.
      */
-    it("gives font-heading-m no --tracking-* property, unlike font-heading-s", async () => {
+    it("gives text-heading-m no --letter-spacing companion, unlike text-heading-s", async () => {
         // Act
         const css = await buildFullCss();
 
         // Assert
-        expect(css).not.toContain("--tracking-heading-m");
+        expect(css).not.toContain("--text-heading-m--letter-spacing");
     });
 
-    it("carries font-heading-s's letter-spacing as a distinct --tracking-* custom property", async () => {
+    it("carries text-heading-s's letter-spacing as Tailwind's own --letter-spacing companion", async () => {
         // Act
         const css = await buildModeCss({ mode: "light", platform: "css" });
 
         // Assert
-        expect(css).toContain("--tracking-heading-s: 2.4px;");
+        expect(css).toContain("--text-heading-s--letter-spacing: 2.4px;");
     });
 
     it("has every one of the six DTCG categories contribute at least one custom property to the generated stylesheet", async () => {

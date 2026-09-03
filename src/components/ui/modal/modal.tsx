@@ -102,26 +102,13 @@ const Content = ({ className, children, ...props }: ContentProps) => {
 type TitleProps = Omit<DialogTitleProps, "className"> & ClassNameProp;
 
 const Title = ({ className, ...props }: TitleProps) => {
-    return (
-        <Dialog.Title
-            className={cn(
-                "font-heading-l text-heading-l [font-weight:var(--font-weight-heading-l)] text-text-primary",
-                className,
-            )}
-            {...props}
-        />
-    );
+    return <Dialog.Title className={cn("font-heading-l text-heading-l text-text-primary", className)} {...props} />;
 };
 
 type DescriptionProps = Omit<DialogDescriptionProps, "className"> & ClassNameProp;
 
 const Description = ({ className, ...props }: DescriptionProps) => {
-    return (
-        <Dialog.Description
-            className={cn("font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted", className)}
-            {...props}
-        />
-    );
+    return <Dialog.Description className={cn("font-body-l text-body-l text-text-muted", className)} {...props} />;
 };
 
 type FooterProps = ComponentProps<"div">;

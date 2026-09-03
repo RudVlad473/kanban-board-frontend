@@ -40,7 +40,7 @@ export const SubtaskChecklistRow = ({ subtask, onToggle, isPending }: Props) => 
 
             <Field.Label
                 className={cn(
-                    "font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary",
+                    "font-body-m text-body-m text-text-primary",
                     /*
                      * checkbox.tsx's own 04-UI-SPEC treatment, reproduced verbatim: 55% of primary
                      * (the lowest whole percent clearing WCAG AA), never the mock-sampled 50%.

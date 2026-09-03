@@ -7,7 +7,7 @@ import { cva } from "class-variance-authority";
  * measured 110.9px on PDF p6) is a floor the box grows from rather than a fixed height.
  */
 export const textareaVariants = cva(
-    "min-h-28 w-full rounded-sm border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
+    "min-h-28 w-full rounded-sm border bg-bg-surface px-4 py-3 font-body-l text-body-l transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
     {
         variants: {
             // The two semantic tokens for the form-primitive error visual, same as TextField.

@@ -44,7 +44,7 @@ export const BoardCard = ({
                 href={buildBoardDetailPath(board.id)}
                 prefetch={true}
                 className={cn(
-                    "mr-6 flex h-11 min-w-0 items-center gap-2 rounded-r-full pr-11 pl-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)]",
+                    "mr-6 flex h-11 min-w-0 items-center gap-2 rounded-r-full pr-11 pl-6 font-body-m text-body-m",
                     isSelected ? "bg-bg-primary text-text-on-primary" : "text-text-muted hover:text-text-primary",
                 )}
             >

@@ -34,17 +34,13 @@ export const DashboardHeader = ({ displayName, boards: seedBoards }: Props) => {
     return (
         <header className="flex shrink-0 items-center gap-4 border-b border-border-default bg-bg-surface px-6 py-4">
             {openBoard ? (
-                <h1 className="min-w-0 truncate font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
-                    {openBoard.name}
-                </h1>
+                <h1 className="min-w-0 truncate font-heading-xl text-heading-xl text-text-primary">{openBoard.name}</h1>
             ) : null}
 
             <div className="ml-auto flex shrink-0 items-center gap-4">
                 <AddTaskButton />
 
-                <span className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
-                    {displayName}
-                </span>
+                <span className="font-body-l text-body-l text-text-primary">{displayName}</span>
 
                 <SignOutButton />
             </div>

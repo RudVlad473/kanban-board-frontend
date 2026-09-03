@@ -134,9 +134,7 @@ export const AddTaskModal = ({
                     />
 
                     <div className="flex flex-col gap-3">
-                        <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
-                            Subtasks
-                        </span>
+                        <span className="font-body-m text-body-m text-text-primary">Subtasks</span>
 
                         {fields.map((field, index) => {
                             const rowValue = liveSubtasks[index]?.value ?? "";
@@ -180,9 +178,7 @@ export const AddTaskModal = ({
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
-                            Status
-                        </span>
+                        <span className="font-body-m text-body-m text-text-primary">Status</span>
 
                         <Controller
                             control={control}
@@ -212,10 +208,7 @@ export const AddTaskModal = ({
                     </div>
 
                     {errorMessage ? (
-                        <p
-                            role="alert"
-                            className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
-                        >
+                        <p role="alert" className="font-body-l text-body-l text-text-danger">
                             {errorMessage}
                         </p>
                     ) : null}

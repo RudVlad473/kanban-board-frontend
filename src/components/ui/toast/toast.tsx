@@ -52,10 +52,7 @@ const Title = ({ className, children, ...props }: TitleProps) => {
     return (
         <BaseToast.Title
             title={tooltip}
-            className={cn(
-                "line-clamp-2 pr-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary",
-                className,
-            )}
+            className={cn("line-clamp-2 pr-6 font-body-m text-body-m text-text-primary", className)}
             {...props}
         >
             {children}
@@ -75,10 +72,7 @@ const Description = ({ className, children, ...props }: DescriptionProps) => {
     return (
         <BaseToast.Description
             title={tooltip}
-            className={cn(
-                "line-clamp-3 pr-6 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted",
-                className,
-            )}
+            className={cn("line-clamp-3 pr-6 font-body-l text-body-l text-text-muted", className)}
             {...props}
         >
             {children}
@@ -97,7 +91,7 @@ const Action = ({ className, ...props }: ActionProps) => {
     return (
         <BaseToast.Action
             className={cn(
-                "-ml-2 self-start rounded-sm px-2 py-1 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary underline decoration-1 underline-offset-2 outline-none hover:no-underline focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2",
+                "-ml-2 self-start rounded-sm px-2 py-1 font-body-m text-body-m text-text-primary underline decoration-1 underline-offset-2 outline-none hover:no-underline focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2",
                 className,
             )}
             {...props}

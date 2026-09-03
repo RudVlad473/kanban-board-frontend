@@ -130,26 +130,20 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
 
                 {/* UI-SPEC empty/detail-view: no block at all when there is none — no placeholder line. */}
                 {task.description !== undefined ? (
-                    <p className="mt-6 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
-                        {task.description}
-                    </p>
+                    <p className="mt-6 font-body-l text-body-l text-text-muted">{task.description}</p>
                 ) : null}
 
                 <div className="mt-6">
                     {subtasks.length === 0 ? (
                         <div className="flex flex-col gap-1">
                             {/* UI-SPEC empty/detail-view: the caption is SUPPRESSED, not "(0 of 0)". */}
-                            <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
-                                No subtasks yet.
-                            </p>
+                            <p className="font-body-l text-body-l text-text-muted">No subtasks yet.</p>
 
-                            <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
-                                Use Edit Task to add one.
-                            </p>
+                            <p className="font-body-l text-body-l text-text-muted">Use Edit Task to add one.</p>
                         </div>
                     ) : (
                         <>
-                            <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
+                            <p className="font-body-m text-body-m text-text-muted">
                                 {toSubtaskDetailCaption(subtasks)}
                             </p>
 
@@ -171,9 +165,7 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
                 </div>
 
                 <div className="mt-6 flex flex-col gap-2">
-                    <p className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
-                        Current Status
-                    </p>
+                    <p className="font-body-m text-body-m text-text-muted">Current Status</p>
 
                     <Dropdown.Root
                         value={currentColumnId}

@@ -76,7 +76,7 @@ export const ColumnHeader = ({
         <div className="sticky top-0 flex items-center gap-2 bg-bg-app pb-6">
             <h2
                 id={`board-column-${column.id}`}
-                className="min-w-0 flex-1 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase"
+                className="min-w-0 flex-1 font-heading-s text-heading-s text-text-muted uppercase"
             >
                 {/* The 44px tier is the kebab's touch target, which sets this row's height too. */}
                 {handleProps === undefined ? (

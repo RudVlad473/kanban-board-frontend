@@ -21,7 +21,7 @@ export const AddColumnPlaceholder = ({ onOpen, ref }: Props) => {
             ref={ref}
             type="button"
             onClick={onOpen}
-            className="flex w-70 shrink-0 items-center justify-center rounded-md bg-[linear-gradient(180deg,var(--color-bg-column-add-from)_0%,var(--color-bg-column-add-to)_100%)] font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-muted outline-none hover:text-bg-primary focus-visible:text-bg-primary focus-visible:ring-2 focus-visible:ring-ring-focus"
+            className="flex w-70 shrink-0 items-center justify-center rounded-md bg-[linear-gradient(180deg,var(--color-bg-column-add-from)_0%,var(--color-bg-column-add-to)_100%)] font-heading-xl text-heading-xl text-text-muted outline-none hover:text-bg-primary focus-visible:text-bg-primary focus-visible:ring-2 focus-visible:ring-ring-focus"
         >
             + New Column
         </button>

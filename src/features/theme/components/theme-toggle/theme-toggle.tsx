@@ -34,10 +34,7 @@ export const ThemeToggle = ({ initialTheme, isAuthenticated, forceErrorMessage }
             </div>
 
             {/* Always rendered (even empty) so assistive technology has a stable live region to watch, per Task 2's action text. */}
-            <p
-                role="status"
-                className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
-            >
+            <p role="status" className="font-body-l text-body-l text-text-danger">
                 {displayedErrorMessage}
             </p>
         </div>

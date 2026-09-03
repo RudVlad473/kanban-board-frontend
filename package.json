@@ -33,7 +33,8 @@
         "e2e:seed": "bash e2e/seed.sh",
         "e2e:cleanup": "bash e2e/seed.sh cleanup",
         "test:all": "pnpm test && pnpm exec playwright test",
-        "api:generate": "openapi-typescript docs/api/kanban-board-openapi.json -o src/lib/core/api-contract/generated-types.ts"
+        "api:generate": "openapi-typescript docs/api/kanban-board-openapi.json -o src/lib/core/api-contract/generated-types.ts",
+        "smoke:check": "node scripts/check-smoke-coverage.mjs"
     },
     "dependencies": {
         "@base-ui/react": "1.7.0",

@@ -106,12 +106,7 @@ export const TextField = ({
              */
             className="flex w-full min-w-0 flex-col gap-1"
         >
-            <Field.Label
-                className={cn(
-                    "font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary",
-                    isLabelHidden && "sr-only",
-                )}
-            >
+            <Field.Label className={cn("font-body-m text-body-m text-text-primary", isLabelHidden && "sr-only")}>
                 {label}
             </Field.Label>
 
@@ -158,7 +153,7 @@ export const TextField = ({
                     <Field.Error
                         match={true}
                         className={cn(
-                            "min-w-0 truncate font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger",
+                            "min-w-0 truncate font-body-l text-body-l text-text-danger",
                             counterText !== null && "sr-only",
                         )}
                     >
@@ -173,7 +168,7 @@ export const TextField = ({
                     <span
                         aria-hidden="true"
                         className={cn(
-                            "shrink-0 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] whitespace-nowrap tabular-nums",
+                            "shrink-0 font-body-l text-body-l whitespace-nowrap tabular-nums",
                             hasError ? "text-text-danger" : "text-text-muted",
                         )}
                     >
@@ -183,9 +178,7 @@ export const TextField = ({
             </div>
 
             {description ? (
-                <Field.Description className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
-                    {description}
-                </Field.Description>
+                <Field.Description className="font-body-l text-body-l text-text-muted">{description}</Field.Description>
             ) : null}
         </Field.Root>
     );

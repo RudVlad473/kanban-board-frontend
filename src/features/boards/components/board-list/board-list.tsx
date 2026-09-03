@@ -126,7 +126,7 @@ export const BoardList = ({
 
     return (
         <>
-            <p className="p-6 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase">
+            <p className="p-6 font-heading-s text-heading-s text-text-muted uppercase">
                 {`ALL BOARDS (${String(boards.length)})`}
             </p>
 
@@ -134,16 +134,14 @@ export const BoardList = ({
             <div className="flex-1 overflow-y-auto">
                 {loadFailed ? (
                     <div className="flex flex-col items-start gap-2 px-6 py-4">
-                        <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
-                            Couldn&apos;t load your boards.
-                        </p>
+                        <p className="font-body-l text-body-l text-text-muted">Couldn&apos;t load your boards.</p>
 
                         <button
                             type="button"
                             onClick={() => {
                                 router.refresh();
                             }}
-                            className="rounded-sm font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary underline decoration-1 underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2"
+                            className="rounded-sm font-body-m text-body-m text-text-primary underline decoration-1 underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2"
                         >
                             Try again.
                         </button>
@@ -173,7 +171,7 @@ export const BoardList = ({
                 onClick={() => {
                     handleOpenChange(true);
                 }}
-                className="flex min-h-11 w-full items-center gap-2 px-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-bg-primary outline-none hover:text-bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-inset"
+                className="flex min-h-11 w-full items-center gap-2 px-6 font-body-m text-body-m text-bg-primary outline-none hover:text-bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-inset"
             >
                 <PanelLeft aria-hidden="true" className="size-5 shrink-0" />+ Create New Board
             </button>

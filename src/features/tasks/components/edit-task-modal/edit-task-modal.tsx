@@ -108,12 +108,10 @@ export const EditTaskModal = ({ task, boardId, columns, onClose, onSubmit, isPen
                      * queued. C-03: the mock's batched panel is honoured visually only (04-UI-SPEC).
                      */}
                     <div className="flex flex-col gap-3">
-                        <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
-                            Subtasks
-                        </span>
+                        <span className="font-body-m text-body-m text-text-primary">Subtasks</span>
 
                         {/* The mitigation for the real hazard it creates — not optional decoration. */}
-                        <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
+                        <p className="font-body-l text-body-l text-text-muted">
                             Subtask changes save as you make them.
                         </p>
 

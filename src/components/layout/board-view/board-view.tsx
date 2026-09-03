@@ -185,7 +185,7 @@ export const BoardView = ({
                  * here, so this branch deliberately renders no `AddColumnPlaceholder`.
                  */
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 bg-bg-app p-6">
-                    <p className="text-center font-heading-l text-heading-l [font-weight:var(--font-weight-heading-l)] text-text-muted">
+                    <p className="text-center font-heading-l text-heading-l text-text-muted">
                         This board is empty. Create a new column to get started.
                     </p>
 
@@ -258,12 +258,12 @@ export const BoardView = ({
                         {liftedTask !== null ? (
                             /* The card's own anatomy minus its controls — a preview, not a second interactive copy. */
                             <div className="flex w-70 flex-col gap-2 rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-lg">
-                                <span className="font-heading-m text-heading-m [font-weight:var(--font-weight-heading-m)] break-words text-text-primary">
+                                <span className="font-heading-m text-heading-m break-words text-text-primary">
                                     {liftedTask.title}
                                 </span>
 
                                 {liftedTask.subtasks.length > 0 ? (
-                                    <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
+                                    <span className="font-body-m text-body-m text-text-muted">
                                         {toSubtaskSummary(liftedTask.subtasks)}
                                     </span>
                                 ) : null}
@@ -271,7 +271,7 @@ export const BoardView = ({
                         ) : null}
 
                         {liftedColumn !== null ? (
-                            <div className="flex w-70 items-center gap-4 rounded-sm bg-bg-surface px-2 py-3 font-heading-s text-heading-s [font-weight:var(--font-weight-heading-s)] tracking-heading-s text-text-muted uppercase shadow-lg">
+                            <div className="flex w-70 items-center gap-4 rounded-sm bg-bg-surface px-2 py-3 font-heading-s text-heading-s text-text-muted uppercase shadow-lg">
                                 <span
                                     aria-hidden="true"
                                     className={cn(

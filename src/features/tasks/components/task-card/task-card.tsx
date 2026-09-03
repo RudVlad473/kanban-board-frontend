@@ -118,15 +118,11 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
                 className="flex min-w-0 flex-1 flex-col gap-2 rounded-sm text-left focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none"
             >
                 {/* C-07: the title WRAPS rather than truncating, and the card is never height-clamped. */}
-                <span className="font-heading-m text-heading-m [font-weight:var(--font-weight-heading-m)] break-words text-text-primary">
-                    {task.title}
-                </span>
+                <span className="font-heading-m text-heading-m break-words text-text-primary">{task.title}</span>
 
                 {/* UI-SPEC empty/task-card: at zero subtasks there is no caption element at all. */}
                 {subtaskSummary !== null ? (
-                    <span className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted">
-                        {subtaskSummary}
-                    </span>
+                    <span className="font-body-m text-body-m text-text-muted">{subtaskSummary}</span>
                 ) : null}
             </button>
 

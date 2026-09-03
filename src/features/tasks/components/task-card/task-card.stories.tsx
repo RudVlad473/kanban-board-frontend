@@ -143,9 +143,7 @@ export const Lifted: Story = {
                     aria-hidden="true"
                     className="absolute top-9 left-20 flex w-70 flex-col gap-2 rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-lg"
                 >
-                    <span className="font-heading-m text-heading-m [font-weight:var(--font-weight-heading-m)] text-text-primary">
-                        {args.task.title}
-                    </span>
+                    <span className="font-heading-m text-heading-m text-text-primary">{args.task.title}</span>
                 </div>
             </div>
         );

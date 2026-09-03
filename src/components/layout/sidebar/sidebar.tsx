@@ -57,9 +57,7 @@ export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Pr
             <div className="flex items-center gap-2 p-6">
                 <Kanban aria-hidden="true" className="size-6 text-text-primary" />
 
-                <span className="font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
-                    kanban
-                </span>
+                <span className="font-heading-xl text-heading-xl text-text-primary">kanban</span>
             </div>
 
             {/* Absorbs the panel's spare height and is allowed to shrink below its content (min-h-0). */}
@@ -71,7 +69,7 @@ export const Sidebar = ({ initialTheme, children, defaultIsExpanded = true }: Pr
                 <button
                     type="button"
                     onClick={collapseSidebar}
-                    className="flex min-h-11 w-full items-center gap-2 rounded-full px-4 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-muted hover:bg-bg-app hover:text-text-primary"
+                    className="flex min-h-11 w-full items-center gap-2 rounded-full px-4 font-body-m text-body-m text-text-muted hover:bg-bg-app hover:text-text-primary"
                 >
                     <EyeOff aria-hidden="true" className="size-5 shrink-0" />
                     Hide Sidebar

@@ -24,10 +24,19 @@ const BREAKPOINT_ALIASES = { mobile: "sm", tablet: "md", desktop: "lg" };
  */
 const fontFamilyVariableSlug = (fontFamily) => fontFamily.toLowerCase().replace(/\s+/g, "-");
 
+// comment-length-exempt: records that Tailwind v4 DOES have a composite font-size type — the reading a future reader would otherwise re-reject — and the scanning behaviour that broke the build from inside this very comment
 /**
- * Expands one composite `typography` token into Tailwind v4's separately-addressable custom
- * properties, since Tailwind v4 has no composite type — `font-heading-xl` becomes four or five
- * individual `--font-`/`--text-`/`--font-weight-`/`--leading-`/`--tracking-<name>` properties.
+ * Expands one composite `typography` token onto Tailwind v4's own font-size companion variables,
+ * so `text-heading-xl` alone emits size, line-height, weight and tracking (see
+ * https://tailwindcss.com/docs/font-size). Family stays separate — v4 has no family companion.
+ *
+ * Decisions ───
+ * - v4 DOES have a composite type. An earlier reading that it does not left every call site
+ *   hand-rolling the weight, and dropped line-height from all 62 of them: nothing rendered a
+ *   design line-height at all. `.planning/WINDOWS.md` window 2 recorded this same fix on
+ *   2026-08-11 and it stayed open until 2026-09-03.
+ * - Never write an arbitrary-value utility literally in this file. Tailwind scans it, so a
+ *   bracketed class in prose is emitted as real CSS; one in this very comment broke the build.
  */
 const typographyDeclarations = (token) => {
     const value = token.$value ?? token.value;
@@ -40,11 +49,11 @@ const typographyDeclarations = (token) => {
     const lines = [
         `  --font-${suffix}: var(${fontVar}), ui-sans-serif, system-ui, sans-serif;`,
         `  --text-${suffix}: ${value.fontSize};`,
-        `  --font-weight-${suffix}: ${value.fontWeight};`,
-        `  --leading-${suffix}: ${value.lineHeight};`,
+        `  --text-${suffix}--font-weight: ${value.fontWeight};`,
+        `  --text-${suffix}--line-height: ${value.lineHeight};`,
     ];
     if (value.letterSpacing) {
-        lines.push(`  --tracking-${suffix}: ${value.letterSpacing};`);
+        lines.push(`  --text-${suffix}--letter-spacing: ${value.letterSpacing};`);
     }
     return lines;
 };

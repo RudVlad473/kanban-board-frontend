@@ -50,7 +50,7 @@ export const BoardsEmptyState = ({ defaultIsAddBoardOpen = false }: Props) => {
 
     return (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 bg-bg-app p-6">
-            <p className="text-center font-heading-l text-heading-l [font-weight:var(--font-weight-heading-l)] text-text-muted">
+            <p className="text-center font-heading-l text-heading-l text-text-muted">
                 Create a new board to get started.
             </p>
 

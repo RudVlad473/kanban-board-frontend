@@ -9,11 +9,9 @@ const Home = () => {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg-app">
             <div className="flex flex-col items-center gap-4 rounded-lg bg-bg-surface p-6">
-                <h1 className="font-heading-xl text-heading-xl [font-weight:var(--font-weight-heading-xl)] text-text-primary">
-                    Kanban Board
-                </h1>
+                <h1 className="font-heading-xl text-heading-xl text-text-primary">Kanban Board</h1>
 
-                <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
+                <p className="font-body-l text-body-l text-text-muted">
                     Organize your work into boards, columns, and tasks.
                 </p>
 

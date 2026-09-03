@@ -150,10 +150,7 @@ export const SignInForm = ({
             />
 
             {serverErrorMessage ? (
-                <p
-                    role="alert"
-                    className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
-                >
+                <p role="alert" className="font-body-l text-body-l text-text-danger">
                     {serverErrorMessage}
                 </p>
             ) : null}
@@ -162,7 +159,7 @@ export const SignInForm = ({
                 Sign In
             </Button>
 
-            <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
+            <p className="text-center font-body-l text-body-l text-text-primary">
                 {"Don't have an account? "}
 
                 <Link href={ROUTE.SIGN_UP} className="text-bg-primary hover:text-bg-primary-hover">

@@ -22,7 +22,7 @@ const BoardContents = async ({ boardId }: { boardId: string }) => {
     if (authenticated.status !== RESULT_STATUS.SUCCESS) {
         return (
             <div className="flex min-h-0 flex-1 items-center justify-center bg-bg-app p-6">
-                <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
+                <p className="text-center font-body-l text-body-l text-text-muted">
                     Couldn&apos;t load this board. Try again.
                 </p>
             </div>

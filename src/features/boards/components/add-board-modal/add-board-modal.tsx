@@ -156,10 +156,7 @@ export const AddBoardModal = ({
                     </div>
 
                     {errorMessage ? (
-                        <p
-                            role="alert"
-                            className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
-                        >
+                        <p role="alert" className="font-body-l text-body-l text-text-danger">
                             {errorMessage}
                         </p>
                     ) : null}

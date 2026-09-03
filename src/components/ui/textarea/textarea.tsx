@@ -41,9 +41,7 @@ export const Textarea = ({
             disabled={isDisabled || isLoading}
             className="relative flex w-full flex-col gap-1"
         >
-            <Field.Label className="font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary">
-                {label}
-            </Field.Label>
+            <Field.Label className="font-body-m text-body-m text-text-primary">{label}</Field.Label>
 
             {/* `render` swaps the mounted element: text-field.tsx passes `type` to a fixed-height
                 `<input>`, which is the one thing a Description box has to change. */}
@@ -58,9 +56,7 @@ export const Textarea = ({
             />
 
             {description ? (
-                <Field.Description className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
-                    {description}
-                </Field.Description>
+                <Field.Description className="font-body-l text-body-l text-text-muted">{description}</Field.Description>
             ) : null}
 
             {/* `match` forced to `true` and mounted only when `hasError`, and absolutely positioned
@@ -68,7 +64,7 @@ export const Textarea = ({
             {hasError && errorMessage ? (
                 <Field.Error
                     match={true}
-                    className="absolute top-full left-0 mt-1 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
+                    className="absolute top-full left-0 mt-1 font-body-l text-body-l text-text-danger"
                 >
                     {errorMessage}
                 </Field.Error>

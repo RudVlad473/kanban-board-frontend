@@ -168,10 +168,7 @@ export const SignUpForm = ({
             />
 
             {serverErrorMessage ? (
-                <p
-                    role="alert"
-                    className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-danger"
-                >
+                <p role="alert" className="font-body-l text-body-l text-text-danger">
                     {serverErrorMessage}
                 </p>
             ) : null}
@@ -180,7 +177,7 @@ export const SignUpForm = ({
                 Create Account
             </Button>
 
-            <p className="text-center font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
+            <p className="text-center font-body-l text-body-l text-text-primary">
                 {"Already have an account? "}
 
                 <Link href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">

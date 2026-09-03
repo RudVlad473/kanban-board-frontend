@@ -17,9 +17,7 @@ export const DashboardHeaderSkeleton = ({ displayName }: { displayName: string }
                     + Add New Task
                 </Button>
 
-                <span className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-primary">
-                    {displayName}
-                </span>
+                <span className="font-body-l text-body-l text-text-primary">{displayName}</span>
 
                 <SignOutButton />
             </div>

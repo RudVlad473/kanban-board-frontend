@@ -14,9 +14,7 @@ type Props = PropsWithChildren<{
 export const AuthCard = ({ title, children }: Props) => {
     return (
         <div className="my-8 flex w-full max-w-md flex-col gap-4 rounded-md bg-bg-surface p-6 shadow-md">
-            <h1 className="font-heading-l text-heading-l [font-weight:var(--font-weight-heading-l)] text-text-primary">
-                {title}
-            </h1>
+            <h1 className="font-heading-l text-heading-l text-text-primary">{title}</h1>
 
             {children}
         </div>
