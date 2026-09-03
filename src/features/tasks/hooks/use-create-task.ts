@@ -43,11 +43,10 @@ const buildSubtaskFailureTitle = (failedCount: number): string => `Couldn't crea
 export const buildSubtaskFailureToastId = (taskId: string): string => `task-subtasks-failed:${taskId}`;
 
 /**
- * One id per ATTEMPT, not per call — a retry of the same values upserts the one toast instead of
- * stacking a second beside it, while a different attempt gets its own.
+ * One id per ATTEMPT — every field the Retry hands back.
  *
- * Every field the Retry hands back is in the id, or two attempts differing only in a field left
- * out would share a toast and the earlier one's typed values would be unreachable.
+ * Base UI upserts on a repeated id, so a field left out lets a later attempt swallow an earlier
+ * one's Retry, and with it the only route back to those values.
  */
 export const buildCreateFailureToastId = ({
     boardId,

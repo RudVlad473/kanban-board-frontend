@@ -45,11 +45,10 @@ const buildColumnFailureTitle = (failedCount: number): string => `Couldn't creat
 export const buildColumnFailureToastId = (boardId: string): string => `board-columns-failed:${boardId}`;
 
 /**
- * One id per ATTEMPT, not per call — a retry of the same values upserts the one toast instead of
- * stacking a second beside it, while a different attempt gets its own.
+ * One id per ATTEMPT — the WHOLE attempt, rows included.
  *
- * The column rows are in the id too, or two attempts sharing a name would share a toast and the
- * earlier one's rows would be unreachable.
+ * Base UI upserts on a repeated id, so a field left out lets a later attempt swallow an earlier
+ * one's Retry, and with it the only route back to those values.
  */
 export const buildCreateFailureToastId = ({ name, columnRows }: CreateBoardArgs): string =>
     `board-create-failed:${JSON.stringify([name, columnRows])}`;
