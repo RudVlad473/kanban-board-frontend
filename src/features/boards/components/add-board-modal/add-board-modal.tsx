@@ -23,11 +23,11 @@ type Props = {
     onOpenChange: (isOpen: boolean) => void;
     onSubmit: (values: AddBoardSubmitValues) => void;
     isPending: boolean;
-    /** The inline failure copy, rendered inside the still-open modal — never a toast. */
+    /** Storybook-only staging — a real create now reports through a toast, never inside this modal. */
     errorMessage?: string | null;
-    /** Pre-fills the board name (a plain React Hook Form `defaultValues` passthrough) — Storybook-only staging, mirroring `sign-up-form.tsx`. */
+    /** Pre-fills the board name (a plain React Hook Form `defaultValues` passthrough) — what a retry reopens with. */
     defaultValues?: { name?: string };
-    /** Storybook-only staging — seeds the column rows with these values instead of one empty one. */
+    /** Seeds the column rows with these values instead of one empty one — a retry's own rows. */
     defaultColumns?: string[];
     /** Storybook-only staging — renders the board-name field's error state without a real submit. */
     forceNameError?: string;

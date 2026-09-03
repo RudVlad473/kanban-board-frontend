@@ -20,7 +20,17 @@ export const AddTaskButton = () => {
      * `columnId`. Comparing against the live board closes it the way `BoardView`'s unmount used to.
      */
     const [modalBoardId, setModalBoardId] = useState<string | null>(null);
-    const { createTask, isPending, errorMessage, clearError } = useCreateTask();
+    /*
+     * What a failed create is reopened with, so closing on submit costs the user nothing (D-05,
+     * reversed 2026-09-03). Null on every fresh open, which is what makes those start empty.
+     */
+    const [retryValues, setRetryValues] = useState<AddTaskSubmitValues | null>(null);
+    const { createTask } = useCreateTask({
+        onRetry: ({ boardId, columnId, title, description, subtaskTitles }) => {
+            setRetryValues({ columnId, title, description, subtasks: subtaskTitles });
+            setModalBoardId(boardId);
+        },
+    });
 
     /*
      * Waits for a KNOWN column list: `AddTaskModal` reads `columns.at(0)` once, in `useForm`'s
@@ -38,25 +48,27 @@ export const AddTaskButton = () => {
 
     const closeModal = (): void => {
         setModalBoardId(null);
-        clearError();
     };
 
-    /* Closed as soon as the task itself lands — the subtask fan-out runs behind it. */
+    /*
+     * Closed BEFORE the create is issued, so the optimistic card is what the user sees next rather
+     * than a dimmed backdrop held for the whole round trip. A refusal rolls the card back and
+     * toasts a Retry; nothing is left for the modal to report.
+     */
     const handleSubmit = (values: AddTaskSubmitValues): void => {
         if (modalBoardId === null) {
             return;
         }
 
+        const boardId = modalBoardId;
+        setModalBoardId(null);
+
         void createTask({
-            boardId: modalBoardId,
+            boardId,
             columnId: values.columnId,
             title: values.title,
             description: values.description,
             subtaskTitles: values.subtasks,
-        }).then((outcome) => {
-            if (outcome.didCreate) {
-                setModalBoardId(null);
-            }
         });
     };
 
@@ -67,20 +79,31 @@ export const AddTaskButton = () => {
                 variant="primary"
                 isDisabled={isCreateDisabled}
                 onClick={() => {
+                    setRetryValues(null);
                     setModalBoardId(openBoardId);
                 }}
             >
                 + Add New Task
             </Button>
 
-            {/* Mounted only while open, so each open starts from empty fields. */}
+            {/* Mounted only while open, so each open re-seeds the form from `retryValues`. */}
             {isOpen ? (
                 <AddTaskModal
                     onClose={closeModal}
                     onSubmit={handleSubmit}
-                    isPending={isPending}
-                    errorMessage={errorMessage}
+                    /* Never pending: the modal no longer outlives the submit that closes it. */
+                    isPending={false}
                     columns={columns}
+                    defaultValues={
+                        retryValues !== null
+                            ? {
+                                  title: retryValues.title,
+                                  description: retryValues.description,
+                                  columnId: retryValues.columnId,
+                              }
+                            : undefined
+                    }
+                    defaultSubtasks={retryValues?.subtasks}
                 />
             ) : null}
         </>

@@ -76,29 +76,43 @@ export const BoardList = ({
     const { deleteBoard, isPending: isDeletePending } = useDeleteBoard({
         currentBoardId: toBoardIdFromPath(pathname),
     });
-    /*
-     * Bumped on every fresh open and used as the modal's `key`, so each open starts from empty
-     * fields — a failed create keeps its values because the modal never closed, not because
-     * the form is retained across opens.
-     */
+    /* Bumped on every open and used as the modal's `key`, so each open re-seeds the form below. */
     const [openCount, setOpenCount] = useState(0);
-    const { createBoard, isPending, errorMessage, clearError } = useCreateBoard();
+    /*
+     * What a failed create is reopened with, so closing on submit costs the user nothing (D-05,
+     * reversed 2026-09-03). Null on every fresh open, which is what makes those start empty.
+     */
+    const [retryValues, setRetryValues] = useState<AddBoardSubmitValues | null>(null);
 
-    const handleOpenChange = (nextIsOpen: boolean): void => {
-        setIsAddBoardOpen(nextIsOpen);
-        clearError();
-
-        if (nextIsOpen) {
-            setOpenCount((count) => count + 1);
-        }
+    const openAddBoard = (values: AddBoardSubmitValues | null): void => {
+        setRetryValues(values);
+        setIsAddBoardOpen(true);
+        setOpenCount((count) => count + 1);
     };
 
+    const { createBoard } = useCreateBoard({
+        onRetry: ({ name, columnRows }) => {
+            openAddBoard({ name, columns: columnRows });
+        },
+    });
+
+    const handleOpenChange = (nextIsOpen: boolean): void => {
+        if (nextIsOpen) {
+            openAddBoard(null);
+            return;
+        }
+
+        closeAddBoard();
+    };
+
+    /*
+     * Closed BEFORE the create is issued, so the optimistic row is what the user sees next rather
+     * than a dimmed backdrop held for the whole round trip. A refusal rolls the row back and
+     * toasts a Retry; nothing is left for the modal to report.
+     */
     const handleSubmit = (values: AddBoardSubmitValues): void => {
-        void createBoard({ name: values.name, columnRows: values.columns }).then((outcome) => {
-            if (outcome.didCreate) {
-                closeAddBoard();
-            }
-        });
+        closeAddBoard();
+        void createBoard({ name: values.name, columnRows: values.columns });
     };
 
     /*
@@ -181,8 +195,10 @@ export const BoardList = ({
                 isOpen={isAddBoardOpen}
                 onOpenChange={handleOpenChange}
                 onSubmit={handleSubmit}
-                isPending={isPending}
-                errorMessage={errorMessage}
+                /* Never pending: the modal no longer outlives the submit that closes it. */
+                isPending={false}
+                defaultValues={retryValues !== null ? { name: retryValues.name } : undefined}
+                defaultColumns={retryValues?.columns}
             />
 
             {boardBeingRenamed !== null ? (

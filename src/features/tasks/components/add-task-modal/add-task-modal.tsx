@@ -27,11 +27,11 @@ type Props = {
     isPending: boolean;
     /** Board order — the Status control lists these verbatim, in the order given. */
     columns: { id: string; name: string }[];
-    /** The inline failure copy, rendered inside the still-open modal — never a toast. */
+    /** Storybook-only staging — a real create now reports through a toast, never inside this modal. */
     errorMessage?: string | null;
-    /** Pre-fills the form (a plain React Hook Form `defaultValues` passthrough) — Storybook-only staging. */
+    /** Pre-fills the form (a plain React Hook Form `defaultValues` passthrough) — what a retry reopens with. */
     defaultValues?: { title?: string; description?: string; columnId?: string };
-    /** Storybook-only staging — seeds the subtask rows with these values instead of the default two. */
+    /** Seeds the subtask rows with these values instead of the default two — a retry's own rows. */
     defaultSubtasks?: string[];
     /** Storybook-only staging — renders the title field's error state without a real submit. */
     forceTitleError?: string;

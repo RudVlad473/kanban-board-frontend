@@ -27,25 +27,36 @@ export const BoardsEmptyState = ({ defaultIsAddBoardOpen = false }: Props) => {
         setValue: setIsAddBoardOpen,
         setFalse: closeAddBoard,
     } = useBoolean(defaultIsAddBoardOpen);
-    // Bumped on every fresh open and used as the modal's `key`, so each open starts empty (as BoardList does).
+    // Bumped on every open and used as the modal's `key`, so each open re-seeds it (as BoardList does).
     const [openCount, setOpenCount] = useState(0);
-    const { createBoard, isPending, errorMessage, clearError } = useCreateBoard();
+    /* What a failed create is reopened with, so closing on submit costs nothing (D-05, reversed 2026-09-03). */
+    const [retryValues, setRetryValues] = useState<AddBoardSubmitValues | null>(null);
 
-    const handleOpenChange = (nextIsOpen: boolean): void => {
-        setIsAddBoardOpen(nextIsOpen);
-        clearError();
-
-        if (nextIsOpen) {
-            setOpenCount((count) => count + 1);
-        }
+    const openAddBoard = (values: AddBoardSubmitValues | null): void => {
+        setRetryValues(values);
+        setIsAddBoardOpen(true);
+        setOpenCount((count) => count + 1);
     };
 
+    const { createBoard } = useCreateBoard({
+        onRetry: ({ name, columnRows }) => {
+            openAddBoard({ name, columns: columnRows });
+        },
+    });
+
+    const handleOpenChange = (nextIsOpen: boolean): void => {
+        if (nextIsOpen) {
+            openAddBoard(null);
+            return;
+        }
+
+        closeAddBoard();
+    };
+
+    /* Closed BEFORE the create is issued; a refusal toasts a Retry rather than reporting in here. */
     const handleSubmit = (values: AddBoardSubmitValues): void => {
-        void createBoard({ name: values.name, columnRows: values.columns }).then((outcome) => {
-            if (outcome.didCreate) {
-                closeAddBoard();
-            }
-        });
+        closeAddBoard();
+        void createBoard({ name: values.name, columnRows: values.columns });
     };
 
     return (
@@ -69,8 +80,10 @@ export const BoardsEmptyState = ({ defaultIsAddBoardOpen = false }: Props) => {
                 isOpen={isAddBoardOpen}
                 onOpenChange={handleOpenChange}
                 onSubmit={handleSubmit}
-                isPending={isPending}
-                errorMessage={errorMessage}
+                /* Never pending: the modal no longer outlives the submit that closes it. */
+                isPending={false}
+                defaultValues={retryValues !== null ? { name: retryValues.name } : undefined}
+                defaultColumns={retryValues?.columns}
             />
         </div>
     );

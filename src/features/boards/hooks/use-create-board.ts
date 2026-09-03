@@ -4,7 +4,6 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
@@ -20,16 +19,18 @@ import { buildBoardDetailPath } from "@/lib/core/routing/routes";
  * Authored copy only — the actions return bare discriminants, so nothing the backend said can
  * reach these strings (UI-SPEC Copywriting Contract).
  */
-const GENERIC_CREATE_FAILURE_MESSAGE = "Couldn't create board. Try again.";
+const GENERIC_CREATE_FAILURE_COPY = { title: "Couldn't create board.", description: "Try again." };
 
-/*
- * Only the branches with something distinct to tell the user, mirroring `use-rename-board.ts`'s
- * own table — collapsed to one sentence each, because this modal renders a single alert paragraph
- * rather than the toast's title/description pair.
- */
-const CREATE_FAILURE_MESSAGE: Partial<Record<ResultStatus, string>> = {
-    [RESULT_STATUS.DUPLICATE]: "A board with that name already exists. Choose a different name.",
-    [RESULT_STATUS.UNAUTHENTICATED]: "Your session has expired. Sign in again to create a board.",
+/* Only the branches with something distinct to tell the user, mirroring `use-rename-board.ts`'s own table. */
+const CREATE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; description: string }>> = {
+    [RESULT_STATUS.DUPLICATE]: {
+        title: "A board with that name already exists.",
+        description: "Choose a different name.",
+    },
+    [RESULT_STATUS.UNAUTHENTICATED]: {
+        title: "Your session has expired.",
+        description: "Sign in again to create a board.",
+    },
 };
 
 const RETRY_ACTION_LABEL = "Retry";
@@ -43,25 +44,27 @@ const buildColumnFailureTitle = (failedCount: number): string => `Couldn't creat
  */
 export const buildColumnFailureToastId = (boardId: string): string => `board-columns-failed:${boardId}`;
 
+/**
+ * One id per ATTEMPT, not per call — a retry of the same name upserts the one toast instead of
+ * stacking a second beside it, while a different attempt gets its own.
+ */
+export const buildCreateFailureToastId = ({ name }: CreateBoardArgs): string => `board-create-failed:${name}`;
+
 /** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
 type CreateBoardVariables = { clientId: string; name: string };
 
-export type CreateBoardOutcome =
-    /** The board itself was created; `failedNames` is empty when every column landed too. */
-    | { didCreate: true; boardId: string; failedNames: string[] }
-    /** Nothing was created, so the modal stays open with the entered values intact. */
-    | { didCreate: false };
+/** What a create was attempted with — a failed one is handed back so its Retry can reopen prefilled. */
+export type CreateBoardArgs = { name: string; columnRows: string[] };
 
 /**
  * Orchestrates BOARD-02's two-phase create — the board first, then one column per named row, only
- * if the board landed. A column phase that reports failures does NOT block the modal from closing:
- * Whatever succeeded is kept and the failed names are handed back to the caller.
+ * if the board landed. Neither phase is waited on by the caller (D-05, reversed 2026-09-03): the
+ * modal closes on submit, and each phase reports its own failure through its own toast.
  */
-export const useCreateBoard = () => {
+export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) => void }) => {
     const router = useRouter();
     const toast = useToast();
     const queryClient = useQueryClient();
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     /*
      * The sidebar's row appears on submit, not on settle — the panel reads this cache entry rather
@@ -93,10 +96,7 @@ export const useCreateBoard = () => {
             return { previousBoards };
         },
 
-        /*
-         * No toast here, unlike every other rollback in this repo: nothing was created, so D-05 keeps
-         * the failure inline in the still-open modal — `createBoard` below sets that copy.
-         */
+        /* The rollback only; `createBoard` below raises the toast, which needs the refusal's status. */
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (_error: unknown, _variables, context) => {
             if (context?.previousBoards !== undefined) {
@@ -113,10 +113,6 @@ export const useCreateBoard = () => {
         },
     });
     const createColumnsMutation = useMutation({ mutationFn: createBoardColumnsAction, retry: false });
-
-    const clearError = (): void => {
-        setErrorMessage(null);
-    };
 
     /**
      * Runs the column phase for exactly the names given, returning the ones that still failed.
@@ -147,6 +143,30 @@ export const useCreateBoard = () => {
         raiseColumnFailureToast({ boardId, failedNames: stillFailingNames });
     };
 
+    /** Reports a board that never landed, offering the reopen that carries the typed values back. */
+    const raiseCreateFailureToast = ({ args, status }: { args: CreateBoardArgs; status: ResultStatus }): void => {
+        const isSessionExpired = status === RESULT_STATUS.UNAUTHENTICATED;
+        const toastId = buildCreateFailureToastId(args);
+
+        toast.add({
+            id: toastId,
+            type: "danger",
+            ...(CREATE_FAILURE_COPY[status] ?? GENERIC_CREATE_FAILURE_COPY),
+            /* An expired session names itself: a Retry there could only reopen a modal that fails again. */
+            ...(!isSessionExpired
+                ? {
+                      actionProps: {
+                          children: RETRY_ACTION_LABEL,
+                          onClick: () => {
+                              toast.close(toastId);
+                              onRetry(args);
+                          },
+                      },
+                  }
+                : {}),
+        });
+    };
+
     const raiseColumnFailureToast = ({ boardId, failedNames }: { boardId: string; failedNames: string[] }): void => {
         toast.add({
             id: buildColumnFailureToastId(boardId),
@@ -161,17 +181,9 @@ export const useCreateBoard = () => {
         });
     };
 
-    const createBoard = async ({
-        name,
-        columnRows,
-    }: {
-        name: string;
-        columnRows: string[];
-    }): Promise<CreateBoardOutcome> => {
-        setErrorMessage(null);
-
+    const createBoard = async (args: CreateBoardArgs): Promise<void> => {
         const outcome = await createBoardMutation
-            .mutateAsync({ clientId: crypto.randomUUID(), name })
+            .mutateAsync({ clientId: crypto.randomUUID(), name: args.name })
             .then((result) => ({ didCreate: true as const, board: result.board }))
             .catch((error: unknown) => ({
                 didCreate: false as const,
@@ -179,34 +191,28 @@ export const useCreateBoard = () => {
             }));
 
         if (!outcome.didCreate) {
-            setErrorMessage(CREATE_FAILURE_MESSAGE[outcome.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
-            return { didCreate: false };
+            raiseCreateFailureToast({ args, status: outcome.status });
+            return;
         }
 
         /* The SERVER's id, never the placeholder's — a client-generated id in the URL is a 404. */
         const boardId = outcome.board.id;
-        const names = toSubmittedColumnNames(columnRows);
-        const failedNames = names.length > 0 ? await createColumns({ boardId, names }) : [];
-
-        /*
-         * Navigate before raising the notice, so the toast appears over the board it is talking
-         * about rather than over the modal that is closing.
-         */
         router.push(buildBoardDetailPath(boardId));
 
-        if (failedNames.length > 0) {
-            raiseColumnFailureToast({ boardId, failedNames });
+        /*
+         * Fire-and-forget, as the task create's own fan-out is: awaiting it here held the create
+         * across TWO round trips, and D-04 keeps whatever landed regardless of who is watching.
+         */
+        const names = toSubmittedColumnNames(args.columnRows);
+
+        if (names.length > 0) {
+            void createColumns({ boardId, names }).then((failedNames) => {
+                if (failedNames.length > 0) {
+                    raiseColumnFailureToast({ boardId, failedNames });
+                }
+            });
         }
-
-        return { didCreate: true, boardId, failedNames };
     };
 
-    return {
-        createBoard,
-        createColumns,
-        retryColumns,
-        isPending: createBoardMutation.isPending || createColumnsMutation.isPending,
-        errorMessage,
-        clearError,
-    };
+    return { createBoard, createColumns, retryColumns };
 };

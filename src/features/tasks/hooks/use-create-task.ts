@@ -3,7 +3,7 @@
 // Covered by: `src/features/tasks/components/add-task-button/add-task-button.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
+import { useRef } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createTaskAction } from "@/features/tasks/actions/create-task-action";
@@ -23,10 +23,11 @@ type CreatableBoard = { columns: TaskColumn[] };
  * Authored copy only — the actions return bare discriminants, so nothing the backend said can
  * reach these strings (UI-SPEC Copywriting Contract).
  */
-const GENERIC_CREATE_FAILURE_MESSAGE = "Couldn't create task. Try again.";
+const CREATE_FAILURE_COPY = { title: "Couldn't create task.", description: "Try again." };
 
-const CREATE_FAILURE_MESSAGE: Partial<Record<ResultStatus, string>> = {
-    [RESULT_STATUS.UNAUTHENTICATED]: "Your session has expired. Sign in again to create a task.",
+const CREATE_SESSION_EXPIRED_COPY = {
+    title: "Your session has expired.",
+    description: "Sign in again to create a task.",
 };
 
 const SUBTASK_SESSION_EXPIRED_MESSAGE = "Your session has expired. Sign in again to add these subtasks.";
@@ -41,11 +42,12 @@ const buildSubtaskFailureTitle = (failedCount: number): string => `Couldn't crea
  */
 export const buildSubtaskFailureToastId = (taskId: string): string => `task-subtasks-failed:${taskId}`;
 
-export type CreateTaskOutcome =
-    /** The task itself was created; the subtask fan-out (if any) runs behind the closed modal. */
-    | { didCreate: true; taskId: string }
-    /** Nothing was created, so the modal stays open with the entered values intact. */
-    | { didCreate: false };
+/**
+ * One id per ATTEMPT, not per call — a retry of the same values upserts the one toast instead of
+ * stacking a second beside it, while a different attempt gets its own.
+ */
+export const buildCreateFailureToastId = ({ boardId, columnId, title }: CreateTaskArgs): string =>
+    `task-create-failed:${boardId}:${columnId}:${title}`;
 
 export type CreateTaskArgs = {
     boardId: string;
@@ -64,13 +66,12 @@ type SubtaskFanOutOutcome = { failedTitles: string[]; isSessionExpired: boolean 
 type SubtaskFanOutArgs = { boardId: string; columnId: string; taskId: string; titles: string[] };
 
 /**
- * TASK-01's create orchestration, in the request-response shape `useCreateColumn` uses: a task
- * failure is reported inline, never a toast. The subtask fan-out runs after the task
- * lands without blocking the caller's close, keeping whatever landed and toasting the rest.
+ * TASK-01's create orchestration, optimistic all the way to the modal (D-05, reversed 2026-09-03).
+ * The caller closes on submit and never waits, so a task failure rolls the card back and reports
+ * through a toast whose Retry hands the attempted values back for a prefilled reopen.
  */
-export const useCreateTask = () => {
+export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => void }) => {
     const toast = useToast();
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     /*
      * The failure toast has no auto-dismiss, so its Retry stays mounted and clickable for the whole
      * retry — without this, a second click fans the same titles out twice and duplicates subtasks.
@@ -126,10 +127,7 @@ export const useCreateTask = () => {
             return { previousBoard };
         },
 
-        /*
-         * No toast here, unlike every other rollback in this repo: nothing was created, so D-05 keeps
-         * the failure inline in the still-open modal — `createTask` below sets that copy.
-         */
+        /* The rollback only; `createTask` below raises the toast, which needs the refusal's status. */
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (_error: unknown, { boardId }: CreateTaskVariables, context) => {
             if (context?.previousBoard !== undefined) {
@@ -148,10 +146,6 @@ export const useCreateTask = () => {
         },
     });
     const createSubtasksMutation = useMutation({ mutationFn: createTaskSubtasksAction, retry: false });
-
-    const clearError = useCallback((): void => {
-        setErrorMessage(null);
-    }, []);
 
     /** Runs the subtask phase for exactly the titles given, reporting what still failed and why. */
     const createSubtasks = async ({
@@ -197,6 +191,30 @@ export const useCreateTask = () => {
         });
     };
 
+    /** Reports a task that never landed, offering the reopen that carries the typed values back. */
+    const raiseCreateFailureToast = ({ args, status }: { args: CreateTaskArgs; status: ResultStatus }): void => {
+        const isSessionExpired = status === RESULT_STATUS.UNAUTHENTICATED;
+        const toastId = buildCreateFailureToastId(args);
+
+        toast.add({
+            id: toastId,
+            type: "danger",
+            ...(isSessionExpired ? CREATE_SESSION_EXPIRED_COPY : CREATE_FAILURE_COPY),
+            /* An expired session names itself: a Retry there could only reopen a modal that fails again. */
+            ...(!isSessionExpired
+                ? {
+                      actionProps: {
+                          children: RETRY_ACTION_LABEL,
+                          onClick: () => {
+                              toast.close(toastId);
+                              onRetry(args);
+                          },
+                      },
+                  }
+                : {}),
+        });
+    };
+
     /** Re-runs the subtask phase for exactly the still-failing titles, upserting the same toast id. */
     const retrySubtasks = async ({ boardId, columnId, taskId, titles }: SubtaskFanOutArgs): Promise<void> => {
         if (taskIdsBeingRetried.current.has(taskId)) {
@@ -219,14 +237,8 @@ export const useCreateTask = () => {
         }
     };
 
-    const createTask = async ({
-        boardId,
-        columnId,
-        title,
-        description,
-        subtaskTitles,
-    }: CreateTaskArgs): Promise<CreateTaskOutcome> => {
-        setErrorMessage(null);
+    const createTask = async (args: CreateTaskArgs): Promise<void> => {
+        const { boardId, columnId, title, description, subtaskTitles } = args;
 
         const outcome = await createTaskMutation
             .mutateAsync({ boardId, columnId, title, description, clientId: crypto.randomUUID() })
@@ -237,17 +249,16 @@ export const useCreateTask = () => {
             }));
 
         if (!outcome.didCreate) {
-            setErrorMessage(CREATE_FAILURE_MESSAGE[outcome.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
-            return { didCreate: false };
+            raiseCreateFailureToast({ args, status: outcome.status });
+            return;
         }
 
         /* The SERVER's id, never the placeholder's — the fan-out below posts children against it. */
         const taskId = outcome.task.id;
 
         /*
-         * Fire-and-forget: the caller closes the modal on `didCreate: true` without waiting for
-         * this — the children cannot exist before the task does, but the task itself is already
-         * real, and D-07 keeps whatever fan-out lands regardless of when the caller stops watching.
+         * Fire-and-forget: the modal closed at submit, so nothing is waiting on this — and D-07
+         * keeps whatever fan-out lands regardless of when the caller stopped watching.
          */
         if (subtaskTitles.length > 0) {
             void createSubtasks({ boardId, columnId, taskId, titles: subtaskTitles }).then((outcome) => {
@@ -256,14 +267,7 @@ export const useCreateTask = () => {
                 }
             });
         }
-
-        return { didCreate: true, taskId };
     };
 
-    return {
-        createTask,
-        isPending: createTaskMutation.isPending,
-        errorMessage,
-        clearError,
-    };
+    return { createTask };
 };
