@@ -2339,6 +2339,81 @@ describeForEachDevice({
             expect(screen.getByRole("heading", { name: "Renamed Task" })).toBeInTheDocument();
         });
 
+        /*
+         * TASK-03's optimistic half, which the case above cannot prove: held unresolved, so the
+         * card's new title can only have come from `onMutate`, never from the server's reply.
+         */
+        it("shows the new title on the card while the save is still in flight", async () => {
+            // Arrange
+            updateTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Renamed Task",
+                    description: undefined,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            updateTaskStub.hold();
+            await render(<TasksAcrossColumns />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+            await userEvent.click(screen.getByRole("button", { name: "Task actions for Fixture Task Alpha" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Task" }));
+
+            // Act — submit, then observe while the action is still unresolved.
+            await userEvent.fill(screen.getByLabelText("Title"), "Renamed Task");
+            await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+            await vi.waitFor(() => {
+                expect(updateTaskStub.calls).toHaveLength(1);
+            });
+
+            // Assert
+            await expect.poll(getColumnTaskTitles).toEqual([
+                { columnName: "Fixture Column 1", taskTitles: ["Renamed Task"] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta"] },
+            ]);
+
+            // Cleanup
+            updateTaskStub.settle();
+        });
+
+        /*
+         * SUBTASK-03's optimistic half. The edit row itself renders local state, so the board cache
+         * is only observable once that modal is left — which is why this case lives here.
+         */
+        it("shows a renamed subtask on the detail view's checklist while the rename is still in flight", async () => {
+            // Arrange
+            updateSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: {
+                    id: "00000000-0000-4000-8000-a00000000001",
+                    title: "Renamed Subtask",
+                    isCompleted: false,
+                    version: 1,
+                },
+            });
+            updateSubtaskStub.hold();
+            await render(<TaskWithMultipleSubtasks />);
+            await userEvent.click(screen.getByText("Fixture Task Alpha"));
+            await userEvent.click(screen.getByRole("button", { name: "Task actions for Fixture Task Alpha" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Task" }));
+
+            // Act — commit the rename, then leave the edit modal with the action still unresolved.
+            await userEvent.fill(screen.getByRole("textbox", { name: "Subtask 1" }), "Renamed Subtask");
+            await userEvent.tab();
+            await vi.waitFor(() => {
+                expect(updateSubtaskStub.calls).toHaveLength(1);
+            });
+            await userEvent.keyboard("{Escape}");
+
+            // Assert
+            expect(await screen.findByRole("checkbox", { name: "Renamed Subtask" })).toBeInTheDocument();
+
+            // Cleanup
+            updateSubtaskStub.settle();
+        });
+
         /* UI-SPEC error/edit-task-modal: the failure is a TOAST, since the modal has already closed. */
         it("reverts the card's title and raises the authored toast on a save failure", async () => {
             // Arrange
