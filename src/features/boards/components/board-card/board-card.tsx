@@ -40,9 +40,26 @@ export const BoardCard = ({
              * Full-bleed pill (UAT finding 1): `mr-6` + `rounded-r-full` match the header's 24px
              * inset, and `pr-11` reserves the kebab's own 44px hit area so the name truncates first.
              */}
+            {/*
+             * Decisions ─────────────────────────────────────────────────────────────────────────
+             * comment-length-exempt: records a one-way door that has already been walked through twice, and the exact condition that would make it safe — a reader who knows only ADR tech/0030 rule 4 would re-add this
+             * No `prefetch` prop, deliberately. `refresh()` updates the Router Cache entry for the
+             * route you are ON, never a prefetched one, so any state a Server Action delivers
+             * through `refresh()` alone is missing from the prefetched render. `6206025` rejected
+             * `prefetch={true}` for this reason; `956aa9a` added it anyway, on the argument that
+             * making the task delete optimistic (ADR tech/0030 rule 4) had removed the constraint.
+             * It had not: the subtask fan-out in `createTaskSubtasksAction` and the post-conflict
+             * board re-read are still `refresh()`-only, and both broke. Measured 2026-09-03 on
+             * `tasks-create` + `tasks-conflict` at `--repeat-each=3`: 7 of 12 executions failed
+             * with the prop, 12 of 12 passed without it, and `git bisect` named `956aa9a`.
+             *
+             * Turning it on requires EVERY mutation that changes this board to write the
+             * `["board", boardId]` entry itself — not just the delete. Re-run that measurement
+             * before believing it is safe; a request count cannot tell the two states apart.
+             * ───────────────────────────────────────────────────────────────────────────────────
+             */}
             <Link
                 href={buildBoardDetailPath(board.id)}
-                prefetch={true}
                 className={cn(
                     "mr-6 flex h-11 min-w-0 items-center gap-2 rounded-r-full pr-11 pl-6 font-body-m text-body-m",
                     isSelected ? "bg-bg-primary text-text-on-primary" : "text-text-muted hover:text-text-primary",

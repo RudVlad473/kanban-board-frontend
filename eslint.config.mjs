@@ -677,6 +677,8 @@ const eslintConfig = defineConfig([
         "src/lib/core/api-contract/generated-types.ts",
         // Stray worktree checkouts (isolation="worktree" executor dispatch) are never lint targets.
         ".claude/worktrees/**",
+        // The same, for a worktree added by hand: `eslint .` reported 710 errors in one on 2026-09-03.
+        ".worktrees/**",
         // MSW's own generated browser worker script (`msw init public/ --save`, plan 01-10) — vendored, never hand-edited.
         "public/mockServiceWorker.js",
         "storybook-static/**",
