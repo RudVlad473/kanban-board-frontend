@@ -17,7 +17,7 @@ type Props = {
 /**
  * Composes `Switch` with static sun/moon glyphs flanking it (UAT finding 4 — the reference design
  * flanks the track, it does not nest an icon in the moving thumb) and a live-region status message,
- * replacing UI-SPEC's unconfirmed toast recommendation since no toast primitive exists (D-13's set).
+ * replacing UI-SPEC's unconfirmed toast recommendation since no toast primitive exists (the set).
  */
 export const ThemeToggle = ({ initialTheme, isAuthenticated, forceErrorMessage }: Props) => {
     const { theme, toggleTheme, errorMessage } = useThemePreference({ initialTheme, isAuthenticated });

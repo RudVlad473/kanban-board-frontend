@@ -78,7 +78,7 @@ export const BoardList = ({
     });
     /*
      * Bumped on every fresh open and used as the modal's `key`, so each open starts from empty
-     * fields — a failed create keeps its values because the modal never closed (D-05), not because
+     * fields — a failed create keeps its values because the modal never closed, not because
      * the form is retained across opens.
      */
     const [openCount, setOpenCount] = useState(0);
@@ -102,7 +102,7 @@ export const BoardList = ({
     };
 
     /*
-     * D-02: closed on submit, not on settle — `renameBoard` applied the optimistic override
+     * Closed on submit, not on settle — `renameBoard` applied the optimistic override
      * synchronously before this line runs, so the sidebar already shows the new name underneath. A
      * later failure still reverts it and raises the hook's own toast, modal or no modal.
      */
@@ -115,7 +115,7 @@ export const BoardList = ({
     };
 
     /*
-     * D-09: closed on submit, not on settle — `deleteBoard` removed the row optimistically before
+     * Closed on submit, not on settle — `deleteBoard` removed the row optimistically before
      * this line runs, so there is no in-flight state left for the modal to report. A failure still
      * restores the row and raises the hook's own toast, modal or no modal.
      */

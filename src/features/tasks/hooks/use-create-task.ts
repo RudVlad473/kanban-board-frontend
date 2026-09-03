@@ -37,14 +37,14 @@ const buildSubtaskFailureTitle = (failedCount: number): string => `Couldn't crea
 
 /**
  * A stable, task-scoped toast id — Base UI's manager upserts on an existing id, which is what
- * makes a retry narrow one toast instead of stacking a second beside a stale first (D-04).
+ * makes a retry narrow one toast instead of stacking a second beside a stale first.
  */
 export const buildSubtaskFailureToastId = (taskId: string): string => `task-subtasks-failed:${taskId}`;
 
 export type CreateTaskOutcome =
     /** The task itself was created; the subtask fan-out (if any) runs behind the closed modal. */
     | { didCreate: true; taskId: string }
-    /** D-05: nothing was created, so the modal stays open with the entered values intact. */
+    /** Nothing was created, so the modal stays open with the entered values intact. */
     | { didCreate: false };
 
 export type CreateTaskArgs = {
@@ -65,7 +65,7 @@ type SubtaskFanOutArgs = { boardId: string; columnId: string; taskId: string; ti
 
 /**
  * TASK-01's create orchestration, in the request-response shape `useCreateColumn` uses: a task
- * failure is reported inline, never a toast (D-05). D-07's subtask fan-out runs after the task
+ * failure is reported inline, never a toast. The subtask fan-out runs after the task
  * lands without blocking the caller's close, keeping whatever landed and toasting the rest.
  */
 export const useCreateTask = () => {

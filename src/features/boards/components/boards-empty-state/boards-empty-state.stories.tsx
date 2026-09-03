@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { BoardsEmptyState } from "./boards-empty-state";
 
 /*
- * Visual-only CSF3 (D-25) — `BoardsEmptyState` is `features/boards/`, not a `components/ui/`
+ * Visual-only CSF3 — `BoardsEmptyState` is `features/boards/`, not a `components/ui/`
  * primitive, so per ADR tech/0011 it gets stories/axe coverage but no visual-spec entry. The
  * decorator supplies the bounded content column the dashboard layout gives it.
  */

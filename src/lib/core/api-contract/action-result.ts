@@ -12,7 +12,7 @@ export type ActionRefusalStatus =
 /**
  * One mutating Server Action's own result: the success payload it returns, plus the refusals it can
  * be answered with — this project's own discriminants only, so no upstream response text reaches a
- * caller's toast (T-02-61, D-21). `TSuccess` left at `unknown` means success carries nothing.
+ * caller's toast (T-02-61). `TSuccess` left at `unknown` means success carries nothing.
  */
 export type ActionResult<TSuccess = unknown, TRefusal extends ActionRefusalStatus = never> =
     | ({ status: typeof RESULT_STATUS.SUCCESS } & TSuccess)

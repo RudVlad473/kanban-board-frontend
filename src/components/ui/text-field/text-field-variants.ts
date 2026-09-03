@@ -29,7 +29,7 @@ export const textFieldBoxVariants = cva(
             },
             /*
              * Driven internally by `isLoading`, not a standalone prop — composes into `disabled`
-             * per GC-17 (mirroring Checkbox/Button); scoped to the same `has-[:disabled]:` modifier
+             * (mirroring Checkbox/Button); scoped to the same `has-[:disabled]:` modifier
              * so tailwind-merge's conflict-group resolution picks it deterministically.
              */
             isBusy: {

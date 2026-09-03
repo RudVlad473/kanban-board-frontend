@@ -224,7 +224,7 @@ describe("the subtask update against the real backend", () => {
         owner = await signUp();
     }, 60_000);
 
-    /* D-08's toggle: a completion-only write, parsing with the promoted subtask shape. */
+    /* The toggle: a completion-only write, parsing with the promoted subtask shape. */
     it("applies a completion-only change and parses as the promoted subtask shape", async () => {
         // Arrange
         const seeded = await seedTaskWithSubtask(owner);
@@ -244,7 +244,7 @@ describe("the subtask update against the real backend", () => {
         expect(parsed.success && parsed.data.title).toBe("Fixture Subtask");
     }, 60_000);
 
-    /* S-03's rename: a title-only write on the SAME operation, proving one action serves both. */
+    /* The rename: a title-only write on the SAME operation, proving one action serves both. */
     it("applies a title-only change, leaving completion untouched", async () => {
         // Arrange
         const seeded = await seedTaskWithSubtask(owner);

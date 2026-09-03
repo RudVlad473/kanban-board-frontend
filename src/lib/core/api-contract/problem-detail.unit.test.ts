@@ -109,7 +109,7 @@ describe("parseProblemDetail", () => {
     });
 
     /*
-     * Parametrised over the rejection-case families (D-26y) rather than a near-identical `it()`
+     * Parametrised over the rejection-case families rather than a near-identical `it()`
      * per shape — each case isolates exactly one reason a value is not a well-formed problem
      * response.
      */

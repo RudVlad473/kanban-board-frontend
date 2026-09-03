@@ -11,7 +11,7 @@ const FIXTURE_COLUMNS = [
 ];
 
 /*
- * Visual-only CSF3 (D-25). Both handlers are `fn()` spies so a test asserts by reading these args,
+ * Visual-only CSF3. Both handlers are `fn()` spies so a test asserts by reading these args,
  * never by spreading props onto a composed story (docs/adr/tech/0025).
  */
 const meta: Meta<typeof AddTaskModal> = {
@@ -100,7 +100,7 @@ const FailingSubmitHost = (props: ComponentProps<typeof AddTaskModal>) => {
     );
 };
 
-/** D-05: the submit handler reports failure, so the modal stays open with everything typed intact. */
+/** The submit handler reports failure, so the modal stays open with everything typed intact. */
 export const SubmitFails: Story = {
     args: { defaultValues: { title: "Take coffee break" } },
     render: (args) => {

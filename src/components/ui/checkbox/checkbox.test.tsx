@@ -44,7 +44,7 @@ const readLabel = (container: HTMLElement) => {
 describeForEachDevice({
     name: "Checkbox",
     body: () => {
-        // Shallow: copy, prop-driven aria state — asserted through composed stories (D-08).
+        // Shallow: copy, prop-driven aria state — asserted through composed stories.
         it("is found by role checkbox with the label as its accessible name", async () => {
             // Act
             await render(<Unchecked />);

@@ -45,7 +45,7 @@ export type ReorderColumnsArgs = { fromIndex: number; toIndex: number };
 type ReorderColumnVariables = { boardId: string; columnId: string; version: number; targetPosition: number };
 
 /**
- * COLUMN-03's optimistic reorder (U-05), written into the open board's cache entry so every reader
+ * COLUMN-03's optimistic reorder, written into the open board's cache entry so every reader
  * of that board sees it at once (docs/adr/tech/0030).
  */
 export const useReorderColumns = ({ boardId }: { boardId: string }) => {

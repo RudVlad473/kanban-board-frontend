@@ -103,7 +103,7 @@ export type CreateTaskSubtasksInput = z.infer<typeof createTaskSubtasksInputSche
 /*
  * The Add New Task form's own shape. `subtasks` rows carry no bound of their own — a blank row is
  * DROPPED at submit (`toSubmittedSubtaskTitles`), not blocked, so the row schema never rejects one.
- * `columnId` is required because the create endpoint is column-scoped (S-06).
+ * `columnId` is required because the create endpoint is column-scoped.
  */
 export const addTaskFormSchema = z.object({
     title: taskTitleRowSchema,

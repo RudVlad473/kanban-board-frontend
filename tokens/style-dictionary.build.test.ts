@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { createConfig } from "../style-dictionary.config.mjs";
 
 /**
- * D-12: a pipeline-level test asserting the Style Dictionary build's generated CSS actually
+ * A pipeline-level test asserting the Style Dictionary build's generated CSS actually
  * contains the expected token values, separate from any component test — a broken token edit
  * fails here with one clear error instead of N confusing component-test failures.
  */

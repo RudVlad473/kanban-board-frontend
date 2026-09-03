@@ -32,7 +32,7 @@ type Props = {
 };
 
 /**
- * One column's header row — U-03's id-keyed dot beside the shipped caption, the U-02 drag handle,
+ * One column's header row — the id-keyed dot beside the shipped caption, the U-02 drag handle,
  * and the per-column overflow menu. Presentational by design: it owns no state and calls no mutation
  * hook, so its tests drive it without a module mock (ADR tech/0020).
  */
@@ -83,7 +83,7 @@ export const ColumnHeader = ({
                     <span className="flex min-h-11 items-center gap-4">{captionRow}</span>
                 ) : (
                     /*
-                     * D-06: no click handler of its own — enter LIFTS the column, so a handle that also
+                     * No click handler of its own — enter LIFTS the column, so a handle that also
                      * activated on enter would be ambiguous. `uppercase` repeats the h2's on purpose: a
                      * UA rule sets text-transform:none on form controls, beating inheritance (03-14).
                      */
@@ -100,7 +100,7 @@ export const ColumnHeader = ({
             </h2>
 
             {/*
-             * A sibling of the heading, never inside it (D-06), which is also the first of the two
+             * A sibling of the heading, never inside it, which is also the first of the two
              * defences against a kebab click starting a drag: it never receives the drag listeners.
              */}
             <Menu.Root defaultOpen={defaultIsMenuOpen}>

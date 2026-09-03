@@ -7,7 +7,7 @@ import { createColumnFull, createTasksFull } from "@/test-utils/factories/board-
 import { DeleteColumnConfirm } from "./delete-column-confirm";
 
 /*
- * Visual-only CSF3 (D-25), mirroring `delete-board-confirm.stories.tsx`. Both handlers are `fn()`
+ * Visual-only CSF3, mirroring `delete-board-confirm.stories.tsx`. Both handlers are `fn()`
  * spies so a test asserts by reading these args, never by spreading props onto a composed story.
  */
 const meta: Meta<typeof DeleteColumnConfirm> = {
@@ -67,7 +67,7 @@ const SettlingHost = (props: ComponentProps<typeof DeleteColumnConfirm>) => {
     ) : null;
 };
 
-/** U-05: the modal closes once the delete settles, whether it succeeded or failed. */
+/** The modal closes once the delete settles, whether it succeeded or failed. */
 export const SubmitSettles: Story = {
     render: (args) => {
         return <SettlingHost {...args} />;

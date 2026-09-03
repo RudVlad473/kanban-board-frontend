@@ -7,7 +7,7 @@ import { createTaskFull } from "@/test-utils/factories/board-full";
 import { DeleteTaskConfirm } from "./delete-task-confirm";
 
 /*
- * Visual-only CSF3 (D-25), mirroring `delete-column-confirm.stories.tsx`. Both handlers are `fn()`
+ * Visual-only CSF3, mirroring `delete-column-confirm.stories.tsx`. Both handlers are `fn()`
  * spies so a test asserts by reading these args, never by spreading props onto a composed story.
  */
 const meta: Meta<typeof DeleteTaskConfirm> = {

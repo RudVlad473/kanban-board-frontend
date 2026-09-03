@@ -14,7 +14,7 @@ import { cn } from "@/lib/core/styling/cn";
 type Props = {
     column: ColumnFull;
     /**
-     * This column's task nodes, built by the layout ring and passed DOWN (D-18). A render prop
+     * This column's task nodes, built by the layout ring and passed DOWN. A render prop
      * rather than an import: the boundaries policy disallows `feature -> feature` in both
      * directions, so this file must know nothing about the tasks feature at all.
      */
@@ -85,7 +85,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
     const isInsertionPoint = !isTaskDragActive && isSorting && overIndex === index && activeIndex !== index;
     /*
      * A hovered card carries its OWN insertion point (task-card.tsx); an empty column has no card to
-     * carry one, so the body itself draws S-08's bar the moment a task drag is over it directly.
+     * carry one, so the body itself draws the bar the moment a task drag is over it directly.
      */
     const isEmptyBodyInsertionPoint = isTaskDragActive && isBodyOver && column.tasks.length === 0;
 
@@ -131,7 +131,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
                 />
 
                 {/*
-                 * S-07: 20px between cards, correcting the shipped 16px. `min-h-22`/`grow`/`shrink-0`
+                 * 20px between cards, correcting the shipped 16px. `min-h-22`/`grow`/`shrink-0`
                  * make the list own the column's whole body height, so all of it is a task droppable.
                  */}
                 <ul ref={setTaskListNodeRef} className="relative flex min-h-22 shrink-0 grow flex-col gap-5">
@@ -139,7 +139,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
 
                     {isEmptyBodyInsertionPoint ? (
                         /*
-                         * S-08's own bar, drawn at the body's own top edge rather than a card's gap —
+                         * The bar, drawn at the body's own top edge rather than a card's gap —
                          * an empty column has no gap to draw it inside.
                          */
                         <span

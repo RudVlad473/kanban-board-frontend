@@ -24,7 +24,7 @@ const { Default, Disabled, Loading } = composeStories(stories);
 describeForEachDevice({
     name: "IconButton",
     body: () => {
-        // Shallow: copy, prop-driven aria/disabled/loading state — asserted through composed stories (D-08).
+        // Shallow: copy, prop-driven aria/disabled/loading state — asserted through composed stories.
         it("exposes the label prop as its accessible name even though it renders no visible text", async () => {
             // Act
             await render(<Default />);

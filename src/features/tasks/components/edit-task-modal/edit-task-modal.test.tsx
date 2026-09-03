@@ -59,7 +59,7 @@ describeForEachDevice({
             await expect.element(screen.getByLabelText("Description")).toHaveValue("");
         });
 
-        /* S-02: no third live move control inside a modal whose button says "Save Changes". */
+        /* No third live move control inside a modal whose button says "Save Changes". */
         it("renders no Status or column-selection control", async () => {
             // Act
             await render(<Default />);
@@ -69,7 +69,7 @@ describeForEachDevice({
             expect(domScreen.queryByText("Status", { exact: true })).not.toBeInTheDocument();
         });
 
-        /* S-01: the mitigation for two visually identical row sets with two different save semantics. */
+        /* The mitigation for two visually identical row sets with two different save semantics. */
         it("renders the exact authored autosave hint directly under the Subtasks label", async () => {
             // Act
             const screen = await render(<Default />);
@@ -202,7 +202,7 @@ describeForEachDevice({
         });
 
         /*
-         * The tracer proof this modal exists for (S-01): add a row, rename an existing row and
+         * The tracer proof this modal exists for: add a row, rename an existing row and
          * remove a row, each WITHOUT the submit ever being pressed, and each one persists.
          */
         it("adds, renames and removes a subtask row, none of it behind the submit", async () => {

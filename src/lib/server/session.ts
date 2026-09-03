@@ -50,7 +50,7 @@ export const isSessionPayload = (value: unknown): value is SessionPayload => {
 };
 
 /**
- * The identity plus the backend's own session credential (GC-18) — what the session cookie
+ * The identity plus the backend's own session credential — what the session cookie
  * actually carries and what `verify`/`verifyToken` return. Kept separate from `SessionPayload`
  * so callers guarding a bare upstream response body aren't forced to supply a credential.
  */

@@ -62,7 +62,7 @@ export const moveTaskAction = async ({
         body: {
             targetColumnId: parsed.data.targetColumnId,
             version: parsed.data.version,
-            /* Always sent: T3 observed omitting it means "append", not "keep position" (D-11). */
+            /* Always sent: T3 observed omitting it means "append", not "keep position". */
             targetPosition: parsed.data.targetPosition,
         },
     });
@@ -75,9 +75,9 @@ export const moveTaskAction = async ({
     if (upstreamError !== undefined) {
         const status = mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code);
 
-        // comment-length-exempt: records why D-12's re-read belongs in the action rather than the hook — a settled placement decision a future reader would otherwise relocate (docs/adr/tech/0023)
+        // comment-length-exempt: records why the re-read belongs in the action rather than the hook — a settled placement decision a future reader would otherwise relocate (docs/adr/tech/0023)
         /*
-         * D-12's re-read, and the one line this action adds over its Phase 3 analog: a conflict
+         * The re-read, and the one line this action adds over its Phase 3 analog: a conflict
          * means the server holds something this screen does not, so reverting alone would leave the
          * user looking at data known to be wrong. It belongs here rather than in the hook because
          * docs/adr/tech/0019 keeps every `refresh()` inside an action — moving it out would pull

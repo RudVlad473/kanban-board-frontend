@@ -5,7 +5,7 @@
 import { useEffect, useRef } from "react";
 
 /**
- * D-04's two-pass scroll to a newly created column, and the ref naming what to scroll to.
+ * The two-pass scroll to a newly created column, and the ref naming what to scroll to.
  *
  * Two passes because the row grows only once the create action's own `refresh()` lands.
  */

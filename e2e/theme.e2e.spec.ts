@@ -11,7 +11,7 @@ import { isTheme, THEME, type Theme } from "../src/lib/core/theme/theme";
 import { recordSeededUserId, SEED_SCOPE } from "../src/test-utils/seeded-user-registry";
 
 const TOGGLE_NAME = "Toggle dark mode";
-/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
+/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with the empty state. */
 const PROTECTED_LANDMARK = "Boards";
 
 // Matches the backend's password/display-name rules (e2e/seed.sh's SEED_PASSWORD comment).
@@ -31,7 +31,7 @@ const waitForThemeCookie = ({ page, theme }: { page: Page; theme: Theme }) =>
 
 /**
  * Signs up directly against the real backend, capturing the assigned theme `seedAccount()`'s
- * script (D-07) doesn't return — a pre-mutation baseline for THEME-03's untouched account.
+ * script doesn't return — a pre-mutation baseline for THEME-03's untouched account.
  */
 const signUpDirectCapturingTheme = async (): Promise<{ email: string; password: string; theme: Theme }> => {
     const email = `e2e-theme-cross-${randomUUID()}@example.com`;
@@ -183,7 +183,7 @@ test.describe("THEME-03: cross-account isolation", () => {
     test("toggling one account's theme leaves a second account's stored preference untouched", async ({ page }) => {
         /*
          * Arrange — two real accounts; account B's own default theme is captured at creation,
-         * since seedAccount() (D-07) doesn't return it and this test needs a pre-mutation baseline.
+         * since seedAccount() doesn't return it and this test needs a pre-mutation baseline.
          */
         const accountA = seedAccount();
         const accountB = await signUpDirectCapturingTheme();

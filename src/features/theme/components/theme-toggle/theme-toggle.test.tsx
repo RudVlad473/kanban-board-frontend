@@ -23,14 +23,14 @@ describeForEachDevice({
     body: () => {
         /*
          * File-local: these two are real cross-test state this component writes, unlike the
-         * centralized body-wipe hook (D-04) which does not cover them.
+         * centralized body-wipe hook which does not cover them.
          */
         afterEach(() => {
             document.documentElement.classList.remove("dark");
             document.cookie = "theme=; path=/; max-age=0";
         });
 
-        // Shallow: accessible name, checked state, failure copy — asserted through composed stories (D-08).
+        // Shallow: accessible name, checked state, failure copy — asserted through composed stories.
         it("is found by role switch with the accessible name", async () => {
             // Act
             await render(<Light />);
@@ -92,7 +92,7 @@ describeForEachDevice({
             // Arrange
             const rendered = await render(<Light />);
             const toggle = rendered.getByRole("switch", { name: "Toggle dark mode" });
-            // D-02: no implicit success default — the persisted outcome is queued at the call site.
+            // No implicit success default — the persisted outcome is queued at the call site.
             actionStub(updateThemeAction).queue({ status: RESULT_STATUS.SUCCESS, theme: THEME.DARK });
 
             // Act

@@ -17,7 +17,7 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 /*
  * SUBTASK-01/02/03/04 against the real deployed nonprod backend — structural, business-level
  * assertions only, no validation copy (docs/adr/tech/0022). This file's second describe's reload
- * is D-06's per-item-save proof: a row persists without the modal's own Save Changes ever pressed.
+ * is the per-item-save proof: a row persists without the modal's own Save Changes ever pressed.
  */
 
 const SIGN_IN_TIMEOUT_MS = 20_000;
@@ -91,14 +91,14 @@ test.describe("SUBTASK-01/03/04: add, rename and delete a subtask without pressi
         await dialog.getByRole("textbox", { name: "Subtask 3", exact: true }).press("Tab");
         await settled;
 
-        // Act — RENAME: subtask 2 (Beta) renames inline on blur (S-03).
+        // Act — RENAME: subtask 2 (Beta) renames inline on blur.
         settled = createServerActionSettled(page);
         const renameRow = dialog.getByRole("textbox", { name: "Subtask 2", exact: true });
         await renameRow.fill("Subtask Beta Renamed");
         await renameRow.press("Tab");
         await settled;
 
-        // Act — DELETE: subtask 1 (Alpha) removes immediately, no confirm (D-09/S-05).
+        // Act — DELETE: subtask 1 (Alpha) removes immediately, no confirm.
         settled = createServerActionSettled(page);
         await dialog.getByRole("button", { name: "Remove subtask 'Subtask Alpha'" }).click();
         await settled;

@@ -86,9 +86,9 @@ export const updateSubtaskAction = async ({
     if (upstreamError !== undefined) {
         const status = mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code);
 
-        // comment-length-exempt: records why D-12's re-read belongs in the action rather than the hook — a settled placement decision a future reader would otherwise relocate (docs/adr/tech/0023)
+        // comment-length-exempt: records why the re-read belongs in the action rather than the hook — a settled placement decision a future reader would otherwise relocate (docs/adr/tech/0023)
         /*
-         * D-12's re-read: a conflict means the server holds something this screen does not, so
+         * The re-read: a conflict means the server holds something this screen does not, so
          * reverting alone would leave the user looking at data known to be wrong (T-04-06). It
          * belongs here rather than in either hook because docs/adr/tech/0019 keeps every `refresh()`
          * inside an action.

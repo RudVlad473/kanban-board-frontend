@@ -115,7 +115,7 @@ describeForEachDevice({
         });
 
         /*
-         * GC-17: isLoading composes into native disabled, so the base disabled:opacity-50 always
+         * IsLoading composes into native disabled, so the base disabled:opacity-50 always
          * outranks isBusy's class; cursor stays the sole busy-vs-disabled differentiator.
          */
         it("a loading box visually matches disabled but keeps a distinct busy cursor", async () => {

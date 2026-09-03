@@ -23,7 +23,7 @@ type Props = {
     onOpenChange: (isOpen: boolean) => void;
     onSubmit: (values: AddBoardSubmitValues) => void;
     isPending: boolean;
-    /** D-05's inline failure copy, rendered inside the still-open modal — never a toast. */
+    /** The inline failure copy, rendered inside the still-open modal — never a toast. */
     errorMessage?: string | null;
     /** Pre-fills the board name (a plain React Hook Form `defaultValues` passthrough) — Storybook-only staging, mirroring `sign-up-form.tsx`. */
     defaultValues?: { name?: string };

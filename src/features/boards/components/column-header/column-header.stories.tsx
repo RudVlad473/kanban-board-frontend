@@ -15,7 +15,7 @@ const SECOND_ACCENT_ID = "00000000-0000-4000-8000-000000000002";
 const THIRD_ACCENT_ID = "00000000-0000-4000-8000-000000000000";
 
 /*
- * Visual-only CSF3 (D-25), mirroring `src/components/layout/board-view/board-view.stories.tsx`. The
+ * Visual-only CSF3, mirroring `src/components/layout/board-view/board-view.stories.tsx`. The
  * decorator supplies the 280px column width the real board gives this header, which is what makes
  * an overlong name truncate.
  */

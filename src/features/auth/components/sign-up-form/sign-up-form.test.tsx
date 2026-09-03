@@ -31,7 +31,7 @@ const SIGN_UP_FAILURE_MESSAGE =
     "We couldn't create your account. If you already have one, try signing in instead, or try again in a moment.";
 
 /*
- * D-03: deep tests render the composed `Empty` story too, not a bare `<SignUpForm />` — this
+ * Deep tests render the composed `Empty` story too, not a bare `<SignUpForm />` — this
  * mounts through the real `AuthCard` decorator plus the global `QueryProvider`/theme decorators
  * (docs/adr/tech/0025), closer to production usage than a hand-wrapped tree.
  */
@@ -45,7 +45,7 @@ const renderSignUpForm = () => render(<Empty />);
 describeForEachDevice({
     name: "SignUpForm",
     body: () => {
-        // Shallow: copy, staged validation/error/pending states — asserted through composed stories (D-08).
+        // Shallow: copy, staged validation/error/pending states — asserted through composed stories.
         it("renders three labelled fields, the primary submit control, and the cross-link to Sign In, each reachable by name", async () => {
             // Act
             await render(<Empty />);
@@ -252,7 +252,7 @@ describeForEachDevice({
              */
             // Arrange
             const rendered = await renderSignUpForm();
-            // D-02: no implicit success default — this submit's outcome is queued at the call site.
+            // No implicit success default — this submit's outcome is queued at the call site.
             actionStub(signUpAction).queue(AUTH_ACTION_IDLE);
             const submitted: { formData: FormData | null } = { formData: null };
             rendered.container.querySelector("form")?.addEventListener("submit", (event) => {
@@ -276,7 +276,7 @@ describeForEachDevice({
         it("submits the typed values as real form data, including the name, on a valid submit", async () => {
             // Arrange
             const rendered = await renderSignUpForm();
-            // D-02: no implicit success default — this submit's outcome is queued at the call site.
+            // No implicit success default — this submit's outcome is queued at the call site.
             actionStub(signUpAction).queue(AUTH_ACTION_IDLE);
             const submitted: { formData: FormData | null } = { formData: null };
             rendered.container.querySelector("form")?.addEventListener("submit", (event) => {

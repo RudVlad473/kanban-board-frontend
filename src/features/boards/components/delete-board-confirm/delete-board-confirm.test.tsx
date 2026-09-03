@@ -194,7 +194,7 @@ describeForEachDevice({
             expect(Deleting.args.onOpenChange).not.toHaveBeenCalled();
         });
 
-        /* D-09: a failed delete closes the modal too — the failure is the hook's toast, not a banner here. */
+        /* A failed delete closes the modal too — the failure is the hook's toast, not a banner here. */
         it("closes once the delete settles, whichever way it went", async () => {
             // Arrange
             const screen = await render(<SubmitSettles />);

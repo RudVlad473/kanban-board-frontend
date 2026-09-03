@@ -16,7 +16,7 @@ type Props = {
 };
 
 /**
- * U-04's confirm modal, mirroring `DeleteBoardConfirm` one containment level down. Deliberately
+ * The confirm modal, mirroring `DeleteBoardConfirm` one containment level down. Deliberately
  * takes `onSubmit` as a prop rather than calling `useDeleteColumn()` itself, so its behavioural
  * tests drive it with a real local function instead of a module mock (docs/adr/tech/0020).
  */

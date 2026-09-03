@@ -9,7 +9,7 @@ import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
 import type { AddBoardSubmitValues } from "@/features/boards/schemas";
 
 /**
- * D-10's zero-boards screen. Reuses the sidebar's own create modal rather than a second create
+ * The zero-boards screen. Reuses the sidebar's own create modal rather than a second create
  * path, so both entry points create a board the same way.
  */
 type Props = {

@@ -34,7 +34,7 @@ export const Textarea = ({
     return (
         /*
          * Field.Root/Label/Control/Description/Error wire up label association, `aria-invalid` and
-         * `aria-describedby` from the library, exactly as text-field.tsx does (D-15).
+         * `aria-describedby` from the library, exactly as text-field.tsx does.
          */
         <Field.Root
             invalid={hasError}

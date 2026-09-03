@@ -5,9 +5,9 @@ import { Menu } from "./menu";
 import { IconButton } from "../icon-button/icon-button";
 
 /*
- * Visual-only CSF3 (D-25) — behavioural assertions live in menu.test.tsx; open state comes from
+ * Visual-only CSF3 — behavioural assertions live in menu.test.tsx; open state comes from
  * `defaultOpen`, never a play function. The kebab composition (IconButton via `render`) mirrors
- * the sidebar's real usage (D-07) — this file never renders a bare unstyled Menu.Trigger.
+ * the sidebar's real usage — this file never renders a bare unstyled Menu.Trigger.
  */
 const meta: Meta<typeof Menu.Root> = {
     component: Menu.Root,

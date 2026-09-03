@@ -28,7 +28,7 @@ const LONG_TITLE_TASK = createTaskFull({
 });
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (empty states, kebab wiring, close guards, the status control, the toggle) live in
  * task-detail-modal.test.tsx.
  */

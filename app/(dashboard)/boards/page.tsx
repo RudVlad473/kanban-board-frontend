@@ -8,7 +8,7 @@ import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 import { requireAuthenticated } from "@/lib/server/require-authenticated";
 
 /*
- * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule). D-11's
+ * Composition only, no business logic (CONVENTIONS.md's "app/ is routing only" rule). The
  * auto-select resolves here on the server, before any board markup reaches the browser, so a user
  * never sees a flash of the wrong screen — the only option still consistent with docs/adr/tech/0019.
  */
@@ -28,7 +28,7 @@ const BoardsPage = async () => {
     /*
      * The same entry the sidebar renders at the top, because both read `fetchBoards()`'s own
      * already-reversed array — sorting or reversing again here would land the redirect somewhere
-     * other than the top of the panel (D-11, D-12).
+     * other than the top of the panel.
      */
     if (result.boards.length === 0) {
         return <BoardsEmptyState />;

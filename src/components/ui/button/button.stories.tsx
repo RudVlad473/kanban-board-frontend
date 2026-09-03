@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Button } from "./button";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (click/keyboard/disabled/merge) live exclusively in button.test.tsx.
  */
 const meta: Meta<typeof Button> = {

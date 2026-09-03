@@ -55,7 +55,7 @@ describeForEachDevice({
             expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
         });
 
-        // D-26y: two near-identical open-key cases, parametrized rather than hand-repeated.
+        // Two near-identical open-key cases, parametrized rather than hand-repeated.
         for (const [key, keyName] of [
             [" ", "Space"],
             ["{Enter}", "Enter"],

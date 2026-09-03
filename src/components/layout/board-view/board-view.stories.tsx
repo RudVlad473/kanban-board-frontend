@@ -15,7 +15,7 @@ import {
 import { BoardView } from "./board-view";
 
 /*
- * Visual-only CSF3 (D-25) — `BoardView` is `features/boards/`, not a `components/ui/` primitive, so
+ * Visual-only CSF3 — `BoardView` is `features/boards/`, not a `components/ui/` primitive, so
  * per ADR tech/0011 it gets stories/axe coverage but no visual-spec entry. The decorator supplies
  * the bounded height the real dashboard column gives it, which is what makes a column scroll.
  */
@@ -48,7 +48,7 @@ export const ColumnsWithNoTasks: Story = {
 /** Stages the horizontal-overflow behaviour — more columns than any viewport fits. */
 export const ManyColumns: Story = { args: { board: createBoardFull({ columns: createColumnsFull({ count: 8 }) }) } };
 
-/** More columns than U-03's three accents, so the dot cycle is visible wrapping at position 3. */
+/** More columns than the three accents, so the dot cycle is visible wrapping at position 3. */
 export const EvenlyCycledColumns: Story = {
     args: { board: createBoardFull({ columns: createColumnsFull({ count: 4 }) }) },
 };
@@ -75,7 +75,7 @@ export const DuplicateColumnName: Story = {
 };
 
 /*
- * D-05's three neighbouring counts, each staged with the modal already open so the next submit is
+ * The three neighbouring counts, each staged with the modal already open so the next submit is
  * the create under test — and so no ghost-column click can scroll the row before the create does.
  */
 export const SevenColumns: Story = {
@@ -372,7 +372,7 @@ export const TaskIntoEmptyColumn: Story = {
 };
 
 /*
- * D-11's own fixture: one column, four distinctly-titled tasks — the within-column keyboard
+ * The fixture: one column, four distinctly-titled tasks — the within-column keyboard
  * reorder needs enough cards that a multi-step move still lands inside the column, mirroring
  * `ReorderableColumns`'s four-column shape for the column path.
  */

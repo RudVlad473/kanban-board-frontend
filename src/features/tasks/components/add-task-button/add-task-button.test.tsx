@@ -35,7 +35,7 @@ beforeEach(() => {
     routerState.pathname = buildBoardDetailPath(openBoardId);
 });
 
-// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
+// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
 vi.mock("next/navigation", () =>
     createNextNavigationShim({
         pathname: () => routerState.pathname,
@@ -43,7 +43,7 @@ vi.mock("next/navigation", () =>
     }),
 );
 
-// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
 const { WithColumns, NoColumns, BoardNotYetHydrated, NoBoardOpen, WithBoardBelow } = composeStories(stories);
@@ -234,7 +234,7 @@ describeForEachDevice({
             await expect.element(screen.getByRole("heading", { name: "Add New Task" })).toBeVisible();
         });
 
-        /* D-07: the fan-out runs behind the already-closed modal, keeping whatever succeeded. */
+        /* The fan-out runs behind the already-closed modal, keeping whatever succeeded. */
         it("runs the subtask fan-out after the task lands, closing the modal without waiting on it", async () => {
             // Arrange
             await render(<WithColumns />);

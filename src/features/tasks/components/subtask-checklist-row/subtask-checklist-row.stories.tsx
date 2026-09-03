@@ -6,7 +6,7 @@ import { createSubtask } from "@/test-utils/factories/board-full";
 import { SubtaskChecklistRow } from "./subtask-checklist-row";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (click-to-toggle, colour/decoration, top-alignment) live in subtask-checklist-row.test.tsx.
  */
 const meta: Meta<typeof SubtaskChecklistRow> = {

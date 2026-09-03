@@ -52,7 +52,7 @@ describeForEachDevice({
     name: "SortableColumn",
     body: () => {
         /*
-         * U-02: the whole header is the handle, and the role description is what tells a screen
+         * The whole header is the handle, and the role description is what tells a screen
          * reader it can be lifted at all. It comes from the library's spread, never a hand-written copy.
          */
         it("gives a column with somewhere to go a drag handle announced as a draggable column", async () => {
@@ -137,7 +137,7 @@ describeForEachDevice({
             expect(items.map((item) => item.getAttribute("data-disabled"))).toEqual([null, null]);
         });
 
-        /* U-05: the reordered array renders before the action settles, never after it. */
+        /* The reordered array renders before the action settles, never after it. */
         it("renders the new order before the reorder settles, and sends exactly one request", async () => {
             // Arrange
             await render(<OptimisticReorder />);
@@ -184,7 +184,7 @@ describeForEachDevice({
         });
 
         /*
-         * U-05: the WHOLE board's order comes back, not just the dragged column — the move shifted
+         * The WHOLE board's order comes back, not just the dragged column — the move shifted
          * every column between the two indices, and dropping the optimistic order restores all of them.
          */
         it("restores the whole board's order and raises the rollback toast when a reorder fails", async () => {
@@ -279,7 +279,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-18's own proof: this component renders whatever `renderTasks()` hands it, verbatim, and
+         * The proof: this component renders whatever `renderTasks()` hands it, verbatim, and
          * nothing of its own — the property that keeps it importing nothing from the tasks feature.
          */
         it("renders exactly what the renderTasks prop returns for a column's own task list", async () => {

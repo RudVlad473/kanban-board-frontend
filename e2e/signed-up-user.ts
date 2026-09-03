@@ -6,7 +6,7 @@ import { ROUTE } from "../src/lib/core/routing/routes";
 import { recordSeededUserId, SEED_SCOPE } from "../src/test-utils/seeded-user-registry";
 
 /*
- * "Letters and spaces" only (GC-02) — a digit-bearing name like "E2E Tester" fails the sign-up
+ * "Letters and spaces" only — a digit-bearing name like "E2E Tester" fails the sign-up
  * form's own name validation, so every default fixture value here satisfies the shared schema.
  */
 export const SIGN_UP_DISPLAY_NAME = "End To End Tester";

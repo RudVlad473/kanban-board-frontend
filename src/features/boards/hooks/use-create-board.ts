@@ -49,13 +49,13 @@ type CreateBoardVariables = { clientId: string; name: string };
 export type CreateBoardOutcome =
     /** The board itself was created; `failedNames` is empty when every column landed too. */
     | { didCreate: true; boardId: string; failedNames: string[] }
-    /** D-05: nothing was created, so the modal stays open with the entered values intact. */
+    /** Nothing was created, so the modal stays open with the entered values intact. */
     | { didCreate: false };
 
 /**
  * Orchestrates BOARD-02's two-phase create — the board first, then one column per named row, only
  * if the board landed. A column phase that reports failures does NOT block the modal from closing:
- * whatever succeeded is kept and the failed names are handed back to the caller (D-03/D-04).
+ * Whatever succeeded is kept and the failed names are handed back to the caller.
  */
 export const useCreateBoard = () => {
     const router = useRouter();
@@ -134,7 +134,7 @@ export const useCreateBoard = () => {
     /**
      * Re-runs the column phase for exactly the still-failing names. A retry that itself partially
      * fails upserts the SAME toast id with the smaller set; one that fully succeeds closes it,
-     * because a toast still naming created columns would misreport what persisted (D-04).
+     * because a toast still naming created columns would misreport what persisted.
      */
     const retryColumns = async ({ boardId, names }: { boardId: string; names: string[] }): Promise<void> => {
         const stillFailingNames = await createColumns({ boardId, names });
@@ -190,7 +190,7 @@ export const useCreateBoard = () => {
 
         /*
          * Navigate before raising the notice, so the toast appears over the board it is talking
-         * about rather than over the modal that is closing (D-04).
+         * about rather than over the modal that is closing.
          */
         router.push(buildBoardDetailPath(boardId));
 

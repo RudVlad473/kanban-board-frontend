@@ -10,7 +10,7 @@ import { SUBTASK_ROW_REQUIRED_FIELD_MESSAGE } from "@/features/tasks/model";
 type Props = {
     /** The row's last-committed title — `""` for a draft row that has never committed. */
     title: string;
-    /** Set by the caller, never inferred — a live row renames, a draft row creates (S-03). */
+    /** Set by the caller, never inferred — a live row renames, a draft row creates. */
     isDraft: boolean;
     /** The row's own accessible label, e.g. "Subtask 2" — hidden visually, kept for a11y. */
     rowLabel: string;
@@ -24,7 +24,7 @@ type Props = {
 
 // comment-length-exempt: records why the field remounts on a failed commit instead of using a ref or an effect — a settled design decision a future reader would otherwise "fix" by reaching for one (docs/adr/tech/0023)
 /**
- * S-03's inline row: the row IS the text field, committing on blur or Enter when its value changed
+ * The inline row: the row IS the text field, committing on blur or Enter when its value changed
  * and is non-empty. Calls no hook — commit/remove/pending all come from the caller (`EditTaskModal`),
  * matching every sibling row/modal's presentational-by-prop rule. `retryToken` remounts the field
  * with `autoFocus` after a failed commit, so the row can refocus itself with no ref and no effect.

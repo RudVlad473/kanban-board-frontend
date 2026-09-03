@@ -31,7 +31,7 @@ type Props = {
 
 // comment-length-exempt: records the one deliberate break from the presentational-by-prop rule every sibling modal follows, and why it is scoped to subtasks only — a settled design decision a future reader would otherwise "fix" by lifting the hooks (docs/adr/tech/0023)
 /**
- * TASK-03's edit form (S-01) plus SUBTASK-01/03/04's per-item add/rename/delete (D-06). Takes
+ * TASK-03's edit form plus SUBTASK-01/03/04's per-item add/rename/delete. Takes
  * `onSubmit` as a prop for the title/description save, matching every sibling modal's
  * presentational-by-prop rule (docs/adr/tech/0020) — but the subtask rows are the one place this
  * modal owns its own mutation hooks directly, because each row saves the instant it is edited, and
@@ -112,7 +112,7 @@ export const EditTaskModal = ({ task, boardId, columns, onClose, onSubmit, isPen
                             Subtasks
                         </span>
 
-                        {/* S-01's mitigation for the real hazard it creates — not optional decoration. */}
+                        {/* The mitigation for the real hazard it creates — not optional decoration. */}
                         <p className="font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted">
                             Subtask changes save as you make them.
                         </p>

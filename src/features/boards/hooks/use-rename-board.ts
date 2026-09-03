@@ -20,7 +20,7 @@ const GENERIC_RENAME_FAILURE = { title: "Couldn't rename board.", description: "
 
 /*
  * Only the branches with something distinct to tell the user. `CONFLICT` is deliberately absent:
- * a stale version keeps D-15's generic path in this phase, because explaining it is SYNC-01's job
+ * A stale version keeps the generic path in this phase, because explaining it is SYNC-01's job
  * (Phase 4) and half-building that reconciliation would be worse than not starting it.
  */
 const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; description: string }>> = {
@@ -41,7 +41,7 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 export type RenameBoardArgs = { boardId: string; name: string; version: number };
 
 /**
- * BOARD-04's optimistic rename (D-15), as TanStack Query's cache-based optimistic update: the
+ * BOARD-04's optimistic rename, as TanStack Query's cache-based optimistic update: the
  * pending name is written into the `boards` entry both the sidebar and the header read, so they
  * change in the same instant with no shared owner and no provider (docs/adr/tech/0019).
  */

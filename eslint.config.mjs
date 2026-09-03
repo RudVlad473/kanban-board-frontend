@@ -24,7 +24,7 @@ const emptyBranchSelectors = (branch) =>
 
 const eslintConfig = defineConfig([
     /*
-     * 1. Type-aware strict + stylistic tiers (D-26n) — projectService gives the type-aware tier
+     * 1. Type-aware strict + stylistic tiers — projectService gives the type-aware tier
      * real type information; tsconfigRootDir anchors resolution to this repo.
      */
     ...tseslint.configs.strictTypeChecked,
@@ -100,7 +100,7 @@ const eslintConfig = defineConfig([
         },
     },
 
-    // 4. Unused vars/args/caught-errors as error, with an underscore-prefix escape hatch (D-26o).
+    // 4. Unused vars/args/caught-errors as error, with an underscore-prefix escape hatch.
     {
         rules: {
             "@typescript-eslint/no-unused-vars": [
@@ -115,7 +115,7 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 4b. `type` over `interface` by default (D-26i) — stylisticTypeChecked's own default prefers
+     * 4b. `type` over `interface` by default — stylisticTypeChecked's own default prefers
      * `interface`, the opposite of this project's convention; override explicitly rather than
      * rewriting every object-shape type alias as an interface.
      */
@@ -132,7 +132,7 @@ const eslintConfig = defineConfig([
      */
 
     /*
-     * 5. Import order/grouping (D-26p) — eslint-plugin-import's fixer crashes under ESLint 10
+     * 5. Import order/grouping — eslint-plugin-import's fixer crashes under ESLint 10
      * (removed SourceCode method); import-x is the actively-maintained, ESLint-10-compatible fork
      * used here instead (see docs/adr/tech/0007).
      */
@@ -164,7 +164,7 @@ const eslintConfig = defineConfig([
                 },
             ],
 
-            // 6. No default exports (D-26j) — overridden below for Next.js framework-forced files.
+            // 6. No default exports — overridden below for Next.js framework-forced files.
             "import-x/no-default-export": "error",
         },
     },
@@ -427,7 +427,7 @@ const eslintConfig = defineConfig([
                 /*
                  * 8g. D-06: ban composeStories' `.run()` repo-wide, incl. *.stories.tsx
                  * (docs/adr/tech/0025, supersedes tech/0021) — no-restricted-properties can't
-                 * express this since .run() is called on a differently-named object per file.
+                 * express this since.run() is called on a differently-named object per file.
                  */
                 {
                     selector: "CallExpression[callee.type='MemberExpression'][callee.property.name='run']",

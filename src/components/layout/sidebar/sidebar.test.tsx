@@ -22,10 +22,10 @@ import * as stories from "./sidebar.stories";
  */
 const mockRefresh = vi.hoisted(() => vi.fn());
 
-// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
+// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
 vi.mock("next/navigation", () => createNextNavigationShim({ pathname: ROUTE.BOARDS, refresh: mockRefresh }));
 
-// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see board-list.test.tsx)
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (see board-list.test.tsx)
 vi.mock("next/link", () => createNextLinkShim());
 
 const {
@@ -40,7 +40,7 @@ const {
 describeForEachDevice({
     name: "Sidebar",
     body: () => {
-        // Shallow: composed structural states (D-08).
+        // Shallow: composed structural states.
         it("renders the brand mark, the Boards landmark and Hide Sidebar when expanded", async () => {
             // Act
             await render(<Expanded />);

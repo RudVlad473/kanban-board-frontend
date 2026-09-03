@@ -14,7 +14,7 @@ import { externalApi } from "@/lib/server/server-client";
 
 /**
  * `renameBoardAction`'s own result — every failure branch carries this project's own discriminant
- * and nothing else, so no upstream response text can reach the rollback toast (T-02-61, D-21).
+ * and nothing else, so no upstream response text can reach the rollback toast (T-02-61).
  */
 export type RenameBoardResult = ActionResult<
     { board: Board },

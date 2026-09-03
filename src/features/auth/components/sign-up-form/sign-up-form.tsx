@@ -24,7 +24,7 @@ import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
 
 type Props = {
-    /** Pre-fills field values (a plain React Hook Form `defaultValues` passthrough) — used by the "Filled"/"LongValues" stories, mirroring Dropdown's `defaultOpen`/TextField's `defaultValue` staging pattern (D-25's non-interactive alternative to a play function). */
+    /** Pre-fills field values (a plain React Hook Form `defaultValues` passthrough) — used by the "Filled"/"LongValues" stories, mirroring Dropdown's `defaultOpen`/TextField's `defaultValue` staging pattern (the non-interactive alternative to a play function). */
     defaultValues?: Partial<SignUpInput>;
     /** Storybook-only staging — renders Email/Password's required-error state without a real submit. */
     forceFieldErrors?: boolean;

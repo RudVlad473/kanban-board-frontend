@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { AuthCard } from "./auth-card";
 
 /*
- * Visual-only CSF3 (D-25); behavioral assertions live in auth-card.test.tsx. A plain
+ * Visual-only CSF3; behavioral assertions live in auth-card.test.tsx. A plain
  * presentational shell — no Server Action import, so no stub alias is needed here.
  */
 const meta: Meta<typeof AuthCard> = {

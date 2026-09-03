@@ -53,7 +53,7 @@ export const signInAction = async (_previousState: AuthActionState, formData: Fo
     const identity: unknown = data;
 
     /*
-     * A success response carrying no upstream credential (GC-18, T-01-50) is a failure, not a
+     * A success response carrying no upstream credential (T-01-50) is a failure, not a
      * degraded success — it would leave the user looking signed in while every call fails.
      */
     const jsessionId = upstreamCookie.extract(response);
@@ -70,7 +70,7 @@ export const signInAction = async (_previousState: AuthActionState, formData: Fo
 
     /*
      * `isSessionPayload` only checks `displayName` is a string, not non-empty — `resolveDisplayName`
-     * guards against a blank name reaching the dashboard chrome (GC-02).
+     * guards against a blank name reaching the dashboard chrome.
      */
     await session.create({ ...identity, displayName: resolveDisplayName(identity), jsessionId });
 

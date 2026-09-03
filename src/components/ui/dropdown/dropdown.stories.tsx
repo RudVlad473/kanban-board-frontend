@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Dropdown } from "./dropdown";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (keyboard nav, selection, focus return, error state, disabled item) live exclusively in
- * dropdown.test.tsx. Per D-25, the open state is driven by `defaultOpen`, not a play function.
+ * dropdown.test.tsx. the open state is driven by `defaultOpen`, not a play function.
  */
 const meta: Meta<typeof Dropdown.Root> = {
     component: Dropdown.Root,

@@ -15,7 +15,7 @@ import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
 
 /**
- * `createBoardAction`'s own result (T-02-47, D-21). `CONFLICT`/`NOT_FOUND` are declared for parity
+ * `createBoardAction`'s own result (T-02-47). `CONFLICT`/`NOT_FOUND` are declared for parity
  * with `mapProblemCodeToStatus`'s return type, not because a create can reach them — it carries no
  * version and targets no existing id, and narrowing them away would trap a future create contract.
  */

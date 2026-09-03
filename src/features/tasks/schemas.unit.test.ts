@@ -533,7 +533,7 @@ describe("addTaskFormSchema", () => {
         expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
     });
 
-    /* S-06: the create endpoint is column-scoped, so a destination must always be chosen. */
+    /* The create endpoint is column-scoped, so a destination must always be chosen. */
     it("reports the required-field message for a blank column id", () => {
         // Act
         const result = addTaskFormSchema.safeParse({ ...createValidFormInput(), columnId: "" });

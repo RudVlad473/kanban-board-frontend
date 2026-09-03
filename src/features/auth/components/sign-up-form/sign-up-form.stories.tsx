@@ -5,7 +5,7 @@ import { AuthCard } from "@/features/auth/components/auth-card/auth-card";
 import { SignUpForm } from "./sign-up-form";
 
 /*
- * Visual-only CSF3 (D-25); behavioral assertions live in sign-up-form.test.tsx. Every state below
+ * Visual-only CSF3; behavioral assertions live in sign-up-form.test.tsx. Every state below
  * is reached through this file's own staging props, the same non-interactive pattern Dropdown/
  * Modal already use via `defaultOpen` — `signUpAction` is referenced but never actually invoked.
  */
@@ -48,7 +48,7 @@ export const Filled: Story = {
 };
 
 /*
- * `forceFieldErrors` now stages only Email/Password's required-message state (GC-02) — Name is
+ * `forceFieldErrors` now stages only Email/Password's required-message state — Name is
  * optional, so an untouched Name field never produces the required-field error the resolver
  * would have shown before this plan.
  */

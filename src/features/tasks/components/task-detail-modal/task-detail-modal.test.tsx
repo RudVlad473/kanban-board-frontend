@@ -127,7 +127,7 @@ describeForEachDevice({
         });
 
         /*
-         * S-01: submitting returns to the detail view — the CARD showing the new title is proved at
+         * Submitting returns to the detail view — the CARD showing the new title is proved at
          * board level (board-view.test.tsx), where a real query-cache-seeded parent exists to read it
          * from; this component test only has the static `task` prop the story supplied.
          */
@@ -204,7 +204,7 @@ describeForEachDevice({
             updateSubtaskStub.settle();
         });
 
-        /* D-08's in-flight lock: the composed disabled checkbox drops a same-row second press. */
+        /* The in-flight lock: the composed disabled checkbox drops a same-row second press. */
         it("marks the pending row's checkbox busy and drops a second press on the SAME row", async () => {
             // Arrange
             updateSubtaskStub.queue({
@@ -233,7 +233,7 @@ describeForEachDevice({
             updateSubtaskStub.settle();
         });
 
-        /* D-08: the lock is per-subtask, not per-task — a different row runs its own write independently. */
+        /* The lock is per-subtask, not per-task — a different row runs its own write independently. */
         it("issues an independent call for a DIFFERENT row while the first is still in flight", async () => {
             // Arrange
             updateSubtaskStub.queue({
@@ -316,7 +316,7 @@ describeForEachDevice({
             expect(Math.min(horizontalOverlap, verticalOverlap)).toBeLessThanOrEqual(0);
         });
 
-        /* S-09: Esc dismisses, matching every other shipped modal's guaranteed mechanism. */
+        /* Esc dismisses, matching every other shipped modal's guaranteed mechanism. */
         it("invokes onClose on Escape", async () => {
             // Arrange
             await render(<Default />);
@@ -338,7 +338,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-10: the Current Status control lists the board's columns in board order, with the
+         * The Current Status control lists the board's columns in board order, with the
          * task's own column pre-selected — the move itself is proved at board level, where the
          * query cache `useMoveTask` reads from is actually populated.
          */

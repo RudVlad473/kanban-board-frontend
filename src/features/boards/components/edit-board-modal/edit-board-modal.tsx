@@ -24,7 +24,7 @@ type Props = {
 };
 
 /**
- * D-14's rename form. Deliberately takes `onSubmit` as a prop rather than calling `useRenameBoard()`
+ * The rename form. Deliberately takes `onSubmit` as a prop rather than calling `useRenameBoard()`
  * itself — that is what lets its behavioural tests drive it with a real local function instead of a
  * module mock, which is banned outside stories (docs/adr/tech/0020).
  */

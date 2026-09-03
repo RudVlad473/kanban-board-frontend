@@ -15,7 +15,7 @@ type Props = {
 };
 
 /**
- * D-06's plain confirm modal — no type-the-name-to-confirm step. Deliberately takes `onSubmit` as a
+ * The plain confirm modal — no type-the-name-to-confirm step. Deliberately takes `onSubmit` as a
  * prop rather than calling `useDeleteBoard()` itself, so its behavioural tests drive it with a real
  * local function instead of a module mock, which is banned outside stories (docs/adr/tech/0020).
  */

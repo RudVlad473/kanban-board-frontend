@@ -123,7 +123,7 @@ describeForEachDevice({
         });
 
         /*
-         * S-03: a draft row carries the seeded placeholder; a live row shows none. Two SIMULTANEOUS
+         * A draft row carries the seeded placeholder; a live row shows none. Two SIMULTANEOUS
          * renders, scoped by their own `container` (never the page-global locator API — both mount
          * into the same document, so an unscoped query resolves to both rows' inputs at once).
          */

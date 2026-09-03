@@ -55,7 +55,7 @@ export default defineConfig({
                 test: {
                     /*
                      * Real-backend integration project (CONVENTIONS.md's test-location table) — no
-                     * mock server stands in for the external API (GC-22); every call dials the
+                     * mock server stands in for the external API; every call dials the
                      * deployed nonprod backend directly, the same path the deployed app uses.
                      */
                     name: "node",

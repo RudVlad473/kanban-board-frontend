@@ -15,7 +15,7 @@ import { createNextLinkShim } from "@/test-utils/next-router-shims";
 
 import * as stories from "./board-card.stories";
 
-// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19)
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode
 vi.mock("next/link", () => createNextLinkShim());
 
 const { Default, Selected, MenuOpen, LongName } = composeStories(stories);

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { taskFullSchema } from "@/lib/core/api-contract/task-schemas";
 
 /**
- * Runtime-verified shape replacing the deleted `isBoard`/`isBoardArray` guards (D-12) — the
+ * Runtime-verified shape replacing the deleted `isBoard`/`isBoardArray` guards — the
  * contract declares no `required` array, so a raw cast to `Board` can't be trusted (see
  * docs/adr/tech/0024).
  */
@@ -20,7 +20,7 @@ export type Board = z.infer<typeof boardSchema>;
 /*
  * The full-board containment hierarchy, composed a level at a time. None of the four response
  * shapes declares a `required` array, so a cast at any level would be a claim rather than a fact
- * (docs/adr/tech/0024). Its task and subtask levels moved to the core ring under D-16.
+ * (docs/adr/tech/0024). Its task and subtask levels moved to the core ring.
  */
 export const columnFullSchema = z.object({
     id: z.string(),
@@ -118,7 +118,7 @@ export const columnNameSchema = z
 
 /*
  * Deliberately separate from `columnNameSchema`, not a relaxation of it: a blank row is now a user
- * error to correct rather than input to drop (D-02a), and it earns the required-field copy, not the
+ * error to correct rather than input to drop, and it earns the required-field copy, not the
  * length copy. `.pipe` rather than stacked `.min`s so the blank case can never report length.
  */
 export const columnNameRowSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).pipe(columnNameSchema);

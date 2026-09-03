@@ -26,7 +26,7 @@ describe("signUpSchema — password", () => {
     });
 
     /*
-     * Parametrised over the rejected-password families (D-26y) rather than repeating
+     * Parametrised over the rejected-password families rather than repeating
      * near-identical blocks — each case isolates exactly one rule violation.
      */
     const rejectedPasswordCases: { name: string; password: string; message: string }[] = [

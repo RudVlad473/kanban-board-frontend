@@ -12,7 +12,7 @@ import { externalApi } from "@/lib/server/server-client";
 
 /**
  * `deleteBoardAction`'s own result — every failure branch is a bare discriminant, so no upstream
- * response text can reach the failure toast (T-02-69, D-21). D-09 wants one generic failure here,
+ * response text can reach the failure toast (T-02-69). D-09 wants one generic failure here,
  * deliberately unlike rename's per-code branches: nothing was changed, so there is nothing to explain.
  */
 export type DeleteBoardResult = ActionResult;

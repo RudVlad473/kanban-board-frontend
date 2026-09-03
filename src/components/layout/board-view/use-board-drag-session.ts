@@ -24,7 +24,7 @@ type Args = {
  * One board's drag session: what is currently lifted, and what a completed drop means.
  *
  * In the layout ring rather than either feature's `hooks/` because it needs BOTH — the column
- * reorder model and the task move model — which the `feature -> feature` boundary forbids (D-18).
+ * reorder model and the task move model — which the `feature -> feature` boundary forbids.
  */
 export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns }: Args) => {
     const [liftedColumnId, setLiftedColumnId] = useState<string | null>(null);

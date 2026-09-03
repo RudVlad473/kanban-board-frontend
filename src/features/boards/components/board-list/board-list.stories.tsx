@@ -5,7 +5,7 @@ import { createBoards } from "@/test-utils/factories/board";
 import { BoardList } from "./board-list";
 
 /*
- * Visual-only CSF3 (D-25) — `BoardList` is `features/boards/`, not a `components/ui/` primitive,
+ * Visual-only CSF3 — `BoardList` is `features/boards/`, not a `components/ui/` primitive,
  * so per ADR tech/0011 it gets stories/axe coverage but no visual-spec entry. The decorator
  * recreates the flex-column, fixed-width context `Sidebar`'s `nav` now supplies (plan 02-09).
  */
@@ -42,8 +42,8 @@ export const AddBoardOpen: Story = { args: { boards: createBoards(3), defaultIsA
 /** Stages the rename modal open on the first row, the same prop-driven way as the create modal. */
 export const RenameOpen: Story = { args: { boards: createBoards(3), defaultRenameTargetIndex: 0 } };
 
-/** Stages D-06's delete confirmation open on the first row, the same prop-driven way. */
+/** Stages the delete confirmation open on the first row, the same prop-driven way. */
 export const DeleteOpen: Story = { args: { boards: createBoards(3), defaultDeleteTargetIndex: 0 } };
 
-/** The last-board case: deleting this one leaves none, which is D-08's empty-state branch. */
+/** The last-board case: deleting this one leaves none, which is the empty-state branch. */
 export const SingleBoard: Story = { args: { boards: createBoards(1) } };

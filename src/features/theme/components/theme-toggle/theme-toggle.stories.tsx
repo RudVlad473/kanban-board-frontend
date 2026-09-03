@@ -5,7 +5,7 @@ import { THEME } from "@/lib/core/theme/theme";
 import { ThemeToggle } from "./theme-toggle";
 
 /*
- * Visual-only CSF3 (D-25); behavioral assertions live in theme-toggle.test.tsx.
+ * Visual-only CSF3; behavioral assertions live in theme-toggle.test.tsx.
  * `updateThemeAction` resolves through `serverActionStubPlugin`'s generic recorder (docs/adr/tech/0020),
  * never invoked for real. Per ADR tech/0011, this component gets no visual-regression baseline.
  */

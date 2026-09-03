@@ -7,7 +7,7 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 
 /*
  * TASK-01 against the real deployed nonprod backend — structural, business-level assertions only,
- * no validation copy (docs/adr/tech/0022). Creation is not optimistic (D-05): the modal stays open
+ * no validation copy (docs/adr/tech/0022). Creation is not optimistic: the modal stays open
  * on the task POST, so the card's appearance IS the settle-wait and needs no extra one.
  */
 
@@ -41,7 +41,7 @@ test.describe("TASK-01: create a task", () => {
         await signIn({ page, account, board });
         const title = `Fixture Created Task ${randomUUID().slice(0, 8)}`;
 
-        // Act — open the header's one create entry point (S-06) and fill every field.
+        // Act — open the header's one create entry point and fill every field.
         await page.getByRole("button", { name: "+ Add New Task" }).click();
         const dialog = page.getByRole("dialog");
         await dialog.getByLabel("Title", { exact: true }).fill(title);
@@ -56,7 +56,7 @@ test.describe("TASK-01: create a task", () => {
 
         /*
          * Assert — the card lands in the CHOSEN column; its appearance is itself the settle-wait
-         * (create is not optimistic, D-05), and the subtask fan-out's caption is polled for.
+         * (create is not optimistic), and the subtask fan-out's caption is polled for.
          */
         const card = columnSection({ page, name: "Doing" }).getByRole("button", { name: new RegExp(`^${title}`) });
         await expect(card).toBeVisible();

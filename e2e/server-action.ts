@@ -2,7 +2,7 @@ import type { Page, Response } from "@playwright/test";
 
 // comment-length-exempt: records the race this exists to close, the wire shape it keys off, and the ordering rule that makes it work — all three are needed to use it correctly and none is readable from the code (docs/adr/tech/0023)
 /*
- * The settle-wait for an OPTIMISTIC mutation (U-05). A spec that asserts an optimistically-applied
+ * The settle-wait for an OPTIMISTIC mutation. A spec that asserts an optimistically-applied
  * value and then reloads is reading the server, but nothing in the optimistic assertion says the
  * write ever left the browser — so under contention the reload outruns the in-flight Server Action
  * and reads stale state. Measured 2026-08-27: `boards-rename` failed twice in fifteen runs at

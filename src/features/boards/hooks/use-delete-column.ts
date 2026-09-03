@@ -54,7 +54,7 @@ export type DeleteColumnArgs = { boardId: string; columnId: string };
  */
 
 /**
- * COLUMN-04's optimistic delete (U-05): the column leaves the board on submit and a refusal puts it
+ * COLUMN-04's optimistic delete: the column leaves the board on submit and a refusal puts it
  * back, tasks included, from the whole-board snapshot. Mechanism: docs/adr/tech/0030.
  */
 export const useDeleteColumn = () => {

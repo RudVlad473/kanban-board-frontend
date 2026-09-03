@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Checkbox } from "./checkbox";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (click/keyboard/controlled/error/disabled) live exclusively in checkbox.test.tsx.
  */
 const meta: Meta<typeof Checkbox> = {

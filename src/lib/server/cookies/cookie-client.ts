@@ -8,7 +8,7 @@ import { createBaseCookieOptions, type CookieName } from "@/lib/core/cookies/coo
 /**
  * The per-client cookie attributes a caller states explicitly — the same third-argument shape
  * `next/headers`'s `cookies().set()` accepts, extracted without importing its unexported
- * `ResponseCookie` type directly (D-10).
+ * `ResponseCookie` type directly.
  */
 type CookieOptions = NonNullable<Parameters<Awaited<ReturnType<typeof cookies>>["set"]>[2]>;
 
@@ -29,7 +29,7 @@ export type CookieClient<TValue> = {
 
 /**
  * Builds a typed cookie client over `next/headers`'s `cookies()` — the single implementation
- * `themeCookie` and the session service both consume (D-10). `write`'s option merge is computed
+ * `themeCookie` and the session service both consume. `write`'s option merge is computed
  * fresh on every call, so no caller's `overrides` can mutate another call's configuration.
  */
 export const createCookieClient = <TValue>({

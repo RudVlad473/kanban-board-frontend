@@ -7,7 +7,7 @@ import { createBoardFull, createColumnFull } from "@/test-utils/factories/board-
 import { RenameColumnModal } from "./rename-column-modal";
 
 /*
- * Visual-only CSF3 (D-25), mirroring `edit-board-modal.stories.tsx`. Both handlers are `fn()` spies
+ * Visual-only CSF3, mirroring `edit-board-modal.stories.tsx`. Both handlers are `fn()` spies
  * so a test asserts by reading these args, never by spreading props onto a composed story.
  */
 const meta: Meta<typeof RenameColumnModal> = {
@@ -56,7 +56,7 @@ const SettlingHost = (props: ComponentProps<typeof RenameColumnModal>) => {
     ) : null;
 };
 
-/** U-05: the modal closes on submit rather than holding a spinner — the rename is optimistic. */
+/** The modal closes on submit rather than holding a spinner — the rename is optimistic. */
 export const SubmitSettles: Story = {
     render: (args) => {
         return <SettlingHost {...args} />;

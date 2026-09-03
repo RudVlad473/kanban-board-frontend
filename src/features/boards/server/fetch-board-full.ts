@@ -20,7 +20,7 @@ const UNREACHABLE_BOARD_STATUSES = new Set([403, 404]);
 
 /**
  * `fetchBoardFull()`'s own result — a bare discriminant on every non-ok branch, never upstream
- * response text, so no caller can leak what the backend said to the client (D-21, T-02.1-04).
+ * response text, so no caller can leak what the backend said to the client (T-02.1-04).
  */
 export type FetchBoardFullResult =
     | { status: typeof RESULT_STATUS.SUCCESS; board: BoardFull }
@@ -65,7 +65,7 @@ const fetchBoardFullById = cache(async (boardId: string): Promise<FetchBoardFull
     }
 
     /*
-     * The ONE ordering site, now covering both levels (D-11): every consumer downstream is
+     * The ONE ordering site, now covering both levels: every consumer downstream is
      * position-ordered by construction, so no component sorts a column or a task list and the
      * optimistic `arrayMove` composes with display order (COLUMN-03).
      */

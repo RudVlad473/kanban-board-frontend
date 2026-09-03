@@ -29,7 +29,7 @@ type Props = {
 /**
  * TASK-02's detail view: a pure read off the board, the kebab opening TASK-03's edit flow (owned
  * directly, the same single-caller reasoning `useToggleSubtask` follows) and TASK-05's delete flow
- * (bubbled to `board-view.tsx`), D-10's Current Status control, and SUBTASK-02's toggle.
+ * (bubbled to `board-view.tsx`), the Current Status control, and SUBTASK-02's toggle.
  */
 export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask }: Props) => {
     const { moveTask, isPending: isMoving } = useMoveTask({ boardId });
@@ -61,7 +61,7 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
     };
 
     /*
-     * S-01: the edit modal closes on submit rather than holding a spinner (matching the shipped
+     * The edit modal closes on submit rather than holding a spinner (matching the shipped
      * rename-modal decision), so this returns to the DETAIL view rather than fully closing — the
      * user was mid-inspection, and the title it now shows is the one the save just applied.
      */

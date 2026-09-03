@@ -24,7 +24,7 @@ const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
 
 /*
- * D-03: deep tests render the composed `Empty` story too, not a bare `<SignInForm />` — this
+ * Deep tests render the composed `Empty` story too, not a bare `<SignInForm />` — this
  * mounts through the real `AuthCard` decorator plus the global `QueryProvider`/theme decorators
  * (docs/adr/tech/0025), closer to production usage than a hand-wrapped tree.
  */
@@ -38,7 +38,7 @@ const renderSignInForm = () => render(<Empty />);
 describeForEachDevice({
     name: "SignInForm",
     body: () => {
-        // Shallow: copy, staged validation/error/pending states — asserted through composed stories (D-08).
+        // Shallow: copy, staged validation/error/pending states — asserted through composed stories.
         it("renders two labelled fields, the primary submit control, and the cross-link to Sign Up, each reachable by name", async () => {
             // Act
             await render(<Empty />);
@@ -140,7 +140,7 @@ describeForEachDevice({
              */
             // Arrange
             const rendered = await renderSignInForm();
-            // D-02: no implicit success default — this submit's outcome is queued at the call site.
+            // No implicit success default — this submit's outcome is queued at the call site.
             actionStub(signInAction).queue(AUTH_ACTION_IDLE);
             const submitted: { formData: FormData | null } = { formData: null };
             rendered.container.querySelector("form")?.addEventListener("submit", (event) => {

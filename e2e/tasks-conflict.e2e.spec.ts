@@ -22,7 +22,7 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
  * OUT OF BAND through the seeding CLI (the same session that created it, never a second sign-in),
  * then perform the UI action that sends the now-stale version. Each case asserts three things: the
  * optimistic change reverts, the distinct conflict toast fires with its pinned copy, and the board
- * ends up showing what the OUT-OF-BAND write actually did — proving the re-read (D-12), not the
+ * ends up showing what the OUT-OF-BAND write actually did — proving the re-read, not the
  * client's own pre-conflict state or its failed optimistic guess.
  */
 
@@ -91,7 +91,7 @@ test.describe("SYNC-01: a real stale-version rejection", () => {
         await expect(conflictToast(page).getByText(CONFLICT_TOAST_DESCRIPTION)).toBeVisible();
 
         /*
-         * Assert — the board re-read (D-12): the detail view settles on the SERVER's own title, not
+         * Assert — the board re-read: the detail view settles on the SERVER's own title, not
          * the pre-conflict cached one and not the failed optimistic guess.
          */
         await expect(page.getByRole("dialog").getByRole("heading", { name: serverChangedTitle })).toBeVisible();
@@ -110,7 +110,7 @@ test.describe("SYNC-01: a real stale-version rejection", () => {
         const task = seedTask({ account, boardId: board.id, columnId: alpha.id, title: originalTitle });
         await signIn({ page, account, board });
 
-        // Act — open the still-stale card's detail view (D-10's Current Status is the move path here).
+        // Act — open the still-stale card's detail view (the Current Status is the move path here).
         await page.getByRole("button", { name: new RegExp(`^${originalTitle}`) }).click();
 
         // Act — the OUT-OF-BAND write: bumps the server's version to 1 without moving the task.
@@ -136,7 +136,7 @@ test.describe("SYNC-01: a real stale-version rejection", () => {
         await expect(conflictToast(page).getByText(CONFLICT_TOAST_TITLE)).toBeVisible();
         await expect(conflictToast(page).getByText(CONFLICT_TOAST_DESCRIPTION)).toBeVisible();
 
-        // Assert — the re-read (D-12): Current Status reverts to Alpha, the move never actually applied server-side.
+        // Assert — the re-read: Current Status reverts to Alpha, the move never actually applied server-side.
         await expect(page.getByRole("dialog").getByRole("combobox", { name: "Alpha" })).toBeVisible();
         await page.keyboard.press("Escape");
 

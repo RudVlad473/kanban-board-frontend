@@ -41,13 +41,13 @@ const registeredStubs = new Set<RegisteredStub>();
 
 /*
  * Decisions ─────────────────────────────────────────────────────────────────────────────────────
- * comment-length-exempt: records why D-03's stated mechanism is deliberately not the one implemented — a settled decision a future reader would otherwise reopen (docs/adr/tech/0023)
+ * comment-length-exempt: records why the stated mechanism is deliberately not the one implemented — a settled decision a future reader would otherwise reopen (docs/adr/tech/0023)
  * D-03 asks an unqueued call to THROW, naming the module key and export name. It records and
  * reports instead, and the report is raised from the global `afterEach` rather than the call site.
  * Reason: every hook in this repo wraps `mutateAsync` in `.catch(() => ({ status: ERROR }))` (see
  * `use-rename-column.ts`), so a throw is swallowed into a generic failure toast and surfaces as a
  * downstream assertion naming nothing — exactly the confusion D-03 exists to prevent. Recording the
- * call and asserting on it later delivers D-03's purpose through a route the catch cannot swallow.
+ * call and asserting on it later delivers the purpose through a route the catch cannot swallow.
  * What would make this wrong: a hook that awaits an action WITHOUT a catch. Then a throw would
  * reach the test directly and the call-site mechanism would become the better one.
  * ───────────────────────────────────────────────────────────────────────────────────────────────

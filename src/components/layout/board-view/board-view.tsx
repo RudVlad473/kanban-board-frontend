@@ -137,7 +137,7 @@ export const BoardView = ({
     };
 
     /*
-     * U-05: closed on submit, not on settle — `renameColumn` applied the optimistic override
+     * Closed on submit, not on settle — `renameColumn` applied the optimistic override
      * synchronously before this line runs, so the header already shows the new name underneath. A
      * later failure still reverts it and raises the hook's own toast, modal or no modal.
      */
@@ -198,7 +198,7 @@ export const BoardView = ({
                 <DndContext {...dndContextProps}>
                     {/*
                      * The column row scrolls horizontally; columns keep their width rather than
-                     * wrapping. The one declaration governing D-04's motion and its opt-out lives here.
+                     * wrapping. The one declaration governing the motion and its opt-out lives here.
                      */}
                     <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto scroll-smooth bg-bg-app p-6 motion-reduce:scroll-auto">
                         {/* Item ids come from the same rendered array the map walks — the library requires render order. */}
@@ -212,7 +212,7 @@ export const BoardView = ({
                                         key={column.id}
                                         column={column}
                                         /*
-                                         * D-18: the tasks feature's nodes are built HERE and handed
+                                         * The tasks feature's nodes are built HERE and handed
                                          * down, so the column imports nothing from that feature.
                                          */
                                         renderTasks={() => {

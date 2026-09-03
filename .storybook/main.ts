@@ -8,7 +8,7 @@ import { serverActionStubPlugin } from "../scripts/vite-plugin-server-action-stu
 const rootDir = path.join(import.meta.dirname, "..");
 
 /*
- * D-11: no dedicated "Tokens" documentation page — primitives' own stories are the
+ * No dedicated "Tokens" documentation page — primitives' own stories are the
  * documentation, so no @storybook/addon-docs entry is registered here.
  */
 const config: StorybookConfig = {

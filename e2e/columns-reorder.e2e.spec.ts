@@ -150,7 +150,7 @@ test.describe("COLUMN-03: reorder columns", () => {
         const settled = createServerActionSettled(page);
         await page.keyboard.press("Space");
 
-        // Assert — D-06's keyboard path produced the same kind of move the pointer path does.
+        // Assert — the keyboard path produced the same kind of move the pointer path does.
         await expect(columnHeadings(page)).toHaveText(toCaptions(["Bravo", "Alpha", "Charlie", "Delta"]));
 
         // Act — let the write reach the server, then reload; the optimistic order cannot answer for it.

@@ -13,7 +13,7 @@ import * as stories from "./sign-out-button.stories";
 const { Default } = composeStories(stories);
 
 /*
- * D-03: renders the composed `Default` story, not a bare `<SignOutButton />` — mounts through the
+ * Renders the composed `Default` story, not a bare `<SignOutButton />` — mounts through the
  * story's own decorators plus the global QueryProvider/theme decorators (docs/adr/tech/0025).
  */
 const renderSignOutButton = () => render(<Default />);
@@ -27,11 +27,11 @@ describeForEachDevice({
     body: () => {
         /*
          * No file-local reset hook: the recorder's call log is cleared centrally by
-         * `resetAllActionStubs()` in vitest.setup.ts's afterEach (D-04), which replaced this file's
+         * `resetAllActionStubs()` in vitest.setup.ts's afterEach, which replaced this file's
          * own counter reset when the hand-written double went away.
          */
 
-        // Shallow: accessible name — asserted through the composed story (D-08).
+        // Shallow: accessible name — asserted through the composed story.
         it("renders a secondary button labelled Sign Out", async () => {
             // Act
             await render(<Default />);
@@ -54,14 +54,14 @@ describeForEachDevice({
         });
 
         /*
-         * D-09: a component-wiring claim ("formAction invoked the action once"), not a real-effect
+         * A component-wiring claim ("formAction invoked the action once"), not a real-effect
          * claim — the session cookie clearing and redirect are proven in e2e/auth.e2e.spec.ts
          * instead (docs/adr/tech/0025).
          */
         it("calls signOutAction exactly once when clicked, asking the backend for nothing beyond that one call", async () => {
             // Arrange
             const rendered = await renderSignOutButton();
-            // D-02: no implicit success default — this one click's outcome is queued at the call site.
+            // No implicit success default — this one click's outcome is queued at the call site.
             actionStub(signOutAction).queue(AUTH_ACTION_IDLE);
 
             // Act

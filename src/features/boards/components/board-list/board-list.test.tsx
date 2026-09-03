@@ -26,15 +26,15 @@ import * as stories from "./board-list.stories";
 /*
  * `next/link`/`next/navigation` are the D-19 environment-shim exception (see the vi.mock below) —
  * every other seam this file used to stub (`useBoards`) is gone: `BoardList` is RSC-fed via props
- * now (D-02/D-03), so there is no business-logic hook left to mock.
+ * now, so there is no business-logic hook left to mock.
  */
 const mockRefresh = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
 const mockReplace = vi.hoisted(() => vi.fn());
-/* A getter-backed holder, so one suite can drive the board-detail paths D-08's branches turn on. */
+/* A getter-backed holder, so one suite can drive the board-detail paths the branches turn on. */
 const currentPathname = vi.hoisted(() => ({ value: "" }));
 
-// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
+// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
 vi.mock("next/navigation", () =>
     createNextNavigationShim({
         pathname: () => currentPathname.value,
@@ -44,7 +44,7 @@ vi.mock("next/navigation", () =>
     }),
 );
 
-// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
 const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, DeleteOpen, SingleBoard } = composeStories(stories);
@@ -63,7 +63,7 @@ const deleteBoardStub = actionStub(deleteBoardAction);
 
 /*
  * Opens the create modal, fills the board name, then adds and fills a row per requested column.
- * The form opens with one row (D-01a), so row 1 is filled in place and the rest are appended.
+ * The form opens with one row, so row 1 is filled in place and the rest are appended.
  */
 const submitNewBoard = async ({ name, columns }: { name: string; columns: string[] }): Promise<void> => {
     await userEvent.click(screen.getByRole("button", { name: "+ Create New Board" }));
@@ -121,7 +121,7 @@ describeForEachDevice({
     name: "BoardList",
     body: () => {
         beforeEach(() => {
-            // No stub reset here: D-04's global `afterEach` resets every registered stub centrally.
+            // No stub reset here: The global `afterEach` resets every registered stub centrally.
             mockPush.mockClear();
             mockReplace.mockClear();
             currentPathname.value = ROUTE.BOARDS;
@@ -354,7 +354,7 @@ describeForEachDevice({
 
         /*
          * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE (probed 2026-08-25)
-         * — the same refusal rename already explains, now recognised on create too (D-01).
+         * — the same refusal rename already explains, now recognised on create too.
          */
         it("names the clash inline and keeps the modal open when the board name is already taken", async () => {
             // Arrange
@@ -364,7 +364,7 @@ describeForEachDevice({
             // Act
             await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
 
-            // Assert — told why, in the still-open modal, with nothing created to navigate to (D-05).
+            // Assert — told why, in the still-open modal, with nothing created to navigate to.
             expect(await screen.findByRole("alert")).toHaveTextContent(
                 "A board with that name already exists. Choose a different name.",
             );
@@ -485,7 +485,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-15's whole point, plus D-02's timing: the row asserts the new name and the modal is
+         * The whole point, plus the timing: the row asserts the new name and the modal is
          * already gone while the write is still in flight, and no other row is touched by it.
          */
         it("closes the modal and shows the new name in that row before the rename resolves", async () => {
@@ -532,7 +532,7 @@ describeForEachDevice({
             });
             renameBoardStub.hold();
 
-            // Act — start a rename on row 1; the modal closes instantly (D-02) while its write is held.
+            // Act — start a rename on row 1; the modal closes instantly while its write is held.
             await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
 
             // Act — open Edit Board on an unrelated row while row 1's rename is still unresolved.
@@ -748,7 +748,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-08: `replace`, not `push` — the deleted board's address must not sit in the back history
+         * `replace`, not `push` — the deleted board's address must not sit in the back history
          * for a user to walk into (T-02-70), and the URL has to show where they actually landed.
          */
         it("moves to the first remaining board, replacing the history entry, when the open board is deleted", async () => {
@@ -817,7 +817,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-09: a refusal restores BOTH halves of the optimistic write — the row and the address that
+         * A refusal restores BOTH halves of the optimistic write — the row and the address that
          * named it — or the sidebar would show a board the user can no longer navigate back to.
          */
         it("restores the row and returns the viewer to the board when the delete fails", async () => {

@@ -11,7 +11,7 @@ StyleDictionary.registerTransformGroup({
 });
 
 /**
- * Breakpoint tokens are authored as `breakpoint.mobile/tablet/desktop` (D-07) but Tailwind v4's
+ * Breakpoint tokens are authored as `breakpoint.mobile/tablet/desktop` but Tailwind v4's
  * responsive-variant namespace expects `--breakpoint-sm/md/lg` — this is a deliberate rename,
  * not a pass-through.
  */
@@ -79,8 +79,8 @@ StyleDictionary.registerFormat({
     format: ({ dictionary }) => {
         const lines = tokenDeclarations(dictionary);
         /*
-         * Tailwind v4 base spacing unit (D-04's extension): generates the whole numeric utility
-         * ladder (p-1 ... p-16) mechanically from this one value, so 12px (space-3) needs no
+         * Tailwind v4 base spacing unit (the extension): generates the whole numeric utility
+         * ladder (p-1... p-16) mechanically from this one value, so 12px (space-3) needs no
          * special case.
          */
         lines.unshift("  --spacing: 4px;");

@@ -127,7 +127,7 @@ describeForEachDevice({
             });
         });
 
-        // D-01a: exactly one row, so nothing has to be cleared that the user did not ask for.
+        // Exactly one row, so nothing has to be cleared that the user did not ask for.
         it("opens with exactly one empty column row", async () => {
             // Act
             const screen = await render(<Default />);
@@ -320,7 +320,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-05: a failed create keeps the modal open with the typed name intact — nothing was
+         * A failed create keeps the modal open with the typed name intact — nothing was
          * created, so there is nothing to reconcile and nothing to clear.
          */
         it("keeps the typed name and shows an inline error when the submit handler reports failure", async () => {
@@ -331,7 +331,7 @@ describeForEachDevice({
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
-            // Assert — both the name and the column rows survive the failure (D-05).
+            // Assert — both the name and the column rows survive the failure.
             await expect.element(screen.getByRole("alert")).toHaveTextContent("Couldn't create board. Try again.");
             await expect.element(screen.getByRole("dialog")).toBeVisible();
             await expect.element(screen.getByLabelText("Board Name")).toHaveValue("Launch");

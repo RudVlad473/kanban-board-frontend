@@ -294,7 +294,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-05: a failed create keeps the modal open with everything typed intact — nothing was
+         * A failed create keeps the modal open with everything typed intact — nothing was
          * created, so there is nothing to reconcile.
          */
         it("keeps the typed fields and shows an inline error when the submit handler reports failure", async () => {

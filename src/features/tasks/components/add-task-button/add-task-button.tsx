@@ -10,7 +10,7 @@ import { useCreateTask } from "@/features/tasks/hooks/use-create-task";
 import { useOpenBoardColumns } from "@/features/tasks/hooks/use-open-board-columns";
 import type { AddTaskSubmitValues } from "@/features/tasks/schemas";
 
-/** S-06's ONE task-creation entry point, and the modal it opens. */
+/** The ONE task-creation entry point, and the modal it opens. */
 export const AddTaskButton = () => {
     const { boardId: openBoardId, columns } = useOpenBoardColumns();
     /*
@@ -35,7 +35,7 @@ export const AddTaskButton = () => {
         clearError();
     };
 
-    /* Closed as soon as the task itself lands — the subtask fan-out runs behind it (D-07). */
+    /* Closed as soon as the task itself lands — the subtask fan-out runs behind it. */
     const handleSubmit = (values: AddTaskSubmitValues): void => {
         if (modalBoardId === null) {
             return;

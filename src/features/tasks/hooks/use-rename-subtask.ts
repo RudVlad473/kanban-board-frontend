@@ -46,7 +46,7 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 
 // comment-length-exempt: records why this is a SECOND hook on an already-shared action rather than a new one, and where the current-value read happens — a settled design decision a future reader would otherwise "simplify" by splitting an action or trusting a stale prop (docs/adr/tech/0023)
 /**
- * SUBTASK-03's inline rename (S-03) — the SECOND caller of `updateSubtaskAction`, the SAME action
+ * SUBTASK-03's inline rename — the SECOND caller of `updateSubtaskAction`, the SAME action
  * `useToggleSubtask` calls, differing only in which field it sends and how it rolls back: one action
  * file per HTTP operation, two hooks with their own optimistic/rollback semantics (see that action's
  * own doc comment). Writes the shared `["board", boardId]` entry (docs/adr/tech/0030). Resolves the

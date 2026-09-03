@@ -47,7 +47,7 @@ const TOGGLE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 
 // comment-length-exempt: records why this hook subscribes to the shared cache rather than trusting its caller's props — a settled design decision a future reader would otherwise "simplify" back into a prop read (docs/adr/tech/0023)
 /**
- * SUBTASK-02's optimistic completion toggle (D-08), reading and writing the open board's shared
+ * SUBTASK-02's optimistic completion toggle, reading and writing the open board's shared
  * cache entry (docs/adr/tech/0030) — the SAME mechanism `useMoveTask` uses. This hook subscribes to
  * that entry itself, seeded via `initialData` from its own caller's `columns`: `initialData` only
  * takes effect while no entry exists yet, so a `TaskDetailModal` mounted under a live `BoardView`

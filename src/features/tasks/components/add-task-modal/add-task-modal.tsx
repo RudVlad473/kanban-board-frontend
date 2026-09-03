@@ -27,7 +27,7 @@ type Props = {
     isPending: boolean;
     /** Board order — the Status control lists these verbatim, in the order given. */
     columns: { id: string; name: string }[];
-    /** D-05's inline failure copy, rendered inside the still-open modal — never a toast. */
+    /** The inline failure copy, rendered inside the still-open modal — never a toast. */
     errorMessage?: string | null;
     /** Pre-fills the form (a plain React Hook Form `defaultValues` passthrough) — Storybook-only staging. */
     defaultValues?: { title?: string; description?: string; columnId?: string };

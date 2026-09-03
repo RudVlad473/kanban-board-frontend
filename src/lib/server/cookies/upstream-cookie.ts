@@ -3,7 +3,7 @@ import "server-only";
 import { COOKIE } from "@/lib/core/cookies/cookie-registry";
 
 /**
- * Deliberately NOT built on `createCookieClient` (D-20): this parses an upstream `fetch`
+ * Deliberately NOT built on `createCookieClient`: this parses an upstream `fetch`
  * `Response`'s `Set-Cookie` header, never `next/headers`'s `cookies()` — see docs/adr/tech/0020
  * for the full reasoning.
  */

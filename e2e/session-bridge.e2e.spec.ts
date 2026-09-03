@@ -10,7 +10,7 @@ import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
 import { THEME } from "../src/lib/core/theme/theme";
 
-/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
+/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with the empty state. */
 const PROTECTED_LANDMARK = "Boards";
 const FRESH_PASSWORD = "SessionRotationPwd1!";
 

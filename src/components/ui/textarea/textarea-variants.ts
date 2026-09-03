@@ -10,14 +10,14 @@ export const textareaVariants = cva(
     "min-h-28 w-full rounded-sm border bg-bg-surface px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-text-muted disabled:opacity-50",
     {
         variants: {
-            // D-17's two semantic tokens for the form-primitive error visual, same as TextField.
+            // The two semantic tokens for the form-primitive error visual, same as TextField.
             state: {
                 default: "border-border-default text-text-primary placeholder:text-text-muted",
                 error: "border-border-danger text-text-primary",
             },
             /*
              * Driven internally by `isLoading`, not a standalone prop — composes into `disabled`
-             * per GC-17, so the cursor is the sole busy-vs-disabled differentiator.
+             * so the cursor is the sole busy-vs-disabled differentiator.
              */
             isBusy: {
                 true: "disabled:cursor-progress",

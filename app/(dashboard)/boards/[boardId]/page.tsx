@@ -52,7 +52,7 @@ const BoardDetailPage = async ({ params }: PageProps<"/boards/[boardId]">) => {
     if (boardsResult.status === RESULT_STATUS.SUCCESS && !boardsResult.boards.some((board) => board.id === boardId)) {
         const [firstBoard] = boardsResult.boards;
 
-        // D-11: change the URL rather than silently render a substitute at the requested one (T-02-54).
+        // Change the URL rather than silently render a substitute at the requested one (T-02-54).
         redirect(boardsResult.boards.length === 0 ? ROUTE.BOARDS : buildBoardDetailPath(firstBoard.id));
     }
 

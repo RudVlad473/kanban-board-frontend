@@ -25,7 +25,7 @@ test.describe("BOARD-02: create a board", () => {
         await page.getByRole("button", { name: "Sign In" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
-        // Act — the form opens with one row (D-01a); add a second and name both.
+        // Act — the form opens with one row; add a second and name both.
         await page.getByRole("button", { name: "+ Create New Board" }).click();
         await page.getByLabel("Board Name", { exact: true }).fill(boardName);
         await page.getByLabel("Column 1", { exact: true }).fill("Todo");
@@ -60,7 +60,7 @@ test.describe("BOARD-02: create a board", () => {
 
         /*
          * Assert — both boards are listed, in no asserted order: `GET /boards` exposes no
-         * createdAt and takes no sort parameter, so D-12's newest-first is unguaranteed
+         * createdAt and takes no sort parameter, so the newest-first is unguaranteed
          * (deferred-items.md, 02-10). Asserting it produced a real order-dependent flake.
          */
         await expect(sidebar.getByRole("link")).toHaveCount(2);

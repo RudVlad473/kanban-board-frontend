@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { Switch } from "./switch";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (keyboard/click/controlled/hit-area) live exclusively in switch.test.tsx.
  */
 const meta: Meta<typeof Switch> = {

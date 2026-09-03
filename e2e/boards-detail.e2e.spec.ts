@@ -33,7 +33,7 @@ test.describe("BOARD-03: open a board and see its contents", () => {
 
         // comment-length-exempt: records a measured framework constraint and the assertion it rules out, so a future reader does not re-add a redirect-chain check that cannot pass
         /*
-         * Assert — D-11's auto-select lands the user on the board, and the zero-boards screen never
+         * Assert — the auto-select lands the user on the board, and the zero-boards screen never
          * paints on the way. This deliberately asserts the outcome, not the transport: the redirect
          * is delivered client-side, because `BoardsPage` awaits `fetchBoards()` before calling
          * `redirect()`, by which point the 200 has begun streaming and Next can no longer send a
@@ -69,7 +69,7 @@ test.describe("BOARD-03: open a board and see its contents", () => {
         await page.getByLabel("Password", { exact: true }).fill(emptyAccount.password);
         await page.getByRole("button", { name: "Sign In" }).click();
 
-        // Assert — D-10's empty state at the board-list route, with no redirect away from it.
+        // Assert — the empty state at the board-list route, with no redirect away from it.
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
         await expect(page.getByText("Create a new board to get started.")).toBeVisible();
         await expect(page.getByRole("button", { name: "Create your first board" })).toBeVisible();

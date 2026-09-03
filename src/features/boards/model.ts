@@ -12,7 +12,7 @@ import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 export const toSubmittedColumnNames = (rows: string[]): string[] =>
     rows.map((row) => row.trim()).filter((row) => row !== "");
 
-/** D-01a: one row, so the user is never made to clear rows they did not ask for. */
+/** One row, so the user is never made to clear rows they did not ask for. */
 export const DEFAULT_COLUMN_ROW_COUNT = 1;
 
 export const createEmptyColumnRows = (count: number): { value: string }[] =>
@@ -20,7 +20,7 @@ export const createEmptyColumnRows = (count: number): { value: string }[] =>
 
 /*
  * `toSubtaskSummary` moved to `features/tasks/model.ts` in plan 04-12: after D-18 put the card in
- * the tasks feature, this one had no consumer left here. D-16's promotion rule covers contract
+ * the tasks feature, this one had no consumer left here. The promotion rule covers contract
  * shapes, and a caption formatter is presentation — so it did not go to the core ring.
  */
 
@@ -63,7 +63,7 @@ export const withBoardReplace = ({
 }): Board[] => boards.map((entry) => (entry.id === boardId ? { ...entry, ...board } : entry));
 
 /**
- * D-08's post-delete destination, or `null` when the user was not looking at the board that went
+ * The post-delete destination, or `null` when the user was not looking at the board that went
  * away and so should not be moved at all. Pure, so all three branches are assertable without a
  * router (CONVENTIONS.md's `model.ts` rule).
  */
@@ -82,7 +82,7 @@ export const resolveDestinationAfterDelete = ({
 
     /*
      * "First remaining" is this array's own first entry — `fetchBoards()` already reversed it to
-     * newest-first, so ordering it again here would land the user off the top of the panel (D-12).
+     * newest-first, so ordering it again here would land the user off the top of the panel.
      */
     const [firstRemaining] = remainingBoards;
 
@@ -157,7 +157,7 @@ export const sortColumnsByPosition = (columns: ColumnFull[]): ColumnFull[] =>
     [...columns].sort((left, right) => left.position - right.position);
 
 /**
- * D-11's within-column ordering, on the same terms as the column sort one level up: `position` is
+ * The within-column ordering, on the same terms as the column sort one level up: `position` is
  * the authority, and the copy is not optional because the input is `cache()`d RSC data. Every
  * factory authors tasks in creation order, which is why the missing sort was invisible until now.
  */
@@ -186,11 +186,11 @@ export const isColumnDestinationVisible = ({
  */
 export const toReorderTargetPosition = ({ toIndex }: { toIndex: number }): number => toIndex;
 
-/** D-03's stated threshold. D-02 keeps the count itself uncapped — nothing here refuses a create. */
+/** The stated threshold. D-02 keeps the count itself uncapped — nothing here refuses a create. */
 export const COLUMN_COUNT_NUDGE_THRESHOLD = 8;
 
 /**
- * D-05 reads D-03's "first crosses 8" as *exceeds* 8, so testing one exact transition is what makes
+ * D-05 reads the "first crosses 8" as *exceeds* 8, so testing one exact transition is what makes
  * the nudge fire once by construction rather than by remembering it already did.
  */
 export const shouldNudgeOnColumnCount = ({ nextCount }: { nextCount: number }): boolean =>

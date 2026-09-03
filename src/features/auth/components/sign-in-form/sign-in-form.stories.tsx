@@ -5,7 +5,7 @@ import { AuthCard } from "@/features/auth/components/auth-card/auth-card";
 import { SignInForm } from "./sign-in-form";
 
 /*
- * Visual-only CSF3 (D-25); behavioral assertions live in sign-in-form.test.tsx. Every state below
+ * Visual-only CSF3; behavioral assertions live in sign-in-form.test.tsx. Every state below
  * is reached through this file's own staging props (Dropdown/Modal's `defaultOpen` pattern), and
  * `appDirectory` is required since the form imports `signInAction`, never invoked by any story.
  */

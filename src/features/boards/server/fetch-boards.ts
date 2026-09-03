@@ -11,7 +11,7 @@ import { externalApi } from "@/lib/server/server-client";
 
 /**
  * `fetchBoards()`'s own result — a bare discriminant on the error branches, never an upstream
- * message, so no caller can accidentally leak upstream response text to the client (D-21, T-02.1-04).
+ * message, so no caller can accidentally leak upstream response text to the client (T-02.1-04).
  */
 export type FetchBoardsResult =
     | { status: typeof RESULT_STATUS.SUCCESS; boards: Board[] }

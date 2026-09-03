@@ -23,7 +23,7 @@ const { Primary, Disabled, Loading } = composeStories(stories);
 describeForEachDevice({
     name: "Button",
     body: () => {
-        // Shallow: copy, prop-driven aria/disabled state — asserted through composed stories (D-08).
+        // Shallow: copy, prop-driven aria/disabled state — asserted through composed stories.
         it("renders the accessible name from its copy", async () => {
             // Act
             await render(<Primary />);
@@ -214,7 +214,7 @@ describeForEachDevice({
 
         it("computes the Loading spinner's animation state consistently with the live reduced-motion preference", async () => {
             /*
-             * GC-13: a static spinner is the live "reduce motion" preference, not a CSS defect —
+             * A static spinner is the live "reduce motion" preference, not a CSS defect —
              * read the real preference rather than assuming it (see button.tsx's own comment).
              */
 

@@ -35,7 +35,7 @@ const POPULATED_TASK = createTaskFull({
 const SINGLE_SUBTASK_TASK = createTaskFull({ subtasks: createSubtasks({ count: 1 }) });
 
 /*
- * Visual-only CSF3 (D-25). `onSubmit` is a `fn()` spy so a test asserts by reading its args, never
+ * Visual-only CSF3. `onSubmit` is a `fn()` spy so a test asserts by reading its args, never
  * by spreading props onto a composed story (docs/adr/tech/0025).
  */
 const meta: Meta<typeof EditTaskModal> = {

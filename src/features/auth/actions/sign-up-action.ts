@@ -52,7 +52,7 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
     const identity: unknown = data;
 
     /*
-     * A success response carrying no upstream credential (GC-18, T-01-50) is a failure, not a
+     * A success response carrying no upstream credential (T-01-50) is a failure, not a
      * degraded success — it would leave the user looking signed in while every call fails.
      */
     const jsessionId = upstreamCookie.extract(response);
@@ -68,7 +68,7 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
 
     /*
      * The session is built from the backend's own returned record, not values assembled from the
-     * submitted form. `resolveDisplayName` still runs over the guarded identity (GC-02).
+     * submitted form. `resolveDisplayName` still runs over the guarded identity.
      */
     await session.create({ ...identity, displayName: resolveDisplayName(identity), jsessionId });
 

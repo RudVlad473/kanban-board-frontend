@@ -7,7 +7,7 @@ import { createBoard } from "@/test-utils/factories/board";
 import { DeleteBoardConfirm } from "./delete-board-confirm";
 
 /*
- * Visual-only CSF3 (D-25), mirroring `edit-board-modal.stories.tsx`. Both handlers are `fn()` spies
+ * Visual-only CSF3, mirroring `edit-board-modal.stories.tsx`. Both handlers are `fn()` spies
  * so a test asserts by reading these args, never by spreading props onto a composed story.
  */
 const meta: Meta<typeof DeleteBoardConfirm> = {
@@ -58,7 +58,7 @@ const SettlingHost = (props: ComponentProps<typeof DeleteBoardConfirm>) => {
     );
 };
 
-/** D-09: the modal closes once the delete settles, whether it succeeded or failed. */
+/** The modal closes once the delete settles, whether it succeeded or failed. */
 export const SubmitSettles: Story = {
     render: (args) => {
         return <SettlingHost {...args} />;

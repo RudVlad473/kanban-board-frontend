@@ -4,7 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { IconButton } from "./icon-button";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (click/keyboard/disabled/merge/hit-area) live exclusively in icon-button.test.tsx.
  */
 const meta: Meta<typeof IconButton> = {

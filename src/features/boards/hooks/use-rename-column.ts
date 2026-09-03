@@ -40,7 +40,7 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 export type RenameColumnArgs = { boardId: string; columnId: string; name: string; version: number };
 
 /**
- * COLUMN-02's optimistic rename (U-05), written into the open board's cache entry so every reader
+ * COLUMN-02's optimistic rename, written into the open board's cache entry so every reader
  * of that board sees it at once (docs/adr/tech/0030).
  */
 export const useRenameColumn = ({ boardId }: { boardId: string }) => {

@@ -97,7 +97,7 @@ const GENERIC_MOVE_TOAST = "Couldn't move task.Try again.";
 
 /*
  * SYNC-01/C-08: the title matches the column phase's own conflict title EXACTLY; only the
- * description differs, since the move action re-reads the board itself (D-12) rather than asking
+ * description differs, since the move action re-reads the board itself rather than asking
  * the user to refresh, which is what the column phase's own wording still (correctly) says.
  */
 const CONFLICT_MOVE_TOAST = "This board changed somewhere else.Refreshing to show the latest.";
@@ -116,7 +116,7 @@ const CONFLICT_UPDATE_TASK_TOAST = "This board changed somewhere else.Refreshing
 /* TASK-05's own generic failure copy, from `use-delete-task.ts`'s `GENERIC_DELETE_FAILURE`. */
 const GENERIC_DELETE_TASK_TOAST = "Couldn't delete task.Try again.";
 
-/** The horizontal column row — the scrolling box D-04's `scrollIntoView` actually moves. */
+/** The horizontal column row — the scrolling box the `scrollIntoView` actually moves. */
 const getScrollRow = (): HTMLElement => {
     const row = document.querySelector<HTMLElement>("div.overflow-x-auto");
     if (row === null) {
@@ -371,7 +371,7 @@ const dragElementOutAndBack = async (source: Element): Promise<void> => {
     await releaseBackAtOrigin();
 };
 
-/** U-02: the drag handle is the caption row itself, so its accessible name is the caption. */
+/** The drag handle is the caption row itself, so its accessible name is the caption. */
 const focusColumnHandle = (caption: string): void => {
     screen.getByRole("button", { name: caption }).focus();
 };
@@ -827,7 +827,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-04: the ghost column always sits immediately after the newest column, so bringing it
+         * The ghost column always sits immediately after the newest column, so bringing it
          * into view is what confirms the create the user cannot otherwise see (D-01 appends).
          */
         it("scrolls the column row to its end after a successful create, with motion governed by CSS", async () => {
@@ -978,7 +978,7 @@ describeForEachDevice({
         });
 
         /*
-         * U-05's whole point, plus the UI-SPEC loading row: the header asserts the new name and the
+         * The whole point, plus the UI-SPEC loading row: the header asserts the new name and the
          * modal is already gone while the write is still in flight, and no other column is touched.
          */
         it("closes the modal and shows the new name in that header before the rename resolves", async () => {
@@ -1362,7 +1362,7 @@ describeForEachDevice({
             reorderColumnStub.settle();
         });
 
-        /* D-06: the library's default lift keys are kept, so enter lifts exactly as space does. */
+        /* The library's default lift keys are kept, so enter lifts exactly as space does. */
         it("lifts and drops on the enter key as well as the space bar", async () => {
             // Arrange
             reorderColumnStub.queue({
@@ -1524,7 +1524,7 @@ describeForEachDevice({
             reorderColumnStub.settle();
         });
 
-        /* U-05: the WHOLE board's order comes back, because the move shifted every column between. */
+        /* The WHOLE board's order comes back, because the move shifted every column between. */
         it("restores the rendered order and raises the rollback toast when the reorder fails", async () => {
             // Arrange
             await render(<ReorderableColumns />);
@@ -1892,7 +1892,7 @@ describeForEachDevice({
         });
 
         /*
-         * S-08's axis-flipped twin of the column indicator: the bar reads from the sort strategy's
+         * The axis-flipped twin of the column indicator: the bar reads from the sort strategy's
          * own indices, so the pointer path and the keyboard path indicate at the same slot.
          */
         it("renders the insertion indicator at the hovered card while a pointer drag is over it", async () => {
@@ -1935,7 +1935,7 @@ describeForEachDevice({
             expect(moveTaskStub.calls).toHaveLength(0);
         });
 
-        /* Pitfall 9's own visual half: the empty body draws S-08's bar directly, having no card of its own to carry one. */
+        /* Pitfall 9's own visual half: the empty body draws the bar directly, having no card of its own to carry one. */
         it("renders the insertion indicator inside an empty column's body while a task drag is over it", async () => {
             // Arrange
             await render(<TaskIntoEmptyColumn />);
@@ -2093,7 +2093,7 @@ describeForEachDevice({
             ]);
         });
 
-        /* U-05's task-level twin: both columns the move touched come back, not just the dragged card. */
+        /* The task-level twin: both columns the move touched come back, not just the dragged card. */
         it("returns the task to its original column and raises the failure toast when the move fails", async () => {
             // Arrange
             await render(<TasksAcrossColumns />);
@@ -2137,7 +2137,7 @@ describeForEachDevice({
             expect(moveTaskStub.calls).toHaveLength(1);
         });
 
-        /* D-13's split, proved at the integration point rather than only in the card's own test. */
+        /* The split, proved at the integration point rather than only in the card's own test. */
         it("opens the task detail view on a card click, and not on a handle click", async () => {
             // Arrange
             await render(<TasksAcrossColumns />);
@@ -2157,7 +2157,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-10: the detail view's Current Status control is the move mutation's SECOND caller —
+         * The detail view's Current Status control is the move mutation's SECOND caller —
          * same hook, same optimistic apply, so the board re-parents the card behind the modal.
          */
         it("moves a task through the Current Status control, issuing exactly one request naming the chosen column", async () => {
@@ -2307,7 +2307,7 @@ describeForEachDevice({
 
         /*
          * TASK-03's own tracer proof at the board integration point: the card is the only surface
-         * left to show the save once the modal has closed (S-01), so this is where it must be proved.
+         * left to show the save once the modal has closed, so this is where it must be proved.
          */
         it("shows the new title on the card immediately and returns to the detail view once the edit modal closes", async () => {
             // Arrange
@@ -2360,7 +2360,7 @@ describeForEachDevice({
             ]);
         });
 
-        /* SYNC-01/C-08: the distinct version-conflict toast, matching the phase-wide title (D-12). */
+        /* SYNC-01/C-08: the distinct version-conflict toast, matching the phase-wide title. */
         it("raises the version-conflict toast, matching the phase-wide title, on a stale-version save", async () => {
             // Arrange
             updateTaskStub.queue({ status: RESULT_STATUS.CONFLICT });
@@ -2505,7 +2505,7 @@ describeForEachDevice({
             expect(screen.getByRole("heading", { name: "Fixture Task Alpha" })).toBeInTheDocument();
         });
 
-        /* D-11: the mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */
+        /* The mandatory keyboard path, mirroring `reorderFromKeyboard`'s column-level shape. */
         it("announces the lift, naming the task's column and 1-based position", async () => {
             // Arrange
             await render(<ReorderableTasks />);

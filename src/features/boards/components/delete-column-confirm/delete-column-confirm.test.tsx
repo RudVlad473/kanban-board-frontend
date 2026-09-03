@@ -76,7 +76,7 @@ describeForEachDevice({
             expect(keep.element()).toHaveClass("bg-bg-surface");
         });
 
-        /* A bare "Cancel" is barred — the secondary button names the alternative OUTCOME (U-04). */
+        /* A bare "Cancel" is barred — the secondary button names the alternative OUTCOME. */
         it("offers no bare Cancel control", async () => {
             // Act
             const screen = await render(<Default />);
@@ -215,7 +215,7 @@ describeForEachDevice({
             expect(Deleting.args.onClose).not.toHaveBeenCalled();
         });
 
-        /* U-05: a failed delete closes the modal too — the failure is the hook's toast, not a banner here. */
+        /* A failed delete closes the modal too — the failure is the hook's toast, not a banner here. */
         it("closes once the delete settles, whichever way it went", async () => {
             // Arrange
             const screen = await render(<SubmitSettles />);

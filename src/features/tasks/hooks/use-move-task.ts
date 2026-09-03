@@ -49,7 +49,7 @@ export type MoveTaskArgs = { taskId: string; targetColumnId: string; targetIndex
 type MoveTaskVariables = { taskId: string; targetColumnId: string; version: number; targetPosition: number };
 
 /**
- * TASK-04's optimistic move (U-05), and D-10's single implementation: the drag path and the detail
+ * TASK-04's optimistic move, and the single implementation: the drag path and the detail
  * view's `Current Status` dropdown are two callers of this one hook. Mechanism: docs/adr/tech/0030.
  */
 export const useMoveTask = ({ boardId }: { boardId: string }) => {

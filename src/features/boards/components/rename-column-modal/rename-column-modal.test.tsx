@@ -134,7 +134,7 @@ describeForEachDevice({
                 });
         });
 
-        /* U-05: no pending state at all — the optimistic name is already on screen underneath. */
+        /* No pending state at all — the optimistic name is already on screen underneath. */
         it("closes on submit rather than holding a loading treatment", async () => {
             // Arrange
             const screen = await render(<SubmitSettles />);

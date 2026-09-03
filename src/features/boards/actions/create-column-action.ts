@@ -25,7 +25,7 @@ export type CreateColumnResult = ActionResult<
 /**
  * COLUMN-01's write path, ordered exactly as `renameBoardAction` orders its own: session, then
  * parse, then the upstream call. No position is sent and none is needed — the backend derives it
- * from call order (02-BACKEND-FACTS.md P5), which is what appends a new column at the end (D-01).
+ * from call order (02-BACKEND-FACTS.md P5), which is what appends a new column at the end.
  */
 export const createColumnAction = async ({
     boardId,

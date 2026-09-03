@@ -41,7 +41,7 @@ const DELETE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 
 // comment-length-exempt: records why this hook follows the optimistic-rename analog rather than the wait-for-server delete one, and why no index-restore path exists — a settled design decision a future reader would otherwise "fix" by adding one (docs/adr/tech/0023)
 /**
- * SUBTASK-04's immediate, optimistic, no-confirm delete (D-09/S-05) — following the optimistic
+ * SUBTASK-04's immediate, optimistic, no-confirm delete — following the optimistic
  * RENAME analog rather than the wait-for-server task-delete one, because a subtask destroys nothing
  * beneath it. Its rollback reinstates the row at its ORIGINAL index for free, via the whole-board
  * snapshot restore `onError` already performs — no separate index is recorded and no bespoke restore

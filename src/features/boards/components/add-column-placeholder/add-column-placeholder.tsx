@@ -2,7 +2,7 @@ import type { Ref } from "react";
 
 type Props = {
     onOpen: () => void;
-    /** D-04's scroll target — the ghost column always trails the newest column, so it stands in for it. */
+    /** The scroll target — the ghost column always trails the newest column, so it stands in for it. */
     ref?: Ref<HTMLButtonElement>;
 };
 

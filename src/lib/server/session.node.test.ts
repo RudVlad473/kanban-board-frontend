@@ -5,7 +5,7 @@ import { createSessionService, type SessionPayload } from "@/lib/server/session"
 import { createSessionRecord } from "@/test-utils/factories/session-record";
 
 /*
- * D-13: mock-free — the request-scoped cookies module is never imported here. `verifyToken` never
+ * Mock-free — the request-scoped cookies module is never imported here. `verifyToken` never
  * calls `cookies()`, so every JWT rejection path is driven directly through it with no jar.
  */
 

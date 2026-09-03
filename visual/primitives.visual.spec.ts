@@ -80,7 +80,7 @@ const storyIds = [
     "components-ui-dropdown--disabled",
     "components-ui-dropdown--long-item-list",
     "components-ui-dropdown--loading", // plan 01-16, Task 2
-    // Modal (plan 01-09, Task 1) — six stories, the seventh and final primitive (D-13/D-28).
+    // Modal (plan 01-09, Task 1) — six stories, the seventh and final primitive.
     "components-ui-modal--open",
     "components-ui-modal--with-description",
     "components-ui-modal--with-footer-actions",

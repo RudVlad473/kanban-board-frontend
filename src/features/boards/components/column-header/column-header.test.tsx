@@ -141,7 +141,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-06's direct consequence: the kebab is a SIBLING of the heading, never inside it, so it
+         * The direct consequence: the kebab is a SIBLING of the heading, never inside it, so it
          * can never be confused with the drag handle plan 03-10 puts on the heading itself.
          */
         it("names the kebab after its own column and keeps it outside the heading", async () => {
@@ -234,7 +234,7 @@ describeForEachDevice({
         });
 
         /*
-         * D-06's direct consequence: the enter key LIFTS the column, so a handle that also
+         * The direct consequence: the enter key LIFTS the column, so a handle that also
          * activated on enter would be ambiguous — this one carries no click action at all.
          */
         it("spreads the library's own handle attributes and adds no click action of its own", async () => {
@@ -252,7 +252,7 @@ describeForEachDevice({
             expect(DragHandleFocused.args.onDelete).not.toHaveBeenCalled();
         });
 
-        /* The handle is the whole caption row, so the dot and the count travel inside it (U-02). */
+        /* The handle is the whole caption row, so the dot and the count travel inside it. */
         it("puts the dot and the caption inside the handle rather than beside it", async () => {
             // Act
             const screen = await render(<DragHandleFocused />);

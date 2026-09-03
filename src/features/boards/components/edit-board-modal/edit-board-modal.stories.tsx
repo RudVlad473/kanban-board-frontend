@@ -7,7 +7,7 @@ import { createBoard } from "@/test-utils/factories/board";
 import { EditBoardModal } from "./edit-board-modal";
 
 /*
- * Visual-only CSF3 (D-25), mirroring `add-board-modal.stories.tsx`. Both handlers are `fn()` spies
+ * Visual-only CSF3, mirroring `add-board-modal.stories.tsx`. Both handlers are `fn()` spies
  * so a test asserts by reading these args, never by spreading props onto a composed story.
  */
 const meta: Meta<typeof EditBoardModal> = {

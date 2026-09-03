@@ -39,7 +39,7 @@ test.describe("COLUMN-01: create a column", () => {
             timeout: SIGN_IN_TIMEOUT_MS,
         });
 
-        /* Every column's own `h2`, in document order — the sequence D-01's append is observable in. */
+        /* Every column's own `h2`, in document order — the sequence the append is observable in. */
         const columnHeadings = page.getByRole("region").getByRole("heading", { level: 2 });
         await expect(columnHeadings).toHaveText(["Backlog (0)", "Doing (0)"]);
 

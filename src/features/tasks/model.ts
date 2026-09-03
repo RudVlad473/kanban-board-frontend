@@ -4,7 +4,7 @@ import type { Subtask, Task, TaskFull } from "@/lib/core/api-contract/task-schem
 import { buildColumnBodyDroppableId } from "@/lib/core/drag/drag-items";
 
 /*
- * D-16's promotion rule covers contract SHAPES, and a caption formatter is presentation rather than
+ * The promotion rule covers contract SHAPES, and a caption formatter is presentation rather than
  * a shape — so `toSubtaskSummary` lands here rather than in the core ring, moved out of the boards
  * feature because after D-18 the tasks feature is its only consumer.
  */
@@ -410,7 +410,7 @@ export const buildSubtaskRowPath = (index: number): SubtaskRowPath =>
 export const toSubmittedSubtaskTitles = (rows: string[]): string[] =>
     rows.map((row) => row.trim()).filter((row) => row !== "");
 
-/** S-03's inline row, and the create/rename schemas' own row-level required-field copy. */
+/** The inline row, and the create/rename schemas' own row-level required-field copy. */
 export const SUBTASK_ROW_REQUIRED_FIELD_MESSAGE = "Can't be empty";
 
 /** The two seeded rows' own placeholders (PDF p6); every row after them repeats the first. */

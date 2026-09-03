@@ -13,7 +13,7 @@ type Props = {
     board: Board;
     isSelected: boolean;
     onEdit: (board: Board) => void;
-    /** Opens D-06's confirm modal for this row's board — the delete itself never happens from here. */
+    /** Opens the confirm modal for this row's board — the delete itself never happens from here. */
     onDelete: (board: Board) => void;
     /** WR-02 (02-REVIEW.md): disables Edit Board while THIS row has a rename already in flight. */
     isEditDisabled?: boolean;

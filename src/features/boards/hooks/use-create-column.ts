@@ -30,7 +30,7 @@ const CREATE_FAILURE_MESSAGE: Partial<Record<ResultStatus, string>> = {
 };
 
 /*
- * D-03/D-05's nudge, authored here beside the failure table. It reports a fact about the board and
+ * D-03/the nudge, authored here beside the failure table. It reports a fact about the board and
  * stops — no scolding, no undo offer, and no suggestion the user did anything wrong, because D-02
  * leaves the column count uncapped.
  */
@@ -141,7 +141,7 @@ export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
 
         /*
          * Raised strictly after the success branch is taken, so it can never gate, delay or alter a
-         * create — the predicate lives in `model.ts` and tests one exact transition (D-05).
+         * create — the predicate lives in `model.ts` and tests one exact transition.
          */
         if (shouldNudgeOnColumnCount({ nextCount: columnCount + 1 })) {
             toast.add(COLUMN_COUNT_NUDGE_COPY);

@@ -16,7 +16,7 @@ type Props = {
     task: TaskFull;
     /** The column this card currently sits in, declared so a drag handler can read it off the item. */
     columnId: string;
-    /** Opens the detail view for this task — nothing is mutated from here (D-13). */
+    /** Opens the detail view for this task — nothing is mutated from here. */
     onOpenDetail: (task: TaskFull) => void;
     /** UI-SPEC zero-one-many: one column holding one task is the only board with nowhere to drag to. */
     isMoveDisabled: boolean;
@@ -91,7 +91,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
         >
             {isInsertionPoint ? (
                 /*
-                 * S-08's axis-flipped twin of the column indicator: a full-width bar drawn in the
+                 * The axis-flipped twin of the column indicator: a full-width bar drawn in the
                  * 20px inter-card gap, so the insertion point reads without waiting for a reflow.
                  */
                 <span
@@ -104,7 +104,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
             ) : null}
 
             {/*
-             * D-13: the content button carries neither the activator ref nor the listeners, and stops
+             * The content button carries neither the activator ref nor the listeners, and stops
              * pointer-event propagation so a press on it can never reach the drag sensor.
              */}
             <button
@@ -131,7 +131,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
             </button>
 
             {/*
-             * S-04: a 44x44 ghost handle at the card's right edge, always rendered and never
+             * A 44x44 ghost handle at the card's right edge, always rendered and never
              * hover-only. A SIBLING of the content button, which never receives the drag listeners.
              */}
             <IconButton

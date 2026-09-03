@@ -268,7 +268,7 @@ describe("columnNameFormRowSchema", () => {
 
 /*
  * Deliberately a separate export from `columnNameSchema`, not a relaxation of it: a blank row is a
- * user error to correct (D-02a) and earns the required-field copy, not the length copy.
+ * user error to correct and earns the required-field copy, not the length copy.
  */
 describe("columnNameRowSchema", () => {
     it("rejects an empty and a whitespace-only row with the required-field copy", () => {

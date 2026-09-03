@@ -7,7 +7,7 @@ import { ROUTE } from "../src/lib/core/routing/routes";
 
 /*
  * BOARD-01, this phase's tracer slice: a signed-in user's own real boards, seeded through the
- * curl CLI (D-07), appear in the sidebar — proving the whole spine end to end against the real
+ * curl CLI, appear in the sidebar — proving the whole spine end to end against the real
  * deployed nonprod backend, no fake HTTP layer anywhere (ADR tech/0018).
  */
 test.describe("BOARD-01: sidebar board list", () => {
@@ -31,7 +31,7 @@ test.describe("BOARD-01: sidebar board list", () => {
         // Assert
         /*
          * Structural: the sidebar lists exactly the two seeded boards, by link count, not by the
-         * caption's exact wording (that copy is covered by sidebar.test.tsx, D-05).
+         * caption's exact wording (that copy is covered by sidebar.test.tsx).
          */
         const sidebar = page.getByRole("navigation", { name: "Boards" });
         await expect(sidebar.getByRole("link", { name: firstBoardName })).toBeVisible();

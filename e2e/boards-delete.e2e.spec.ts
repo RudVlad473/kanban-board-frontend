@@ -8,11 +8,11 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 // comment-length-exempt: records the seeding order this spec's assertions depend on and what it deliberately leaves to the composed-story tests (docs/adr/tech/0023)
 /*
  * BOARD-05 against the real deployed nonprod backend: a board deleted from its sidebar overflow
- * menu, the cascade proved to have persisted across a reload, and both of D-08's destination
+ * menu, the cascade proved to have persisted across a reload, and both of the destination
  * branches — happy paths only, structural assertions only, no confirmation wording or toast copy
  * (docs/adr/tech/0022; those are covered by delete-board-confirm.test.tsx and board-list.test.tsx).
  * One curl-seeded account throughout: a second would exceed the backend's 2-session cap. Boards are
- * seeded oldest-first and the sidebar renders newest-first (D-12), so the SECOND board seeded here
+ * seeded oldest-first and the sidebar renders newest-first, so the SECOND board seeded here
  * is the one D-11 auto-selects at sign-in and the one the first delete lands on.
  */
 test.describe("BOARD-05: delete a board", () => {
@@ -36,7 +36,7 @@ test.describe("BOARD-05: delete a board", () => {
         await page.getByRole("button", { name: "Sign In" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
 
-        // Arrange — open the board that is about to be deleted, so D-08's move branch is the one taken.
+        // Arrange — open the board that is about to be deleted, so the move branch is the one taken.
         const sidebar = page.getByRole("navigation", { name: "Boards" });
         await sidebar.getByRole("link", { name: doomedName }).click();
         await expect(page).toHaveURL(new RegExp(`${buildBoardDetailPath(doomed.id)}$`));
@@ -65,7 +65,7 @@ test.describe("BOARD-05: delete a board", () => {
         await page.getByRole("menuitem", { name: "Delete Board" }).click();
         await page.getByRole("dialog").getByRole("button", { name: "Delete Board" }).click();
 
-        // Assert — D-08's other branch: the zero-boards empty state, at the board-list route.
+        // Assert — the other branch: the zero-boards empty state, at the board-list route.
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
         await expect(page.getByText("Create a new board to get started.")).toBeVisible();
         await expect(page.getByRole("button", { name: "Create your first board" })).toBeVisible();

@@ -20,8 +20,8 @@ import { externalApi } from "@/lib/server/server-client";
 export type DeleteSubtaskResult = ActionResult<unknown, typeof RESULT_STATUS.CONFLICT | typeof RESULT_STATUS.NOT_FOUND>;
 
 /**
- * SUBTASK-04's write path (D-09/S-05), ordered exactly as `deleteColumnAction` orders its own:
- * session, then parse, then the upstream call, with `userId` from the session only (T-04-02). A
+ * SUBTASK-04's write path, ordered exactly as `deleteColumnAction` orders its own:
+ * Session, then parse, then the upstream call, with `userId` from the session only (T-04-02). A
  * subtask has no children, which is why this delete gets no confirm step, unlike a task's cascade.
  */
 export const deleteSubtaskAction = async ({
@@ -69,9 +69,9 @@ export const deleteSubtaskAction = async ({
     if (upstreamError !== undefined) {
         const status = mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code);
 
-        // comment-length-exempt: records why D-12's re-read belongs in the action rather than the hook — a settled placement decision a future reader would otherwise relocate (docs/adr/tech/0023)
+        // comment-length-exempt: records why the re-read belongs in the action rather than the hook — a settled placement decision a future reader would otherwise relocate (docs/adr/tech/0023)
         /*
-         * D-12's re-read: a conflict means the server holds something this screen does not, so
+         * The re-read: a conflict means the server holds something this screen does not, so
          * reverting alone would leave the user looking at data known to be wrong (T-04-06). It
          * belongs here rather than in the hook because docs/adr/tech/0019 keeps every `refresh()`
          * inside an action.
@@ -87,7 +87,7 @@ export const deleteSubtaskAction = async ({
     /*
      * The endpoint declares no response body, so nothing is parsed on the way back — which is
      * exactly why the session check and the server-derived id above are the whole untrusted
-     * surface here: a subtask destroys nothing beneath it (D-09/S-05).
+     * surface here: a subtask destroys nothing beneath it.
      */
     refresh();
 

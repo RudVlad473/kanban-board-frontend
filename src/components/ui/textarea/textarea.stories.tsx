@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Textarea } from "./textarea";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (typing, error announcement, disabled, minimum box) live exclusively in textarea.test.tsx.
  */
 const meta: Meta<typeof Textarea> = {

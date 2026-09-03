@@ -5,7 +5,7 @@ import { ROUTE } from "@/lib/core/routing/routes";
 import { ErrorFallback } from "./error-fallback";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (retry callback, digest presence/absence, link) live exclusively in error-fallback.test.tsx.
  * No `visual/*.visual.spec.ts` entry — ADR tech/0011 scopes baselines to `components/ui/` only.
  */

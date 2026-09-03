@@ -46,7 +46,7 @@ const SortableList = ({ task, columnId, onOpenDetail, isMoveDisabled, isMoving }
 };
 
 /*
- * Visual-only CSF3 (D-25) — `features/tasks/`, so per ADR tech/0011 it gets stories/axe coverage but
+ * Visual-only CSF3 — `features/tasks/`, so per ADR tech/0011 it gets stories/axe coverage but
  * no visual-spec entry. Every story renders through a host, since this component is meaningless
  * outside a sortable context.
  */
@@ -112,7 +112,7 @@ export const Moving: Story = { args: { isMoving: true } };
 
 /*
  * UI-SPEC zero-one-many: a board of one column holding one task has nowhere to drag to, so the
- * handle stays rendered (S-04) but disabled, rather than becoming a control that visibly does nothing.
+ * handle stays rendered but disabled, rather than becoming a control that visibly does nothing.
  */
 export const LoneTask: Story = { args: { isMoveDisabled: true } };
 

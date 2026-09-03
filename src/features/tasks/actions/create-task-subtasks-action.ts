@@ -13,7 +13,7 @@ import { externalApi } from "@/lib/server/server-client";
 
 /**
  * `createTaskSubtasksAction`'s own result — `SUCCESS` carries the titles that did NOT land, empty
- * when everything did. A partial result is kept, never rolled back (ADR domain/0003, D-07).
+ * when everything did. A partial result is kept, never rolled back (ADR domain/0003).
  */
 export type CreateTaskSubtasksResult = ActionResult<{ failedTitles: string[] }>;
 

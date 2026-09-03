@@ -21,7 +21,7 @@ import { SortableColumn } from "./sortable-column";
 const FIXTURE_BOARD_ID = "00000000-0000-4000-8000-000000000001";
 
 /*
- * D-18's render-prop bridge, staged with inert rows rather than real `TaskCard`s: this file is in
+ * The render-prop bridge, staged with inert rows rather than real `TaskCard`s: this file is in
  * the boards feature, which may not import the tasks feature — which is the property these stories
  * exist to demonstrate. The layout ring's own stories cover the real cards.
  */
@@ -128,7 +128,7 @@ const ReorderHost = ({ onRename, onDelete }: ComponentProps<typeof SortableColum
 };
 
 /*
- * Visual-only CSF3 (D-25) — `features/boards/`, so per ADR tech/0011 it gets stories/axe coverage
+ * Visual-only CSF3 — `features/boards/`, so per ADR tech/0011 it gets stories/axe coverage
  * but no visual-spec entry. Every story renders through a host, since this component is meaningless
  * outside a sortable context.
  */
@@ -205,7 +205,7 @@ export const EmptyColumn: Story = {
 };
 
 /*
- * UI-SPEC partial/drag-drop-surface (backstop): S-08's axis-flipped indicator bar, drawn between
+ * UI-SPEC partial/drag-drop-surface (backstop): The axis-flipped indicator bar, drawn between
  * two stubbed cards — a decorative reproduction, no dnd-kit interaction (ADR tech/0025 bars play
  * functions); `board-view.test.tsx` proves the real mechanism, indices and both input paths.
  */

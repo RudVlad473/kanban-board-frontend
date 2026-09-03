@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /*
  * The task and subtask levels of the full-board containment hierarchy, promoted out of the boards
- * feature's own `schemas.ts` under D-16 so a second feature may compose them without a
+ * feature's own `schemas.ts` so a second feature may compose them without a
  * feature-to-feature import (ADR tech/0024's promotion rule).
  */
 export const subtaskSchema = z.object({

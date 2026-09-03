@@ -9,7 +9,7 @@ import { THEME } from "../src/lib/core/theme/theme";
 const SESSION_COOKIE_NAME = "session";
 /*
  * The sidebar landmark. Was the `/boards` placeholder heading until plan 02-11 replaced that page
- * with D-10's empty state, which left the old assertion passing for the wrong reason.
+ * with the empty state, which left the old assertion passing for the wrong reason.
  */
 const PROTECTED_LANDMARK = "Boards";
 

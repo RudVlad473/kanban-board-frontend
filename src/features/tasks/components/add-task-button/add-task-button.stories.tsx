@@ -12,7 +12,7 @@ import { createBoardFull, createColumnsFull } from "@/test-utils/factories/board
 import { AddTaskButton } from "./add-task-button";
 
 /*
- * Visual-only CSF3 (D-25). The button has no interesting appearance of its own — what these stories
+ * Visual-only CSF3. The button has no interesting appearance of its own — what these stories
  * stage is the pair it exists for: the header's create button and the modal it opens, fed the way
  * production feeds it (the open board's cache entry, written by the page's `HydrationBoundary`).
  */

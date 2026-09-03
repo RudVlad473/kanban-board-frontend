@@ -87,7 +87,7 @@ describe("createEmptyColumnRows", () => {
         expect(rows).toEqual([]);
     });
 
-    /* D-01a: the form opens with one row, never zero and never several. */
+    /* The form opens with one row, never zero and never several. */
     it("returns a single row at the form's own default count", () => {
         // Act
         const rows = createEmptyColumnRows(DEFAULT_COLUMN_ROW_COUNT);
@@ -248,7 +248,7 @@ describe("removeBoard", () => {
     });
 });
 
-/* D-08's three branches, each assertable here rather than through a router. */
+/* The three branches, each assertable here rather than through a router. */
 describe("resolveDestinationAfterDelete", () => {
     it("returns the first remaining board's path when the deleted board was the one being viewed", () => {
         // Arrange
@@ -310,7 +310,7 @@ describe("resolveDestinationAfterDelete", () => {
     });
 });
 
-/* U-03: the contract carries no colour field, so the dot's hue derives from the column's own id. */
+/* The contract carries no colour field, so the dot's hue derives from the column's own id. */
 describe("toColumnDotToken", () => {
     it("returns the same accent every time for the same id", () => {
         // Act & Assert
@@ -595,7 +595,7 @@ describe("toReorderTargetPosition", () => {
 });
 
 /*
- * D-05 resolves D-03's "first crosses 8" as *exceeds* 8, and testing one exact transition is what
+ * D-05 resolves the "first crosses 8" as *exceeds* 8, and testing one exact transition is what
  * makes "once only" true by construction rather than by remembering.
  */
 describe("shouldNudgeOnColumnCount", () => {

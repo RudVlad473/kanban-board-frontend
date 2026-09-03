@@ -4,7 +4,7 @@ import { Eye } from "lucide-react";
 import { TextField } from "./text-field";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (typing, error announcement, disabled, overflow) live exclusively in text-field.test.tsx.
  */
 const meta: Meta<typeof TextField> = {

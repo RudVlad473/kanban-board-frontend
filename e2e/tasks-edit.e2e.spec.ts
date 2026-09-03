@@ -9,7 +9,7 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 /*
  * TASK-03 against the real deployed nonprod backend — structural, business-level assertions only,
  * no validation copy (docs/adr/tech/0022). One of the two criteria only a reload can demonstrate:
- * the save is optimistic (S-01 closes the modal on submit), so only a reload proves persistence.
+ * The save is optimistic (S-01 closes the modal on submit), so only a reload proves persistence.
  */
 
 const SIGN_IN_TIMEOUT_MS = 20_000;

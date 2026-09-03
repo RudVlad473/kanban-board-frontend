@@ -1,7 +1,7 @@
 import type { Board } from "@/features/boards/schemas";
 
 /**
- * D-11's fixture-entity mechanism for `Board` — a factory function with `Partial<T>` overrides,
+ * The fixture-entity mechanism for `Board` — a factory function with `Partial<T>` overrides,
  * not a class needing `new` (matches this project's established convention against
  * class-needing-`new` abstractions).
  */

@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import { AddColumnModal } from "./add-column-modal";
 
 /*
- * Visual-only CSF3 (D-25), `appDirectory` matching `add-board-modal.stories.tsx`. Both handlers are
+ * Visual-only CSF3, `appDirectory` matching `add-board-modal.stories.tsx`. Both handlers are
  * `fn()` spies so a test asserts by reading these args, never by spreading props onto a composed
  * story (docs/adr/tech/0025).
  */

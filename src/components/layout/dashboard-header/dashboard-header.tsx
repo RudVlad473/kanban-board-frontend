@@ -23,7 +23,7 @@ export const DashboardHeader = ({ displayName, boards: seedBoards }: Props) => {
     const pathname = usePathname();
     const openBoardId = toBoardIdFromPath(pathname);
     /*
-     * The same cache entry the sidebar row renders (D-15), so an optimistic rename reaches the title
+     * The same cache entry the sidebar row renders, so an optimistic rename reaches the title
      * in the same instant — no provider, because the QueryClient is the shared owner.
      */
     const openBoard = boards.find(

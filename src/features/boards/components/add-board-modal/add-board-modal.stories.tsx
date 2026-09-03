@@ -5,7 +5,7 @@ import { fn } from "storybook/test";
 import { AddBoardModal } from "./add-board-modal";
 
 /*
- * Visual-only CSF3 (D-25), `appDirectory` matching `sign-up-form.stories.tsx`. Both handlers are
+ * Visual-only CSF3, `appDirectory` matching `sign-up-form.stories.tsx`. Both handlers are
  * `fn()` spies so a test asserts by reading these args, never by spreading props onto a composed
  * story (docs/adr/tech/0025).
  */
@@ -36,7 +36,7 @@ export const CreateFailed: Story = {
     args: { defaultValues: { name: "Platform Launch" }, errorMessage: "Couldn't create board. Try again." },
 };
 
-/** D-01a: the form's own default — one empty row, no staging needed beyond naming the state. */
+/** The form's own default — one empty row, no staging needed beyond naming the state. */
 export const OneEmptyRow: Story = {};
 
 export const ManyColumns: Story = {
@@ -98,7 +98,7 @@ const FailingSubmitHost = (props: ComponentProps<typeof AddBoardModal>) => {
     );
 };
 
-/** D-05: the submit handler reports failure, so the modal stays open with everything typed intact. */
+/** The submit handler reports failure, so the modal stays open with everything typed intact. */
 export const SubmitFails: Story = {
     args: { defaultColumns: ["Todo"] },
     render: (args) => {

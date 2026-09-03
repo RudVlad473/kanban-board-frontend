@@ -18,7 +18,7 @@ const { Default, NoSubtasks, OneSubtask, LongTitle, Moving, LoneTask } = compose
 /*
  * Read off the DOM rather than by role: a card renders TWO buttons, and the handle's accessible name
  * interpolates the same title the content button's does, so a name-based query is ambiguous by
- * construction — which is D-13's whole point rather than an accident of these fixtures.
+ * construction — which is the whole point rather than an accident of these fixtures.
  */
 const getCards = (): HTMLElement[] => Array.from(document.querySelectorAll("li"));
 
@@ -87,7 +87,7 @@ describeForEachDevice({
             expect(Default.args.onOpenDetail).not.toHaveBeenCalled();
         });
 
-        /* The handle is a SIBLING of the content button, never nested inside it (S-04). */
+        /* The handle is a SIBLING of the content button, never nested inside it. */
         it("keeps the handle outside the content button so it can never receive a card click", async () => {
             // Act
             await render(<Default />);

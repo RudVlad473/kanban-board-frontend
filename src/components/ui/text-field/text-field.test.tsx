@@ -47,7 +47,7 @@ const getFieldBox = (input: Element): HTMLElement => {
 describeForEachDevice({
     name: "TextField",
     body: () => {
-        // Shallow: copy, prop-driven aria wiring, disabled/busy rendering — through composed stories (D-08).
+        // Shallow: copy, prop-driven aria wiring, disabled/busy rendering — through composed stories.
         it("associates the visible label with the input as its accessible name", async () => {
             // Act
             await render(<Idle />);
@@ -220,7 +220,7 @@ describeForEachDevice({
             const screen = await render(<TextField label="Email" isLoading={true} onValueChange={onValueChange} />);
             const input = screen.getByRole("textbox", { name: "Email" });
 
-            // Act — isLoading composes into native disabled (GC-17), same suppression as isDisabled.
+            // Act — isLoading composes into native disabled, same suppression as isDisabled.
             (input.element() as HTMLInputElement).focus();
             expect(input.element()).not.toBe(document.activeElement);
             await userEvent.keyboard("z");

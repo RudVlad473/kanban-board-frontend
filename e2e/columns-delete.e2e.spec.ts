@@ -38,7 +38,7 @@ const seedTask = async ({
     columnId: string;
     title: string;
 }): Promise<void> => {
-    /* Built from the declared template rather than a fresh literal, exactly as app code must (GC-04). */
+    /* Built from the declared template rather than a fresh literal, exactly as app code must. */
     const path = EXTERNAL_PATH.COLUMN_DETAIL.replace("{boardId}", boardId).replace("{columnId}", columnId);
     /* The sign-up session's own credential, never a second sign-in — the 2-session cap is the budget. */
     const response = await fetch(`${E2E_CONFIG.EXTERNAL_API_BASE_URL}${path}?userId=${account.id}`, {

@@ -13,7 +13,7 @@ import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
  * run in the Vitest `node` project. What is provable here is the sequential per-title POST loop
  * against the real subtasks-collection path (Pitfall 2's three-ancestor case), and that a partial
  * failure (a malformed title never reaching the wire) keeps every title that landed — the same
- * upstream shape `createSubtaskAction` itself calls per item (ADR domain/0003, D-07).
+ * upstream shape `createSubtaskAction` itself calls per item (ADR domain/0003).
  */
 
 type SeededAccount = { id: string; jsessionId: string };

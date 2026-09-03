@@ -34,7 +34,7 @@ const DELETE_FAILURE_COPY = { title: "Couldn't delete board.", description: "Try
  */
 
 /**
- * BOARD-05's optimistic delete (D-09): the row leaves the sidebar and the viewer leaves the board
+ * BOARD-05's optimistic delete: the row leaves the sidebar and the viewer leaves the board
  * on submit, and a refusal puts both back. Mechanism: docs/adr/tech/0030.
  */
 export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | null }) => {

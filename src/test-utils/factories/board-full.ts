@@ -2,7 +2,7 @@ import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 import type { Subtask, TaskFull } from "@/lib/core/api-contract/task-schemas";
 
 /**
- * D-11's fixture-entity mechanism for the full-board hierarchy — plain factory functions taking
+ * The fixture-entity mechanism for the full-board hierarchy — plain factory functions taking
  * `Partial<T>` overrides, never a class needing `new` (matches `factories/board.ts`).
  */
 export const createSubtask = (overrides: Partial<Subtask> = {}): Subtask => ({

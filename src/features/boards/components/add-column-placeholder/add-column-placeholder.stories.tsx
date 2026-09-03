@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import { AddColumnPlaceholder } from "./add-column-placeholder";
 
 /*
- * Visual-only CSF3 (D-25). `onOpen` is an `fn()` spy so a test asserts by reading this arg, never
+ * Visual-only CSF3. `onOpen` is an `fn()` spy so a test asserts by reading this arg, never
  * by spreading props onto a composed story (docs/adr/tech/0025).
  */
 const meta: Meta<typeof AddColumnPlaceholder> = {

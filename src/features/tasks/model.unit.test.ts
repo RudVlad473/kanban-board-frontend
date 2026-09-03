@@ -96,7 +96,7 @@ describe("withSubtaskCompletion", () => {
         );
     });
 
-    /* D-08's per-subtask key: a sibling task's own subtask is never touched by another task's toggle. */
+    /* The per-subtask key: a sibling task's own subtask is never touched by another task's toggle. */
     it("leaves a different task's subtasks untouched", () => {
         // Arrange
         const columns = [
@@ -313,7 +313,7 @@ describe("withSubtaskRemove", () => {
         },
     ];
 
-    /* D-09/S-05: the row the delete removed is gone; a sibling row keeps its own original position. */
+    /* The row the delete removed is gone; a sibling row keeps its own original position. */
     it("removes only the named subtask, leaving a sibling subtask at its original index", () => {
         // Act
         const columns = withSubtaskRemove({
