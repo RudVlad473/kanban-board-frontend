@@ -31,7 +31,7 @@
             "id": 4,
             "name": "Blocking human phase sign-off checkpoint",
             "status": "in_progress",
-            "progress": "REVIEW-1..7 are now ALL closed (1-5 fixed, 6 fixed, 7 dissolved by the blank-row decision), plus two product-owner defects and one pre-existing dev-server blocker fixed. 14 commits 05af07f..882b1c8, all pushed. comments:check was added to the pre-commit hook after failing three separate CI runs in one session. The checkpoint is answerable for the first time; it has still never been answered."
+            "progress": "REVIEW-1..7 are now ALL closed (1-5 fixed, 6 fixed, 7 dissolved by the blank-row decision), plus two product-owner defects and one pre-existing dev-server blocker fixed. 14 commits 05af07f..882b1c8, all pushed. comments:check was added to the pre-commit hook after failing three separate CI runs in one session. CI is GREEN on all four jobs at 140367b (run 33794249733). The checkpoint is answerable for the first time; it has still never been answered."
         }
     ],
     "remaining_tasks": [
@@ -81,11 +81,6 @@
             "description": "A local e2e run wipes the shared nonprod backend via /admin/reset and will fail any CI e2e job in flight. Also observed: the shared backend deletes accounts mid-session, so an account that signed in at 200 can 401 three minutes later.",
             "type": "external",
             "workaround": "Check no CI e2e job is running before starting a local e2e run. Ports 3000/3001/6007 were freed at pause time and the Playwright MCP browser was closed."
-        },
-        {
-            "description": "CI status at pause time is NOT confirmed. A run covering 882b1c8 was in flight when the session ended. The two runs before it were red on `comments:check` alone, which short-circuits the visual and e2e jobs behind it; that gate now runs in the pre-commit hook, so the same failure cannot reach CI again.",
-            "type": "external",
-            "workaround": "gh run list --repo RudVlad473/kanban-board-frontend --branch gsd/phase-04-task-subtask-workflow --limit 1 --json databaseId --jq '.[0].databaseId', then gh run watch <id> --exit-status. Read back all four job conclusions before trusting the branch."
         }
     ],
     "async_jobs": [],
