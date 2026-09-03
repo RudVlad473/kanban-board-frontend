@@ -46,7 +46,7 @@ vi.mock("next/navigation", () =>
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
-const { WithColumns, NoColumns, NoBoardOpen, WithBoardBelow } = composeStories(stories);
+const { WithColumns, NoColumns, BoardNotYetHydrated, NoBoardOpen, WithBoardBelow } = composeStories(stories);
 
 /*
  * Looked up off the imported binding, so `queue` accepts only that action's own awaited result and
@@ -96,6 +96,18 @@ describeForEachDevice({
             const button = screen.getByRole("button", { name: "+ Add New Task" });
             await expect.element(button).toBeDisabled();
             await expect.element(button).toHaveAttribute("disabled");
+        });
+
+        /*
+         * The state the SERVER renders on a board route. Disabling it there is what produced the
+         * hydration mismatch: the client's first render already has the entry and enables it.
+         */
+        it("renders the create button enabled while the open board's entry has not hydrated yet", async () => {
+            // Act
+            await render(<BoardNotYetHydrated />);
+
+            // Assert
+            await expect.element(screen.getByRole("button", { name: "+ Add New Task" })).toBeEnabled();
         });
 
         it("renders the create button disabled with no board open", async () => {

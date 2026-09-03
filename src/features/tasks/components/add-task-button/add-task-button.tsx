@@ -25,9 +25,10 @@ export const AddTaskButton = () => {
 
     /*
      * Disabled with no board open or a board with zero columns — `addTaskByColumnId` is
-     * column-scoped, so there is nowhere to post.
+     * column-scoped, so there is nowhere to post. Never on an UNKNOWN column list, which is what the
+     * server render sees and what a hydration mismatch is made of.
      */
-    const isCreateDisabled = columns.length === 0;
+    const isCreateDisabled = columns?.length === 0;
 
     const closeModal = (): void => {
         setModalBoardId(null);
@@ -74,7 +75,7 @@ export const AddTaskButton = () => {
                     onSubmit={handleSubmit}
                     isPending={isPending}
                     errorMessage={errorMessage}
-                    columns={columns}
+                    columns={columns ?? []}
                 />
             ) : null}
         </>

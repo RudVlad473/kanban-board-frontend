@@ -1,6 +1,5 @@
 import { Dialog } from "@base-ui/react/dialog";
 import type {
-    DialogCloseProps,
     DialogDescriptionProps,
     DialogPopupProps,
     DialogRootProps,
@@ -136,10 +135,8 @@ const Footer = ({ className, ...props }: FooterProps) => {
     return <div className={cn("flex items-center justify-end gap-4", className)} {...props} />;
 };
 
-type CloseProps = Omit<DialogCloseProps, "className"> & ClassNameProp;
-
-const Close = ({ className, ...props }: CloseProps) => {
-    return <Dialog.Close className={className} {...props} />;
-};
-
-export const Modal = { Root, Trigger, Content, Title, Description, Footer, Close };
+/*
+ * No `Close` part: `Content` renders the dismiss control itself, so a consumer-composed one would be
+ * a second way to do the same thing. Reintroduce it only if a modal needs a close in its own body.
+ */
+export const Modal = { Root, Trigger, Content, Title, Description, Footer };

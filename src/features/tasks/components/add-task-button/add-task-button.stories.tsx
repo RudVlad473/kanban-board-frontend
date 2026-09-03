@@ -87,6 +87,17 @@ export const WithBoardBelow: Story = {
     },
 };
 
+/*
+ * The server's own view: this header renders above the board page's `HydrationBoundary`, so on a
+ * board route the open board's entry does not exist yet. Absent is not empty — disabling here is a
+ * state the hydrated client contradicts one render later.
+ */
+export const BoardNotYetHydrated: Story = {
+    render: () => {
+        return <DashboardHeader displayName="Ada Lovelace" boards={SHELL_BOARDS} />;
+    },
+};
+
 export const NoBoardOpen: Story = {
     parameters: { nextjs: { appDirectory: true, navigation: { pathname: ROUTE.BOARDS } } },
     render: () => {

@@ -20,7 +20,10 @@ type ColumnsOnlyBoard = { columns: { id: string; name: string }[] };
  * write already updates — no provider needed (docs/adr/tech/0030). `skipToken` keeps it a pure
  * cache read: this renders above the board page's `HydrationBoundary`, which fills the entry.
  */
-export const useOpenBoardColumns = (): { boardId: string | null; columns: { id: string; name: string }[] } => {
+export const useOpenBoardColumns = (): {
+    boardId: string | null;
+    columns: { id: string; name: string }[] | undefined;
+} => {
     const boardId = toBoardIdFromPath(usePathname());
     const { data: board } = useQuery<ColumnsOnlyBoard>({
         queryKey: buildBoardQueryKey(boardId ?? ""),
@@ -28,8 +31,9 @@ export const useOpenBoardColumns = (): { boardId: string | null; columns: { id: 
     });
 
     /*
-     * `[]` on the no-board route by construction, never whatever sits under the `["board", ""]`
-     * key this must still subscribe to — a hook cannot be called conditionally.
+     * `[]` on the no-board route by construction, never whatever sits under the `["board", ""]` key
+     * this must still subscribe to. `undefined` for an ABSENT entry, which this renders above the
+     * boundary for: collapsing that into `[]` made the server disagree with the hydrated client.
      */
-    return { boardId, columns: !isNil(boardId) ? (board?.columns ?? []) : [] };
+    return { boardId, columns: !isNil(boardId) ? board?.columns : [] };
 };
