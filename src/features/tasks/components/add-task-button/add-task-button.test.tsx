@@ -31,8 +31,12 @@ const openBoardId = "00000000-0000-4000-8000-000000000001";
  */
 const routerState = vi.hoisted(() => ({ pathname: "/boards/00000000-0000-4000-8000-000000000001" }));
 
+/* Moves the shimmed pathname, so a push this header issues is observable as a board change. */
+const mockPush = vi.hoisted(() => vi.fn());
+
 beforeEach(() => {
     routerState.pathname = buildBoardDetailPath(openBoardId);
+    mockPush.mockClear();
 });
 
 // eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
@@ -40,6 +44,7 @@ vi.mock("next/navigation", () =>
     createNextNavigationShim({
         pathname: () => routerState.pathname,
         refresh: () => undefined,
+        push: mockPush,
     }),
 );
 
@@ -255,6 +260,26 @@ describeForEachDevice({
             await expect.element(within(region).getByText("Try again.")).toBeVisible();
             await expect.element(within(region).getByRole("button", { name: "Retry" })).toBeVisible();
             expect(screen.queryByRole("heading", { name: "Add New Task" })).not.toBeInTheDocument();
+        });
+
+        /*
+         * `isOpen` requires the modal's board to BE the open one, so a Retry clicked after a
+         * board-to-board navigation would otherwise do nothing at all and strand `modalBoardId`.
+         */
+        it("navigates back to the attempt's own board when the toast's Retry is clicked", async () => {
+            // Arrange
+            await render(<WithColumns />);
+            createTaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await openCreateTaskModal();
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            const region = await screen.findByRole("region", { name: "Notifications" });
+
+            // Act
+            await userEvent.click(await within(region).findByRole("button", { name: "Retry" }));
+
+            // Assert
+            expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(openBoardId));
         });
 
         /*

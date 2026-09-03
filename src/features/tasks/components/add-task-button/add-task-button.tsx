@@ -3,6 +3,7 @@
 // Covered by: `src/features/tasks/components/add-task-button/add-task-button.test.tsx`
 
 import { isNil } from "es-toolkit";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button/button";
@@ -10,6 +11,7 @@ import { AddTaskModal } from "@/features/tasks/components/add-task-modal/add-tas
 import { useCreateTask } from "@/features/tasks/hooks/use-create-task";
 import { useOpenBoardColumns } from "@/features/tasks/hooks/use-open-board-columns";
 import type { AddTaskSubmitValues } from "@/features/tasks/schemas";
+import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /** The ONE task-creation entry point, and the modal it opens. */
 export const AddTaskButton = () => {
@@ -25,10 +27,16 @@ export const AddTaskButton = () => {
      * reversed 2026-09-03). Null on every fresh open, which is what makes those start empty.
      */
     const [retryValues, setRetryValues] = useState<AddTaskSubmitValues | null>(null);
+    const router = useRouter();
     const { createTask } = useCreateTask({
         onRetry: ({ boardId, columnId, title, description, subtaskTitles }) => {
             setRetryValues({ columnId, title, description, subtasks: subtaskTitles });
             setModalBoardId(boardId);
+            /*
+             * The attempt names a column on THAT board, so the reopen has to go back to it — this
+             * header outlives a board-to-board navigation and the toast outlives it with no timeout.
+             */
+            router.push(buildBoardDetailPath(boardId));
         },
     });
 
