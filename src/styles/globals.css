@@ -2,7 +2,15 @@
 @import "./tokens.css";
 @import "./fonts.css";
 
-@source not "../../.planning";
+/*
+ * Planning docs write utility classes with literal placeholders (`--font-weight-{token}`, `-*`,
+ * `...`); Tailwind's scanner turns them into rules that fail to parse, taking the whole stylesheet
+ * with them and 500-ing every dev page. A git worktree is scanned as its OWN root, so its copy of
+ * `.planning` is reached through neither `.gitignore` nor the first rule — hence all three.
+ */
+@source not "../../.planning/**/*";
+@source not "../../.claude/worktrees/**/*";
+@source not "../../.worktrees/**/*";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
