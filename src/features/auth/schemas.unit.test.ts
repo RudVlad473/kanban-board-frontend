@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { zodErrorToFieldErrors } from "@/lib/core/api-contract/zod-field-errors";
 
-import { signInSchema, signUpSchema } from "./schemas";
+import { PASSWORD_REQUIREMENT_HINT, signInSchema, signUpSchema } from "./schemas";
 
 const VALID_EMAIL = "user@example.com";
 const VALID_PASSWORD = "Correct1Password!";
@@ -53,6 +53,37 @@ describe("signUpSchema — password", () => {
             }
         });
     }
+});
+
+/*
+ * The hint is the only statement of the rule a user sees BEFORE submitting, so a class the schema
+ * enforces but the hint omits is a field nobody can fill correctly on the first try. It shipped
+ * omitting "special character", which was found by driving the real form.
+ */
+describe("PASSWORD_REQUIREMENT_HINT", () => {
+    it("describes a password the schema actually accepts", () => {
+        // Arrange — built to satisfy the hint as written, and nothing more.
+        const body = { email: VALID_EMAIL, password: "Passw0rd!" };
+
+        // Act
+        const result = signUpSchema.safeParse(body);
+
+        // Assert
+        expect(result.success).toBe(true);
+    });
+
+    it("names every character class the schema enforces", () => {
+        /*
+         * Arrange, Act, Assert
+         * Prose matching, deliberately: the hint's whole job is to say these words to the user, so
+         * dropping one is the defect rather than a wording preference.
+         */
+        expect(PASSWORD_REQUIREMENT_HINT).toContain("8 characters");
+        expect(PASSWORD_REQUIREMENT_HINT).toContain("upper");
+        expect(PASSWORD_REQUIREMENT_HINT).toContain("lower");
+        expect(PASSWORD_REQUIREMENT_HINT).toContain("number");
+        expect(PASSWORD_REQUIREMENT_HINT).toContain("special character");
+    });
 });
 
 describe("signUpSchema — displayName", () => {
