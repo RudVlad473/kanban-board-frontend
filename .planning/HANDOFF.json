@@ -78,9 +78,9 @@
             "workaround": "Apply the same reconcile-don't-restore change (remove only this mutation's own clientId row) that f49de3e made to use-create-board.ts."
         },
         {
-            "description": "A local e2e run wipes the shared nonprod backend via /admin/reset and will fail any CI e2e job in flight. Also observed: the shared backend deletes accounts mid-session, so an account that signed in at 200 can 401 three minutes later.",
+            "description": "CORRECTED 2026-09-03: the claim that a local e2e run wipes the shared nonprod backend has been FALSE since 5f325f8 (quick task 260829-kyv). deleteSeededUsers() posts {userIds:[...]} for targeted deletion from a per-run, per-runner registry; fullReset() is manual-only and nothing automated calls it; probeResetCapability() refuses to start the suite against a backend still serving the old wiping contract. What remains true: the shared backend evicts accounts mid-session, so an account that signs in at 200 can 401 three minutes later \u2014 a real non-code failure signature in CI e2e.",
             "type": "external",
-            "workaround": "Check no CI e2e job is running before starting a local e2e run. Ports 3000/3001/6007 were freed at pause time and the Playwright MCP browser was closed."
+            "workaround": "Do not fence local e2e off from concurrent CI on wipe grounds. When a CI e2e job fails on a 401 or vanished data, suspect eviction/shared-backend flakiness and re-run the job before hunting a code defect."
         }
     ],
     "async_jobs": [],

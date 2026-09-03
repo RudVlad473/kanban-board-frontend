@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-22 task 4 — CI fully green at bea3986 (run 33756448713); the human phase sign-off checkpoint is presented and blocking
+stopped_at: Plan 04-22 task 4 — CI fully green at 140367b (run 33794249733); the human phase sign-off checkpoint is presented and blocking
 last_updated: "2026-09-03T13:00:00.000Z"
 last_activity: 2026-09-03
-last_activity_desc: Four e2e defects fixed, CI green on all four jobs, checkpoint presented
+last_activity_desc: Quick task 260903-ttt complete — SOPS+age secrets, local/CI gitleaks parity, CI green at 153c096
 state_head: c0ab07e41dd5ce9d946af6210940848ecf15f2b8
 progress:
   total_phases: 6
@@ -134,10 +134,10 @@ verifying phase 03 wave 4) —
   primitives —
   `.planning/todos/pending/2026-08-21-trim-boards-schema-unit-tests-that-just-retest-zod.md`.
 
-- Reopen the local pre-commit gitleaks investigation — CI-only secret scanning was a deliberate
-  Phase 1 call (npm gitleaks wrappers rejected on supply-chain grounds); worth re-checking whether
-  the tooling landscape has better options now —
-  `.planning/todos/pending/2026-08-22-reopen-local-pre-commit-gitleaks-investigation.md`.
+- **DONE 2026-09-03 (quick task 260903-ttt)** — the local pre-commit gitleaks investigation is
+  closed: option 3 (checksum-pinned direct-binary install) was taken, and CI's previously unpinned
+  scanner version is now pinned in `ci.yml`. Moved to
+  `.planning/todos/completed/2026-08-22-reopen-local-pre-commit-gitleaks-investigation.md`.
 
 - Fold e2e seeding logic into a single service/module — `theme.e2e.spec.ts`'s
   `signUpDirectCapturingTheme()` duplicates `seed.ts`'s `seedAccount()` because the seed script
@@ -202,6 +202,7 @@ verifying phase 03 wave 4) —
 | # | Description | Date | Commit | Status | Directory |
 |---|-------------|------|--------|--------|-----------|
 | 260829-kyv | Regenerate OpenAPI contract from backend and scope e2e reset cleanup to seeded user ids instead of full-db wipe | 2026-08-29 | 5f325f8 | Verified | [260829-kyv-regenerate-openapi-contract-from-backend](./quick/260829-kyv-regenerate-openapi-contract-from-backend/) |
+| 260903-ttt | Wire SOPS + age for local secret management and verify gitleaks still behaves alongside it | 2026-09-03 | 153c096 | Verified | [260903-ttt-wire-sops-age-for-local-secret-managemen](./quick/260903-ttt-wire-sops-age-for-local-secret-managemen/) |
 
 ### Roadmap Evolution
 
@@ -225,8 +226,22 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-09-03
-Stopped at: Session resumed from HANDOFF.json; remaining-work item 1 in flight — 22 commits pushed
-(`9b29c25..ab82611` on `gsd/phase-04-task-subtask-workflow`), blocking on CI run 33748811645
+Stopped at: Quick task `260903-ttt` complete and pushed — CI green on all four jobs at `153c096`
+(run 33805069347, conclusions read back per job). Phase 04's 04-22 human sign-off checkpoint is
+still open and blocking; it was NOT answered this session. Four follow-up todos were filed and are
+listed under Pending Todos.
+
+**Quick task 260903-ttt (2026-09-03):** SOPS + age now carry local secrets. `secrets.enc.env` is
+committed ciphertext; `pnpm secrets:decrypt` reconstitutes `.env.local` from it plus the age key at
+`~/.config/sops/age/keys.txt`, so a fresh worktree needs no copy from another checkout. CI's gitleaks
+was found UNPINNED (the action installs the latest release at run time) and is now pinned to 8.30.1
+in `ci.yml`, which is the single source of truth both `scripts/install-verified-tools.sh` and
+`pnpm gitleaks:check` parse. The gitleaks allowlist for `secrets.enc.env` is path-only and paired
+with `pnpm secrets:check`, which asserts the file is genuinely SOPS ciphertext — neither half ships
+alone. `pnpm setup:worktree` collapses the four-step fresh-worktree ritual into one command. ADR
+`docs/adr/tech/0032`. Every guard was falsified in both directions; verified independently by the
+orchestrator (16 guard unit tests pass in the `node` project, all three guards exit 0 on the good
+state). Full narrative: `260903-ttt-SUMMARY.md`.
 
 **2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
 cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
