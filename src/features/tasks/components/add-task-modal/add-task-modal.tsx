@@ -142,6 +142,7 @@ export const AddTaskModal = ({
                                 rowValue.trim() === ""
                                     ? `Remove Subtask ${String(index + 1)}`
                                     : `Remove subtask '${rowValue}'`;
+                            const rowErrorMessage = errors.subtasks?.[index]?.value?.message;
 
                             return (
                                 <div key={field.id} className="flex items-center gap-2">
@@ -150,6 +151,8 @@ export const AddTaskModal = ({
                                         isLabelHidden={true}
                                         type="text"
                                         placeholder={toSubtaskRowPlaceholder(index)}
+                                        hasError={Boolean(rowErrorMessage)}
+                                        errorMessage={rowErrorMessage}
                                         {...register(buildSubtaskRowPath(index))}
                                     />
 

@@ -73,19 +73,16 @@ const submitNewBoard = async ({ name, columns }: { name: string; columns: string
      */
     await userEvent.fill(await screen.findByLabelText("Board Name"), name);
 
+    /*
+     * Every row is added here: the modal seeds none, so zero requested columns needs no cleanup.
+     * A row left as "" is the blank-row case — adding it and filling nothing is the point.
+     */
     for (const [index, columnName] of columns.entries()) {
-        if (index > 0) {
-            await userEvent.click(screen.getByRole("button", { name: "+ Add New Column" }));
-        }
-        // A row left as "" is the blank-row case — filling nothing into it is the point.
+        await userEvent.click(screen.getByRole("button", { name: "+ Add New Column" }));
+
         if (columnName !== "") {
             await userEvent.fill(screen.getByLabelText(`Column ${String(index + 1)}`), columnName);
         }
-    }
-
-    // Zero requested columns means the default row has to go, so no blank one is left to drop.
-    if (columns.length === 0) {
-        await userEvent.click(screen.getByRole("button", { name: "Remove Column 1" }));
     }
 
     await userEvent.click(screen.getByRole("button", { name: "Create New Board" }));
@@ -321,25 +318,23 @@ describeForEachDevice({
          * A blank row left on screen is dropped on the way to the create sequence rather than
          * blocking the submit, matching how the task form treats a blank subtask row.
          */
-        it("drops a blank column row from the create sequence instead of blocking the submit", async () => {
+        /* Reversed 2026-09-03: a blank row is a user error, so the submit is refused before any action runs. */
+        it("refuses the submit on a blank column row instead of dropping it from the sequence", async () => {
             // Arrange
             await render(<Empty />);
-            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [] });
 
             // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo", "", "Done"] });
 
-            // Assert — the two named rows are sent, the blank one is not, and the modal closes.
-            await vi.waitFor(() => {
-                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
-            });
-            expect(createBoardColumnsStub.calls).toEqual([{ boardId: STUB_BOARD_ID, names: ["Todo", "Done"] }]);
-            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
+            // Assert — nothing left the browser, and the modal is still open on the offending row.
+            await expect.element(screen.getByText("Can't be empty", { exact: true })).toBeVisible();
+            expect(createBoardStub.calls).toHaveLength(0);
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
+            await expect.element(screen.getByRole("heading", { name: "Add New Board" })).toBeVisible();
         });
 
-        /* Removing every row is still a valid, column-less create. */
-        it("creates a board with no columns when every row is removed", async () => {
+        /* No rows are seeded, so a column-less create needs nothing removed first. */
+        it("creates a board with no columns when no row is added", async () => {
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });

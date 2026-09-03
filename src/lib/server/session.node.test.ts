@@ -1,7 +1,8 @@
 import { SignJWT } from "jose";
 import { describe, expect, it } from "vitest";
 
-import { createSessionService, type SessionPayload } from "@/lib/server/session";
+import { THEME } from "@/lib/core/theme/theme";
+import { createSessionService, isSessionPayload, isUpstreamIdentity, type SessionPayload } from "@/lib/server/session";
 import { createSessionRecord } from "@/test-utils/factories/session-record";
 
 /*
@@ -118,5 +119,45 @@ describe("createSessionService(secret).verifyToken", () => {
 
         // Act / Assert
         await expect(service.verifyToken(undefined)).resolves.toBeNull();
+    });
+});
+
+/*
+ * The two guards are not interchangeable: `isUpstreamIdentity` reads a body the BACKEND wrote,
+ * `isSessionPayload` a cookie THIS APP wrote. Confirmed 2026-09-03 against the deployed nonprod
+ * backend — `POST /signup` with no `displayName` answers 201 with `"displayName": null`.
+ */
+describe("isUpstreamIdentity", () => {
+    const upstreamIdentity = { id: "8pz2ktyyl3pc", email: "no-name@example.com", theme: THEME.LIGHT };
+
+    it("accepts an identity whose displayName is null, as a nameless account's really is", () => {
+        expect(isUpstreamIdentity({ ...upstreamIdentity, displayName: null })).toBe(true);
+    });
+
+    it("accepts an identity with no displayName key at all", () => {
+        expect(isUpstreamIdentity(upstreamIdentity)).toBe(true);
+    });
+
+    it("accepts an identity carrying a name", () => {
+        expect(isUpstreamIdentity({ ...upstreamIdentity, displayName: "Named User" })).toBe(true);
+    });
+
+    it("rejects a displayName of the wrong type", () => {
+        expect(isUpstreamIdentity({ ...upstreamIdentity, displayName: 42 })).toBe(false);
+    });
+
+    it("rejects an identity missing the fields a session is built from", () => {
+        expect(isUpstreamIdentity({ displayName: "Named User" })).toBe(false);
+        expect(isUpstreamIdentity({ ...upstreamIdentity, theme: "PUCE" })).toBe(false);
+        expect(isUpstreamIdentity(null)).toBe(false);
+    });
+});
+
+describe("isSessionPayload", () => {
+    it("still requires displayName to be a string — the cookie is written by resolveDisplayName, never null", () => {
+        const { jsessionId: _jsessionId, ...payload } = createSessionRecord();
+
+        expect(isSessionPayload(payload)).toBe(true);
+        expect(isSessionPayload({ ...payload, displayName: null })).toBe(false);
     });
 });

@@ -15,7 +15,7 @@ import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { upstreamCookie } from "@/lib/server/cookies/upstream-cookie";
 import { externalApi } from "@/lib/server/server-client";
-import { isSessionPayload, session } from "@/lib/server/session";
+import { isUpstreamIdentity, session } from "@/lib/server/session";
 
 /**
  * Fixed message for every sign-in failure branch — prevents account enumeration (T-01-08). Never
@@ -58,7 +58,7 @@ export const signInAction = async (_previousState: AuthActionState, formData: Fo
      */
     const jsessionId = upstreamCookie.extract(response);
 
-    if (upstreamError !== undefined || !isSessionPayload(identity) || !jsessionId) {
+    if (upstreamError !== undefined || !isUpstreamIdentity(identity) || !jsessionId) {
         // The backend collapses every 401 cause into one code — anti-enumeration (T-01-08, T-01-54).
         const problem = parseProblemDetail(upstreamError);
         return {
@@ -69,8 +69,9 @@ export const signInAction = async (_previousState: AuthActionState, formData: Fo
     }
 
     /*
-     * `isSessionPayload` only checks `displayName` is a string, not non-empty — `resolveDisplayName`
-     * guards against a blank name reaching the dashboard chrome.
+     * `isUpstreamIdentity` admits an absent, null or blank name — `resolveDisplayName` is what
+     * guarantees the cookie carries a non-empty string, and what keeps a blank name off the
+     * dashboard chrome.
      */
     await session.create({ ...identity, displayName: resolveDisplayName(identity), jsessionId });
 

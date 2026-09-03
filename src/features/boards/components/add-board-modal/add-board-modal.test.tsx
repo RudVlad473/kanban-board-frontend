@@ -127,17 +127,20 @@ describeForEachDevice({
             });
         });
 
-        // Exactly one row, so nothing has to be cleared that the user did not ask for.
-        it("opens with exactly one empty column row", async () => {
+        /*
+         * No seeded row: a blank row now blocks the submit, so one would have to be cleared before
+         * a board with no columns could be created — see `DEFAULT_COLUMN_ROW_COUNT`.
+         */
+        it("opens with no column rows at all", async () => {
             // Act
             const screen = await render(<Default />);
 
             // Assert
-            await expect.element(screen.getByLabelText("Column 1", { exact: true })).toHaveValue("");
-            await expect.element(screen.getByLabelText("Column 2", { exact: true })).not.toBeInTheDocument();
+            await expect.element(screen.getByLabelText("Column 1", { exact: true })).not.toBeInTheDocument();
+            await expect.element(screen.getByRole("button", { name: "+ Add New Column" })).toBeVisible();
         });
 
-        it("appends a further empty row when the add-row control is activated", async () => {
+        it("appends an empty row when the add-row control is activated", async () => {
             // Arrange
             const screen = await render(<Default />);
 
@@ -145,12 +148,13 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "+ Add New Column" }).click();
 
             // Assert
-            await expect.element(screen.getByLabelText("Column 2", { exact: true })).toHaveValue("");
+            await expect.element(screen.getByLabelText("Column 1", { exact: true })).toHaveValue("");
         });
 
         it("removes rows one at a time, down to none at all", async () => {
-            // Arrange — two added rows on top of the default one, so removal has something to walk.
+            // Arrange — three added rows, so removal has something to walk.
             const screen = await render(<Default />);
+            await screen.getByRole("button", { name: "+ Add New Column" }).click();
             await screen.getByRole("button", { name: "+ Add New Column" }).click();
             await screen.getByRole("button", { name: "+ Add New Column" }).click();
 
@@ -245,7 +249,8 @@ describeForEachDevice({
          * A blank row is omitted from the create sequence rather than blocking the submit — the
          * rule the task form's own subtask rows already follow.
          */
-        it("submits a blank row alongside a filled one, carrying the blank through to be dropped", async () => {
+        /* Reversed 2026-09-03: a blank row beside a filled one is a user error, not input to drop. */
+        it("refuses a blank row beside a filled one and shows that row's required-field error", async () => {
             // Arrange
             const screen = await render(<BlankRowBesideFilledRow />);
 
@@ -254,43 +259,38 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
             // Assert
-            await vi.waitFor(() => {
-                expect(BlankRowBesideFilledRow.args.onSubmit).toHaveBeenCalledWith({
-                    name: "Launch",
-                    columns: ["Todo", ""],
-                });
-            });
+            await expect.element(screen.getByText("Can't be empty", { exact: true })).toBeVisible();
+            expect(BlankRowBesideFilledRow.args.onSubmit).not.toHaveBeenCalled();
         });
 
-        /* The default state itself: one untouched row is dropped, never a reason to refuse. */
-        it("submits with the single default row left untouched", async () => {
+        /* The default state itself: no rows to clear, so a board with no columns submits directly. */
+        it("submits with no columns from the untouched default state", async () => {
             // Arrange
             const screen = await render(<Default />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
-            await screen.getByRole("button", { name: "Create New Board" }).click();
-
-            // Assert
-            await vi.waitFor(() => {
-                expect(Default.args.onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [""] });
-            });
-        });
-
-        /* Removing that row instead of naming it is the sanctioned way to create with no columns. */
-        it("submits with no columns once the single default row is removed", async () => {
-            // Arrange
-            const screen = await render(<Default />);
-
-            // Act
-            await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
-            await screen.getByRole("button", { name: "Remove Column 1" }).click();
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
             // Assert
             await vi.waitFor(() => {
                 expect(Default.args.onSubmit).toHaveBeenCalledWith({ name: "Launch", columns: [] });
             });
+        });
+
+        /* Adding a row then leaving it blank is refused rather than quietly discarded. */
+        it("refuses a row the user added and left blank", async () => {
+            // Arrange
+            const screen = await render(<Default />);
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Board Name"), "Launch");
+            await screen.getByRole("button", { name: "+ Add New Column" }).click();
+            await screen.getByRole("button", { name: "Create New Board" }).click();
+
+            // Assert
+            await expect.element(screen.getByText("Can't be empty", { exact: true })).toBeVisible();
+            expect(Default.args.onSubmit).not.toHaveBeenCalled();
         });
 
         it("renders no column rows when staged with none", async () => {

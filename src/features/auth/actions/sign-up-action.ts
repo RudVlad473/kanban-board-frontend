@@ -15,7 +15,7 @@ import { ROUTE } from "@/lib/core/routing/routes";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 import { upstreamCookie } from "@/lib/server/cookies/upstream-cookie";
 import { externalApi } from "@/lib/server/server-client";
-import { isSessionPayload, session } from "@/lib/server/session";
+import { isUpstreamIdentity, session } from "@/lib/server/session";
 
 /*
  * The contract still documents `POST /signup` as a bare 200 with no error schema — the real
@@ -57,7 +57,7 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
      */
     const jsessionId = upstreamCookie.extract(response);
 
-    if (upstreamError !== undefined || !isSessionPayload(identity) || !jsessionId) {
+    if (upstreamError !== undefined || !isUpstreamIdentity(identity) || !jsessionId) {
         const problem = parseProblemDetail(upstreamError);
         return {
             status: RESULT_STATUS.ERROR,

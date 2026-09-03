@@ -101,15 +101,15 @@ export const createTaskSubtasksInputSchema = z.object({
 export type CreateTaskSubtasksInput = z.infer<typeof createTaskSubtasksInputSchema>;
 
 /*
- * The Add New Task form's own shape. `subtasks` rows carry no bound of their own — a blank row is
- * DROPPED at submit (`toSubmittedSubtaskTitles`), not blocked, so the row schema never rejects one.
- * `columnId` is required because the create endpoint is column-scoped.
+ * The Add New Task form's own shape. A blank subtask row BLOCKS the submit and earns the
+ * required-field copy — product-owner decision 2026-09-03, reversing 04-UI-SPEC.md's dropped-row
+ * reading. `columnId` is required because the create endpoint is column-scoped.
  */
 export const addTaskFormSchema = z.object({
     title: taskTitleRowSchema,
     description: z.string(),
     columnId: z.string().min(1, REQUIRED_FIELD_MESSAGE),
-    subtasks: z.array(z.object({ value: z.string() })),
+    subtasks: z.array(z.object({ value: subtaskTitleRowSchema })),
 });
 
 export type AddTaskFormValues = z.infer<typeof addTaskFormSchema>;

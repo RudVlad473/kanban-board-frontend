@@ -87,13 +87,13 @@ describe("createEmptyColumnRows", () => {
         expect(rows).toEqual([]);
     });
 
-    /* The form opens with one row, never zero and never several. */
-    it("returns a single row at the form's own default count", () => {
+    /* The form opens with no rows: a blank one would block the submit rather than be dropped. */
+    it("returns no rows at the form's own default count", () => {
         // Act
         const rows = createEmptyColumnRows(DEFAULT_COLUMN_ROW_COUNT);
 
         // Assert
-        expect(rows).toHaveLength(1);
+        expect(rows).toHaveLength(0);
     });
 
     it("returns rows that are distinct objects, so editing one never edits another", () => {

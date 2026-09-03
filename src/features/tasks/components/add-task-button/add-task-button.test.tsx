@@ -268,7 +268,9 @@ describeForEachDevice({
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
             await userEvent.fill(screen.getByLabelText("Description"), "Recharge the batteries a little.");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
             await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
             await userEvent.fill(screen.getByLabelText("Subtask 2", { exact: true }), "Drink coffee & smile");
             await userEvent.click(screen.getByRole("combobox"));
             await userEvent.click(await within(document.body).findByRole("option", { name: "Doing" }));
@@ -298,6 +300,7 @@ describeForEachDevice({
             createTaskSubtasksStub.hold();
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
             await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
 
             // Act
@@ -321,7 +324,9 @@ describeForEachDevice({
             createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Drink coffee & smile"] });
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
             await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
             await userEvent.fill(screen.getByLabelText("Subtask 2", { exact: true }), "Drink coffee & smile");
 
             // Act
@@ -351,6 +356,7 @@ describeForEachDevice({
             createTaskSubtasksStub.queue({ status: RESULT_STATUS.UNAUTHENTICATED });
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
             await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
 
             // Act
@@ -371,6 +377,7 @@ describeForEachDevice({
             createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Make coffee"] });
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
             await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
             await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
             const region = await screen.findByRole("region", { name: "Notifications" });
@@ -400,6 +407,7 @@ describeForEachDevice({
             createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Make coffee"] });
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
             await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
             await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
             const region = await screen.findByRole("region", { name: "Notifications" });

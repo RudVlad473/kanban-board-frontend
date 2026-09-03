@@ -5,15 +5,20 @@ import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 
 /**
- * The create-board form's column rows reduced to the names sent, in the order typed: trimmed, and a
- * blank row DROPPED rather than blocking submission — the same rule `toSubmittedSubtaskTitles`
- * applies to the task form's rows. Pure, per CONVENTIONS.md's `model.ts` rule.
+ * Reduce the create-board form's column rows to the names sent, in the order typed.
+ *
+ * Trimming only: `addBoardFormSchema` refuses a blank row outright, so the filter guards a shape
+ * the form can no longer produce. Pure, per CONVENTIONS.md's `model.ts` rule.
  */
 export const toSubmittedColumnNames = (rows: string[]): string[] =>
     rows.map((row) => row.trim()).filter((row) => row !== "");
 
-/** One row, so the user is never made to clear rows they did not ask for. */
-export const DEFAULT_COLUMN_ROW_COUNT = 1;
+/*
+ * Zero, for the reason this constant's own comment always claimed: the user is never made to clear
+ * a row they did not ask for. A blank row now BLOCKS the submit (product-owner decision
+ * 2026-09-03), so one seeded row would charge a deletion for every board created without columns.
+ */
+export const DEFAULT_COLUMN_ROW_COUNT = 0;
 
 export const createEmptyColumnRows = (count: number): { value: string }[] =>
     Array.from({ length: count }, () => ({ value: "" }));

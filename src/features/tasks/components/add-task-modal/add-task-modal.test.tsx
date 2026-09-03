@@ -44,14 +44,17 @@ describeForEachDevice({
         });
 
         /* UI-SPEC empty/add-task-modal: the mock's own two seeded draft rows. */
-        it("opens with exactly two blank subtask rows", async () => {
+        /*
+         * No seeded rows, diverging from the mock's two: a blank row blocks the submit, so seeded
+         * rows would charge two deletions per subtask-less task (`DEFAULT_SUBTASK_ROW_COUNT`).
+         */
+        it("opens with no subtask rows at all", async () => {
             // Act
             const screen = await render(<Default />);
 
             // Assert
-            await expect.element(screen.getByLabelText("Subtask 1", { exact: true })).toHaveValue("");
-            await expect.element(screen.getByLabelText("Subtask 2", { exact: true })).toHaveValue("");
-            await expect.element(screen.getByLabelText("Subtask 3", { exact: true })).not.toBeInTheDocument();
+            await expect.element(screen.getByLabelText("Subtask 1", { exact: true })).not.toBeInTheDocument();
+            await expect.element(screen.getByRole("button", { name: "+ Add New Subtask" })).toBeVisible();
         });
 
         it("lists the board's columns in order, defaulting to the first", async () => {
@@ -156,21 +159,21 @@ describeForEachDevice({
         });
 
         /* UI-SPEC empty/add-task-modal: a blank row is omitted from the fan-out, not validation-blocked. */
-        it("omits a blank subtask row from the submitted values rather than blocking submission", async () => {
+        /* Reversed 2026-09-03: a blank row beside a filled one is an error to correct, not input to drop. */
+        it("refuses the submit on a blank subtask row and shows that row's required-field error", async () => {
             // Arrange
             const screen = await render(<Default />);
 
             // Act
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
             await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+            await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
             await screen.getByRole("button", { name: "Create Task" }).click();
 
             // Assert
-            await vi.waitFor(() => {
-                expect(Default.args.onSubmit).toHaveBeenCalledWith(
-                    expect.objectContaining({ subtasks: ["Make coffee"] }),
-                );
-            });
+            await expect.element(screen.getByText("Can't be empty", { exact: true })).toBeVisible();
+            expect(Default.args.onSubmit).not.toHaveBeenCalled();
         });
 
         /* UI-SPEC empty/add-task-modal: removing both seeded rows is legal. */
@@ -188,7 +191,7 @@ describeForEachDevice({
             });
         });
 
-        it("appends a further blank row when the add-row control is activated", async () => {
+        it("appends a blank row when the add-row control is activated", async () => {
             // Arrange — filled first so blurring Title never reflows this row mid-click (below).
             const screen = await render(<Default />);
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
@@ -197,7 +200,7 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
 
             // Assert
-            await expect.element(screen.getByLabelText("Subtask 3", { exact: true })).toHaveValue("");
+            await expect.element(screen.getByLabelText("Subtask 1", { exact: true })).toHaveValue("");
         });
 
         it("removes a subtask row on its own remove control", async () => {
@@ -219,8 +222,12 @@ describeForEachDevice({
          * indistinguishable — a fallback name still disambiguates the blank case.
          */
         it("names an untouched row's remove control by its position, not a bare 'Remove'", async () => {
-            // Act
+            // Arrange
             const screen = await render(<Default />);
+
+            // Act — two rows the user added and has not yet named.
+            await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
+            await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
 
             // Assert
             await expect.element(screen.getByRole("button", { name: "Remove Subtask 1" })).toBeVisible();
@@ -235,6 +242,7 @@ describeForEachDevice({
         it("keeps each subtask row's label announced but out of the layout", async () => {
             // Act
             const screen = await render(<Default />);
+            await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
             await expect.element(screen.getByLabelText("Subtask 1", { exact: true })).toBeVisible();
 
             // Assert — still associated (the query above resolves), but occupying no vertical space.

@@ -52,6 +52,25 @@ test.describe("AUTH-01: sign up", () => {
         const themeCookie = cookies.find((cookie) => cookie.name === COOKIE.THEME);
         expect(themeCookie).toBeDefined();
     });
+
+    /*
+     * Every other fixture here fills the optional Name, which is how a nameless account went
+     * unexercised while sign-up reported a CREATED one as failed (the backend answers 201 with
+     * `"displayName": null`).
+     */
+    test("creates an account when the optional Name is left blank, falling back to the email local part", async ({
+        page,
+    }) => {
+        // Arrange
+        const localPart = `e2e-noname-${randomUUID()}`;
+
+        // Act
+        await signUpViaUi({ page, email: `${localPart}@example.com`, password: FRESH_PASSWORD, displayName: "" });
+
+        // Assert
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await expect(page.getByText(localPart, { exact: true })).toBeVisible();
+    });
 });
 
 test.describe("AUTH-02: sign in", () => {

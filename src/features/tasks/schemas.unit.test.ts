@@ -516,9 +516,34 @@ describe("addTaskFormSchema", () => {
         subtasks: [{ value: "Make coffee" }, { value: "" }],
     });
 
-    it("accepts a well-formed form, including a blank subtask row", () => {
+    /*
+     * Reversed 2026-09-03 by the product owner, who submitted a task carrying a blank subtask row
+     * and reported it as a defect: a blank row is a user error to correct, not input to drop.
+     */
+    it("reports the required-field message for a blank subtask row", () => {
         // Act
         const result = addTaskFormSchema.safeParse(createValidFormInput());
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("reports the required-field message for a whitespace-only subtask row", () => {
+        // Act
+        const result = addTaskFormSchema.safeParse({ ...createValidFormInput(), subtasks: [{ value: "   " }] });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("accepts a form whose subtask rows all carry a title", () => {
+        // Act
+        const result = addTaskFormSchema.safeParse({
+            ...createValidFormInput(),
+            subtasks: [{ value: "Make coffee" }, { value: "Drink coffee" }],
+        });
 
         // Assert
         expect(result.success).toBe(true);
@@ -543,7 +568,7 @@ describe("addTaskFormSchema", () => {
         expect(result.success || result.error.issues[0]?.message).toBe("Can't be empty");
     });
 
-    it("accepts every subtask row blank — removing both seeded rows is legal", () => {
+    it("accepts an empty row list — removing both seeded rows is legal", () => {
         // Act
         const result = addTaskFormSchema.safeParse({ ...createValidFormInput(), subtasks: [] });
 

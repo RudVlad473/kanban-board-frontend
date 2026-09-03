@@ -1,5 +1,5 @@
 type ResolveDisplayNameInput = {
-    displayName?: string;
+    displayName?: string | null;
     email: string;
 };
 

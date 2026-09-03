@@ -386,8 +386,12 @@ export const createTaskMoveAnnouncements = ({
     };
 };
 
-/** UI-SPEC "populated/Add New Task modal": the mock's own two seeded draft rows. */
-export const DEFAULT_SUBTASK_ROW_COUNT = 2;
+/*
+ * Zero, deliberately diverging from the mock's two seeded rows (PDF p6, 04-UI-SPEC.md "populated/
+ * Add New Task modal"): a blank row BLOCKS the submit (product-owner decision 2026-09-03), so
+ * seeded rows would open the modal invalid. Changing this back requires changing that rule too.
+ */
+export const DEFAULT_SUBTASK_ROW_COUNT = 0;
 
 export const createEmptySubtaskRows = (count: number): { value: string }[] =>
     Array.from({ length: count }, () => ({ value: "" }));

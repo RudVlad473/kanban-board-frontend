@@ -5,7 +5,7 @@ import {
     boardNameSchema,
     boardsSchema,
     columnFullSchema,
-    columnNameFormRowSchema,
+    addBoardFormSchema,
     columnNameRowSchema,
     columnNameSchema,
     columnSchema,
@@ -242,27 +242,34 @@ describe("columnNameSchema", () => {
 });
 
 /*
- * The create FORM's row rule, as opposed to `columnNameRowSchema`'s single-field one: blank is
- * accepted here because such a row is dropped from the create sequence, never sent.
+ * The create form no longer has a row rule of its own — `addBoardFormSchema` reuses
+ * `columnNameRowSchema`, so a blank row blocks the submit here exactly as it does in every
+ * single-field column form (product-owner decision 2026-09-03).
  */
-describe("columnNameFormRowSchema", () => {
-    it("accepts an empty and a whitespace-only row", () => {
-        // Act & Assert
-        expect(columnNameFormRowSchema.safeParse("").success).toBe(true);
-        expect(columnNameFormRowSchema.safeParse("   ").success).toBe(true);
-    });
-
-    /* Dropping blank rows must not also drop the bound a named row still has to clear. */
-    it("still reports the length copy for a one-, two- and thirty-three-character row", () => {
+describe("addBoardFormSchema", () => {
+    it("refuses a blank column row rather than accepting it to be dropped later", () => {
         // Act
-        const results = ["A", "To", "x".repeat(33)].map((value) => columnNameFormRowSchema.safeParse(value));
+        const result = addBoardFormSchema.safeParse({
+            name: "Platform Launch",
+            columns: [{ value: "Todo" }, { value: "" }],
+        });
 
         // Assert
-        for (const result of results) {
-            expect(result.success).toBe(false);
-            expect(result.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
-        }
-        expect(columnNameFormRowSchema.safeParse("Fix").success).toBe(true);
+        expect(result.success).toBe(false);
+        expect(result.error?.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("refuses a whitespace-only column row", () => {
+        expect(addBoardFormSchema.safeParse({ name: "Platform Launch", columns: [{ value: "   " }] }).success).toBe(
+            false,
+        );
+    });
+
+    it("accepts rows that all carry a valid name, and an empty row list", () => {
+        expect(addBoardFormSchema.safeParse({ name: "Platform Launch", columns: [{ value: "Todo" }] }).success).toBe(
+            true,
+        );
+        expect(addBoardFormSchema.safeParse({ name: "Platform Launch", columns: [] }).success).toBe(true);
     });
 });
 
