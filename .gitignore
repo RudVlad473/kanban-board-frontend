@@ -31,6 +31,7 @@ test-results/
 playwright-report/
 .vitest-attachments/
 .e2e-seeded-users/
+coverage/
 # Vitest Browser Mode's own failure screenshots, co-located next to the failing test file — not
 # the committed Playwright visual-regression baselines under visual/__screenshots__ (Task 3).
 # Covers both src/ (component tests) and app/ (route-boundary tests, plan 01-17) test locations.

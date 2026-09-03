@@ -40,6 +40,22 @@ const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 
 export default defineConfig({
     test: {
+        coverage: {
+            provider: "v8",
+            reportsDirectory: "coverage",
+            reporter: ["text", "html", "lcov", "json-summary"],
+            exclude: [
+                "**/*.config.{js,mjs,ts}",
+                "scripts/**",
+                "e2e/**",
+                "visual/**",
+                "**/*.stories.tsx",
+                "src/test-utils/**",
+                "**/*.d.ts",
+                "src/lib/core/api-contract/generated-types.ts",
+            ],
+            // No thresholds yet — set them from the first real measurement, not a blind guess.
+        },
         projects: [
             {
                 resolve: { alias },

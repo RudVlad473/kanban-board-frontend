@@ -4,6 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { signUpViaUi } from "./signed-up-user";
 import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
+import { THEME } from "../src/lib/core/theme/theme";
 
 // comment-length-exempt: states what this spec covers that 21 per-feature specs structurally cannot, and the rule that keeps its step list honest — both facts a future reader would otherwise have to reconstruct before deciding whether to extend it
 /*
@@ -21,6 +22,13 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
  * marked complete in .planning/REQUIREMENTS.md has no step here. That is what stops this from
  * decaying into a stale checklist covering thirteen of fourteen features while reading as
  * coverage — the gate is tied to the file a new feature cannot avoid updating.
+ *
+ * RUN IT BY HAND. Neither this spec nor `smoke:check` is wired into CI, deliberately: across six
+ * runs on 2026-09-03 it failed intermittently, twice at BOARD-02 with exactly one of two columns
+ * created and no failure toast. The same interaction was then driven by hand and SUCCEEDED three
+ * times — dev, and a production build, on both the sidebar and empty-state creation paths — so the
+ * cause is in this spec or its environment, not the application, and it is not yet identified.
+ * Wiring an unexplained intermittent failure into CI would train people to ignore a red build.
  */
 
 /** Long enough for a cold Server Action against the real nonprod backend, not a UI transition. */
@@ -59,30 +67,64 @@ test.describe("full-app smoke", () => {
         });
 
         await test.step("THEME-01 — the theme toggle flips and survives a reload", async () => {
+            /*
+             * Read off the switch's own `aria-checked` and the server's HTML, the two signals
+             * `theme.e2e.spec.ts` proves. A live `classList` read looked equivalent and is not:
+             * the dark scope is applied by the server render, so the class does not flip in place.
+             */
             const toggle = page.getByRole("switch", { name: "Toggle dark mode" });
-            const wasDark = await page.evaluate(() => document.documentElement.classList.contains("dark"));
+            const before = await toggle.getAttribute("aria-checked");
+            const after = before === "true" ? "false" : "true";
+
             await toggle.click();
+            await expect(toggle).toHaveAttribute("aria-checked", after, { timeout: ACTION_TIMEOUT_MS });
+
+            /*
+             * The cookie lags the toggle by ~1.5s, so reloading on the flipped control alone races
+             * the persistence write and reads the OLD theme back — measured in theme.e2e.spec.ts,
+             * and reproduced here on the first run of this spec.
+             */
             await expect
-                .poll(() => page.evaluate(() => document.documentElement.classList.contains("dark")))
-                .toBe(!wasDark);
+                .poll(() => page.evaluate(() => document.cookie), { timeout: ACTION_TIMEOUT_MS })
+                .toContain(`theme=${after === "true" ? THEME.DARK : THEME.LIGHT}`);
 
             await page.reload();
-            await expect
-                .poll(() => page.evaluate(() => document.documentElement.classList.contains("dark")))
-                .toBe(!wasDark);
+            await expect(page.getByRole("switch", { name: "Toggle dark mode" })).toHaveAttribute(
+                "aria-checked",
+                after,
+                { timeout: ACTION_TIMEOUT_MS },
+            );
         });
 
         await test.step("BOARD-02 — create a board, naming its initial columns", async () => {
             await page.getByRole("button", { name: "Create your first board" }).click();
-            await page.getByLabel("Board Name", { exact: true }).fill(boardName);
-            await page.getByLabel("Column 1", { exact: true }).fill("Backlog");
-            await page.getByRole("button", { name: "+ Add New Column" }).click();
-            await page.getByLabel("Column 2", { exact: true }).fill("Doing");
-            await page.getByRole("dialog").getByRole("button", { name: "Create New Board", exact: true }).click();
+            const createDialog = page.getByRole("dialog");
+            await createDialog.getByLabel("Board Name", { exact: true }).fill(boardName);
+            await createDialog.getByLabel("Column 1", { exact: true }).fill("Backlog");
+            await createDialog.getByRole("button", { name: "+ Add New Column" }).click();
+            await createDialog.getByLabel("Column 2", { exact: true }).fill("Doing");
+
+            /*
+             * Read the fields back before submitting. A row added and left empty is dropped
+             * silently, and the miss then surfaces two steps later as a column that never existed —
+             * which is exactly how this spec first failed.
+             */
+            await expect(createDialog.getByLabel("Column 1", { exact: true })).toHaveValue("Backlog");
+            await expect(createDialog.getByLabel("Column 2", { exact: true })).toHaveValue("Doing");
+
+            await createDialog.getByRole("button", { name: "Create New Board", exact: true }).click();
 
             await expect(page.getByRole("heading", { level: 1, name: boardName })).toBeVisible({
                 timeout: ACTION_TIMEOUT_MS,
             });
+
+            /*
+             * Both columns asserted HERE rather than in a later step, on a SHORT budget: the column
+             * phase belongs to this creation, and its partial-failure toast auto-dismisses in 5s,
+             * so a long wait reports an empty notification region and loses the cause.
+             */
+            await expect(page.getByRole("heading", { name: /^Backlog/ })).toBeVisible({ timeout: 8_000 });
+            await expect(page.getByRole("heading", { name: /^Doing/ })).toBeVisible({ timeout: 8_000 });
         });
 
         await test.step("BOARD-01 — the new board is listed in the sidebar", async () => {
@@ -91,9 +133,13 @@ test.describe("full-app smoke", () => {
             ).toBeVisible();
         });
 
-        await test.step("BOARD-03 — the board renders the columns it was created with", async () => {
-            await expect(page.getByRole("heading", { name: /^Backlog/ })).toBeVisible();
-            await expect(page.getByRole("heading", { name: /^Doing/ })).toBeVisible();
+        await test.step("BOARD-03 — selecting the board reads its full contents back from the server", async () => {
+            /* A fresh document, so this proves the persisted read rather than the create's own cache write. */
+            await page.reload();
+            await expect(page.getByRole("heading", { name: /^Backlog/ })).toBeVisible({
+                timeout: ACTION_TIMEOUT_MS,
+            });
+            await expect(page.getByRole("heading", { name: /^Doing/ })).toBeVisible({ timeout: ACTION_TIMEOUT_MS });
         });
 
         await test.step("COLUMN-01 — add a third column to the live board", async () => {
@@ -145,17 +191,20 @@ test.describe("full-app smoke", () => {
             await dialog.getByRole("combobox").click();
             await page.getByRole("option", { name: "Doing" }).click();
 
-            await expect
-                .poll(
-                    async () =>
-                        (await page
-                            .locator("section")
-                            .filter({ has: page.getByRole("heading", { name: /^Doing/ }) })
-                            .getByRole("button", { name: /^Smoke Task/ })
-                            .count()) > 0,
-                    { timeout: ACTION_TIMEOUT_MS },
-                )
-                .toBe(true);
+            /*
+             * Closed before the board is read: Base UI marks everything outside an open dialog
+             * `aria-hidden`, so a role query for the moved card finds nothing while it is up and
+             * the move reads as having failed.
+             */
+            await page.keyboard.press("Escape");
+            await expect(dialog).toBeHidden({ timeout: ACTION_TIMEOUT_MS });
+
+            await expect(
+                page
+                    .locator("section")
+                    .filter({ has: page.getByRole("heading", { name: /^Doing/ }) })
+                    .getByRole("button", { name: /^Smoke Task/ }),
+            ).toBeVisible({ timeout: ACTION_TIMEOUT_MS });
         });
 
         await test.step("SUBTASK-01/03/04 — add, rename and delete a subtask from the edit modal", async () => {
