@@ -20,14 +20,19 @@ env:
 
 jobs:
     # GC-06: the authoritative secret scan (D-26h — hooks are a convenience, CI is the gate).
-    # No local pre-commit half exists for this control: the Task 1 checkpoint rejected both
-    # candidate npm gitleaks wrappers on supply-chain grounds (single-maintainer, low-star
-    # repackagings of a third-party binary), and this project has no devcontainer/direct-binary
-    # convention to fall back on for a vetted local binary — see 01-18-SUMMARY.md. This job uses
-    # the official gitleaks/gitleaks-action instead, which downloads and runs the real gitleaks
-    # binary itself (no pnpm/Node steps needed — unlike the other jobs below, it isn't consuming
-    # this project's own dependency tree). No `needs:` — a secret is worth reporting even when
-    # the build is broken, and this scan is fast enough not to wait behind `quality`.
+    # A local pre-commit half now exists and is ADDITIVE, never a replacement: .husky/pre-commit
+    # scans staged changes with the same gitleaks release this job pins. 01-18-SUMMARY.md's
+    # reasoning for having no local half is superseded rather than reversed — it rejected the
+    # single-maintainer npm repackagings that were then the only option, and installing the
+    # official release binary directly (`pnpm tools:install`, checksum-verified) makes that
+    # objection moot. GITLEAKS_VERSION below is what makes local and CI the same scanner rather
+    # than two that happen to share a name; docs/adr/tech/0032 has the full record.
+    #
+    # This job uses the official gitleaks/gitleaks-action, which downloads and runs the real
+    # gitleaks binary itself (no pnpm/Node steps needed — unlike the other jobs below, it isn't
+    # consuming this project's own dependency tree). No `needs:` — a secret is worth reporting
+    # even when the build is broken, and this scan is fast enough not to wait behind `quality`.
+    # Only this job sees full history; the local hook covers staged changes alone.
     secrets:
         runs-on: ubuntu-latest
         timeout-minutes: 15

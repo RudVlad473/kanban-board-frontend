@@ -51,9 +51,28 @@ verify() {
     fi
 }
 
+# --redact is not optional: without it the guard that catches a secret is the thing that prints it
+# into the terminal scrollback and into any stored transcript. -v is what makes the refusal
+# actionable — without it gitleaks prints only "leaks found: 1", naming no file, rule or line.
+# Measured 2026-09-03 on 8.30.1: the two together print `REDACTED` for both Finding and Secret.
+scan() {
+    gitleaks git --staged --redact -v --no-banner "${REPO_ROOT}"
+}
+
+# One process for all three, not three `pnpm run` invocations. Measured 2026-09-03: the pnpm
+# wrapper cost ~2.4s EACH and the checks themselves ~1.7s total, so the dispatch overhead was 80%
+# of an 8.5s tax on every commit — the shape that gets a hook bypassed with --no-verify.
+precommit() {
+    node "${REPO_ROOT}/scripts/check-gitleaks-version.mjs"
+    scan
+    node "${REPO_ROOT}/scripts/check-secrets-encrypted.mjs" --staged
+}
+
 case "${1:-}" in
     encrypt) encrypt ;;
     decrypt) decrypt ;;
     verify) verify ;;
-    *) echo "usage: secrets.sh encrypt|decrypt|verify" >&2; exit 2 ;;
+    scan) scan ;;
+    precommit) precommit ;;
+    *) echo "usage: secrets.sh encrypt|decrypt|verify|scan|precommit" >&2; exit 2 ;;
 esac
