@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "timestamp": "2026-09-03T18:49:31.317Z",
+    "timestamp": "2026-09-03T18:56:00.000Z",
     "phase": "04",
     "phase_name": "Task & Subtask Workflow",
     "phase_dir": ".planning/phases/04-task-subtask-workflow",
@@ -9,14 +9,29 @@
     "total_tasks": 4,
     "status": "paused",
     "completed_tasks": [
-        { "id": 1, "name": "Correct CONVENTIONS.md against the shipped code", "status": "done", "commit": "c0ab07e" },
-        { "id": 2, "name": "Verify all eight success criteria and run the full gate", "status": "done", "commit": "d6311c0" },
-        { "id": 3, "name": "Compare every rendered surface against the design source", "status": "done", "commit": "d6311c0" },
+        {
+            "id": 1,
+            "name": "Correct CONVENTIONS.md against the shipped code",
+            "status": "done",
+            "commit": "c0ab07e"
+        },
+        {
+            "id": 2,
+            "name": "Verify all eight success criteria and run the full gate",
+            "status": "done",
+            "commit": "d6311c0"
+        },
+        {
+            "id": 3,
+            "name": "Compare every rendered surface against the design source",
+            "status": "done",
+            "commit": "d6311c0"
+        },
         {
             "id": 4,
             "name": "Blocking human phase sign-off checkpoint",
             "status": "in_progress",
-            "progress": "REVIEW-1..7 are now ALL closed (1-5 fixed, 6 fixed, 7 dissolved by the blank-row decision), plus two new product-owner defects fixed. 12 commits 05af07f..2bb3a7c, all pushed. The checkpoint is answerable for the first time; it has still never been answered."
+            "progress": "REVIEW-1..7 are now ALL closed (1-5 fixed, 6 fixed, 7 dissolved by the blank-row decision), plus two product-owner defects and one pre-existing dev-server blocker fixed. 14 commits 05af07f..882b1c8, all pushed. comments:check was added to the pre-commit hook after failing three separate CI runs in one session. The checkpoint is answerable for the first time; it has still never been answered."
         }
     ],
     "remaining_tasks": [
@@ -27,7 +42,7 @@
         },
         {
             "id": 6,
-            "name": "Unresolved product-owner report: 'sign in sign up still causes full page reload' — could not reproduce; needs an incognito/extensions-off check",
+            "name": "Unresolved product-owner report: 'sign in sign up still causes full page reload' \u2014 could not reproduce; needs an incognito/extensions-off check",
             "status": "not_started"
         },
         {
@@ -58,12 +73,12 @@
     ],
     "blockers": [
         {
-            "description": "'sign in sign up still causes full page reload' is reported but not reproducible. Measured soft on every path: landing -> /login -> /register -> /login, both refusal paths, both success paths and sign-out all stayed on ONE document (navCount 1, a window marker survived every hop, RSC fetches 36-73ms). /login and /register share app/(auth)/layout.tsx so only the page segment swaps, and e2e already asserts this and passes. Only lead: the dev log shows a whole-tree hydration mismatch from a client-only `vc-init` class on <body> (Vercel Toolbar or a browser extension), which makes React discard the server HTML and re-render everything — visually identical to a reload, and absent under headless Playwright.",
+            "description": "'sign in sign up still causes full page reload' is reported but not reproducible. Measured soft on every path: landing -> /login -> /register -> /login, both refusal paths, both success paths and sign-out all stayed on ONE document (navCount 1, a window marker survived every hop, RSC fetches 36-73ms). /login and /register share app/(auth)/layout.tsx so only the page segment swaps, and e2e already asserts this and passes. Only lead: the dev log shows a whole-tree hydration mismatch from a client-only `vc-init` class on <body> (Vercel Toolbar or a browser extension), which makes React discard the server HTML and re-render everything \u2014 visually identical to a reload, and absent under headless Playwright.",
             "type": "human_action",
             "workaround": "Ask the product owner to retry in an incognito window with extensions disabled. If it still reproduces there, the measurements above are wrong and the investigation restarts."
         },
         {
-            "description": "Finding B is unverified. A review agent claims BoardView never remounts across a board-to-board navigation, so retryColumnName survives and a column Retry writes board A's column name onto board B — a silent wrong write. Reading the code suggests it is REFUTED: app/(dashboard)/boards/[boardId]/page.tsx:65 renders <Suspense key={boardId}> around the subtree containing BoardView, which remounts on key change, and carries a comment saying exactly that. The agent said 'the page renders it unkeyed' — it is keyed one level up.",
+            "description": "Finding B is unverified. A review agent claims BoardView never remounts across a board-to-board navigation, so retryColumnName survives and a column Retry writes board A's column name onto board B \u2014 a silent wrong write. Reading the code suggests it is REFUTED: app/(dashboard)/boards/[boardId]/page.tsx:65 renders <Suspense key={boardId}> around the subtree containing BoardView, which remounts on key change, and carries a comment saying exactly that. The agent said 'the page renders it unkeyed' \u2014 it is keyed one level up.",
             "type": "technical",
             "workaround": "Drive it in the running app before dismissing: create two boards, fail a column create on A, navigate to B, and check whether the toast and its Retry survive."
         },
@@ -76,6 +91,11 @@
             "description": "A local e2e run wipes the shared nonprod backend via /admin/reset and will fail any CI e2e job in flight. Also observed: the shared backend deletes accounts mid-session, so an account that signed in at 200 can 401 three minutes later.",
             "type": "external",
             "workaround": "Check no CI e2e job is running before starting a local e2e run. Ports 3000/3001/6007 were freed at pause time and the Playwright MCP browser was closed."
+        },
+        {
+            "description": "CI status at pause time is NOT confirmed. A run covering 882b1c8 was in flight when the session ended. The two runs before it were red on `comments:check` alone, which short-circuits the visual and e2e jobs behind it; that gate now runs in the pre-commit hook, so the same failure cannot reach CI again.",
+            "type": "external",
+            "workaround": "gh run list --repo RudVlad473/kanban-board-frontend --branch gsd/phase-04-task-subtask-workflow --limit 1 --json databaseId --jq '.[0].databaseId', then gh run watch <id> --exit-status. Read back all four job conclusions before trusting the branch."
         }
     ],
     "async_jobs": [],
@@ -99,12 +119,12 @@
     "decisions": [
         {
             "decision": "A blank subtask or column row BLOCKS the submit; consequently both create modals open with ZERO rows instead of the mock's seeded two/one",
-            "rationale": "Product owner submitted a task carrying a blank subtask row and reported it as a defect, reversing 04-UI-SPEC.md's dropped-row reading. The row count and the blank-row rule cannot be chosen independently: keeping the seeded rows would open the modal invalid and charge two deletions for every subtask-less task. This also closes defect #2 from the earlier batch, which nobody could reproduce — the screenshot WAS the repro.",
+            "rationale": "Product owner submitted a task carrying a blank subtask row and reported it as a defect, reversing 04-UI-SPEC.md's dropped-row reading. The row count and the blank-row rule cannot be chosen independently: keeping the seeded rows would open the modal invalid and charge two deletions for every subtask-less task. This also closes defect #2 from the earlier batch, which nobody could reproduce \u2014 the screenshot WAS the repro.",
             "phase": "04"
         },
         {
             "decision": "Split isSessionPayload into isUpstreamIdentity (upstream body) and isSessionPayload (our own cookie)",
-            "rationale": "One guard was doing two jobs. The backend answers POST /signup with \"displayName\": null for a nameless account — a shape the generated contract's `displayName?: string` never declares — so demanding a string reported a CREATED account as failed and burned the email address. Every e2e sign-up fixture fills the Name field, which is exactly why it shipped.",
+            "rationale": "One guard was doing two jobs. The backend answers POST /signup with \"displayName\": null for a nameless account \u2014 a shape the generated contract's `displayName?: string` never declares \u2014 so demanding a string reported a CREATED account as failed and burned the email address. Every e2e sign-up fixture fills the Name field, which is exactly why it shipped.",
             "phase": "04"
         },
         {
@@ -114,11 +134,16 @@
         },
         {
             "decision": "Tailwind must not scan worktree copies of .planning",
-            "rationale": "Planning docs write utility classes with literal placeholders; the scanner turns them into unparseable CSS and a stylesheet that fails to parse 500s every dev page. A worktree is scanned as its OWN root, so its .planning is reached through neither the outer .gitignore nor the existing @source rule — meaning local dev broke for as long as any worktree existed, which is now the normal state.",
+            "rationale": "Planning docs write utility classes with literal placeholders; the scanner turns them into unparseable CSS and a stylesheet that fails to parse 500s every dev page. A worktree is scanned as its OWN root, so its .planning is reached through neither the outer .gitignore nor the existing @source rule \u2014 meaning local dev broke for as long as any worktree existed, which is now the normal state.",
+            "phase": "04"
+        },
+        {
+            "decision": "comments:check runs in the pre-commit hook, not only in CI",
+            "rationale": "It failed three separate CI runs in one session, each time on a comment the hook had already let through, and each failure cost a full red run plus the skipped visual and e2e jobs behind it. The hook ran 2 of CI's 11 gate scripts; this closes the cheapest and most frequently hit part of that gap.",
             "phase": "04"
         }
     ],
     "uncommitted_files": [],
-    "next_action": "Wire SOPS + age for local secret management, and prove gitleaks still behaves alongside it. Recommended shape: `age-keygen -o ~/.config/sops/age/keys.txt`; commit an encrypted `secrets.enc.env`; launch via `sops exec-env secrets.enc.env 'pnpm dev'`. Expect gitleaks' entropy-based generic-api-key rule to fire on the base64 ciphertext — allowlist the file BY PATH ONLY, and pair that allowlist with a pre-commit assertion that the file really is encrypted (`grep -q 'ENC\\[AES256_GCM' secrets.enc.env`), because an allowlisted path is exactly how a plaintext secret later ships silently. Landing this deletes three existing problems: the Read(.env.*) deny, the ~/.claude/bin/seed-worktree-env wrapper, and worktree env seeding entirely (the encrypted file arrives via git).",
-    "context_notes": "Phase 04's remaining review debt is CLEARED: REVIEW-1..5 fixed by a sequential agent in one worktree (they shared files), REVIEW-6 fixed by a parallel agent, REVIEW-7 dissolved. All five REVIEW-1..5 findings were CONFIRMED — none refuted — but REVIEW-6's finding named the WRONG FILE (subtask-editor-row.tsx; the checkbox row is subtask-checklist-row.tsx), so keep treating review findings as claims. The session's throughline was that a contract change is not done when its own tests pass: changing the create modals to seed zero rows was verified against component tests, and CI then went red on three e2e specs that filled `Column 1`/`Subtask 1` — a grep of e2e/ would have caught it and was not run. Twice I reported CI green before it was. Two process learnings were recorded globally: agents must run the WHOLE suite plus the repo's full CI gate list (derived from .github/workflows, never the pre-commit hook, which runs 2 of 11), and a batch of reported bugs is parallel work partitioned by FILE SET, not a queue. Do NOT delete .claude/worktrees/agent-ad99257c01d94ec72 — it holds the only copy of the uncommitted test-coverage setup, tracked in .planning/todos/pending/."
+    "next_action": "Wire SOPS + age for local secret management, and prove gitleaks still behaves alongside it. Recommended shape: `age-keygen -o ~/.config/sops/age/keys.txt`; commit an encrypted `secrets.enc.env`; launch via `sops exec-env secrets.enc.env 'pnpm dev'`. Expect gitleaks' entropy-based generic-api-key rule to fire on the base64 ciphertext \u2014 allowlist the file BY PATH ONLY, and pair that allowlist with a pre-commit assertion that the file really is encrypted (`grep -q 'ENC\\[AES256_GCM' secrets.enc.env`), because an allowlisted path is exactly how a plaintext secret later ships silently. Landing this deletes three existing problems: the Read(.env.*) deny, the ~/.claude/bin/seed-worktree-env wrapper, and worktree env seeding entirely (the encrypted file arrives via git).",
+    "context_notes": "Phase 04's remaining review debt is CLEARED: REVIEW-1..5 fixed by a sequential agent in one worktree (they shared files), REVIEW-6 fixed by a parallel agent, REVIEW-7 dissolved. All five REVIEW-1..5 findings were CONFIRMED \u2014 none refuted \u2014 but REVIEW-6's finding named the WRONG FILE (subtask-editor-row.tsx; the checkbox row is subtask-checklist-row.tsx), so keep treating review findings as claims. The session's throughline was that a contract change is not done when its own tests pass: changing the create modals to seed zero rows was verified against component tests, and CI then went red on three e2e specs that filled `Column 1`/`Subtask 1` \u2014 a grep of e2e/ would have caught it and was not run. Twice I reported CI green before it was. Two process learnings were recorded globally: agents must run the WHOLE suite plus the repo's full CI gate list (derived from .github/workflows, never the pre-commit hook, which runs 2 of 11), and a batch of reported bugs is parallel work partitioned by FILE SET, not a queue. Do NOT delete .claude/worktrees/agent-ad99257c01d94ec72 \u2014 it holds the only copy of the uncommitted test-coverage setup, tracked in .planning/todos/pending/."
 }
