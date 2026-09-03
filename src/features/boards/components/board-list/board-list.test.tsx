@@ -4,7 +4,7 @@
  * load the Vite plugin for (see docs/adr/tech/0021).
  */
 import { composeStories } from "@storybook/react";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -254,8 +254,9 @@ describeForEachDevice({
                 expect(createBoardStub.calls).toHaveLength(1);
             });
 
-            // Assert — newest-first, and nobody has been navigated anywhere yet.
+            // Assert — newest-first behind an already-closed modal, and nobody navigated anywhere yet.
             expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
+            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
             expect(mockPush).not.toHaveBeenCalled();
 
             // Act — let the write land.
@@ -272,7 +273,7 @@ describeForEachDevice({
         });
 
         /* The other half of the same mechanism: a refusal must leave no trace of the optimistic row. */
-        it("removes the optimistic row and reports the failure inline when the create fails", async () => {
+        it("removes the optimistic row and reports the failure in a toast when the create fails", async () => {
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
@@ -291,10 +292,12 @@ describeForEachDevice({
             // Act
             createBoardStub.settle();
 
-            // Assert — D-05 keeps nothing-was-created inline, so the rollback raises no toast.
-            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create board. Try again.");
+            // Assert — the row is withdrawn and the refusal is reported in the toast stack.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+            });
             expect(getRenderedBoardNames()).toEqual(namesBefore);
-            expect(getRaisedToastTexts()).toHaveLength(0);
+            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
             expect(mockPush).not.toHaveBeenCalled();
         });
 
@@ -356,7 +359,7 @@ describeForEachDevice({
          * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE (probed 2026-08-25)
          * — the same refusal rename already explains, now recognised on create too.
          */
-        it("names the clash inline and keeps the modal open when the board name is already taken", async () => {
+        it("names the clash in the failure toast when the board name is already taken", async () => {
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.DUPLICATE });
@@ -364,11 +367,12 @@ describeForEachDevice({
             // Act
             await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
 
-            // Assert — told why, in the still-open modal, with nothing created to navigate to.
-            expect(await screen.findByRole("alert")).toHaveTextContent(
-                "A board with that name already exists. Choose a different name.",
-            );
-            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+            // Assert — told why, with nothing created to navigate to and no column phase attempted.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("A board with that name already exists.");
+            });
+            expect(getRaisedToastTexts()[0]).toContain("Choose a different name.");
+            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
             expect(createBoardColumnsStub.calls).toHaveLength(0);
             expect(mockPush).not.toHaveBeenCalled();
         });
@@ -383,9 +387,32 @@ describeForEachDevice({
             await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
 
             // Assert
-            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create board. Try again.");
-            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+            });
+            expect(getRaisedToastTexts()[0]).toContain("Try again.");
             expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        /*
+         * The trade-off closing on submit was accepted on: a refused create may cost the user a
+         * click, never what they typed — name and every column row come back as they left them.
+         */
+        it("reopens the modal prefilled with the whole attempt when the toast's Retry is clicked", async () => {
+            // Arrange
+            await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo", "Doing"] });
+            const region = await screen.findByRole("region", { name: "Notifications" });
+
+            // Act
+            await userEvent.click(await within(region).findByRole("button", { name: "Retry" }));
+
+            // Assert
+            await expect.element(screen.getByRole("heading", { name: "Add New Board" })).toBeVisible();
+            await expect.element(screen.getByLabelText("Board Name")).toHaveValue("Platform Launch");
+            await expect.element(screen.getByLabelText("Column 1")).toHaveValue("Todo");
+            await expect.element(screen.getByLabelText("Column 2")).toHaveValue("Doing");
         });
 
         it("auto-dismisses the column-failure toast rather than leaving it on screen indefinitely", async () => {

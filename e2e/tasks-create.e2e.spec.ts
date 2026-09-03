@@ -7,8 +7,8 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 
 /*
  * TASK-01 against the real deployed nonprod backend — structural, business-level assertions only,
- * no validation copy (docs/adr/tech/0022). Creation is not optimistic: the modal stays open
- * on the task POST, so the card's appearance IS the settle-wait and needs no extra one.
+ * no validation copy (docs/adr/tech/0022). Creation IS optimistic and the modal closes at submit
+ * (04-UI-SPEC.md's D-05 amendment), so a card on screen proves only that the write was issued.
  */
 
 const SIGN_IN_TIMEOUT_MS = 20_000;
