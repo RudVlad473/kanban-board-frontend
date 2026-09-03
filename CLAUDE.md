@@ -162,3 +162,18 @@ Never `cat`, `grep`, or otherwise print `.env.local`'s contents — only copy it
 environment picks the values up naturally. Never `git add` it (it's ignored on purpose). The
 copy is worktree-local and disappears with the worktree on cleanup — that's expected, not a
 leak to clean up by hand.
+
+**The `cp` itself needs a permission rule, and the rule only applies from the NEXT session.**
+The permission layer denies `cp` of a credential file by default, which reads as a refusal to
+follow this section rather than as a missing rule. `.claude/settings.local.json` now carries
+`Bash(cp /home/andre/dev/kanban-board-frontend/.env.local *)` and its relative twin — but
+`permissions` is read at startup, so writing the rule does not unblock the session that wrote
+it. Found 2026-09-03: the rule was added and the very next `cp` was still denied.
+
+So when the copy is denied, do not retry it and do not treat it as a policy decision to work
+around — ask for it as a `!` command, which runs in the user's own shell and lands in the
+session:
+
+```
+! cp ~/dev/kanban-board-frontend/.env.local <worktree>/.env.local
+```
