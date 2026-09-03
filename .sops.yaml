@@ -1,0 +1,13 @@
+# Recipients for `pnpm secrets:encrypt` / `pnpm secrets:decrypt` (docs/adr/tech/0032).
+#
+# The value below is an age PUBLIC recipient and is safe to commit. Its private half lives at
+# ~/.config/sops/age/keys.txt (override with SOPS_AGE_KEY_FILE) and is the only way to decrypt
+# secrets.enc.env — back it up.
+#
+# path_regex matches the file sops is READING, not the one --output names. Measured 2026-09-03
+# with sops 3.13.3: a regex matching only `secrets.enc.env` fails encryption with "no matching
+# creation rules found", because the input is the plaintext. Both paths are listed so encrypt
+# and any later `sops updatekeys` both resolve a rule.
+creation_rules:
+    - path_regex: (^|/)(\.env\.local|secrets\.enc\.env)$
+      age: age1j990f2cfxrgylkxncppddn0muwuq90pu26pnktr80eg7g452r4vseuxjrg

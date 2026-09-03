@@ -40,10 +40,27 @@ jobs:
                   # a full-history re-scan on every run — see the action's own README.
                   fetch-depth: 0
 
+            # Decisions ───────────────────────────────────────────────────────────────────
+            # GITLEAKS_VERSION is pinned, and this literal is the single source of truth for
+            # it. Observed 2026-09-03 at the pinned action SHA (src/gitleaks.js): with the var
+            # unset the action calls `getLatestRelease()` and installs whatever is newest at
+            # run time — so the rule set actually enforced changes between runs with nothing
+            # in the repo recording which one passed, and a green history proves nothing about
+            # today's rules. Cost accepted: a newly published rule is not picked up until the
+            # pin is bumped (docs/adr/tech/0032).
+            #
+            # Two readers parse this literal — scripts/install-verified-tools.sh installs it
+            # locally, scripts/check-gitleaks-version.mjs fails when the local binary differs.
+            # Writing the version anywhere else is the drift both of them exist to prevent.
+            #
+            # False if: the action stops honouring GITLEAKS_VERSION, or a second
+            # GITLEAKS_VERSION assignment appears in this file (check-gitleaks-version.mjs
+            # fails on the ambiguity rather than guessing).
             - name: Scan for secrets
               uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GITLEAKS_VERSION: "8.30.1"
 
     quality:
         runs-on: ubuntu-latest
