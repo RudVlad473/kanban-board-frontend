@@ -2,6 +2,7 @@
 
 // Covered by: `src/features/tasks/components/add-task-button/add-task-button.test.tsx`
 
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button/button";
@@ -21,7 +22,12 @@ export const AddTaskButton = () => {
     const [modalBoardId, setModalBoardId] = useState<string | null>(null);
     const { createTask, isPending, errorMessage, clearError } = useCreateTask();
 
-    const isOpen = modalBoardId !== null && modalBoardId === openBoardId;
+    /*
+     * Waits for a KNOWN column list: `AddTaskModal` reads `columns.at(0)` once, in `useForm`'s
+     * `defaultValues`, so mounting against an absent entry pins `columnId` to `""` for the modal's
+     * whole life and `Create Task` silently does nothing.
+     */
+    const isOpen = modalBoardId !== null && modalBoardId === openBoardId && !isNil(columns) && columns.length > 0;
 
     /*
      * Disabled with no board open or a board with zero columns — `addTaskByColumnId` is
@@ -67,15 +73,14 @@ export const AddTaskButton = () => {
                 + Add New Task
             </Button>
 
-            {/* Mounted only while open, so each open starts from empty fields and `useForm`'s
-                defaultValues never pin to an empty column list. */}
+            {/* Mounted only while open, so each open starts from empty fields. */}
             {isOpen ? (
                 <AddTaskModal
                     onClose={closeModal}
                     onSubmit={handleSubmit}
                     isPending={isPending}
                     errorMessage={errorMessage}
-                    columns={columns ?? []}
+                    columns={columns}
                 />
             ) : null}
         </>

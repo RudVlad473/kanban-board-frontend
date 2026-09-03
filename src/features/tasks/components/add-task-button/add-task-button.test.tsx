@@ -110,6 +110,22 @@ describeForEachDevice({
             await expect.element(screen.getByRole("button", { name: "+ Add New Task" })).toBeEnabled();
         });
 
+        /*
+         * The entry can still be absent when the click lands, and a modal mounted then holds
+         * `columnId: ""` forever. Failed 3 CI runs running as `tasks-create.e2e.spec.ts:78`, never
+         * locally.
+         */
+        it("opens no modal while the open board's entry has not hydrated yet", async () => {
+            // Arrange
+            await render(<BoardNotYetHydrated />);
+
+            // Act
+            await openCreateTaskModal();
+
+            // Assert — no dialog at all, rather than one whose status control can never be filled.
+            expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        });
+
         it("renders the create button disabled with no board open", async () => {
             // Arrange
             routerState.pathname = ROUTE.BOARDS;
