@@ -180,13 +180,12 @@ over keeping the modal open.
 
 **Trade-off accepted explicitly:** closing on submit puts the user's typed input at risk, which is
 why Retry-prefill is not a nicety but the condition the reversal was accepted on. It is pinned by
-tests in `board-list.test.tsx` and `add-task-button.test.tsx` ("reopens the modal prefilled with
-the whole attempt when the toast's Retry is clicked"); a create that loses input is a regression.
+tests in `board-list.test.tsx`, `add-task-button.test.tsx` and `board-view.test.tsx` ("reopens the
+modal prefilled…"); a create that loses input is a regression.
 
-**Known inconsistency, temporary:** the COLUMN create (`use-create-column`, driven from
-`src/components/layout/board-view/**`) still follows the original D-05 — its modal stays open and
-reports inline. That is being reversed separately; until then, board/task creates and column
-creates deliberately disagree.
+**Scope:** all three creates — board, task and column (`use-create-column`, driven from
+`src/components/layout/board-view/**`) — now behave alike. The column create was reversed last, on
+2026-09-03; there is no create left on the superseded behaviour.
 
 ---
 
