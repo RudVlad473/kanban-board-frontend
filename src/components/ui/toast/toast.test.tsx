@@ -142,6 +142,49 @@ describeForEachDevice({
             expect(onRetry).toHaveBeenCalledTimes(1);
         });
 
+        /*
+         * A create-failure toast has no auto-dismiss and sits over the sidebar's create control at
+         * mobile width, so the whole card is a dismiss target rather than only the 24px glyph.
+         */
+        it("dismisses the toast when its body is tapped, not only its close control", async () => {
+            // Arrange
+            const screen = await renderToastHarness([{ title: "Couldn't create board.", description: "Try again." }]);
+            await screen.getByRole("button", { name: "Add toast 1" }).click();
+            await expect.element(screen.getByRole("dialog", { name: "Couldn't create board." })).toBeVisible();
+
+            // Act — the description, which is body, not a control.
+            await screen.getByText("Try again.", { exact: true }).click();
+
+            // Assert
+            await expect
+                .element(screen.getByRole("dialog", { name: "Couldn't create board." }))
+                .not.toBeInTheDocument();
+        });
+
+        /*
+         * The Retry is the only copy of the user's typed values until it fires (the modal closed at
+         * submit), so a body-dismiss that also fired on Retry would destroy what Retry replays.
+         */
+        it("keeps the toast on screen when the action is activated, so a retry never dismisses its own payload", async () => {
+            // Arrange
+            const onRetry = vi.fn();
+            const screen = await renderToastHarness([
+                {
+                    title: "Couldn't create board.",
+                    description: "Try again.",
+                    actionProps: { children: "Retry", onClick: onRetry },
+                },
+            ]);
+            await screen.getByRole("button", { name: "Add toast 1" }).click();
+
+            // Act
+            await screen.getByRole("button", { name: "Retry" }).click();
+
+            // Assert
+            expect(onRetry).toHaveBeenCalledTimes(1);
+            await expect.element(screen.getByRole("dialog", { name: "Couldn't create board." })).toBeVisible();
+        });
+
         it("dismisses the toast when its close control is activated, removing the title from the document", async () => {
             /*
              * Arrange — Close is aria-hidden unless the viewport is "expanded" (hover/focus), so

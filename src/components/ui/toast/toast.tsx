@@ -119,12 +119,28 @@ const Close = ({ className, ...props }: CloseProps) => {
 export const Toast = { Root, Content, Title, Description, Action, Close };
 
 const ToastList = () => {
-    const { toasts } = useToast();
+    const { toasts, close } = useToast();
     return (
         <>
             {toasts.map((toast) => {
                 return (
-                    <Toast.Root key={toast.id} toast={toast}>
+                    <Toast.Root
+                        key={toast.id}
+                        toast={toast}
+                        /*
+                         * Tapping the card dismisses it, so a toast that has no auto-dismiss can be
+                         * cleared without hunting the 24px Close glyph — it sits over the sidebar's
+                         * create control at mobile width. Interactive descendants are excluded, or
+                         * Retry would dismiss the very toast holding the values it replays.
+                         */
+                        onClick={(event) => {
+                            if (event.target instanceof Element && event.target.closest("button, a")) {
+                                return;
+                            }
+
+                            close(toast.id);
+                        }}
+                    >
                         <Toast.Content>
                             <Toast.Title>{toast.title}</Toast.Title>
 
