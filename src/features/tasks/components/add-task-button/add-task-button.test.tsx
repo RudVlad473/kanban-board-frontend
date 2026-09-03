@@ -57,6 +57,9 @@ const createTaskSubtasksStub = actionStub(createTaskSubtasksAction);
 
 const NEW_TASK = { id: "new-task-id", title: "Take coffee break", description: undefined, version: 0, position: 0 };
 
+/** Deliberately unlike anything typed below, so a placeholder swapped for the server's row shows. */
+const SERVER_TASK_TITLE = "Take coffee break (saved)";
+
 const openCreateTaskModal = async (): Promise<void> => {
     await userEvent.click(screen.getByRole("button", { name: "+ Add New Task" }));
 };
@@ -176,11 +179,12 @@ describeForEachDevice({
          * TASK-01's optimistic insert (docs/adr/tech/0030): the card is on the board while the action
          * is demonstrably still unresolved, which a settle-then-assert test cannot show.
          */
-        it("renders the new card in its column before the create resolves", async () => {
+        it("renders the new card in its column, the modal already gone, before the create resolves", async () => {
             // Arrange — the one story that renders the board the header writes into.
             await render(<WithBoardBelow />);
             const titlesBefore = getFirstColumnTaskTitles();
-            createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
+            /* A title the user never typed, so the swap below is visible rather than inferred. */
+            createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: { ...NEW_TASK, title: SERVER_TASK_TITLE } });
             createTaskStub.hold();
             await openCreateTaskModal();
 
@@ -191,22 +195,21 @@ describeForEachDevice({
                 expect(createTaskStub.calls).toHaveLength(1);
             });
 
-            // Assert — appended to the column the modal was submitted against, modal still open.
+            // Assert — appended to the column the modal was submitted against, with the modal already closed.
             expect(getFirstColumnTaskTitles()).toEqual([...titlesBefore, "Take coffee break"]);
-            expect(screen.getByRole("heading", { name: "Add New Task" })).toBeInTheDocument();
+            expect(screen.queryByRole("heading", { name: "Add New Task" })).not.toBeInTheDocument();
 
             // Act — let the write land.
             createTaskStub.settle();
 
             // Assert — the placeholder is SWAPPED for the server's task, never appended beside it.
             await vi.waitFor(() => {
-                expect(screen.queryByRole("heading", { name: "Add New Task" })).not.toBeInTheDocument();
+                expect(getFirstColumnTaskTitles()).toEqual([...titlesBefore, SERVER_TASK_TITLE]);
             });
-            expect(getFirstColumnTaskTitles()).toEqual([...titlesBefore, "Take coffee break"]);
         });
 
         /* The other half of the same mechanism: a refusal must leave no trace of the optimistic card. */
-        it("removes the optimistic card and reports the failure inline when the create fails", async () => {
+        it("removes the optimistic card and reports the failure in a toast when the create fails", async () => {
             // Arrange
             await render(<WithBoardBelow />);
             const titlesBefore = getFirstColumnTaskTitles();
@@ -227,15 +230,16 @@ describeForEachDevice({
             // Act
             createTaskStub.settle();
 
-            // Assert — D-05 keeps nothing-was-created inline, so the rollback raises no toast.
-            expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't create task. Try again.");
-            expect(getFirstColumnTaskTitles()).toEqual(titlesBefore);
-            expect(within(screen.getByRole("region", { name: "Notifications" })).queryAllByRole("dialog")).toHaveLength(
-                0,
-            );
+            // Assert — the card is withdrawn and the refusal is reported in the toast stack.
+            const region = await screen.findByRole("region", { name: "Notifications" });
+            await expect.element(within(region).getByText("Couldn't create task.")).toBeVisible();
+            await vi.waitFor(() => {
+                expect(getFirstColumnTaskTitles()).toEqual(titlesBefore);
+            });
         });
 
-        it("keeps the modal open with an inline error when the create fails", async () => {
+        /* The modal is gone by the time the refusal lands, so the toast is the only place left to say so. */
+        it("reports the create failure in a toast carrying Retry, the modal having closed at submit", async () => {
             // Arrange
             await render(<WithColumns />);
             createTaskStub.queue({ status: RESULT_STATUS.ERROR });
@@ -246,8 +250,43 @@ describeForEachDevice({
             await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
 
             // Assert
-            await expect.element(screen.getByRole("alert")).toHaveTextContent("Couldn't create task. Try again.");
+            const region = await screen.findByRole("region", { name: "Notifications" });
+            await expect.element(within(region).getByText("Couldn't create task.")).toBeVisible();
+            await expect.element(within(region).getByText("Try again.")).toBeVisible();
+            await expect.element(within(region).getByRole("button", { name: "Retry" })).toBeVisible();
+            expect(screen.queryByRole("heading", { name: "Add New Task" })).not.toBeInTheDocument();
+        });
+
+        /*
+         * The trade-off closing on submit was accepted on: a refused create may cost the user a
+         * click, never what they typed. Every field, including the status chosen, comes back.
+         */
+        it("reopens the modal prefilled with the whole attempt when the toast's Retry is clicked", async () => {
+            // Arrange
+            await render(<WithColumns />);
+            createTaskStub.queue({ status: RESULT_STATUS.ERROR });
+            await openCreateTaskModal();
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.fill(screen.getByLabelText("Description"), "Recharge the batteries a little.");
+            await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+            await userEvent.fill(screen.getByLabelText("Subtask 2", { exact: true }), "Drink coffee & smile");
+            await userEvent.click(screen.getByRole("combobox"));
+            await userEvent.click(await within(document.body).findByRole("option", { name: "Doing" }));
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            const region = await screen.findByRole("region", { name: "Notifications" });
+
+            // Act
+            await userEvent.click(await within(region).findByRole("button", { name: "Retry" }));
+
+            // Assert
             await expect.element(screen.getByRole("heading", { name: "Add New Task" })).toBeVisible();
+            await expect.element(screen.getByLabelText("Title")).toHaveValue("Take coffee break");
+            await expect.element(screen.getByLabelText("Description")).toHaveValue("Recharge the batteries a little.");
+            await expect.element(screen.getByLabelText("Subtask 1", { exact: true })).toHaveValue("Make coffee");
+            await expect
+                .element(screen.getByLabelText("Subtask 2", { exact: true }))
+                .toHaveValue("Drink coffee & smile");
+            await expect.element(screen.getByRole("combobox")).toHaveTextContent("Doing");
         });
 
         /* The fan-out runs behind the already-closed modal, keeping whatever succeeded. */
