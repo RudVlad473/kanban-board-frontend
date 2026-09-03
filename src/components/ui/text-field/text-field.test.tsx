@@ -23,6 +23,7 @@ const {
     Password,
     CharacterCounter,
     CharacterCounterFilled,
+    CharacterCounterUnderMinimum,
     CharacterCounterLengthInvalid,
     CharacterCounterRequiredEmpty,
 } = composeStories(stories);
@@ -363,6 +364,28 @@ describeForEachDevice({
 
             // Assert
             await expect.element(screen.getByText("2/32")).toBeVisible();
+        });
+
+        /*
+         * Two bounds, one slot: while the value is too SHORT the upper limit is not what stands in
+         * the user's way, so the counter counts toward the lower one and swaps once it is met.
+         */
+        it("counts toward the minimum while under it, and toward the limit once it is met", async () => {
+            // Arrange
+            const screen = await render(<CharacterCounterUnderMinimum />);
+            const input = screen.getByRole("textbox", { name: "Column Name" });
+
+            /* Read exactly: a substring matcher would find "2/3" inside "2/32" and pass either way. */
+            const counterText = () => screen.container.querySelector('[aria-hidden="true"].tabular-nums')?.textContent;
+
+            // Assert — staged at two characters, one short of the minimum.
+            await expect.poll(counterText).toBe("2/3 min");
+
+            // Act — reaching the minimum.
+            await userEvent.type(input.element(), "c");
+
+            // Assert
+            await expect.poll(counterText).toBe("3/32");
         });
 
         /* An always-on counter on an untouched empty field is noise, so it waits for a first character. */

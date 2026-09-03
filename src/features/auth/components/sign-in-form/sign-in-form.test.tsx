@@ -6,6 +6,8 @@ import { render } from "vitest-browser-react";
 
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signInAction } from "@/features/auth/actions/sign-in-action";
+import { PROBLEM_CODE } from "@/lib/core/api-contract/problem-detail";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { flattenFormData } from "@/test-utils/flatten-form-data";
@@ -156,6 +158,32 @@ describeForEachDevice({
                 email: "demo@kanban-board.dev",
                 password: "correct-horse-battery-staple",
             });
+        });
+
+        /*
+         * A client error means this submit never reached the server, so a refusal still on screen
+         * describes an older one. Both at once is what put two messages on the sign-in card.
+         */
+        it("drops the server's refusal once a client-side field error appears", async () => {
+            // Arrange — a real refused submit, not the story's staged `forceServerError`.
+            const rendered = await renderSignInForm();
+            actionStub(signInAction).queue({
+                status: RESULT_STATUS.ERROR,
+                code: PROBLEM_CODE.BAD_CREDENTIALS,
+                message: INVALID_CREDENTIALS_MESSAGE,
+            });
+            await rendered.getByRole("textbox", { name: "Email" }).fill("demo@kanban-board.dev");
+            await rendered.getByLabelText("Password", { exact: true }).fill("wrong-password");
+            await rendered.getByRole("button", { name: "Sign In" }).click();
+            await expect.element(rendered.getByRole("alert")).toHaveTextContent(INVALID_CREDENTIALS_MESSAGE);
+
+            // Act — a client-side error, which blocks any further submit.
+            await rendered.getByRole("textbox", { name: "Email" }).fill("not-an-email");
+            await userEvent.tab();
+
+            // Assert
+            await expect.element(rendered.getByText("Enter a valid email address.")).toBeVisible();
+            expect(rendered.getByRole("alert").elements().length).toBe(0);
         });
 
         it("renders the password field masked by default, reveals it via the toggle, and updates the toggle's accessible name", async () => {

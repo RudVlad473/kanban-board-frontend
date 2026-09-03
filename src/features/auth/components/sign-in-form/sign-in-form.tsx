@@ -93,7 +93,15 @@ export const SignInForm = ({
     }, [isActionPending, state, resetField, setValue]);
 
     const isPending = forceSubmitting || isActionPending;
-    const serverErrorMessage = forceServerError ?? (state.status === RESULT_STATUS.ERROR ? state.message : undefined);
+
+    /*
+     * The same precedence the field messages below use, applied to the form-level alert: a client
+     * error means this submit never reached the server, so the refusal on screen describes an older
+     * one. Leaving both up put "Can't be empty" and "Invalid email or password." on screen together.
+     */
+    const hasClientFieldError = errors.email !== undefined || errors.password !== undefined;
+    const serverErrorMessage =
+        forceServerError ?? (state.status === RESULT_STATUS.ERROR && !hasClientFieldError ? state.message : undefined);
 
     /*
      * Client-side field errors (React Hook Form) take precedence over the server's, since they

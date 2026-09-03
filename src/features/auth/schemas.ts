@@ -7,6 +7,9 @@ import { z } from "zod";
 export const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const EMAIL_FORMAT_MESSAGE = "Enter a valid email address.";
 const PASSWORD_LENGTH_MESSAGE = "Password must be between 8 and 64 characters.";
+
+/* The sign-up field states the rule before a submit can fail it, so it stays one number. */
+export const PASSWORD_REQUIREMENT_HINT = "At least 8 characters, with an upper and lower case letter and a number.";
 const PASSWORD_COMPLEXITY_MESSAGE =
     "Password must include an uppercase letter, a lowercase letter, a number, and a special character.";
 /* Exported so a TextField's `characterLimit` and the rule it counts against stay one number. */

@@ -197,7 +197,7 @@ describeForEachDevice({
             await screen.getByRole("button", { name: "Create New Board" }).click();
 
             // Assert — the slot shows the counter; the prose it replaces stays the accessible description.
-            await expect.element(screen.getByText("2/32")).toBeVisible();
+            await expect.element(screen.getByText("2/3 min", { exact: true })).toBeVisible();
             expect(
                 screen.getByText("Column name must be between 3 and 32 characters.").element().getBoundingClientRect()
                     .width,
@@ -210,7 +210,7 @@ describeForEachDevice({
             const screen = await render(<ColumnNameError />);
 
             // Assert — the slot shows the counter; the prose it replaces stays the accessible description.
-            await expect.element(screen.getByText("2/32")).toBeVisible();
+            await expect.element(screen.getByText("2/3 min", { exact: true })).toBeVisible();
             expect(
                 screen.getByText("Column name must be between 3 and 32 characters.").element().getBoundingClientRect()
                     .width,
@@ -227,7 +227,7 @@ describeForEachDevice({
             const screen = await render(<ColumnNameError />);
 
             // Act
-            const messageRect = screen.getByText("2/32").element().getBoundingClientRect();
+            const messageRect = screen.getByText("2/3 min", { exact: true }).element().getBoundingClientRect();
             const addRowRect = screen
                 .getByRole("button", { name: "+ Add New Column" })
                 .element()

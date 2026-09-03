@@ -13,6 +13,7 @@ import {
     addBoardFormSchema,
     BOARD_NAME_MAX_LENGTH,
     COLUMN_NAME_MAX_LENGTH,
+    COLUMN_NAME_MIN_LENGTH,
     type AddBoardFormValues,
     type AddBoardSubmitValues,
 } from "@/features/boards/schemas";
@@ -122,6 +123,7 @@ export const AddBoardModal = ({
                                         label={rowLabel}
                                         type="text"
                                         characterLimit={COLUMN_NAME_MAX_LENGTH}
+                                        characterMinimum={COLUMN_NAME_MIN_LENGTH}
                                         placeholder="e.g. Todo"
                                         hasError={Boolean(rowErrorMessage)}
                                         errorMessage={rowErrorMessage}

@@ -6,7 +6,12 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button/button";
 import { Modal } from "@/components/ui/modal/modal";
 import { TextField } from "@/components/ui/text-field/text-field";
-import { addColumnFormSchema, COLUMN_NAME_MAX_LENGTH, type AddColumnFormValues } from "@/features/boards/schemas";
+import {
+    addColumnFormSchema,
+    COLUMN_NAME_MIN_LENGTH,
+    COLUMN_NAME_MAX_LENGTH,
+    type AddColumnFormValues,
+} from "@/features/boards/schemas";
 
 type Props = {
     isOpen: boolean;
@@ -81,6 +86,7 @@ export const AddColumnModal = ({
                         label="Column Name"
                         type="text"
                         characterLimit={COLUMN_NAME_MAX_LENGTH}
+                        characterMinimum={COLUMN_NAME_MIN_LENGTH}
                         placeholder="e.g. Todo"
                         hasError={Boolean(nameErrorMessage)}
                         errorMessage={nameErrorMessage}

@@ -15,6 +15,7 @@ import { signUpAction } from "@/features/auth/actions/sign-up-action";
 import { readFormField } from "@/features/auth/model";
 import {
     DISPLAY_NAME_MAX_LENGTH,
+    PASSWORD_REQUIREMENT_HINT,
     REQUIRED_FIELD_MESSAGE,
     signUpSchema,
     type SignUpInput,
@@ -142,6 +143,7 @@ export const SignUpForm = ({
             <TextField
                 label="Password"
                 type={isPasswordRevealed ? "text" : "password"}
+                description={PASSWORD_REQUIREMENT_HINT}
                 isLoading={isPending}
                 hasError={forceFieldErrors || Boolean(passwordErrorMessage)}
                 errorMessage={forceFieldErrors ? REQUIRED_FIELD_MESSAGE : passwordErrorMessage}

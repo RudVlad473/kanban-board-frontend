@@ -76,7 +76,7 @@ describeForEachDevice({
             await screenResult.getByRole("button", { name: "Create New Column" }).click();
 
             // Assert — the slot shows the counter; the prose it replaces stays the accessible description.
-            await expect.element(screenResult.getByText("2/32")).toBeVisible();
+            await expect.element(screenResult.getByText("2/3 min", { exact: true })).toBeVisible();
             expect(
                 screenResult
                     .getByText("Column name must be between 3 and 32 characters.")

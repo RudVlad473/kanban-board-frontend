@@ -83,6 +83,12 @@ export const CharacterCounterFilled: Story = {
     decorators: [inBoardModalField],
 };
 
+/* Under the minimum the denominator is the blocking bound, qualified so `/3` is not read as a max. */
+export const CharacterCounterUnderMinimum: Story = {
+    args: { label: "Column Name", characterLimit: 32, characterMinimum: 3, defaultValue: "ab" },
+    decorators: [inBoardModalField],
+};
+
 /* Length-invalid: the counter turns red and the prose it replaces goes to aria-describedby. */
 export const CharacterCounterLengthInvalid: Story = {
     args: {

@@ -34,6 +34,12 @@ type Props = Omit<ComponentProps<typeof Field.Control>, "className" | "disabled"
          * runtime to recover a bound would couple this primitive to every form that uses it.
          */
         characterLimit?: number;
+        /**
+         * The lower bound the same schema enforces; while under it the counter counts toward it and
+         * qualifies the denominator (`2/3 min`), since the prose naming the bound is `sr-only`
+         * whenever a counter owns the slot and a bare `/3` would then read as the maximum.
+         */
+        characterMinimum?: number;
         /** Rendered inside the field's visual box, absolutely positioned — e.g. a password-visibility IconButton. */
         trailing?: ReactNode;
     };
@@ -47,6 +53,7 @@ export const TextField = ({
     isDisabled = false,
     isLoading = false,
     characterLimit,
+    characterMinimum,
     size,
     trailing,
     className,
@@ -76,8 +83,12 @@ export const TextField = ({
      * case and keeps its prose, which already fits; a non-empty one is a length case and gets the
      * counter, which fits at any width. The prose stays mounted for `aria-describedby` either way.
      */
+    const isUnderMinimum = !isNil(characterMinimum) && valueLength < characterMinimum;
+    const activeBound = isUnderMinimum ? characterMinimum : characterLimit;
     const counterText =
-        characterLimit !== undefined && valueLength > 0 ? `${String(valueLength)}/${String(characterLimit)}` : null;
+        !isNil(activeBound) && valueLength > 0
+            ? `${String(valueLength)}/${String(activeBound)}${isUnderMinimum ? " min" : ""}`
+            : null;
 
     return (
         /*

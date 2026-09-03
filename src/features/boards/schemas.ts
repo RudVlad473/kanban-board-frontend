@@ -106,11 +106,14 @@ export type EditBoardFormValues = z.infer<typeof editBoardFormSchema>;
 export const COLUMN_NAME_MAX_LENGTH = 32;
 const COLUMN_NAME_LENGTH_MESSAGE = `Column name must be between 3 and ${String(COLUMN_NAME_MAX_LENGTH)} characters.`;
 
+/* Exported so a TextField's `characterMinimum` and the rule it counts against stay one number. */
+export const COLUMN_NAME_MIN_LENGTH = 3;
+
 /** The backend's own enforced bounds, mirrored verbatim (02-BACKEND-FACTS.md P6). */
 export const columnNameSchema = z
     .string()
     .trim()
-    .min(3, COLUMN_NAME_LENGTH_MESSAGE)
+    .min(COLUMN_NAME_MIN_LENGTH, COLUMN_NAME_LENGTH_MESSAGE)
     .max(COLUMN_NAME_MAX_LENGTH, COLUMN_NAME_LENGTH_MESSAGE);
 
 /*

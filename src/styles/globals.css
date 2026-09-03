@@ -21,4 +21,20 @@
             transition-timing-function: ease;
         }
     }
+
+    /*
+     * Chrome paints its own background and text colour on an autofilled input and neither is a
+     * property CSS can set — only the inset shadow trick reaches it, and it must repaint on the
+     * theme swap too, which is why the tokens are read rather than hard-coded.
+     */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+        -webkit-box-shadow: inset 0 0 0 1000px var(--color-bg-surface);
+        -webkit-text-fill-color: var(--color-text-primary);
+        caret-color: var(--color-text-primary);
+        /* Chrome's own fade back to yellow; long enough that the override wins for any real session. */
+        transition: background-color 100000s ease-in-out 0s;
+    }
 }
