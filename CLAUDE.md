@@ -121,67 +121,51 @@ fresh — stayed red on those same snapshots.
 
 ## Set up every fresh worktree before running anything
 
-Three things a `git worktree add` does not bring across. Run all three first in any worktree-based
-execution (GSD's `isolation="worktree"` dispatch or otherwise), before `pnpm dev`, tests, lint or
-e2e:
+One command, run inside the worktree before `pnpm dev`, tests, lint or e2e — in GSD's
+`isolation="worktree"` dispatch or any other worktree-based execution:
 
 ```bash
-cp /home/andre/dev/kanban-board-frontend/.env.local "$(git rev-parse --show-toplevel)/.env.local"
-pnpm install --frozen-lockfile
-pnpm exec next typegen
+pnpm --dir "$(git rev-parse --show-toplevel)" setup:worktree
 ```
 
-Skipping `next typegen` is the one that misleads. `tsconfig.json` includes `.next/types/**/*.ts`,
-so without it `pnpm lint` reports three `no-unsafe-assignment` errors in
-`app/(dashboard)/boards/[boardId]/page.tsx` against the generated `PageProps<>` global. It reads
-as a real regression in a file you never touched. Found 2026-08-28, reported independently by two
-Phase 4 executors.
+It installs dependencies, runs `next typegen` and restores `next-env.d.ts`, and decrypts the env
+file from the committed `secrets.enc.env` — no copy from another checkout, no
+`seed-worktree-env`. It is idempotent, and it skips the decrypt (with a notice) rather than
+overwriting an env file that already exists. It fails with a named remedy if `sops` is missing
+(`pnpm tools:install`) or the age key is missing.
 
-`next typegen` also rewrites tracked `next-env.d.ts`, pointing its imports at `./.next/dev/types/`
-instead of the committed `./.next/types/`. Next regenerates that file and marks it "should not be
-edited", so the rewrite is generated churn, not a change worth keeping. Restore it before you
-commit anything, or it rides into the wave merge:
+Prefer this over running the steps individually. `next typegen` is the one that misleads when
+skipped: `tsconfig.json` includes `.next/types/**/*.ts`, so without it `pnpm lint` reports three
+`no-unsafe-assignment` errors in `app/(dashboard)/boards/[boardId]/page.tsx` against the generated
+`PageProps<>` global, reading as a real regression in a file you never touched. Found 2026-08-28,
+reported independently by two Phase 4 executors — which is why it is a script now and not a list.
+`next typegen` also rewrites the tracked `next-env.d.ts` as generated churn; the script restores it
+so it cannot ride into a wave merge.
 
-```bash
-git checkout -- next-env.d.ts
-```
+`pnpm build` also populates `.next/types` and leaves `next-env.d.ts` matching the committed form,
+so it is an acceptable substitute for the typegen half when you were going to build anyway.
 
-`pnpm build` also populates `.next/types` and leaves `next-env.d.ts` matching the committed form.
-Prefer it when you were going to build anyway; prefer `typegen` plus the restore when you only
-need lint and types to resolve.
+Run `pnpm tools:install` too if `gitleaks` is absent — the pre-commit hook needs it, and
+`setup:worktree` prints a reminder when it is missing.
 
-### `.env.local` specifically
+### Env values specifically
 
-`.env.local` is gitignored, so `git worktree add` never copies it — a plan executed in an
-isolated worktree (GSD's `isolation="worktree"` dispatch, or any other worktree-based
-execution) starts with none of the local env vars (`NONPROD_RESET_TOKEN`, `SESSION_SECRET`,
-etc.) that `pnpm dev`/tests/e2e runs depend on. This silently breaks any task that needs them —
-e.g. `e2e/global-setup.ts` refuses to run without `NONPROD_RESET_TOKEN`.
+Env values now travel with the repo as age-encrypted ciphertext at `secrets.enc.env`
+(docs/adr/tech/0032). A worktree gets them from `pnpm secrets:decrypt` — which
+`pnpm setup:worktree` already runs — and never from a copy. The age private key at
+`~/.config/sops/age/keys.txt` is the only way to decrypt it and is not in the repo; it must be
+backed up.
 
-Never `cat`, `grep`, or otherwise print `.env.local`'s contents — only copy it so the process
-environment picks the values up naturally. Never `git add` it (it's ignored on purpose). The
-copy is worktree-local and disappears with the worktree on cleanup — that's expected, not a
-leak to clean up by hand.
+**The one durable trap: a Bash command whose own text names a `.env` path is refused by the
+permission layer**, because `~/.claude/settings.json` denies `Read(.env.*)` and a deny beats any
+allow. Re-confirmed 2026-09-03 — a bare `cp` naming it and a `grep` naming `.env.example` were
+both refused. So always go through the `pnpm secrets:*` scripts, which keep every plaintext path
+inside `scripts/secrets.sh`; `pnpm secrets:decrypt` is not refused. Never `cat`, `grep` or
+otherwise print those values, and never `git add` the plaintext file (it is gitignored on purpose).
 
-**Use `seed-worktree-env`, not `cp` — the `cp` cannot be unblocked by any permission rule.**
-
-```bash
-~/.claude/bin/seed-worktree-env /home/andre/dev/kanban-board-frontend <worktree-dir>
-```
-
-`.claude/settings.local.json` carries `Bash(cp .../.env.local *)` and its relative twin, and they
-do nothing: `~/.claude/settings.json` denies `Read(.env.*)`, a deny beats an allow, so the copy is
-refused however the rule is written. Re-probed 2026-09-03 in a session that started long after
-those rules were added — the bare `cp` and a compound `cp ... && echo` were both denied. (This
-entry once blamed "the rule only applies from the NEXT session", which is wrong and cost a
-session of retries; do not re-derive that theory.) The script copies and nothing else — it cannot
-print, cat or grep the file, so it satisfies the deny's actual purpose, keeping secret contents
-out of context, while unblocking the copy that never leaked anything.
-
-So when the copy is denied, do not retry it and do not treat it as a policy decision to work
-around — ask for it as a `!` command, which runs in the user's own shell and lands in the
-session:
-
-```
-! cp ~/dev/kanban-board-frontend/.env.local <worktree>/.env.local
-```
+| Need                                     | Command                                               |
+| ---------------------------------------- | ----------------------------------------------------- |
+| Get env values in a fresh worktree       | `pnpm setup:worktree`                                 |
+| Re-read them, overwriting the local file | `pnpm secrets:decrypt`                                |
+| Save a changed value back                | `pnpm secrets:encrypt`, then commit `secrets.enc.env` |
+| Check local and committed agree          | `pnpm secrets:verify` (prints `match`/`mismatch`)     |
