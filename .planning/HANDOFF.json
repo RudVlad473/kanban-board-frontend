@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "timestamp": "2026-09-03T18:56:00.000Z",
+    "timestamp": "2026-09-03T22:31:31.734Z",
     "phase": "04",
     "phase_name": "Task & Subtask Workflow",
     "phase_dir": ".planning/phases/04-task-subtask-workflow",
@@ -31,104 +31,126 @@
             "id": 4,
             "name": "Blocking human phase sign-off checkpoint",
             "status": "in_progress",
-            "progress": "REVIEW-1..7 are now ALL closed (1-5 fixed, 6 fixed, 7 dissolved by the blank-row decision), plus two product-owner defects and one pre-existing dev-server blocker fixed. 14 commits 05af07f..882b1c8, all pushed. comments:check was added to the pre-commit hook after failing three separate CI runs in one session. CI is GREEN on all four jobs at 140367b (run 33794249733). The checkpoint is answerable for the first time; it has still never been answered."
+            "progress": "Still unanswered, and untouched this session. It has been answerable since 140367b. Phase 04 itself is complete and CI-green; only the sign-off is outstanding."
         }
     ],
     "remaining_tasks": [
         {
             "id": 5,
-            "name": "NEXT SESSION STARTS HERE: wire SOPS + age for local secrets, and prove gitleaks still behaves alongside it",
-            "status": "not_started"
-        },
-        {
-            "id": 6,
-            "name": "Verify or refute Finding B (cross-board column Retry writing to the wrong board) by driving the running app",
-            "status": "not_started"
-        },
-        {
-            "id": 7,
-            "name": "use-create-task.ts and use-create-column.ts carry REVIEW-2's stale-snapshot defect, knowingly unfixed",
-            "status": "not_started"
-        },
-        {
-            "id": 8,
             "name": "Answer the 04-22 human sign-off checkpoint (product owner only)",
             "status": "not_started"
         },
         {
+            "id": 6,
+            "name": "Read the finished spike report and act on it: .planning/quick/spike-pnpm-startup-and-pre-push-gates.md",
+            "status": "not_started"
+        },
+        {
+            "id": 7,
+            "name": "Pin the CI runtime layer (runner image, action SHAs, Node) + Dependabot + NEXT_TELEMETRY_DISABLED",
+            "status": "not_started"
+        },
+        {
+            "id": 8,
+            "name": "Wire the pre-push verify hook using the spike's timing numbers",
+            "status": "not_started"
+        },
+        {
             "id": 9,
-            "name": "Wire planning-tokens:check into CI once the 109 residual bare decision ids are cleared by hand",
+            "name": "Fail loudly when .env.local is missing (app + machine-tier PreToolUse hook)",
             "status": "not_started"
         },
         {
             "id": 10,
-            "name": "Diagnose the full-app smoke's unexplained intermittency, then decide on CI wiring",
+            "name": "Retire the three now-obsolete env-seeding workarounds on this machine",
+            "status": "not_started"
+        },
+        {
+            "id": 11,
+            "name": "Verify or refute Finding B (cross-board column Retry writing to the wrong board)",
+            "status": "not_started"
+        },
+        {
+            "id": 12,
+            "name": "use-create-task.ts and use-create-column.ts carry REVIEW-2's stale-snapshot defect, knowingly unfixed",
             "status": "not_started"
         }
     ],
     "blockers": [
         {
-            "description": "Finding B is unverified. A review agent claims BoardView never remounts across a board-to-board navigation, so retryColumnName survives and a column Retry writes board A's column name onto board B \u2014 a silent wrong write. Reading the code suggests it is REFUTED: app/(dashboard)/boards/[boardId]/page.tsx:65 renders <Suspense key={boardId}> around the subtree containing BoardView, which remounts on key change, and carries a comment saying exactly that. The agent said 'the page renders it unkeyed' \u2014 it is keyed one level up.",
+            "description": "A background spike agent was STILL RUNNING when this handoff was written (last transcript activity 00:23, handoff written 00:31). It had already written .planning/quick/spike-pnpm-startup-and-pre-push-gates.md at 00:11 and was continuing with Spike 2's expensive timings (build/test/e2e). That file may therefore be incomplete or may have grown after this handoff. Read it fresh; do not assume the version summarised here is final.",
             "type": "technical",
-            "workaround": "Drive it in the running app before dismissing: create two boards, fail a column create on A, navigate to B, and check whether the toast and its Retry survive."
+            "workaround": "Read the spike file in full before acting on it. If its Spike 2 section is missing per-gate timings or the aggregation comparison, the agent did not finish and those numbers must be re-measured before designing the pre-push hook."
         },
         {
-            "description": "use-create-task.ts and use-create-column.ts have the identical onError snapshot-restore shape that REVIEW-2 fixed in use-create-board.ts. Two concurrent creates on one board means the first one's failure erases the second one's success. Reported by the fix agent, deliberately left unfixed because it was outside the scope it was given.",
+            "description": "use-create-task.ts and use-create-column.ts have the identical onError snapshot-restore shape that REVIEW-2 fixed in use-create-board.ts. Two concurrent creates on one board means the first one's failure erases the second one's success. Known, deliberately left unfixed as out of scope.",
             "type": "technical",
             "workaround": "Apply the same reconcile-don't-restore change (remove only this mutation's own clientId row) that f49de3e made to use-create-board.ts."
         },
         {
-            "description": "CORRECTED 2026-09-03: the claim that a local e2e run wipes the shared nonprod backend has been FALSE since 5f325f8 (quick task 260829-kyv). deleteSeededUsers() posts {userIds:[...]} for targeted deletion from a per-run, per-runner registry; fullReset() is manual-only and nothing automated calls it; probeResetCapability() refuses to start the suite against a backend still serving the old wiping contract. What remains true: the shared backend evicts accounts mid-session, so an account that signs in at 200 can 401 three minutes later \u2014 a real non-code failure signature in CI e2e.",
-            "type": "external",
-            "workaround": "Do not fence local e2e off from concurrent CI on wipe grounds. When a CI e2e job fails on a 401 or vanished data, suspect eviction/shared-backend flakiness and re-run the job before hunting a code defect."
+            "description": "Finding B is unverified. A review agent claimed BoardView never remounts across a board-to-board navigation, so retryColumnName survives and a column Retry writes board A's column name onto board B. Reading the code suggests it is REFUTED: app/(dashboard)/boards/[boardId]/page.tsx:65 renders <Suspense key={boardId}> around the subtree containing BoardView.",
+            "type": "technical",
+            "workaround": "Drive it in the running app: create two boards, fail a column create on A, navigate to B, check whether the toast and its Retry survive."
+        },
+        {
+            "description": "board-view.test.tsx:943 (MOBILE scroll position, 'expected 2 to be +0') failed one CI run and passed on rerun of the identical commit, during a task that touched nothing under src/, app/ or e2e/. Suspected: a synchronous read against a still-settling smooth scroll, the same shape as two races this repo already fixed by polling.",
+            "type": "technical",
+            "workaround": "Filed at .planning/todos/pending/2026-09-03-board-view-column-row-scroll-rollback-test-is-flaky-on-ci.md. Treat a repeat as environmental until proven otherwise, but fix it by polling rather than by rerunning."
         }
     ],
     "async_jobs": [],
     "human_actions_pending": [
         {
             "action": "Approve or reject Phase 04 at the 04-22 checkpoint",
-            "context": "Presented 2026-09-03 and still unanswered. It is now answerable for the first time: the REVIEW-1 finding that negated the approved D-05 trade-off is fixed. Do not mark Phase 04 complete in ROADMAP.md and do not run /gsd-verify-work until they answer.",
+            "context": "Presented 2026-09-03, still unanswered, untouched this session. Answerable since REVIEW-1 was fixed. Do not mark Phase 04 complete in ROADMAP.md and do not run /gsd-verify-work until answered.",
             "blocking": true
         },
         {
-            "action": "Decide whether to fix the two sibling hooks carrying REVIEW-2's defect now or file them",
-            "context": "Known live bug, scoped out of the agent's brief rather than judged unimportant.",
+            "action": "Back up ~/.config/sops/age/keys.txt off this machine",
+            "context": "It is now the ONLY key to the committed ciphertext in secrets.enc.env. The existing .env.local on disk is the fallback that makes losing it survivable today; that fallback does not exist on a fresh clone.",
+            "blocking": false
+        },
+        {
+            "action": "Retire three now-obsolete workarounds on this machine",
+            "context": "~/.claude/bin/seed-worktree-env, the Bash(cp .../.env.local *) rules in .claude/settings.local.json, and the machine-memory entry describing that workaround. KEEP its durable half: a Bash command whose text names a .env path is still refused by the permission layer. Also: the stranded worktree .claude/worktrees/agent-ad99257c01d94ec72 still holds a plaintext env copy on disk.",
             "blocking": false
         }
     ],
     "decisions": [
         {
-            "decision": "A blank subtask or column row BLOCKS the submit; consequently both create modals open with ZERO rows instead of the mock's seeded two/one",
-            "rationale": "Product owner submitted a task carrying a blank subtask row and reported it as a defect, reversing 04-UI-SPEC.md's dropped-row reading. The row count and the blank-row rule cannot be chosen independently: keeping the seeded rows would open the modal invalid and charge two deletions for every subtask-less task. This also closes defect #2 from the earlier batch, which nobody could reproduce \u2014 the screenshot WAS the repro.",
+            "decision": "Commit the REAL nonprod secret values, age-encrypted, rather than placeholders",
+            "rationale": "User-chosen after being shown the trade. Only this shape pays off: it deletes the Read(.env.*) deny friction, the seed-worktree-env wrapper, and worktree env seeding entirely, because the encrypted file arrives via git. A placeholder file keeps all three problems. Accepted: ciphertext of real nonprod credentials is in git history permanently, and rotation means re-encrypt + commit.",
+            "phase": "quick-260903-ttt"
+        },
+        {
+            "decision": "The gitleaks allowlist for secrets.enc.env is by-path only, and ships paired with an encryption assertion",
+            "rationale": "An allowlisted path with no assertion that the file is genuinely encrypted is exactly how a plaintext secret ships silently later. pnpm secrets:check asserts SOPS ciphertext, runs on the INDEX in pre-commit and on disk in CI, and also fails if the paths literal stops matching its copy in the script. Neither half ships alone.",
+            "phase": "quick-260903-ttt"
+        },
+        {
+            "decision": "ci.yml is the single source of truth for the gitleaks version; the install script and the drift guard parse it",
+            "rationale": "CI's scanner was UNPINNED — gitleaks-action installs the latest release at run time, so the enforced rule set changed between runs with nothing in the repo recording which one passed. Pinned to 8.30.1. The version literal appears exactly once so local and CI cannot diverge.",
+            "phase": "quick-260903-ttt"
+        },
+        {
+            "decision": "Local e2e belongs in the default pre-push tier, with an explicit agent-facing callout",
+            "rationale": "User's call, made after a stale claim was corrected: local e2e does NOT wipe the shared nonprod backend. Since 5f325f8 resets are targeted per user id from a per-run registry; fullReset() is manual-only; probeResetCapability() refuses to start against a backend still serving the old wiping contract. CI's e2e job is ~1m41s for 57 specs, so the time cost is acceptable.",
             "phase": "04"
         },
         {
-            "decision": "Split isSessionPayload into isUpstreamIdentity (upstream body) and isSessionPayload (our own cookie)",
-            "rationale": "One guard was doing two jobs. The backend answers POST /signup with \"displayName\": null for a nameless account \u2014 a shape the generated contract's `displayName?: string` never declares \u2014 so demanding a string reported a CREATED account as failed and burned the email address. Every e2e sign-up fixture fills the Name field, which is exactly why it shipped.",
+            "decision": "The full test suite does NOT go on pre-commit",
+            "rationale": "Pre-commit is for the irreversible or the cheap; pre-push is for the expensive and correctness-related. A secret in a commit needs history rewriting, so it belongs on pre-commit. A failing test does not. Decisive here: this repo does TDD with RED commits, where a commit containing a failing test is a supported workflow — a full-suite pre-commit gate makes red-green-refactor impossible without --no-verify and trains bypass reflex.",
             "phase": "04"
         },
         {
-            "decision": "A toast dismisses on a tap anywhere on its card, excluding interactive descendants",
-            "rationale": "REVIEW-1 made the create-failure toasts permanent, and at mobile width the card covers the sidebar's + Create New Board control. Retry is excluded because until it fires the toast holds the only copy of the user's typed values, so a body-dismiss firing on Retry would destroy what Retry replays.",
-            "phase": "04"
-        },
-        {
-            "decision": "Tailwind must not scan worktree copies of .planning",
-            "rationale": "Planning docs write utility classes with literal placeholders; the scanner turns them into unparseable CSS and a stylesheet that fails to parse 500s every dev page. A worktree is scanned as its OWN root, so its .planning is reached through neither the outer .gitignore nor the existing @source rule \u2014 meaning local dev broke for as long as any worktree existed, which is now the normal state.",
-            "phase": "04"
-        },
-        {
-            "decision": "comments:check runs in the pre-commit hook, not only in CI",
-            "rationale": "It failed three separate CI runs in one session, each time on a comment the hook had already let through, and each failure cost a full red run plus the skipped visual and e2e jobs behind it. The hook ran 2 of CI's 11 gate scripts; this closes the cheapest and most frequently hit part of that gap.",
-            "phase": "04"
-        },
-        {
-            "decision": "CLOSED, not reproducible: the reported 'sign in / sign up causes a full page reload'",
-            "rationale": "Measured soft on every path 2026-09-03: landing -> /login -> /register -> /login, both refusal paths, both success paths and sign-out all stayed on ONE document (navCount 1, a window marker survived every hop, RSC fetches 36-73ms). /login and /register share app/(auth)/layout.tsx so only the page segment swaps, and e2e/auth.e2e.spec.ts already asserts this and passes. The product owner then could not reproduce it either and ruled it out. Do NOT re-open without a fresh repro \u2014 the leading hypothesis was a whole-tree hydration mismatch from a client-only `vc-init` class on <body> (Vercel Toolbar or a browser extension), which re-renders everything and looks identical to a reload.",
-            "phase": "04"
+            "decision": "pnpm was starting twice; global pnpm realigned to the repo's packageManager pin",
+            "rationale": "Global pnpm was 11.22.0 while package.json pins 11.20.0. pnpm 11's switchCliVersion sees the mismatch and re-executes the entire CLI as a synchronous child process, so every invocation in this repo paid two full pnpm boots. npm install -g pnpm@11.20.0 took pnpm --version from ~1991ms to ~669ms (orchestrator re-verified: 0.74-0.81s). None of the suspected causes (nvm prefix conflict, NODE_OPTIONS, shell function, /mnt/c, store size) were responsible.",
+            "phase": "spike"
         }
     ],
-    "uncommitted_files": [],
-    "next_action": "Wire SOPS + age for local secret management, and prove gitleaks still behaves alongside it. Recommended shape: `age-keygen -o ~/.config/sops/age/keys.txt`; commit an encrypted `secrets.enc.env`; launch via `sops exec-env secrets.enc.env 'pnpm dev'`. Expect gitleaks' entropy-based generic-api-key rule to fire on the base64 ciphertext \u2014 allowlist the file BY PATH ONLY, and pair that allowlist with a pre-commit assertion that the file really is encrypted (`grep -q 'ENC\\[AES256_GCM' secrets.enc.env`), because an allowlisted path is exactly how a plaintext secret later ships silently. Landing this deletes three existing problems: the Read(.env.*) deny, the ~/.claude/bin/seed-worktree-env wrapper, and worktree env seeding entirely (the encrypted file arrives via git).",
-    "context_notes": "Phase 04's remaining review debt is CLEARED: REVIEW-1..5 fixed by a sequential agent in one worktree (they shared files), REVIEW-6 fixed by a parallel agent, REVIEW-7 dissolved. All five REVIEW-1..5 findings were CONFIRMED \u2014 none refuted \u2014 but REVIEW-6's finding named the WRONG FILE (subtask-editor-row.tsx; the checkbox row is subtask-checklist-row.tsx), so keep treating review findings as claims. The session's throughline was that a contract change is not done when its own tests pass: changing the create modals to seed zero rows was verified against component tests, and CI then went red on three e2e specs that filled `Column 1`/`Subtask 1` \u2014 a grep of e2e/ would have caught it and was not run. Twice I reported CI green before it was. Two process learnings were recorded globally: agents must run the WHOLE suite plus the repo's full CI gate list (derived from .github/workflows, never the pre-commit hook, which runs 2 of 11), and a batch of reported bugs is parallel work partitioned by FILE SET, not a queue. Do NOT delete .claude/worktrees/agent-ad99257c01d94ec72 \u2014 it holds the only copy of the uncommitted test-coverage setup, tracked in .planning/todos/pending/."
+    "uncommitted_files": [
+        ".planning/quick/spike-pnpm-startup-and-pre-push-gates.md"
+    ],
+    "next_action": "Read .planning/quick/spike-pnpm-startup-and-pre-push-gates.md in full — it may have grown after this handoff was written, since the spike agent was still running. Verify its Spike 2 section actually contains per-gate timings and the three-way aggregation comparison; if not, re-measure before designing anything. Then pick up the CI runtime pinning todo (folding NEXT_TELEMETRY_DISABLED into it, same workflow env: surface), which is the highest-severity open item and independent of everything else.",
+    "context_notes": "This session did NOT touch Phase 04 itself. It ran quick task 260903-ttt (SOPS + age local secrets, local/CI gitleaks parity) end to end: 4 commits f1b613f..153c096 plus docs at adc6edf, CI green on all four jobs at 153c096 (run 33805069347, conclusions read back per job by the orchestrator, not taken on the executor's report). Guards were re-verified independently: secrets:check, gitleaks:check and secrets:verify all exit 0, and 16 guard unit tests pass in vitest's `node` project (note: scripts/**/*.unit.test.mjs run in the `node` project, NOT `unit` — an easy wrong-project mistake). The session's recurring theme was stale claims: a project memory entry asserted local e2e wipes the shared backend, which had been false since 5f325f8, and repeating it produced a wrong recommendation until the user challenged it. The memory and the previous HANDOFF blocker were rewritten. Before repeating any memory's claim in a recommendation, check it against the code it describes. Five todos were filed this session: CI runtime pinning, loud failure on missing .env.local, pre-push verify tiers, NEXT_TELEMETRY_DISABLED, and the board-view scroll flake. Next.js telemetry was disabled on this box (machine state only — CI and fresh clones still opt in, hence the todo)."
 }
