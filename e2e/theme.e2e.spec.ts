@@ -20,6 +20,16 @@ const ACCOUNT_DISPLAY_NAME = "Theme Fixture Tester";
 
 const readBodyBackgroundColor = (page: Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
+/*
+ * `07e7969` gave every element a 200ms colour transition, so a single read taken right after the
+ * click returns the interpolated value — at t=0 that is the START colour, which is why a synchronous
+ * read reported "unchanged" on five consecutive CI runs. Poll until the transition has landed.
+ */
+const expectBodyBackgroundColor = ({ page, not, color }: { page: Page; not: boolean; color: string }) =>
+    not
+        ? expect.poll(() => readBodyBackgroundColor(page)).not.toBe(color)
+        : expect.poll(() => readBodyBackgroundColor(page)).toBe(color);
+
 const isDarkScopeApplied = (html: string) => /<html[^>]*\bclass="[^"]*\bdark\b[^"]*"/.test(html);
 
 /*
@@ -74,8 +84,7 @@ test.describe("THEME-01: theme persistence", () => {
 
         // Assert — toggling changes the toggle state, a visible surface colour, and the cookie.
         await expect(toggle).toHaveAttribute("aria-checked", initialChecked === "true" ? "false" : "true");
-        const toggledColor = await readBodyBackgroundColor(page);
-        expect(toggledColor).not.toBe(initialColor);
+        await expectBodyBackgroundColor({ page, not: true, color: initialColor });
         await waitForThemeCookie({ page, theme: toggledTheme });
 
         // Act
@@ -120,8 +129,7 @@ test.describe("THEME-01: theme persistence", () => {
 
         // Assert — both the interface and the persisted preference return to where they started.
         await expect(toggleAfterSignIn).toHaveAttribute("aria-checked", initialChecked ?? "false");
-        const finalColor = await readBodyBackgroundColor(page);
-        expect(finalColor).toBe(initialColor);
+        await expectBodyBackgroundColor({ page, not: false, color: initialColor });
         await waitForThemeCookie({ page, theme: originalTheme });
         const finalReloadResponse = await page.reload();
         if (!finalReloadResponse) {
