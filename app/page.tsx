@@ -1,4 +1,6 @@
-// Covered by: nothing to test — the public landing route, which no test navigates to
+// Covered by: `e2e/auth.e2e.spec.ts`
+import Link from "next/link";
+
 import { ROUTE } from "@/lib/core/routing/routes";
 
 /*
@@ -16,19 +18,13 @@ const Home = () => {
                 </p>
 
                 <div className="flex gap-4">
-                    {/*
-                     * Plain anchors, not next/link's `Link` — a one-time transition, and
-                     * next/link needs `process.env`, undefined in Vitest Browser Mode (see 01-12-SUMMARY.md).
-                     */}
-                    {/* eslint-disable-next-line no-restricted-syntax -- see comment above */}
-                    <a href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">
+                    <Link href={ROUTE.SIGN_IN} className="text-bg-primary hover:text-bg-primary-hover">
                         Sign In
-                    </a>
+                    </Link>
 
-                    {/* eslint-disable-next-line no-restricted-syntax -- see comment above */}
-                    <a href={ROUTE.SIGN_UP} className="text-bg-primary hover:text-bg-primary-hover">
+                    <Link href={ROUTE.SIGN_UP} className="text-bg-primary hover:text-bg-primary-hover">
                         Create Account
-                    </a>
+                    </Link>
                 </div>
             </div>
         </div>

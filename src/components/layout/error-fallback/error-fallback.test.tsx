@@ -7,9 +7,13 @@ import { render } from "vitest-browser-react";
 
 import { ROUTE } from "@/lib/core/routing/routes";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { createNextLinkShim } from "@/test-utils/next-router-shims";
 
 import { ErrorFallback } from "./error-fallback";
 import * as stories from "./error-fallback.stories";
+
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode
+vi.mock("next/link", () => createNextLinkShim());
 
 const { Default, WithReference, WithoutHomeLink } = composeStories(stories);
 

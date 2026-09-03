@@ -263,4 +263,12 @@ test.describe("AUTH-05: the sign-in and sign-up cross-links", () => {
     test("moves from sign up to sign in without a full page load", async ({ page }) => {
         await navigatesWithoutReloading({ page, from: ROUTE.SIGN_UP, linkName: "Sign In", to: ROUTE.SIGN_IN });
     });
+
+    test("moves from the landing page to sign in without a full page load", async ({ page }) => {
+        await navigatesWithoutReloading({ page, from: ROUTE.HOME, linkName: "Sign In", to: ROUTE.SIGN_IN });
+    });
+
+    test("moves from the landing page to sign up without a full page load", async ({ page }) => {
+        await navigatesWithoutReloading({ page, from: ROUTE.HOME, linkName: "Create Account", to: ROUTE.SIGN_UP });
+    });
 });
