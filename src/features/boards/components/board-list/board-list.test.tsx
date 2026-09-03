@@ -121,6 +121,7 @@ describeForEachDevice({
             // No stub reset here: The global `afterEach` resets every registered stub centrally.
             mockPush.mockClear();
             mockReplace.mockClear();
+            mockRefresh.mockClear();
             currentPathname.value = ROUTE.BOARDS;
         });
 
@@ -212,6 +213,35 @@ describeForEachDevice({
 
             // Assert
             expect(await screen.findByRole("dialog")).toBeInTheDocument();
+        });
+
+        /*
+         * The board route is read server-side, so a read that resolves before the columns exist
+         * renders an empty board — and the fan-out's own `refresh()` can land on the route being left.
+         */
+        it("refreshes the route it navigated to once the column fan-out has settled", async () => {
+            // Arrange
+            await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [] });
+            createBoardColumnsStub.hold();
+
+            // Act — navigate first, with the fan-out demonstrably still unresolved.
+            await submitNewBoard({ name: "Launch", columns: ["Todo"] });
+            await vi.waitFor(() => {
+                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
+            });
+
+            // Assert — nothing refreshed yet, so a refresh seen later cannot be the navigation's own.
+            expect(mockRefresh).not.toHaveBeenCalled();
+
+            // Act
+            createBoardColumnsStub.settle();
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(mockRefresh).toHaveBeenCalled();
+            });
         });
 
         it("closes the modal, navigates to the new board and raises no toast when every column lands", async () => {

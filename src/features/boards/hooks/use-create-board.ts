@@ -213,6 +213,13 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
 
         if (names.length > 0) {
             void createColumns({ boardId, names }).then((failedNames) => {
+                /*
+                 * The navigation above races this fan-out: the new board's RSC read can resolve
+                 * before the columns exist, and the action's own `refresh()` then lands on the route
+                 * being LEFT. This one is ordered after the columns, on whatever route is now open.
+                 */
+                router.refresh();
+
                 if (failedNames.length > 0) {
                     raiseColumnFailureToast({ boardId, failedNames });
                 }
