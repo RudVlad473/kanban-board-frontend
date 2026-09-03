@@ -16,6 +16,7 @@
         "folders:check": "node scripts/check-component-folders.mjs",
         "actions:check": "node scripts/check-action-verbs.mjs",
         "coverage:check": "node scripts/check-coverage-pointers.mjs",
+        "secrets:check": "node scripts/check-secrets-encrypted.mjs",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "prepare": "husky",

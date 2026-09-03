@@ -125,6 +125,13 @@ jobs:
             - name: Coverage pointer check
               run: pnpm coverage:check
 
+            # In `quality` rather than `secrets` because the `secrets` job deliberately has no
+            # Node/pnpm setup. Without this step the assertion pairing gitleaks' allowlist entry
+            # would run only in a local hook, and a machine without that hook could push plaintext
+            # straight past the allowlisted scan (docs/adr/tech/0032).
+            - name: Encrypted secrets check
+              run: pnpm secrets:check
+
             - name: API types drift
               run: |
                   pnpm api:generate

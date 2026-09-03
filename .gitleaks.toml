@@ -4,16 +4,39 @@ title = "kanban-board-frontend gitleaks configuration"
 # https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml for what "default" means.
 # Detected automatically by the gitleaks CLI (and by gitleaks-action, which shells out to the same
 # CLI) as `.gitleaks.toml` at the repo root — no explicit `--config`/`GITLEAKS_CONFIG` wiring
-# needed in CI (see .github/workflows/ci.yml's `secrets` job).
+# needed in CI (see .github/workflows/ci.yml's `secrets` job) or in `pnpm secrets:scan`.
 [extend]
 useDefault = true
 
-# No [[rules.allowlist]] entries below. GC-06's plan anticipated pnpm-lock.yaml and the committed
-# OpenAPI contract JSON under docs/api/ as likely standing false positives (integrity hashes and
-# example/schema values respectively can resemble credential shapes). Both were verified empirically
-# during this plan's Task 1 (a full working-tree scan with this exact config, and a full git-history
-# scan — see 01-18-SUMMARY.md) and produced zero findings under the default rule set. Per this
-# project's own rule ("allowlist nothing on suspicion; every entry carries a one-line reason"),
-# adding entries for a false positive that does not currently occur would itself be an unjustified
-# entry. If a future gitleaks rule update starts flagging either path, add a scoped allowlist entry
-# here then, with the reason recorded next to it.
+# Project rule: allowlist nothing on suspicion; every entry carries a one-line reason. There is
+# exactly one entry, below.
+#
+# Measured 2026-09-03 with gitleaks 8.30.1: the committed ciphertext produces ZERO findings under
+# the default rule set today, so this entry suppresses nothing right now. It is kept anyway, which
+# is a departure from the "add it when a rule actually fires" line below, for one reason: this is
+# not a file that merely resembles credentials, it is credential material by construction and will
+# be for as long as it exists. Proven load-bearing rather than assumed: a fabricated
+# credential-shaped literal placed in that file was invisible to gitleaks with this entry, while
+# the same literal at a non-allowlisted path reported 1 finding.
+#
+# Decisions ─────────────────────────────────────────────────────────────────────────────────────
+# The entry is safe ONLY because it is paired with `pnpm secrets:check`, which asserts that every
+# assignment in that file is SOPS ciphertext. Allowlisting removes the path from the only automated
+# secret scan, so without the assertion this is a hole; with it, the two are one mechanism. The
+# assertion runs on the INDEX in .husky/pre-commit and on disk in CI's `quality` job, and it also
+# fails if the `paths` literal below stops matching its copy in
+# scripts/check-secrets-encrypted.mjs — the halves cannot silently drift apart. Rationale and the
+# rejected alternatives are in docs/adr/tech/0032.
+#
+# Anchored and path-only on purpose: not a directory prefix, not a regex over content, one file.
+# The singular `[allowlist]` table is used rather than `[[allowlists]]`, which does not parse
+# before gitleaks 8.19 — with GITLEAKS_VERSION pinned to 8.30.1 in ci.yml that matters less than
+# it did, but it removes config-syntax skew as a variable if the pin is ever moved down.
+#
+# Full-history and tracked-content scans reported the same counts with this entry as without it
+# (0 and 0). False if either count ever moves without the tree moving, or if a pin bump makes the
+# default rule set start flagging the ciphertext — at which point this entry stops being
+# pre-emptive and the note above should be rewritten to say so.
+[allowlist]
+description = "SOPS/age ciphertext by construction; plaintext there is refused by `pnpm secrets:check`"
+paths = ['''^secrets\.enc\.env$''']
