@@ -42,10 +42,9 @@ export const SubtaskChecklistRow = ({ subtask, onToggle, isPending }: Props) => 
             <Field.Label
                 className={cn(
                     /*
-                     * Padding, not `self-center`: centring only bites while the row has slack to
-                     * spend, so a wrapped title spent it and carried its first line 4.5px above the
-                     * checkbox. Reserving the same 4.5px — half of (40px row − 16px
-                     * padding − 15px line) — puts the first line in one place whether it wraps or not.
+                     * Padding, not `self-center`: centring only bites while the row has slack, so a
+                     * wrapped title spent it and carried its first line 4.5px above the checkbox.
+                     * Reserving that 4.5px pins the first line whether the title wraps or not.
                      */
                     "py-[4.5px] font-body-m text-body-m text-text-primary",
                     /*
