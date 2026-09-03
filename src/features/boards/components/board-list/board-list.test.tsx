@@ -411,6 +411,39 @@ describeForEachDevice({
         });
 
         /*
+         * The concurrent case a snapshot rollback cannot serve: the second create is in the cache
+         * entry but not in the first one's snapshot, so restoring that snapshot deletes it.
+         */
+        it("keeps a board that landed while an earlier create was still in flight and then failed", async () => {
+            // Arrange — the first create is held unresolved, so the second runs on top of it.
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            createBoardStub.hold();
+            await submitNewBoard({ name: "Doomed", columns: [] });
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(1);
+            });
+
+            // Act — the second create lands while the first is still flying, then the first refuses.
+            createBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ id: STUB_BOARD_ID, name: "Survivor" }),
+            });
+            await submitNewBoard({ name: "Survivor", columns: [] });
+            await vi.waitFor(() => {
+                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
+            });
+            createBoardStub.settle();
+
+            // Assert — only the refused row is withdrawn; the landed one survives its rollback.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+            });
+            expect(getRenderedBoardNames()).toEqual(["Survivor", ...namesBefore]);
+        });
+
+        /*
          * The Retry is the ONLY route back to the typed name and rows, so a toast that expires
          * takes the whole attempt with it. Fake timers reach Base UI's `setTimeout`.
          */

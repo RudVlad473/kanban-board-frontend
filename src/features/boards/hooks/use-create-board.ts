@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
-import { toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
+import { removeBoard, toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -83,25 +83,26 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
         },
         retry: false,
 
+        /* No snapshot taken: `onError` below reconciles by `clientId`, so there is nothing to restore. */
         onMutate: async ({ clientId, name }: CreateBoardVariables) => {
             // Or an in-flight read could land on top of the optimistic list and undo it.
             await queryClient.cancelQueries({ queryKey: BOARDS_QUERY_KEY });
-            const previousBoards = queryClient.getQueryData<Board[]>(BOARDS_QUERY_KEY);
 
             /* `version: 0` is inert placeholder filler — the server owns it, and success replaces it. */
             queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
                 withBoardInsert({ boards: current ?? [], board: { id: clientId, name, version: 0 } }),
             );
-
-            return { previousBoards };
         },
 
-        /* The rollback only; `createBoard` below raises the toast, which needs the refusal's status. */
+        /*
+         * Removes THIS create's own row, never restores a snapshot: a second create that landed
+         * while this one flew is in the entry but not in that snapshot, and would be erased with it.
+         */
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
-        onError: (_error: unknown, _variables, context) => {
-            if (context?.previousBoards !== undefined) {
-                queryClient.setQueryData(BOARDS_QUERY_KEY, context.previousBoards);
-            }
+        onError: (_error: unknown, { clientId }: CreateBoardVariables) => {
+            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+                current === undefined ? current : removeBoard({ boards: current, boardId: clientId }),
+            );
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)
