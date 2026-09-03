@@ -128,10 +128,9 @@ const ToastList = () => {
                         key={toast.id}
                         toast={toast}
                         /*
-                         * Tapping the card dismisses it, so a toast that has no auto-dismiss can be
-                         * cleared without hunting the 24px Close glyph — it sits over the sidebar's
-                         * create control at mobile width. Interactive descendants are excluded, or
-                         * Retry would dismiss the very toast holding the values it replays.
+                         * The whole card dismisses, because a toast with no auto-dismiss sits over
+                         * the sidebar's create control at mobile width. Interactive descendants are
+                         * excluded, or Retry would dismiss the toast holding the values it replays.
                          */
                         onClick={(event) => {
                             if (event.target instanceof Element && event.target.closest("button, a")) {

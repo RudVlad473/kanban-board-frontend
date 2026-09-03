@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "timestamp": "2026-09-03T16:46:42.195Z",
+    "timestamp": "2026-09-03T18:49:31.317Z",
     "phase": "04",
     "phase_name": "Task & Subtask Workflow",
     "phase_dir": ".planning/phases/04-task-subtask-workflow",
@@ -16,28 +16,28 @@
             "id": 4,
             "name": "Blocking human phase sign-off checkpoint",
             "status": "in_progress",
-            "progress": "CI is green at f56e21b (all four jobs, run 33775721817). Both mock divergences task 3 raised were re-measured in the running app and are RESOLVED. The checkpoint was presented once and is still unanswered. Since then the product owner reported 7 NEW defects from driving the app; 6 are fixed and shipped, and a three-way code review then found 7 more, one of which negates the trade-off they approved."
+            "progress": "REVIEW-1..7 are now ALL closed (1-5 fixed, 6 fixed, 7 dissolved by the blank-row decision), plus two new product-owner defects fixed. 12 commits 05af07f..2bb3a7c, all pushed. The checkpoint is answerable for the first time; it has still never been answered."
         }
     ],
     "remaining_tasks": [
         {
             "id": 5,
-            "name": "REVIEW-1 (HIGH): failure toasts auto-dismiss at 5s, destroying the only copy of the user's typed values",
+            "name": "NEXT SESSION STARTS HERE: wire SOPS + age for local secrets, and prove gitleaks still behaves alongside it",
             "status": "not_started"
         },
         {
             "id": 6,
-            "name": "REVIEW-2 (HIGH): use-create-board onError restores a whole stale snapshot, erasing a later successful create",
+            "name": "Unresolved product-owner report: 'sign in sign up still causes full page reload' — could not reproduce; needs an incognito/extensions-off check",
             "status": "not_started"
         },
         {
             "id": 7,
-            "name": "REVIEW-3 (MED-HIGH): toast ids drop retry payload; column id omits boardId entirely",
+            "name": "Verify or refute Finding B (cross-board column Retry writing to the wrong board) by driving the running app",
             "status": "not_started"
         },
         {
             "id": 8,
-            "name": "REVIEW-4..7 (MED/LOW): cross-board Retry dead button + stranded modalBoardId; board-create navigation/fan-out race; wrapped-title checkbox 4.5px low; blank subtask rows dropped from Retry prefill",
+            "name": "use-create-task.ts and use-create-column.ts carry REVIEW-2's stale-snapshot defect, knowingly unfixed",
             "status": "not_started"
         },
         {
@@ -58,62 +58,67 @@
     ],
     "blockers": [
         {
-            "description": "REVIEW-1 defeats the D-05 reversal the product owner explicitly approved. They accepted close-on-submit ONLY because a rollback toast's Retry reopened the modal prefilled. That toast auto-dismisses after 5s (app/layout.tsx:27 mounts ToastProvider with no timeout; Base UI default is 5000), and retryValues/retryColumnName are null until Retry fires — so after 6s the whole form is unrecoverable. Verified twice: by a reviewer that ran it, and by reading the provider and the Base UI default.",
-            "type": "technical",
-            "workaround": "Pass an explicit no-auto-dismiss timeout for the danger/create-failure toasts. use-create-task.ts:76 ALREADY claims 'The failure toast has no auto-dismiss' — the comment is false and describes the intended behaviour."
-        },
-        {
-            "description": "Product owner's defect #2 ('creating task still allows submission with empty input') could not be reproduced and was deliberately NOT changed. Empty title and whitespace-only title are both blocked with ZERO network requests; blank subtask rows are accepted and dropped by design. Awaiting a repro before touching it.",
+            "description": "'sign in sign up still causes full page reload' is reported but not reproducible. Measured soft on every path: landing -> /login -> /register -> /login, both refusal paths, both success paths and sign-out all stayed on ONE document (navCount 1, a window marker survived every hop, RSC fetches 36-73ms). /login and /register share app/(auth)/layout.tsx so only the page segment swaps, and e2e already asserts this and passes. Only lead: the dev log shows a whole-tree hydration mismatch from a client-only `vc-init` class on <body> (Vercel Toolbar or a browser extension), which makes React discard the server HTML and re-render everything — visually identical to a reload, and absent under headless Playwright.",
             "type": "human_action",
-            "workaround": "Ask which field and which modal. A real adjacent inconsistency was found: a whitespace-only title shows the counter as '3/32' (satisfied) while the field is invalid, because the counter counts characters the validator trims."
+            "workaround": "Ask the product owner to retry in an incognito window with extensions disabled. If it still reproduces there, the measurements above are wrong and the investigation restarts."
         },
         {
-            "description": "A local e2e run wipes the shared nonprod backend via /admin/reset and will fail any CI e2e job in flight. Ports 3000/3001/6007 were freed at pause time.",
+            "description": "Finding B is unverified. A review agent claims BoardView never remounts across a board-to-board navigation, so retryColumnName survives and a column Retry writes board A's column name onto board B — a silent wrong write. Reading the code suggests it is REFUTED: app/(dashboard)/boards/[boardId]/page.tsx:65 renders <Suspense key={boardId}> around the subtree containing BoardView, which remounts on key change, and carries a comment saying exactly that. The agent said 'the page renders it unkeyed' — it is keyed one level up.",
+            "type": "technical",
+            "workaround": "Drive it in the running app before dismissing: create two boards, fail a column create on A, navigate to B, and check whether the toast and its Retry survive."
+        },
+        {
+            "description": "use-create-task.ts and use-create-column.ts have the identical onError snapshot-restore shape that REVIEW-2 fixed in use-create-board.ts. Two concurrent creates on one board means the first one's failure erases the second one's success. Reported by the fix agent, deliberately left unfixed because it was outside the scope it was given.",
+            "type": "technical",
+            "workaround": "Apply the same reconcile-don't-restore change (remove only this mutation's own clientId row) that f49de3e made to use-create-board.ts."
+        },
+        {
+            "description": "A local e2e run wipes the shared nonprod backend via /admin/reset and will fail any CI e2e job in flight. Also observed: the shared backend deletes accounts mid-session, so an account that signed in at 200 can 401 three minutes later.",
             "type": "external",
-            "workaround": "Check no CI e2e job is running before starting a local e2e run."
+            "workaround": "Check no CI e2e job is running before starting a local e2e run. Ports 3000/3001/6007 were freed at pause time and the Playwright MCP browser was closed."
         }
     ],
     "async_jobs": [],
     "human_actions_pending": [
         {
+            "action": "Retry the 'full page reload' on sign in / sign up in an incognito window with extensions off",
+            "context": "Blocks the only product-owner report from this session that was not resolved. Four independent measurements say the navigation is soft; the extension hypothesis is the remaining explanation and only the product owner can test it.",
+            "blocking": false
+        },
+        {
             "action": "Approve or reject Phase 04 at the 04-22 checkpoint",
-            "context": "Presented once with CI green; still unanswered. Do not mark Phase 04 complete in ROADMAP.md and do not run /gsd-verify-work until they answer. Note the review findings landed AFTER it was presented, so the checkpoint should arguably be re-presented once REVIEW-1..3 are fixed.",
+            "context": "Presented 2026-09-03 and still unanswered. It is now answerable for the first time: the REVIEW-1 finding that negated the approved D-05 trade-off is fixed. Do not mark Phase 04 complete in ROADMAP.md and do not run /gsd-verify-work until they answer.",
             "blocking": true
         },
         {
-            "action": "Supply a repro for defect #2, or agree to drop it",
-            "context": "Blocks the only one of the seven reported defects that was not fixed.",
+            "action": "Decide whether to fix the two sibling hooks carrying REVIEW-2's defect now or file them",
+            "context": "Known live bug, scoped out of the agent's brief rather than judged unimportant.",
             "blocking": false
         }
     ],
     "decisions": [
         {
-            "decision": "Reverse D-05: all three creates (task, board, column) close the modal at submit; a refusal rolls back and raises a toast whose Retry reopens the modal prefilled",
-            "rationale": "Product owner drove the running app 2026-09-03 and reported creates as feeling non-optimistic. They were shown the input-loss trade-off explicitly and chose the Retry-prefill option over plain close+toast. Recorded in 02-UI-SPEC.md, 03-UI-SPEC.md and 04-UI-SPEC.md.",
+            "decision": "A blank subtask or column row BLOCKS the submit; consequently both create modals open with ZERO rows instead of the mock's seeded two/one",
+            "rationale": "Product owner submitted a task carrying a blank subtask row and reported it as a defect, reversing 04-UI-SPEC.md's dropped-row reading. The row count and the blank-row rule cannot be chosen independently: keeping the seeded rows would open the modal invalid and charge two deletions for every subtask-less task. This also closes defect #2 from the earlier batch, which nobody could reproduce — the screenshot WAS the repro.",
             "phase": "04"
         },
         {
-            "decision": "Auth forms gate the POST on client validation; action={dispatch} stays only as the pre-hydration fallback",
-            "rationale": "An empty sign-in form POSTed to the server, reproduced in a real browser. RHF was display-only because handleSubmit was never called. RHF's synchronous preventDefault is what stops React also running the form action — verified by three independent reviewers, and empirically (exactly 1 dispatch on a valid submit).",
+            "decision": "Split isSessionPayload into isUpstreamIdentity (upstream body) and isSessionPayload (our own cookie)",
+            "rationale": "One guard was doing two jobs. The backend answers POST /signup with \"displayName\": null for a nameless account — a shape the generated contract's `displayName?: string` never declares — so demanding a string reported a CREATED account as failed and burned the email address. Every e2e sign-up fixture fills the Name field, which is exactly why it shipped.",
             "phase": "04"
         },
         {
-            "decision": "Password is no longer cleared on a client-side refusal, only on a server ERROR",
-            "rationale": "A refusal that never left the browser should not cost the user the correction they were about to make.",
+            "decision": "A toast dismisses on a tap anywhere on its card, excluding interactive descendants",
+            "rationale": "REVIEW-1 made the create-failure toasts permanent, and at mobile width the card covers the sidebar's + Create New Board control. Retry is excluded because until it fires the toast holds the only copy of the user's typed values, so a body-dismiss firing on Retry would destroy what Retry replays.",
             "phase": "04"
         },
         {
-            "decision": "The submit handler is typed NonNullable<ComponentProps<\"form\">[\"onSubmit\"]>",
-            "rationale": "The repo's lint bans BOTH React FormEvent and FormEventHandler as deprecated aliases, and the repo has no precedent for typing a raw form submit event. Deriving from the element names no deprecated alias.",
-            "phase": "04"
-        },
-        {
-            "decision": "Subtask label uses self-center rather than changing the row's items-start",
-            "rationale": "Centres a single-line title (was 4.5px high, measured) and is a no-op once a wrapped title fills the row. NOTE: two reviewers independently flag that the WRAPPED case is now 4.5px misaligned, worse than the 2.5px before — REVIEW-6.",
+            "decision": "Tailwind must not scan worktree copies of .planning",
+            "rationale": "Planning docs write utility classes with literal placeholders; the scanner turns them into unparseable CSS and a stylesheet that fails to parse 500s every dev page. A worktree is scanned as its OWN root, so its .planning is reached through neither the outer .gitignore nor the existing @source rule — meaning local dev broke for as long as any worktree existed, which is now the normal state.",
             "phase": "04"
         }
     ],
     "uncommitted_files": [],
-    "next_action": "Fix REVIEW-1 first: give the create-failure toasts no auto-dismiss, which is what use-create-task.ts:76 already claims. Then REVIEW-2 (board onError reconcile instead of wholesale restore) and REVIEW-3 (toast ids carry the full retry payload; the column id must include boardId). Re-run gates + CI, then re-present the 04-22 checkpoint.",
-    "context_notes": "CI is green and everything is pushed — this pause is clean, not mid-edit. The session's throughline was that SCOPED GREEN PROVES LESS THAN IT LOOKS, three times over: (1) three parallel fix agents each ran their own files green while the full suite was broken by a next/link import in two error-boundary tests neither of them owned; (2) the product owner found 7 user-visible defects against a 2000-test green suite, because no form test asserted a negative gate, e2e is timing-blind, and visual is primitives-only by ADR 0011; (3) the code review then found 7 more against a green CI. Also: I gave a fix agent a FALSE premise (that use-create-column already closed on submit — the citation was about rename) and it correctly stopped rather than building on it; verify a premise before briefing an agent on it. Every behavioural fix this session was falsified against the unfixed code, and that is why they are trustworthy."
+    "next_action": "Wire SOPS + age for local secret management, and prove gitleaks still behaves alongside it. Recommended shape: `age-keygen -o ~/.config/sops/age/keys.txt`; commit an encrypted `secrets.enc.env`; launch via `sops exec-env secrets.enc.env 'pnpm dev'`. Expect gitleaks' entropy-based generic-api-key rule to fire on the base64 ciphertext — allowlist the file BY PATH ONLY, and pair that allowlist with a pre-commit assertion that the file really is encrypted (`grep -q 'ENC\\[AES256_GCM' secrets.enc.env`), because an allowlisted path is exactly how a plaintext secret later ships silently. Landing this deletes three existing problems: the Read(.env.*) deny, the ~/.claude/bin/seed-worktree-env wrapper, and worktree env seeding entirely (the encrypted file arrives via git).",
+    "context_notes": "Phase 04's remaining review debt is CLEARED: REVIEW-1..5 fixed by a sequential agent in one worktree (they shared files), REVIEW-6 fixed by a parallel agent, REVIEW-7 dissolved. All five REVIEW-1..5 findings were CONFIRMED — none refuted — but REVIEW-6's finding named the WRONG FILE (subtask-editor-row.tsx; the checkbox row is subtask-checklist-row.tsx), so keep treating review findings as claims. The session's throughline was that a contract change is not done when its own tests pass: changing the create modals to seed zero rows was verified against component tests, and CI then went red on three e2e specs that filled `Column 1`/`Subtask 1` — a grep of e2e/ would have caught it and was not run. Twice I reported CI green before it was. Two process learnings were recorded globally: agents must run the WHOLE suite plus the repo's full CI gate list (derived from .github/workflows, never the pre-commit hook, which runs 2 of 11), and a batch of reported bugs is parallel work partitioned by FILE SET, not a queue. Do NOT delete .claude/worktrees/agent-ad99257c01d94ec72 — it holds the only copy of the uncommitted test-coverage setup, tracked in .planning/todos/pending/."
 }
