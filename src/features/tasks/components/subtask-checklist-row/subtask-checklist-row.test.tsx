@@ -94,6 +94,27 @@ describeForEachDevice({
         });
 
         /*
+         * Reported as "the subtasks text doesn't look centred": the label sat at the top of a 40px
+         * row, 4.5px above its centre. Asserted as measured centres, never as a class name.
+         */
+        it("centres a single-line title against the row it sits in", async () => {
+            // Act
+            const screenInstance = await render(<Default />);
+            const label = readLabel(screenInstance.container);
+            const row = label.parentElement;
+            if (row === null) {
+                throw new Error("expected the row's own Field.Root ancestor");
+            }
+
+            // Assert
+            const labelRect = label.getBoundingClientRect();
+            const rowRect = row.getBoundingClientRect();
+            const labelCentre = labelRect.top + labelRect.height / 2;
+            const rowCentre = rowRect.top + rowRect.height / 2;
+            expect(Math.abs(labelCentre - rowCentre)).toBeLessThanOrEqual(1);
+        });
+
+        /*
          * The checkbox stays TOP-aligned to a two-line title's first line rather than centring
          * against the whole block — asserted by distance-from-edge, not an exact pixel value.
          */

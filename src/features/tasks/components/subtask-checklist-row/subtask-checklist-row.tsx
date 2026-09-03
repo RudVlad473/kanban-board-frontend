@@ -31,7 +31,8 @@ export const SubtaskChecklistRow = ({ subtask, onToggle, isPending }: Props) => 
                 onCheckedChange={() => {
                     onToggle(subtask.id);
                 }}
-                className={cn(checkboxVariants({ size: "sm", isBusy: isPending }), "mt-0.5 shrink-0")}
+                /* `mt-1` sits the 16px box on the row's own centre, and near a wrapped title's first line. */
+                className={cn(checkboxVariants({ size: "sm", isBusy: isPending }), "mt-1 shrink-0")}
             >
                 <BaseCheckbox.Indicator className="flex items-center justify-center">
                     <Check strokeWidth={3} />
@@ -40,7 +41,12 @@ export const SubtaskChecklistRow = ({ subtask, onToggle, isPending }: Props) => 
 
             <Field.Label
                 className={cn(
-                    "font-body-m text-body-m text-text-primary",
+                    /*
+                     * `self-center` centres a single-line title on the 40px row, which it missed by
+                     * 4.5px. A wrapped title fills the row, leaving no slack, so C-04's top
+                     * alignment survives untouched.
+                     */
+                    "self-center font-body-m text-body-m text-text-primary",
                     /*
                      * checkbox.tsx's own 04-UI-SPEC treatment, reproduced verbatim: 55% of primary
                      * (the lowest whole percent clearing WCAG AA), never the mock-sampled 50%.
