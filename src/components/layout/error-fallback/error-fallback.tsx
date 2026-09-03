@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button/button";
 
 /*
@@ -39,14 +41,9 @@ export const ErrorFallback = ({ title, description, digest, onRetry, homeHref }:
                     </Button>
 
                     {homeHref ? (
-                        /*
-                         * A plain anchor, not `next/link`'s `Link` — a full reload is safer here,
-                         * discarding whatever in-memory state triggered the crash (01-17-SUMMARY.md).
-                         */
-                        // eslint-disable-next-line no-restricted-syntax -- see comment above
-                        <a href={homeHref} className="text-bg-primary hover:text-bg-primary-hover">
+                        <Link href={homeHref} className="text-bg-primary hover:text-bg-primary-hover">
                             Back to boards
-                        </a>
+                        </Link>
                     ) : null}
                 </div>
             </div>

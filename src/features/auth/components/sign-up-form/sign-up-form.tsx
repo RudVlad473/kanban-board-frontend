@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useEffect, useRef } from "react";
+import { type ComponentProps, startTransition, useActionState } from "react";
 import { useForm } from "react-hook-form";
 import { useBoolean } from "usehooks-ts";
 
@@ -12,7 +12,6 @@ import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signUpAction } from "@/features/auth/actions/sign-up-action";
-import { readFormField } from "@/features/auth/model";
 import {
     DISPLAY_NAME_MAX_LENGTH,
     PASSWORD_REQUIREMENT_HINT,
@@ -41,9 +40,10 @@ type Props = {
 };
 
 /**
- * React Hook Form + Zod sign-up form composed from the design-system primitives only, submitted
- * via `useActionState` + `signUpAction` so it works pre-hydration — React Hook Form is
- * display-only validation (`mode: "onTouched"`), never gating submission (see 01-33-SUMMARY.md).
+ * React Hook Form + Zod sign-up form composed from the design-system primitives only.
+ *
+ * Dispatched through `useActionState` + `signUpAction`, gated on the client schema: nothing
+ * reaches the server that the schema refuses, and nothing typed is lost when it does.
  */
 export const SignUpForm = ({
     defaultValues,
@@ -58,7 +58,7 @@ export const SignUpForm = ({
     const [state, dispatch, isActionPending] = useActionState(signUpAction, AUTH_ACTION_IDLE);
     const {
         register,
-        setValue,
+        handleSubmit,
         formState: { errors },
     } = useForm<SignUpInput>({
         resolver: zodResolver(signUpSchema),
@@ -67,38 +67,19 @@ export const SignUpForm = ({
     });
 
     /*
-     * React's `requestFormReset` clears every uncontrolled field once the action settles
-     * (progressive-enhancement default) — sign-up restores every field as submitted (no deliberate
-     * clear, unlike sign-in's password). `null` until the first submission so this never fires on mount.
+     * `handleSubmit` validates the untouched fields `mode: "onTouched"` never reaches, and its
+     * `preventDefault` stops React also running `action`. FormData is read before the first await,
+     * while `currentTarget` is still the form; `startTransition` is what `action` gave for free.
      */
-    const lastSubmittedRef = useRef<{ email: string; displayName: string; password: string } | null>(null);
-    const formAction = (formData: FormData) => {
-        lastSubmittedRef.current = {
-            email: readFormField({ formData, key: "email" }),
-            displayName: readFormField({ formData, key: "displayName" }),
-            password: readFormField({ formData, key: "password" }),
-        };
-        dispatch(formData);
+    const submit: NonNullable<ComponentProps<"form">["onSubmit"]> = (event) => {
+        const formData = new FormData(event.currentTarget);
+
+        void handleSubmit(() => {
+            startTransition(() => {
+                dispatch(formData);
+            });
+        })(event);
     };
-
-    /*
-     * Keyed on `isActionPending`, not `state` — `useActionState`'s `Object.is` bailout can skip a
-     * reference-equal resolution (e.g. tests reusing the shared `AUTH_ACTION_IDLE` constant).
-     */
-    useEffect(() => {
-        if (isActionPending) {
-            return;
-        }
-
-        const submitted = lastSubmittedRef.current;
-        if (!submitted) {
-            return;
-        }
-
-        setValue("email", submitted.email);
-        setValue("displayName", submitted.displayName);
-        setValue("password", submitted.password);
-    }, [isActionPending, setValue]);
 
     const isPending = forceSubmitting || isActionPending;
     const serverErrorMessage = forceServerError ?? (state.status === RESULT_STATUS.ERROR ? state.message : undefined);
@@ -119,7 +100,7 @@ export const SignUpForm = ({
         (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.password : undefined);
 
     return (
-        <form noValidate={true} action={formAction} className="flex flex-col gap-4">
+        <form noValidate={true} action={dispatch} onSubmit={submit} className="flex flex-col gap-4">
             <TextField
                 label="Email"
                 type="email"

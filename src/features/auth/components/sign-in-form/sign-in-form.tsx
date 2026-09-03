@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useEffect, useRef } from "react";
+import { type ComponentProps, startTransition, useActionState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useBoolean } from "usehooks-ts";
 
@@ -12,7 +12,6 @@ import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { TextField } from "@/components/ui/text-field/text-field";
 import { AUTH_ACTION_IDLE } from "@/features/auth/action-state";
 import { signInAction } from "@/features/auth/actions/sign-in-action";
-import { readFormField } from "@/features/auth/model";
 import { REQUIRED_FIELD_MESSAGE, signInSchema, type SignInInput } from "@/features/auth/schemas";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { ROUTE } from "@/lib/core/routing/routes";
@@ -31,9 +30,10 @@ type Props = {
 };
 
 /**
- * React Hook Form + Zod sign-in form submitted via `useActionState` + `signInAction` so it works
- * pre-hydration; React Hook Form is display-only validation, never gating submission (see
- * 01-33-SUMMARY.md). A rejected sign-in clears the password field, not the email.
+ * React Hook Form + Zod sign-in form dispatched through `useActionState` + `signInAction`.
+ *
+ * The client schema gates the dispatch: nothing reaches the server that the schema refuses. A
+ * rejected sign-in clears the password field, not the email.
  */
 export const SignInForm = ({
     defaultValues,
@@ -46,8 +46,8 @@ export const SignInForm = ({
     const [state, dispatch, isActionPending] = useActionState(signInAction, AUTH_ACTION_IDLE);
     const {
         register,
+        handleSubmit,
         resetField,
-        setValue,
         formState: { errors },
     } = useForm<SignInInput>({
         resolver: zodResolver(signInSchema),
@@ -56,41 +56,29 @@ export const SignInForm = ({
     });
 
     /*
-     * React's `requestFormReset` clears every uncontrolled field once the action settles
-     * (progressive-enhancement default) — captured here so it can be selectively restored below;
-     * `null` until the first real submission so the effect never fires on mount.
+     * `handleSubmit` validates the untouched fields `mode: "onTouched"` never reaches, and its
+     * `preventDefault` stops React also running `action`. FormData is read before the first await,
+     * while `currentTarget` is still the form; `startTransition` is what `action` gave for free.
      */
-    const lastSubmittedRef = useRef<{ email: string; password: string } | null>(null);
-    const formAction = (formData: FormData) => {
-        lastSubmittedRef.current = {
-            email: readFormField({ formData, key: "email" }),
-            password: readFormField({ formData, key: "password" }),
-        };
-        dispatch(formData);
+    const submit: NonNullable<ComponentProps<"form">["onSubmit"]> = (event) => {
+        const formData = new FormData(event.currentTarget);
+
+        void handleSubmit(() => {
+            startTransition(() => {
+                dispatch(formData);
+            });
+        })(event);
     };
 
     /*
-     * Restores email always, clears password on error instead — undoes React's own field reset
-     * once the action settles. Keyed on `isActionPending`, not `state`, since `useActionState`'s
-     * `Object.is` bailout can skip a reference-equal resolution (e.g. tests reusing `AUTH_ACTION_IDLE`).
+     * Only a real server refusal clears the password — a client-side one never left the browser,
+     * so wiping what the user typed would cost them the correction they were about to make.
      */
     useEffect(() => {
-        if (isActionPending) {
-            return;
-        }
-
-        const submitted = lastSubmittedRef.current;
-        if (!submitted) {
-            return;
-        }
-
-        setValue("email", submitted.email);
         if (state.status === RESULT_STATUS.ERROR) {
             resetField("password");
-        } else {
-            setValue("password", submitted.password);
         }
-    }, [isActionPending, state, resetField, setValue]);
+    }, [state, resetField]);
 
     const isPending = forceSubmitting || isActionPending;
 
@@ -113,7 +101,7 @@ export const SignInForm = ({
         errors.password?.message ?? (state.status === RESULT_STATUS.ERROR ? state.fieldErrors?.password : undefined);
 
     return (
-        <form noValidate={true} action={formAction} className="flex flex-col gap-4">
+        <form noValidate={true} action={dispatch} onSubmit={submit} className="flex flex-col gap-4">
             <TextField
                 label="Email"
                 type="email"

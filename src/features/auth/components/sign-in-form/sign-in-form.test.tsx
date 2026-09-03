@@ -50,7 +50,7 @@ describeForEachDevice({
             expect(screen.getByRole("link", { name: "Create Account" })).toBeInTheDocument();
         });
 
-        it("submits through the form element's own action, not a submit handler, so it works before hydration", async () => {
+        it("carries React's own function-action fallback on the form element, so it works before hydration", async () => {
             // Act
             await render(<Empty />);
 
@@ -158,6 +158,65 @@ describeForEachDevice({
                 email: "demo@kanban-board.dev",
                 password: "correct-horse-battery-staple",
             });
+        });
+
+        /*
+         * The client schema gates the Server Action, so a submit the schema refuses costs no
+         * request and loses no typing — the two halves of the same defect.
+         */
+        it("sends nothing and keeps the typed password when submitted with an invalid email", async () => {
+            // Arrange
+            const rendered = await renderSignInForm();
+            await rendered.getByRole("textbox", { name: "Email" }).fill("not-an-email");
+            await rendered.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
+
+            // Act
+            await rendered.getByRole("button", { name: "Sign In" }).click();
+
+            // Assert
+            await expect.element(rendered.getByText("Enter a valid email address.")).toBeVisible();
+            expect(actionStub(signInAction).calls.length).toBe(0);
+            await expect
+                .element(rendered.getByLabelText("Password", { exact: true }))
+                .toHaveValue("correct-horse-battery-staple");
+        });
+
+        /*
+         * The gate dispatches by hand rather than through the form's `action`, so the transition
+         * `action` supplied for free has to be supplied here — without it `isPending` never flips.
+         */
+        it("marks the submit control busy while a valid submit is still in flight", async () => {
+            // Arrange
+            const rendered = await renderSignInForm();
+            const stub = actionStub(signInAction);
+            stub.queue(AUTH_ACTION_IDLE);
+            stub.hold();
+            await rendered.getByRole("textbox", { name: "Email" }).fill("demo@kanban-board.dev");
+            await rendered.getByLabelText("Password", { exact: true }).fill("correct-horse-battery-staple");
+
+            // Act
+            await rendered.getByRole("button", { name: "Sign In" }).click();
+
+            // Assert
+            await expect
+                .element(rendered.getByRole("button", { name: "Sign In" }))
+                .toHaveAttribute("aria-busy", "true");
+
+            // Cleanup — releases the held call so the suite does not leave one pending.
+            stub.settle();
+        });
+
+        // `mode: "onTouched"` never validates a field the user never focused; a submit must.
+        it("sends nothing and reports both untouched fields when an empty form is submitted", async () => {
+            // Arrange
+            const rendered = await renderSignInForm();
+
+            // Act
+            await rendered.getByRole("button", { name: "Sign In" }).click();
+
+            // Assert
+            await expect.poll(() => rendered.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
+            expect(actionStub(signInAction).calls.length).toBe(0);
         });
 
         /*

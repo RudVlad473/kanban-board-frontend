@@ -70,5 +70,28 @@ describeForEachDevice({
             // Assert — the recorder's own call log, not a mock.
             await expect.poll(() => actionStub(signOutAction).calls.length).toBe(1);
         });
+
+        /*
+         * Sign-out ends in a server redirect, so the whole round trip is dead time on screen
+         * unless the control says so. `hold()` freezes that window open.
+         */
+        it("renders the pending spinner while the sign-out action is still in flight", async () => {
+            // Arrange
+            const rendered = await renderSignOutButton();
+            const stub = actionStub(signOutAction);
+            stub.queue(AUTH_ACTION_IDLE);
+            stub.hold();
+            const button = rendered.getByRole("button", { name: "Sign Out" });
+
+            // Act
+            await button.click();
+
+            // Assert
+            await expect.poll(() => button.element().querySelector("svg.animate-spin") !== null).toBe(true);
+            await expect.element(button).toHaveAttribute("aria-busy", "true");
+
+            // Cleanup — releases the held call so the suite does not leave one pending.
+            stub.settle();
+        });
     },
 });

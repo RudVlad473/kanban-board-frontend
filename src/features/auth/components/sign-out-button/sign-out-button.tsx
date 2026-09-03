@@ -16,7 +16,7 @@ export const SignOutButton = () => {
 
     return (
         <form action={dispatch}>
-            <Button type="submit" variant="secondary" isDisabled={isActionPending} aria-busy={isActionPending}>
+            <Button type="submit" variant="secondary" isDisabled={isActionPending} isLoading={isActionPending}>
                 Sign Out
             </Button>
         </form>

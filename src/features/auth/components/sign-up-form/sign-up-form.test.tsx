@@ -67,7 +67,7 @@ describeForEachDevice({
             expect(screen.getByLabelText("Name")).toHaveAccessibleName("Name");
         });
 
-        it("submits through the form element's own action, not a submit handler, so it works before hydration", async () => {
+        it("carries React's own function-action fallback on the form element, so it works before hydration", async () => {
             // Act
             await render(<Empty />);
 
@@ -296,6 +296,38 @@ describeForEachDevice({
                 displayName: "Jamie Rivera",
                 password: "CorrectPassword1!",
             });
+        });
+
+        /*
+         * The client schema gates the Server Action, so a submit the schema refuses costs no
+         * request and loses no typing — the two halves of the same defect.
+         */
+        it("sends nothing and keeps the typed password when submitted with an invalid email", async () => {
+            // Arrange
+            const rendered = await renderSignUpForm();
+            await rendered.getByRole("textbox", { name: "Email" }).fill("not-an-email");
+            await rendered.getByLabelText("Password", { exact: true }).fill("CorrectPassword1!");
+
+            // Act
+            await rendered.getByRole("button", { name: "Create Account" }).click();
+
+            // Assert
+            await expect.element(rendered.getByText("Enter a valid email address.")).toBeVisible();
+            expect(actionStub(signUpAction).calls.length).toBe(0);
+            await expect.element(rendered.getByLabelText("Password", { exact: true })).toHaveValue("CorrectPassword1!");
+        });
+
+        // `mode: "onTouched"` never validates a field the user never focused; a submit must.
+        it("sends nothing and reports both required fields when an empty form is submitted", async () => {
+            // Arrange
+            const rendered = await renderSignUpForm();
+
+            // Act
+            await rendered.getByRole("button", { name: "Create Account" }).click();
+
+            // Assert
+            await expect.poll(() => rendered.getByText(REQUIRED_FIELD_MESSAGE).elements().length).toBe(2);
+            expect(actionStub(signUpAction).calls.length).toBe(0);
         });
 
         it("renders the password field masked by default, reveals it via the toggle, and updates the toggle's accessible name", async () => {
