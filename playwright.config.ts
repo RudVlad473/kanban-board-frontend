@@ -26,11 +26,21 @@ const runsOnlyProject = (name: string): boolean =>
     requestedProjects.length > 0 && requestedProjects.every((project) => project === name);
 
 /*
+ * `smoke` needs exactly what `e2e` needs — the built application and the reset-backed
+ * setup/teardown — so every gate below asks about the pair rather than about `e2e` alone.
+ */
+const APP_BACKED_PROJECTS = ["e2e", "smoke"];
+
+const runsOnlyAppBackedProjects = (): boolean =>
+    requestedProjects.length > 0 && requestedProjects.every((project) => APP_BACKED_PROJECTS.includes(project));
+
+/*
  * An unfiltered invocation (no `--project` at all) runs every project, `e2e` included — so the
  * reset-capability precondition below must apply then too, not only when `e2e` is named
  * explicitly.
  */
-const includesProject = (name: string): boolean => requestedProjects.length === 0 || requestedProjects.includes(name);
+const includesAppBackedProject = (): boolean =>
+    requestedProjects.length === 0 || requestedProjects.some((project) => APP_BACKED_PROJECTS.includes(project));
 
 const visualWebServer: NonNullable<PlaywrightTestConfig["webServer"]> = {
     command: `node scripts/serve-static.mjs storybook-static ${String(PORT)}`,
@@ -89,11 +99,11 @@ export default defineConfig({
      * without a working reset capability, and `globalTeardown` deletes only what this run
      * registered (`SETUP.md`) — both wired in only when this run actually includes `e2e`.
      */
-    globalSetup: includesProject("e2e") ? "./e2e/global-setup.ts" : undefined,
-    globalTeardown: includesProject("e2e") ? "./e2e/global-teardown.ts" : undefined,
+    globalSetup: includesAppBackedProject() ? "./e2e/global-setup.ts" : undefined,
+    globalTeardown: includesAppBackedProject() ? "./e2e/global-teardown.ts" : undefined,
     webServer: runsOnlyProject("visual")
         ? visualWebServer
-        : runsOnlyProject("e2e")
+        : runsOnlyAppBackedProjects()
           ? e2eWebServer
           : [visualWebServer, e2eWebServer],
     projects: [
@@ -114,6 +124,21 @@ export default defineConfig({
             name: "e2e",
             testDir: "./e2e",
             testMatch: "**/*.e2e.spec.ts",
+            /*
+             * The full-app smoke is deliberately out of CI (see its own header), but it matched this
+             * glob and ran there anyway for its first four days — the exclusion was decided and
+             * never implemented. `smoke` below is how to run it.
+             */
+            testIgnore: "**/full-app.e2e.spec.ts",
+            use: {
+                ...devices["Desktop Chrome"],
+                baseURL: E2E_CONFIG.BASE_URL,
+            },
+        },
+        {
+            name: "smoke",
+            testDir: "./e2e",
+            testMatch: "**/full-app.e2e.spec.ts",
             use: {
                 ...devices["Desktop Chrome"],
                 baseURL: E2E_CONFIG.BASE_URL,

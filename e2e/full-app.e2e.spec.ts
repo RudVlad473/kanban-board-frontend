@@ -23,7 +23,8 @@ import { THEME } from "../src/lib/core/theme/theme";
  * decaying into a stale checklist covering thirteen of fourteen features while reading as
  * coverage — the gate is tied to the file a new feature cannot avoid updating.
  *
- * RUN IT BY HAND. Neither this spec nor `smoke:check` is wired into CI, deliberately: across six
+ * RUN IT BY HAND with `pnpm test:smoke` — the `smoke` project exists so that this spec, and only
+ * this spec, runs there. Neither it nor `smoke:check` is wired into CI, deliberately: across six
  * runs on 2026-09-03 it failed intermittently, twice at BOARD-02 with exactly one of two columns
  * created and no failure toast. The same interaction was then driven by hand and SUCCEEDED three
  * times — dev, and a production build, on both the sidebar and empty-state creation paths — so the

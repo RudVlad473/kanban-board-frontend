@@ -31,6 +31,7 @@
         "build-storybook": "storybook build",
         "test:visual": "playwright test --project visual",
         "test:e2e": "playwright test --project e2e",
+        "test:smoke": "playwright test --project smoke",
         "e2e:seed": "bash e2e/seed.sh",
         "e2e:cleanup": "bash e2e/seed.sh cleanup",
         "test:all": "pnpm test && pnpm exec playwright test",
