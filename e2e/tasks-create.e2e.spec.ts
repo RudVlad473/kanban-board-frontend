@@ -46,7 +46,9 @@ test.describe("TASK-01: create a task", () => {
         const dialog = page.getByRole("dialog");
         await dialog.getByLabel("Title", { exact: true }).fill(title);
         await dialog.getByLabel("Description", { exact: true }).fill("Fixture task description.");
+        await dialog.getByRole("button", { name: "+ Add New Subtask" }).click();
         await dialog.getByRole("textbox", { name: "Subtask 1", exact: true }).fill("Subtask One");
+        await dialog.getByRole("button", { name: "+ Add New Subtask" }).click();
         await dialog.getByRole("textbox", { name: "Subtask 2", exact: true }).fill("Subtask Two");
 
         // Act — Status defaults to the first column; choose the SECOND to prove the field is real.
@@ -81,12 +83,10 @@ test.describe("TASK-01: create a task", () => {
         await signIn({ page, account, board });
         const title = `Fixture Bare Task ${randomUUID().slice(0, 8)}`;
 
-        // Act — drop both seeded subtask rows before submitting; removing both is legal.
+        // Act — the form seeds no subtask rows, so a subtask-less task needs no cleanup first.
         await page.getByRole("button", { name: "+ Add New Task" }).click();
         const dialog = page.getByRole("dialog");
         await dialog.getByLabel("Title", { exact: true }).fill(title);
-        await dialog.getByRole("button", { name: "Remove Subtask 1", exact: true }).click();
-        await dialog.getByRole("button", { name: "Remove Subtask 1", exact: true }).click();
         await dialog.getByRole("button", { name: "Create Task" }).click();
 
         /*

@@ -25,9 +25,10 @@ test.describe("BOARD-02: create a board", () => {
         await page.getByRole("button", { name: "Sign In" }).click();
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
 
-        // Act — the form opens with one row; add a second and name both.
+        // Act — the form opens with no rows; add two and name both.
         await page.getByRole("button", { name: "+ Create New Board" }).click();
         await page.getByLabel("Board Name", { exact: true }).fill(boardName);
+        await page.getByRole("button", { name: "+ Add New Column" }).click();
         await page.getByLabel("Column 1", { exact: true }).fill("Todo");
         await page.getByRole("button", { name: "+ Add New Column" }).click();
         await page.getByLabel("Column 2", { exact: true }).fill("Doing");
@@ -48,14 +49,13 @@ test.describe("BOARD-02: create a board", () => {
         expect(created.columns.map((column) => column.position)).toEqual([0, 1]);
 
         /*
-         * Act — a second board with no columns, which under D-02a means removing the default row
-         * rather than leaving it blank. The name must differ: the backend refuses a duplicate with
-         * 409 DUPLICATE_RESOURCE, contrary to this plan's assumption — see 02-10-SUMMARY.md.
+         * Act — a second board with no columns, which now needs no cleanup: the form seeds no rows,
+         * because a blank one blocks the submit. The name must differ: the backend refuses a
+         * duplicate with 409 DUPLICATE_RESOURCE — see 02-10-SUMMARY.md.
          */
         const secondBoardName = `E2E Create Later ${suffix}`;
         await page.getByRole("button", { name: "+ Create New Board" }).click();
         await page.getByLabel("Board Name", { exact: true }).fill(secondBoardName);
-        await page.getByRole("button", { name: "Remove Column 1" }).click();
         await page.getByRole("button", { name: "Create New Board", exact: true }).click();
 
         /*

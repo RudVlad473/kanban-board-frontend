@@ -101,14 +101,14 @@ test.describe("full-app smoke", () => {
             await page.getByRole("button", { name: "Create your first board" }).click();
             const createDialog = page.getByRole("dialog");
             await createDialog.getByLabel("Board Name", { exact: true }).fill(boardName);
+            await createDialog.getByRole("button", { name: "+ Add New Column" }).click();
             await createDialog.getByLabel("Column 1", { exact: true }).fill("Backlog");
             await createDialog.getByRole("button", { name: "+ Add New Column" }).click();
             await createDialog.getByLabel("Column 2", { exact: true }).fill("Doing");
 
             /*
-             * Read the fields back before submitting. A row added and left empty is dropped
-             * silently, and the miss then surfaces two steps later as a column that never existed —
-             * which is exactly how this spec first failed.
+             * Read the fields back before submitting — a row left empty now blocks the submit, and
+             * this assertion names which row rather than leaving a timeout two steps later.
              */
             await expect(createDialog.getByLabel("Column 1", { exact: true })).toHaveValue("Backlog");
             await expect(createDialog.getByLabel("Column 2", { exact: true })).toHaveValue("Doing");
