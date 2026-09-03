@@ -131,10 +131,10 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
                 />
 
                 {/*
-                 * S-07: 20px between cards, measured twice on the mock, correcting the shipped 16px.
-                 * `min-h-22` is the 88px one-card floor an empty column needs to stay droppable.
+                 * S-07: 20px between cards, correcting the shipped 16px. `min-h-22`/`grow`/`shrink-0`
+                 * make the list own the column's whole body height, so all of it is a task droppable.
                  */}
-                <ul ref={setTaskListNodeRef} className="relative flex min-h-22 flex-col gap-5">
+                <ul ref={setTaskListNodeRef} className="relative flex min-h-22 shrink-0 grow flex-col gap-5">
                     {renderTasks()}
 
                     {isEmptyBodyInsertionPoint ? (

@@ -1769,6 +1769,71 @@ describeForEachDevice({
             moveTaskStub.settle();
         });
 
+        /*
+         * The column's empty area below its last card. Found live: it read as part of the column but
+         * dropped nothing, because only the card list is a task droppable and the list stopped at its
+         * content, leaving the rest of the column owned by the COLUMN droppable a task drop ignores.
+         */
+        it("moves a task dropped in the empty area below a column's last card", async () => {
+            // Arrange
+            await render(<TasksAcrossColumns />);
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-d10000000001",
+                    title: "Fixture Task Alpha",
+                    description: undefined,
+                    version: 1,
+                    position: 0,
+                },
+            });
+            moveTaskStub.hold();
+            const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
+            const lastCard = screen.getByRole("button", { name: /^Fixture Task Beta/ }).closest("li");
+            const destination = document.querySelectorAll("section")[1];
+            if (lastCard === null) {
+                throw new Error("the destination column's last card did not render");
+            }
+            /*
+             * Approached via the card rather than straight to a pre-read point: at MOBILE the
+             * destination column starts off screen, and the row auto-scrolls under the drag
+             * (Pitfall 8), so both rects are re-read only once the pointer is already parked there.
+             */
+            const { moveTo, release } = await holdDragOver([centerOf(source), centerOf(lastCard)]);
+            const cardRect = lastCard.getBoundingClientRect();
+            const columnRect = destination.getBoundingClientRect();
+            const deadPoint = { x: cardRect.left + cardRect.width / 2, y: cardRect.bottom + 40 };
+
+            /*
+             * A positive control: with no empty area below the card this asserts nothing. Geometric,
+             * because `elementFromPoint` is viewport-relative and reads null for the MOBILE run's
+             * destination column, three quarters of which sits off screen at 375px.
+             */
+            expect(deadPoint.y).toBeGreaterThan(cardRect.bottom);
+            expect(deadPoint.y).toBeLessThan(columnRect.bottom);
+            expect(deadPoint.x).toBeGreaterThan(columnRect.left);
+            expect(deadPoint.x).toBeLessThan(columnRect.right);
+
+            // Act
+            await moveTo([deadPoint]);
+
+            /* The other half of the report: the area drew nothing, so it read as not a target at all. */
+            await expect.poll(() => lastCard.querySelectorAll('[aria-hidden="true"].bg-bg-primary').length).toBe(1);
+            await release();
+
+            /*
+             * Lands where that bar said it would — above the card, the cross-column insertion the
+             * indicator draws. Dropping BELOW the last card does not append; see 04-22.
+             */
+            await expect.poll(getColumnTaskTitles).toEqual([
+                { columnName: "Fixture Column 1", taskTitles: [] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Alpha", "Fixture Task Beta"] },
+            ]);
+            expect(moveTaskStub.calls).toHaveLength(1);
+            expect(moveTaskStub.calls[0]?.targetColumnId).toBe("00000000-0000-4000-8000-c00000000002");
+            moveTaskStub.settle();
+        });
+
         /* UI-SPEC populated/drag-drop-surface: the lifted treatment mirrors the shipped column one. */
         it("fades the source card in place and shows a full-opacity clone following the pointer while lifted", async () => {
             // Arrange
