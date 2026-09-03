@@ -27,6 +27,17 @@ const readLabel = (container: HTMLElement): HTMLElement => {
     return label;
 };
 
+/* A Range's client rects come one per rendered line, so the first is the first line box wherever it wrapped. */
+const firstLineCentre = (label: HTMLElement): number => {
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    const firstLine = range.getClientRects().item(0);
+    if (firstLine === null) {
+        throw new Error("expected the label's text to lay out at least one line box");
+    }
+    return firstLine.top + firstLine.height / 2;
+};
+
 afterEach(() => {
     document.documentElement.classList.remove("dark");
 });
@@ -133,6 +144,24 @@ describeForEachDevice({
             const distanceFromTop = checkboxRect.top - rowRect.top;
             const distanceFromBottom = rowRect.bottom - checkboxRect.bottom;
             expect(distanceFromTop).toBeLessThan(distanceFromBottom);
+        });
+
+        /*
+         * "Aligned to the first line" is only measurable against the first LINE BOX: the row's own
+         * edges cannot tell a checkbox on the first line from one 4.5px below it.
+         */
+        it.each([
+            { name: "single-line", Story: Default },
+            { name: "wrapped", Story: LongTitle },
+        ])("centres the checkbox on a $name title's first line", async ({ Story }) => {
+            // Act
+            const screenInstance = await render(<Story />);
+            const label = readLabel(screenInstance.container);
+            const checkboxRect = screen.getByRole("checkbox").getBoundingClientRect();
+
+            // Assert
+            const offset = checkboxRect.top + checkboxRect.height / 2 - firstLineCentre(label);
+            expect(Math.abs(offset)).toBeLessThanOrEqual(1);
         });
     },
 });
