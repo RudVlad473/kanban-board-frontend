@@ -18,9 +18,9 @@ type Props = {
     onOpenChange: (isOpen: boolean) => void;
     onSubmit: (values: { name: string }) => void;
     isPending: boolean;
-    /** The generic create failure, rendered inline in the still-open modal — never a toast. */
+    /** Storybook-only staging — a real create now reports through a toast, never inside this modal. */
     errorMessage?: string | null;
-    /** Pre-fills the column name (a plain React Hook Form `defaultValues` passthrough) — Storybook-only staging. */
+    /** Pre-fills the column name (a plain React Hook Form `defaultValues` passthrough) — what a retry reopens with. */
     defaultValues?: { name?: string };
     /** Storybook-only staging — renders the column-name field's error state without a real submit. */
     forceNameError?: string;

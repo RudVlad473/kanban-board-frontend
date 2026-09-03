@@ -3,7 +3,6 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
@@ -39,20 +38,30 @@ const COLUMN_COUNT_NUDGE_COPY = {
     description: "Columns scroll horizontally from here.",
 };
 
+const RETRY_ACTION_LABEL = "Retry";
+
+/** Name-scoped so retrying one attempt upserts its own toast instead of stacking beside a stale first. */
+export const buildCreateFailureToastId = ({ name }: CreateColumnArgs): string => `column-create-failed:${name}`;
+
 export type CreateColumnArgs = { boardId: string; name: string };
 
 /** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
 type CreateColumnVariables = CreateColumnArgs & { clientId: string };
 
 /**
- * COLUMN-01's optimistic create (docs/adr/tech/0030). A failure is reported inline rather than as a
- * toast: the rollback puts the board back as it was, so there is nothing left to reconcile and the
- * modal stays open holding the typed name. The refresh is the action's own, not this hook's.
+ * COLUMN-01's optimistic create (docs/adr/tech/0030). The modal closes at submit, so a failure is
+ * reported by a toast whose Retry reopens it holding the typed name — the D-05 reversal of
+ * 2026-09-03, matching create-task and create-board. The refresh is the action's own.
  */
-export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
+export const useCreateColumn = ({
+    columnCount,
+    onRetry,
+}: {
+    columnCount: number;
+    onRetry: (args: CreateColumnArgs) => void;
+}) => {
     const toast = useToast();
     const queryClient = useQueryClient();
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const mutation = useMutation({
         mutationFn: async ({ boardId, name }: CreateColumnVariables) => {
@@ -119,12 +128,32 @@ export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
         },
     });
 
-    const clearError = (): void => {
-        setErrorMessage(null);
+    /** Reports a column that never landed, offering the reopen that carries the typed name back. */
+    const raiseCreateFailureToast = ({ args, status }: { args: CreateColumnArgs; status: ResultStatus }): void => {
+        const isSessionExpired = status === RESULT_STATUS.UNAUTHENTICATED;
+        const toastId = buildCreateFailureToastId(args);
+
+        toast.add({
+            id: toastId,
+            type: "danger",
+            title: CREATE_FAILURE_MESSAGE[status] ?? GENERIC_CREATE_FAILURE_MESSAGE,
+            /* An expired session names itself: a Retry there could only reopen a modal that fails again. */
+            ...(!isSessionExpired
+                ? {
+                      actionProps: {
+                          children: RETRY_ACTION_LABEL,
+                          onClick: () => {
+                              toast.close(toastId);
+                              onRetry(args);
+                          },
+                      },
+                  }
+                : {}),
+        });
     };
 
-    const createColumn = async ({ boardId, name }: CreateColumnArgs): Promise<{ didCreate: boolean }> => {
-        setErrorMessage(null);
+    const createColumn = async (args: CreateColumnArgs): Promise<void> => {
+        const { boardId, name } = args;
 
         const outcome = await mutation
             .mutateAsync({ boardId, name, clientId: crypto.randomUUID() })
@@ -135,8 +164,8 @@ export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
             }));
 
         if (!outcome.didCreate) {
-            setErrorMessage(CREATE_FAILURE_MESSAGE[outcome.status] ?? GENERIC_CREATE_FAILURE_MESSAGE);
-            return { didCreate: false };
+            raiseCreateFailureToast({ args, status: outcome.status });
+            return;
         }
 
         /*
@@ -146,9 +175,7 @@ export const useCreateColumn = ({ columnCount }: { columnCount: number }) => {
         if (shouldNudgeOnColumnCount({ nextCount: columnCount + 1 })) {
             toast.add(COLUMN_COUNT_NUDGE_COPY);
         }
-
-        return { didCreate: true };
     };
 
-    return { createColumn, isPending: mutation.isPending, errorMessage, clearError };
+    return { createColumn, isPending: mutation.isPending };
 };

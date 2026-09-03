@@ -102,7 +102,16 @@ export const BoardView = ({
     );
     const taskBeingDeleted = taskBeingDeletedColumn?.tasks.find((task) => task.id === taskBeingDeletedId) ?? null;
     const columnCount = renderedColumns.length;
-    const { createColumn, isPending, errorMessage, clearError } = useCreateColumn({ columnCount });
+    /* What a failed create reopens with, so closing on submit costs the user nothing (D-05, reversed 2026-09-03). */
+    const [retryColumnName, setRetryColumnName] = useState<string | null>(null);
+    const { createColumn, isPending } = useCreateColumn({
+        columnCount,
+        onRetry: ({ name }) => {
+            setRetryColumnName(name);
+            setIsAddColumnOpen(true);
+            setOpenCount((count) => count + 1);
+        },
+    });
     const { renameColumn } = useRenameColumn({ boardId: board.id });
     const { reorderColumns: requestReorder, reorderingColumnId } = useReorderColumns({ boardId: board.id });
     const { moveTask: requestMove, movingTaskId } = useMoveTask({ boardId: board.id });
@@ -119,21 +128,21 @@ export const BoardView = ({
 
     const handleOpenChange = (nextIsOpen: boolean): void => {
         setIsAddColumnOpen(nextIsOpen);
-        clearError();
 
         if (nextIsOpen) {
+            setRetryColumnName(null);
             setOpenCount((count) => count + 1);
         }
     };
 
-    /* Closed only when the create actually landed, so an inline failure has a modal to land in. */
+    /*
+     * Closed BEFORE the create is issued, so the optimistic column is what the user sees next. A
+     * refusal rolls it back and toasts a Retry that reopens this modal holding the typed name.
+     */
     const handleSubmit = (values: { name: string }): void => {
-        void createColumn({ boardId: board.id, name: values.name }).then((outcome) => {
-            if (outcome.didCreate) {
-                closeAddColumn();
-                revealOnNextGrowth();
-            }
-        });
+        closeAddColumn();
+        revealOnNextGrowth();
+        void createColumn({ boardId: board.id, name: values.name });
     };
 
     /*
@@ -298,7 +307,7 @@ export const BoardView = ({
                 onOpenChange={handleOpenChange}
                 onSubmit={handleSubmit}
                 isPending={isPending}
-                errorMessage={errorMessage}
+                defaultValues={retryColumnName !== null ? { name: retryColumnName } : undefined}
             />
 
             {columnBeingRenamed !== null ? (
