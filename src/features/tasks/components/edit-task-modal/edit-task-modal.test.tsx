@@ -16,6 +16,7 @@ import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { getBackdropElement } from "@/test-utils/modal-backdrop";
+import { getRaisedToastTexts } from "@/test-utils/raised-toasts";
 
 import * as stories from "./edit-task-modal.stories";
 
@@ -24,6 +25,10 @@ const { Default, NoDescription, Populated, SingleSubtask, Submitting, TitleError
 const createSubtaskStub = actionStub(createSubtaskAction);
 const updateSubtaskStub = actionStub(updateSubtaskAction);
 const deleteSubtaskStub = actionStub(deleteSubtaskAction);
+
+/** The two authored toast strings, as the user reads them — title and description run together. */
+const GENERIC_CREATE_TOAST = "Couldn't add subtask.Try again.";
+const GENERIC_RENAME_TOAST = "Couldn't rename subtask.Try again.";
 
 describeForEachDevice({
     name: "EditTask modal",
@@ -253,6 +258,81 @@ describeForEachDevice({
             // Assert — all three persisted with the submit never pressed.
             await expect.element(screen.getByRole("button", { name: "Remove subtask 'New Subtask'" })).toBeVisible();
             expect(Populated.args.onSubmit).not.toHaveBeenCalled();
+        });
+
+        /*
+         * SUBTASK-01's optimistic add: the committed row is in the list BEFORE the server agrees,
+         * which is what renumbers the draft it was typed in from "Subtask 1" to "Subtask 2".
+         */
+        it("lists the committed row while the create is still in flight, renumbering its draft behind it", async () => {
+            // Arrange
+            createSubtaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                subtask: {
+                    id: "00000000-0000-4000-8000-a00000000099",
+                    title: "New Subtask",
+                    isCompleted: false,
+                    version: 0,
+                },
+            });
+            createSubtaskStub.hold();
+            const screen = await render(<Default />);
+
+            // Act — commit a draft row, then observe while the action is still unresolved.
+            await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
+            await userEvent.fill(screen.getByRole("textbox", { name: "Subtask 1" }), "New Subtask");
+            await userEvent.tab();
+            await vi.waitFor(() => {
+                expect(createSubtaskStub.calls).toHaveLength(1);
+            });
+
+            // Assert — two rows: the optimistic one, and the draft still awaiting its own reply.
+            await expect.element(screen.getByRole("textbox", { name: "Subtask 1" })).toHaveValue("New Subtask");
+            await expect.element(screen.getByRole("textbox", { name: "Subtask 2" })).toBeVisible();
+
+            // Act — let the write land.
+            createSubtaskStub.settle();
+
+            // Assert — the draft retires into the server's own row, never leaving a duplicate.
+            await vi.waitFor(() => {
+                expect(domScreen.queryByRole("textbox", { name: "Subtask 2" })).not.toBeInTheDocument();
+            });
+            await expect.element(screen.getByRole("textbox", { name: "Subtask 1" })).toHaveValue("New Subtask");
+        });
+
+        /* UI-SPEC error/edit-task-modal: a failed add removes the optimistic row and leaves its draft. */
+        it("removes the optimistic row and announces the failure when the create is refused", async () => {
+            // Arrange
+            createSubtaskStub.queue({ status: RESULT_STATUS.ERROR });
+            const screen = await render(<Default />);
+
+            // Act
+            await screen.getByRole("button", { name: "+ Add New Subtask" }).click();
+            await userEvent.fill(screen.getByRole("textbox", { name: "Subtask 1" }), "New Subtask");
+            await userEvent.tab();
+
+            // Assert — one row left, blank and ready to retry.
+            await expect.poll(getRaisedToastTexts).toEqual([GENERIC_CREATE_TOAST]);
+            expect(domScreen.queryByRole("textbox", { name: "Subtask 2" })).not.toBeInTheDocument();
+            await expect.element(screen.getByRole("textbox", { name: "Subtask 1" })).toHaveValue("");
+        });
+
+        /*
+         * SUBTASK-03's rollback: the row restores itself from the board cache, so this passes only
+         * while `onError` puts the prior title back there.
+         */
+        it("restores a failed rename's prior title and announces the failure", async () => {
+            // Arrange
+            updateSubtaskStub.queue({ status: RESULT_STATUS.ERROR });
+            const screen = await render(<Populated />);
+
+            // Act
+            await userEvent.fill(screen.getByRole("textbox", { name: "Subtask 1" }), "Renamed Subtask");
+            await userEvent.tab();
+
+            // Assert
+            await expect.poll(getRaisedToastTexts).toEqual([GENERIC_RENAME_TOAST]);
+            await expect.element(screen.getByRole("textbox", { name: "Subtask 1" })).toHaveValue("Fixture Subtask 1");
         });
 
         /* UI-SPEC zero-one-many/edit-task-modal: removing the last row returns to the empty shape. */
