@@ -3,7 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { useColumnDragSensors } from "@/features/boards/hooks/use-column-drag-sensors";
 import { createColumnReorderAnnouncements } from "@/features/boards/model";
@@ -34,11 +34,11 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
     const [liftedColumnId, setLiftedColumnId] = useState<string | null>(null);
     const [liftedTaskId, setLiftedTaskId] = useState<string | null>(null);
     /*
-     * A ref, not state, and cleared on the next LIFT rather than on this drop — the drop animation is
-     * configured on the render `handleDragEnd` triggers, by which point `liftedTaskId` is already
-     * null, so a state-derived answer reports "column" for every task drop.
+     * Overwritten on the next LIFT and never cleared on a drop — the drop animation is configured on
+     * the render `handleDragEnd` triggers, by which point `liftedTaskId` is already null, so an
+     * answer derived from it reports "column" for every task drop.
      */
-    const liftedKindRef = useRef<string | null>(null);
+    const [liftedKind, setLiftedKind] = useState<string | null>(null);
     const sensors = useColumnDragSensors();
 
     /* Every column's own card ids, which is both the sortable item list and what narrows a collision. */
@@ -49,10 +49,10 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
 
     /* Branched on the item's DECLARED type, never on the id: an id lookup returns -1 for the other kind. */
     const handleDragStart = ({ active }: DragStartEvent): void => {
-        const liftedKind = toDragItemData(active.data.current)?.type ?? null;
-        liftedKindRef.current = liftedKind;
+        const kind = toDragItemData(active.data.current)?.type ?? null;
+        setLiftedKind(kind);
 
-        if (liftedKind === DRAG_ITEM_TYPE.TASK) {
+        if (kind === DRAG_ITEM_TYPE.TASK) {
             setLiftedTaskId(String(active.id));
 
             return;
@@ -184,7 +184,7 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
          * 2026-09-04 — the dropped card stayed invisible for ~120ms after landing. A column reorder
          * keeps its settle, which is the animation 03-UI-SPEC actually asks for.
          */
-        wasTaskLifted: liftedKindRef.current === DRAG_ITEM_TYPE.TASK,
+        wasTaskLifted: liftedKind === DRAG_ITEM_TYPE.TASK,
         /* UI-SPEC zero-one-many: one column holding one task is the only board a card cannot move on. */
         isTaskMoveDisabled: columns.length === 1 && taskCount === 1,
     };
