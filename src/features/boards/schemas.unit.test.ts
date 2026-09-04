@@ -139,6 +139,37 @@ describe("columnFullSchema", () => {
         // Act & Assert
         expect(columnFullSchema.safeParse(withoutTasks).success).toBe(false);
     });
+
+    /* Case is preserved verbatim, never normalized — the mixed-case round trip the create action's own suite proves against the real backend. */
+    it("parses a colour in uppercase, lowercase and mixed case, preserving the case verbatim", () => {
+        // Act & Assert
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "#49C4E5" }).success).toBe(true);
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "#49c4e5" }).success).toBe(true);
+        const mixed = columnFullSchema.safeParse({ ...createColumnFull(), color: "#49C4e5" });
+        expect(mixed.success).toBe(true);
+        expect(mixed.success && mixed.data.color).toBe("#49C4e5");
+    });
+
+    /* The shape every column that exists today returns, and no key at all — the app must be correct whichever the backend emits. */
+    it("parses a column whose colour is null, and one with no colour key at all", () => {
+        // Arrange
+        const { color: _color, ...withoutColor } = createColumnFull();
+
+        // Act & Assert
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: null }).success).toBe(true);
+        expect(columnFullSchema.safeParse(withoutColor).success).toBe(true);
+    });
+
+    /*
+     * The check the OpenAPI contract cannot make: springdoc emits a bare `type: string` with no
+     * pattern and no maxLength, so this app's own boundary is the only thing that refuses these.
+     */
+    it("rejects a colour missing its hash, of the wrong length, or holding non-hex characters", () => {
+        // Act & Assert
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "49C4E5" }).success).toBe(false);
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "#49C4E" }).success).toBe(false);
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "#GGGGGG" }).success).toBe(false);
+    });
 });
 
 describe("boardNameSchema", () => {
@@ -476,6 +507,18 @@ describe("createColumnInputSchema", () => {
     it("rejects an empty board id", () => {
         // Act & Assert
         expect(createColumnInputSchema.safeParse({ boardId: "", name: "Todo" }).success).toBe(false);
+    });
+
+    /* A forged Server Action payload is refused at this app's own boundary — the contract carries no format check at all. */
+    it("accepts a valid colour, accepts its absence, and rejects a malformed one", () => {
+        // Act & Assert
+        expect(
+            createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Todo", color: "#49C4E5" }).success,
+        ).toBe(true);
+        expect(createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Todo" }).success).toBe(true);
+        expect(
+            createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Todo", color: "not-a-colour" }).success,
+        ).toBe(false);
     });
 });
 

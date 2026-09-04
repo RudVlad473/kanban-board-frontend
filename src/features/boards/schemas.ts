@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { taskFullSchema } from "@/lib/core/api-contract/task-schemas";
+import { HEX_COLOR_PATTERN } from "@/lib/core/styling/oklab";
 
 /**
  * Runtime-verified shape replacing the deleted `isBoard`/`isBoardArray` guards — the
@@ -18,6 +19,13 @@ export const boardsSchema = boardSchema.array();
 export type Board = z.infer<typeof boardSchema>;
 
 /*
+ * The only format authority a stored column colour has — the contract carries neither a `pattern`
+ * nor a `maxLength` for it (springdoc emits a bare `type: string`), so a malformed value is
+ * rejected here rather than coerced away, per this app's own boundary (docs/adr/tech/0024).
+ */
+export const columnColorSchema = z.string().regex(HEX_COLOR_PATTERN);
+
+/*
  * The full-board containment hierarchy, composed a level at a time. None of the four response
  * shapes declares a `required` array, so a cast at any level would be a claim rather than a fact
  * (docs/adr/tech/0024). Its task and subtask levels moved to the core ring.
@@ -27,6 +35,8 @@ export const columnFullSchema = z.object({
     name: z.string(),
     version: z.number(),
     position: z.number(),
+    /* Both `null` (every column that exists today) and an absent key must parse. */
+    color: columnColorSchema.nullish(),
     tasks: taskFullSchema.array(),
 });
 
@@ -158,7 +168,11 @@ export type CreateBoardColumnsInput = z.infer<typeof createBoardColumnsInputSche
  * a blank column name the required-field copy and only an out-of-bounds one the length copy, and
  * that split is exactly what the row schema already pipes (it reuses the 3-32 bound, never restates it).
  */
-export const createColumnInputSchema = z.object({ boardId: z.string().min(1), name: columnNameRowSchema });
+export const createColumnInputSchema = z.object({
+    boardId: z.string().min(1),
+    name: columnNameRowSchema,
+    color: columnColorSchema.optional(),
+});
 
 export type CreateColumnInput = z.infer<typeof createColumnInputSchema>;
 

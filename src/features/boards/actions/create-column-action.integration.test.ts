@@ -94,15 +94,18 @@ const createColumnUpstream = async ({
     account,
     boardId,
     name,
+    color,
 }: {
     account: SeededAccount;
     boardId?: string;
     name: string;
+    color?: string;
 }): Promise<{ status: number; ok: boolean; body: unknown }> => {
     const response = await fetch(buildUpstreamUrl({ path: EXTERNAL_PATH.BOARD_COLUMNS, boardId, userId: account.id }), {
         method: "POST",
         headers: { "Content-Type": "application/json", Cookie: `JSESSIONID=${account.jsessionId}` },
-        body: JSON.stringify({ name }),
+        /* Mirrors the action's own `parsed.data.color !== undefined` guard — an omitted key, not an explicit `undefined`. */
+        body: JSON.stringify({ name, ...(color !== undefined ? { color } : {}) }),
     });
 
     return { status: response.status, ok: response.ok, body: await response.json().catch(() => null) };
@@ -201,5 +204,37 @@ describe("the column create against the real backend", () => {
         // Assert
         expect(ok).toBe(false);
         expect(await readColumnNames({ account: owner, boardId })).not.toContain(name);
+    }, 60_000);
+
+    /* The mixed-case round trip the brief records — the backend must not normalise the stored hex. */
+    it("returns a submitted colour back byte-identical, including a mixed-case hex", async () => {
+        // Arrange
+        const name = `Coloured ${randomUUID().slice(0, 8)}`;
+        const color = "#49C4e5";
+
+        // Act
+        const { ok, body } = await createColumnUpstream({ account: owner, boardId, name, color });
+
+        // Assert
+        expect(ok).toBe(true);
+        const column = columnSchema.safeParse(body);
+        expect(column.success).toBe(true);
+        expect(column.success && column.data.color).toBe(color);
+    }, 60_000);
+
+    /*
+     * Whichever of `null` or an absent key the backend emits for a colourless column, the app's own
+     * `columnSchema` must parse it without throwing — this is the live fact the SUMMARY records.
+     */
+    it("still succeeds and parses when no colour is submitted", async () => {
+        // Arrange
+        const name = `Colourless ${randomUUID().slice(0, 8)}`;
+
+        // Act
+        const { ok, body } = await createColumnUpstream({ account: owner, boardId, name });
+
+        // Assert
+        expect(ok).toBe(true);
+        expect(columnSchema.safeParse(body).success).toBe(true);
     }, 60_000);
 });

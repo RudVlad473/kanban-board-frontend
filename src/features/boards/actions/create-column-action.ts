@@ -30,9 +30,11 @@ export type CreateColumnResult = ActionResult<
 export const createColumnAction = async ({
     boardId,
     name,
+    color,
 }: {
     boardId: string;
     name: string;
+    color?: string;
 }): Promise<CreateColumnResult> => {
     const record = await verifySession();
     if (!record) {
@@ -44,7 +46,7 @@ export const createColumnAction = async ({
      * arbitrary payload regardless of compile-time types, so this is real runtime defense
      * (T-03-01, see docs/adr/tech/0024).
      */
-    const parsed = createColumnInputSchema.safeParse({ boardId, name });
+    const parsed = createColumnInputSchema.safeParse({ boardId, name, color });
     if (!parsed.success) {
         return { status: RESULT_STATUS.INVALID, fieldErrors: zodErrorToFieldErrors(parsed.error) };
     }
@@ -56,7 +58,8 @@ export const createColumnAction = async ({
      */
     const { data, error } = await externalApi.POST(EXTERNAL_PATH.BOARD_COLUMNS, {
         params: { path: { boardId: parsed.data.boardId }, query: { userId: record.id } },
-        body: { name: parsed.data.name },
+        /* Sent only when present — an explicit `color: undefined` key is not the same as an omitted one to every serializer. */
+        body: { name: parsed.data.name, ...(parsed.data.color !== undefined ? { color: parsed.data.color } : {}) },
     });
 
     /*

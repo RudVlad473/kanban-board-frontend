@@ -592,7 +592,7 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(createColumnStub.calls).toHaveLength(1);
             });
-            expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
+            expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog", color: "#49C4E5" });
         });
 
         /* UI-SPEC error/Add-Column-duplicate: its own copy, now carried to the user by the toast. */
@@ -676,7 +676,7 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(createColumnStub.calls).toHaveLength(1);
             });
-            expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog" });
+            expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog", color: "#EA6000" });
             await vi.waitFor(() => {
                 expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
             });

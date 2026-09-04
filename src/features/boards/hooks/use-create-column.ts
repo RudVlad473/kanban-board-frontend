@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
+import { pickNextColumnColor } from "@/features/boards/column-palette";
 import {
     shouldNudgeOnColumnCount,
     withColumnInsert,
@@ -56,8 +57,12 @@ export const buildCreateFailureToastId = ({ boardId, name }: CreateColumnArgs): 
 
 export type CreateColumnArgs = { boardId: string; name: string };
 
-/** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
-type CreateColumnVariables = CreateColumnArgs & { clientId: string };
+/**
+ * What the create mutation is called with — the placeholder's id rides along so `onSuccess` can
+ * find it, and `color` is chosen once in `createColumn` (never here) so `onMutate`'s optimistic
+ * insert and `mutationFn`'s upstream call agree on the same pick.
+ */
+type CreateColumnVariables = CreateColumnArgs & { clientId: string; color?: string };
 
 /**
  * COLUMN-01's optimistic create (docs/adr/tech/0030). The modal closes at submit, so a failure is
@@ -75,8 +80,8 @@ export const useCreateColumn = ({
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
-        mutationFn: async ({ boardId, name }: CreateColumnVariables) => {
-            const result = await createColumnAction({ boardId, name });
+        mutationFn: async ({ boardId, name, color }: CreateColumnVariables) => {
+            const result = await createColumnAction({ boardId, name, color });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
                 throw new ActionRefusedError(result.status);
@@ -86,7 +91,7 @@ export const useCreateColumn = ({
         },
         retry: false,
 
-        onMutate: async ({ boardId, clientId, name }: CreateColumnVariables) => {
+        onMutate: async ({ boardId, clientId, name, color }: CreateColumnVariables) => {
             const queryKey = buildBoardQueryKey(boardId);
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
@@ -104,6 +109,7 @@ export const useCreateColumn = ({
                                   name,
                                   version: 0,
                                   position: current.columns.length,
+                                  color,
                                   tasks: [],
                               },
                           }),
@@ -168,8 +174,16 @@ export const useCreateColumn = ({
     const createColumn = async (args: CreateColumnArgs): Promise<void> => {
         const { boardId, name } = args;
 
+        /*
+         * Read straight from the entry every sibling column already lives in (ADR tech/0030) — an
+         * absent entry means an empty column list, which `pickNextColumnColor` reads as entry 0. A
+         * retry re-reads this at call time, so it re-picks against whatever the board looks like then.
+         */
+        const boardEntry = queryClient.getQueryData<BoardFull>(buildBoardQueryKey(boardId));
+        const color = pickNextColumnColor({ columns: boardEntry?.columns ?? [] });
+
         const outcome = await mutation
-            .mutateAsync({ boardId, name, clientId: crypto.randomUUID() })
+            .mutateAsync({ boardId, name, color, clientId: crypto.randomUUID() })
             .then(() => ({ didCreate: true as const }))
             .catch((error: unknown) => ({
                 didCreate: false as const,
