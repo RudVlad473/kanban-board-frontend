@@ -10,6 +10,11 @@ concurrency:
     group: "ci-${{ github.ref }}"
     cancel-in-progress: true
 
+# Default GITHUB_TOKEN scope for every job (docs/adr/tech/0033); a job that needs more
+# declares its own `permissions:` escalation rather than widening this default.
+permissions:
+    contents: read
+
 env:
     NEXT_TELEMETRY_DISABLED: "1"
     # The deployed nonprod backend's real address (GC-22: no mock server remains anywhere in the
@@ -34,10 +39,10 @@ jobs:
     # even when the build is broken, and this scan is fast enough not to wait behind `quality`.
     # Only this job sees full history; the local hook covers staged changes alone.
     secrets:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 15
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
               with:
                   # gitleaks-action diffs baseRef^..headRef from the push/PR event payload; a
                   # shallow checkout (the default `fetch-depth: 1` used by the other jobs below)
@@ -68,16 +73,16 @@ jobs:
                   GITLEAKS_VERSION: "8.30.1"
 
     quality:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 15
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: pnpm/action-setup@v4
+            - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
               with:
-                  node-version: 24
+                  node-version: 24.19.0
                   cache: "pnpm"
 
             - run: pnpm install --frozen-lockfile
@@ -175,17 +180,17 @@ jobs:
                   NONPROD_RESET_TOKEN: ${{ secrets.NONPROD_RESET_TOKEN }}
 
     visual:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 15
         needs: quality
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: pnpm/action-setup@v4
+            - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
               with:
-                  node-version: 24
+                  node-version: 24.19.0
                   cache: "pnpm"
 
             - run: pnpm install --frozen-lockfile
@@ -201,24 +206,24 @@ jobs:
 
             - name: Upload Playwright report
               if: failure()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
               with:
                   name: playwright-report
                   path: playwright-report/
                   retention-days: 7
 
     e2e:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 15
         needs: quality
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: pnpm/action-setup@v4
+            - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
               with:
-                  node-version: 24
+                  node-version: 24.19.0
                   cache: "pnpm"
 
             - run: pnpm install --frozen-lockfile
@@ -252,7 +257,7 @@ jobs:
 
             - name: Upload Playwright report
               if: failure()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
               with:
                   name: playwright-e2e-report
                   path: playwright-report/
