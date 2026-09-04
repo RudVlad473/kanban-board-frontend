@@ -19,6 +19,7 @@
         "secrets:check": "node scripts/check-secrets-encrypted.mjs",
         "gitleaks:check": "node scripts/check-gitleaks-version.mjs",
         "secrets:scan": "bash scripts/secrets.sh scan",
+        "verify": "node scripts/verify.mjs",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "prepare": "husky",
