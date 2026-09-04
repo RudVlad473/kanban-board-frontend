@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteSubtaskAction } from "@/features/tasks/actions/delete-subtask-action";
-import { withSubtaskRemove, type TaskColumn } from "@/features/tasks/model";
+import { withSubtaskRemove, withSubtaskRestore, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
@@ -68,7 +68,15 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
         onMutate: async ({ subtaskId }: { subtaskId: string; columnId: string }) => {
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<DeletableBoard>(queryKey);
+
+            /* Captured BEFORE the removal, so the rollback can put this row back at its own index. */
+            const subtasks =
+                queryClient
+                    .getQueryData<DeletableBoard>(queryKey)
+                    ?.columns.flatMap((column) => column.tasks)
+                    .find((task) => task.id === taskId)?.subtasks ?? [];
+            const removedSubtask = subtasks.find((subtask) => subtask.id === subtaskId);
+            const removedIndex = subtasks.findIndex((subtask) => subtask.id === subtaskId);
 
             setPendingSubtaskIds((current) => new Set(current).add(subtaskId));
             queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
@@ -77,14 +85,28 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                     : { ...current, columns: withSubtaskRemove({ columns: current.columns, taskId, subtaskId }) },
             );
 
-            return { previousBoard };
+            if (removedSubtask === undefined) {
+                return undefined;
+            }
+
+            /* Re-inserts THIS row at its original index — a snapshot would resurrect a sibling deleted since. */
+            return {
+                undo: (current: DeletableBoard) =>
+                    withSubtaskRestore({
+                        columns: current.columns,
+                        taskId,
+                        subtask: removedSubtask,
+                        index: removedIndex,
+                    }),
+            };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, _variables, context) => {
-            /* The full snapshot restore is the reinstatement — the row returns at its ORIGINAL index for free. */
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(queryKey, context.previousBoard);
+            if (context !== undefined) {
+                queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
+                    current === undefined ? current : { ...current, columns: context.undo(current) },
+                );
             }
 
             raiseFailureToast(error);

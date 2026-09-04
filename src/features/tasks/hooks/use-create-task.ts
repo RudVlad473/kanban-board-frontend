@@ -8,7 +8,7 @@ import { useRef } from "react";
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createTaskAction } from "@/features/tasks/actions/create-task-action";
 import { createTaskSubtasksAction } from "@/features/tasks/actions/create-task-subtasks-action";
-import { withTaskInsert, withTaskReplace, type TaskColumn } from "@/features/tasks/model";
+import { withTaskInsert, withTaskRemove, withTaskReplace, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
@@ -109,7 +109,6 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
             const queryKey = buildBoardQueryKey(boardId);
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<CreatableBoard>(queryKey);
 
             /* `version` is inert placeholder filler — the server owns it, and success replaces it. */
             queryClient.setQueryData<CreatableBoard>(queryKey, (current) =>
@@ -132,15 +131,22 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
                       },
             );
 
-            return { previousBoard };
+            /* Removes THIS task only — a snapshot restore would also erase a sibling that landed. */
+            return {
+                undo: (current: CreatableBoard) => withTaskRemove({ columns: current.columns, taskId: clientId }),
+            };
         },
 
         /* The rollback only; `createTask` below raises the toast, which needs the refusal's status. */
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (_error: unknown, { boardId }: CreateTaskVariables, context) => {
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
+            if (context === undefined) {
+                return;
             }
+
+            queryClient.setQueryData<CreatableBoard>(buildBoardQueryKey(boardId), (current) =>
+                current === undefined ? current : { ...current, columns: context.undo(current) },
+            );
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)

@@ -97,7 +97,6 @@ export const useToggleSubtask = ({
         onMutate: async ({ subtaskId, isCompleted }: { subtaskId: string; version: number; isCompleted: boolean }) => {
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<ToggleableBoard>(queryKey);
 
             setPendingSubtaskIds((current) => new Set(current).add(subtaskId));
             queryClient.setQueryData<ToggleableBoard>(queryKey, (current) =>
@@ -109,13 +108,31 @@ export const useToggleSubtask = ({
                       },
             );
 
-            return { previousBoard };
+            /* Flips THIS box back only — a snapshot restore would also undo a sibling toggle. */
+            return { restoredIsCompleted: !isCompleted };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
-        onError: (error: unknown, _variables, context) => {
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(queryKey, context.previousBoard);
+        onError: (
+            error: unknown,
+            { subtaskId }: { subtaskId: string; version: number; isCompleted: boolean },
+            context,
+        ) => {
+            if (context !== undefined) {
+                const { restoredIsCompleted } = context;
+                queryClient.setQueryData<ToggleableBoard>(queryKey, (current) =>
+                    current === undefined
+                        ? current
+                        : {
+                              ...current,
+                              columns: withSubtaskCompletion({
+                                  columns: current.columns,
+                                  taskId,
+                                  subtaskId,
+                                  isCompleted: restoredIsCompleted,
+                              }),
+                          },
+                );
             }
 
             raiseFailureToast(error);

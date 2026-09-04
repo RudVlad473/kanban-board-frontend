@@ -82,7 +82,13 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
         }) => {
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<RenamableBoard>(queryKey);
+
+            /* Captured BEFORE the write, so the rollback can restore THIS subtask's own title. */
+            const previousTitle = queryClient
+                .getQueryData<RenamableBoard>(queryKey)
+                ?.columns.flatMap((column) => column.tasks)
+                .flatMap((task) => task.subtasks)
+                .find((subtask) => subtask.id === subtaskId)?.title;
 
             setPendingSubtaskIds((current) => new Set(current).add(subtaskId));
             queryClient.setQueryData<RenamableBoard>(queryKey, (current) =>
@@ -94,14 +100,31 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                       },
             );
 
-            return { previousBoard };
+            /* Restores THIS title only — a snapshot restore would also undo a sibling row's edit. */
+            return { previousTitle };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
-        onError: (error: unknown, _variables, context) => {
-            /* Restoring the whole-board snapshot is what restores the prior title — no bespoke undo. */
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(queryKey, context.previousBoard);
+        onError: (
+            error: unknown,
+            { subtaskId }: { subtaskId: string; version: number; title: string; columnId: string },
+            context,
+        ) => {
+            if (context?.previousTitle !== undefined) {
+                const restoredTitle = context.previousTitle;
+                queryClient.setQueryData<RenamableBoard>(queryKey, (current) =>
+                    current === undefined
+                        ? current
+                        : {
+                              ...current,
+                              columns: withSubtaskRename({
+                                  columns: current.columns,
+                                  taskId,
+                                  subtaskId,
+                                  title: restoredTitle,
+                              }),
+                          },
+                );
             }
 
             raiseFailureToast(error);

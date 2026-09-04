@@ -187,6 +187,30 @@ export const withTaskInsert = <C extends TaskColumn>({
 }): C[] => columns.map((column) => (column.id === columnId ? { ...column, tasks: [...column.tasks, task] } : column));
 
 /**
+ * The board as it reads with one task put BACK at `index` in its column — the inverse of
+ * `withTaskRemove`, and what a failed delete or a failed move rolls back with.
+ *
+ * Spliced into whatever the column holds NOW, never into a remembered copy; see
+ * `withColumnRestore` for the concurrency defect that rule exists to avoid.
+ */
+export const withTaskRestore = <C extends TaskColumn>({
+    columns,
+    columnId,
+    task,
+    index,
+}: {
+    columns: C[];
+    columnId: string;
+    task: TaskFull;
+    index: number;
+}): C[] =>
+    columns.map((column) =>
+        column.id === columnId
+            ? { ...column, tasks: [...column.tasks.slice(0, index), task, ...column.tasks.slice(index)] }
+            : column,
+    );
+
+/**
  * The board as it reads with the task at `taskId` MERGED with `task` — how `useCreateTask` swaps its
  * placeholder for the server's real id, version and position. Merged rather than assigned because
  * `TaskResponseDTO` carries no `subtasks` (docs/adr/tech/0030 rule 2).
@@ -223,6 +247,33 @@ export const withSubtaskInsert = <C extends TaskColumn>({
         ...column,
         tasks: column.tasks.map((task) =>
             task.id === taskId ? { ...task, subtasks: [...task.subtasks, subtask] } : task,
+        ),
+    }));
+
+/**
+ * The board as it reads with one subtask put BACK at `index` in its task — the inverse of
+ * `withSubtaskRemove`, and what a failed delete rolls back with.
+ *
+ * Spliced into whatever the task holds NOW, never into a remembered copy; see `withColumnRestore`
+ * for the concurrency defect that rule exists to avoid.
+ */
+export const withSubtaskRestore = <C extends TaskColumn>({
+    columns,
+    taskId,
+    subtask,
+    index,
+}: {
+    columns: C[];
+    taskId: string;
+    subtask: Subtask;
+    index: number;
+}): C[] =>
+    columns.map((column) => ({
+        ...column,
+        tasks: column.tasks.map((task) =>
+            task.id === taskId
+                ? { ...task, subtasks: [...task.subtasks.slice(0, index), subtask, ...task.subtasks.slice(index)] }
+                : task,
         ),
     }));
 

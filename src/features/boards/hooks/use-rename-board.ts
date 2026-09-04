@@ -64,19 +64,27 @@ export const useRenameBoard = () => {
         onMutate: async ({ boardId, name }: RenameBoardArgs) => {
             // Or an in-flight read could land on top of the optimistic name and undo it.
             await queryClient.cancelQueries({ queryKey: BOARDS_QUERY_KEY });
-            const previousBoards = queryClient.getQueryData<Board[]>(BOARDS_QUERY_KEY);
+
+            /* Captured BEFORE the write, so the rollback can restore THIS board's own name. */
+            const previousName = queryClient
+                .getQueryData<Board[]>(BOARDS_QUERY_KEY)
+                ?.find((board) => board.id === boardId)?.name;
 
             queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
                 current?.map((board) => (board.id === boardId ? { ...board, name } : board)),
             );
 
-            return { previousBoards };
+            /* Restores THIS name only — a snapshot restore would also undo a sibling rename. */
+            return { previousName };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (error, variables, context); the shape is dictated by that external API, not this project (ADR tech/0016 exemption, as in sign-in-action.ts)
-        onError: (error: unknown, _variables, context) => {
-            if (context?.previousBoards !== undefined) {
-                queryClient.setQueryData(BOARDS_QUERY_KEY, context.previousBoards);
+        onError: (error: unknown, { boardId }: RenameBoardArgs, context) => {
+            if (context?.previousName !== undefined) {
+                const restoredName = context.previousName;
+                queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+                    current?.map((board) => (board.id === boardId ? { ...board, name: restoredName } : board)),
+                );
             }
 
             raiseFailureToast(error);

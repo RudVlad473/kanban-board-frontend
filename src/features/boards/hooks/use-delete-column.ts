@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
-import { withColumnRemove } from "@/features/boards/model";
+import { withColumnRemove, withColumnRestore } from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
@@ -77,7 +77,11 @@ export const useDeleteColumn = () => {
             const queryKey = buildBoardQueryKey(boardId);
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<BoardFull>(queryKey);
+
+            /* Captured BEFORE the removal, so the rollback can put this column back where it was. */
+            const columns = queryClient.getQueryData<BoardFull>(queryKey)?.columns ?? [];
+            const removedColumn = columns.find((column) => column.id === columnId);
+            const removedIndex = columns.findIndex((column) => column.id === columnId);
 
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
                 current === undefined
@@ -85,14 +89,23 @@ export const useDeleteColumn = () => {
                     : { ...current, columns: withColumnRemove({ columns: current.columns, columnId }) },
             );
 
-            return { previousBoard };
+            if (removedColumn === undefined) {
+                return undefined;
+            }
+
+            /* Re-inserts THIS column only — a snapshot restore would also resurrect a sibling deleted since. */
+            return {
+                undo: (current: BoardFull) =>
+                    withColumnRestore({ columns: current.columns, column: removedColumn, index: removedIndex }),
+            };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { boardId }: DeleteColumnArgs, context) => {
-            /* Restoring the whole-board snapshot is what brings the column and its tasks back. */
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
+            if (context !== undefined) {
+                queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
+                    current === undefined ? current : { ...current, columns: context.undo(current) },
+                );
             }
 
             raiseFailureToast(error);

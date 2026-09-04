@@ -6,7 +6,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
-import { shouldNudgeOnColumnCount, withColumnInsert, withColumnReplace } from "@/features/boards/model";
+import {
+    shouldNudgeOnColumnCount,
+    withColumnInsert,
+    withColumnRemove,
+    withColumnReplace,
+} from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
@@ -85,7 +90,6 @@ export const useCreateColumn = ({
             const queryKey = buildBoardQueryKey(boardId);
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<BoardFull>(queryKey);
 
             /* `version` is inert placeholder filler — the server owns it, and success replaces it. */
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
@@ -106,18 +110,20 @@ export const useCreateColumn = ({
                       },
             );
 
-            return { previousBoard };
+            /* Removes THIS column only — see the hook doc for why a snapshot cannot be restored here. */
+            return { undo: (current: BoardFull) => withColumnRemove({ columns: current.columns, columnId: clientId }) };
         },
 
-        /*
-         * No toast here, unlike every other rollback in this repo: nothing was created, so the
-         * failure stays inline in the still-open modal (03-UI-SPEC error/Add-Column-generic).
-         */
+        /* No toast here: `createColumn` below raises it, so a retry can carry the typed name back. */
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (_error: unknown, { boardId }: CreateColumnVariables, context) => {
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
+            if (context === undefined) {
+                return;
             }
+
+            queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
+                current === undefined ? current : { ...current, columns: context.undo(current) },
+            );
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)

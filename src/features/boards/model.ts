@@ -103,6 +103,26 @@ export const withColumnInsert = ({ columns, column }: { columns: ColumnFull[]; c
     column,
 ];
 
+// comment-length-exempt: records why a rollback splices into the LIVE array rather than restoring a snapshot, the concurrency defect this whole family exists to avoid (docs/adr/tech/0023)
+/**
+ * The board's columns with one put BACK at `index` — the inverse of `withColumnRemove`, and what a
+ * failed delete rolls back with.
+ *
+ * Spliced into whatever the array holds NOW, never into a remembered copy: a sibling mutation may
+ * have landed while the delete was in flight, and restoring a snapshot taken before it would erase
+ * it. An index past the end appends, which is the right answer for a column deleted from the end
+ * of a row that has since shrunk.
+ */
+export const withColumnRestore = ({
+    columns,
+    column,
+    index,
+}: {
+    columns: ColumnFull[];
+    column: ColumnFull;
+    index: number;
+}): ColumnFull[] => [...columns.slice(0, index), column, ...columns.slice(index)];
+
 /**
  * The board's columns with one already removed — the reducer behind `useDeleteColumn`'s optimistic
  * write. A columnId the board no longer holds yields the input untouched.

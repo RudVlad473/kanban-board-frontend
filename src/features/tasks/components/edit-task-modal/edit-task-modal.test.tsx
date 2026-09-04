@@ -260,6 +260,43 @@ describeForEachDevice({
             expect(Populated.args.onSubmit).not.toHaveBeenCalled();
         });
 
+        // comment-length-exempt: records the resurrection this pins and why only a failing-plus-succeeding pair shows it, which a reader would otherwise reduce to a single failed delete
+        /*
+         * A failed delete must put back ITS OWN row and nothing else. Restoring a whole-board
+         * snapshot also puts back any row deleted while this one flew — a Subtask the server has
+         * already dropped, back on screen, which is the resurrection ADR 0030 rule 4 exists to stop.
+         */
+        it("leaves a subtask deleted when an unrelated delete fails while it was in flight", async () => {
+            // Arrange
+            const screen = await render(<Populated />);
+            deleteSubtaskStub.queue({ status: RESULT_STATUS.ERROR });
+            deleteSubtaskStub.hold();
+
+            // Act — the first delete goes out and is left unresolved.
+            await screen.getByRole("button", { name: "Remove subtask 'Fixture Subtask 1'" }).click();
+            await vi.waitFor(() => {
+                expect(deleteSubtaskStub.calls).toHaveLength(1);
+            });
+
+            // Act — a second delete lands completely while the first is still in flight.
+            deleteSubtaskStub.queue({ status: RESULT_STATUS.SUCCESS });
+            await screen.getByRole("button", { name: "Remove subtask 'Fixture Subtask 2'" }).click();
+            await vi.waitFor(() => {
+                expect(deleteSubtaskStub.calls).toHaveLength(2);
+            });
+
+            // Act — now let the first delete fail.
+            deleteSubtaskStub.settle();
+            await expect
+                .element(screen.getByRole("button", { name: "Remove subtask 'Fixture Subtask 1'" }))
+                .toBeVisible();
+
+            // Assert — the refused row is back, and the one the server accepted stays gone.
+            await expect
+                .element(screen.getByRole("button", { name: "Remove subtask 'Fixture Subtask 2'" }))
+                .not.toBeInTheDocument();
+        });
+
         /*
          * SUBTASK-01's optimistic add: the committed row is in the list BEFORE the server agrees,
          * which is what renumbers the draft it was typed in from "Subtask 1" to "Subtask 2".

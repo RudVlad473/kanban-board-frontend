@@ -90,7 +90,6 @@ export const useCreateSubtask = ({
         onMutate: async ({ clientId, title }: { clientId: string; title: string }) => {
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<CreatableBoard>(queryKey);
 
             setPendingClientIds((current) => new Set(current).add(clientId));
             /* Placeholder fields are inert — the server owns `isCompleted`/`version`, replaced on success. */
@@ -107,14 +106,19 @@ export const useCreateSubtask = ({
                       },
             );
 
-            return { previousBoard };
+            /* Removes THIS row only — sibling draft rows commit independently and must survive. */
+            return {
+                undo: (current: CreatableBoard) =>
+                    withSubtaskRemove({ columns: current.columns, taskId, subtaskId: clientId }),
+            };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, _variables, context) => {
-            /* Restoring the whole-board snapshot is what removes the placeholder row — no bespoke undo. */
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(queryKey, context.previousBoard);
+            if (context !== undefined) {
+                queryClient.setQueryData<CreatableBoard>(queryKey, (current) =>
+                    current === undefined ? current : { ...current, columns: context.undo(current) },
+                );
             }
 
             raiseFailureToast(error);

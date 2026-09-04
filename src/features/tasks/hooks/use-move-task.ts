@@ -72,7 +72,11 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
         onMutate: async ({ taskId, targetColumnId, targetPosition }: MoveTaskVariables) => {
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<MovableBoard>(queryKey);
+
+            /* Where this task sat BEFORE the move, so the rollback can put it back there. */
+            const board = queryClient.getQueryData<MovableBoard>(queryKey);
+            const sourceColumn = board?.columns.find((column) => column.tasks.some((task) => task.id === taskId));
+            const sourceIndex = sourceColumn?.tasks.findIndex((task) => task.id === taskId) ?? -1;
 
             queryClient.setQueryData<MovableBoard>(queryKey, (current) =>
                 current === undefined
@@ -88,13 +92,28 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
                       },
             );
 
-            return { previousBoard };
+            /* Moves THIS task back only — a snapshot restore would also undo a sibling write. */
+            return sourceColumn === undefined ? undefined : { sourceColumnId: sourceColumn.id, sourceIndex };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
-        onError: (error: unknown, _variables, context) => {
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(queryKey, context.previousBoard);
+        onError: (error: unknown, { taskId }: MoveTaskVariables, context) => {
+            if (context !== undefined) {
+                const { sourceColumnId, sourceIndex } = context;
+
+                queryClient.setQueryData<MovableBoard>(queryKey, (current) =>
+                    current === undefined
+                        ? current
+                        : {
+                              ...current,
+                              columns: moveTaskInColumns({
+                                  columns: current.columns,
+                                  taskId,
+                                  targetColumnId: sourceColumnId,
+                                  targetIndex: sourceIndex,
+                              }),
+                          },
+                );
             }
 
             raiseFailureToast(error);

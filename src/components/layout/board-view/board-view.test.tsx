@@ -758,6 +758,48 @@ describeForEachDevice({
             createColumnStub.settle();
         });
 
+        // comment-length-exempt: records the concurrency the whole-entry rollback loses and why a same-hook pair is the smallest case that shows it, which a reader would otherwise simplify into a single failing create
+        /*
+         * The rollback must undo THIS create only. Restoring a whole-board snapshot also erases any
+         * column that landed while this one flew — the hazard `use-create-board.ts` already records
+         * and avoids, and which every other hook still had. Two creates, the first refused and the
+         * second accepted, is the smallest arrangement that tells the two rollbacks apart.
+         */
+        it("keeps a column that landed while a failing create was still in flight", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            createColumnStub.queue({ status: RESULT_STATUS.ERROR });
+            createColumnStub.hold();
+
+            // Act — the first create goes out and is left unresolved.
+            await submitNewColumn("Backlog");
+            await vi.waitFor(() => {
+                expect(createColumnStub.calls).toHaveLength(1);
+            });
+
+            // Act — a second create lands completely while the first is still in flight.
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: SECOND_STUB_COLUMN_ID, name: "Icebox", version: 0, position: namesBefore.length + 1 },
+            });
+            await userEvent.click(screen.getByRole("button", { name: "+ New Column" }));
+            await submitOpenColumnForm("Icebox");
+            await vi.waitFor(() => {
+                expect(createColumnStub.calls).toHaveLength(2);
+            });
+            expect(getRenderedColumnNames()).toEqual([...namesBefore, "Backlog", "Icebox"]);
+
+            // Act — now let the first create fail.
+            createColumnStub.settle();
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
+            });
+
+            // Assert — Backlog is withdrawn and Icebox, which the server accepted, is untouched.
+            expect(getRenderedColumnNames()).toEqual([...namesBefore, "Icebox"]);
+        });
+
         /* The other half of the same mechanism: a refusal must leave no trace of the optimistic column. */
         it("removes the optimistic column and reports the failure in a toast when the create fails", async () => {
             // Arrange

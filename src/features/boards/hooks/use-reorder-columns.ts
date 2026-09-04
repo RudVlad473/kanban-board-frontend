@@ -68,7 +68,11 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
         onMutate: async ({ columnId, targetPosition }: ReorderColumnVariables) => {
             // Or an in-flight read could land on top of the optimistic order and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<BoardFull>(queryKey);
+
+            /* Where this column sat BEFORE the move, so the rollback can put it back there. */
+            const previousIndex =
+                queryClient.getQueryData<BoardFull>(queryKey)?.columns.findIndex((column) => column.id === columnId) ??
+                -1;
 
             queryClient.setQueryData<BoardFull>(queryKey, (current) => {
                 const fromIndex = current?.columns.findIndex((column) => column.id === columnId) ?? -1;
@@ -85,13 +89,25 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
                       };
             });
 
-            return { previousBoard };
+            /* Moves THIS column back only — a snapshot restore would also undo a sibling write. */
+            return { previousIndex };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
-        onError: (error: unknown, _variables, context) => {
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(queryKey, context.previousBoard);
+        onError: (error: unknown, { columnId }: ReorderColumnVariables, context) => {
+            if (context !== undefined && context.previousIndex !== -1) {
+                const { previousIndex } = context;
+
+                queryClient.setQueryData<BoardFull>(queryKey, (current) => {
+                    const fromIndex = current?.columns.findIndex((column) => column.id === columnId) ?? -1;
+
+                    return current === undefined || fromIndex === -1
+                        ? current
+                        : {
+                              ...current,
+                              columns: reorderColumns({ columns: current.columns, fromIndex, toIndex: previousIndex }),
+                          };
+                });
             }
 
             raiseFailureToast(error);

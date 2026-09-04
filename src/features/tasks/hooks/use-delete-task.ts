@@ -7,7 +7,7 @@ import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteTaskAction } from "@/features/tasks/actions/delete-task-action";
-import { withTaskRemove, type TaskColumn } from "@/features/tasks/model";
+import { withTaskRemove, withTaskRestore, type TaskColumn } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
@@ -79,7 +79,12 @@ export const useDeleteTask = () => {
             const queryKey = buildBoardQueryKey(boardId);
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<DeletableBoard>(queryKey);
+
+            /* Captured BEFORE the removal, so the rollback can put this task back where it was. */
+            const board = queryClient.getQueryData<DeletableBoard>(queryKey);
+            const sourceColumn = board?.columns.find((column) => column.tasks.some((task) => task.id === taskId));
+            const removedTask = sourceColumn?.tasks.find((task) => task.id === taskId);
+            const removedIndex = sourceColumn?.tasks.findIndex((task) => task.id === taskId) ?? -1;
 
             queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
                 !isNil(current)
@@ -87,14 +92,28 @@ export const useDeleteTask = () => {
                     : current,
             );
 
-            return { previousBoard };
+            if (isNil(sourceColumn) || isNil(removedTask)) {
+                return undefined;
+            }
+
+            /* Re-inserts THIS task only — a snapshot restore would also resurrect a sibling deleted since. */
+            return {
+                undo: (current: DeletableBoard) =>
+                    withTaskRestore({
+                        columns: current.columns,
+                        columnId: sourceColumn.id,
+                        task: removedTask,
+                        index: removedIndex,
+                    }),
+            };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { boardId }: DeleteTaskArgs, context) => {
-            /* Restoring the whole-board snapshot is what brings the task and its subtasks back. */
-            if (!isNil(context?.previousBoard)) {
-                queryClient.setQueryData(buildBoardQueryKey(boardId), context.previousBoard);
+            if (!isNil(context)) {
+                queryClient.setQueryData<DeletableBoard>(buildBoardQueryKey(boardId), (current) =>
+                    isNil(current) ? current : { ...current, columns: context.undo(current) },
+                );
             }
 
             raiseFailureToast(error);

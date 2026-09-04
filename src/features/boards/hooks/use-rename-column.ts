@@ -62,7 +62,11 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
 
         onMutate: async ({ columnId, name }: RenameColumnArgs) => {
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<BoardFull>(queryKey);
+
+            /* Captured BEFORE the write, so the rollback can restore THIS column's own name. */
+            const previousName = queryClient
+                .getQueryData<BoardFull>(queryKey)
+                ?.columns.find((column) => column.id === columnId)?.name;
 
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
                 current === undefined
@@ -75,13 +79,24 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
                       },
             );
 
-            return { previousBoard };
+            /* Restores THIS name only — a snapshot restore would also undo a sibling write. */
+            return { previousName };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
-        onError: (error: unknown, _variables, context) => {
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(queryKey, context.previousBoard);
+        onError: (error: unknown, { columnId }: RenameColumnArgs, context) => {
+            if (context?.previousName !== undefined) {
+                const restoredName = context.previousName;
+                queryClient.setQueryData<BoardFull>(queryKey, (current) =>
+                    current === undefined
+                        ? current
+                        : {
+                              ...current,
+                              columns: current.columns.map((column) =>
+                                  column.id === columnId ? { ...column, name: restoredName } : column,
+                              ),
+                          },
+                );
             }
 
             raiseFailureToast(error);

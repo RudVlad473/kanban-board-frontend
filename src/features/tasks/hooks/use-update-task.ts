@@ -79,7 +79,12 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
         onMutate: async ({ taskId, title, description }: UpdateTaskVariables) => {
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
-            const previousBoard = queryClient.getQueryData<UpdatableBoard>(queryKey);
+
+            /* Captured BEFORE the write, so the rollback can restore THIS task's own fields. */
+            const previousTask = queryClient
+                .getQueryData<UpdatableBoard>(queryKey)
+                ?.columns.flatMap((column) => column.tasks)
+                .find((task) => task.id === taskId);
 
             queryClient.setQueryData<UpdatableBoard>(queryKey, (current) =>
                 current === undefined
@@ -90,13 +95,29 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
                       },
             );
 
-            return { previousBoard };
+            /* Restores THIS task's fields only — a snapshot restore would also undo a sibling write. */
+            return previousTask === undefined
+                ? undefined
+                : { previousTitle: previousTask.title, previousDescription: previousTask.description };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
-        onError: (error: unknown, _variables, context) => {
-            if (context?.previousBoard !== undefined) {
-                queryClient.setQueryData(queryKey, context.previousBoard);
+        onError: (error: unknown, { taskId }: UpdateTaskVariables, context) => {
+            if (context !== undefined) {
+                const { previousTitle, previousDescription } = context;
+                queryClient.setQueryData<UpdatableBoard>(queryKey, (current) =>
+                    current === undefined
+                        ? current
+                        : {
+                              ...current,
+                              columns: withTaskUpdate({
+                                  columns: current.columns,
+                                  taskId,
+                                  title: previousTitle,
+                                  description: previousDescription,
+                              }),
+                          },
+                );
             }
 
             raiseFailureToast(error);

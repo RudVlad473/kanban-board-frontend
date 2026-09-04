@@ -25,9 +25,9 @@ const DELETE_FAILURE_COPY = { title: "Couldn't delete board.", description: "Try
  * Decisions ─────────────────────────────────────────────────────────────────────────────────────
  * comment-length-exempt: records a reversal of this hook's own previous decision, which a reader comparing it against ADR domain/0002 would otherwise re-open (docs/adr/tech/0023)
  * This hook read "deliberately NOT optimistic (ADR domain/0002)" until 2026-09-02. That ADR says
- * the SERVER cannot undo a delete; it says nothing about staging one in the client. The snapshot
- * `onError` restores is a complete undo of the only thing removed here — a cache entry — so the
- * argument it rested on ("there would be nothing to roll back to") was never true of this write.
+ * the SERVER cannot undo a delete; it says nothing about staging one in the client. `onError` puts
+ * the removed row back, which is a complete undo of the only thing removed here — a cache entry —
+ * so the argument it rested on ("there would be nothing to roll back to") was never true here.
  * What would make this wrong: a delete whose failure the client cannot detect. This one's action
  * reports every refusal as a status, which is what the rollback below hangs on.
  * ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -57,7 +57,11 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
         onMutate: async ({ boardId }: { boardId: string }) => {
             // Or an in-flight read could land on top of the optimistic list and undo it.
             await queryClient.cancelQueries({ queryKey: BOARDS_QUERY_KEY });
-            const previousBoards = queryClient.getQueryData<Board[]>(BOARDS_QUERY_KEY);
+
+            /* Captured BEFORE the removal, so the rollback can put this row back where it was. */
+            const boards = queryClient.getQueryData<Board[]>(BOARDS_QUERY_KEY) ?? [];
+            const removedBoard = boards.find((board) => board.id === boardId);
+            const removedIndex = boards.findIndex((board) => board.id === boardId);
 
             /* `setQueryData` returns what it wrote, which is the list the destination is resolved against. */
             const remainingBoards =
@@ -75,13 +79,24 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
                 router.replace(destination);
             }
 
-            return { previousBoards, didNavigate: destination !== null };
+            /* Re-inserts THIS row only — a snapshot restore would also resurrect a board deleted since. */
+            const undo =
+                removedBoard === undefined
+                    ? null
+                    : (current: Board[]) => [
+                          ...current.slice(0, removedIndex),
+                          removedBoard,
+                          ...current.slice(removedIndex),
+                      ];
+
+            return { undo, didNavigate: destination !== null };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { boardId }: { boardId: string }, context) => {
-            if (context?.previousBoards !== undefined) {
-                queryClient.setQueryData(BOARDS_QUERY_KEY, context.previousBoards);
+            if (context?.undo != null) {
+                const restore = context.undo;
+                queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) => restore(current ?? []));
             }
 
             /*
