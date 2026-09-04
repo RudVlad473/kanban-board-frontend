@@ -49,8 +49,13 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
     } = useSortable({
         id: column.id,
         disabled: isReorderDisabled,
-        /* Declared so a drag handler branches on what was lifted rather than guessing from the id. */
-        data: { type: DRAG_ITEM_TYPE.COLUMN },
+        /*
+         * `type` so a drag handler branches on what was lifted rather than guessing from the id.
+         * `columnId` so this section answers "which column is the pointer in?" the same way the body
+         * droppable does — it is the only one covering the header band, where a task drop used to
+         * resolve to no column at all.
+         */
+        data: { type: DRAG_ITEM_TYPE.COLUMN, columnId: column.id },
         attributes: { roleDescription: "draggable column" },
     });
 

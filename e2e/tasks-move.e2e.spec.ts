@@ -158,6 +158,48 @@ test.describe("TASK-04: move a task between columns", () => {
         ).toHaveCount(0);
     });
 
+    /* The mirror of the drop-below case: the FIRST slot of a populated column, reached from above. */
+    test("task move: drags a task above the destination's first card and lands it there", async ({ page }) => {
+        // Arrange — Alpha holds the mover, Bravo holds three cards, so "first" is its own slot.
+        const { account, board } = seedTwoColumnBoardWithThreeDestinationTasks();
+        await signIn({ page, account, board });
+        await expect.poll(() => readTaskTitlesInColumn({ page, name: "Bravo" })).toEqual(DESTINATION_TASK_TITLES);
+        /* The handle's centre, and a point above the first card's centre but still inside Bravo. */
+        const source = await centerOf(taskDragHandle({ page, title: TASK_TITLE }));
+        const firstCard = columnSection({ page, name: "Bravo" }).locator("li").first();
+        const firstCardBox = await firstCard.boundingBox();
+
+        if (firstCardBox === null) {
+            throw new Error("the destination column's first card reported no bounding box");
+        }
+
+        const target = { x: firstCardBox.x + firstCardBox.width / 2, y: firstCardBox.y - 12 };
+
+        // Act — a real press, several intermediate moves, then a release once the request is created.
+        await page.mouse.move(source.x, source.y);
+        await page.mouse.down();
+        /* A first move past MouseSensor's 8px activation distance, so the lift is already under way. */
+        await page.mouse.move(source.x + 16, source.y, { steps: 4 });
+        await page.mouse.move(target.x, target.y, { steps: DRAG_MOVE_STEPS });
+        /* Created before the release that issues the write, per createServerActionSettled's contract. */
+        const settled = createServerActionSettled(page);
+        await page.mouse.up();
+
+        // Assert — FIRST, ahead of every seeded card.
+        await expect
+            .poll(() => readTaskTitlesInColumn({ page, name: "Bravo" }))
+            .toEqual([TASK_TITLE, ...DESTINATION_TASK_TITLES]);
+
+        // Act — let the write reach the server, then reload; the optimistic placement cannot answer for it.
+        await settled;
+        await page.reload();
+
+        // Assert — the position the server stored is the one the drop showed.
+        await expect
+            .poll(() => readTaskTitlesInColumn({ page, name: "Bravo" }))
+            .toEqual([TASK_TITLE, ...DESTINATION_TASK_TITLES]);
+    });
+
     // comment-length-exempt: records the exact geometry the drop depends on and the reading it rules out, which a future reader would otherwise simplify into a centre-of-card drag that proves nothing
     /*
      * Reported 2026-09-04: with three cards in the destination, a card dragged below the LAST one

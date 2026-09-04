@@ -90,8 +90,21 @@ export const createTaskAwareCollisionDetection = ({
             return collisions;
         }
 
-        const hovered = columnTaskIds.find(({ columnId }) => buildColumnBodyDroppableId(columnId) === String(overId));
-        /* Already over a card, or over an empty column body — either way the first collision is the answer. */
+        // comment-length-exempt: records the third droppable a task drag can land on and the dead strip that ignoring it leaves, a slot-unreachable bug this file has now shipped twice (docs/adr/tech/0023)
+        /*
+         * Which column the pointer is in, from EITHER of the two droppables that can answer it: the
+         * column-body list, or the column's own sortable `<section>`.
+         *
+         * The section is what the pointer is inside anywhere the list is not — the header band above
+         * the first card — and its data carries no `columnId`, so a drop there resolved to no column
+         * and issued no request at all. Reading the column off its droppable id instead makes every
+         * point inside a column a drop into that column, which is what leaves no dead strips.
+         */
+        const hovered = columnTaskIds.find(
+            ({ columnId }) => buildColumnBodyDroppableId(columnId) === String(overId) || columnId === String(overId),
+        );
+
+        /* Nothing this board owns, or an empty column — either way the first collision is the answer. */
         if (hovered === undefined || hovered.taskIds.length === 0) {
             return collisions;
         }
