@@ -118,7 +118,7 @@ export const BoardView = ({
     const { deleteColumn, isPending: isDeletePending } = useDeleteColumn();
     const { deleteTask, isPending: isDeleteTaskPending } = useDeleteTask();
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
-    const { dndContextProps, liftedColumn, liftedTask, isTaskMoveDisabled } = useBoardDragSession({
+    const { dndContextProps, liftedColumn, liftedTask, isTaskMoveDisabled, wasTaskLifted } = useBoardDragSession({
         boardId: board.id,
         columns: renderedColumns,
         moveTask: requestMove,
@@ -263,7 +263,7 @@ export const BoardView = ({
                     {/* The full-opacity preview that follows the pointer while the column itself stays
                         in place at reduced opacity; the settle is dropped entirely under reduce-motion. */}
                     {/* null disables dnd-kit's drop animation; undefined means "use its default". */}
-                    <DragOverlay dropAnimation={prefersReducedMotion ? null : undefined}>
+                    <DragOverlay dropAnimation={prefersReducedMotion || wasTaskLifted ? null : undefined}>
                         {liftedTask !== null ? (
                             /* The card's own anatomy minus its controls — a preview, not a second interactive copy. */
                             <div className="flex w-70 flex-col gap-2 rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-lg">

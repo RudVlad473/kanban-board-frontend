@@ -95,6 +95,19 @@ const seedTwoColumnBoardWithThreeDestinationTasks = (): { account: SeededAccount
     return { account, board };
 };
 
+/* One column holding all three, which is the only arrangement a WITHIN-column reorder exists in. */
+const seedOneColumnBoardWithThreeTasks = (): { account: SeededAccount; board: SeededBoard } => {
+    const account = seedAccount();
+    const board = seedBoard({ account, name: `E2E Task Reorder ${randomUUID().slice(0, 8)}` });
+    const column = seedColumn({ account, boardId: board.id, name: "Alpha" });
+
+    for (const title of DESTINATION_TASK_TITLES) {
+        seedTask({ account, boardId: board.id, columnId: column.id, title });
+    }
+
+    return { account, board };
+};
+
 /**
  * One column's card titles in rendered ORDER — the content button's own first span, which is what
  * distinguishes it from the drag handle `<button>` beside it.
@@ -156,6 +169,49 @@ test.describe("TASK-04: move a task between columns", () => {
         await expect(
             columnSection({ page, name: "Alpha" }).getByRole("button", { name: TASK_TITLE, exact: true }),
         ).toHaveCount(0);
+    });
+
+    // comment-length-exempt: records both measured artifacts and the frame they have to be absent on, which is the whole difference between this test and one that always passes
+    /*
+     * Reported 2026-09-04: reordering within one column made the cards flicker on drop. Two
+     * artifacts, both from the library settling a list the optimistic write had ALREADY reordered:
+     * the shifted neighbour FLIP-animated back from a position it no longer occupied (measured
+     * -104px -> -22px -> 0 over ~180ms), and the settle's own side effect held the dropped card at
+     * `opacity: 0` for ~120ms. Asserted on the drop frame itself with no polling — one tick later
+     * both animations have finished and every reading is clean whether or not the fix is present.
+     */
+    test("task reorder: settles with no leftover transform or hidden card on the drop frame", async ({ page }) => {
+        // Arrange — three cards in ONE column, which is the only arrangement the report reproduces on.
+        const { account, board } = seedOneColumnBoardWithThreeTasks();
+        await signIn({ page, account, board });
+        await expect.poll(() => readTaskTitlesInColumn({ page, name: "Alpha" })).toEqual(DESTINATION_TASK_TITLES);
+        const [firstTitle, secondTitle] = DESTINATION_TASK_TITLES;
+        const source = await centerOf(taskDragHandle({ page, title: firstTitle }));
+
+        // Act — lift the first card and drop it below the second's centre.
+        await page.mouse.move(source.x, source.y);
+        await page.mouse.down();
+        /* A first move past MouseSensor's 8px activation distance, so the lift is already under way. */
+        await page.mouse.move(source.x + 16, source.y, { steps: 4 });
+        await page.mouse.move(source.x, source.y + 150, { steps: DRAG_MOVE_STEPS });
+        await page.mouse.up();
+
+        // Assert — every card is settled on this very frame: nothing translated, nothing hidden.
+        const settledStyles = await page.evaluate(() =>
+            Array.from(document.querySelectorAll("section li")).map((item) => {
+                const computed = getComputedStyle(item);
+
+                return { transform: computed.transform, opacity: computed.opacity };
+            }),
+        );
+
+        expect(settledStyles).toEqual(settledStyles.map(() => ({ transform: "none", opacity: "1" })));
+        expect(settledStyles).toHaveLength(DESTINATION_TASK_TITLES.length);
+
+        // Assert — and the reorder itself still happened.
+        await expect
+            .poll(() => readTaskTitlesInColumn({ page, name: "Alpha" }))
+            .toEqual([secondTitle, firstTitle, DESTINATION_TASK_TITLES[2]]);
     });
 
     /* The mirror of the drop-below case: the FIRST slot of a populated column, reached from above. */

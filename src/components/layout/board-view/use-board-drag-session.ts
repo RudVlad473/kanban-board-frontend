@@ -3,7 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useColumnDragSensors } from "@/features/boards/hooks/use-column-drag-sensors";
 import { createColumnReorderAnnouncements } from "@/features/boards/model";
@@ -33,6 +33,12 @@ type Args = {
 export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns }: Args) => {
     const [liftedColumnId, setLiftedColumnId] = useState<string | null>(null);
     const [liftedTaskId, setLiftedTaskId] = useState<string | null>(null);
+    /*
+     * A ref, not state, and cleared on the next LIFT rather than on this drop — the drop animation is
+     * configured on the render `handleDragEnd` triggers, by which point `liftedTaskId` is already
+     * null, so a state-derived answer reports "column" for every task drop.
+     */
+    const liftedKindRef = useRef<string | null>(null);
     const sensors = useColumnDragSensors();
 
     /* Every column's own card ids, which is both the sortable item list and what narrows a collision. */
@@ -43,7 +49,10 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
 
     /* Branched on the item's DECLARED type, never on the id: an id lookup returns -1 for the other kind. */
     const handleDragStart = ({ active }: DragStartEvent): void => {
-        if (toDragItemData(active.data.current)?.type === DRAG_ITEM_TYPE.TASK) {
+        const liftedKind = toDragItemData(active.data.current)?.type ?? null;
+        liftedKindRef.current = liftedKind;
+
+        if (liftedKind === DRAG_ITEM_TYPE.TASK) {
             setLiftedTaskId(String(active.id));
 
             return;
@@ -164,6 +173,18 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
         },
         liftedColumn,
         liftedTask,
+        // comment-length-exempt: records the two artifacts the library's own settle produces against an already-reordered list, both measured, which a reader would otherwise restore as a missing animation (docs/adr/tech/0023)
+        /*
+         * Whether the drop being settled RIGHT NOW was a task's — which must not play the library's
+         * settle at all.
+         *
+         * The move is optimistic, so the list has already reordered by the time the settle starts:
+         * the overlay flies to the card's pre-move rect while the card itself is elsewhere, and the
+         * settle's own side effect holds the real card at `opacity: 0` until it finishes. Measured
+         * 2026-09-04 — the dropped card stayed invisible for ~120ms after landing. A column reorder
+         * keeps its settle, which is the animation 03-UI-SPEC actually asks for.
+         */
+        wasTaskLifted: liftedKindRef.current === DRAG_ITEM_TYPE.TASK,
         /* UI-SPEC zero-one-many: one column holding one task is the only board a card cannot move on. */
         isTaskMoveDisabled: columns.length === 1 && taskCount === 1,
     };

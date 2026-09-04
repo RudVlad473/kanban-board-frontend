@@ -62,6 +62,12 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
         disabled: { draggable: isMoveDisabled || isMoving, droppable: isColumnDragActive },
         data: { type: DRAG_ITEM_TYPE.TASK, columnId },
         attributes: { roleDescription: "draggable task" },
+        /*
+         * The drop already moved this card: `useMoveTask`'s optimistic write reorders the list in
+         * the same tick, so the library's default FLIP would animate a card that is ALREADY in its
+         * final slot back from the position it no longer occupies.
+         */
+        animateLayoutChanges: () => false,
     });
 
     /* Read off the strategy's own indices, so the pointer path and the keyboard path indicate identically. */
