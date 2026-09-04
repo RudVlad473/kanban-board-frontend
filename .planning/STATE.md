@@ -204,6 +204,7 @@ verifying phase 03 wave 4) —
 | 260829-kyv | Regenerate OpenAPI contract from backend and scope e2e reset cleanup to seeded user ids instead of full-db wipe | 2026-08-29 | 5f325f8 | Verified | [260829-kyv-regenerate-openapi-contract-from-backend](./quick/260829-kyv-regenerate-openapi-contract-from-backend/) |
 | 260903-ttt | Wire SOPS + age for local secret management and verify gitleaks still behaves alongside it | 2026-09-03 | 153c096 | Verified | [260903-ttt-wire-sops-age-for-local-secret-managemen](./quick/260903-ttt-wire-sops-age-for-local-secret-managemen/) |
 | 260904-e3z | Wire the pnpm verify pre-push hook and a ci.yml drift guard, per Spike 2's two-tier recommendation | 2026-09-04 | 21cf5d5 | Verified | [260904-e3z-wire-the-pre-push-verify-hook-per-spike-](./quick/260904-e3z-wire-the-pre-push-verify-hook-per-spike-/) |
+| 260904-s6o | Implement column colour end-to-end on the frontend against the regenerated OpenAPI contract: curated 6-entry palette, first-unused pick, ΔE_ok 0.15 floor | 2026-09-04 | df37fd4 | Verified | [260904-s6o-implement-column-colour-end-to-end-on-th](./quick/260904-s6o-implement-column-colour-end-to-end-on-th/) |
 
 ### Roadmap Evolution
 
