@@ -46,3 +46,20 @@ Deferred from `260903-ttt` only because that task's executor was actively rewrit
 time and a concurrent edit would have conflicted. Consider folding this into the CI-pinning work in
 `2026-09-03-pin-ci-runtime-layer-runner-image-actions-node.md` — both edit the same `env:`/workflow
 surface, and doing them together is one review instead of two.
+
+## Closed 2026-09-04 (branch `quick/ci-runtime-pinning`) — partially done
+
+**Workflow half is already in place, pre-dating this close.** Both `.github/workflows/ci.yml` and
+`.github/workflows/visual-baselines.yml` carry `NEXT_TELEMETRY_DISABLED: "1"` in a single
+top-level `env:` block — landed in an earlier commit on this branch's history (`9c429a5` and
+before), not newly added here. Verified present in both files as of this close; no further edit
+needed on that half.
+
+**`.env.example` half is blocked, exactly as this todo predicted.** A direct `Read` on
+`.env.example` was refused: "File is in a directory that is denied by your permission settings" —
+the `Read(.env.*)` deny in `~/.claude/settings.json` applies to the literal filename regardless of
+directory, matching the note above. Per instruction, no workaround was attempted (no `pnpm
+secrets:*` wrapper exists for this file — those cover `secrets.enc.env`/`.env.local`, not the
+template). **This one edit still needs a human:** add a line to `.env.example` setting
+`NEXT_TELEMETRY_DISABLED=1` with a one-line comment explaining it keeps Next.js telemetry off by
+default for fresh clones (mirroring the reasoning already in this file's Problem section).

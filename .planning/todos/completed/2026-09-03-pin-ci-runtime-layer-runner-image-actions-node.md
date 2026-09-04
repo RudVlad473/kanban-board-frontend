@@ -75,3 +75,33 @@ Sequence matters — do 6 first or the rest rots.
 Worth an ADR under `docs/adr/tech/` — this is a durable policy decision ("everything in CI is
 pinned, and Dependabot is what keeps the pins fresh") that a future contributor would otherwise
 undo by writing `@v5` out of habit.
+
+## Closed 2026-09-04 (branch `quick/ci-runtime-pinning`)
+
+All six findings addressed in one combined body of work with the telemetry todo (same
+`ci.yml`/`visual-baselines.yml` surface):
+
+1. `.github/dependabot.yml` added first, `github-actions` + `npm` ecosystems, weekly.
+2. All five jobs (`secrets`, `quality`, `visual`, `e2e` in `ci.yml`; `update-baselines` in
+   `visual-baselines.yml`) now run `ubuntu-24.04`. Not yet re-recorded against it — see the
+   telemetry todo's closure note for why that's deferred rather than skipped.
+3. All 16 mutable action references (not 14 — the actual count once counted directly) SHA-pinned
+   with a trailing `# vX.Y.Z` comment matching `gitleaks-action`'s format:
+   `actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0`,
+   `actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0`,
+   `actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2`,
+   `pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0`. One correction made while
+   resolving these: `pnpm/action-setup` tags are annotated, so the ref SHA is the tag object, not
+   the commit — required dereferencing one level further than `actions/checkout` et al.
+4. `permissions: contents: read` added at the top of `ci.yml`. No job needed a per-job escalation —
+   none of `ci.yml`'s jobs write to the repo, unlike `visual-baselines.yml`'s own job.
+5. Node pinned to `24.19.0` (the version already installed locally) in both `ci.yml`'s three
+   `node-version:` fields and `.nvmrc`.
+6. `pnpm exec playwright install --with-deps` left unpinned, decision recorded in
+   docs/adr/tech/0033: the browser binary itself is already pinned via the exact
+   `@playwright/test` version; pinning the distro `apt` packages Playwright's own installer
+   resolves would fight the runner image's package index rather than this repo's dependency tree.
+
+Recorded in `docs/adr/tech/0033-pin-the-ci-runtime-and-keep-pins-fresh-with-dependabot.md`.
+`pnpm gates:check` and a full `pnpm verify` (20/20 gates, ~8m11s) both passed after the change; no
+`run:` step text in `ci.yml` was touched by any of the above.
