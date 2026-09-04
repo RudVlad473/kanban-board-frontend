@@ -81,13 +81,13 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
 
             /* Re-inserts THIS row only — a snapshot restore would also resurrect a board deleted since. */
             const undo =
-                removedBoard === undefined
-                    ? null
-                    : (current: Board[]) => [
+                removedBoard !== undefined
+                    ? (current: Board[]) => [
                           ...current.slice(0, removedIndex),
                           removedBoard,
                           ...current.slice(removedIndex),
-                      ];
+                      ]
+                    : null;
 
             return { undo, didNavigate: destination !== null };
         },

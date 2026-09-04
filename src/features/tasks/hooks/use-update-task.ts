@@ -96,9 +96,9 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
             );
 
             /* Restores THIS task's fields only — a snapshot restore would also undo a sibling write. */
-            return previousTask === undefined
-                ? undefined
-                : { previousTitle: previousTask.title, previousDescription: previousTask.description };
+            return previousTask !== undefined
+                ? { previousTitle: previousTask.title, previousDescription: previousTask.description }
+                : undefined;
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
@@ -118,6 +118,15 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
                               }),
                           },
                 );
+            }
+
+            /*
+             * A conflict means the server holds what this screen does not, so the rollback alone
+             * leaves the user on data known to be wrong. Re-read HERE too, not only through the
+             * action's `refresh()`, which never reaches a prefetched route (tech/0030 rule 4).
+             */
+            if (error instanceof ActionRefusedError && error.status === RESULT_STATUS.CONFLICT) {
+                void queryClient.refetchQueries({ queryKey });
             }
 
             raiseFailureToast(error);

@@ -13,9 +13,10 @@ describe("createChildrenSerially", () => {
         let peakInFlight = 0;
 
         // Act
-        const failed = await createChildrenSerially({
+        const { created, failedValues } = await createChildrenSerially({
             values: ["first", "second", "third"],
             valueSchema: nonEmpty,
+            parseChild: (data) => data,
             createChild: async (value) => {
                 started.push(value);
                 inFlight += 1;
@@ -29,7 +30,9 @@ describe("createChildrenSerially", () => {
         // Assert
         expect(started).toEqual(["first", "second", "third"]);
         expect(peakInFlight).toBe(1);
-        expect(failed).toEqual([]);
+        expect(failedValues).toEqual([]);
+        /* Rule 4: the caller writes these into the board entry, so they must come back in order. */
+        expect(created).toHaveLength(3);
     });
 
     it("keeps going after a refusal and reports only the refused value", async () => {
@@ -37,9 +40,10 @@ describe("createChildrenSerially", () => {
         const attempted: string[] = [];
 
         // Act
-        const failed = await createChildrenSerially({
+        const { failedValues } = await createChildrenSerially({
             values: ["kept", "refused", "also kept"],
             valueSchema: nonEmpty,
+            parseChild: (data) => data,
             createChild: (value) => {
                 attempted.push(value);
                 return Promise.resolve(value === "refused" ? { error: { message: "nope" } } : {});
@@ -48,7 +52,7 @@ describe("createChildrenSerially", () => {
 
         // Assert
         expect(attempted).toEqual(["kept", "refused", "also kept"]);
-        expect(failed).toEqual(["refused"]);
+        expect(failedValues).toEqual(["refused"]);
     });
 
     it("reports a value its schema rejects as failed without calling the backend for it", async () => {
@@ -56,9 +60,10 @@ describe("createChildrenSerially", () => {
         const attempted: string[] = [];
 
         // Act
-        const failed = await createChildrenSerially({
+        const { failedValues } = await createChildrenSerially({
             values: ["valid", "", "also valid"],
             valueSchema: nonEmpty,
+            parseChild: (data) => data,
             createChild: (value) => {
                 attempted.push(value);
                 return Promise.resolve({});
@@ -67,18 +72,34 @@ describe("createChildrenSerially", () => {
 
         // Assert
         expect(attempted).toEqual(["valid", "also valid"]);
-        expect(failed).toEqual([""]);
+        expect(failedValues).toEqual([""]);
     });
 
     it("reports the value as given, not as its schema parsed it", async () => {
         // Act
-        const failed = await createChildrenSerially({
+        const { failedValues } = await createChildrenSerially({
             values: ["  padded  "],
             valueSchema: z.string().trim(),
+            parseChild: (data) => data,
             createChild: (value) => Promise.resolve(value === "padded" ? { error: { message: "nope" } } : {}),
         });
 
         // Assert
-        expect(failed).toEqual(["  padded  "]);
+        expect(failedValues).toEqual(["  padded  "]);
+    });
+
+    /* A body the caller cannot parse is reported as failed: nothing here can name what was written. */
+    it("reports a child whose response body it cannot parse as failed", async () => {
+        // Act
+        const { created, failedValues } = await createChildrenSerially({
+            values: ["parsed", "unparsable"],
+            valueSchema: nonEmpty,
+            parseChild: (data) => (data !== "unparsable" ? data : null),
+            createChild: (value) => Promise.resolve({ data: value }),
+        });
+
+        // Assert
+        expect(created).toEqual(["parsed"]);
+        expect(failedValues).toEqual(["unparsable"]);
     });
 });

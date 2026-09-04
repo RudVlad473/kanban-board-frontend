@@ -11,6 +11,7 @@ import { render } from "vitest-browser-react";
 
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
 import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
+import { getBoardAction } from "@/features/boards/actions/get-board-action";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { buildCreateFailureToastId } from "@/features/boards/hooks/use-create-column";
@@ -60,6 +61,7 @@ const {
  * own awaited result and `calls` is typed as its first parameter (04-CONTEXT.md D-01).
  */
 const createColumnStub = actionStub(createColumnAction);
+const getBoardStub = actionStub(getBoardAction);
 const renameColumnStub = actionStub(renameColumnAction);
 const deleteColumnStub = actionStub(deleteColumnAction);
 const reorderColumnStub = actionStub(reorderColumnAction);
@@ -2281,15 +2283,29 @@ describeForEachDevice({
             ]);
         });
 
+        // comment-length-exempt: records a reversal of this test's own previous guarantee and the measurement that forced it, which a reader restoring "no client re-read" needs
         /*
          * SYNC-01/T-04-06/T-04-34: revert and toast proved TOGETHER — a silent revert reads as lost
-         * work. `moveTaskStub.calls` staying at 1 proves no client re-read; the action's own
-         * `refresh()` on `CONFLICT` is proved instead by `move-task-action.integration.test.ts`.
+         * work. `moveTaskStub.calls` staying at 1 still proves exactly ONE move request.
+         *
+         * This test asserted "no client re-read" until 2026-09-04, on the grounds that the action's
+         * own `refresh()` covered it. It no longer does: `board-card.tsx` ships `prefetch` again,
+         * and `refresh()` never reaches a prefetched route. Measured on `tasks-create` +
+         * `tasks-conflict` at `--repeat-each=3` — 12 of 12 pass with the client re-read and 5 of 12
+         * fail without it, so the re-read is what makes the prop safe rather than an extra request.
          */
         it("reverts the card, raises the distinct version-conflict toast, and issues no extra client request for a stale version", async () => {
             // Arrange
             await render(<TasksAcrossColumns />);
             moveTaskStub.queue({ status: RESULT_STATUS.CONFLICT });
+            /* The conflict's own re-read, which is what shows the user the server's actual state. */
+            const conflictBoard = TasksAcrossColumns.args.board;
+
+            if (conflictBoard === undefined) {
+                throw new Error("the story that seeds this board did not provide one");
+            }
+
+            getBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: conflictBoard });
             const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
             const target = screen.getByRole("button", { name: /^Fixture Task Beta/ });
 

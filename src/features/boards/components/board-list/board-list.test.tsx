@@ -223,7 +223,7 @@ describeForEachDevice({
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [] });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [], created: [] });
             createBoardColumnsStub.hold();
 
             // Act — navigate first, with the fan-out demonstrably still unresolved.
@@ -248,7 +248,7 @@ describeForEachDevice({
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [] });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [], created: [] });
 
             // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
@@ -332,7 +332,11 @@ describeForEachDevice({
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Doing", "Done"] });
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: ["Doing", "Done"],
+                created: [],
+            });
 
             // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
@@ -503,7 +507,7 @@ describeForEachDevice({
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Doing"] });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Doing"], created: [] });
             await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing"] });
             await vi.waitFor(() => {
                 expect(getRaisedToastTexts()[0]).toContain("Couldn't create 1 column(s).");
@@ -533,7 +537,11 @@ describeForEachDevice({
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Doing", "Done"] });
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: ["Doing", "Done"],
+                created: [],
+            });
 
             // Act — create with three named columns, two of which fail.
             await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
@@ -545,7 +553,7 @@ describeForEachDevice({
             expect(getRaisedToastTexts()[0]).toContain("Couldn't create 2 column(s).");
 
             // Act — retry those two; one fails again.
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Done"] });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Done"], created: [] });
             await userEvent.click(screen.getByRole("button", { name: "Retry" }));
 
             // Assert — still ONE toast (same id, upserted), with a strictly smaller failed set.
@@ -555,7 +563,7 @@ describeForEachDevice({
             expect(getRaisedToastTexts()).toHaveLength(1);
 
             // Act — retry the last one; it succeeds.
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [] });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [], created: [] });
             await userEvent.click(screen.getByRole("button", { name: "Retry" }));
 
             // Assert — the toast closes rather than naming a column that now exists.

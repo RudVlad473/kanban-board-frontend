@@ -109,6 +109,15 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                 );
             }
 
+            /*
+             * A conflict means the server holds what this screen does not, so the rollback alone
+             * leaves the user on data known to be wrong. Re-read HERE too, not only through the
+             * action's `refresh()`, which never reaches a prefetched route (tech/0030 rule 4).
+             */
+            if (error instanceof ActionRefusedError && error.status === RESULT_STATUS.CONFLICT) {
+                void queryClient.refetchQueries({ queryKey });
+            }
+
             raiseFailureToast(error);
         },
 

@@ -2,7 +2,7 @@
 
 // Covered by: `src/features/tasks/components/task-detail-modal/task-detail-modal.test.tsx`
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
@@ -74,13 +74,19 @@ export const useToggleSubtask = ({
         queryKey,
         initialData: { columns },
         staleTime: Infinity,
-        /* Unreachable in practice — `staleTime: Infinity` plus an always-present entry never refetches. */
-        queryFn: (): Promise<ToggleableBoard> => Promise.resolve({ columns }),
+        // comment-length-exempt: records what this observer must NOT do to a shared entry and the corruption a fetching one causes, which a reader would otherwise "restore" as a missing queryFn
+        /*
+         * `skipToken`, never a resolver: this observer READS the board entry, and the entry's own
+         * fetcher belongs to `board-query.ts`. A `queryFn` here is stored on the shared query and
+         * can win the last-writer race, so a refetch would resolve the whole board to this hook's
+         * partial `{ columns }` view — no `id`, no `name` — and `BoardView` reads both.
+         */
+        queryFn: skipToken,
     });
     const subtasks: Subtask[] =
-        board.columns.flatMap((column) => column.tasks).find((task) => task.id === taskId)?.subtasks ?? [];
+        (board?.columns ?? []).flatMap((column) => column.tasks).find((task) => task.id === taskId)?.subtasks ?? [];
     /* The subtask endpoint's ancestors are inert (04-BACKEND-FACTS.md T2) but still required by the schema. */
-    const columnId = board.columns.find((column) => column.tasks.some((task) => task.id === taskId))?.id ?? "";
+    const columnId = (board?.columns ?? []).find((column) => column.tasks.some((task) => task.id === taskId))?.id ?? "";
 
     const mutation = useMutation({
         mutationFn: async (args: { subtaskId: string; version: number; isCompleted: boolean }) => {
@@ -133,6 +139,15 @@ export const useToggleSubtask = ({
                               }),
                           },
                 );
+            }
+
+            /*
+             * A conflict means the server holds what this screen does not, so the rollback alone
+             * leaves the user on data known to be wrong. Re-read HERE too, not only through the
+             * action's `refresh()`, which never reaches a prefetched route (tech/0030 rule 4).
+             */
+            if (error instanceof ActionRefusedError && error.status === RESULT_STATUS.CONFLICT) {
+                void queryClient.refetchQueries({ queryKey });
             }
 
             raiseFailureToast(error);

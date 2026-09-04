@@ -188,9 +188,7 @@ export const withTaskInsert = <C extends TaskColumn>({
 
 /**
  * The board as it reads with one task put BACK at `index` in its column — the inverse of
- * `withTaskRemove`, and what a failed delete or a failed move rolls back with.
- *
- * Spliced into whatever the column holds NOW, never into a remembered copy; see
+ * `withTaskRemove`. Spliced into whatever the column holds NOW, never a remembered copy; see
  * `withColumnRestore` for the concurrency defect that rule exists to avoid.
  */
 export const withTaskRestore = <C extends TaskColumn>({
@@ -252,10 +250,8 @@ export const withSubtaskInsert = <C extends TaskColumn>({
 
 /**
  * The board as it reads with one subtask put BACK at `index` in its task — the inverse of
- * `withSubtaskRemove`, and what a failed delete rolls back with.
- *
- * Spliced into whatever the task holds NOW, never into a remembered copy; see `withColumnRestore`
- * for the concurrency defect that rule exists to avoid.
+ * `withSubtaskRemove`. Spliced into whatever the task holds NOW, never a remembered copy; see
+ * `withColumnRestore` for the concurrency defect that rule exists to avoid.
  */
 export const withSubtaskRestore = <C extends TaskColumn>({
     columns,

@@ -8,7 +8,13 @@ import { useRef } from "react";
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createTaskAction } from "@/features/tasks/actions/create-task-action";
 import { createTaskSubtasksAction } from "@/features/tasks/actions/create-task-subtasks-action";
-import { withTaskInsert, withTaskRemove, withTaskReplace, type TaskColumn } from "@/features/tasks/model";
+import {
+    withSubtaskInsert,
+    withTaskInsert,
+    withTaskRemove,
+    withTaskReplace,
+    type TaskColumn,
+} from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
@@ -173,6 +179,26 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
             .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
         if (result.status === RESULT_STATUS.SUCCESS) {
+            // comment-length-exempt: records the rule this write exists to satisfy and the navigation failure that leaving it to refresh() causes, which is what kept `prefetch` off the sidebar links
+            /*
+             * The fan-out writes the board entry itself (docs/adr/tech/0030 rule 4). It landed
+             * through the action's own `refresh()` alone until now, and `refresh()` never reaches a
+             * PREFETCHED route — so a board opened from a prefetched link rendered the task with no
+             * subtasks. `board-card.tsx` names this hook as one of the two blockers for turning
+             * `prefetch` on.
+             */
+            queryClient.setQueryData<CreatableBoard>(buildBoardQueryKey(boardId), (current) =>
+                current === undefined
+                    ? current
+                    : {
+                          ...current,
+                          columns: result.created.reduce(
+                              (columns, subtask) => withSubtaskInsert({ columns, taskId, subtask }),
+                              current.columns,
+                          ),
+                      },
+            );
+
             return { failedTitles: result.failedTitles, isSessionExpired: false };
         }
 

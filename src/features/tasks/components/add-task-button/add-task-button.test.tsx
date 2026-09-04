@@ -377,7 +377,7 @@ describeForEachDevice({
             // Arrange
             await render(<WithColumns />);
             createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
-            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: [] });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: [], created: [] });
             createTaskSubtasksStub.hold();
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
@@ -402,7 +402,11 @@ describeForEachDevice({
             // Arrange
             await render(<WithColumns />);
             createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
-            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Drink coffee & smile"] });
+            createTaskSubtasksStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedTitles: ["Drink coffee & smile"],
+                created: [],
+            });
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
             await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
@@ -418,7 +422,7 @@ describeForEachDevice({
             await expect.element(within(region).getByText("Couldn't create 1 subtask(s).")).toBeVisible();
 
             // Act — retry, this time succeeding.
-            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: [] });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: [], created: [] });
             await userEvent.click(within(region).getByRole("button", { name: "Retry" }));
 
             // Assert — the toast clears once the retry lands.
@@ -455,7 +459,7 @@ describeForEachDevice({
             // Arrange — real timers, so the create and its subtask fan-out settle normally.
             await render(<WithColumns />);
             createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
-            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Make coffee"] });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Make coffee"], created: [] });
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
             await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
@@ -485,7 +489,7 @@ describeForEachDevice({
             // Arrange
             await render(<WithColumns />);
             createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
-            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Make coffee"] });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: ["Make coffee"], created: [] });
             await openCreateTaskModal();
             await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
             await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
@@ -495,7 +499,7 @@ describeForEachDevice({
             await expect.element(within(region).getByText("Couldn't create 1 subtask(s).")).toBeVisible();
 
             // Act — the retry is held unresolved, so the button is still mounted for the second click.
-            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: [] });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: [], created: [] });
             createTaskSubtasksStub.hold();
             const retryButton = within(region).getByRole("button", { name: "Retry" });
             await userEvent.click(retryButton);

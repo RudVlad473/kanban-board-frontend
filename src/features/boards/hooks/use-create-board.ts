@@ -8,11 +8,18 @@ import { useRouter } from "next/navigation";
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
-import { removeBoard, toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
+import {
+    removeBoard,
+    toSubmittedColumnNames,
+    withBoardInsert,
+    withBoardReplace,
+    withColumnInsert,
+} from "@/features/boards/model";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
-import type { Board } from "@/features/boards/schemas";
+import type { Board, BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /*
@@ -127,8 +134,32 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
             .mutateAsync({ boardId, names })
             .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
-        // A wholesale failure leaves the set unchanged rather than reporting fewer failures than there are.
-        return result.status === RESULT_STATUS.SUCCESS ? result.failedNames : names;
+        if (result.status !== RESULT_STATUS.SUCCESS) {
+            // A wholesale failure leaves the set unchanged rather than reporting fewer failures than there are.
+            return names;
+        }
+
+        // comment-length-exempt: records the rule this write exists to satisfy and the navigation failure that leaving it to refresh() causes, which is what kept `prefetch` off the sidebar links
+        /*
+         * The fan-out writes the board entry itself (docs/adr/tech/0030 rule 4). It landed through
+         * the action's own `refresh()` alone until now, and `refresh()` never reaches a PREFETCHED
+         * route — so a board opened from a prefetched link rendered with none of its columns.
+         * `board-card.tsx` names this hook as one of the two blockers for turning `prefetch` on.
+         * A no-op when nothing has read this board yet, which is the usual case right after a create.
+         */
+        queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
+            current === undefined
+                ? current
+                : {
+                      ...current,
+                      columns: result.created.reduce(
+                          (columns, column) => withColumnInsert({ columns, column: { ...column, tasks: [] } }),
+                          current.columns,
+                      ),
+                  },
+        );
+
+        return result.failedNames;
     };
 
     /**

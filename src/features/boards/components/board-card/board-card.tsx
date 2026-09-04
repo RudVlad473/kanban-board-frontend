@@ -42,24 +42,27 @@ export const BoardCard = ({
              */}
             {/*
              * Decisions ─────────────────────────────────────────────────────────────────────────
-             * comment-length-exempt: records a one-way door that has already been walked through twice, and the exact condition that would make it safe — a reader who knows only ADR tech/0030 rule 4 would re-add this
-             * No `prefetch` prop, deliberately. `refresh()` updates the Router Cache entry for the
-             * route you are ON, never a prefetched one, so any state a Server Action delivers
-             * through `refresh()` alone is missing from the prefetched render. `6206025` rejected
-             * `prefetch={true}` for this reason; `956aa9a` added it anyway, on the argument that
-             * making the task delete optimistic (ADR tech/0030 rule 4) had removed the constraint.
-             * It had not: the subtask fan-out in `createTaskSubtasksAction` and the post-conflict
-             * board re-read are still `refresh()`-only, and both broke. Measured 2026-09-03 on
-             * `tasks-create` + `tasks-conflict` at `--repeat-each=3`: 7 of 12 executions failed
-             * with the prop, 12 of 12 passed without it, and `git bisect` named `956aa9a`.
+             * comment-length-exempt: records a one-way door walked through twice, the condition that finally made it safe, and the measurement that proves it — a reader who reverts this needs all three
+             * `prefetch` is ON, and was refused twice before. `refresh()` updates the Router Cache
+             * entry for the route you are ON, never a prefetched one, so any state a Server Action
+             * delivered through `refresh()` alone was missing from the prefetched render. `6206025`
+             * refused the prop for that reason; `956aa9a` added it anyway and broke — measured
+             * 2026-09-03 on `tasks-create` + `tasks-conflict` at `--repeat-each=3`, 7 of 12
+             * executions failed with it and 12 of 12 passed without, with `git bisect` naming that
+             * commit.
              *
-             * Turning it on requires EVERY mutation that changes this board to write the
-             * `["board", boardId]` entry itself — not just the delete. Re-run that measurement
-             * before believing it is safe; a request count cannot tell the two states apart.
+             * What changed: the exit condition that note itself set — EVERY mutation that changes
+             * this board now writes the `["board", boardId]` entry itself, so nothing depends on
+             * `refresh()` reaching a prefetched route. The two fan-outs
+             * (`createTaskSubtasksAction`, `createBoardColumnsAction`) return what they created and
+             * their hooks write it; the post-conflict re-read is now a client refetch as well as a
+             * `refresh()`. Re-run that same measurement before believing any of this — a request
+             * count cannot tell the two cache states apart.
              * ───────────────────────────────────────────────────────────────────────────────────
              */}
             <Link
                 href={buildBoardDetailPath(board.id)}
+                prefetch={true}
                 className={cn(
                     "mr-6 flex h-11 min-w-0 items-center gap-2 rounded-r-full pr-11 pl-6 font-body-m text-body-m",
                     isSelected ? "bg-bg-primary text-text-on-primary" : "text-text-muted hover:text-text-primary",

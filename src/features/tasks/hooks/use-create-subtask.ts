@@ -2,7 +2,7 @@
 
 // Covered by: `src/features/tasks/components/edit-task-modal/edit-task-modal.test.tsx`
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
@@ -65,11 +65,17 @@ export const useCreateSubtask = ({
         queryKey,
         initialData: { columns },
         staleTime: Infinity,
-        /* Unreachable in practice — `staleTime: Infinity` plus an always-present entry never refetches. */
-        queryFn: (): Promise<CreatableBoard> => Promise.resolve({ columns }),
+        // comment-length-exempt: records what this observer must NOT do to a shared entry and the corruption a fetching one causes, which a reader would otherwise "restore" as a missing queryFn
+        /*
+         * `skipToken`, never a resolver: this observer READS the board entry, and the entry's own
+         * fetcher belongs to `board-query.ts`. A `queryFn` here is stored on the shared query and
+         * can win the last-writer race, so a refetch would resolve the whole board to this hook's
+         * partial `{ columns }` view — no `id`, no `name` — and `BoardView` reads both.
+         */
+        queryFn: skipToken,
     });
     const subtasks: Subtask[] =
-        board.columns.flatMap((column) => column.tasks).find((task) => task.id === taskId)?.subtasks ?? [];
+        (board?.columns ?? []).flatMap((column) => column.tasks).find((task) => task.id === taskId)?.subtasks ?? [];
 
     const mutation = useMutation({
         mutationFn: async (args: { clientId: string; title: string }) => {

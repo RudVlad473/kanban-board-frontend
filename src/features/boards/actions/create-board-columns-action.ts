@@ -4,7 +4,7 @@
 
 import { refresh } from "next/cache";
 
-import { columnNameSchema, createBoardColumnsInputSchema } from "@/features/boards/schemas";
+import { columnNameSchema, columnSchema, createBoardColumnsInputSchema, type Column } from "@/features/boards/schemas";
 import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { createChildrenSerially } from "@/lib/core/api-contract/create-children-serially";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
@@ -17,7 +17,7 @@ import { externalApi } from "@/lib/server/server-client";
  * `createBoardColumnsAction`'s own result — `SUCCESS` carries the names that did NOT land, empty
  * when everything did. A partial result is kept, never rolled back (ADR domain/0003).
  */
-export type CreateBoardColumnsResult = ActionResult<{ failedNames: string[] }>;
+export type CreateBoardColumnsResult = ActionResult<{ failedNames: string[]; created: Column[] }>;
 
 /**
  * Creates one column per name, in order. `userId` comes only from the verified session record,
@@ -41,9 +41,11 @@ export const createBoardColumnsAction = async ({
         return { status: RESULT_STATUS.INVALID, fieldErrors: zodErrorToFieldErrors(parsed.error) };
     }
 
-    const failedNames = await createChildrenSerially({
+    const { created, failedValues } = await createChildrenSerially({
         values: parsed.data.names,
         valueSchema: columnNameSchema,
+        /* The written columns go back to the caller, which writes them into the board entry (rule 4). */
+        parseChild: (data) => columnSchema.safeParse(data).data ?? null,
         createChild: (name) =>
             externalApi.POST(EXTERNAL_PATH.BOARD_COLUMNS, {
                 params: { path: { boardId: parsed.data.boardId }, query: { userId: record.id } },
@@ -57,5 +59,5 @@ export const createBoardColumnsAction = async ({
      */
     refresh();
 
-    return { status: RESULT_STATUS.SUCCESS, failedNames };
+    return { status: RESULT_STATUS.SUCCESS, failedNames: failedValues, created };
 };
