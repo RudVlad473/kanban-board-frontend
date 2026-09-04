@@ -2617,6 +2617,9 @@
           "position": {
             "type": "integer",
             "format": "int32"
+          },
+          "color": {
+            "type": "string"
           }
         }
       },
@@ -2740,6 +2743,9 @@
             "type": "string",
             "maxLength": 32,
             "minLength": 3
+          },
+          "color": {
+            "type": "string"
           }
         },
         "required": [
@@ -2870,6 +2876,9 @@
           "position": {
             "type": "integer",
             "format": "int32"
+          },
+          "color": {
+            "type": "string"
           },
           "tasks": {
             "type": "array",

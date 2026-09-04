@@ -300,6 +300,7 @@ export interface components {
             version?: number;
             /** Format: int32 */
             position?: number;
+            color?: string;
         };
         UpdateTaskRequestDTO: {
             title?: string;
@@ -343,6 +344,7 @@ export interface components {
         };
         SaveColumnRequestDTO: {
             name: string;
+            color?: string;
         };
         SaveTaskRequestDTO: {
             title: string;
@@ -383,6 +385,7 @@ export interface components {
             version?: number;
             /** Format: int32 */
             position?: number;
+            color?: string;
             tasks?: components["schemas"]["TaskFullResponseDTO"][];
         };
         TaskFullResponseDTO: {
