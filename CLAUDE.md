@@ -199,6 +199,28 @@ so it is an acceptable substitute for the typegen half when you were going to bu
 Run `pnpm tools:install` too if `gitleaks` is absent — the pre-commit hook needs it, and
 `setup:worktree` prints a reminder when it is missing.
 
+## Never leave an account behind on nonprod
+
+Accounts are real rows on a shared backend nobody wipes on a schedule. The automated suite is
+already clean — `globalTeardown` deletes exactly the ids that run seeded — so the only way to
+pollute it is by hand.
+
+**To get a login, run `pnpm e2e:seed account`. Never sign up through the UI.** The script registers
+the id, so `pnpm e2e:cleanup` can find it; a UI sign-up is registered nowhere and is unreachable by
+every cleanup path there is. Both commands load `.env.local` themselves, so neither needs a
+Playwright run or an exported base URL around it.
+
+**Run `pnpm e2e:cleanup` when you are done, in the same session.** It deletes every registered
+account and empties the registry. If you already signed up through the UI, the id is the only
+handle left: `pnpm e2e:cleanup --users <id>`.
+
+| Need                             | Command                            |
+| -------------------------------- | ---------------------------------- |
+| A login to drive the app with    | `pnpm e2e:seed account`            |
+| Delete everything seeded by hand | `pnpm e2e:cleanup`                 |
+| Delete specific accounts by id   | `pnpm e2e:cleanup --users <id,id>` |
+| Check nothing is outstanding     | `ls .e2e-seeded-users/`            |
+
 ### Env values specifically
 
 Env values now travel with the repo as age-encrypted ciphertext at `secrets.enc.env`

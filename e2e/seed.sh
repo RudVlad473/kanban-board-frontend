@@ -25,6 +25,33 @@ usage() {
 # process.cwd() -- two different spellings would make `cleanup` silently clean nothing (D-A).
 REGISTRY_DIR=".e2e-seeded-users"
 
+# comment-length-exempt: records why this CLI loads its own env rather than inheriting it, which is what makes the ad-hoc seed/cleanup pair usable outside a Playwright run at all
+# Loaded here because this CLI is meant to run on its own: `pnpm e2e:cleanup` after an ad-hoc
+# `pnpm e2e:seed account` is the ONLY cleanup path for an account a Playwright run did not create,
+# and it is useless if the caller has to export the API base URL by hand first. Only Playwright
+# loaded these before (e2e/test-env.ts), so every standalone invocation died on
+# "EXTERNAL_API_BASE_URL must be set". An already-exported value wins, exactly as it does there, so
+# CI's own secrets are never overwritten.
+load_local_env() {
+    local file=".env.local"
+    [ -f "$file" ] || return 0
+
+    local key line value
+    for key in EXTERNAL_API_BASE_URL NONPROD_RESET_TOKEN; do
+        [ -n "${!key:-}" ] && continue
+        line=$(grep -m 1 "^${key}=" "$file" || true)
+        [ -n "$line" ] || continue
+        value="${line#*=}"
+        value="${value%\"}"
+        value="${value#\"}"
+        value="${value%\'}"
+        value="${value#\'}"
+        export "${key}=${value}"
+    done
+}
+
+load_local_env
+
 # Satisfies the backend's password rule: 8-64 chars, upper, lower, digit, special.
 SEED_PASSWORD="E2eFixturePwd1!"
 # Satisfies the backend's display-name rule: 3-32 letters and spaces only, no digits.
@@ -99,6 +126,19 @@ cmd_account() {
     if [ -z "$jsession_id" ]; then
         echo "seed.sh account: no JSESSIONID cookie found in the jar after signup" >&2
         exit 1
+    fi
+
+    # comment-length-exempt: records the leak this closes and why the TS wrapper opts out, which is the duplicate-id failure a reader would otherwise reintroduce
+    # An account created by THIS CLI registers itself, so `cleanup` can find it. It did not before,
+    # which meant every ad-hoc `pnpm e2e:seed account` -- the way an agent gets a login without
+    # signing up through the UI -- left a permanent account on the shared nonprod backend that no
+    # cleanup path could ever name. Its own scope file, never `playwright.txt`: `globalSetup`
+    # truncates that one, and `cleanup` reads every file in the directory anyway. The TS wrapper
+    # (e2e/seed.ts) records its own ids and sets the skip flag, or the same account would be listed
+    # twice and the delete batch 404s on the second, already-deleted id.
+    if [ -z "${E2E_SEED_SKIP_REGISTRY:-}" ]; then
+        mkdir -p "$REGISTRY_DIR"
+        echo "$id" >>"$REGISTRY_DIR/manual.txt"
     fi
 
     build_json id "$id" email "$email" password "$SEED_PASSWORD" displayName "$SEED_DISPLAY_NAME" jsessionId "$jsession_id"

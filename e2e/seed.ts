@@ -19,7 +19,16 @@ export type SeededBoard = { id: string; name: string; version: number };
  */
 const runSeedScript = (args: string[]): string => {
     const result = spawnSync("bash", ["e2e/seed.sh", ...args], {
-        env: { ...process.env, EXTERNAL_API_BASE_URL: E2E_CONFIG.EXTERNAL_API_BASE_URL },
+        /*
+         * `E2E_SEED_SKIP_REGISTRY` because `seedAccount` records the id itself, into the scope
+         * `globalTeardown` reads — letting the script also record it would list the same account
+         * twice and 404 the whole delete batch on the second, already-deleted id.
+         */
+        env: {
+            ...process.env,
+            EXTERNAL_API_BASE_URL: E2E_CONFIG.EXTERNAL_API_BASE_URL,
+            E2E_SEED_SKIP_REGISTRY: "1",
+        },
         encoding: "utf8",
     });
 
