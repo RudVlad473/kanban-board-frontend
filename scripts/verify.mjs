@@ -62,6 +62,7 @@ export const VERIFY_STEPS = [
     checkStep({ id: "folders", checkFileName: "component-folders", ciAlias: "folders:check" }),
     checkStep({ id: "actions", checkFileName: "action-verbs", ciAlias: "actions:check" }),
     checkStep({ id: "handlers", checkFileName: "no-route-handlers", ciAlias: "handlers:check" }),
+    checkStep({ id: "gates", checkFileName: "ci-gate-coverage", ciAlias: "gates:check" }),
     checkStep({ id: "stories", checkFileName: "no-play-functions", ciAlias: "stories:check" }),
     checkStep({ id: "coverage", checkFileName: "coverage-pointers", ciAlias: "coverage:check" }),
     checkStep({ id: "routes", checkFileName: "routes", ciAlias: "routes:check" }),

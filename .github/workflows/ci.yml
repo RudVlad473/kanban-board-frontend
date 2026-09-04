@@ -130,6 +130,11 @@ jobs:
             - name: Coverage pointer check
               run: pnpm coverage:check
 
+            # scripts/check-ci-gate-coverage.mjs's own regression pin reads this file, so this
+            # step is itself covered by the entry pnpm verify's VERIFY_STEPS carries for it.
+            - name: Gate coverage check
+              run: pnpm gates:check
+
             # In `quality` rather than `secrets` because the `secrets` job deliberately has no
             # Node/pnpm setup. Without this step the assertion pairing gitleaks' allowlist entry
             # would run only in a local hook, and a machine without that hook could push plaintext

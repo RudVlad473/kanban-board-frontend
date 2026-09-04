@@ -18,6 +18,7 @@
         "coverage:check": "node scripts/check-coverage-pointers.mjs",
         "secrets:check": "node scripts/check-secrets-encrypted.mjs",
         "gitleaks:check": "node scripts/check-gitleaks-version.mjs",
+        "gates:check": "node scripts/check-ci-gate-coverage.mjs",
         "secrets:scan": "bash scripts/secrets.sh scan",
         "verify": "node scripts/verify.mjs",
         "format": "prettier --write .",
