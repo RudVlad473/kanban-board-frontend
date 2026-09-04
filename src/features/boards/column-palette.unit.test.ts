@@ -47,8 +47,8 @@ describe("COLUMN_COLOR_PALETTE", () => {
     });
 
     /* Asserted as a literal so a silent addition or removal to the shipped set is caught. */
-    it("ships exactly 8 entries", () => {
-        expect(COLUMN_COLOR_PALETTE.length).toBe(8);
+    it("ships exactly 6 entries", () => {
+        expect(COLUMN_COLOR_PALETTE.length).toBe(6);
     });
 
     /*
@@ -141,8 +141,8 @@ describe("pickNextColumnColor", () => {
 
     /*
      * Every palette entry is rendered at least once — measured independently offline (not derived
-     * from the function under test) that index 5 (#729900) has the greatest minimum ΔE_ok against
-     * the other 7 entries once each entry's own zero self-distance is excluded.
+     * from the function under test) that index 1 (#8471F2) has the greatest minimum ΔE_ok against
+     * the other 5 entries, 0.2000, once each entry's own zero self-distance is excluded.
      */
     it("returns the entry maximising its minimum ΔE_ok against the rendered set once every entry is used", () => {
         // Arrange
@@ -153,7 +153,7 @@ describe("pickNextColumnColor", () => {
         const second = pickNextColumnColor({ columns });
 
         // Assert
-        expect(first).toBe(COLUMN_COLOR_PALETTE[5]);
+        expect(first).toBe(COLUMN_COLOR_PALETTE[1]);
         expect(first).toBe(second);
     });
 });

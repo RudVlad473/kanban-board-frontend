@@ -676,7 +676,7 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(createColumnStub.calls).toHaveLength(1);
             });
-            expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog", color: "#EA6000" });
+            expect(createColumnStub.calls[0]).toEqual({ boardId: FIXTURE_BOARD_ID, name: "Backlog", color: "#FD8C7B" });
             await vi.waitFor(() => {
                 expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
             });

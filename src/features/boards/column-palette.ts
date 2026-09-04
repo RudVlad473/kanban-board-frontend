@@ -5,19 +5,10 @@ import { deltaEOk } from "@/lib/core/styling/oklab";
 
 /*
  * Entries 0-2 are the shipped `--color-accent-column-N` values, in `COLUMN_DOT_TOKENS` order — the
- * alignment `resolveRenderedColumnColor` needs. Entries 3-7 came from a farthest-point search over
- * the shipped OKLab band; every pair clears ΔE_ok 0.15 except the grandfathered pair at 0/2 (0.134).
+ * alignment `resolveRenderedColumnColor` needs. Six is the ceiling, not a preference: a 7th entry
+ * cannot clear ΔE_ok 0.15 at the mock's own lightness — measurements in quick task 260904-s6o.
  */
-export const COLUMN_COLOR_PALETTE = [
-    "#49C4E5",
-    "#8471F2",
-    "#67E2AE",
-    "#EA6000",
-    "#FF9FFC",
-    "#729900",
-    "#FFB700",
-    "#D551A2",
-] as const;
+export const COLUMN_COLOR_PALETTE = ["#49C4E5", "#8471F2", "#67E2AE", "#FD8C7B", "#F093FE", "#F2C50E"] as const;
 
 /** The narrow shape the picker needs — never the full `ColumnFull`, so this module has no schema dependency. */
 type RenderableColumn = { id: string; color?: string | null };
