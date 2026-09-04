@@ -2624,6 +2624,14 @@ describeForEachDevice({
         it("raises the version-conflict toast, matching the phase-wide title, on a stale-version save", async () => {
             // Arrange
             updateTaskStub.queue({ status: RESULT_STATUS.CONFLICT });
+            const conflictSaveBoard = TasksAcrossColumns.args.board;
+
+            if (conflictSaveBoard === undefined) {
+                throw new Error("the story that seeds this board did not provide one");
+            }
+
+            /* The conflict's own re-read; reachable here only since the shared entry stopped being poisoned. */
+            getBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: conflictSaveBoard });
             await render(<TasksAcrossColumns />);
             await userEvent.click(screen.getByText("Fixture Task Alpha"));
             await userEvent.click(screen.getByRole("button", { name: "Task actions for Fixture Task Alpha" }));

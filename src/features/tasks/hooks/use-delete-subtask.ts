@@ -76,7 +76,8 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                     ?.columns.flatMap((column) => column.tasks)
                     .find((task) => task.id === taskId)?.subtasks ?? [];
             const removedSubtask = subtasks.find((subtask) => subtask.id === subtaskId);
-            const removedIndex = subtasks.findIndex((subtask) => subtask.id === subtaskId);
+            /* The neighbour it followed, so a concurrent add cannot shift the anchor. */
+            const afterSubtaskId = subtasks[subtasks.findIndex((subtask) => subtask.id === subtaskId) - 1]?.id ?? null;
 
             setPendingSubtaskIds((current) => new Set(current).add(subtaskId));
             queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
@@ -96,7 +97,7 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
                         columns: current.columns,
                         taskId,
                         subtask: removedSubtask,
-                        index: removedIndex,
+                        afterSubtaskId,
                     }),
             };
         },

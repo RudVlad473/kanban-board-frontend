@@ -397,7 +397,27 @@ cmd_cleanup() {
         exit 1
     fi
 
-    rm -f "$REGISTRY_DIR"/*
+    # comment-length-exempt: records both failures this replaces -- the stranding an unconditional wipe caused and the 404 that leaving the ids behind would cause -- which together are why it is a targeted removal
+    # The registry is pruned to exactly what was deleted, never emptied wholesale. `--users` names
+    # its own ids: clearing the whole file there erased every OTHER registered id while those
+    # accounts were still alive on nonprod, unreachable by any cleanup path -- the failure the
+    # registry exists to prevent. Leaving them listed is wrong too: an already-deleted id 404s the
+    # entire next batch, stranding every id beside it.
+    if [ -n "$users_arg" ]; then
+        local remaining
+        for registry_file in "$REGISTRY_DIR"/*; do
+            [ -f "$registry_file" ] || continue
+            remaining=$(grep -vxF -f <(printf '%s\n' "${ids[@]}") "$registry_file" || true)
+            if [ -n "$remaining" ]; then
+                printf '%s\n' "$remaining" >"$registry_file"
+            else
+                rm -f "$registry_file"
+            fi
+        done
+    else
+        rm -f "$REGISTRY_DIR"/*
+    fi
+
     echo "seed.sh cleanup: deleted ${#ids[@]} user(s)"
 }
 

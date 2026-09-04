@@ -84,7 +84,9 @@ export const useDeleteTask = () => {
             const board = queryClient.getQueryData<DeletableBoard>(queryKey);
             const sourceColumn = board?.columns.find((column) => column.tasks.some((task) => task.id === taskId));
             const removedTask = sourceColumn?.tasks.find((task) => task.id === taskId);
-            const removedIndex = sourceColumn?.tasks.findIndex((task) => task.id === taskId) ?? -1;
+            /* The neighbour it followed, so a concurrent insert or move cannot shift the anchor. */
+            const afterTaskId =
+                sourceColumn?.tasks[sourceColumn.tasks.findIndex((task) => task.id === taskId) - 1]?.id ?? null;
 
             queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
                 !isNil(current)
@@ -103,7 +105,7 @@ export const useDeleteTask = () => {
                         columns: current.columns,
                         columnId: sourceColumn.id,
                         task: removedTask,
-                        index: removedIndex,
+                        afterTaskId,
                     }),
             };
         },

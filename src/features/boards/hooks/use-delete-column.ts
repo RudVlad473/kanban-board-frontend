@@ -81,7 +81,8 @@ export const useDeleteColumn = () => {
             /* Captured BEFORE the removal, so the rollback can put this column back where it was. */
             const columns = queryClient.getQueryData<BoardFull>(queryKey)?.columns ?? [];
             const removedColumn = columns.find((column) => column.id === columnId);
-            const removedIndex = columns.findIndex((column) => column.id === columnId);
+            /* The neighbour it followed, so a concurrent insert or reorder cannot shift the anchor. */
+            const afterColumnId = columns[columns.findIndex((column) => column.id === columnId) - 1]?.id ?? null;
 
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
                 current === undefined
@@ -96,7 +97,7 @@ export const useDeleteColumn = () => {
             /* Re-inserts THIS column only — a snapshot restore would also resurrect a sibling deleted since. */
             return {
                 undo: (current: BoardFull) =>
-                    withColumnRestore({ columns: current.columns, column: removedColumn, index: removedIndex }),
+                    withColumnRestore({ columns: current.columns, column: removedColumn, afterColumnId }),
             };
         },
 

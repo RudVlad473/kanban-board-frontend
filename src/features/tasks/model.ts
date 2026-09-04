@@ -187,26 +187,31 @@ export const withTaskInsert = <C extends TaskColumn>({
 }): C[] => columns.map((column) => (column.id === columnId ? { ...column, tasks: [...column.tasks, task] } : column));
 
 /**
- * The board as it reads with one task put BACK at `index` in its column — the inverse of
- * `withTaskRemove`. Spliced into whatever the column holds NOW, never a remembered copy; see
- * `withColumnRestore` for the concurrency defect that rule exists to avoid.
+ * The board as it reads with one task put BACK after `afterTaskId` in its column — the inverse of
+ * `withTaskRemove`, `null` restoring it first. Anchored on its neighbour, never a remembered index;
+ * see `withColumnRestore` for the concurrent edit that distinguishes the two.
  */
 export const withTaskRestore = <C extends TaskColumn>({
     columns,
     columnId,
     task,
-    index,
+    afterTaskId,
 }: {
     columns: C[];
     columnId: string;
     task: TaskFull;
-    index: number;
+    afterTaskId: string | null;
 }): C[] =>
-    columns.map((column) =>
-        column.id === columnId
-            ? { ...column, tasks: [...column.tasks.slice(0, index), task, ...column.tasks.slice(index)] }
-            : column,
-    );
+    columns.map((column) => {
+        if (column.id !== columnId) {
+            return column;
+        }
+
+        const anchorIndex = afterTaskId !== null ? column.tasks.findIndex((entry) => entry.id === afterTaskId) : -1;
+        const index = afterTaskId === null ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : column.tasks.length;
+
+        return { ...column, tasks: [...column.tasks.slice(0, index), task, ...column.tasks.slice(index)] };
+    });
 
 /**
  * The board as it reads with the task at `taskId` MERGED with `task` — how `useCreateTask` swaps its
@@ -249,28 +254,34 @@ export const withSubtaskInsert = <C extends TaskColumn>({
     }));
 
 /**
- * The board as it reads with one subtask put BACK at `index` in its task — the inverse of
- * `withSubtaskRemove`. Spliced into whatever the task holds NOW, never a remembered copy; see
- * `withColumnRestore` for the concurrency defect that rule exists to avoid.
+ * The board as it reads with one subtask put BACK after `afterSubtaskId` in its task — the inverse
+ * of `withSubtaskRemove`, `null` restoring it first. Anchored on its neighbour, never a remembered
+ * index; see `withColumnRestore` for the concurrent edit that distinguishes the two.
  */
 export const withSubtaskRestore = <C extends TaskColumn>({
     columns,
     taskId,
     subtask,
-    index,
+    afterSubtaskId,
 }: {
     columns: C[];
     taskId: string;
     subtask: Subtask;
-    index: number;
+    afterSubtaskId: string | null;
 }): C[] =>
     columns.map((column) => ({
         ...column,
-        tasks: column.tasks.map((task) =>
-            task.id === taskId
-                ? { ...task, subtasks: [...task.subtasks.slice(0, index), subtask, ...task.subtasks.slice(index)] }
-                : task,
-        ),
+        tasks: column.tasks.map((task) => {
+            if (task.id !== taskId) {
+                return task;
+            }
+
+            const anchorIndex =
+                afterSubtaskId !== null ? task.subtasks.findIndex((entry) => entry.id === afterSubtaskId) : -1;
+            const index = afterSubtaskId === null ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : task.subtasks.length;
+
+            return { ...task, subtasks: [...task.subtasks.slice(0, index), subtask, ...task.subtasks.slice(index)] };
+        }),
     }));
 
 /**

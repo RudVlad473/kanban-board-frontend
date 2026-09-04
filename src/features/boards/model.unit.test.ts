@@ -22,6 +22,7 @@ import {
     withBoardReplace,
     withColumnInsert,
     withColumnRemove,
+    withColumnRestore,
     withColumnReplace,
 } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
@@ -183,6 +184,57 @@ describe("withColumnRemove", () => {
 
         // Act & Assert
         expect(withColumnRemove({ columns, columnId: "no-such-column" })).toEqual(columns);
+    });
+});
+
+describe("withColumnRestore", () => {
+    // comment-length-exempt: records the reviewer-reproduced case this pins and the reading it rules out, which is exactly what an index-based restore gets wrong
+    /*
+     * Reported by a code reviewer 2026-09-04, reproduced by running it: delete Bravo from
+     * [Alpha, Bravo, Charlie], let a sibling reorder move Charlie to the front, then fail the
+     * delete. An index captured before the delete restores Bravo at index 1 — [Charlie, Bravo,
+     * Alpha] — which is neither where it was nor where the sibling reorder put things. Anchored on
+     * the column it FOLLOWED, it lands after Alpha wherever Alpha now is.
+     */
+    it("puts a column back after the one it followed, even when a sibling moved meanwhile", () => {
+        // Arrange
+        const [alpha, bravo, charlie] = createColumnsFull({ count: 3 });
+        const afterDelete = withColumnRemove({ columns: [alpha, bravo, charlie], columnId: bravo.id });
+        const afterSiblingReorder = [charlie, alpha];
+
+        // Act
+        const restored = withColumnRestore({
+            columns: afterSiblingReorder,
+            column: bravo,
+            afterColumnId: alpha.id,
+        });
+
+        // Assert
+        expect(afterDelete.map((column) => column.id)).toEqual([alpha.id, charlie.id]);
+        expect(restored.map((column) => column.id)).toEqual([charlie.id, alpha.id, bravo.id]);
+    });
+
+    it("restores a column that was first back to the front", () => {
+        // Arrange
+        const [alpha, bravo] = createColumnsFull({ count: 2 });
+
+        // Act
+        const restored = withColumnRestore({ columns: [bravo], column: alpha, afterColumnId: null });
+
+        // Assert
+        expect(restored.map((column) => column.id)).toEqual([alpha.id, bravo.id]);
+    });
+
+    /* The anchor itself can be deleted while the rollback is pending; appending is the only answer left. */
+    it("appends when the column it followed is gone too", () => {
+        // Arrange
+        const [alpha, bravo, charlie] = createColumnsFull({ count: 3 });
+
+        // Act
+        const restored = withColumnRestore({ columns: [charlie], column: bravo, afterColumnId: alpha.id });
+
+        // Assert
+        expect(restored.map((column) => column.id)).toEqual([charlie.id, bravo.id]);
     });
 });
 

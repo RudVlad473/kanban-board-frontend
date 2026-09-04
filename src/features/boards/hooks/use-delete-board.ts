@@ -61,7 +61,8 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
             /* Captured BEFORE the removal, so the rollback can put this row back where it was. */
             const boards = queryClient.getQueryData<Board[]>(BOARDS_QUERY_KEY) ?? [];
             const removedBoard = boards.find((board) => board.id === boardId);
-            const removedIndex = boards.findIndex((board) => board.id === boardId);
+            /* The neighbour it followed, so a create landing meanwhile cannot shift the anchor. */
+            const afterBoardId = boards[boards.findIndex((board) => board.id === boardId) - 1]?.id ?? null;
 
             /* `setQueryData` returns what it wrote, which is the list the destination is resolved against. */
             const remainingBoards =
@@ -82,11 +83,17 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
             /* Re-inserts THIS row only — a snapshot restore would also resurrect a board deleted since. */
             const undo =
                 removedBoard !== undefined
-                    ? (current: Board[]) => [
-                          ...current.slice(0, removedIndex),
-                          removedBoard,
-                          ...current.slice(removedIndex),
-                      ]
+                    ? (current: Board[]) => {
+                          /*
+                           * Front when the row was first or its neighbour is gone — the sibling
+                           * restores append in that second case, but `GET /boards` guarantees no
+                           * order at all, so neither choice is observable here.
+                           */
+                          const anchor = current.findIndex((board) => board.id === afterBoardId);
+                          const at = anchor !== -1 ? anchor + 1 : 0;
+
+                          return [...current.slice(0, at), removedBoard, ...current.slice(at)];
+                      }
                     : null;
 
             return { undo, didNavigate: destination !== null };

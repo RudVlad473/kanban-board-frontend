@@ -2,7 +2,7 @@
 
 // Covered by: `src/features/tasks/components/edit-task-modal/edit-task-modal.test.tsx`
 
-import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
@@ -65,17 +65,19 @@ export const useCreateSubtask = ({
         queryKey,
         initialData: { columns },
         staleTime: Infinity,
-        // comment-length-exempt: records what this observer must NOT do to a shared entry and the corruption a fetching one causes, which a reader would otherwise "restore" as a missing queryFn
+        // comment-length-exempt: records what this observer must NOT declare on a shared entry, and that BOTH ways of declaring one are wrong — a reader would otherwise restore either the resolver or the skipToken
         /*
-         * `skipToken`, never a resolver: this observer READS the board entry, and the entry's own
-         * fetcher belongs to `board-query.ts`. A `queryFn` here is stored on the shared query and
-         * can win the last-writer race, so a refetch would resolve the whole board to this hook's
-         * partial `{ columns }` view — no `id`, no `name` — and `BoardView` reads both.
+         * NO `queryFn` at all. This observer only READS the board entry; the entry's own fetcher
+         * belongs to `board-query.ts`, and every observer's `queryFn` is stored on the one shared
+         * query, so the last one mounted wins. A resolver here resolved the whole board to this
+         * hook's partial `{ columns }` view. `skipToken` is worse: it is truthy, so query-core's
+         * "borrow a queryFn from another observer" fallback (guarded by `if (!this.options.queryFn)`)
+         * never fires and a refetch parks the shared query in `error: Missing queryFn`. Omitting it
+         * is what lets that fallback reach the canonical fetcher. Measured on query-core 5.101.4.
          */
-        queryFn: skipToken,
     });
     const subtasks: Subtask[] =
-        (board?.columns ?? []).flatMap((column) => column.tasks).find((task) => task.id === taskId)?.subtasks ?? [];
+        board.columns.flatMap((column) => column.tasks).find((task) => task.id === taskId)?.subtasks ?? [];
 
     const mutation = useMutation({
         mutationFn: async (args: { clientId: string; title: string }) => {

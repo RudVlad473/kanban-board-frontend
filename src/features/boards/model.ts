@@ -103,25 +103,29 @@ export const withColumnInsert = ({ columns, column }: { columns: ColumnFull[]; c
     column,
 ];
 
-// comment-length-exempt: records why a rollback splices into the LIVE array rather than restoring a snapshot, the concurrency defect this whole family exists to avoid (docs/adr/tech/0023)
+// comment-length-exempt: records why a rollback anchors on a NEIGHBOUR rather than an index, and the concurrent edit that makes the difference visible (docs/adr/tech/0023)
 /**
- * The board's columns with one put BACK at `index` — the inverse of `withColumnRemove`, and what a
- * failed delete rolls back with.
+ * The board's columns with one put BACK after `afterColumnId` — the inverse of `withColumnRemove`,
+ * and what a failed delete rolls back with. `null` restores it to the front.
  *
- * Spliced into whatever the array holds NOW, never into a remembered copy: a sibling mutation may
- * have landed while the delete was in flight, and restoring a snapshot taken before it would erase
- * it. An index past the end appends, which is the right answer for a column deleted from the end
- * of a row that has since shrunk.
+ * Anchored on the neighbour it followed, never on a remembered index: a sibling reorder or insert
+ * that lands while the delete is in flight moves everything, and an index captured beforehand then
+ * names a different slot. An anchor that is itself gone appends, which is the only answer left.
  */
 export const withColumnRestore = ({
     columns,
     column,
-    index,
+    afterColumnId,
 }: {
     columns: ColumnFull[];
     column: ColumnFull;
-    index: number;
-}): ColumnFull[] => [...columns.slice(0, index), column, ...columns.slice(index)];
+    afterColumnId: string | null;
+}): ColumnFull[] => {
+    const anchorIndex = afterColumnId !== null ? columns.findIndex((entry) => entry.id === afterColumnId) : -1;
+    const index = afterColumnId === null ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : columns.length;
+
+    return [...columns.slice(0, index), column, ...columns.slice(index)];
+};
 
 /**
  * The board's columns with one already removed — the reducer behind `useDeleteColumn`'s optimistic
