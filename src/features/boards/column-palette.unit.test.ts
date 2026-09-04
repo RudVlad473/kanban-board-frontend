@@ -156,4 +156,42 @@ describe("pickNextColumnColor", () => {
         expect(first).toBe(COLUMN_COLOR_PALETTE[1]);
         expect(first).toBe(second);
     });
+
+    /*
+     * The saturated branch must SPREAD, not stick. Counting occurrences is what makes it: a set
+     * loses multiplicity, so every candidate scored identically on every call past the sixth and
+     * one entry won forever — columns 7, 8, 9 and 10 all rendered the same hue.
+     */
+    it("spreads successive picks across the palette once every entry is rendered, instead of repeating one", () => {
+        // Arrange — every entry rendered exactly once, then four more columns added in turn.
+        const live = COLUMN_COLOR_PALETTE.map((color, index) => ({ id: `col-${String(index)}`, color }));
+        const picks: string[] = [];
+
+        // Act
+        for (let added = 0; added < COLUMN_COLOR_PALETTE.length; added += 1) {
+            const picked = pickNextColumnColor({ columns: live });
+            picks.push(picked);
+            live.push({ id: `extra-${String(added)}`, color: picked });
+        }
+
+        // Assert — a full second lap uses every entry exactly once, in least-used order.
+        expect(new Set(picks).size).toBe(COLUMN_COLOR_PALETTE.length);
+    });
+
+    /*
+     * The backend preserves the case it is sent and CSS does not care, so two strings can paint one
+     * dot. Compared raw, the stored value reads as unused and the new column is handed a hue already
+     * on screen — the collision this module exists to prevent, wearing a different case.
+     */
+    it("treats a differently-cased stored colour as the palette entry it renders as", () => {
+        // Arrange — the lowercase spelling of entry 0.
+        const columns = [{ id: "legacy", color: COLUMN_COLOR_PALETTE[0].toLowerCase() }];
+
+        // Act
+        const picked = pickNextColumnColor({ columns });
+
+        // Assert
+        expect(picked).not.toBe(COLUMN_COLOR_PALETTE[0]);
+        expect(picked.toUpperCase()).not.toBe(COLUMN_COLOR_PALETTE[0].toUpperCase());
+    });
 });

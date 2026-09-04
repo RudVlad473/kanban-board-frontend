@@ -35,8 +35,12 @@ export const columnFullSchema = z.object({
     name: z.string(),
     version: z.number(),
     position: z.number(),
-    /* Both `null` (every column that exists today) and an absent key must parse. */
-    color: columnColorSchema.nullish(),
+    /*
+     * Both `null` (every column today) and an absent key must parse. LENIENT where
+     * `createColumnInputSchema` is strict: nested in `boardFullSchema`, a refusal here would fail
+     * the WHOLE board's parse over one dot, on a field with no edit endpoint to repair it.
+     */
+    color: columnColorSchema.nullish().catch(null),
     tasks: taskFullSchema.array(),
 });
 

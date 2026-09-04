@@ -48,7 +48,7 @@ export const createTaskSubtasksAction = async ({
         valueSchema: subtaskTitleRowSchema,
         /* The written rows go back to the caller, which writes them into the board entry (rule 4). */
         parseChild: (data) => subtaskSchema.safeParse(data).data ?? null,
-        createChild: (title) =>
+        createChild: ({ value: title }) =>
             externalApi.POST(EXTERNAL_PATH.TASK_SUBTASKS, {
                 params: {
                     path: { boardId: parsed.data.boardId, columnId: parsed.data.columnId, taskId: parsed.data.taskId },

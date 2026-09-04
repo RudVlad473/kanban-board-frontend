@@ -161,14 +161,31 @@ describe("columnFullSchema", () => {
     });
 
     /*
-     * The check the OpenAPI contract cannot make: springdoc emits a bare `type: string` with no
-     * pattern and no maxLength, so this app's own boundary is the only thing that refuses these.
+     * The check the OpenAPI contract cannot make (springdoc emits a bare `type: string`). Refused
+     * on WRITE, where the caller can still be told; degraded on read — see the test below.
      */
-    it("rejects a colour missing its hash, of the wrong length, or holding non-hex characters", () => {
+    it("rejects a colour missing its hash, of the wrong length, or holding non-hex characters on write", () => {
+        // Arrange
+        const valid = { boardId: "b1", name: "Todo" };
+
         // Act & Assert
-        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "49C4E5" }).success).toBe(false);
-        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "#49C4E" }).success).toBe(false);
-        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "#GGGGGG" }).success).toBe(false);
+        expect(createColumnInputSchema.safeParse({ ...valid, color: "49C4E5" }).success).toBe(false);
+        expect(createColumnInputSchema.safeParse({ ...valid, color: "#49C4E" }).success).toBe(false);
+        expect(createColumnInputSchema.safeParse({ ...valid, color: "#GGGGGG" }).success).toBe(false);
+        expect(createColumnInputSchema.safeParse({ ...valid, color: "#49C4E5" }).success).toBe(true);
+    });
+
+    /*
+     * Nested in `boardFullSchema`, so refusing here would fail the WHOLE board's parse over one
+     * column's field — unloadable, and `color` has no edit endpoint to repair it with.
+     */
+    it("degrades a malformed stored colour to null on read, leaving the rest of the board parseable", () => {
+        // Act
+        const result = columnFullSchema.safeParse({ ...createColumnFull(), color: "red" });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.data?.color).toBeNull();
     });
 });
 

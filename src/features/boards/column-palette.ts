@@ -22,34 +22,53 @@ export const resolveRenderedColumnColor = ({ id, color }: RenderableColumn): str
     color ?? COLUMN_COLOR_PALETTE[toColumnAccentIndex({ id })];
 
 /*
- * Excludes the candidate's own occurrence in `used`: once every entry is rendered, a candidate is
- * always itself a member of `used`, and comparing it against itself is a zero that would poison
- * every candidate's minimum equally, collapsing "maximise the minimum" to an arbitrary tie.
+ * The backend preserves the case it is sent and CSS ignores it, so `#49c4e5` and `#49C4E5` are two
+ * strings painting one dot — compared raw, the stored one reads as unused and collides.
+ */
+const normaliseHex = (hex: string): string => hex.toUpperCase();
+
+/*
+ * Excludes the candidate's own occurrences in `used`: a candidate is always itself a member once
+ * every entry is rendered, and comparing it against itself is a zero that would poison every
+ * candidate's minimum equally, collapsing "maximise the minimum" to an arbitrary tie.
  */
 const minDistanceToUsed = ({ candidate, used }: { candidate: string; used: readonly string[] }): number =>
-    Math.min(...used.filter((entry) => entry !== candidate).map((entry) => deltaEOk({ hexA: candidate, hexB: entry })));
+    Math.min(
+        ...used
+            .filter((entry) => normaliseHex(entry) !== normaliseHex(candidate))
+            .map((entry) => deltaEOk({ hexA: candidate, hexB: entry })),
+    );
 
 /**
- * The first palette entry not already RENDERED on the board; when every entry is rendered at least
- * once, the entry maximising its minimum ΔE_ok against the rendered set, tied by palette order for
- * a deterministic result. An empty column list returns the first entry.
+ * The first palette entry not already RENDERED; once all are, the LEAST-USED, ties broken by
+ * maximum minimum ΔE_ok then palette order. Counting (not set membership) is what makes the
+ * saturated branch spread: a set loses multiplicity and one entry then wins every call forever.
  */
 export const pickNextColumnColor = ({
     columns,
 }: {
     columns: RenderableColumn[];
 }): (typeof COLUMN_COLOR_PALETTE)[number] => {
-    const rendered = new Set(columns.map((column) => resolveRenderedColumnColor(column)));
-    const firstUnused = COLUMN_COLOR_PALETTE.find((entry) => !rendered.has(entry));
+    const used = columns.map((column) => resolveRenderedColumnColor(column));
+    const usageOf = (entry: string): number =>
+        used.filter((rendered) => normaliseHex(rendered) === normaliseHex(entry)).length;
+
+    const firstUnused = COLUMN_COLOR_PALETTE.find((entry) => usageOf(entry) === 0);
     if (firstUnused !== undefined) {
         return firstUnused;
     }
 
-    const used = [...rendered];
+    return COLUMN_COLOR_PALETTE.reduce((best, candidate) => {
+        const usageDelta = usageOf(candidate) - usageOf(best);
 
-    return COLUMN_COLOR_PALETTE.reduce((best, candidate) =>
-        minDistanceToUsed({ candidate, used }) > minDistanceToUsed({ candidate: best, used }) ? candidate : best,
-    );
+        return usageDelta === 0
+            ? minDistanceToUsed({ candidate, used }) > minDistanceToUsed({ candidate: best, used })
+                ? candidate
+                : best
+            : usageDelta < 0
+              ? candidate
+              : best;
+    });
 };
 
 /** Exactly one of the two is ever set — the branch a header dot's `className`/`style` props read directly. */

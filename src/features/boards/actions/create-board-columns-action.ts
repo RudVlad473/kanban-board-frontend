@@ -4,6 +4,7 @@
 
 import { refresh } from "next/cache";
 
+import { pickNextColumnColor } from "@/features/boards/column-palette";
 import { columnNameSchema, columnSchema, createBoardColumnsInputSchema, type Column } from "@/features/boards/schemas";
 import type { ActionResult } from "@/lib/core/api-contract/action-result";
 import { createChildrenSerially } from "@/lib/core/api-contract/create-children-serially";
@@ -46,10 +47,14 @@ export const createBoardColumnsAction = async ({
         valueSchema: columnNameSchema,
         /* The written columns go back to the caller, which writes them into the board entry (rule 4). */
         parseChild: (data) => columnSchema.safeParse(data).data ?? null,
-        createChild: (name) =>
+        /*
+         * Picked here too, not only in `useCreateColumn`: colourless columns fall back to three
+         * id-derived buckets, so a board created with four guarantees a duplicate dot by pigeonhole.
+         */
+        createChild: ({ value: name, createdSoFar }) =>
             externalApi.POST(EXTERNAL_PATH.BOARD_COLUMNS, {
                 params: { path: { boardId: parsed.data.boardId }, query: { userId: record.id } },
-                body: { name },
+                body: { name, color: pickNextColumnColor({ columns: [...createdSoFar] }) },
             }),
     });
 

@@ -9,6 +9,7 @@ import { createColumnAction } from "@/features/boards/actions/create-column-acti
 import { pickNextColumnColor } from "@/features/boards/column-palette";
 import {
     shouldNudgeOnColumnCount,
+    toInFlightColumns,
     withColumnInsert,
     withColumnRemove,
     withColumnReplace,
@@ -17,6 +18,7 @@ import type { BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 
 /*
  * Authored copy only — the action returns bare discriminants, so nothing the backend said can
@@ -80,6 +82,7 @@ export const useCreateColumn = ({
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
+        mutationKey: MUTATION_KEY.CREATE_COLUMN,
         mutationFn: async ({ boardId, name, color }: CreateColumnVariables) => {
             const result = await createColumnAction({ boardId, name, color });
 
@@ -180,7 +183,16 @@ export const useCreateColumn = ({
          * retry re-reads this at call time, so it re-picks against whatever the board looks like then.
          */
         const boardEntry = queryClient.getQueryData<BoardFull>(buildBoardQueryKey(boardId));
-        const color = pickNextColumnColor({ columns: boardEntry?.columns ?? [] });
+        /* Creates already in flight on THIS board, whose picks are not in the entry yet. */
+        const inFlight = toInFlightColumns({
+            pending: queryClient
+                .getMutationCache()
+                .findAll({ mutationKey: MUTATION_KEY.CREATE_COLUMN, status: "pending" })
+                .map((pending) => pending.state.variables as CreateColumnVariables | undefined),
+            boardId,
+        });
+
+        const color = pickNextColumnColor({ columns: [...(boardEntry?.columns ?? []), ...inFlight] });
 
         const outcome = await mutation
             .mutateAsync({ boardId, name, color, clientId: crypto.randomUUID() })

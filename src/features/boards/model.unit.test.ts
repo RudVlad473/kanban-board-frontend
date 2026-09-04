@@ -24,6 +24,7 @@ import {
     withColumnRemove,
     withColumnRestore,
     withColumnReplace,
+    toInFlightColumns,
 } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
@@ -751,5 +752,43 @@ describe("createColumnReorderAnnouncements", () => {
 
         // Assert
         expect(announcement).toBeUndefined();
+    });
+});
+
+/*
+ * The pick's view of creates that have not written their optimistic insert yet. Without them a
+ * second create issued in the same turn re-picks the first one's colour, and `color` has no edit
+ * endpoint, so that duplicate is permanent.
+ */
+describe("toInFlightColumns", () => {
+    it("shapes this board's pending creates as columns carrying their picked colour", () => {
+        // Arrange
+        const pending = [
+            { boardId: "board-1", clientId: "c1", color: "#49C4E5" },
+            { boardId: "board-1", clientId: "c2", color: "#8471F2" },
+        ];
+
+        // Act & Assert
+        expect(toInFlightColumns({ pending, boardId: "board-1" })).toEqual([
+            { id: "c1", color: "#49C4E5" },
+            { id: "c2", color: "#8471F2" },
+        ]);
+    });
+
+    /* A create on another board is not a sibling — counting it would burn this board's entry 0. */
+    it("excludes pending creates belonging to a different board", () => {
+        // Arrange
+        const pending = [
+            { boardId: "board-2", clientId: "other", color: "#49C4E5" },
+            { boardId: "board-1", clientId: "mine", color: "#8471F2" },
+        ];
+
+        // Act & Assert
+        expect(toInFlightColumns({ pending, boardId: "board-1" })).toEqual([{ id: "mine", color: "#8471F2" }]);
+    });
+
+    it("tolerates a pending mutation whose variables are not readable yet", () => {
+        // Act & Assert
+        expect(toInFlightColumns({ pending: [undefined], boardId: "board-1" })).toEqual([]);
     });
 });

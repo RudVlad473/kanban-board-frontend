@@ -94,6 +94,25 @@ export const resolveDestinationAfterDelete = ({
     return remainingBoards.length === 0 ? ROUTE.BOARDS : buildBoardDetailPath(firstRemaining.id);
 };
 
+/** The subset of a create-column mutation's variables that a colour pick needs to see. */
+export type InFlightColumnCreate = { boardId: string; clientId: string; color?: string };
+
+/*
+ * The in-flight creates on ONE board, shaped as columns so a colour pick can treat them as siblings.
+ * `onMutate` awaits `cancelQueries` before its optimistic insert, so a create issued in the same
+ * turn is visible only here, in the mutation cache — the board entry still shows no sign of it.
+ */
+export const toInFlightColumns = ({
+    pending,
+    boardId,
+}: {
+    pending: (InFlightColumnCreate | undefined)[];
+    boardId: string;
+}): { id: string; color?: string }[] =>
+    pending
+        .filter((variables) => variables?.boardId === boardId)
+        .map((variables) => ({ id: variables?.clientId ?? "", color: variables?.color }));
+
 /**
  * The board's columns with one already appended — the reducer behind `useCreateColumn`'s optimistic
  * insert. Appended, never sorted: D-01 puts a new column at the end of the row.

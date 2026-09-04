@@ -22,7 +22,14 @@ export const createChildrenSerially = async <TChild>({
 }: {
     values: string[];
     valueSchema: ZodType<string>;
-    createChild: (value: string) => Promise<{ data?: unknown; error?: unknown }>;
+    /*
+     * `createdSoFar` is what this fan-out has already landed, in order — a caller deriving a
+     * child's field from its siblings needs the accumulator, not its own empty pre-call snapshot.
+     */
+    createChild: (args: {
+        value: string;
+        createdSoFar: readonly TChild[];
+    }) => Promise<{ data?: unknown; error?: unknown }>;
     /* Applied to each created child's body; a child the caller cannot parse counts as failed. */
     parseChild: (data: unknown) => TChild | null;
 }): Promise<SerialCreateOutcome<TChild>> => {
@@ -37,7 +44,7 @@ export const createChildrenSerially = async <TChild>({
             continue;
         }
 
-        const { data, error } = await createChild(validValue.data);
+        const { data, error } = await createChild({ value: validValue.data, createdSoFar: created });
 
         if (!isNil(error)) {
             failedValues.push(value);

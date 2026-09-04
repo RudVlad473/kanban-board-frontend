@@ -3,6 +3,7 @@
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useQuery } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 import { useBoolean, useMediaQuery } from "usehooks-ts";
 
@@ -126,6 +127,8 @@ export const BoardView = ({
         reorderColumns: requestReorder,
     });
     const { ghostColumnRef, revealOnNextGrowth } = useNewColumnReveal({ columnCount });
+    /* Resolved once so the drag overlay's dot cannot drift from the header's on how it picks. */
+    const liftedDotProps = !isNil(liftedColumn) ? toColumnDotProps(liftedColumn) : null;
 
     const handleOpenChange = (nextIsOpen: boolean): void => {
         setIsAddColumnOpen(nextIsOpen);
@@ -284,11 +287,8 @@ export const BoardView = ({
                             <div className="flex w-70 items-center gap-4 rounded-sm bg-bg-surface px-2 py-3 font-heading-s text-heading-s text-text-muted uppercase shadow-lg">
                                 <span
                                     aria-hidden="true"
-                                    className={cn(
-                                        "size-4 shrink-0 rounded-full",
-                                        toColumnDotProps(liftedColumn).className,
-                                    )}
-                                    style={toColumnDotProps(liftedColumn).style}
+                                    className={cn("size-4 shrink-0 rounded-full", liftedDotProps?.className)}
+                                    style={liftedDotProps?.style}
                                 />
 
                                 <span className="min-w-0 truncate">
