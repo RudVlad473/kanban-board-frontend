@@ -170,12 +170,19 @@ const hashColumnId = (id: string): number => {
 };
 
 /**
+ * The id-derived accent bucket, computed in exactly one place so `toColumnDotToken` and the
+ * colour palette's own fallback (`column-palette.ts`) can never disagree on which bucket an id
+ * lands in.
+ */
+export const toColumnAccentIndex = ({ id }: { id: string }): number => hashColumnId(id) % COLUMN_DOT_TOKENS.length;
+
+/**
  * U-03: the decorative header dot derives its hue from the column's own id, never its position —
  * delete renumbers positions, so a position-keyed hue repainted every surviving column.
  * Full rationale: 03-UI-SPEC.md § Color, "Keyed by id, not by position".
  */
 export const toColumnDotToken = ({ id }: { id: string }): (typeof COLUMN_DOT_TOKENS)[number] =>
-    COLUMN_DOT_TOKENS[hashColumnId(id) % COLUMN_DOT_TOKENS.length];
+    COLUMN_DOT_TOKENS[toColumnAccentIndex({ id })];
 
 /**
  * `position` is the backend's ordering authority — the response array's own order carries no
