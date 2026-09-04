@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useBoolean, useMediaQuery } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button/button";
+import { toColumnDotProps } from "@/features/boards/column-palette";
 import { AddColumnModal } from "@/features/boards/components/add-column-modal/add-column-modal";
 import { AddColumnPlaceholder } from "@/features/boards/components/add-column-placeholder/add-column-placeholder";
 import { DeleteColumnConfirm } from "@/features/boards/components/delete-column-confirm/delete-column-confirm";
@@ -16,7 +17,7 @@ import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
 import { useDeleteColumn, type DeleteColumnArgs } from "@/features/boards/hooks/use-delete-column";
 import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";
 import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
-import { toColumnCaption, toColumnDotToken } from "@/features/boards/model";
+import { toColumnCaption } from "@/features/boards/model";
 import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
 import { DeleteTaskConfirm } from "@/features/tasks/components/delete-task-confirm/delete-task-confirm";
@@ -285,8 +286,9 @@ export const BoardView = ({
                                     aria-hidden="true"
                                     className={cn(
                                         "size-4 shrink-0 rounded-full",
-                                        toColumnDotToken({ id: liftedColumn.id }),
+                                        toColumnDotProps(liftedColumn).className,
                                     )}
+                                    style={toColumnDotProps(liftedColumn).style}
                                 />
 
                                 <span className="min-w-0 truncate">

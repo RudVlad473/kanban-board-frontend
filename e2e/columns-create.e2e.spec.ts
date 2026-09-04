@@ -3,7 +3,18 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 import { seedAccount, seedBoard, seedColumn } from "./seed";
+import { COLUMN_COLOR_PALETTE } from "../src/features/boards/column-palette";
 import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
+
+/** The browser's own serialization of a `#RRGGBB` background — what `getComputedStyle` returns. */
+const toRgbString = (hex: string): string => {
+    const digits = hex.slice(1);
+    const channel = (start: number): number => parseInt(digits.slice(start, start + 2), 16);
+
+    return `rgb(${String(channel(0))}, ${String(channel(2))}, ${String(channel(4))})`;
+};
+
+const PALETTE_RGB_VALUES = COLUMN_COLOR_PALETTE.map(toRgbString);
 
 // comment-length-exempt: records the two entry points this spec separates and the reason its order assertion reads text rather than the accessible name, so a future reader does not collapse either
 /*
@@ -56,6 +67,26 @@ test.describe("COLUMN-01: create a column", () => {
 
         // Assert — the create persisted, still in last position.
         await expect(columnHeadings).toHaveText(["Backlog (0)", "Doing (0)", `${addedName} (0)`]);
+
+        /*
+         * COLUMN-COLOR-01: the new column's dot renders a palette colour and differs from both
+         * seeded siblings' rendered hues — they carry no stored colour, so this is the collision
+         * this feature exists to prevent, proved against the real backend rather than a fixture.
+         */
+        const getDotBackground = (index: number): Promise<string> =>
+            columnHeadings
+                .nth(index)
+                .locator('[aria-hidden="true"]')
+                .evaluate((dot) => getComputedStyle(dot).backgroundColor);
+        const [backlogBackground, doingBackground, addedBackground] = await Promise.all([
+            getDotBackground(0),
+            getDotBackground(1),
+            getDotBackground(2),
+        ]);
+
+        expect(PALETTE_RGB_VALUES).toContain(addedBackground);
+        expect(addedBackground).not.toBe(backlogBackground);
+        expect(addedBackground).not.toBe(doingBackground);
     });
 
     test("creates the first column from the empty state and leaves that state showing it", async ({ page }) => {

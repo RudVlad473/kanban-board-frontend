@@ -5,7 +5,8 @@ import { EllipsisVertical } from "lucide-react";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Menu } from "@/components/ui/menu/menu";
-import { toColumnCaption, toColumnDotToken } from "@/features/boards/model";
+import { toColumnDotProps } from "@/features/boards/column-palette";
+import { toColumnCaption } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
 import { cn } from "@/lib/core/styling/cn";
 
@@ -56,13 +57,16 @@ export const ColumnHeader = ({
     const handleAttributes = handleProps?.attributes;
     const handleListeners = handleProps?.listeners;
 
+    const dotProps = toColumnDotProps(column);
+
     /* Declared once so the handle and the handle-less lone column cannot drift apart visually. */
     const captionRow = (
         <>
             {/* Decoration only: the hue states nothing the caption beside it does not already say. */}
             <span
                 aria-hidden="true"
-                className={cn("size-4 shrink-0 rounded-full", toColumnDotToken({ id: column.id }))}
+                className={cn("size-4 shrink-0 rounded-full", dotProps.className)}
+                style={dotProps.style}
             />
 
             <span className="min-w-0 truncate">{column.name}</span>

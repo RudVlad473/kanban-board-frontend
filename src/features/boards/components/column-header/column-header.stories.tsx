@@ -155,3 +155,19 @@ export const DragHandleFocused: Story = {
  * stale, so neither entry may fire a second mutation against it (T-03-31).
  */
 export const MutationsDisabled: Story = { args: { areMutationsDisabled: true, defaultIsMenuOpen: true } };
+
+/*
+ * A stored colour outside the three shipped accent classes — proves the dot reads the wire value
+ * over the id-derived class, and exercises this path through the a11y project (ADR tech/0025).
+ */
+export const StoredColor: Story = {
+    args: {
+        column: createColumnFull({
+            id: FIRST_ACCENT_ID,
+            name: "Design",
+            position: 0,
+            color: "#EA6000",
+            tasks: createTasksFull(2),
+        }),
+    },
+};

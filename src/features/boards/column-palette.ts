@@ -1,4 +1,6 @@
-import { toColumnAccentIndex } from "@/features/boards/model";
+import { isNil } from "es-toolkit";
+
+import { toColumnAccentIndex, toColumnDotToken } from "@/features/boards/model";
 import { deltaEOk } from "@/lib/core/styling/oklab";
 
 /*
@@ -58,3 +60,16 @@ export const pickNextColumnColor = ({
         minDistanceToUsed({ candidate, used }) > minDistanceToUsed({ candidate: best, used }) ? candidate : best,
     );
 };
+
+/** Exactly one of the two is ever set — the branch a header dot's `className`/`style` props read directly. */
+export type ColumnDotProps = { className: string | undefined; style: { backgroundColor: string } | undefined };
+
+/**
+ * The id-derived accent CLASS for a null/absent stored colour, or an inline `backgroundColor` for
+ * a stored one — a runtime hex can never be a Tailwind class. One branch, so the two render sites
+ * (the header dot and the drag-overlay's copy of it) cannot drift apart on how they pick.
+ */
+export const toColumnDotProps = ({ id, color }: RenderableColumn): ColumnDotProps =>
+    isNil(color)
+        ? { className: toColumnDotToken({ id }), style: undefined }
+        : { className: undefined, style: { backgroundColor: color } };

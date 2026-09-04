@@ -24,6 +24,7 @@ const {
     LoneColumnMenuOpen,
     DragHandleFocused,
     MutationsDisabled,
+    StoredColor,
 } = composeStories(stories);
 
 /** The dot is `aria-hidden`, so it is reached through the DOM rather than by role. */
@@ -85,6 +86,32 @@ describeForEachDevice({
             // Assert
             await expect.element(screen.getByRole("heading", { name: "Todo (4)" })).toBeVisible();
             expect(getDotElement()).toHaveTextContent("");
+        });
+
+        /*
+         * A stored colour is a runtime hex, never a Tailwind class — this proves the dot renders it
+         * as an inline style and drops every `bg-accent-column-N` utility rather than layering both.
+         */
+        it("renders a stored colour as the dot's computed background, carrying no accent class", async () => {
+            // Act
+            await render(<StoredColor />);
+
+            // Assert
+            const dot = getDotElement();
+            expect(getComputedStyle(dot).backgroundColor).toBe("rgb(234, 96, 0)");
+            expect(dot.className).not.toMatch(/bg-accent-column-\d/);
+        });
+
+        /* Still `aria-hidden` and contributing nothing to the accessible name — the stored-colour path is decoration too. */
+        it("keeps a stored-colour dot aria-hidden and out of the accessible name", async () => {
+            // Act
+            const screen = await render(<StoredColor />);
+
+            // Assert
+            await expect.element(screen.getByRole("heading", { name: "Design (2)" })).toBeVisible();
+            const dot = getDotElement();
+            expect(dot).toHaveAttribute("aria-hidden", "true");
+            expect(dot).toHaveTextContent("");
         });
 
         /*
