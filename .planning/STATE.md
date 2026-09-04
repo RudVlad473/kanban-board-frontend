@@ -5,10 +5,10 @@ current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
 stopped_at: Plan 04-22 task 4 — CI fully green at 140367b (run 33794249733); the human phase sign-off checkpoint is presented and blocking
-last_updated: "2026-09-03T13:00:00.000Z"
-last_activity: 2026-09-03
-last_activity_desc: Quick task 260903-ttt complete — SOPS+age secrets, local/CI gitleaks parity, CI green at 153c096
-state_head: c0ab07e41dd5ce9d946af6210940848ecf15f2b8
+last_updated: "2026-09-04T09:10:00.000Z"
+last_activity: 2026-09-04
+last_activity_desc: Quick task 260904-e3z complete — pnpm verify pre-push hook and ci.yml drift guard, CI green at 21cf5d5
+state_head: 21cf5d5d75aa5dd1290f25956be54e2601bc951f
 progress:
   total_phases: 6
   completed_phases: 5
@@ -203,6 +203,7 @@ verifying phase 03 wave 4) —
 |---|-------------|------|--------|--------|-----------|
 | 260829-kyv | Regenerate OpenAPI contract from backend and scope e2e reset cleanup to seeded user ids instead of full-db wipe | 2026-08-29 | 5f325f8 | Verified | [260829-kyv-regenerate-openapi-contract-from-backend](./quick/260829-kyv-regenerate-openapi-contract-from-backend/) |
 | 260903-ttt | Wire SOPS + age for local secret management and verify gitleaks still behaves alongside it | 2026-09-03 | 153c096 | Verified | [260903-ttt-wire-sops-age-for-local-secret-managemen](./quick/260903-ttt-wire-sops-age-for-local-secret-managemen/) |
+| 260904-e3z | Wire the pnpm verify pre-push hook and a ci.yml drift guard, per Spike 2's two-tier recommendation | 2026-09-04 | 21cf5d5 | Verified | [260904-e3z-wire-the-pre-push-verify-hook-per-spike-](./quick/260904-e3z-wire-the-pre-push-verify-hook-per-spike-/) |
 
 ### Roadmap Evolution
 
@@ -342,5 +343,29 @@ CI run 33756448713 green on quality/secrets/visual/e2e. Both mock divergences 04
 re-measured through the running app and are RESOLVED — the subtask remove control is 0px off its
 field centre (was 26px), and every type token on the boards surface renders its design line-height
 and weight, which `4b048b2` fixed after task 3 recorded the finding.
+
+**This session (2026-09-04, quick task `260904-e3z`):** Wired the pre-push gate the 2026-09-03 todo
+asked for, in the two-tier shape Spike 2 measured (`.planning/quick/spike-pnpm-startup-and-pre-push-gates.md`).
+`scripts/verify.mjs` runs 20 ordered gates via `.husky/pre-push` — an e2e-token preflight, 11 fast
+check scripts dispatched via direct `node` (never `pnpm run`), then `next typegen`, `format:check`,
+`build`, `lint`, `test`, `e2e` last. `scripts/check-ci-gate-coverage.mjs` parses `ci.yml`'s `run:`
+steps and fails when a gate is covered by neither `VERIFY_STEPS` nor a written exception, wired into
+both `pnpm verify` and `ci.yml`'s own `quality` job so a `--no-verify` push still gets caught.
+
+Measured a clean isolated `pnpm verify` run at **~5m14s** (313584ms self-reported, `time` agreed at
+5:14.25) — a little over the spike's ~4-5min budget, tracked to `lint`'s already-flagged 48-106s
+variance rather than the design; not re-tiered. A second run made concurrently with the real
+`git push` (contending with an earlier killed attempt) measured 11m5s, which is noise from resource
+contention on this box, not a repeat measurement of the design's own cost.
+
+All falsifications passed and were reverted immediately: a formatting violation stopped
+`pnpm verify` at `[format]` naming the re-run command; a real `git push` carrying that violation was
+refused by the hook (`husky - pre-push script failed`) and `git push --no-verify` bypassed it
+cleanly; an unset `NONPROD_RESET_TOKEN` with no `.env.local` fallback refused in 0ms naming
+`pnpm secrets:decrypt` with no token value in the message; and the drift guard exited non-zero on
+both a fabricated `ci.yml` step and a fabricated job, each naming the offender.
+
+CI green on all four jobs (`quality`, `secrets`, `e2e`, `visual`) at `21cf5d5`, run `33855852084`.
+Full narrative: `260904-e3z-SUMMARY.md`.
 
 **Next:** the blocking human phase sign-off checkpoint at the end of 04-22 — presented 2026-09-03.
