@@ -141,10 +141,39 @@ Adding a step to `ci.yml`'s `quality` or `e2e` job now requires adding it to `sc
 (itself one of the 20 gates, and also run in CI so a `--no-verify` push still gets caught) fails
 otherwise.
 
+## Isolation policy: GSD dispatch is sequential; ad-hoc parallel work isolates explicitly
+
+`.planning/config.json` sets `workflow.use_worktrees: false`. GSD's own internal dispatch
+(execute-phase, plan-phase, quick, etc. spawning gsd-executor/gsd-planner) runs sequentially on the
+main checkout in this project — it never auto-creates a worktree per plan or task. This was set
+silently in `d6311c0` with no recorded reason; retroactively justified 2026-09-04 after two
+stranded-worktree incidents surfaced in one session (`.claude/worktrees/agent-ad99257c01d94ec72`,
+holding real uncommitted work from an abandoned session, and a redundant worktree the orchestrator
+itself created and had to clean up moments later) against zero cleanup cost from two full quick
+tasks that ran sequentially the same session. Do not flip this back to `true` without a plan for
+who reaps a stranded worktree.
+
+This does **not** mean worktree isolation is unavailable — only that GSD's own dispatch won't reach
+for it. The orchestrating session can still dispatch a specific `Agent(isolation="worktree")` call
+for genuinely parallel ad-hoc work (e.g., running several independent todos at once). That is a
+different mechanism from GSD's dispatch and is not gated by `use_worktrees`. When you do this:
+
+- **Never also manually create a `.worktrees/<slug>` git worktree for the same dispatch and tell
+  the agent it's already there.** `isolation="worktree"` makes the harness create its own, under
+  `.claude/worktrees/agent-<id>`, ignoring anything set up beforehand. Pick one mechanism. Found
+  2026-09-04: doing both left a manually-created worktree empty and unused while the agent worked
+  somewhere else entirely, and the dispatch prompt's claim about the agent's own location was
+  simply wrong.
+- Confirm where the agent actually landed with `git worktree list`, not by trusting your own
+  dispatch prompt, before assuming `setup:worktree` ran in the right place.
+- Clean up when done — `git worktree remove`, delete the branch once merged. A stranded worktree
+  holding real uncommitted work is expensive to recover and easy to lose track of.
+
 ## Set up every fresh worktree before running anything
 
-One command, run inside the worktree before `pnpm dev`, tests, lint or e2e — in GSD's
-`isolation="worktree"` dispatch or any other worktree-based execution:
+One command, run inside the worktree before `pnpm dev`, tests, lint or e2e — in an ad-hoc
+`Agent(isolation="worktree")` dispatch (see the isolation policy above) or any other
+worktree-based execution:
 
 ```bash
 pnpm --dir "$(git rev-parse --show-toplevel)" setup:worktree
