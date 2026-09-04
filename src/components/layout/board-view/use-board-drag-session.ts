@@ -9,7 +9,11 @@ import { useColumnDragSensors } from "@/features/boards/hooks/use-column-drag-se
 import { createColumnReorderAnnouncements } from "@/features/boards/model";
 import type { ColumnFull } from "@/features/boards/schemas";
 import { createTaskMoveAnnouncements, toTaskMoveTargetPosition } from "@/features/tasks/model";
-import { createTaskAwareCollisionDetection, toDragItemData } from "@/features/tasks/task-drag-model";
+import {
+    createTaskAwareCollisionDetection,
+    isPastOverTaskCentre,
+    toDragItemData,
+} from "@/features/tasks/task-drag-model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
 
@@ -78,6 +82,8 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
             destinationTaskIds: destination.tasks.map((task) => task.id),
             taskId,
             overTaskId: overData.type === DRAG_ITEM_TYPE.TASK ? String(over.id) : null,
+            /* Only a cross-column drop reads this; within one column the model has a direction already. */
+            isPastOverTask: isPastOverTaskCentre({ activeRect: active.rect.current.translated, overRect: over.rect }),
         });
 
         /* A drop that ended exactly where it began is not a move, so it issues no request at all. */

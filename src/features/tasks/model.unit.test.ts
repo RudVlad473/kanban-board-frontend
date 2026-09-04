@@ -445,6 +445,47 @@ describe("toTaskMoveTargetPosition", () => {
         expect(position).toBe(3);
     });
 
+    /* The last slot of a non-empty column is reachable ONLY through this flag — see the model's own note. */
+    it("puts a cross-column drop past the last card AFTER it", () => {
+        // Act
+        const position = toTaskMoveTargetPosition({
+            destinationTaskIds: DESTINATION_IDS,
+            taskId: "elsewhere",
+            overTaskId: "delta",
+            isPastOverTask: true,
+        });
+
+        // Assert
+        expect(position).toBe(4);
+    });
+
+    it("puts a cross-column drop past a middle card between it and the next", () => {
+        // Act
+        const position = toTaskMoveTargetPosition({
+            destinationTaskIds: DESTINATION_IDS,
+            taskId: "elsewhere",
+            overTaskId: "bravo",
+            isPastOverTask: true,
+        });
+
+        // Assert — [alpha, bravo, elsewhere, charlie, delta], which is index 2.
+        expect(position).toBe(2);
+    });
+
+    /* The flag is a CROSS-column read: within one column the direction already decides the step. */
+    it("ignores the geometry flag for a within-column upward move", () => {
+        // Act
+        const position = toTaskMoveTargetPosition({
+            destinationTaskIds: DESTINATION_IDS,
+            taskId: "delta",
+            overTaskId: "alpha",
+            isPastOverTask: true,
+        });
+
+        // Assert
+        expect(position).toBe(0);
+    });
+
     /* T3: omitting the field means "append", so a drop on the body must send the end index itself. */
     it("appends when the drop landed on the column body rather than a card", () => {
         // Act

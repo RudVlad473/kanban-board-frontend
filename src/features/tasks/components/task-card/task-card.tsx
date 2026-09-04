@@ -8,6 +8,7 @@ import { useMediaQuery } from "usehooks-ts";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { toSubtaskSummary } from "@/features/tasks/model";
+import { isPastOverTaskCentre } from "@/features/tasks/task-drag-model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
 import { cn } from "@/lib/core/styling/cn";
@@ -42,7 +43,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
      * exactly the drag it does not participate in; its draggable half keeps the existing
      * `isMoveDisabled`/`isMoving` guards.
      */
-    const { active } = useDndContext();
+    const { active, over } = useDndContext();
     const isColumnDragActive = active?.data.current?.type === DRAG_ITEM_TYPE.COLUMN;
     const {
         activeIndex,
@@ -65,8 +66,16 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
 
     /* Read off the strategy's own indices, so the pointer path and the keyboard path indicate identically. */
     const isInsertionPoint = isSorting && overIndex === index && activeIndex !== index;
-    /* A card lifted from ANOTHER column reports -1 here, and a cross-column drop inserts before this one. */
-    const isInsertionBelow = activeIndex !== -1 && activeIndex < index;
+    /*
+     * A card lifted from ANOTHER column reports -1 here, so there is no direction to read off the
+     * indices — the same geometry `use-board-drag-session.ts` resolves the drop with decides the bar,
+     * which is what keeps the indicator and the landing index from disagreeing.
+     */
+    const isInsertionBelow =
+        activeIndex !== -1
+            ? activeIndex < index
+            : over !== null &&
+              isPastOverTaskCentre({ activeRect: active?.rect.current.translated ?? null, overRect: over.rect });
 
     /*
      * UI-SPEC "Card caption": suppression at zero subtasks is this CALL SITE's decision, so the

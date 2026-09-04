@@ -20,6 +20,8 @@ const SIGN_IN_TIMEOUT_MS = 20_000;
 const DRAG_MOVE_STEPS = 10;
 const TASK_TITLE = "Fixture Movable Task";
 const DESTINATION_TASK_TITLE = "Fixture Destination Task";
+/** Three, so "last" is a slot no other reading of the drop resolves to by accident. */
+const DESTINATION_TASK_TITLES = ["Fixture Bravo One", "Fixture Bravo Two", "Fixture Bravo Three"];
 
 /** A task's own drag handle, matched by its accessible name — never the content button beside it. */
 const taskDragHandle = ({ page, title }: { page: Page; title: string }): Locator =>
@@ -75,6 +77,35 @@ const seedTwoColumnBoardWithOneTaskEach = (): { account: SeededAccount; board: S
     return { account, board };
 };
 
+/*
+ * A populated destination, which is the only fixture the LAST slot exists in: with one card there,
+ * "before it" and "after it" are the same two positions an empty column cannot distinguish.
+ */
+const seedTwoColumnBoardWithThreeDestinationTasks = (): { account: SeededAccount; board: SeededBoard } => {
+    const account = seedAccount();
+    const board = seedBoard({ account, name: `E2E Task Move Last ${randomUUID().slice(0, 8)}` });
+    const source = seedColumn({ account, boardId: board.id, name: "Alpha" });
+    const destination = seedColumn({ account, boardId: board.id, name: "Bravo" });
+    seedTask({ account, boardId: board.id, columnId: source.id, title: TASK_TITLE });
+
+    for (const title of DESTINATION_TASK_TITLES) {
+        seedTask({ account, boardId: board.id, columnId: destination.id, title });
+    }
+
+    return { account, board };
+};
+
+/**
+ * One column's card titles in rendered ORDER — the content button's own first span, which is what
+ * distinguishes it from the drag handle `<button>` beside it.
+ */
+const columnTaskTitles = async ({ page, name }: { page: Page; name: string }): Promise<string[]> => {
+    const texts = await columnSection({ page, name }).locator("li button span:first-child").allInnerTexts();
+
+    /* The handle's own icon span matches the selector too and reads empty; only titles are the order. */
+    return texts.filter((text) => text.length > 0);
+};
+
 const signIn = async ({ page, account, board }: { page: Page; account: SeededAccount; board: SeededBoard }) => {
     await page.goto(ROUTE.SIGN_IN);
     await page.getByLabel("Email", { exact: true }).fill(account.email);
@@ -125,6 +156,56 @@ test.describe("TASK-04: move a task between columns", () => {
         await expect(
             columnSection({ page, name: "Alpha" }).getByRole("button", { name: TASK_TITLE, exact: true }),
         ).toHaveCount(0);
+    });
+
+    // comment-length-exempt: records the exact geometry the drop depends on and the reading it rules out, which a future reader would otherwise simplify into a centre-of-card drag that proves nothing
+    /*
+     * Reported 2026-09-04: with three cards in the destination, a card dragged below the LAST one
+     * still landed above it, so the final slot was unreachable by pointer. The drop point is
+     * deliberately BELOW the last card's own centre and inside the column — the collision still
+     * resolves to that card (nothing else is a task droppable down there), so only the geometry
+     * read tells "after" from "before".
+     */
+    test("task move: drags a task below the destination's last card and lands it there", async ({ page }) => {
+        // Arrange — Alpha holds the mover, Bravo holds three cards, so "last" is its own slot.
+        const { account, board } = seedTwoColumnBoardWithThreeDestinationTasks();
+        await signIn({ page, account, board });
+        await expect.poll(() => columnTaskTitles({ page, name: "Bravo" })).toEqual(DESTINATION_TASK_TITLES);
+
+        // Arrange — the handle's centre, and a point below the last card but still inside Bravo.
+        const source = await centerOf(taskDragHandle({ page, title: TASK_TITLE }));
+        const lastCard = columnSection({ page, name: "Bravo" }).locator("li").last();
+        const lastCardBox = await lastCard.boundingBox();
+
+        if (lastCardBox === null) {
+            throw new Error("the destination column's last card reported no bounding box");
+        }
+
+        const target = { x: lastCardBox.x + lastCardBox.width / 2, y: lastCardBox.y + lastCardBox.height + 20 };
+
+        // Act — a real press, several intermediate moves, then a release once the request is created.
+        await page.mouse.move(source.x, source.y);
+        await page.mouse.down();
+        /* A first move past MouseSensor's 8px activation distance, so the lift is already under way. */
+        await page.mouse.move(source.x + 16, source.y, { steps: 4 });
+        await page.mouse.move(target.x, target.y, { steps: DRAG_MOVE_STEPS });
+        /* Created before the release that issues the write, per createServerActionSettled's contract. */
+        const settled = createServerActionSettled(page);
+        await page.mouse.up();
+
+        // Assert — LAST, not third: the whole point of the report.
+        await expect
+            .poll(() => columnTaskTitles({ page, name: "Bravo" }))
+            .toEqual([...DESTINATION_TASK_TITLES, TASK_TITLE]);
+
+        // Act — let the write reach the server, then reload; the optimistic placement cannot answer for it.
+        await settled;
+        await page.reload();
+
+        // Assert — the position the server stored is the one the drop showed.
+        await expect
+            .poll(() => columnTaskTitles({ page, name: "Bravo" }))
+            .toEqual([...DESTINATION_TASK_TITLES, TASK_TITLE]);
     });
 
     test("task move: moves a task into another column by keyboard and keeps it there across a reload", async ({

@@ -1,7 +1,37 @@
 import { describe, expect, it } from "vitest";
 
-import { createTaskAwareCollisionDetection, toDragItemData } from "@/features/tasks/task-drag-model";
+import {
+    createTaskAwareCollisionDetection,
+    isPastOverTaskCentre,
+    toDragItemData,
+} from "@/features/tasks/task-drag-model";
 import { buildColumnBodyDroppableId, DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
+
+/** A card-sized rect at a given top edge; only the vertical axis decides this predicate. */
+const createCardRect = (top: number) => ({ top, bottom: top + 88, left: 0, right: 280, width: 280, height: 88 });
+
+describe("isPastOverTaskCentre", () => {
+    it("reads a card resting level with the one it landed on as NOT past it", () => {
+        // Act & Assert
+        expect(isPastOverTaskCentre({ activeRect: createCardRect(100), overRect: createCardRect(100) })).toBe(false);
+    });
+
+    /* One pixel past the shared centre is enough — an edge test would never reach the last slot. */
+    it("reads a card nudged one pixel below the one it landed on as past it", () => {
+        // Act & Assert
+        expect(isPastOverTaskCentre({ activeRect: createCardRect(101), overRect: createCardRect(100) })).toBe(true);
+    });
+
+    it("reads a card still overlapping from above as not past it", () => {
+        // Act & Assert
+        expect(isPastOverTaskCentre({ activeRect: createCardRect(60), overRect: createCardRect(100) })).toBe(false);
+    });
+
+    it("reports no translated rect as not past, since nothing was dragged", () => {
+        // Act & Assert
+        expect(isPastOverTaskCentre({ activeRect: null, overRect: createCardRect(100) })).toBe(false);
+    });
+});
 
 describe("buildColumnBodyDroppableId", () => {
     /* It cannot be the column id: the column is already a sortable under that id. */

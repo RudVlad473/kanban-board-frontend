@@ -6,6 +6,7 @@ import {
     getFirstCollision,
     pointerWithin,
     rectIntersection,
+    type ClientRect,
     type CollisionDetection,
 } from "@dnd-kit/core";
 
@@ -37,6 +38,22 @@ export const toDragItemData = (data: Record<string, unknown> | undefined): DragI
 
     return { type: type as DragItemType, columnId: typeof columnId === "string" ? columnId : undefined };
 };
+
+/**
+ * Whether the dragged card came to rest past the midpoint of the card it landed on — the "insert
+ * after, not before" half of a cross-column drop, which no collision result carries on its own.
+ *
+ * Centres, not edges: an edge test needs the card dragged fully clear of the one below it, and the
+ * collision has already switched to the NEXT card by then, so the last slot stays unreachable.
+ * `translated` is null before the first pointer move, which cannot be a drop.
+ */
+export const isPastOverTaskCentre = ({
+    activeRect,
+    overRect,
+}: {
+    activeRect: ClientRect | null;
+    overRect: ClientRect;
+}): boolean => activeRect !== null && activeRect.top + activeRect.height / 2 > overRect.top + overRect.height / 2;
 
 // comment-length-exempt: records which strategy each drag kind gets and the regression a blanket swap would cause — a settled branch a future reader would otherwise collapse into one strategy (docs/adr/tech/0023)
 /**

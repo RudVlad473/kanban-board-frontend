@@ -80,6 +80,8 @@ const OTHER_BOARD_ID = "00000000-0000-4000-8000-0000000000ff";
  * from the call; no consumer reads it back, since every column hook branches on `status` alone.
  */
 const STUB_WRITTEN_COLUMN_ID = "stub-written-column-id";
+/** A second id, for the one test that has two creates in flight and must tell their columns apart. */
+const SECOND_STUB_COLUMN_ID = "stub-written-column-id-2";
 
 /* Duplicated verbatim from `board-view.stories.tsx`'s own host — see the comment beside them there. */
 const SERVER_RENAMED_NAME = "Renamed On The Server";
@@ -709,6 +711,51 @@ describeForEachDevice({
                 expect(screen.queryByRole("heading", { name: "Add New Column" })).not.toBeInTheDocument();
             });
             expect(getRenderedColumnNames()).toEqual([...namesBefore, "Backlog"]);
+        });
+
+        // comment-length-exempt: records the shared-flag failure this pins and why a settled first create cannot show it — a future reader would otherwise wire the hook's `isPending` back in
+        /*
+         * Reported 2026-09-04: a second Add Column opened while the first create was still in flight
+         * showed a loading submit button and refused backdrop dismissal, because one hook instance
+         * serves the whole board and its `isPending` is shared. Creates are independent; the modal
+         * closes at submit, so no pending state it could read is ever its own.
+         */
+        it("opens a second Add Column ready to submit while the first create is still in flight", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedColumnNames();
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: STUB_WRITTEN_COLUMN_ID, name: "Backlog", version: 0, position: namesBefore.length },
+            });
+            createColumnStub.hold();
+
+            // Act — submit one create and leave it unresolved, then reopen from the ghost column.
+            await submitNewColumn("Backlog");
+            await vi.waitFor(() => {
+                expect(createColumnStub.calls).toHaveLength(1);
+            });
+            await userEvent.click(screen.getByRole("button", { name: "+ New Column" }));
+
+            // Assert — a submit button, not a spinner: the first create's flight is not this modal's.
+            expect(await screen.findByRole("heading", { name: "Add New Column" })).toBeInTheDocument();
+            const submit = screen.getByRole("button", { name: "Create New Column" });
+            expect(submit).toBeEnabled();
+            expect(submit).not.toHaveAttribute("aria-busy", "true");
+
+            // Act — the second create goes out on its own while the first is still held.
+            createColumnStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                column: { id: SECOND_STUB_COLUMN_ID, name: "Icebox", version: 0, position: namesBefore.length + 1 },
+            });
+            await submitOpenColumnForm("Icebox");
+
+            // Assert — both columns stand, neither create having waited on the other.
+            await vi.waitFor(() => {
+                expect(createColumnStub.calls).toHaveLength(2);
+            });
+            expect(getRenderedColumnNames()).toEqual([...namesBefore, "Backlog", "Icebox"]);
+            createColumnStub.settle();
         });
 
         /* The other half of the same mechanism: a refusal must leave no trace of the optimistic column. */
@@ -1894,17 +1941,20 @@ describeForEachDevice({
             // Act
             await moveTo([deadPoint]);
 
-            /* The other half of the report: the area drew nothing, so it read as not a target at all. */
-            await expect.poll(() => lastCard.querySelectorAll('[aria-hidden="true"].bg-bg-primary').length).toBe(1);
+            /*
+             * The other half of the report: the area drew nothing, so it read as not a target at all.
+             * BELOW the card, not above it — a drop past the last card's centre appends, and the bar
+             * is read off the same geometry, so what it draws is where the card lands.
+             */
+            await expect
+                .poll(() => lastCard.querySelectorAll('[aria-hidden="true"].bg-bg-primary.-bottom-2\\.5').length)
+                .toBe(1);
             await release();
 
-            /*
-             * Lands where that bar said it would — above the card, the cross-column insertion the
-             * indicator draws. Dropping BELOW the last card does not append; see 04-22.
-             */
+            /* Lands where that bar said it would — AFTER the last card, which is the only way to that slot. */
             await expect.poll(getColumnTaskTitles).toEqual([
                 { columnName: "Fixture Column 1", taskTitles: [] },
-                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Alpha", "Fixture Task Beta"] },
+                { columnName: "Fixture Column 2", taskTitles: ["Fixture Task Beta", "Fixture Task Alpha"] },
             ]);
             expect(moveTaskStub.calls).toHaveLength(1);
             expect(moveTaskStub.calls[0]?.targetColumnId).toBe("00000000-0000-4000-8000-c00000000002");

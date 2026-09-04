@@ -184,5 +184,9 @@ export const useCreateColumn = ({
         }
     };
 
-    return { createColumn, isPending: mutation.isPending };
+    /*
+     * No `isPending`: one hook instance serves every create on the board, so its flag is shared and
+     * a second create would read the first one's. Concurrent creates are independent by design.
+     */
+    return { createColumn };
 };

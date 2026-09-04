@@ -104,7 +104,7 @@ export const BoardView = ({
     const columnCount = renderedColumns.length;
     /* What a failed create reopens with, so closing on submit costs the user nothing (D-05, reversed 2026-09-03). */
     const [retryColumnName, setRetryColumnName] = useState<string | null>(null);
-    const { createColumn, isPending } = useCreateColumn({
+    const { createColumn } = useCreateColumn({
         columnCount,
         onRetry: ({ name }) => {
             setRetryColumnName(name);
@@ -306,7 +306,13 @@ export const BoardView = ({
                 isOpen={isAddColumnOpen}
                 onOpenChange={handleOpenChange}
                 onSubmit={handleSubmit}
-                isPending={isPending}
+                /*
+                 * Never pending, matching `board-list.tsx`'s own create modal: this modal closes at
+                 * submit, so any pending flag it could read belongs to a DIFFERENT column's create.
+                 * Wiring the hook's shared flag here made a second open show a loading button and
+                 * refuse backdrop dismissal while the first create was still in flight.
+                 */
+                isPending={false}
                 defaultValues={retryColumnName !== null ? { name: retryColumnName } : undefined}
             />
 

@@ -39,15 +39,23 @@ export type TaskColumn = { id: string; tasks: TaskFull[] };
  * the dragged task already removed, plus one step when the move is DOWNWARD inside a single column —
  * without that step a card dropped on the card below it lands back where it started. `overTaskId` is
  * null when the drop landed on the column body rather than on a card, which means "append".
+ *
+ * A CROSS-column drop has no such direction to read — the dragged card was never in this list, so
+ * the step comes from `isPastOverTask`, the caller's geometry read of where the card actually
+ * settled relative to the card it landed on. Without it the last slot of a non-empty column is
+ * unreachable: hovering below the last card still collides with that card, and every drop resolved
+ * to the index BEFORE it.
  */
 export const toTaskMoveTargetPosition = ({
     destinationTaskIds,
     taskId,
     overTaskId,
+    isPastOverTask = false,
 }: {
     destinationTaskIds: string[];
     taskId: string;
     overTaskId: string | null;
+    isPastOverTask?: boolean;
 }): number => {
     const remaining = destinationTaskIds.filter((id) => id !== taskId);
 
@@ -61,10 +69,14 @@ export const toTaskMoveTargetPosition = ({
     }
 
     const activeIndex = destinationTaskIds.indexOf(taskId);
-    const overIndex = destinationTaskIds.indexOf(overTaskId);
-    const isDownwardWithinColumn = activeIndex !== -1 && activeIndex < overIndex;
 
-    return isDownwardWithinColumn ? indexAfterRemoval + 1 : indexAfterRemoval;
+    if (activeIndex === -1) {
+        return isPastOverTask ? indexAfterRemoval + 1 : indexAfterRemoval;
+    }
+
+    const overIndex = destinationTaskIds.indexOf(overTaskId);
+
+    return activeIndex < overIndex ? indexAfterRemoval + 1 : indexAfterRemoval;
 };
 
 /**
