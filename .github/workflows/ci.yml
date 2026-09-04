@@ -167,8 +167,14 @@ jobs:
             - name: Build
               run: pnpm build
 
+            # The token is what lets `vitest-nonprod-cleanup.ts`'s own teardown delete this job's
+            # seeded accounts. Without it that teardown refuses and defers to the step below, which
+            # then does all the work rather than acting as the safety net it is described as — so
+            # the accounts survive anything that stops the two steps running back to back.
             - name: Test
               run: pnpm test
+              env:
+                  NONPROD_RESET_TOKEN: ${{ secrets.NONPROD_RESET_TOKEN }}
 
             # GC-23/260829-kyv: `pnpm test`'s "node" project's own globalSetup/globalTeardown pair
             # (vitest-nonprod-cleanup.ts) already deletes what it seeded, so this is a no-op safety
