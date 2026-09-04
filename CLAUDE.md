@@ -119,6 +119,28 @@ two days older than `b4abc4c`, so a `--update-snapshots=all` re-record wrote pre
 then passed 300/300 against the very images it had just written, while CI — which always builds
 fresh — stayed red on those same snapshots.
 
+## `pnpm verify` gates every push
+
+`.husky/pre-push` runs `pnpm verify` before any push leaves this machine — 20 gates ordered
+fastest-first (an e2e-token preflight, 11 direct-`node` check scripts including the drift guard
+below, then `next typegen`/format/build/lint/test, `e2e` last by deliberate exception). Measured
+full run on this box: **~5m14s** (`scripts/verify.mjs`'s own total 313584ms), a little over the
+~4-5min the spike (`.planning/quick/spike-pnpm-startup-and-pre-push-gates.md`) budgeted — `lint`'s
+cost varies 48-106s here for reasons never root-caused, and today's run landed near the low end.
+
+`e2e` dials the real deployed nonprod backend and deletes only the user ids it seeded (`5f325f8`) —
+a 401 from a seed helper there may be account eviction mid-session, not a code defect. An absent
+`NONPROD_RESET_TOKEN` is refused in the first second, naming `pnpm secrets:decrypt`, never a
+confusing failure minutes later. `git push --no-verify` is the documented escape hatch when you
+need to push anyway; CI is still the sign-off either way (see above). Visual regression stays
+deliberately out of this tier — same `CI=1`/`pnpm build-storybook` requirement as above, reached
+locally via `pnpm test:visual` when touching design-system primitives.
+
+Adding a step to `ci.yml`'s `quality` or `e2e` job now requires adding it to `scripts/verify.mjs`'s
+`VERIFY_STEPS` or to `scripts/check-ci-gate-coverage.mjs`'s exception list — `pnpm gates:check`
+(itself one of the 20 gates, and also run in CI so a `--no-verify` push still gets caught) fails
+otherwise.
+
 ## Set up every fresh worktree before running anything
 
 One command, run inside the worktree before `pnpm dev`, tests, lint or e2e — in GSD's

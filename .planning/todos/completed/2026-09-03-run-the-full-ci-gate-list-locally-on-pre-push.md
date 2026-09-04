@@ -71,3 +71,33 @@ it; do not guess it.
 Note the remaining shared-backend caveat: accounts can be evicted mid-session, so an e2e `401` from
 a seed helper may be environmental. The hook should say so in its failure output rather than leaving
 the reader to hunt a phantom auth bug.
+
+## Closed 2026-09-04 (quick task 260904-e3z)
+
+**Tier chosen: two tiers, per Spike 2's recommendation** —
+`.planning/quick/spike-pnpm-startup-and-pre-push-gates.md`. `pnpm verify` (`.husky/pre-push`) runs
+the default tier: an e2e-token preflight, 11 fast check scripts dispatched via direct `node` (never
+`pnpm run`), then `next typegen`, `format:check`, `build`, `lint`, `test`, and `e2e` last. Visual
+regression and the full-history secrets scan stay CI-only, recorded as named exceptions in
+`scripts/check-ci-gate-coverage.mjs` rather than silently omitted.
+
+**Measured total: ~5m14s** (`pnpm verify`'s own reported total 313584ms; wall-clock `time` agreed at
+5:14.25), a little over the spike's ~4-5min estimate — driven by `lint`'s already-flagged 48-106s
+variance on this box, not by the design. Not re-tiered.
+
+**Falsified in both directions, each reverted immediately:**
+- A formatting violation in a scratch file stopped `pnpm verify` at `[format]`, naming the step and
+  printing `pnpm format:check` as the exact re-run command.
+- A real `git push` with that same violation present was refused by the hook
+  (`husky - pre-push script failed (code 1)`); `git push --no-verify` bypassed it and pushed cleanly,
+  confirming `.husky/_` really sources the new `.husky/pre-push` file.
+- With `NONPROD_RESET_TOKEN` unset and the local env file unavailable, the preflight refused in 0ms,
+  naming `pnpm secrets:decrypt` and printing no token value.
+- The drift guard (`pnpm gates:check`) was falsified against the real `ci.yml`: a fabricated step
+  produced an `uncovered-step` violation naming it, and a fabricated job produced an `unknown-job`
+  violation naming it — both reverted.
+
+**Left CI-only, with reasons:** the full-history `secrets` job (only it sees the push event's ref
+range; the local hook only ever sees staged changes) and the `visual` job (348s locally, needs `CI=1`
+and a fresh `pnpm build-storybook`, covers Storybook design-system primitives only — reachable
+locally via `pnpm test:visual`).
