@@ -39,21 +39,20 @@ export const toDragItemData = (data: Record<string, unknown> | undefined): DragI
     return { type: type as DragItemType, columnId: typeof columnId === "string" ? columnId : undefined };
 };
 
+const toCentreY = (rect: ClientRect): number => rect.top + rect.height / 2;
+
 /**
- * Whether the dragged card came to rest past the midpoint of the card it landed on — the "insert
- * after, not before" half of a cross-column drop, which no collision result carries on its own.
- *
- * Centres, not edges: an edge test needs the card dragged fully clear of the one below it, and the
- * collision has already switched to the NEXT card by then, so the last slot stays unreachable.
- * `translated` is null before the first pointer move, which cannot be a drop.
+ * Whether the dragged card sits BELOW the card it is hovering — the "insert after, not before"
+ * half of a cross-column drop, which no collision result carries on its own. Centres, not edges:
+ * an edge test only reads true once the collision has moved to the next card.
  */
-export const isPastOverTaskCentre = ({
-    activeRect,
-    overRect,
+export const isDraggedBelowCard = ({
+    draggedRect,
+    cardRect,
 }: {
-    activeRect: ClientRect | null;
-    overRect: ClientRect;
-}): boolean => activeRect !== null && activeRect.top + activeRect.height / 2 > overRect.top + overRect.height / 2;
+    draggedRect: ClientRect | null;
+    cardRect: ClientRect;
+}): boolean => draggedRect !== null && toCentreY(draggedRect) > toCentreY(cardRect);
 
 // comment-length-exempt: records which strategy each drag kind gets and the regression a blanket swap would cause — a settled branch a future reader would otherwise collapse into one strategy (docs/adr/tech/0023)
 /**

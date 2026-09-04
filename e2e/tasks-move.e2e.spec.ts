@@ -99,7 +99,7 @@ const seedTwoColumnBoardWithThreeDestinationTasks = (): { account: SeededAccount
  * One column's card titles in rendered ORDER — the content button's own first span, which is what
  * distinguishes it from the drag handle `<button>` beside it.
  */
-const columnTaskTitles = async ({ page, name }: { page: Page; name: string }): Promise<string[]> => {
+const readTaskTitlesInColumn = async ({ page, name }: { page: Page; name: string }): Promise<string[]> => {
     const texts = await columnSection({ page, name }).locator("li button span:first-child").allInnerTexts();
 
     /* The handle's own icon span matches the selector too and reads empty; only titles are the order. */
@@ -170,9 +170,8 @@ test.describe("TASK-04: move a task between columns", () => {
         // Arrange — Alpha holds the mover, Bravo holds three cards, so "last" is its own slot.
         const { account, board } = seedTwoColumnBoardWithThreeDestinationTasks();
         await signIn({ page, account, board });
-        await expect.poll(() => columnTaskTitles({ page, name: "Bravo" })).toEqual(DESTINATION_TASK_TITLES);
-
-        // Arrange — the handle's centre, and a point below the last card but still inside Bravo.
+        await expect.poll(() => readTaskTitlesInColumn({ page, name: "Bravo" })).toEqual(DESTINATION_TASK_TITLES);
+        /* The handle's centre, and a point below the last card but still inside Bravo. */
         const source = await centerOf(taskDragHandle({ page, title: TASK_TITLE }));
         const lastCard = columnSection({ page, name: "Bravo" }).locator("li").last();
         const lastCardBox = await lastCard.boundingBox();
@@ -195,7 +194,7 @@ test.describe("TASK-04: move a task between columns", () => {
 
         // Assert — LAST, not third: the whole point of the report.
         await expect
-            .poll(() => columnTaskTitles({ page, name: "Bravo" }))
+            .poll(() => readTaskTitlesInColumn({ page, name: "Bravo" }))
             .toEqual([...DESTINATION_TASK_TITLES, TASK_TITLE]);
 
         // Act — let the write reach the server, then reload; the optimistic placement cannot answer for it.
@@ -204,7 +203,7 @@ test.describe("TASK-04: move a task between columns", () => {
 
         // Assert — the position the server stored is the one the drop showed.
         await expect
-            .poll(() => columnTaskTitles({ page, name: "Bravo" }))
+            .poll(() => readTaskTitlesInColumn({ page, name: "Bravo" }))
             .toEqual([...DESTINATION_TASK_TITLES, TASK_TITLE]);
     });
 

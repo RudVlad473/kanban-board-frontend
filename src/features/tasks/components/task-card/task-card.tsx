@@ -8,7 +8,7 @@ import { useMediaQuery } from "usehooks-ts";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { toSubtaskSummary } from "@/features/tasks/model";
-import { isPastOverTaskCentre } from "@/features/tasks/task-drag-model";
+import { isDraggedBelowCard } from "@/features/tasks/task-drag-model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
 import { cn } from "@/lib/core/styling/cn";
@@ -75,7 +75,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
         activeIndex !== -1
             ? activeIndex < index
             : over !== null &&
-              isPastOverTaskCentre({ activeRect: active?.rect.current.translated ?? null, overRect: over.rect });
+              isDraggedBelowCard({ draggedRect: active?.rect.current.translated ?? null, cardRect: over.rect });
 
     /*
      * UI-SPEC "Card caption": suppression at zero subtasks is this CALL SITE's decision, so the

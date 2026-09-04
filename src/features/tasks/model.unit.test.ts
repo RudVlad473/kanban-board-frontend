@@ -452,7 +452,7 @@ describe("toTaskMoveTargetPosition", () => {
             destinationTaskIds: DESTINATION_IDS,
             taskId: "elsewhere",
             overTaskId: "delta",
-            isPastOverTask: true,
+            insertsAfterOverTask: true,
         });
 
         // Assert
@@ -465,7 +465,7 @@ describe("toTaskMoveTargetPosition", () => {
             destinationTaskIds: DESTINATION_IDS,
             taskId: "elsewhere",
             overTaskId: "bravo",
-            isPastOverTask: true,
+            insertsAfterOverTask: true,
         });
 
         // Assert — [alpha, bravo, elsewhere, charlie, delta], which is index 2.
@@ -479,7 +479,7 @@ describe("toTaskMoveTargetPosition", () => {
             destinationTaskIds: DESTINATION_IDS,
             taskId: "delta",
             overTaskId: "alpha",
-            isPastOverTask: true,
+            insertsAfterOverTask: true,
         });
 
         // Assert

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
     createTaskAwareCollisionDetection,
-    isPastOverTaskCentre,
+    isDraggedBelowCard,
     toDragItemData,
 } from "@/features/tasks/task-drag-model";
 import { buildColumnBodyDroppableId, DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
@@ -10,26 +10,53 @@ import { buildColumnBodyDroppableId, DRAG_ITEM_TYPE } from "@/lib/core/drag/drag
 /** A card-sized rect at a given top edge; only the vertical axis decides this predicate. */
 const createCardRect = (top: number) => ({ top, bottom: top + 88, left: 0, right: 280, width: 280, height: 88 });
 
-describe("isPastOverTaskCentre", () => {
-    it("reads a card resting level with the one it landed on as NOT past it", () => {
-        // Act & Assert
-        expect(isPastOverTaskCentre({ activeRect: createCardRect(100), overRect: createCardRect(100) })).toBe(false);
+describe("isDraggedBelowCard", () => {
+    it("reads a card resting exactly level with the one it is over as not below it", () => {
+        // Arrange
+        const cardRect = createCardRect(100);
+        const draggedRect = createCardRect(100);
+
+        // Act
+        const isBelow = isDraggedBelowCard({ draggedRect, cardRect });
+
+        // Assert
+        expect(isBelow).toBe(false);
     });
 
     /* One pixel past the shared centre is enough — an edge test would never reach the last slot. */
-    it("reads a card nudged one pixel below the one it landed on as past it", () => {
-        // Act & Assert
-        expect(isPastOverTaskCentre({ activeRect: createCardRect(101), overRect: createCardRect(100) })).toBe(true);
+    it("reads a card nudged one pixel down as below the one it is over", () => {
+        // Arrange
+        const cardRect = createCardRect(100);
+        const draggedRect = createCardRect(101);
+
+        // Act
+        const isBelow = isDraggedBelowCard({ draggedRect, cardRect });
+
+        // Assert
+        expect(isBelow).toBe(true);
     });
 
-    it("reads a card still overlapping from above as not past it", () => {
-        // Act & Assert
-        expect(isPastOverTaskCentre({ activeRect: createCardRect(60), overRect: createCardRect(100) })).toBe(false);
+    it("reads a card still overlapping from above as not below it", () => {
+        // Arrange
+        const cardRect = createCardRect(100);
+        const draggedRect = createCardRect(60);
+
+        // Act
+        const isBelow = isDraggedBelowCard({ draggedRect, cardRect });
+
+        // Assert
+        expect(isBelow).toBe(false);
     });
 
-    it("reports no translated rect as not past, since nothing was dragged", () => {
-        // Act & Assert
-        expect(isPastOverTaskCentre({ activeRect: null, overRect: createCardRect(100) })).toBe(false);
+    it("reads a drag that has not moved yet as not below anything", () => {
+        // Arrange
+        const cardRect = createCardRect(100);
+
+        // Act
+        const isBelow = isDraggedBelowCard({ draggedRect: null, cardRect });
+
+        // Assert
+        expect(isBelow).toBe(false);
     });
 });
 

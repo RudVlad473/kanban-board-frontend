@@ -11,7 +11,7 @@ import type { ColumnFull } from "@/features/boards/schemas";
 import { createTaskMoveAnnouncements, toTaskMoveTargetPosition } from "@/features/tasks/model";
 import {
     createTaskAwareCollisionDetection,
-    isPastOverTaskCentre,
+    isDraggedBelowCard,
     toDragItemData,
 } from "@/features/tasks/task-drag-model";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
@@ -83,7 +83,10 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
             taskId,
             overTaskId: overData.type === DRAG_ITEM_TYPE.TASK ? String(over.id) : null,
             /* Only a cross-column drop reads this; within one column the model has a direction already. */
-            isPastOverTask: isPastOverTaskCentre({ activeRect: active.rect.current.translated, overRect: over.rect }),
+            insertsAfterOverTask: isDraggedBelowCard({
+                draggedRect: active.rect.current.translated,
+                cardRect: over.rect,
+            }),
         });
 
         /* A drop that ended exactly where it began is not a move, so it issues no request at all. */

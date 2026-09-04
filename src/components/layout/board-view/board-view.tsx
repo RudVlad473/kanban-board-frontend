@@ -307,10 +307,8 @@ export const BoardView = ({
                 onOpenChange={handleOpenChange}
                 onSubmit={handleSubmit}
                 /*
-                 * Never pending, matching `board-list.tsx`'s own create modal: this modal closes at
-                 * submit, so any pending flag it could read belongs to a DIFFERENT column's create.
-                 * Wiring the hook's shared flag here made a second open show a loading button and
-                 * refuse backdrop dismissal while the first create was still in flight.
+                 * Never pending, matching `board-list.tsx`'s own create modal: this closes at submit,
+                 * so any pending flag it could read belongs to a DIFFERENT column's create.
                  */
                 isPending={false}
                 defaultValues={retryColumnName !== null ? { name: retryColumnName } : undefined}
