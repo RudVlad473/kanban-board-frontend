@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import type { PropsWithChildren } from "react";
 
+import { BoardPrefetcher } from "@/components/layout/board-prefetcher/board-prefetcher";
 import { BoardScreen } from "@/components/layout/board-view/board-screen";
 import { DashboardHeader } from "@/components/layout/dashboard-header/dashboard-header";
 import { DashboardHeaderSkeleton } from "@/components/layout/dashboard-header-skeleton/dashboard-header-skeleton";
@@ -128,6 +129,9 @@ const DashboardLayout = async ({ children }: PropsWithChildren) => {
                     <Suspense fallback={<BoardViewSkeleton />}>
                         <OpenBoard boardId={openBoardId} />
                     </Suspense>
+
+                    {/* Renders nothing; loads every board in the background so a switch has something to paint. */}
+                    <BoardPrefetcher />
 
                     {/* Always rendered, never routed through `BoardScreen`: the page is what carries
                         `[boardId]`'s membership redirect, and a page that is never rendered never

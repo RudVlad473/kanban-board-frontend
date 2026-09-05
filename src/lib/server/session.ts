@@ -77,7 +77,7 @@ export const isUpstreamIdentity = (value: unknown): value is UpstreamIdentity =>
 
     const { displayName } = value as Record<string, unknown>;
 
-    return isNil(displayName) || isNil(displayName) || typeof displayName === "string";
+    return isNil(displayName) || typeof displayName === "string";
 };
 
 /**
