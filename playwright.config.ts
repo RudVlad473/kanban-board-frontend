@@ -130,6 +130,21 @@ export default defineConfig({
              * never implemented. `smoke` below is how to run it.
              */
             testIgnore: "**/full-app.e2e.spec.ts",
+            // comment-length-exempt: records the measurement that justifies retries here and the one failure mode they must NOT hide, which is what stops the next reader from raising or deleting them
+            /*
+             * CI-only, because this project is the one bound to the shared nonprod backend over the
+             * public internet, and that host intermittently refuses TCP outright — measured
+             * 2026-09-05: `curl: (28) Failed to connect ... after 134812 ms`, reproduced from both a
+             * GitHub runner and a local box. One such drop among 73 tests failed the whole job three
+             * runs running, each time on DIFFERENT tests, against frontend code byte-identical to a
+             * passing run.
+             *
+             * Two retries buy tolerance for a transient host, not for a flaky assertion: a real
+             * regression fails all three attempts, so the job still goes red. Read the retry counts
+             * rather than only the pass/fail — a test that is consistently `flaky` is a defect this
+             * setting is hiding, and the right response is to fix it, never to raise this number.
+             */
+            retries: process.env.CI ? 2 : 0,
             use: {
                 ...devices["Desktop Chrome"],
                 baseURL: E2E_CONFIG.BASE_URL,
