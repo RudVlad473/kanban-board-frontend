@@ -1,23 +1,23 @@
 {
     "version": "1.0",
-    "timestamp": "2026-09-05T14:09:14.027Z",
+    "timestamp": "2026-09-05T14:20:00.000Z",
     "phase": "04",
     "phase_name": "Task & Subtask Workflow",
     "phase_dir": ".planning/phases/04-task-subtask-workflow",
     "plan": null,
-    "task": 1,
+    "task": 2,
     "total_tasks": 2,
-    "status": "paused",
+    "status": "complete",
     "completed_tasks": [
         {
             "id": 1,
-            "name": "BOARD-04 — a board switch paints the already-loaded board, then swaps in a fresh read",
+            "name": "BOARD-04 \u2014 a board switch paints the already-loaded board, then swaps in a fresh read",
             "status": "done",
             "commit": "1119ffa"
         },
         {
             "id": 2,
-            "name": "OPT-01 — no action on a task/column/board/subtask the server has not confirmed",
+            "name": "OPT-01 \u2014 no action on a task/column/board/subtask the server has not confirmed",
             "status": "done",
             "commit": "2ce04f2"
         },
@@ -48,34 +48,24 @@
         {
             "id": 7,
             "name": "Revert the characterization test that turned CI red",
-            "status": "in_progress",
-            "progress": "committed locally as b1cab4d; push was interrupted mid-verify, so origin is still at the red 53643a2"
-        }
-    ],
-    "remaining_tasks": [
-        {
-            "id": 7,
-            "name": "Push b1cab4d (runs pnpm verify, ~6-7min)",
-            "status": "in_progress"
+            "status": "done",
+            "commit": "b1cab4d"
         },
         {
             "id": 8,
-            "name": "Confirm CI green per-job at the new head",
-            "status": "not_started"
-        }
-    ],
-    "blockers": [
-        {
-            "description": "CI is red at origin head 53643a2 with 3 e2e keyboard-drag failures. Not a product defect — caused by the characterization test that b1cab4d reverts.",
-            "type": "technical",
-            "workaround": "Push b1cab4d."
+            "name": "Handoff written and pushed",
+            "status": "done",
+            "commit": "77a0a0f"
         },
         {
-            "description": "Shared nonprod backend flakes under CI load (account eviction, sign-in sticking at /login).",
-            "type": "external",
-            "workaround": "Re-run before reporting an e2e failure as a defect."
+            "id": 9,
+            "name": "CI green per-job at 77a0a0f (quality, secrets, visual, e2e)",
+            "status": "done",
+            "commit": "77a0a0f"
         }
     ],
+    "remaining_tasks": [],
+    "blockers": [],
     "async_jobs": [],
     "human_actions_pending": [],
     "decisions": [
@@ -100,7 +90,7 @@
             "phase": "04"
         },
         {
-            "decision": "isNil option 2 — migrate all 222 sites, then raise the rule to error",
+            "decision": "isNil option 2 \u2014 migrate all 222 sites, then raise the rule to error",
             "rationale": "User's explicit choice after being shown the cost and the semantic risk. One site keeps the raw comparison behind a disable: createChildrenSerially treats undefined as a successful bodyless create and only null as unparsable.",
             "phase": "04"
         },
@@ -111,6 +101,6 @@
         }
     ],
     "uncommitted_files": [],
-    "next_action": "git push (runs pnpm verify on the way out), then confirm CI per-job with gh run view --json jobs — not the gh run watch exit code.",
-    "context_notes": "Both user-reported defects are done, reviewed by three isolated agents, and pushed. What remains is release mechanics only: one local commit that un-breaks CI. Do not restart feature work or re-open the review. The session's expensive lessons: pnpm test:unit is one of three vitest projects and hid 70 broken tests behind a green; CI, not local green, is this project's sign-off; and several of the later 'fixes' were to my own test harness rather than to the product."
+    "next_action": "Nothing outstanding. Both defects shipped, reviewed and CI-green. If new work starts here, read the anti-patterns in .continue-here.md first.",
+    "context_notes": "COMPLETE. Both user-reported defects are shipped, reviewed by three isolated agents, and CI-green at 77a0a0f. Two optional review observations remain unactioned (a skeleton reachable in a narrow post-sign-in window with many boards; a benign 'destination stream closed early' log from next start). Session's expensive lessons: pnpm test:unit is one of three vitest projects and hid 70 broken tests behind a green; CI, not local green, is this project's sign-off; several later 'fixes' were to my own test harness rather than to the product."
 }
