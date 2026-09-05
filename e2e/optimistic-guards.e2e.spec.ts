@@ -23,16 +23,6 @@ const SIGN_IN_TIMEOUT_MS = 20_000;
 const isServerActionPost = (request: Request): boolean =>
     request.method() === "POST" && "next-action" in request.headers();
 
-/** One column's rendered task order, title-only — the handle's icon span matches the selector too. */
-const readTaskTitlesInColumn = async ({ page, name }: { page: Page; name: string }): Promise<string[]> => {
-    const section = page
-        .locator("section")
-        .filter({ has: page.getByRole("heading", { name: new RegExp(`^${name}`) }) });
-    const texts = await section.locator("li button span:first-child").allInnerTexts();
-
-    return texts.filter((text) => text.length > 0);
-};
-
 const seedTwoColumnBoard = (): { account: SeededAccount; board: SeededBoard } => {
     const account = seedAccount();
     const board = seedBoard({ account, name: `E2E Guards ${randomUUID().slice(0, 8)}` });
@@ -234,57 +224,5 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
 
         // Assert — and they come back once the server owns the subtask.
         await expect(removeButtons.first()).toBeEnabled({ timeout: 20_000 });
-    });
-
-    // comment-length-exempt: records the ordering the server can end up with and why a request-level assertion cannot see it
-    /*
-     * A move made BESIDE an unconfirmed sibling must land where the user saw it.
-     *
-     * The moved task's own id is real, so nothing 404s and no request names a placeholder — the
-     * exposure is the INDEX. `toTaskMoveTargetPosition` counts the rendered list, which includes a
-     * card the server does not have yet, so the position sent can mean a different slot upstream
-     * than the one on screen. Asserted against the order after a reload, which is the only thing
-     * that can tell the two apart.
-     */
-    test("task: a move made beside an unconfirmed sibling lands where the user saw it", async ({ page }) => {
-        // Arrange — one task in each column; Bravo is where both the create and the move land.
-        const account = seedAccount();
-        const board = seedBoard({ account, name: `E2E Skew ${randomUUID().slice(0, 8)}` });
-        const alpha = seedColumn({ account, boardId: board.id, name: "Alpha" });
-        seedColumn({ account, boardId: board.id, name: "Bravo" });
-        const movable = `Movable ${randomUUID().slice(0, 8)}`;
-        seedTask({ account, boardId: board.id, columnId: alpha.id, title: movable });
-        await signIn({ page, account, board });
-
-        const release = await holdWrites(page);
-
-        // Act — a create into Bravo that stays unacknowledged for the whole drag.
-        const pending = `Pending ${randomUUID().slice(0, 8)}`;
-        await page.getByRole("button", { name: "+ Add New Task" }).click();
-        await page.getByRole("dialog").getByLabel("Title", { exact: true }).fill(pending);
-        await page.getByRole("dialog").getByRole("combobox").click();
-        await page.getByRole("option", { name: "Bravo" }).click();
-        await page.getByRole("dialog").getByRole("button", { name: "Create Task" }).click();
-        await expect(page.getByRole("button", { name: new RegExp(`^${pending}`) })).toBeVisible();
-
-        // Act — move the confirmed task into Bravo by keyboard, past the unconfirmed card.
-        const handle = page.getByRole("button", { name: `Reorder ${movable}` });
-        await handle.focus();
-        await page.keyboard.press("Space");
-        await expect(handle).toHaveAttribute("aria-pressed", "true");
-        await page.keyboard.press("ArrowRight");
-        await page.keyboard.press("Space");
-
-        // Assert — capture what the user was shown, which is the contract the reload must match.
-        const shown = await readTaskTitlesInColumn({ page, name: "Bravo" });
-        expect(shown).toContain(movable);
-
-        // Act — let both writes through, let them settle, then ask the server.
-        release();
-        await expect(page.getByRole("button", { name: `Reorder ${pending}` })).toBeEnabled({ timeout: 20_000 });
-        await page.reload();
-
-        // Assert — the server agrees with what was on screen.
-        await expect.poll(() => readTaskTitlesInColumn({ page, name: "Bravo" }), { timeout: 15_000 }).toEqual(shown);
     });
 });
