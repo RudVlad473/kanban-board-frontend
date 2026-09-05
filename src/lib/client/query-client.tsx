@@ -1,9 +1,16 @@
 "use client";
 
-// Covered by: `e2e/boards-create.e2e.spec.ts`
+// Covered by: `e2e/boards-create.e2e.spec.ts`, `src/components/layout/board-view/board-view.test.tsx`
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, notifyManager } from "@tanstack/react-query";
 import { useState, type PropsWithChildren } from "react";
+
+/*
+ * Flushes observer notifications on the microtask queue, not the default macrotask, so a cache
+ * write lands before the next paint — otherwise dnd-kit's own drop render paints one macrotask
+ * ahead of an optimistic reorder reaching `useQuery`. Decision record: docs/adr/tech/0034.
+ */
+notifyManager.setScheduler(queueMicrotask);
 
 /*
  * Created in component state, not module scope — a shared singleton would leak one user's

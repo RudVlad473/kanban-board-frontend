@@ -87,6 +87,8 @@ stage its write, say so here and expect the caching to be re-litigated with it.
   manual reload, which is that requirement observed.
 - `useOptimistic` remains the right default for optimistic state that is not server-owned. This
   record governs the two board entries only.
+- The cache write above reaches its `useQuery` observer through TanStack's own notify scheduler;
+  docs/adr/tech/0034 changed that scheduler's timing and is the record for how promptly it does.
 
 ## Sources
 
