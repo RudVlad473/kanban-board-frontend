@@ -1032,7 +1032,18 @@ describeForEachDevice({
                 expect(getRaisedToastTexts()[0]).toContain(GENERIC_CREATE_COLUMN_TOAST);
             });
             expect(getRenderedColumnNames()).not.toContain("Backlog");
-            expect(scrollRow.scrollLeft).toBe(0);
+
+            /*
+             * comment-length-exempt: records the CI-only race a single read hits here, invisible from a local run
+             * Waited for, not sampled: the row is `scroll-smooth`, so the reveal armed at submit
+             * can still be animating when the rollback lands and a single read catches it
+             * mid-flight. Read once, this asserted 0 locally and 2 on CI, twice in four runs
+             * against identical component code (2026-09-05). The end state is what the test says
+             * it pins, and a create that actually landed would settle somewhere other than 0.
+             */
+            await vi.waitFor(() => {
+                expect(scrollRow.scrollLeft).toBe(0);
+            });
         });
 
         /* D-03/D-05 fire on one exact transition, and D-02 keeps the create itself uncapped. */
