@@ -80,6 +80,15 @@ const getFirstColumnTaskTitles = (): (string | null)[] =>
         (item) => item.querySelector("button span")?.textContent ?? null,
     );
 
+/** The content button's SECOND span for the card whose first span matches `title` — its caption, or null when none renders. */
+const getFirstColumnTaskCaption = (title: string): string | null => {
+    const item = Array.from(document.querySelectorAll("section")[0].querySelectorAll("li")).find(
+        (entry) => entry.querySelector("button span")?.textContent === title,
+    );
+
+    return item?.querySelector("button")?.querySelectorAll("span")[1]?.textContent ?? null;
+};
+
 describeForEachDevice({
     name: "AddTaskButton",
     body: () => {
@@ -210,6 +219,48 @@ describeForEachDevice({
             // Assert — the placeholder is SWAPPED for the server's task, never appended beside it.
             await vi.waitFor(() => {
                 expect(getFirstColumnTaskTitles()).toEqual([...titlesBefore, SERVER_TASK_TITLE]);
+            });
+        });
+
+        /*
+         * OPT-01/T-04-05: the typed subtask titles are staged in the SAME optimistic write as the
+         * card, so the caption is there before either the create or the fan-out has resolved — and
+         * a partial fan-out retires every placeholder rather than appending beside them.
+         */
+        it("renders the typed subtask count on the card before the create resolves, and never doubles it", async () => {
+            // Arrange
+            await render(<WithBoardBelow />);
+            createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: { ...NEW_TASK, title: SERVER_TASK_TITLE } });
+            createTaskStub.hold();
+            await openCreateTaskModal();
+
+            // Act
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
+            await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
+            await userEvent.fill(screen.getByLabelText("Subtask 2", { exact: true }), "Drink coffee & smile");
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            await vi.waitFor(() => {
+                expect(createTaskStub.calls).toHaveLength(1);
+            });
+
+            // Assert — the caption is on the card while the create is demonstrably still unresolved.
+            expect(getFirstColumnTaskCaption("Take coffee break")).toBe("0 of 2 subtasks");
+
+            // Act — land a partial fan-out before the create itself settles.
+            createTaskSubtasksStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedTitles: ["Drink coffee & smile"],
+                created: [{ id: "server-subtask-id", title: "Make coffee", isCompleted: false, version: 0 }],
+            });
+            createTaskStub.settle();
+
+            // Assert — retired to the one title that actually landed, never the typed count plus it.
+            const region = await screen.findByRole("region", { name: "Notifications" });
+            await expect.element(within(region).getByText("Couldn't create 1 subtask(s).")).toBeVisible();
+            await vi.waitFor(() => {
+                expect(getFirstColumnTaskCaption(SERVER_TASK_TITLE)).toBe("0 of 1 subtasks");
             });
         });
 
@@ -394,6 +445,45 @@ describeForEachDevice({
             createTaskSubtasksStub.settle();
             await vi.waitFor(() => {
                 expect(createTaskSubtasksStub.calls).toHaveLength(1);
+            });
+        });
+
+        /*
+         * OPT-01: a placeholder subtask id names nothing upstream until its own fan-out lands, so a
+         * toggle sent against it would 404 — the row must be disabled and busy for that whole window.
+         */
+        it("leaves a placeholder subtask row inert until the fan-out that owns it lands", async () => {
+            // Arrange
+            await render(<WithBoardBelow />);
+            createTaskStub.queue({ status: RESULT_STATUS.SUCCESS, task: NEW_TASK });
+            createTaskSubtasksStub.queue({ status: RESULT_STATUS.SUCCESS, failedTitles: [], created: [] });
+            createTaskSubtasksStub.hold();
+            await openCreateTaskModal();
+            await userEvent.fill(screen.getByLabelText("Title"), "Take coffee break");
+            await userEvent.click(screen.getByRole("button", { name: "+ Add New Subtask" }));
+            await userEvent.fill(screen.getByLabelText("Subtask 1", { exact: true }), "Make coffee");
+
+            // Act — submit, then wait for the create to have settled and the fan-out to be in flight.
+            await userEvent.click(screen.getByRole("button", { name: "Create Task" }));
+            await vi.waitFor(() => {
+                expect(createTaskSubtasksStub.calls).toHaveLength(1);
+            });
+
+            // Open the new card's detail modal.
+            const cardButton = Array.from(document.querySelectorAll("section")[0].querySelectorAll("li"))
+                .find((item) => item.querySelector("button span")?.textContent === "Take coffee break")
+                ?.querySelector("button");
+            await userEvent.click(cardButton as HTMLElement);
+
+            // Assert — busy and disabled for as long as the fan-out that owns it is unresolved.
+            const checkbox = screen.getByRole("checkbox", { name: "Make coffee" });
+            await expect.poll(() => checkbox.getAttribute("aria-busy")).toBe("true");
+            expect(checkbox).toHaveAttribute("aria-disabled", "true");
+
+            // Cleanup — settle the fan-out so no mutation is left in flight past the test.
+            createTaskSubtasksStub.settle();
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("checkbox", { name: "Make coffee" })).not.toBeInTheDocument();
             });
         });
 
