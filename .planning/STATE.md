@@ -35,7 +35,7 @@ Phase: 04 (Task & Subtask Workflow) — EXECUTING
 Plan: 22 of 22 — all three tasks complete; `04-22-SUMMARY.md` written.
 Plan 04-22's final `checkpoint:human-verify` gate is open and blocking.
 Status: Awaiting human phase sign-off
-Last activity: 2026-09-02 — Plan 04-22 close-out complete; awaiting human phase sign-off
+Last activity: 2026-09-05 - Completed quick task 260905-r15: Fix the millisecond horizontal-scroll flicker when switching between boards
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
 Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 22/22 (awaiting sign-off)
@@ -205,6 +205,7 @@ verifying phase 03 wave 4) —
 | 260903-ttt | Wire SOPS + age for local secret management and verify gitleaks still behaves alongside it | 2026-09-03 | 153c096 | Verified | [260903-ttt-wire-sops-age-for-local-secret-managemen](./quick/260903-ttt-wire-sops-age-for-local-secret-managemen/) |
 | 260904-e3z | Wire the pnpm verify pre-push hook and a ci.yml drift guard, per Spike 2's two-tier recommendation | 2026-09-04 | 21cf5d5 | Verified | [260904-e3z-wire-the-pre-push-verify-hook-per-spike-](./quick/260904-e3z-wire-the-pre-push-verify-hook-per-spike-/) |
 | 260904-s6o | Implement column colour end-to-end on the frontend against the regenerated OpenAPI contract: curated 6-entry palette, first-unused pick, ΔE_ok 0.15 floor | 2026-09-04 | df37fd4 | Verified | [260904-s6o-implement-column-colour-end-to-end-on-th](./quick/260904-s6o-implement-column-colour-end-to-end-on-th/) |
+| 260905-r15 | Key `BoardView` on board id in `BoardScreen` so a board switch mounts a fresh scroll row instead of carrying the previous board's `scrollLeft` | 2026-09-05 | 005f2c9 | Verified | [260905-r15-fix-the-millisecond-horizontal-scroll-fl](./quick/260905-r15-fix-the-millisecond-horizontal-scroll-fl/) |
 
 ### Roadmap Evolution
 
@@ -369,4 +370,28 @@ both a fabricated `ci.yml` step and a fabricated job, each naming the offender.
 CI green on all four jobs (`quality`, `secrets`, `e2e`, `visual`) at `21cf5d5`, run `33855852084`.
 Full narrative: `260904-e3z-SUMMARY.md`.
 
-**Next:** the blocking human phase sign-off checkpoint at the end of 04-22 — presented 2026-09-03.
+**This session (2026-09-05, quick task `260905-r15`):** Fixed the reported millisecond
+horizontal-scroll flicker's one confirmed root cause: `BoardScreen` reused the same `BoardView`
+element tree across a board switch (the dashboard layout does not re-render on a `[boardId]`
+change), so the horizontal column row was one DOM element and board A's `scrollLeft` carried into
+board B whenever B also overflowed. Fixed by keying the rendered `BoardView` on `board.id` —
+React's "resetting state with a key" — no effect, ref, or scroll bookkeeping added.
+
+Falsified in both directions in `e2e/boards-switch.e2e.spec.ts`: RED (`f71bbdc`) failed on the
+offset assertion reading 400 where 0 was expected, against the unfixed code; GREEN (`005f2c9`)
+passed both the new case and the pre-existing BOARD-04 instant-paint case in the same run.
+`board-view.test.tsx` 218/218, the two neighbouring e2e specs (`optimistic-guards`,
+`boards-detail`) 8/8, and `pnpm verify`'s full 20-gate run (all three vitest projects, build, lint,
+tsc, format, and the full 74-test e2e suite) green in 7m40s.
+
+**What is NOT proven:** the sub-frame flicker itself was never reproduced in headless Chromium at
+planning time (no intermediate painted frame at rAF granularity, and headless hides scrollbars) —
+what this closes is the carried-over scroll offset, the one confirmed scroll-state defect on a
+switch, not a direct recording of the reported flicker. The orchestrator's own browser check
+against the real app is what would close that remaining gap.
+
+Push and CI were explicitly deferred to the orchestrator per this session's environment
+instructions (a Next dev server on port 3000 was already owned by the orchestrator, which also
+runs the push + `gh run watch` step). `260905-r15-SUMMARY.md` has the full narrative.
+
+**Next:** the blocking human phase sign-off checkpoint at the end of 04-22 — presented 2026-09-03. Also outstanding: push `005f2c9`/`f71bbdc` and confirm CI green for quick task `260905-r15`.
