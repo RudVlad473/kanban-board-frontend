@@ -35,7 +35,7 @@ Phase: 04 (Task & Subtask Workflow) — EXECUTING
 Plan: 22 of 22 — all three tasks complete; `04-22-SUMMARY.md` written.
 Plan 04-22's final `checkpoint:human-verify` gate is open and blocking.
 Status: Awaiting human phase sign-off
-Last activity: 2026-09-05 - Completed quick task 260905-r15: Fix the millisecond horizontal-scroll flicker when switching between boards
+Last activity: 2026-09-05 - Completed quick task 260905-s0l: Fix the task-title flicker across a column when reordering tasks inside a single column
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
 Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 22/22 (awaiting sign-off)
@@ -206,6 +206,7 @@ verifying phase 03 wave 4) —
 | 260904-e3z | Wire the pnpm verify pre-push hook and a ci.yml drift guard, per Spike 2's two-tier recommendation | 2026-09-04 | 21cf5d5 | Verified | [260904-e3z-wire-the-pre-push-verify-hook-per-spike-](./quick/260904-e3z-wire-the-pre-push-verify-hook-per-spike-/) |
 | 260904-s6o | Implement column colour end-to-end on the frontend against the regenerated OpenAPI contract: curated 6-entry palette, first-unused pick, ΔE_ok 0.15 floor | 2026-09-04 | df37fd4 | Verified | [260904-s6o-implement-column-colour-end-to-end-on-th](./quick/260904-s6o-implement-column-colour-end-to-end-on-th/) |
 | 260905-r15 | Key `BoardView` on board id in `BoardScreen` so a board switch mounts a fresh scroll row instead of carrying the previous board's `scrollLeft` | 2026-09-05 | 005f2c9 | Verified | [260905-r15-fix-the-millisecond-horizontal-scroll-fl](./quick/260905-r15-fix-the-millisecond-horizontal-scroll-fl/) |
+| 260905-s0l | Flush TanStack query notifications on the microtask queue so an in-column task reorder never paints the pre-move order after the drop (ADR tech/0034) | 2026-09-05 | 56d6f68 | Verified | [260905-s0l-fix-the-task-title-flicker-across-a-colu](./quick/260905-s0l-fix-the-task-title-flicker-across-a-colu/) |
 
 ### Roadmap Evolution
 
