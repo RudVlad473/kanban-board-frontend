@@ -193,6 +193,43 @@ const getColumnTaskTitles = (): { columnName: string | null | undefined; taskTit
         ),
     }));
 
+type ColumnFrame = { titles: (string | null)[]; transforms: string[] };
+
+const sameOrder = ({ a, b }: { a: (string | null)[]; b: (string | null)[] }): boolean =>
+    a.length === b.length && a.every((title, index) => title === b[index]);
+
+/**
+ * Records the first column's title order and every card's own `transform` once per animation
+ * frame. `stop()` cancels the loop and hands back what it saw — the flicker this pins is a
+ * conjunction across those two reads, not visible in either alone.
+ */
+const sampleFirstColumnFrames = (): { stop: () => ColumnFrame[] } => {
+    const frames: ColumnFrame[] = [];
+    let handle = 0;
+
+    const capture = (): void => {
+        const items = Array.from(document.querySelectorAll("section")[0].querySelectorAll("li"));
+        frames.push({
+            titles: items.map((item) => item.querySelector("button span")?.textContent ?? null),
+            transforms: items.map((item) => getComputedStyle(item).transform),
+        });
+        handle = requestAnimationFrame(capture);
+    };
+
+    /*
+     * A synchronous first sample, so the caller's already-live DOM state is recorded even if the
+     * next scheduled action (the drop keypress) resolves before the first `rAF` callback runs.
+     */
+    capture();
+
+    return {
+        stop: (): ColumnFrame[] => {
+            cancelAnimationFrame(handle);
+            return frames;
+        },
+    };
+};
+
 /*
  * Read off the DOM rather than by role: Base UI marks the tree outside an open dialog `aria-hidden`,
  * so a role query would report nothing while the detail modal a rollback test needs is open.
@@ -2839,6 +2876,70 @@ describeForEachDevice({
                 version: 0,
                 targetPosition: 1,
             });
+            moveTaskStub.settle();
+        });
+
+        // comment-length-exempt: pins a cross-frame render-timing bug a passing-looking test cannot show; a future reader would otherwise "simplify" the sampler away (docs/adr/tech/0023)
+        /*
+         * dnd-kit clears every sibling's sort transform synchronously on drop, in the SAME render as
+         * the DOM's still-original order; the optimistic reorder from `useMoveTask`'s `onMutate`
+         * only reaches this `useQuery` observer once TanStack's notify scheduler flushes, which by
+         * default is a later macrotask. Between those two renders sits exactly the frame this test
+         * forbids: every transform already "none" while the titles still read the pre-move order.
+         * See docs/adr/tech/0034.
+         */
+        it("paints no frame of the pre-move order once a within-column drop clears the transforms", async () => {
+            // Arrange — held, so `onSuccess` cannot land mid-sample and muddy which render is measured.
+            moveTaskStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                task: {
+                    id: "00000000-0000-4000-8000-e10000000001",
+                    title: "Task One",
+                    description: undefined,
+                    version: 1,
+                    position: 1,
+                },
+            });
+            moveTaskStub.hold();
+            await render(<ReorderableTasks />);
+            focusTaskHandle("Task One");
+
+            const preMoveOrder = ["Task One", "Task Two", "Task Three", "Task Four"];
+            const postMoveOrder = ["Task Two", "Task One", "Task Three", "Task Four"];
+
+            // Act — lift, arrow into the sorting state, THEN start sampling, then drop.
+            await userEvent.keyboard(" ");
+            const liftedAnnouncement = getAnnouncement();
+            await userEvent.keyboard("{ArrowDown}");
+            await expect.poll(getAnnouncement).not.toBe(liftedAnnouncement);
+
+            const sampler = sampleFirstColumnFrames();
+            await userEvent.keyboard(" ");
+            await expect.poll(() => getColumnTaskTitles()[0].taskTitles).toEqual(postMoveOrder);
+            /*
+             * One more frame, so the sampler's own next `rAF` tick (a frame behind the poll above,
+             * which reads the DOM directly) also lands in the recorded sample before it is stopped.
+             */
+            await new Promise<void>((resolve) => {
+                requestAnimationFrame(() => {
+                    resolve();
+                });
+            });
+            const frames = sampler.stop();
+
+            // Assert — non-vacuity: the sample actually caught a live sort and the eventual reorder.
+            expect(frames.some((frame) => frame.transforms.some((transform) => transform !== "none"))).toBe(true);
+            expect(frames.some((frame) => sameOrder({ a: frame.titles, b: postMoveOrder }))).toBe(true);
+
+            // Assert — the forbidden conjunction never appears: cleared transforms, pre-move titles.
+            const hasFlickerFrame = frames.some(
+                (frame) =>
+                    frame.transforms.every((transform) => transform === "none") &&
+                    sameOrder({ a: frame.titles, b: preMoveOrder }),
+            );
+            expect(hasFlickerFrame).toBe(false);
+
+            expect(moveTaskStub.calls).toHaveLength(1);
             moveTaskStub.settle();
         });
 
