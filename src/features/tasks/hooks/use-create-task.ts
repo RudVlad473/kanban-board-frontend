@@ -18,6 +18,7 @@ import {
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 
 /*
  * Only the part of the board entry a create touches. Structural rather than the boards feature's own
@@ -100,6 +101,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
      * rows land through the action's own `refresh()` rather than through a second placeholder.
      */
     const createTaskMutation = useMutation({
+        mutationKey: MUTATION_KEY.CREATE_TASK,
         mutationFn: async ({ boardId, columnId, title, description }: CreateTaskVariables) => {
             const result = await createTaskAction({ boardId, columnId, title, description });
 

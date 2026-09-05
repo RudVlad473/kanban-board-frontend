@@ -43,3 +43,10 @@ export const isProtectedPath = (pathname: string): boolean =>
     PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
 export const isPublicPath = (pathname: string): boolean => (PUBLIC_PATHS as readonly string[]).includes(pathname);
+
+/**
+ * The request header `proxy.ts` stamps the pathname onto, so a Server Component can resolve the
+ * open board's id — a layout receives no `params` for a segment below it, and the board is
+ * hydrated by the dashboard layout rather than by the board page (docs/adr/tech/0030).
+ */
+export const PATHNAME_HEADER = "x-kanban-pathname";

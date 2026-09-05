@@ -12,6 +12,7 @@ import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import type { Subtask } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 
 /*
  * Only the part of the board entry a create touches. Structural rather than the boards feature's
@@ -80,6 +81,7 @@ export const useCreateSubtask = ({
         board.columns.flatMap((column) => column.tasks).find((task) => task.id === taskId)?.subtasks ?? [];
 
     const mutation = useMutation({
+        mutationKey: MUTATION_KEY.CREATE_SUBTASK,
         mutationFn: async (args: { clientId: string; title: string }) => {
             const columnId =
                 queryClient

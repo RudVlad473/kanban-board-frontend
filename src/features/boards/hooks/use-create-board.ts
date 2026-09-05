@@ -20,6 +20,7 @@ import type { Board, BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /*
@@ -82,6 +83,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
      * placeholder's `clientId` never leaves the cache; `createBoard` below navigates with the server's.
      */
     const createBoardMutation = useMutation({
+        mutationKey: MUTATION_KEY.CREATE_BOARD,
         mutationFn: async ({ name }: CreateBoardVariables) => {
             const result = await createBoardAction({ name });
 

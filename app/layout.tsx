@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 
+import { BoardQueryDefaults } from "@/components/layout/board-query-defaults/board-query-defaults";
 import { ToastProvider } from "@/components/ui/toast/toast";
 import { QueryProvider } from "@/lib/client/query-client";
 import { cn } from "@/lib/core/styling/cn";
@@ -24,7 +25,11 @@ const RootLayout = async ({ children }: LayoutProps<"/">) => {
         <html lang="en" className={cn("h-full antialiased", theme === THEME.DARK && "dark")}>
             <body className="flex min-h-full flex-col bg-bg-app text-text-primary">
                 <QueryProvider>
-                    <ToastProvider>{children}</ToastProvider>
+                    {/* Inside the provider and above everything that observes a board, so the
+                        board entry's fetcher is registered before the first observer mounts. */}
+                    <BoardQueryDefaults>
+                        <ToastProvider>{children}</ToastProvider>
+                    </BoardQueryDefaults>
                 </QueryProvider>
             </body>
         </html>

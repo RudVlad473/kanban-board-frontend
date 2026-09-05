@@ -12,6 +12,7 @@ import { DeleteBoardConfirm } from "@/features/boards/components/delete-board-co
 import { EditBoardModal } from "@/features/boards/components/edit-board-modal/edit-board-modal";
 import { useCreateBoard } from "@/features/boards/hooks/use-create-board";
 import { useDeleteBoard } from "@/features/boards/hooks/use-delete-board";
+import { usePrefetchAllBoards } from "@/features/boards/hooks/use-prefetch-all-boards";
 import { useRenameBoard, type RenameBoardArgs } from "@/features/boards/hooks/use-rename-board";
 import { createBoardsQueryOptions } from "@/features/boards/queries/boards-query";
 import type { AddBoardSubmitValues, Board } from "@/features/boards/schemas";
@@ -48,6 +49,11 @@ export const BoardList = ({
         enabled: !loadFailed,
     });
     const boards = data ?? [];
+    /*
+     * BOARD-04's first half, mounted HERE because this is where the board list first becomes known
+     * on the client — every board is loaded in the background so a switch has something to paint.
+     */
+    usePrefetchAllBoards({ boards });
     const pathname = usePathname();
     const router = useRouter();
     const {
