@@ -96,6 +96,9 @@ union branch, which `tsc` already rules out. Both were artifacts of a reviewer t
 the repo. The two survivors were real and worth having, which is the point: verification is what
 separates them.
 
+Dispatching a three-way review — the worktree-and-port setup, the brief the reviewers read, and the
+structural-search step a mechanical rewrite needs — is `docs/review-brief.md`.
+
 ## CI green is the sign-off
 
 A wave, plan, or phase is done when CI says so. Block on the run rather than polling it:
