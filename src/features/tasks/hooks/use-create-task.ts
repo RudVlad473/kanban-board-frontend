@@ -11,6 +11,7 @@ import { createTaskAction } from "@/features/tasks/actions/create-task-action";
 import { createTaskSubtasksAction } from "@/features/tasks/actions/create-task-subtasks-action";
 import {
     withSubtaskInsert,
+    withSubtaskRemove,
     withTaskInsert,
     withTaskRemove,
     withTaskReplace,
@@ -18,6 +19,7 @@ import {
 } from "@/features/tasks/model";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import type { Subtask } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 
@@ -73,13 +75,34 @@ export type CreateTaskArgs = {
     subtaskTitles: string[];
 };
 
-/** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
-type CreateTaskVariables = { boardId: string; columnId: string; title: string; description: string; clientId: string };
+/**
+ * What the create mutation is called with — the placeholder's id rides along so `onSuccess` can
+ * find it, and `placeholderSubtasks` rides along so `onMutate` can stage the typed titles under the
+ * SAME ids the fan-out below retires.
+ */
+type CreateTaskVariables = {
+    boardId: string;
+    columnId: string;
+    title: string;
+    description: string;
+    clientId: string;
+    placeholderSubtasks: Subtask[];
+};
 
 /** What one fan-out attempt leaves behind: the titles still missing, and whether retrying can help. */
 type SubtaskFanOutOutcome = { failedTitles: string[]; isSessionExpired: boolean };
 
-type SubtaskFanOutArgs = { boardId: string; columnId: string; taskId: string; titles: string[] };
+/**
+ * `ownedClientIds` names the placeholder rows THIS fan-out is responsible for retiring — empty for
+ * a retry, which appends genuinely new rows and owns no placeholders.
+ */
+type SubtaskFanOutArgs = {
+    boardId: string;
+    columnId: string;
+    taskId: string;
+    titles: string[];
+    ownedClientIds?: string[];
+};
 
 /**
  * TASK-01's create orchestration, optimistic all the way to the modal (D-05, reversed 2026-09-03).
@@ -114,7 +137,14 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
         },
         retry: false,
 
-        onMutate: async ({ boardId, columnId, clientId, title, description }: CreateTaskVariables) => {
+        onMutate: async ({
+            boardId,
+            columnId,
+            clientId,
+            title,
+            description,
+            placeholderSubtasks,
+        }: CreateTaskVariables) => {
             const queryKey = buildBoardQueryKey(boardId);
             // Or an in-flight read could land on top of the optimistic board and undo it.
             await queryClient.cancelQueries({ queryKey });
@@ -134,7 +164,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
                                   description: description !== "" ? description : undefined,
                                   version: 0,
                                   position: current.columns.find((column) => column.id === columnId)?.tasks.length ?? 0,
-                                  subtasks: [],
+                                  subtasks: placeholderSubtasks,
                               },
                           }),
                       },
@@ -176,6 +206,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
         columnId,
         taskId,
         titles,
+        ownedClientIds = [],
     }: SubtaskFanOutArgs): Promise<SubtaskFanOutOutcome> => {
         const result = await createSubtasksMutation
             .mutateAsync({ boardId, columnId, taskId, titles })
@@ -195,14 +226,33 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
                     ? current
                     : {
                           ...current,
+                          /* Retire every OWNED placeholder before inserting what landed — `created` holds only what survived, so pairing by index would misattribute a partial failure. */
                           columns: result.created.reduce(
                               (columns, subtask) => withSubtaskInsert({ columns, taskId, subtask }),
-                              current.columns,
+                              ownedClientIds.reduce(
+                                  (columns, subtaskId) => withSubtaskRemove({ columns, taskId, subtaskId }),
+                                  current.columns,
+                              ),
                           ),
                       },
             );
 
             return { failedTitles: result.failedTitles, isSessionExpired: false };
+        }
+
+        // A wholesale failure retires the owned placeholders too — the card must not claim subtasks the server never heard of.
+        if (ownedClientIds.length > 0) {
+            queryClient.setQueryData<CreatableBoard>(buildBoardQueryKey(boardId), (current) =>
+                isNil(current)
+                    ? current
+                    : {
+                          ...current,
+                          columns: ownedClientIds.reduce(
+                              (columns, subtaskId) => withSubtaskRemove({ columns, taskId, subtaskId }),
+                              current.columns,
+                          ),
+                      },
+            );
         }
 
         // A wholesale failure leaves the set unchanged rather than reporting fewer failures than there are.
@@ -215,7 +265,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
         taskId,
         failedTitles,
         isSessionExpired,
-    }: Omit<SubtaskFanOutArgs, "titles"> & SubtaskFanOutOutcome): void => {
+    }: Omit<SubtaskFanOutArgs, "titles" | "ownedClientIds"> & SubtaskFanOutOutcome): void => {
         toast.add({
             id: buildSubtaskFailureToastId(taskId),
             type: "danger",
@@ -283,9 +333,23 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
 
     const createTask = async (args: CreateTaskArgs): Promise<void> => {
         const { boardId, columnId, title, description, subtaskTitles } = args;
+        /* Generated ONCE here, never inside `onMutate` — the fan-out below has to name these same ids to retire them. */
+        const placeholderSubtasks: Subtask[] = subtaskTitles.map((subtaskTitle) => ({
+            id: crypto.randomUUID(),
+            title: subtaskTitle,
+            isCompleted: false,
+            version: 0,
+        }));
 
         const outcome = await createTaskMutation
-            .mutateAsync({ boardId, columnId, title, description, clientId: crypto.randomUUID() })
+            .mutateAsync({
+                boardId,
+                columnId,
+                title,
+                description,
+                clientId: crypto.randomUUID(),
+                placeholderSubtasks,
+            })
             .then((result) => ({ didCreate: true as const, task: result.task }))
             .catch((error: unknown) => ({
                 didCreate: false as const,
@@ -305,7 +369,13 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
          * keeps whatever fan-out lands regardless of when the caller stopped watching.
          */
         if (subtaskTitles.length > 0) {
-            void createSubtasks({ boardId, columnId, taskId, titles: subtaskTitles }).then((outcome) => {
+            void createSubtasks({
+                boardId,
+                columnId,
+                taskId,
+                titles: subtaskTitles,
+                ownedClientIds: placeholderSubtasks.map((subtask) => subtask.id),
+            }).then((outcome) => {
                 if (outcome.failedTitles.length > 0) {
                     raiseSubtaskFailureToast({ boardId, columnId, taskId, ...outcome });
                 }
