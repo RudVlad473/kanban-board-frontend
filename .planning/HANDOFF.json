@@ -1,106 +1,77 @@
 {
     "version": "1.0",
-    "timestamp": "2026-09-05T14:20:00.000Z",
+    "timestamp": "2026-09-05T20:33:22.782Z",
     "phase": "04",
     "phase_name": "Task & Subtask Workflow",
     "phase_dir": ".planning/phases/04-task-subtask-workflow",
     "plan": null,
-    "task": 2,
-    "total_tasks": 2,
-    "status": "complete",
+    "task": 3,
+    "total_tasks": 3,
+    "status": "paused",
     "completed_tasks": [
         {
             "id": 1,
-            "name": "BOARD-04 \u2014 a board switch paints the already-loaded board, then swaps in a fresh read",
+            "name": "quick 260905-r15 — board switch carries the previous board's scrollLeft; BoardView keyed on board.id",
             "status": "done",
-            "commit": "1119ffa"
+            "commit": "a8da96e"
         },
         {
             "id": 2,
-            "name": "OPT-01 \u2014 no action on a task/column/board/subtask the server has not confirmed",
+            "name": "quick 260905-s0l — in-column reorder paints the pre-move order for one frame; notifyManager.setScheduler(queueMicrotask), ADR tech/0034",
             "status": "done",
-            "commit": "2ce04f2"
+            "commit": "fa2c9d7"
         },
         {
             "id": 3,
-            "name": "local/prefer-is-nil raised to error, all 222 sites migrated",
-            "status": "done",
-            "commit": "dfb9f14"
-        },
+            "name": "quick 260905-tz5 — '0 of N subtasks' caption staged optimistically in the create's onMutate; useUnconfirmedIds reads plural clientIds",
+            "status": "in_progress",
+            "progress": "Code committed and pushed at 2912b3a, browser-verified, CI run 33990374143 was in_progress at pause time; not yet signed off"
+        }
+    ],
+    "remaining_tasks": [
         {
             "id": 4,
-            "name": "Background board load moved out of BoardList (had broken 70 browser tests)",
-            "status": "done",
-            "commit": "0e3bb0f"
+            "name": "Read CI run 33990374143 per-job conclusions for 2912b3a; a red job blocks task 3's sign-off",
+            "status": "not_started"
         },
         {
             "id": 5,
-            "name": "Three-way review dispatched, findings verified and fixed; brief saved global + project",
-            "status": "done",
-            "commit": "a5405d4"
-        },
-        {
-            "id": 6,
-            "name": "e2e/test stability: gated hold, scroll-settle wait",
-            "status": "done",
-            "commit": "4a09974"
-        },
-        {
-            "id": 7,
-            "name": "Revert the characterization test that turned CI red",
-            "status": "done",
-            "commit": "b1cab4d"
-        },
-        {
-            "id": 8,
-            "name": "Handoff written and pushed",
-            "status": "done",
-            "commit": "77a0a0f"
-        },
-        {
-            "id": 9,
-            "name": "CI green per-job at 77a0a0f (quality, secrets, visual, e2e)",
-            "status": "done",
-            "commit": "77a0a0f"
+            "name": "Code review of the three quick tasks (range 82c4ce0..2912b3a) — user stopped an in-flight /code-review and has not chosen Claude-only vs three-way vs none",
+            "status": "not_started"
         }
     ],
-    "remaining_tasks": [],
     "blockers": [],
     "async_jobs": [],
-    "human_actions_pending": [],
+    "human_actions_pending": [
+        {
+            "action": "Choose the review mode for 82c4ce0..2912b3a: (1) Claude /code-review opus high only, (2) full three-way Claude + Gemini + Codex per ~/.claude/TOOLING_PREFERENCES.md, (3) none",
+            "context": "The user asked whether reviews were run (they were not; gsd-quick skips review without --full), then said 'stop all reviewers now' while a Claude review was mid-flight. No findings were produced.",
+            "blocking": false
+        },
+        {
+            "action": "Confirm on the real Windows Chrome that the board-switch horizontal-scroll flicker is gone",
+            "context": "Headless Chromium hides scrollbars and never reproduced a sub-frame flicker; the fix closes the one confirmed defect (carried-over scrollLeft). The recording at B:\\videos\\obs\\output_llm.mp4 is 1 fps and cannot show it either way.",
+            "blocking": false
+        }
+    ],
     "decisions": [
         {
-            "decision": "Mount the board area in app/(dashboard)/layout.tsx rather than [boardId]/page.tsx",
-            "rationale": "Next does not re-render the layout when only the [boardId] segment changes, so it survives a switch and paints from the cache entry with no server round trip. A board delivered as page output is a board the user waits for.",
+            "decision": "Key BoardView on board.id in BoardScreen instead of resetting scrollLeft in an effect",
+            "rationale": "React's own 'reset state with a key'; a fresh scroll row starts at 0 and board-scoped modal state cannot follow the user across boards. No bookkeeping added (CLAUDE.md platform-primitive rule).",
             "phase": "04"
         },
         {
-            "decision": "Register the board entry's fetcher on the key family via setQueryDefaults([\"board\"], ...)",
-            "rationale": "Several hooks deliberately declare no queryFn; with none carrying one mounted at fetch time the entry parks in 'No queryFn was passed' and can never revalidate. Pre-existing defect, measured on code predating this work.",
+            "decision": "Set TanStack notifyManager scheduler to queueMicrotask globally (docs/adr/tech/0034), not per-hook flushSync or override state",
+            "rationale": "Measured: the default setTimeout(0) scheduler lets dnd-kit's synchronous drop render paint before the optimistic reorder reaches useQuery. TanStack's own knob; 0029 shapes forbidden.",
             "phase": "04"
         },
         {
-            "decision": "staleTime: Infinity plus an explicit invalidate on board change, not staleTime: 0",
-            "rationale": "Zero made every observer's mount refetch; opening the task detail modal re-read the board and detached the input being typed into.",
-            "phase": "04"
-        },
-        {
-            "decision": "Derive the unconfirmed-entity guards from TanStack's mutation cache, not a flag on the cached entity",
-            "rationale": "The entity is merged over on success, so a flag would have to be un-set by hand; a mutation leaving pending retires its id on its own.",
-            "phase": "04"
-        },
-        {
-            "decision": "isNil option 2 \u2014 migrate all 222 sites, then raise the rule to error",
-            "rationale": "User's explicit choice after being shown the cost and the semantic risk. One site keeps the raw comparison behind a disable: createChildrenSerially treats undefined as a successful bodyless create and only null as unparsable.",
-            "phase": "04"
-        },
-        {
-            "decision": "Revert 53643a2 rather than harden it",
-            "rationale": "It pinned nothing (passed on current code, no failing variant) and destabilised CI. Its finding does not reproduce: the create is issued before the move, so the server list already contains the row the index counted.",
+            "decision": "Placeholder subtasks are retired by owned client ids then re-inserted from result.created, never paired by index",
+            "rationale": "createChildrenSerially skips failed titles, so created and typed titles are not index-aligned after a partial failure.",
             "phase": "04"
         }
     ],
     "uncommitted_files": [],
-    "next_action": "Nothing outstanding. Both defects shipped, reviewed and CI-green. If new work starts here, read the anti-patterns in .continue-here.md first.",
-    "context_notes": "COMPLETE. Both user-reported defects are shipped, reviewed by three isolated agents, and CI-green at 77a0a0f. Two optional review observations remain unactioned (a skeleton reachable in a narrow post-sign-in window with many boards; a benign 'destination stream closed early' log from next start). Session's expensive lessons: pnpm test:unit is one of three vitest projects and hid 70 broken tests behind a green; CI, not local green, is this project's sign-off; several later 'fixes' were to my own test harness rather than to the product."
+    "next_action": "gh run view 33990374143 --json jobs --jq '.jobs[] | \"\\(.name): \\(.conclusion)\"' — if all four are success, task 3 is signed off; then ask the user for the review mode (numbered list in prose, never AskUserQuestion).",
+    "context_notes": "All three user-reported flickers were reproduced headless with rAF samplers and CDP screencasts before planning, and each fix was re-measured in the browser after execution. Each quick task ran planner(opus) -> executor(sonnet) sequentially on the main checkout (workflow.use_worktrees=false, isolation forced to none). Tasks 1 and 2 have green CI (runs 33983054240 and 33987535209). The dev server on :3000 was restarted by the orchestrator after an executor's verify run killed it. The seeded nonprod account was cleaned up; .e2e-seeded-users/ is empty. Side finding not filed: the sidebar's active board highlight lags the board area by ~150ms on a switch."
 }
