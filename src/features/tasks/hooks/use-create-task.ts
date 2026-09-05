@@ -104,6 +104,15 @@ type SubtaskFanOutArgs = {
     ownedClientIds?: string[];
 };
 
+/** What the fan-out mutation is called with — `clientIds` is what `useUnconfirmedIds` reads back. */
+type SubtaskFanOutVariables = {
+    boardId: string;
+    columnId: string;
+    taskId: string;
+    titles: string[];
+    clientIds: string[];
+};
+
 /**
  * TASK-01's create orchestration, optimistic all the way to the modal (D-05, reversed 2026-09-03).
  * The caller closes on submit and never waits, so a task failure rolls the card back and reports
@@ -198,7 +207,13 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
             );
         },
     });
-    const createSubtasksMutation = useMutation({ mutationFn: createTaskSubtasksAction, retry: false });
+    const createSubtasksMutation = useMutation({
+        mutationKey: MUTATION_KEY.CREATE_SUBTASK,
+        /* `useUnconfirmedIds` reads `mutation.state.variables`, so `clientIds` must ride on the variables — the action itself takes no such field. */
+        mutationFn: ({ boardId, columnId, taskId, titles }: SubtaskFanOutVariables) =>
+            createTaskSubtasksAction({ boardId, columnId, taskId, titles }),
+        retry: false,
+    });
 
     /** Runs the subtask phase for exactly the titles given, reporting what still failed and why. */
     const createSubtasks = async ({
@@ -209,7 +224,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
         ownedClientIds = [],
     }: SubtaskFanOutArgs): Promise<SubtaskFanOutOutcome> => {
         const result = await createSubtasksMutation
-            .mutateAsync({ boardId, columnId, taskId, titles })
+            .mutateAsync({ boardId, columnId, taskId, titles, clientIds: ownedClientIds })
             .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
 
         if (result.status === RESULT_STATUS.SUCCESS) {
