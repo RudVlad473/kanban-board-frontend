@@ -43,15 +43,30 @@ const signIn = async ({ page, account, board }: { page: Page; account: SeededAcc
     await expect(page).toHaveURL(new RegExp(`${buildBoardDetailPath(board.id)}$`), { timeout: SIGN_IN_TIMEOUT_MS });
 };
 
-/** Holds every write the app issues from here on, so the in-flight window is wide enough to act in. */
-const holdWrites = async (page: Page): Promise<void> => {
+// comment-length-exempt: records why the hold must be releasable, and the CI-only failure the always-on version produced
+/**
+ * Hold the writes the app issues, so the in-flight window is wide enough to act inside, and give
+ * back the release.
+ *
+ * Releasable rather than on for the whole test: every write the test makes AFTER the one under
+ * test was being delayed too, which on a slower runner was enough for the create to be refused and
+ * its optimistic row rolled back — the control under assertion then did not exist at all rather
+ * than being enabled. Green locally, red on CI (2026-09-05).
+ */
+const holdWrites = async (page: Page): Promise<() => void> => {
+    let isHolding = true;
+
     await page.route("**/*", async (route, request) => {
-        if (isServerActionPost(request)) {
+        if (isHolding && isServerActionPost(request)) {
             await new Promise((resolve) => setTimeout(resolve, CREATE_HOLD_MS));
         }
 
         await route.continue();
     });
+
+    return () => {
+        isHolding = false;
+    };
 };
 
 test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
@@ -60,7 +75,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         const { account, board } = seedTwoColumnBoard();
         await signIn({ page, account, board });
         const title = `Guarded Task ${randomUUID().slice(0, 8)}`;
-        await holdWrites(page);
+        const release = await holdWrites(page);
 
         // Act — create a task; the modal closes at submit, so the optimistic card is what is on screen.
         await page.getByRole("button", { name: "+ Add New Task" }).click();
@@ -71,6 +86,9 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         const card = page.getByRole("button", { name: new RegExp(`^${title}`) });
         await expect(card).toBeVisible();
         await expect(page.getByRole("button", { name: `Reorder ${title}` })).toBeDisabled();
+
+        /* Released here: only the create under test needed holding, and the settle must not wait on it. */
+        release();
 
         /*
          * Assert — and it becomes draggable once the server has acknowledged it, so this is a
@@ -84,7 +102,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         const { account, board } = seedTwoColumnBoard();
         await signIn({ page, account, board });
         const name = `Gamma${randomUUID().slice(0, 4)}`;
-        await holdWrites(page);
+        const release = await holdWrites(page);
 
         // Act — create a column; this modal also closes at submit behind an optimistic column.
         await page.getByRole("button", { name: "+ New Column" }).click();
@@ -102,6 +120,9 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         await page.keyboard.press("Escape");
         await page.keyboard.press("Escape");
 
+        /* Released here: only the create under test needed holding, and the settle must not wait on it. */
+        release();
+
         // Assert — the window closes when the server acknowledges it.
         await expect(page.getByRole("button", { name: `Column actions for ${name}` })).toBeEnabled({ timeout: 20_000 });
     });
@@ -112,7 +133,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         await signIn({ page, account, board });
         const name = `E2E Guarded Board ${randomUUID().slice(0, 8)}`;
         const openUrl = page.url();
-        await holdWrites(page);
+        const release = await holdWrites(page);
 
         // Act — create a board; the sidebar shows it optimistically before the server replies.
         await page.getByRole("button", { name: "+ Create New Board" }).click();
@@ -125,6 +146,9 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         await expect(row).toHaveAttribute("aria-disabled", "true");
         await row.click({ force: true });
         await expect(page).toHaveURL(openUrl);
+
+        /* Released here: only the create under test needed holding, and the settle must not wait on it. */
+        release();
 
         // Assert — once acknowledged it is an ordinary row again.
         await expect(row).not.toHaveAttribute("aria-disabled", "true", { timeout: 20_000 });
@@ -139,7 +163,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         const { account, board } = seedTwoColumnBoard();
         await signIn({ page, account, board });
         const name = `E2E Aux Board ${randomUUID().slice(0, 8)}`;
-        await holdWrites(page);
+        const release = await holdWrites(page);
 
         // Act — create a board, then middle-click its still-unconfirmed row.
         await page.getByRole("button", { name: "+ Create New Board" }).click();
@@ -151,6 +175,9 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
 
         // Assert — no second tab: the placeholder id was never navigated to.
         await expect.poll(() => page.context().pages().length, { timeout: 2000 }).toBe(1);
+
+        /* Released so the create can settle before teardown rather than being abandoned mid-flight. */
+        release();
     });
 
     /*
@@ -171,7 +198,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         await page.getByRole("menuitem", { name: "Edit Task" }).click();
 
         const subtaskTitle = `Held Subtask ${randomUUID().slice(0, 4)}`;
-        await holdWrites(page);
+        const release = await holdWrites(page);
 
         // Act — commit a new subtask row; its create is held open from here.
         await page.getByRole("button", { name: "+ Add New Subtask" }).click();
@@ -191,6 +218,9 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         for (let index = 0; index < removeCount; index += 1) {
             await expect(removeButtons.nth(index)).toBeDisabled();
         }
+
+        /* Released here: only the create under test needed holding, and the settle must not wait on it. */
+        release();
 
         // Assert — and they come back once the server owns the subtask.
         await expect(removeButtons.first()).toBeEnabled({ timeout: 20_000 });

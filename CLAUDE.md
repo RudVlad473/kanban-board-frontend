@@ -96,8 +96,8 @@ union branch, which `tsc` already rules out. Both were artifacts of a reviewer t
 the repo. The two survivors were real and worth having, which is the point: verification is what
 separates them.
 
-Dispatching a three-way review — the worktree-and-port setup, the brief the reviewers read, and the
-structural-search step a mechanical rewrite needs — is `docs/review-brief.md`.
+Dispatching a three-way review is `~/.claude/REVIEW_BRIEF.md`; `docs/review-brief.md` holds this
+repo's half of it (the run commands, the `E2E_PORT` requirement, the seed helpers).
 
 ## CI green is the sign-off
 
