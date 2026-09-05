@@ -3,6 +3,7 @@
 // Covered by: `src/features/boards/components/board-list/board-list.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useRouter } from "next/navigation";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
@@ -75,33 +76,32 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
                 currentBoardId,
             });
 
-            if (destination !== null) {
+            if (!isNil(destination)) {
                 // `replace`, so the deleted board's address does not sit in the back history (T-02-70).
                 router.replace(destination);
             }
 
             /* Re-inserts THIS row only — a snapshot restore would also resurrect a board deleted since. */
-            const undo =
-                removedBoard !== undefined
-                    ? (current: Board[]) => {
-                          /*
-                           * Front when the row was first or its neighbour is gone — the sibling
-                           * restores append in that second case, but `GET /boards` guarantees no
-                           * order at all, so neither choice is observable here.
-                           */
-                          const anchor = current.findIndex((board) => board.id === afterBoardId);
-                          const at = anchor !== -1 ? anchor + 1 : 0;
+            const undo = !isNil(removedBoard)
+                ? (current: Board[]) => {
+                      /*
+                       * Front when the row was first or its neighbour is gone — the sibling
+                       * restores append in that second case, but `GET /boards` guarantees no
+                       * order at all, so neither choice is observable here.
+                       */
+                      const anchor = current.findIndex((board) => board.id === afterBoardId);
+                      const at = anchor !== -1 ? anchor + 1 : 0;
 
-                          return [...current.slice(0, at), removedBoard, ...current.slice(at)];
-                      }
-                    : null;
+                      return [...current.slice(0, at), removedBoard, ...current.slice(at)];
+                  }
+                : null;
 
-            return { undo, didNavigate: destination !== null };
+            return { undo, didNavigate: !isNil(destination) };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { boardId }: { boardId: string }, context) => {
-            if (context?.undo != null) {
+            if (!isNil(context?.undo)) {
                 const restore = context.undo;
                 queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) => restore(current ?? []));
             }

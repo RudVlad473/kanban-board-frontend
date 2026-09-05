@@ -3,6 +3,7 @@
 // Covered by: `src/features/tasks/components/add-task-button/add-task-button.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useRef } from "react";
 
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
@@ -120,7 +121,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
 
             /* `version` is inert placeholder filler — the server owns it, and success replaces it. */
             queryClient.setQueryData<CreatableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -148,12 +149,12 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
         /* The rollback only; `createTask` below raises the toast, which needs the refusal's status. */
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (_error: unknown, { boardId }: CreateTaskVariables, context) => {
-            if (context === undefined) {
+            if (isNil(context)) {
                 return;
             }
 
             queryClient.setQueryData<CreatableBoard>(buildBoardQueryKey(boardId), (current) =>
-                current === undefined ? current : { ...current, columns: context.undo(current) },
+                isNil(current) ? current : { ...current, columns: context.undo(current) },
             );
         },
 
@@ -161,7 +162,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
         onSuccess: ({ task }, { boardId, clientId }) => {
             /* MERGED, never assigned — `TaskResponseDTO` carries no `subtasks` (docs/adr/tech/0030 rule 2). */
             queryClient.setQueryData<CreatableBoard>(buildBoardQueryKey(boardId), (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : { ...current, columns: withTaskReplace({ columns: current.columns, taskId: clientId, task }) },
             );
@@ -190,7 +191,7 @@ export const useCreateTask = ({ onRetry }: { onRetry: (args: CreateTaskArgs) => 
              * `prefetch` on.
              */
             queryClient.setQueryData<CreatableBoard>(buildBoardQueryKey(boardId), (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { isNil } from "es-toolkit";
 
 import { seedAccount, seedBoard, seedColumn, seedTask, type SeededAccount, type SeededBoard } from "./seed";
 import { createServerActionSettled } from "./server-action";
@@ -44,7 +45,7 @@ const columnSection = ({ page, name }: { page: Page; name: string }): Locator =>
 const centerOf = async (locator: Locator): Promise<{ x: number; y: number }> => {
     const box = await locator.boundingBox();
 
-    if (box === null) {
+    if (isNil(box)) {
         throw new Error("a drag target reported no bounding box, so it is not rendered");
     }
 
@@ -225,7 +226,7 @@ test.describe("TASK-04: move a task between columns", () => {
         const firstCard = columnSection({ page, name: "Bravo" }).locator("li").first();
         const firstCardBox = await firstCard.boundingBox();
 
-        if (firstCardBox === null) {
+        if (isNil(firstCardBox)) {
             throw new Error("the destination column's first card reported no bounding box");
         }
 
@@ -274,7 +275,7 @@ test.describe("TASK-04: move a task between columns", () => {
         const lastCard = columnSection({ page, name: "Bravo" }).locator("li").last();
         const lastCardBox = await lastCard.boundingBox();
 
-        if (lastCardBox === null) {
+        if (isNil(lastCardBox)) {
             throw new Error("the destination column's last card reported no bounding box");
         }
 

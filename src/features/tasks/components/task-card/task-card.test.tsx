@@ -5,6 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
+import { isNil } from "es-toolkit";
 import { expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -25,7 +26,7 @@ const getCards = (): HTMLElement[] => Array.from(document.querySelectorAll("li")
 /** A card's open-detail control: the first button inside it, with the handle always the second. */
 const getContentButton = (card: Element): HTMLElement => {
     const content = card.querySelector("button");
-    if (content === null) {
+    if (isNil(content)) {
         throw new Error("a task card rendered no open-detail control");
     }
 

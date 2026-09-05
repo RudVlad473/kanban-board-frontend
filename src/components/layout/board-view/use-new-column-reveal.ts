@@ -2,6 +2,7 @@
 
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
+import { isNil } from "es-toolkit";
 import { useEffect, useRef } from "react";
 
 /**
@@ -21,7 +22,7 @@ export const useNewColumnReveal = ({ columnCount }: { columnCount: number }) => 
 
     /* Retired as it runs, so a later count change (a delete) cannot re-fire it (T-03-27). */
     useEffect(() => {
-        if (requestedAtCount.current === null || requestedAtCount.current === columnCount) {
+        if (isNil(requestedAtCount.current) || requestedAtCount.current === columnCount) {
             return;
         }
 

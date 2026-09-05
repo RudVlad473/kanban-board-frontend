@@ -45,7 +45,7 @@ export const AddTaskButton = () => {
      * `defaultValues`, so mounting against an absent entry pins `columnId` to `""` for the modal's
      * whole life and `Create Task` silently does nothing.
      */
-    const isOpen = modalBoardId !== null && modalBoardId === openBoardId && !isNil(columns) && columns.length > 0;
+    const isOpen = !isNil(modalBoardId) && modalBoardId === openBoardId && !isNil(columns) && columns.length > 0;
 
     /*
      * Disabled with no board open or a board with zero columns — `addTaskByColumnId` is
@@ -64,7 +64,7 @@ export const AddTaskButton = () => {
      * toasts a Retry; nothing is left for the modal to report.
      */
     const handleSubmit = (values: AddTaskSubmitValues): void => {
-        if (modalBoardId === null) {
+        if (isNil(modalBoardId)) {
             return;
         }
 
@@ -103,7 +103,7 @@ export const AddTaskButton = () => {
                     isPending={false}
                     columns={columns}
                     defaultValues={
-                        retryValues !== null
+                        !isNil(retryValues)
                             ? {
                                   title: retryValues.title,
                                   description: retryValues.description,

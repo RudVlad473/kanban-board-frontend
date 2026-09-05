@@ -1,4 +1,5 @@
 import type { Announcements, UniqueIdentifier } from "@dnd-kit/core";
+import { isNil } from "es-toolkit";
 
 import type { Board, Column, ColumnFull } from "@/features/boards/schemas";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
@@ -140,8 +141,8 @@ export const withColumnRestore = ({
     column: ColumnFull;
     afterColumnId: string | null;
 }): ColumnFull[] => {
-    const anchorIndex = afterColumnId !== null ? columns.findIndex((entry) => entry.id === afterColumnId) : -1;
-    const index = afterColumnId === null ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : columns.length;
+    const anchorIndex = !isNil(afterColumnId) ? columns.findIndex((entry) => entry.id === afterColumnId) : -1;
+    const index = isNil(afterColumnId) ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : columns.length;
 
     return [...columns.slice(0, index), column, ...columns.slice(index)];
 };
@@ -270,7 +271,7 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
         onDragStart: ({ active }) => {
             const column = resolveColumn(active.id);
 
-            return column !== null
+            return !isNil(column)
                 ? `Picked up ${column.name}, position ${column.position} of ${total}. Use left and right arrow keys to move, space to drop, escape to cancel.`
                 : undefined;
         },
@@ -282,18 +283,18 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
          */
         onDragOver: ({ active, over }) => {
             const column = resolveColumn(active.id);
-            const target = over !== null && over.id !== active.id ? resolveColumn(over.id) : null;
+            const target = !isNil(over) && over.id !== active.id ? resolveColumn(over.id) : null;
 
-            return column !== null && target !== null
+            return !isNil(column) && !isNil(target)
                 ? `${column.name} moved to position ${target.position} of ${total}.`
                 : undefined;
         },
 
         onDragEnd: ({ active, over }) => {
             const column = resolveColumn(active.id);
-            const target = over !== null ? resolveColumn(over.id) : null;
+            const target = !isNil(over) ? resolveColumn(over.id) : null;
 
-            return column !== null && target !== null
+            return !isNil(column) && !isNil(target)
                 ? `${column.name} dropped at position ${target.position} of ${total}.`
                 : undefined;
         },
@@ -301,7 +302,7 @@ export const createColumnReorderAnnouncements = ({ columns }: { columns: ColumnF
         onDragCancel: ({ active }) => {
             const column = resolveColumn(active.id);
 
-            return column !== null
+            return !isNil(column)
                 ? `Move cancelled. ${column.name} returned to position ${column.position} of ${total}.`
                 : undefined;
         },

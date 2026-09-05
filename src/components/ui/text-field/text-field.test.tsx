@@ -5,6 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
+import { isNil } from "es-toolkit";
 import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -34,7 +35,7 @@ const {
  */
 const getFieldBox = (input: Element): HTMLElement => {
     const box = input.parentElement;
-    if (box === null) {
+    if (isNil(box)) {
         throw new Error("Field box not found — is the input still wrapped?");
     }
     return box;

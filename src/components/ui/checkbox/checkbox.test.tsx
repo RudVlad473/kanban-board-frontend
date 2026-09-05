@@ -5,6 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
+import { isNil } from "es-toolkit";
 import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -31,7 +32,7 @@ const {
  */
 const readLabel = (container: HTMLElement) => {
     const label = container.querySelector("label");
-    if (label === null) {
+    if (isNil(label)) {
         throw new Error("expected the composed story to render a label");
     }
     return label;

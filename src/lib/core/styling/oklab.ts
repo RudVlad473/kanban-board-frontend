@@ -2,6 +2,7 @@
  * `#RRGGBB` only — the single format authority for a stored column colour (the OpenAPI contract
  * carries no `pattern`/`maxLength` for it). Case-insensitive on the hex digits.
  */
+import { isNil } from "es-toolkit";
 export const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 /** The `#RRGGBB` string as 0-1 sRGB components, or `null` when it does not match `HEX_COLOR_PATTERN`. */
@@ -32,7 +33,7 @@ type OklabLab = { l: number; a: number; b: number };
  */
 const toOklabLab = (hex: string): OklabLab => {
     const rgb = parseHexColor(hex);
-    if (rgb === null) {
+    if (isNil(rgb)) {
         throw new Error(`toOklab: not a valid #RRGGBB hex color: ${hex}`);
     }
 

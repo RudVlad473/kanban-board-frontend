@@ -54,7 +54,7 @@ export const pickNextColumnColor = ({
         used.filter((rendered) => normaliseHex(rendered) === normaliseHex(entry)).length;
 
     const firstUnused = COLUMN_COLOR_PALETTE.find((entry) => usageOf(entry) === 0);
-    if (firstUnused !== undefined) {
+    if (!isNil(firstUnused)) {
         return firstUnused;
     }
 

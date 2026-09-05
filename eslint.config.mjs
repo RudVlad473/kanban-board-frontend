@@ -666,7 +666,7 @@ const eslintConfig = defineConfig([
     {
         files: ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "e2e/**/*.ts", "visual/**/*.ts"],
         plugins: { local: localRulesPlugin },
-        rules: { "local/prefer-is-nil": "warn" },
+        rules: { "local/prefer-is-nil": "error" },
     },
 
     // 9. Generated/vendored trees are never hand-edited or worth linting.

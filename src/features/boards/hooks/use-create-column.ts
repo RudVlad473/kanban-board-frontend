@@ -3,6 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
@@ -101,7 +102,7 @@ export const useCreateColumn = ({
 
             /* `version` is inert placeholder filler — the server owns it, and success replaces it. */
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -126,12 +127,12 @@ export const useCreateColumn = ({
         /* No toast here: `createColumn` below raises it, so a retry can carry the typed name back. */
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (_error: unknown, { boardId }: CreateColumnVariables, context) => {
-            if (context === undefined) {
+            if (isNil(context)) {
                 return;
             }
 
             queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
-                current === undefined ? current : { ...current, columns: context.undo(current) },
+                isNil(current) ? current : { ...current, columns: context.undo(current) },
             );
         },
 
@@ -139,7 +140,7 @@ export const useCreateColumn = ({
         onSuccess: ({ column }, { boardId, clientId }) => {
             /* MERGED, never assigned — `ColumnResponseDTO` carries no `tasks` (docs/adr/tech/0030 rule 2). */
             queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,

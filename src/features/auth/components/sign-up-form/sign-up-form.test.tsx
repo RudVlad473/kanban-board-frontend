@@ -1,5 +1,6 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
+import { isNil } from "es-toolkit";
 import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -266,7 +267,7 @@ describeForEachDevice({
             await rendered.getByRole("button", { name: "Create Account" }).click();
 
             // Assert
-            await expect.poll(() => submitted.formData !== null).toBe(true);
+            await expect.poll(() => !isNil(submitted.formData)).toBe(true);
             expect(flattenFormData(submitted.formData)).toEqual({
                 email: "new@example.com",
                 password: "CorrectPassword1!",
@@ -290,7 +291,7 @@ describeForEachDevice({
             await rendered.getByRole("button", { name: "Create Account" }).click();
 
             // Assert
-            await expect.poll(() => submitted.formData !== null).toBe(true);
+            await expect.poll(() => !isNil(submitted.formData)).toBe(true);
             expect(flattenFormData(submitted.formData)).toEqual({
                 email: "new@example.com",
                 displayName: "Jamie Rivera",

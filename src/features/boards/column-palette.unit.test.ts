@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+import { isNil } from "es-toolkit";
 import { describe, expect, it } from "vitest";
 
 import { COLUMN_DOT_TOKENS } from "@/features/boards/model";
@@ -62,7 +63,7 @@ describe("COLUMN_COLOR_PALETTE", () => {
             const match = new RegExp(`--color-accent-column-${String(index + 1)}:\\s*(#[0-9a-fA-F]{6});`).exec(
                 tokensCss,
             );
-            if (match === null) {
+            if (isNil(match)) {
                 throw new Error(`tokens.css has no --color-accent-column-${String(index + 1)} declaration`);
             }
             return match[1];

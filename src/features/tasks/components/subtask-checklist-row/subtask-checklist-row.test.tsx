@@ -5,6 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
+import { isNil } from "es-toolkit";
 import { afterEach, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 
@@ -21,7 +22,7 @@ const FIXTURE_SUBTASK_ID = createSubtask().id;
 /* Narrows a render's own container to its label — mirrors `checkbox.test.tsx`'s own helper. */
 const readLabel = (container: HTMLElement): HTMLElement => {
     const label = container.querySelector("label");
-    if (label === null) {
+    if (isNil(label)) {
         throw new Error("expected the row to render a label");
     }
     return label;
@@ -32,7 +33,7 @@ const firstLineCentre = (label: HTMLElement): number => {
     const range = document.createRange();
     range.selectNodeContents(label);
     const firstLine = range.getClientRects().item(0);
-    if (firstLine === null) {
+    if (isNil(firstLine)) {
         throw new Error("expected the label's text to lay out at least one line box");
     }
     return firstLine.top + firstLine.height / 2;
@@ -113,7 +114,7 @@ describeForEachDevice({
             const screenInstance = await render(<Default />);
             const label = readLabel(screenInstance.container);
             const row = label.parentElement;
-            if (row === null) {
+            if (isNil(row)) {
                 throw new Error("expected the row's own Field.Root ancestor");
             }
 
@@ -134,7 +135,7 @@ describeForEachDevice({
             await render(<LongTitle />);
             const checkbox = screen.getByRole("checkbox");
             const row = checkbox.closest("div");
-            if (row === null) {
+            if (isNil(row)) {
                 throw new Error("expected the row's own Field.Root ancestor");
             }
 

@@ -1,3 +1,4 @@
+import { isNil } from "es-toolkit";
 import { z } from "zod";
 
 /*
@@ -31,7 +32,7 @@ export const signUpSchema = z.object({
     displayName: z
         .string()
         .optional()
-        .transform((value) => (value !== undefined && value.trim() !== "" ? value : undefined))
+        .transform((value) => (!isNil(value) && value.trim() !== "" ? value : undefined))
         .pipe(
             z
                 .string()

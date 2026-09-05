@@ -1,5 +1,6 @@
 "use server";
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { deleteColumnInputSchema } from "@/features/boards/schemas";
@@ -62,7 +63,7 @@ export const deleteColumnAction = async ({
      * than trust the generated type, mirroring `deleteBoardAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         /*
          * Routed through the shared mapping, unlike the board delete's bare status: the UI-SPEC
          * needs a stale `version` distinguishable from a generic refusal, and a double submit

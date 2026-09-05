@@ -3,6 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
@@ -85,12 +86,12 @@ export const useDeleteColumn = () => {
             const afterColumnId = columns[columns.findIndex((column) => column.id === columnId) - 1]?.id ?? null;
 
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : { ...current, columns: withColumnRemove({ columns: current.columns, columnId }) },
             );
 
-            if (removedColumn === undefined) {
+            if (isNil(removedColumn)) {
                 return undefined;
             }
 
@@ -103,9 +104,9 @@ export const useDeleteColumn = () => {
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { boardId }: DeleteColumnArgs, context) => {
-            if (context !== undefined) {
+            if (!isNil(context)) {
                 queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
-                    current === undefined ? current : { ...current, columns: context.undo(current) },
+                    isNil(current) ? current : { ...current, columns: context.undo(current) },
                 );
             }
 

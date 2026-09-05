@@ -3,6 +3,7 @@
 import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { isNil } from "es-toolkit";
 import { GripVertical } from "lucide-react";
 import { useMediaQuery } from "usehooks-ts";
 
@@ -85,7 +86,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
     const isInsertionBelow =
         activeIndex !== -1
             ? activeIndex < index
-            : over !== null &&
+            : !isNil(over) &&
               isDraggedBelowCard({ draggedRect: active?.rect.current.translated ?? null, cardRect: over.rect });
 
     /*
@@ -143,7 +144,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
                 <span className="font-heading-m text-heading-m break-words text-text-primary">{task.title}</span>
 
                 {/* UI-SPEC empty/task-card: at zero subtasks there is no caption element at all. */}
-                {subtaskSummary !== null ? (
+                {!isNil(subtaskSummary) ? (
                     <span className="font-body-m text-body-m text-text-muted">{subtaskSummary}</span>
                 ) : null}
             </button>

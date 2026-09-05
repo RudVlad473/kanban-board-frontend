@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { isKeyboardEvent, subtract, type Coordinates } from "@dnd-kit/utilities";
+import { isNil } from "es-toolkit";
 
 import { isColumnDestinationVisible } from "@/features/boards/model";
 import { DRAG_ITEM_TYPE } from "@/lib/core/drag/drag-items";
@@ -49,7 +50,7 @@ const resolveVisibleDestinationMove = ({
     }
 
     const scrollRow = scrollableAncestors.at(0);
-    if (collisionRect === null || scrollRow === undefined) {
+    if (isNil(collisionRect) || isNil(scrollRow)) {
         return null;
     }
 
@@ -101,7 +102,7 @@ class ColumnKeyboardSensor extends BaseKeyboardSensor {
     handleKeyDown(event: Event): void {
         const move = resolveVisibleDestinationMove({ event, props: this.props });
 
-        if (move === null) {
+        if (isNil(move)) {
             super.handleKeyDown(event);
 
             return;

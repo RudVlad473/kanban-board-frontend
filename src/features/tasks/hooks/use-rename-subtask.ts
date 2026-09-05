@@ -3,6 +3,7 @@
 // Covered by: `src/features/tasks/components/edit-task-modal/edit-task-modal.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
@@ -92,7 +93,7 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
 
             setPendingSubtaskIds((current) => new Set(current).add(subtaskId));
             queryClient.setQueryData<RenamableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -110,10 +111,10 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
             { subtaskId }: { subtaskId: string; version: number; title: string; columnId: string },
             context,
         ) => {
-            if (context?.previousTitle !== undefined) {
+            if (!isNil(context?.previousTitle)) {
                 const restoredTitle = context.previousTitle;
                 queryClient.setQueryData<RenamableBoard>(queryKey, (current) =>
-                    current === undefined
+                    isNil(current)
                         ? current
                         : {
                               ...current,
@@ -136,7 +137,7 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
          */
         onSuccess: ({ subtask }) => {
             queryClient.setQueryData<RenamableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -180,7 +181,7 @@ export const useRenameSubtask = ({ boardId, taskId }: { boardId: string; taskId:
             ?.subtasks.find((subtask) => subtask.id === subtaskId);
         const columnId = board?.columns.find((column) => column.tasks.some((task) => task.id === taskId))?.id;
 
-        if (target === undefined || columnId === undefined) {
+        if (isNil(target) || isNil(columnId)) {
             return false;
         }
 

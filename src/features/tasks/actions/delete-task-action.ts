@@ -1,5 +1,6 @@
 "use server";
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { deleteTaskInputSchema } from "@/features/tasks/schemas";
@@ -63,7 +64,7 @@ export const deleteTaskAction = async ({
      * than trust the generated type, mirroring `deleteColumnAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         /*
          * A second delete lands as `ENTITY_NOT_FOUND` (T6), routed through the shared not-found
          * branch rather than the generic fallback (T-04-42) — the same branch a foreign board's

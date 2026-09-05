@@ -3,6 +3,7 @@
 // Covered by: `src/features/boards/components/board-list/board-list.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
@@ -80,7 +81,7 @@ export const useRenameBoard = () => {
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (error, variables, context); the shape is dictated by that external API, not this project (ADR tech/0016 exemption, as in sign-in-action.ts)
         onError: (error: unknown, { boardId }: RenameBoardArgs, context) => {
-            if (context?.previousName !== undefined) {
+            if (!isNil(context?.previousName)) {
                 const restoredName = context.previousName;
                 queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
                     current?.map((board) => (board.id === boardId ? { ...board, name: restoredName } : board)),

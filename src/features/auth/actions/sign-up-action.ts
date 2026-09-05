@@ -2,6 +2,7 @@
 
 // Covered by: `e2e/auth.e2e.spec.ts`
 
+import { isNil } from "es-toolkit";
 import { redirect } from "next/navigation";
 
 import { type AuthActionState } from "@/features/auth/action-state";
@@ -57,7 +58,7 @@ export const signUpAction = async (_previousState: AuthActionState, formData: Fo
      */
     const jsessionId = upstreamCookie.extract(response);
 
-    if (upstreamError !== undefined || !isUpstreamIdentity(identity) || !jsessionId) {
+    if (!isNil(upstreamError) || !isUpstreamIdentity(identity) || !jsessionId) {
         const problem = parseProblemDetail(upstreamError);
         return {
             status: RESULT_STATUS.ERROR,

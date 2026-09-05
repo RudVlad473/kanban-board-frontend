@@ -1,5 +1,6 @@
 "use client";
 
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 import { useBoolean } from "usehooks-ts";
 
@@ -82,7 +83,7 @@ export const BoardsEmptyState = ({ defaultIsAddBoardOpen = false }: Props) => {
                 onSubmit={handleSubmit}
                 /* Never pending: the modal no longer outlives the submit that closes it. */
                 isPending={false}
-                defaultValues={retryValues !== null ? { name: retryValues.name } : undefined}
+                defaultValues={!isNil(retryValues) ? { name: retryValues.name } : undefined}
                 defaultColumns={retryValues?.columns}
             />
         </div>

@@ -58,6 +58,7 @@ export const createChildrenSerially = async <TChild>({
          */
         const child = parseChild(data);
 
+        /* eslint-disable-next-line local/prefer-is-nil -- `null` and `undefined` differ here: `undefined` is a successful create whose response carried no body, only `null` means unparsable */
         if (child === null) {
             failedValues.push(value);
             continue;

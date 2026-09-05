@@ -1,5 +1,6 @@
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
+import { isNil } from "es-toolkit";
 import { expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 
@@ -87,7 +88,7 @@ describeForEachDevice({
             await button.click();
 
             // Assert
-            await expect.poll(() => button.element().querySelector("svg.animate-spin") !== null).toBe(true);
+            await expect.poll(() => !isNil(button.element().querySelector("svg.animate-spin"))).toBe(true);
             await expect.element(button).toHaveAttribute("aria-busy", "true");
 
             // Cleanup — releases the held call so the suite does not leave one pending.

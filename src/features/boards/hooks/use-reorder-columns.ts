@@ -3,6 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
@@ -77,7 +78,7 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
             queryClient.setQueryData<BoardFull>(queryKey, (current) => {
                 const fromIndex = current?.columns.findIndex((column) => column.id === columnId) ?? -1;
 
-                return current === undefined || fromIndex === -1
+                return isNil(current) || fromIndex === -1
                     ? current
                     : {
                           ...current,
@@ -95,13 +96,13 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { columnId }: ReorderColumnVariables, context) => {
-            if (context !== undefined && context.previousIndex !== -1) {
+            if (!isNil(context) && context.previousIndex !== -1) {
                 const { previousIndex } = context;
 
                 queryClient.setQueryData<BoardFull>(queryKey, (current) => {
                     const fromIndex = current?.columns.findIndex((column) => column.id === columnId) ?? -1;
 
-                    return current === undefined || fromIndex === -1
+                    return isNil(current) || fromIndex === -1
                         ? current
                         : {
                               ...current,
@@ -119,7 +120,7 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
          */
         onSuccess: ({ column }) => {
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -135,7 +136,7 @@ export const useReorderColumns = ({ boardId }: { boardId: string }) => {
         /* Read from the entry the drag itself rendered, so the version cannot be a render behind. */
         const movedColumn = queryClient.getQueryData<BoardFull>(queryKey)?.columns.at(fromIndex);
 
-        if (movedColumn === undefined || fromIndex === toIndex) {
+        if (isNil(movedColumn) || fromIndex === toIndex) {
             return;
         }
 

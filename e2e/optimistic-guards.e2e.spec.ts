@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test, type Page, type Request } from "@playwright/test";
 
-import { seedAccount, seedBoard, seedColumn, type SeededAccount, type SeededBoard } from "./seed";
+import { seedAccount, seedBoard, seedColumn, seedTask, type SeededAccount, type SeededBoard } from "./seed";
 import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 
 // comment-length-exempt: records the invariant every test here asserts and why a placeholder id is not merely cosmetic, which is what makes these disabled states correctness rather than polish
@@ -128,5 +128,71 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
 
         // Assert — once acknowledged it is an ordinary row again.
         await expect(row).not.toHaveAttribute("aria-disabled", "true", { timeout: 20_000 });
+    });
+
+    /*
+     * The row is reachable by AUXILIARY click, which React's `onClick` never sees — a guard built
+     * only on `onClick` leaves the raw `href` (a client-generated placeholder id) followable.
+     */
+    test("board: a middle click on the unconfirmed row opens nothing either", async ({ page }) => {
+        // Arrange
+        const { account, board } = seedTwoColumnBoard();
+        await signIn({ page, account, board });
+        const name = `E2E Aux Board ${randomUUID().slice(0, 8)}`;
+        await holdWrites(page);
+
+        // Act — create a board, then middle-click its still-unconfirmed row.
+        await page.getByRole("button", { name: "+ Create New Board" }).click();
+        await page.getByLabel("Board Name", { exact: true }).fill(name);
+        await page.getByRole("button", { name: "Create New Board", exact: true }).click();
+        const row = page.getByRole("link", { name });
+        await expect(row).toHaveAttribute("aria-disabled", "true");
+        await row.click({ button: "middle", force: true });
+
+        // Assert — no second tab: the placeholder id was never navigated to.
+        await expect.poll(() => page.context().pages().length, { timeout: 2000 }).toBe(1);
+    });
+
+    /*
+     * The edit modal renders subtasks straight from the board entry, so an optimistic row appears
+     * there as an ordinary one — with a rename and a delete that would both name a placeholder id.
+     */
+    test("subtask: the edit modal's row for an unconfirmed subtask has no live controls", async ({ page }) => {
+        // Arrange — one task to open the editor on.
+        const account = seedAccount();
+        const board = seedBoard({ account, name: `E2E Subtask Guard ${randomUUID().slice(0, 8)}` });
+        const column = seedColumn({ account, boardId: board.id, name: "Alpha" });
+        const title = `Guarded Parent ${randomUUID().slice(0, 8)}`;
+        seedTask({ account, boardId: board.id, columnId: column.id, title });
+        await signIn({ page, account, board });
+
+        await page.getByRole("button", { name: new RegExp(`^${title}`) }).click();
+        await page.getByRole("button", { name: `Task actions for ${title}` }).click();
+        await page.getByRole("menuitem", { name: "Edit Task" }).click();
+
+        const subtaskTitle = `Held Subtask ${randomUUID().slice(0, 4)}`;
+        await holdWrites(page);
+
+        // Act — commit a new subtask row; its create is held open from here.
+        await page.getByRole("button", { name: "+ Add New Subtask" }).click();
+        /* The seeded task has no subtasks, so the first draft row is row 1. */
+        const draft = page.getByRole("dialog").getByRole("textbox", { name: "Subtask 1", exact: true });
+        await draft.fill(subtaskTitle);
+        await draft.press("Tab");
+
+        /*
+         * Assert — EVERY control naming that subtask is inert, not just the draft row's own. The
+         * optimistic insert puts a second row on screen carrying the same placeholder id.
+         */
+        const removeButtons = page.getByRole("button", { name: `Remove subtask '${subtaskTitle}'` });
+        await expect(removeButtons).not.toHaveCount(0);
+        const removeCount = await removeButtons.count();
+
+        for (let index = 0; index < removeCount; index += 1) {
+            await expect(removeButtons.nth(index)).toBeDisabled();
+        }
+
+        // Assert — and they come back once the server owns the subtask.
+        await expect(removeButtons.first()).toBeEnabled({ timeout: 20_000 });
     });
 });

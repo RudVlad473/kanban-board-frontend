@@ -3,6 +3,7 @@
 // Covered by: `src/features/boards/components/board-list/board-list.test.tsx` and `src/features/boards/components/boards-empty-state/boards-empty-state.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useRouter } from "next/navigation";
 
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
@@ -113,7 +114,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (_error: unknown, { clientId }: CreateBoardVariables) => {
             queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
-                current === undefined ? current : removeBoard({ boards: current, boardId: clientId }),
+                isNil(current) ? current : removeBoard({ boards: current, boardId: clientId }),
             );
         },
 
@@ -150,7 +151,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
          * A no-op when nothing has read this board yet, which is the usual case right after a create.
          */
         queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
-            current === undefined
+            isNil(current)
                 ? current
                 : {
                       ...current,

@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
+import { isNil } from "es-toolkit";
 import { jwtVerify, SignJWT } from "jose";
 
 import { COOKIE } from "@/lib/core/cookies/cookie-registry";
@@ -31,7 +32,7 @@ const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // seven days, absolute expir
 
 /** The identity fields both guards below require, whatever a display name turns out to be. */
 const hasIdentityCore = (value: unknown): boolean => {
-    if (typeof value !== "object" || value === null) {
+    if (typeof value !== "object" || isNil(value)) {
         return false;
     }
 
@@ -76,7 +77,7 @@ export const isUpstreamIdentity = (value: unknown): value is UpstreamIdentity =>
 
     const { displayName } = value as Record<string, unknown>;
 
-    return displayName === undefined || displayName === null || typeof displayName === "string";
+    return isNil(displayName) || isNil(displayName) || typeof displayName === "string";
 };
 
 /**

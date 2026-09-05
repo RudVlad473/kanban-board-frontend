@@ -1,5 +1,6 @@
 "use client";
 
+import { isNil } from "es-toolkit";
 import { EllipsisVertical } from "lucide-react";
 import { useState } from "react";
 
@@ -49,7 +50,7 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
 
     const handleColumnChange = (nextColumnId: string | null): void => {
         const destination = columns.find((column) => column.id === nextColumnId);
-        if (destination === undefined || destination.id === currentColumnId) {
+        if (isNil(destination) || destination.id === currentColumnId) {
             return;
         }
 
@@ -133,7 +134,7 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
                 </div>
 
                 {/* UI-SPEC empty/detail-view: no block at all when there is none — no placeholder line. */}
-                {task.description !== undefined ? (
+                {!isNil(task.description) ? (
                     <p className="mt-6 font-body-l text-body-l text-text-muted">{task.description}</p>
                 ) : null}
 

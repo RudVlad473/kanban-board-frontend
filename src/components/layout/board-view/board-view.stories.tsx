@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { type ComponentProps } from "react";
 
 import type { BoardFull } from "@/features/boards/schemas";
@@ -125,7 +126,7 @@ const ServerPropsHost = (props: ComponentProps<typeof BoardView>) => {
      */
     const replaceFirstColumnName = (name: string): void => {
         queryClient.setQueryData<BoardFull>(queryKey, (current) =>
-            current === undefined
+            isNil(current)
                 ? current
                 : {
                       ...current,
@@ -182,7 +183,7 @@ const ServerDeleteHost = (props: ComponentProps<typeof BoardView>) => {
                 type="button"
                 onClick={() => {
                     queryClient.setQueryData<BoardFull>(queryKey, (current) =>
-                        current === undefined
+                        isNil(current)
                             ? current
                             : { ...current, columns: current.columns.filter((_, index) => index !== 1) },
                     );

@@ -2,6 +2,7 @@
 
 // Covered by: `src/features/tasks/actions/create-task-subtasks-action.integration.test.ts` (same path/body per item)
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { createSubtaskInputSchema } from "@/features/tasks/schemas";
@@ -57,7 +58,7 @@ export const createSubtaskAction = async ({
     });
 
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         const status = mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code);
 
         /* A create carries no `version` and no uniqueness rule — both fold into `ERROR`. */

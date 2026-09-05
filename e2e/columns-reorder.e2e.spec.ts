@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { isNil } from "es-toolkit";
 
 import { seedAccount, seedBoard, seedColumn, type SeededAccount, type SeededBoard } from "./seed";
 import { createServerActionSettled } from "./server-action";
@@ -65,7 +66,7 @@ const expectLiftAnnounced = async ({ page, name, position }: { page: Page; name:
 const centerOf = async (locator: Locator): Promise<{ x: number; y: number }> => {
     const box = await locator.boundingBox();
 
-    if (box === null) {
+    if (isNil(box)) {
         throw new Error("a drag handle reported no bounding box, so it is not rendered");
     }
 

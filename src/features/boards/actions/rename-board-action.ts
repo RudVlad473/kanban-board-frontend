@@ -1,5 +1,6 @@
 "use server";
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { boardSchema, renameBoardInputSchema, type Board } from "@/features/boards/schemas";
@@ -60,7 +61,7 @@ export const renameBoardAction = async ({
      * than trust the generated type, mirroring `createBoardAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         /*
          * Named branches, never upstream text: the shared mapping selects one of this project's own
          * discriminants and the caller authors the copy (T-02-61). `CONFLICT` is what SYNC-01

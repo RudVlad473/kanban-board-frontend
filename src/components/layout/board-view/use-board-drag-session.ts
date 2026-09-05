@@ -3,6 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 
 import { useColumnDragSensors } from "@/features/boards/hooks/use-column-drag-sensors";
@@ -73,7 +74,7 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
     const moveDroppedTask = ({ active, over }: DragEndEvent): void => {
         const overData = toDragItemData(over?.data.current);
 
-        if (over === null || overData?.columnId === undefined) {
+        if (isNil(over) || isNil(overData?.columnId)) {
             return;
         }
 
@@ -82,7 +83,7 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
         const destination = columns.find((column) => column.id === targetColumnId);
         const source = columns.find((column) => column.tasks.some((task) => task.id === active.id));
 
-        if (destination === undefined || source === undefined) {
+        if (isNil(destination) || isNil(source)) {
             return;
         }
 
@@ -116,7 +117,7 @@ export const useBoardDragSession = ({ boardId, columns, moveTask, reorderColumns
         setLiftedColumnId(null);
         setLiftedTaskId(null);
 
-        if (over === null || active.id === over.id) {
+        if (isNil(over) || active.id === over.id) {
             return;
         }
 

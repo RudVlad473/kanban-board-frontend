@@ -1,5 +1,6 @@
 "use server";
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { deleteSubtaskInputSchema, type DeleteSubtaskInput } from "@/features/tasks/schemas";
@@ -66,7 +67,7 @@ export const deleteSubtaskAction = async ({
      * than trust the generated type, mirroring `deleteColumnAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         const status = mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code);
 
         // comment-length-exempt: records why the re-read belongs in the action rather than the hook — a settled placement decision a future reader would otherwise relocate (docs/adr/tech/0023)

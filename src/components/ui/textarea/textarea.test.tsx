@@ -4,6 +4,7 @@
  * (vitest.setup.ts documents this in full; text-field.test.tsx is the proven precedent).
  */
 import { composeStories } from "@storybook/react";
+import { isNil } from "es-toolkit";
 import { expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -32,7 +33,7 @@ const MINIMUM_BOX_HEIGHT = 112;
  */
 const readTextarea = (container: HTMLElement) => {
     const control = container.querySelector("textarea");
-    if (control === null) {
+    if (isNil(control)) {
         throw new Error("expected the composed story to render a textarea");
     }
     return control;

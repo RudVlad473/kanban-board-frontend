@@ -2,6 +2,7 @@
 
 // Covered by: `e2e/boards-create.e2e.spec.ts`
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { boardSchema, createBoardInputSchema, type Board } from "@/features/boards/schemas";
@@ -55,7 +56,7 @@ export const createBoardAction = async ({ name }: { name: string }): Promise<Cre
      * than trust the generated type, mirroring `fetchBoards`/`updateThemeAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         /*
          * Named branches, never upstream text: the shared mapping selects one of this project's own
          * discriminants and the caller authors the copy (T-02-64), the same call `renameBoardAction`

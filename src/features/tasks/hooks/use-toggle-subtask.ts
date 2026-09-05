@@ -3,6 +3,7 @@
 // Covered by: `src/features/tasks/components/task-detail-modal/task-detail-modal.test.tsx`
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
@@ -108,7 +109,7 @@ export const useToggleSubtask = ({
 
             setPendingSubtaskIds((current) => new Set(current).add(subtaskId));
             queryClient.setQueryData<ToggleableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -126,10 +127,10 @@ export const useToggleSubtask = ({
             { subtaskId }: { subtaskId: string; version: number; isCompleted: boolean },
             context,
         ) => {
-            if (context !== undefined) {
+            if (!isNil(context)) {
                 const { restoredIsCompleted } = context;
                 queryClient.setQueryData<ToggleableBoard>(queryKey, (current) =>
-                    current === undefined
+                    isNil(current)
                         ? current
                         : {
                               ...current,
@@ -161,7 +162,7 @@ export const useToggleSubtask = ({
          */
         onSuccess: ({ subtask }) => {
             queryClient.setQueryData<ToggleableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -194,7 +195,7 @@ export const useToggleSubtask = ({
 
     const toggleSubtask = (subtaskId: string): void => {
         const target = subtasks.find((subtask) => subtask.id === subtaskId);
-        if (target === undefined) {
+        if (isNil(target)) {
             return;
         }
 

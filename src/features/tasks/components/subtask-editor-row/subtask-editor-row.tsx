@@ -1,5 +1,6 @@
 "use client";
 
+import { isNil } from "es-toolkit";
 import { X } from "lucide-react";
 import { useState } from "react";
 
@@ -81,7 +82,7 @@ export const SubtaskEditorRow = ({
                 errorMessage={shownErrorMessage}
                 onChange={(event) => {
                     setValue(event.target.value);
-                    if (errorMessage !== undefined) {
+                    if (!isNil(errorMessage)) {
                         setErrorMessage(undefined);
                     }
                 }}

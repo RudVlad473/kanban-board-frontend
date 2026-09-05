@@ -30,7 +30,12 @@ const loadLocalEnvFile = () => {
 
 loadLocalEnvFile();
 
-const E2E_PORT = 4173;
+/*
+ * Overridable so several checkouts can run the suite at once — each worktree exports its own
+ * `E2E_PORT` and gets its own `next start`, instead of the second run silently reusing the first
+ * one's server (`reuseExistingServer` is on off-CI, so a stale build would answer its requests).
+ */
+const E2E_PORT = Number(process.env.E2E_PORT ?? 4173);
 
 export const E2E_CONFIG = {
     SESSION_SECRET: process.env.SESSION_SECRET ?? "test-only-session-secret-not-for-production",

@@ -3,6 +3,7 @@
  * dynamic path builder below) instead of a literal; `pnpm routes:check` fails the build if one
  * reappears. Follows ADR tech/0012's `as const` pattern, keys deliberately not mirroring values.
  */
+import { isNil } from "es-toolkit";
 export const ROUTE = {
     HOME: "/",
     SIGN_IN: "/login",
@@ -27,7 +28,7 @@ const BOARD_DETAIL_PATH_PATTERN = new RegExp(`^${ROUTE.BOARDS}/([^/]+)$`);
 export const toBoardIdFromPath = (pathname: string): string | null => {
     const match = BOARD_DETAIL_PATH_PATTERN.exec(pathname);
 
-    return match !== null ? match[1] : null;
+    return !isNil(match) ? match[1] : null;
 };
 
 /**

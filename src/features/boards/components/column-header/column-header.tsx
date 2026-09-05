@@ -1,6 +1,7 @@
 "use client";
 
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
+import { isNil } from "es-toolkit";
 import { EllipsisVertical } from "lucide-react";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
@@ -89,7 +90,7 @@ export const ColumnHeader = ({
                 className="min-w-0 flex-1 font-heading-s text-heading-s text-text-muted uppercase"
             >
                 {/* The 44px tier is the kebab's touch target, which sets this row's height too. */}
-                {handleProps === undefined ? (
+                {isNil(handleProps) ? (
                     <span className="flex min-h-11 items-center gap-4">{captionRow}</span>
                 ) : (
                     /*

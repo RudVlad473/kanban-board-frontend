@@ -1,9 +1,9 @@
 /**
  * Report a raw `null`/`undefined` comparison in favour of es-toolkit's `isNil`.
  *
- * Warn, not error: ~167 pre-existing sites are frozen behind
- * `.planning/todos/pending/2026-09-02-replace-raw-null-undefined-comparisons-with-isnil.md`,
- * and erroring would fail the build on day one. New code is expected to be clean.
+ * An ERROR since 2026-09-05: the 222 sites that kept it at `warn` were migrated in one pass, so
+ * there is nothing left to grandfather. Where `null` and `undefined` are genuinely different,
+ * keep the raw comparison behind a one-line `eslint-disable-next-line` saying which and why.
  */
 const isNullLiteral = (node) => node.type === "Literal" && node.raw === "null";
 

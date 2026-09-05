@@ -1,5 +1,6 @@
 // Covered by: `e2e/boards-list.e2e.spec.ts`
 import { HydrationBoundary } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -69,7 +70,7 @@ const HeaderBoards = async ({ displayName }: { displayName: string }) => {
  */
 const OpenBoard = async ({ boardId }: { boardId: string | null }) => {
     /* No board in the URL, so nothing to read and nothing to suspend on — the shape stays the same. */
-    if (boardId === null) {
+    if (isNil(boardId)) {
         return <BoardScreen initialBoard={null} />;
     }
 

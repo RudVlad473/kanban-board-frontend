@@ -5,6 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen, within } from "@testing-library/react";
+import { isNil } from "es-toolkit";
 import { expect, it, vi } from "vitest";
 import { cdp, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -131,7 +132,7 @@ const GENERIC_DELETE_TASK_TOAST = "Couldn't delete task.Try again.";
 /** The horizontal column row — the scrolling box the `scrollIntoView` actually moves. */
 const getScrollRow = (): HTMLElement => {
     const row = document.querySelector<HTMLElement>("div.overflow-x-auto");
-    if (row === null) {
+    if (isNil(row)) {
         throw new Error("The horizontal column row is not rendered.");
     }
 
@@ -470,7 +471,7 @@ const stepRightAndMeasureScroll = async ({
         .sort((left, right) => left.rect.left - right.rect.left)
         .at(0)?.rect;
     const wasDestinationVisible =
-        destination !== undefined &&
+        !isNil(destination) &&
         destination.left >= rowRect.left &&
         destination.right <= rowRect.left + scrollRow.clientWidth;
     const scrollBefore = scrollRow.scrollLeft;
@@ -1915,7 +1916,7 @@ describeForEachDevice({
             moveTaskStub.hold();
             const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
             const target = document.querySelectorAll("section")[1].querySelector("ul");
-            if (target === null) {
+            if (isNil(target)) {
                 throw new Error("the empty column's card list did not render");
             }
 
@@ -1959,7 +1960,7 @@ describeForEachDevice({
             const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
             const lastCard = screen.getByRole("button", { name: /^Fixture Task Beta/ }).closest("li");
             const destination = document.querySelectorAll("section")[1];
-            if (lastCard === null) {
+            if (isNil(lastCard)) {
                 throw new Error("the destination column's last card did not render");
             }
             /*
@@ -2011,7 +2012,7 @@ describeForEachDevice({
             await render(<TasksAcrossColumns />);
             const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
             const sourceCard = source.closest("li");
-            if (sourceCard === null) {
+            if (isNil(sourceCard)) {
                 throw new Error("the source task's card did not render");
             }
             const target = screen.getByRole("button", { name: /^Fixture Task Beta/ });
@@ -2113,7 +2114,7 @@ describeForEachDevice({
             const source = screen.getByRole("button", { name: "Reorder Fixture Task Alpha" });
             const origin = centerOf(source);
             const target = document.querySelectorAll("section")[1].querySelector("ul");
-            if (target === null) {
+            if (isNil(target)) {
                 throw new Error("the empty column's card list did not render");
             }
 
@@ -2152,7 +2153,7 @@ describeForEachDevice({
 
                 // Assert — the shifted sibling settles into its new slot with no transition style at all.
                 const shiftedCard = screen.getByRole("button", { name: "Reorder Task Two" }).closest("li");
-                if (shiftedCard === null) {
+                if (isNil(shiftedCard)) {
                     throw new Error("Task Two's card did not render");
                 }
                 await expect.poll(() => shiftedCard.style.transition).toBe("");
@@ -2301,7 +2302,7 @@ describeForEachDevice({
             /* The conflict's own re-read, which is what shows the user the server's actual state. */
             const conflictBoard = TasksAcrossColumns.args.board;
 
-            if (conflictBoard === undefined) {
+            if (isNil(conflictBoard)) {
                 throw new Error("the story that seeds this board did not provide one");
             }
 
@@ -2626,7 +2627,7 @@ describeForEachDevice({
             updateTaskStub.queue({ status: RESULT_STATUS.CONFLICT });
             const conflictSaveBoard = TasksAcrossColumns.args.board;
 
-            if (conflictSaveBoard === undefined) {
+            if (isNil(conflictSaveBoard)) {
                 throw new Error("the story that seeds this board did not provide one");
             }
 

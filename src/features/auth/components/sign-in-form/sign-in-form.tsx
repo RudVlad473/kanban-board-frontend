@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isNil } from "es-toolkit";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { type ComponentProps, startTransition, useActionState, useEffect } from "react";
@@ -87,7 +88,7 @@ export const SignInForm = ({
      * error means this submit never reached the server, so the refusal on screen describes an older
      * one. Leaving both up put "Can't be empty" and "Invalid email or password." on screen together.
      */
-    const hasClientFieldError = errors.email !== undefined || errors.password !== undefined;
+    const hasClientFieldError = !isNil(errors.email) || !isNil(errors.password);
     const serverErrorMessage =
         forceServerError ?? (state.status === RESULT_STATUS.ERROR && !hasClientFieldError ? state.message : undefined);
 

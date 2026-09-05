@@ -2,6 +2,7 @@
 
 // Covered by: `e2e/theme.e2e.spec.ts`
 
+import { isNil } from "es-toolkit";
 import { z } from "zod";
 
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
@@ -50,7 +51,7 @@ export const updateThemeAction = async (theme: Theme): Promise<UpdateThemeResult
      * sign-up.ts work around — so `error` is widened through `unknown` rather than trusted as-is.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         return { status: RESULT_STATUS.ERROR };
     }
 

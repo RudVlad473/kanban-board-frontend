@@ -3,6 +3,7 @@
  * fields duplicated verbatim across `session.ts`/`theme.ts` today. Pure `lib/core/` module,
  * importable from both server and client code — values are non-secret cookie names and flags.
  */
+import { isNil } from "es-toolkit";
 export const COOKIE = {
     SESSION: "session",
     THEME: "theme",
@@ -51,7 +52,7 @@ export const buildClientCookieString = ({
         ["secure", secure ? "" : undefined],
     ];
     return attributes
-        .filter((attribute): attribute is [string, string] => attribute[1] !== undefined)
+        .filter((attribute): attribute is [string, string] => !isNil(attribute[1]))
         .map(([key, attributeValue]) => (attributeValue === "" ? key : `${key}=${attributeValue}`))
         .join("; ");
 };

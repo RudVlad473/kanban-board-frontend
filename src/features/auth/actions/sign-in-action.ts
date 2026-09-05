@@ -2,6 +2,7 @@
 
 // Covered by: `e2e/auth.e2e.spec.ts`
 
+import { isNil } from "es-toolkit";
 import { redirect } from "next/navigation";
 
 import { type AuthActionState } from "@/features/auth/action-state";
@@ -58,7 +59,7 @@ export const signInAction = async (_previousState: AuthActionState, formData: Fo
      */
     const jsessionId = upstreamCookie.extract(response);
 
-    if (upstreamError !== undefined || !isUpstreamIdentity(identity) || !jsessionId) {
+    if (!isNil(upstreamError) || !isUpstreamIdentity(identity) || !jsessionId) {
         // The backend collapses every 401 cause into one code — anti-enumeration (T-01-08, T-01-54).
         const problem = parseProblemDetail(upstreamError);
         return {

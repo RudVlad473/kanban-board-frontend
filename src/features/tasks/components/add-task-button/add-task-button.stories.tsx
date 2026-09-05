@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 
 import { BoardView } from "@/components/layout/board-view/board-view";
@@ -40,7 +41,7 @@ const BoardCacheSeed = ({ board, children }: { board: object; children: React.Re
 const DashboardShell = ({ columns }: { columns: { id: string; name: string; tasks: never[] }[] | null }) => {
     const header = <DashboardHeader displayName="Ada Lovelace" boards={SHELL_BOARDS} />;
 
-    return columns === null ? header : <BoardCacheSeed board={{ id: OPEN_BOARD_ID, columns }}>{header}</BoardCacheSeed>;
+    return isNil(columns) ? header : <BoardCacheSeed board={{ id: OPEN_BOARD_ID, columns }}>{header}</BoardCacheSeed>;
 };
 
 const meta: Meta<typeof AddTaskButton> = {

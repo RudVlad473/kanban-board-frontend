@@ -64,7 +64,7 @@ export const TextField = ({
 }: Props) => {
     const boxRef = useRef<HTMLDivElement>(null);
     const [typedLength, setTypedLength] = useState(0);
-    const valueLength = value === undefined ? typedLength : String(value).length;
+    const valueLength = isNil(value) ? typedLength : String(value).length;
 
     /*
      * One post-mount DOM read, because `register()` writes a form's default value straight through
@@ -154,7 +154,7 @@ export const TextField = ({
                         match={true}
                         className={cn(
                             "min-w-0 truncate font-body-l text-body-l text-text-danger",
-                            counterText !== null && "sr-only",
+                            !isNil(counterText) && "sr-only",
                         )}
                     >
                         {errorMessage}
@@ -164,7 +164,7 @@ export const TextField = ({
                 {/* `aria-hidden` because the fragment "12/32" states no bound on its own; the prose
                     above is what carries the constraint to assistive tech, in full, whenever the
                     field is invalid. */}
-                {counterText !== null ? (
+                {!isNil(counterText) ? (
                     <span
                         aria-hidden="true"
                         className={cn(

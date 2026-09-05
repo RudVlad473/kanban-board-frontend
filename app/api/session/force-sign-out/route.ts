@@ -1,4 +1,5 @@
 // Covered by: `e2e/session-bridge.e2e.spec.ts`
+import { isNil } from "es-toolkit";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { ROUTE } from "@/lib/core/routing/routes";
@@ -24,7 +25,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
      * (`e2e/session-bridge.e2e.spec.ts`'s SESSION-01 and SESSION-03 cover both directions).
      */
     const secFetchSite = request.headers.get("sec-fetch-site");
-    if (secFetchSite === null || !ALLOWED_FETCH_SITES.has(secFetchSite)) {
+    if (isNil(secFetchSite) || !ALLOWED_FETCH_SITES.has(secFetchSite)) {
         return new NextResponse(null, { status: 403 });
     }
 

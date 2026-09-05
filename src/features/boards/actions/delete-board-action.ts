@@ -1,5 +1,6 @@
 "use server";
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { deleteBoardInputSchema } from "@/features/boards/schemas";
@@ -47,7 +48,7 @@ export const deleteBoardAction = async ({ boardId }: { boardId: string }): Promi
      * than trust the generated type, mirroring `renameBoardAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         return { status: RESULT_STATUS.ERROR };
     }
 

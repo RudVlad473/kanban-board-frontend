@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { isNil } from "es-toolkit";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { boardFullSchema, columnFullSchema, columnSchema, boardSchema } from "@/features/boards/schemas";
@@ -40,8 +41,8 @@ const buildUpstreamUrl = ({
      * An unsupplied segment is left as its literal placeholder rather than blanked — that is what
      * `openapi-fetch`'s own serializer produces (03-RESEARCH.md Pitfall 2).
      */
-    const withBoard = boardId === undefined ? path : path.replace("{boardId}", boardId);
-    const resolved = columnId === undefined ? withBoard : withBoard.replace("{columnId}", columnId);
+    const withBoard = isNil(boardId) ? path : path.replace("{boardId}", boardId);
+    const resolved = isNil(columnId) ? withBoard : withBoard.replace("{columnId}", columnId);
 
     return `${baseUrl}${resolved}?userId=${userId}`;
 };
@@ -105,7 +106,7 @@ const createColumnUpstream = async ({
         method: "POST",
         headers: { "Content-Type": "application/json", Cookie: `JSESSIONID=${account.jsessionId}` },
         /* Mirrors the action's own `parsed.data.color !== undefined` guard — an omitted key, not an explicit `undefined`. */
-        body: JSON.stringify({ name, ...(color !== undefined ? { color } : {}) }),
+        body: JSON.stringify({ name, ...(!isNil(color) ? { color } : {}) }),
     });
 
     return { status: response.status, ok: response.ok, body: await response.json().catch(() => null) };

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isNil } from "es-toolkit";
 import { cache } from "react";
 
 import { sortColumnsByPosition, sortTasksByPosition } from "@/features/boards/model";
@@ -48,7 +49,7 @@ const fetchBoardFullById = cache(async (boardId: string): Promise<FetchBoardFull
      * than trust the generated type, mirroring `fetchBoards`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         return UNREACHABLE_BOARD_STATUSES.has(response.status)
             ? { status: RESULT_STATUS.NOT_FOUND }
             : { status: RESULT_STATUS.ERROR };

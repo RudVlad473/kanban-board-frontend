@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { isNil } from "es-toolkit";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { sortColumnsByPosition } from "@/features/boards/model";
@@ -41,8 +42,8 @@ const buildUpstreamUrl = ({
      * An unsupplied segment is left as its literal placeholder rather than blanked — that is what
      * `openapi-fetch`'s own serializer produces (03-RESEARCH.md Pitfall 2).
      */
-    const withBoard = boardId === undefined ? path : path.replace("{boardId}", boardId);
-    const resolved = columnId === undefined ? withBoard : withBoard.replace("{columnId}", columnId);
+    const withBoard = isNil(boardId) ? path : path.replace("{boardId}", boardId);
+    const resolved = isNil(columnId) ? withBoard : withBoard.replace("{columnId}", columnId);
 
     return `${baseUrl}${resolved}?userId=${userId}`;
 };

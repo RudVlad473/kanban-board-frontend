@@ -80,6 +80,12 @@ export const BoardCard = ({
                         event.preventDefault();
                     }
                 }}
+                /* React's `onClick` never fires for a middle click, so the raw `href` needs its own guard. */
+                onAuxClick={(event) => {
+                    if (isUnconfirmed) {
+                        event.preventDefault();
+                    }
+                }}
                 className={cn(
                     "mr-6 flex h-11 min-w-0 items-center gap-2 rounded-r-full pr-11 pl-6 font-body-m text-body-m",
                     isSelected ? "bg-bg-primary text-text-on-primary" : "text-text-muted hover:text-text-primary",

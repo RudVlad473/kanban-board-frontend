@@ -3,6 +3,7 @@
 // Covered by: `src/features/tasks/components/edit-task-modal/edit-task-modal.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
@@ -81,12 +82,12 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
 
             setPendingSubtaskIds((current) => new Set(current).add(subtaskId));
             queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : { ...current, columns: withSubtaskRemove({ columns: current.columns, taskId, subtaskId }) },
             );
 
-            if (removedSubtask === undefined) {
+            if (isNil(removedSubtask)) {
                 return undefined;
             }
 
@@ -104,9 +105,9 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, _variables, context) => {
-            if (context !== undefined) {
+            if (!isNil(context)) {
                 queryClient.setQueryData<DeletableBoard>(queryKey, (current) =>
-                    current === undefined ? current : { ...current, columns: context.undo(current) },
+                    isNil(current) ? current : { ...current, columns: context.undo(current) },
                 );
             }
 
@@ -140,7 +141,7 @@ export const useDeleteSubtask = ({ boardId, taskId }: { boardId: string; taskId:
         const board = queryClient.getQueryData<DeletableBoard>(queryKey);
         const columnId = board?.columns.find((column) => column.tasks.some((task) => task.id === taskId))?.id;
 
-        if (columnId === undefined) {
+        if (isNil(columnId)) {
             return;
         }
 

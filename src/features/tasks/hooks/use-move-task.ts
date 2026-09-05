@@ -3,6 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
@@ -79,7 +80,7 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
             const sourceIndex = sourceColumn?.tasks.findIndex((task) => task.id === taskId) ?? -1;
 
             queryClient.setQueryData<MovableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -93,16 +94,16 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
             );
 
             /* Moves THIS task back only — a snapshot restore would also undo a sibling write. */
-            return sourceColumn !== undefined ? { sourceColumnId: sourceColumn.id, sourceIndex } : undefined;
+            return !isNil(sourceColumn) ? { sourceColumnId: sourceColumn.id, sourceIndex } : undefined;
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { taskId }: MoveTaskVariables, context) => {
-            if (context !== undefined) {
+            if (!isNil(context)) {
                 const { sourceColumnId, sourceIndex } = context;
 
                 queryClient.setQueryData<MovableBoard>(queryKey, (current) =>
-                    current === undefined
+                    isNil(current)
                         ? current
                         : {
                               ...current,
@@ -135,7 +136,7 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
          */
         onSuccess: ({ task }) => {
             queryClient.setQueryData<MovableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -157,7 +158,7 @@ export const useMoveTask = ({ boardId }: { boardId: string }) => {
             ?.columns.flatMap((column) => column.tasks)
             .find((task) => task.id === taskId);
 
-        if (movedTask === undefined) {
+        if (isNil(movedTask)) {
             return;
         }
 

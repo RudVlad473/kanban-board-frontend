@@ -3,6 +3,7 @@
 // Covered by: `src/components/layout/board-view/board-view.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
@@ -69,7 +70,7 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
                 ?.columns.find((column) => column.id === columnId)?.name;
 
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -85,10 +86,10 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { columnId }: RenameColumnArgs, context) => {
-            if (context?.previousName !== undefined) {
+            if (!isNil(context?.previousName)) {
                 const restoredName = context.previousName;
                 queryClient.setQueryData<BoardFull>(queryKey, (current) =>
-                    current === undefined
+                    isNil(current)
                         ? current
                         : {
                               ...current,
@@ -109,7 +110,7 @@ export const useRenameColumn = ({ boardId }: { boardId: string }) => {
          */
         onSuccess: ({ column }) => {
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,

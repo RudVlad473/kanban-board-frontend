@@ -3,6 +3,7 @@
 // Covered by: `src/features/tasks/components/task-detail-modal/task-detail-modal.test.tsx`
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
@@ -87,7 +88,7 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
                 .find((task) => task.id === taskId);
 
             queryClient.setQueryData<UpdatableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -96,17 +97,17 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
             );
 
             /* Restores THIS task's fields only — a snapshot restore would also undo a sibling write. */
-            return previousTask !== undefined
+            return !isNil(previousTask)
                 ? { previousTitle: previousTask.title, previousDescription: previousTask.description }
                 : undefined;
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, { taskId }: UpdateTaskVariables, context) => {
-            if (context !== undefined) {
+            if (!isNil(context)) {
                 const { previousTitle, previousDescription } = context;
                 queryClient.setQueryData<UpdatableBoard>(queryKey, (current) =>
-                    current === undefined
+                    isNil(current)
                         ? current
                         : {
                               ...current,
@@ -138,7 +139,7 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
          */
         onSuccess: ({ task }) => {
             queryClient.setQueryData<UpdatableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -159,7 +160,7 @@ export const useUpdateTask = ({ boardId }: { boardId: string }) => {
         const target = board?.columns.flatMap((column) => column.tasks).find((task) => task.id === taskId);
         const columnId = board?.columns.find((column) => column.tasks.some((task) => task.id === taskId))?.id;
 
-        if (target === undefined || columnId === undefined) {
+        if (isNil(target) || isNil(columnId)) {
             return;
         }
 

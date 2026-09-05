@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { isNil } from "es-toolkit";
 import { beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 
@@ -41,10 +42,10 @@ const buildUpstreamUrl = ({
      * An unsupplied segment is left as its literal placeholder rather than blanked — that is what
      * `openapi-fetch`'s own serializer produces (04-RESEARCH.md Pitfall 2).
      */
-    const withBoard = boardId === undefined ? path : path.replace("{boardId}", boardId);
-    const withColumn = columnId === undefined ? withBoard : withBoard.replace("{columnId}", columnId);
-    const withTask = taskId === undefined ? withColumn : withColumn.replace("{taskId}", taskId);
-    const resolved = subtaskId === undefined ? withTask : withTask.replace("{subtaskId}", subtaskId);
+    const withBoard = isNil(boardId) ? path : path.replace("{boardId}", boardId);
+    const withColumn = isNil(columnId) ? withBoard : withBoard.replace("{columnId}", columnId);
+    const withTask = isNil(taskId) ? withColumn : withColumn.replace("{taskId}", taskId);
+    const resolved = isNil(subtaskId) ? withTask : withTask.replace("{subtaskId}", subtaskId);
 
     return `${baseUrl}${resolved}?userId=${userId}`;
 };

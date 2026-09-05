@@ -1,4 +1,5 @@
 import type { Announcements, UniqueIdentifier } from "@dnd-kit/core";
+import { isNil } from "es-toolkit";
 
 import type { Subtask, Task, TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildColumnBodyDroppableId } from "@/lib/core/drag/drag-items";
@@ -58,7 +59,7 @@ export const toTaskMoveTargetPosition = ({
 }): number => {
     const remaining = destinationTaskIds.filter((id) => id !== taskId);
 
-    if (overTaskId === null) {
+    if (isNil(overTaskId)) {
         return remaining.length;
     }
 
@@ -95,7 +96,7 @@ export const moveTaskInColumns = <C extends TaskColumn>({
 }): C[] => {
     const movedTask = columns.flatMap((column) => column.tasks).find((task) => task.id === taskId);
 
-    if (movedTask === undefined) {
+    if (isNil(movedTask)) {
         return columns;
     }
 
@@ -207,8 +208,8 @@ export const withTaskRestore = <C extends TaskColumn>({
             return column;
         }
 
-        const anchorIndex = afterTaskId !== null ? column.tasks.findIndex((entry) => entry.id === afterTaskId) : -1;
-        const index = afterTaskId === null ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : column.tasks.length;
+        const anchorIndex = !isNil(afterTaskId) ? column.tasks.findIndex((entry) => entry.id === afterTaskId) : -1;
+        const index = isNil(afterTaskId) ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : column.tasks.length;
 
         return { ...column, tasks: [...column.tasks.slice(0, index), task, ...column.tasks.slice(index)] };
     });
@@ -276,9 +277,10 @@ export const withSubtaskRestore = <C extends TaskColumn>({
                 return task;
             }
 
-            const anchorIndex =
-                afterSubtaskId !== null ? task.subtasks.findIndex((entry) => entry.id === afterSubtaskId) : -1;
-            const index = afterSubtaskId === null ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : task.subtasks.length;
+            const anchorIndex = !isNil(afterSubtaskId)
+                ? task.subtasks.findIndex((entry) => entry.id === afterSubtaskId)
+                : -1;
+            const index = isNil(afterSubtaskId) ? 0 : anchorIndex !== -1 ? anchorIndex + 1 : task.subtasks.length;
 
             return { ...task, subtasks: [...task.subtasks.slice(0, index), subtask, ...task.subtasks.slice(index)] };
         }),
@@ -391,7 +393,7 @@ export const createTaskMoveAnnouncements = ({
     const resolveColumnBody = (id: UniqueIdentifier): { column: string; position: string; total: string } | null => {
         const column = columns.find((entry) => buildColumnBodyDroppableId(entry.id) === String(id));
 
-        return column !== undefined
+        return !isNil(column)
             ? {
                   column: column.name,
                   position: String(column.tasks.length + 1),
@@ -408,21 +410,21 @@ export const createTaskMoveAnnouncements = ({
         onDragStart: (event) => {
             const task = resolveTask(event.active.id);
 
-            return task === null
+            return isNil(task)
                 ? fallback.onDragStart(event)
                 : `Picked up ${task.title} from ${task.column}, position ${task.position} of ${task.total}. Use arrow keys to move, space to drop, escape to cancel.`;
         },
 
         onDragOver: (event) => {
             const task = resolveTask(event.active.id);
-            if (task === null) {
+            if (isNil(task)) {
                 return fallback.onDragOver(event);
             }
 
             /* The library fires this once on the lift, over the item's own slot — announcing that would overwrite "Picked up …". */
             const target =
-                event.over !== null && event.over.id !== event.active.id ? resolveTarget(event.over.id) : null;
-            if (target === null) {
+                !isNil(event.over) && event.over.id !== event.active.id ? resolveTarget(event.over.id) : null;
+            if (isNil(target)) {
                 return undefined;
             }
 
@@ -434,13 +436,13 @@ export const createTaskMoveAnnouncements = ({
 
         onDragEnd: (event) => {
             const task = resolveTask(event.active.id);
-            if (task === null) {
+            if (isNil(task)) {
                 return fallback.onDragEnd(event);
             }
 
-            const target = event.over !== null ? resolveTarget(event.over.id) : null;
+            const target = !isNil(event.over) ? resolveTarget(event.over.id) : null;
 
-            return target !== null
+            return !isNil(target)
                 ? `${task.title} dropped in ${target.column} at position ${target.position} of ${target.total}.`
                 : undefined;
         },
@@ -448,7 +450,7 @@ export const createTaskMoveAnnouncements = ({
         onDragCancel: (event) => {
             const task = resolveTask(event.active.id);
 
-            return task === null
+            return isNil(task)
                 ? fallback.onDragCancel(event)
                 : `Move cancelled. ${task.title} returned to ${task.column}, position ${task.position} of ${task.total}.`;
         },

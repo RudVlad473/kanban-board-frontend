@@ -1,6 +1,7 @@
 // Covered by: `e2e/boards-list.e2e.spec.ts`
 import "server-only";
 
+import { isNil } from "es-toolkit";
 import { cache } from "react";
 
 import { boardsSchema, type Board } from "@/features/boards/schemas";
@@ -38,7 +39,7 @@ export const fetchBoards = cache(async (): Promise<FetchBoardsResult> => {
      * than trust the generated type, mirroring `updateThemeAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         return { status: RESULT_STATUS.ERROR };
     }
 

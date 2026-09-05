@@ -9,6 +9,7 @@ import {
     type ClientRect,
     type CollisionDetection,
 } from "@dnd-kit/core";
+import { isNil } from "es-toolkit";
 
 import { buildColumnBodyDroppableId, DRAG_ITEM_TYPE, type DragItemType } from "@/lib/core/drag/drag-items";
 
@@ -52,7 +53,7 @@ export const isDraggedBelowCard = ({
 }: {
     draggedRect: ClientRect | null;
     cardRect: ClientRect;
-}): boolean => draggedRect !== null && toCentreY(draggedRect) > toCentreY(cardRect);
+}): boolean => !isNil(draggedRect) && toCentreY(draggedRect) > toCentreY(cardRect);
 
 // comment-length-exempt: records which strategy each drag kind gets and the regression a blanket swap would cause — a settled branch a future reader would otherwise collapse into one strategy (docs/adr/tech/0023)
 /**
@@ -86,7 +87,7 @@ export const createTaskAwareCollisionDetection = ({
         const collisions = pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
         const overId = getFirstCollision(collisions, "id");
 
-        if (overId === null) {
+        if (isNil(overId)) {
             return collisions;
         }
 
@@ -105,7 +106,7 @@ export const createTaskAwareCollisionDetection = ({
         );
 
         /* Nothing this board owns, or an empty column — either way the first collision is the answer. */
-        if (hovered === undefined || hovered.taskIds.length === 0) {
+        if (isNil(hovered) || hovered.taskIds.length === 0) {
             return collisions;
         }
 

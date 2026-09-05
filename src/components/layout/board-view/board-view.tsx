@@ -91,10 +91,10 @@ export const BoardView = ({
      */
     const [openCount, setOpenCount] = useState(0);
     const [columnBeingRenamed, setColumnBeingRenamed] = useState<ColumnFull | null>(
-        defaultRenameColumnTargetIndex !== undefined ? (board.columns[defaultRenameColumnTargetIndex] ?? null) : null,
+        !isNil(defaultRenameColumnTargetIndex) ? (board.columns[defaultRenameColumnTargetIndex] ?? null) : null,
     );
     const [columnBeingDeleted, setColumnBeingDeleted] = useState<ColumnFull | null>(
-        defaultDeleteColumnTargetIndex !== undefined ? (board.columns[defaultDeleteColumnTargetIndex] ?? null) : null,
+        !isNil(defaultDeleteColumnTargetIndex) ? (board.columns[defaultDeleteColumnTargetIndex] ?? null) : null,
     );
     /*
      * An ID, not a snapshot — a snapshot task/column pair would go stale the moment the Current
@@ -279,7 +279,7 @@ export const BoardView = ({
                         in place at reduced opacity; the settle is dropped entirely under reduce-motion. */}
                     {/* null disables dnd-kit's drop animation; undefined means "use its default". */}
                     <DragOverlay dropAnimation={prefersReducedMotion || wasTaskLifted ? null : undefined}>
-                        {liftedTask !== null ? (
+                        {!isNil(liftedTask) ? (
                             /* The card's own anatomy minus its controls — a preview, not a second interactive copy. */
                             <div className="flex w-70 flex-col gap-2 rounded-md bg-bg-surface py-6 pr-2 pl-4 shadow-lg">
                                 <span className="font-heading-m text-heading-m break-words text-text-primary">
@@ -294,7 +294,7 @@ export const BoardView = ({
                             </div>
                         ) : null}
 
-                        {liftedColumn !== null ? (
+                        {!isNil(liftedColumn) ? (
                             <div className="flex w-70 items-center gap-4 rounded-sm bg-bg-surface px-2 py-3 font-heading-s text-heading-s text-text-muted uppercase shadow-lg">
                                 <span
                                     aria-hidden="true"
@@ -324,10 +324,10 @@ export const BoardView = ({
                  * so any pending flag it could read belongs to a DIFFERENT column's create.
                  */
                 isPending={false}
-                defaultValues={retryColumnName !== null ? { name: retryColumnName } : undefined}
+                defaultValues={!isNil(retryColumnName) ? { name: retryColumnName } : undefined}
             />
 
-            {columnBeingRenamed !== null ? (
+            {!isNil(columnBeingRenamed) ? (
                 <RenameColumnModal
                     /* Keyed on the target column, so reopening on another header seeds that column's name. */
                     key={columnBeingRenamed.id}
@@ -340,7 +340,7 @@ export const BoardView = ({
                 />
             ) : null}
 
-            {columnBeingDeleted !== null ? (
+            {!isNil(columnBeingDeleted) ? (
                 <DeleteColumnConfirm
                     /* Keyed on the target column, so reopening on another header names that column. */
                     key={columnBeingDeleted.id}
@@ -354,7 +354,7 @@ export const BoardView = ({
                 />
             ) : null}
 
-            {openTask !== null ? (
+            {!isNil(openTask) ? (
                 <TaskDetailModal
                     /*
                      * Prefixed, not a bare id: `DeleteTaskConfirm` below is this modal's own sibling
@@ -374,7 +374,7 @@ export const BoardView = ({
                 />
             ) : null}
 
-            {taskBeingDeleted !== null && taskBeingDeletedColumn !== undefined ? (
+            {!isNil(taskBeingDeleted) && !isNil(taskBeingDeletedColumn) ? (
                 <DeleteTaskConfirm
                     /* Prefixed for the same reason as `TaskDetailModal`'s own key just above. */
                     key={`delete-task-${taskBeingDeleted.id}`}

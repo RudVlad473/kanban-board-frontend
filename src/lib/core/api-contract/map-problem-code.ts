@@ -1,3 +1,5 @@
+import { isNil } from "es-toolkit";
+
 import { PROBLEM_CODE, type ProblemCode } from "@/lib/core/api-contract/problem-detail";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 
@@ -32,4 +34,4 @@ const UPSTREAM_CODE_TO_STATUS: Partial<Record<ProblemCode, UpstreamFailureStatus
  * Takes `undefined` directly, since `parseProblemDetail` returns null for anything it cannot read.
  */
 export const mapProblemCodeToStatus = (code: ProblemCode | undefined): UpstreamFailureStatus =>
-    (code !== undefined ? UPSTREAM_CODE_TO_STATUS[code] : undefined) ?? RESULT_STATUS.ERROR;
+    (!isNil(code) ? UPSTREAM_CODE_TO_STATUS[code] : undefined) ?? RESULT_STATUS.ERROR;

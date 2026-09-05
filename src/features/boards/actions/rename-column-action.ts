@@ -1,5 +1,6 @@
 "use server";
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { columnSchema, renameColumnInputSchema, type Column } from "@/features/boards/schemas";
@@ -70,7 +71,7 @@ export const renameColumnAction = async ({
      * than trust the generated type, mirroring `renameBoardAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         return { status: mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code) };
     }
 

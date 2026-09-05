@@ -1,5 +1,6 @@
 "use server";
 
+import { isNil } from "es-toolkit";
 import { refresh } from "next/cache";
 
 import { columnSchema, createColumnInputSchema, type Column } from "@/features/boards/schemas";
@@ -59,7 +60,7 @@ export const createColumnAction = async ({
     const { data, error } = await externalApi.POST(EXTERNAL_PATH.BOARD_COLUMNS, {
         params: { path: { boardId: parsed.data.boardId }, query: { userId: record.id } },
         /* Sent only when present — an explicit `color: undefined` key is not the same as an omitted one to every serializer. */
-        body: { name: parsed.data.name, ...(parsed.data.color !== undefined ? { color: parsed.data.color } : {}) },
+        body: { name: parsed.data.name, ...(!isNil(parsed.data.color) ? { color: parsed.data.color } : {}) },
     });
 
     /*
@@ -67,7 +68,7 @@ export const createColumnAction = async ({
      * than trust the generated type, mirroring `renameBoardAction`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         const status = mapProblemCodeToStatus(parseProblemDetail(upstreamError)?.code);
 
         /*

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { PanelLeft } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -66,7 +67,7 @@ export const BoardList = ({
         setFalse: closeAddBoard,
     } = useBoolean(defaultIsAddBoardOpen);
     const [boardBeingRenamed, setBoardBeingRenamed] = useState<Board | null>(
-        defaultRenameTargetIndex !== undefined ? (boards[defaultRenameTargetIndex] ?? null) : null,
+        !isNil(defaultRenameTargetIndex) ? (boards[defaultRenameTargetIndex] ?? null) : null,
     );
     /*
      * WR-01/WR-02 (02-REVIEW.md): scopes `useRenameBoard`'s shared `isPending` flag to the
@@ -75,7 +76,7 @@ export const BoardList = ({
      */
     const [pendingRenameBoardId, setPendingRenameBoardId] = useState<string | null>(null);
     const [boardBeingDeleted, setBoardBeingDeleted] = useState<Board | null>(
-        defaultDeleteTargetIndex !== undefined ? (boards[defaultDeleteTargetIndex] ?? null) : null,
+        !isNil(defaultDeleteTargetIndex) ? (boards[defaultDeleteTargetIndex] ?? null) : null,
     );
     /*
      * Scoped to the sidebar deliberately: D-15 names the sidebar, and the dashboard header's board
@@ -208,11 +209,11 @@ export const BoardList = ({
                 onSubmit={handleSubmit}
                 /* Never pending: the modal no longer outlives the submit that closes it. */
                 isPending={false}
-                defaultValues={retryValues !== null ? { name: retryValues.name } : undefined}
+                defaultValues={!isNil(retryValues) ? { name: retryValues.name } : undefined}
                 defaultColumns={retryValues?.columns}
             />
 
-            {boardBeingRenamed !== null ? (
+            {!isNil(boardBeingRenamed) ? (
                 <EditBoardModal
                     /* Keyed on the target board, so reopening on another row seeds that row's own name. */
                     key={boardBeingRenamed.id}
@@ -228,7 +229,7 @@ export const BoardList = ({
                 />
             ) : null}
 
-            {boardBeingDeleted !== null ? (
+            {!isNil(boardBeingDeleted) ? (
                 <DeleteBoardConfirm
                     /* Keyed on the target board, so reopening on another row names that row's own board. */
                     key={boardBeingDeleted.id}

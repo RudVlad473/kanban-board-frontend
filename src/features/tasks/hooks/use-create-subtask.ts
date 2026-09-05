@@ -3,6 +3,7 @@
 // Covered by: `src/features/tasks/components/edit-task-modal/edit-task-modal.test.tsx`
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
 import { useState } from "react";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
@@ -104,7 +105,7 @@ export const useCreateSubtask = ({
             setPendingClientIds((current) => new Set(current).add(clientId));
             /* Placeholder fields are inert — the server owns `isCompleted`/`version`, replaced on success. */
             queryClient.setQueryData<CreatableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,
@@ -125,9 +126,9 @@ export const useCreateSubtask = ({
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (error: unknown, _variables, context) => {
-            if (context !== undefined) {
+            if (!isNil(context)) {
                 queryClient.setQueryData<CreatableBoard>(queryKey, (current) =>
-                    current === undefined ? current : { ...current, columns: context.undo(current) },
+                    isNil(current) ? current : { ...current, columns: context.undo(current) },
                 );
             }
 
@@ -138,7 +139,7 @@ export const useCreateSubtask = ({
         onSuccess: ({ subtask }, { clientId }) => {
             /* The placeholder row is swapped for the server's real id/version — never inserted twice. */
             queryClient.setQueryData<CreatableBoard>(queryKey, (current) =>
-                current === undefined
+                isNil(current)
                     ? current
                     : {
                           ...current,

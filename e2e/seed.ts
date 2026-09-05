@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
 
+import { isNil } from "es-toolkit";
+
 import { E2E_CONFIG } from "./test-env";
 import { recordSeededUserId, SEED_SCOPE } from "../src/test-utils/seeded-user-registry";
 
@@ -112,7 +114,7 @@ export const seedTask = ({
             columnId,
             "--title",
             title,
-            ...(description !== undefined ? ["--description", description] : []),
+            ...(!isNil(description) ? ["--description", description] : []),
         ]),
     ) as SeededTask;
 

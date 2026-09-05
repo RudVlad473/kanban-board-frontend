@@ -14,7 +14,9 @@ import { useDeleteSubtask } from "@/features/tasks/hooks/use-delete-subtask";
 import { useRenameSubtask } from "@/features/tasks/hooks/use-rename-subtask";
 import { type TaskColumn } from "@/features/tasks/model";
 import { editTaskFormSchema, type EditTaskFormValues, type EditTaskSubmitValues } from "@/features/tasks/schemas";
+import { useUnconfirmedIds } from "@/lib/client/use-unconfirmed-ids";
 import { TASK_TITLE_MAX_LENGTH, type TaskFull } from "@/lib/core/api-contract/task-schemas";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 
 type Props = {
     task: TaskFull;
@@ -53,6 +55,7 @@ export const EditTaskModal = ({ task, boardId, columns, onClose, onSubmit, isPen
     const { subtasks, createSubtask, isCreatingSubtask } = useCreateSubtask({ boardId, taskId: task.id, columns });
     const { renameSubtask, isSubtaskPending: isRenamePending } = useRenameSubtask({ boardId, taskId: task.id });
     const { deleteSubtask, isSubtaskPending: isDeletePending } = useDeleteSubtask({ boardId, taskId: task.id });
+    const unconfirmedSubtaskIds = useUnconfirmedIds({ mutationKey: MUTATION_KEY.CREATE_SUBTASK });
     const [draftRowIds, setDraftRowIds] = useState<string[]>([]);
 
     const titleErrorMessage = forceTitleError ?? errors.title?.message;
@@ -115,6 +118,10 @@ export const EditTaskModal = ({ task, boardId, columns, onClose, onSubmit, isPen
                             Subtask changes save as you make them.
                         </p>
 
+                        {/*
+                         * `unconfirmedSubtaskIds` too: an optimistic insert puts the new subtask in
+                         * THIS list alongside its own draft row, carrying the placeholder id.
+                         */}
                         {subtasks.map((subtask, index) => {
                             return (
                                 <SubtaskEditorRow
@@ -122,7 +129,11 @@ export const EditTaskModal = ({ task, boardId, columns, onClose, onSubmit, isPen
                                     title={subtask.title}
                                     isDraft={false}
                                     rowLabel={`Subtask ${String(index + 1)}`}
-                                    isPending={isRenamePending(subtask.id) || isDeletePending(subtask.id)}
+                                    isPending={
+                                        isRenamePending(subtask.id) ||
+                                        isDeletePending(subtask.id) ||
+                                        unconfirmedSubtaskIds.has(subtask.id)
+                                    }
                                     onCommit={(title) => renameSubtask({ subtaskId: subtask.id, title })}
                                     onRemove={() => {
                                         deleteSubtask(subtask.id);
