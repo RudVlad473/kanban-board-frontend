@@ -104,5 +104,6 @@ export const BoardScreen = ({ initialBoard }: Props) => {
         return <BoardViewSkeleton />;
     }
 
-    return <BoardView board={board} />;
+    /* Keyed on the board id: a new board is a new view, so the row starts at the beginning and board-scoped modal state does not follow the user across. */
+    return <BoardView key={board.id} board={board} />;
 };
