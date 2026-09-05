@@ -20,9 +20,6 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 
 const SIGN_IN_TIMEOUT_MS = 20_000;
 
-/** Long enough to interact inside the in-flight window, short enough not to dominate the run. */
-const CREATE_HOLD_MS = 6000;
-
 const isServerActionPost = (request: Request): boolean =>
     request.method() === "POST" && "next-action" in request.headers();
 
@@ -43,29 +40,32 @@ const signIn = async ({ page, account, board }: { page: Page; account: SeededAcc
     await expect(page).toHaveURL(new RegExp(`${buildBoardDetailPath(board.id)}$`), { timeout: SIGN_IN_TIMEOUT_MS });
 };
 
-// comment-length-exempt: records why the hold must be releasable, and the CI-only failure the always-on version produced
+// comment-length-exempt: records why the hold is gated rather than timed, and the CI-only failure the timed version produced
 /**
- * Hold the writes the app issues, so the in-flight window is wide enough to act inside, and give
- * back the release.
+ * Park the writes the app issues until the test releases them, and give back the release.
  *
- * Releasable rather than on for the whole test: every write the test makes AFTER the one under
- * test was being delayed too, which on a slower runner was enough for the create to be refused and
- * its optimistic row rolled back — the control under assertion then did not exist at all rather
- * than being enabled. Green locally, red on CI (2026-09-05).
+ * A GATE, not a sleep. A fixed delay has to be long enough for the slowest assertion, so it holds
+ * the write open far longer than the test actually needs and widens the window for the shared
+ * backend to refuse it — the create was rolled back and the control under assertion then did not
+ * exist at all rather than being enabled. Green locally at any worker count, red on CI
+ * (2026-09-05). Gated, the write is parked for exactly as long as the assertions take.
  */
 const holdWrites = async (page: Page): Promise<() => void> => {
-    let isHolding = true;
+    let release = (): void => undefined;
+    const gate = new Promise<void>((resolve) => {
+        release = resolve;
+    });
 
     await page.route("**/*", async (route, request) => {
-        if (isHolding && isServerActionPost(request)) {
-            await new Promise((resolve) => setTimeout(resolve, CREATE_HOLD_MS));
+        if (isServerActionPost(request)) {
+            await gate;
         }
 
         await route.continue();
     });
 
     return () => {
-        isHolding = false;
+        release();
     };
 };
 
@@ -87,7 +87,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         await expect(card).toBeVisible();
         await expect(page.getByRole("button", { name: `Reorder ${title}` })).toBeDisabled();
 
-        /* Released here: only the create under test needed holding, and the settle must not wait on it. */
+        /* Released here: the guard assertions above are done, so the write may go through. */
         release();
 
         /*
@@ -120,7 +120,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         await page.keyboard.press("Escape");
         await page.keyboard.press("Escape");
 
-        /* Released here: only the create under test needed holding, and the settle must not wait on it. */
+        /* Released here: the guard assertions above are done, so the write may go through. */
         release();
 
         // Assert — the window closes when the server acknowledges it.
@@ -147,7 +147,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         await row.click({ force: true });
         await expect(page).toHaveURL(openUrl);
 
-        /* Released here: only the create under test needed holding, and the settle must not wait on it. */
+        /* Released here: the guard assertions above are done, so the write may go through. */
         release();
 
         // Assert — once acknowledged it is an ordinary row again.
@@ -219,7 +219,7 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
             await expect(removeButtons.nth(index)).toBeDisabled();
         }
 
-        /* Released here: only the create under test needed holding, and the settle must not wait on it. */
+        /* Released here: the guard assertions above are done, so the write may go through. */
         release();
 
         // Assert — and they come back once the server owns the subtask.
