@@ -65,6 +65,7 @@ const SortableRow = ({
                                 renderTasks={renderStubbedTasks(each)}
                                 isReorderDisabled={columns.length === 1}
                                 isReordering={isReordering && each.id === column.id}
+                                isUnconfirmed={false}
                                 onRename={onRename}
                                 onDelete={onDelete}
                             />
@@ -115,6 +116,7 @@ const ReorderHost = ({ onRename, onDelete }: ComponentProps<typeof SortableColum
                                     renderTasks={renderStubbedTasks(column)}
                                     isReorderDisabled={renderedColumns.length === 1}
                                     isReordering={column.id === reorderingColumnId}
+                                    isUnconfirmed={false}
                                     onRename={onRename}
                                     onDelete={onDelete}
                                 />

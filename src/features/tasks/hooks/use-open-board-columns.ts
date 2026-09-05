@@ -6,7 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { isNil } from "es-toolkit";
 import { usePathname } from "next/navigation";
 
+import { useUnconfirmedIds } from "@/lib/client/use-unconfirmed-ids";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 import { toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /*
@@ -25,6 +27,8 @@ export const useOpenBoardColumns = (): {
     columns: { id: string; name: string }[] | undefined;
 } => {
     const boardId = toBoardIdFromPath(usePathname());
+    /* OPT-01: a create posts to the column resource itself, so an unacknowledged column is no target. */
+    const unconfirmedColumnIds = useUnconfirmedIds({ mutationKey: MUTATION_KEY.CREATE_COLUMN });
     // comment-length-exempt: records why this observer declares no fetcher and why `skipToken` is not the way to say that, which is the exact substitution that poisons the shared entry
     /*
      * NO `queryFn` at all — this observer only READS the shared board entry, whose fetcher belongs
@@ -43,5 +47,7 @@ export const useOpenBoardColumns = (): {
      * this must still subscribe to. `undefined` for an ABSENT entry, which this renders above the
      * boundary for: collapsing that into `[]` made the server disagree with the hydrated client.
      */
-    return { boardId, columns: !isNil(boardId) ? board?.columns : [] };
+    const columns = board?.columns.filter((column) => !unconfirmedColumnIds.has(column.id));
+
+    return { boardId, columns: !isNil(boardId) ? columns : [] };
 };

@@ -23,6 +23,11 @@ type Props = {
     isMoveDisabled: boolean;
     /** T-04: this card was the one moved, and its PATCH has not settled yet. */
     isMoving: boolean;
+    /**
+     * OPT-01: this card's own create has not been acknowledged, so its id names no task upstream —
+     * every control that would send a request about it is inert until it has.
+     */
+    isUnconfirmed: boolean;
 };
 
 /**
@@ -30,7 +35,7 @@ type Props = {
  * it. Presentational by design — it owns no mutation state and calls no mutation hook, so its tests
  * drive it with a real local callback rather than a module mock (ADR tech/0020).
  */
-export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMoving }: Props) => {
+export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMoving, isUnconfirmed }: Props) => {
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
     // comment-length-exempt: an empirically-confirmed dnd-kit interaction a future reader would otherwise revert as unnecessary (docs/adr/tech/0023)
     /*
@@ -59,7 +64,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
         transition,
     } = useSortable({
         id: task.id,
-        disabled: { draggable: isMoveDisabled || isMoving, droppable: isColumnDragActive },
+        disabled: { draggable: isMoveDisabled || isMoving || isUnconfirmed, droppable: isColumnDragActive },
         data: { type: DRAG_ITEM_TYPE.TASK, columnId },
         attributes: { roleDescription: "draggable task" },
         /*
@@ -93,7 +98,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
     return (
         <li
             ref={setNodeRef}
-            aria-busy={isMoving}
+            aria-busy={isMoving || isUnconfirmed}
             style={{
                 transform: CSS.Transform.toString(transform),
                 /* The one motion the drag has; dropped entirely under reduce-motion rather than shortened. */
@@ -124,6 +129,8 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
              */}
             <button
                 type="button"
+                /* The detail view is where edit, delete and move live, so it stays shut until the server owns this task. */
+                disabled={isUnconfirmed}
                 onPointerDown={(event) => {
                     event.stopPropagation();
                 }}
@@ -149,7 +156,7 @@ export const TaskCard = ({ task, columnId, onOpenDetail, isMoveDisabled, isMovin
                 ref={setActivatorNodeRef}
                 variant="ghost"
                 size="md"
-                isDisabled={isMoveDisabled || isMoving}
+                isDisabled={isMoveDisabled || isMoving || isUnconfirmed}
                 label={`Reorder ${task.title}`}
                 icon={<GripVertical />}
                 className="shrink-0 cursor-grab aria-pressed:cursor-grabbing"

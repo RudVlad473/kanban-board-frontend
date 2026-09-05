@@ -27,6 +27,8 @@ import { TaskDetailModal } from "@/features/tasks/components/task-detail-modal/t
 import { useDeleteTask, type DeleteTaskArgs } from "@/features/tasks/hooks/use-delete-task";
 import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
 import { toSubtaskSummary } from "@/features/tasks/model";
+import { useUnconfirmedIds } from "@/lib/client/use-unconfirmed-ids";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 import { cn } from "@/lib/core/styling/cn";
 
 import { useBoardDragSession } from "./use-board-drag-session";
@@ -70,6 +72,13 @@ export const BoardView = ({
         initialData: seedBoard,
     });
     const renderedColumns = board.columns;
+    /*
+     * The columns and cards on screen that the server has not acknowledged yet. Their ids are
+     * client-generated placeholders, so every control that would send a request naming one is
+     * disabled below until the create settles (see `useUnconfirmedIds`).
+     */
+    const unconfirmedColumnIds = useUnconfirmedIds({ mutationKey: MUTATION_KEY.CREATE_COLUMN });
+    const unconfirmedTaskIds = useUnconfirmedIds({ mutationKey: MUTATION_KEY.CREATE_TASK });
     const {
         value: isAddColumnOpen,
         setValue: setIsAddColumnOpen,
@@ -245,6 +254,7 @@ export const BoardView = ({
                                                                 }}
                                                                 isMoveDisabled={isTaskMoveDisabled}
                                                                 isMoving={task.id === movingTaskId}
+                                                                isUnconfirmed={unconfirmedTaskIds.has(task.id)}
                                                             />
                                                         );
                                                     })}
@@ -253,6 +263,7 @@ export const BoardView = ({
                                         }}
                                         isReorderDisabled={renderedColumns.length === 1}
                                         isReordering={column.id === reorderingColumnId}
+                                        isUnconfirmed={unconfirmedColumnIds.has(column.id)}
                                         onRename={setColumnBeingRenamed}
                                         onDelete={setColumnBeingDeleted}
                                     />

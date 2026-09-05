@@ -23,6 +23,11 @@ type Props = {
     isReorderDisabled: boolean;
     /** T-03-31: this column was the one moved, and its reorder has not settled yet. */
     isReordering: boolean;
+    /**
+     * OPT-01: this column's own create has not been acknowledged, so its id names no column
+     * upstream — it cannot be reordered, renamed, deleted, or dropped into until it has.
+     */
+    isUnconfirmed: boolean;
     onRename: (column: ColumnFull) => void;
     onDelete: (column: ColumnFull) => void;
 };
@@ -32,7 +37,15 @@ type Props = {
  * handle button. Its own component because the sortable hook cannot be called inside the board
  * container's `map` — and because `pnpm tsx:check` allows one component per `.tsx`.
  */
-export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReordering, onRename, onDelete }: Props) => {
+export const SortableColumn = ({
+    column,
+    renderTasks,
+    isReorderDisabled,
+    isReordering,
+    isUnconfirmed,
+    onRename,
+    onDelete,
+}: Props) => {
     const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)", { initializeWithValue: false });
     const {
         activeIndex,
@@ -48,7 +61,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
         transition,
     } = useSortable({
         id: column.id,
-        disabled: isReorderDisabled,
+        disabled: isReorderDisabled || isUnconfirmed,
         /*
          * `columnId` so this section answers "which column is the pointer in?" the same way the body
          * droppable does — it is the only one covering the header band, where a task drop resolved
@@ -78,7 +91,8 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
     const { isOver: isBodyOver, setNodeRef: setTaskListNodeRef } = useDroppable({
         id: buildColumnBodyDroppableId(column.id),
         data: { type: DRAG_ITEM_TYPE.COLUMN_BODY, columnId: column.id },
-        disabled: !isTaskDragActive,
+        /* A task cannot be dropped into a column the server does not have — the move would 404. */
+        disabled: !isTaskDragActive || isUnconfirmed,
     });
 
     /*
@@ -97,7 +111,7 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
         <section
             ref={setNodeRef}
             aria-labelledby={`board-column-${column.id}`}
-            aria-busy={isReordering}
+            aria-busy={isReordering || isUnconfirmed}
             style={{
                 transform: CSS.Transform.toString(transform),
                 /* The one motion the drag has; dropped entirely under reduce-motion rather than shortened. */
@@ -127,9 +141,12 @@ export const SortableColumn = ({ column, renderTasks, isReorderDisabled, isReord
                 <ColumnHeader
                     column={column}
                     handleProps={
-                        !isReorderDisabled ? { setNode: setActivatorNodeRef, attributes, listeners } : undefined
+                        !isReorderDisabled && !isUnconfirmed
+                            ? { setNode: setActivatorNodeRef, attributes, listeners }
+                            : undefined
                     }
                     areMutationsDisabled={isReordering}
+                    isUnconfirmed={isUnconfirmed}
                     onRename={onRename}
                     onDelete={onDelete}
                 />

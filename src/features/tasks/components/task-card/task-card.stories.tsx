@@ -35,6 +35,7 @@ const SortableList = ({ task, columnId, onOpenDetail, isMoveDisabled, isMoving }
                                     onOpenDetail={onOpenDetail}
                                     isMoveDisabled={tasks.length === 1}
                                     isMoving={isMoving && each.id === task.id}
+                                    isUnconfirmed={false}
                                 />
                             );
                         })}

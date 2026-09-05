@@ -17,6 +17,11 @@ type Props = {
     onDelete: (board: Board) => void;
     /** WR-02 (02-REVIEW.md): disables Edit Board while THIS row has a rename already in flight. */
     isEditDisabled?: boolean;
+    /**
+     * OPT-01: this row's own create has not been acknowledged, so its id names no board upstream —
+     * following the link would 404 and both menu entries would address nothing.
+     */
+    isUnconfirmed?: boolean;
     /** Storybook-only staging for the overflow menu's open state (see BoardList's `defaultIsAddBoardOpen`). */
     defaultIsMenuOpen?: boolean;
 };
@@ -32,6 +37,7 @@ export const BoardCard = ({
     onEdit,
     onDelete,
     isEditDisabled = false,
+    isUnconfirmed = false,
     defaultIsMenuOpen = false,
 }: Props) => {
     return (
@@ -62,7 +68,18 @@ export const BoardCard = ({
              */}
             <Link
                 href={buildBoardDetailPath(board.id)}
-                prefetch={true}
+                prefetch={!isUnconfirmed}
+                /*
+                 * `aria-disabled` plus a swallowed activation, never a removed `href`: the row must
+                 * keep its shape and its place in the list while the create is in flight.
+                 */
+                aria-disabled={isUnconfirmed || undefined}
+                tabIndex={isUnconfirmed ? -1 : undefined}
+                onClick={(event) => {
+                    if (isUnconfirmed) {
+                        event.preventDefault();
+                    }
+                }}
                 className={cn(
                     "mr-6 flex h-11 min-w-0 items-center gap-2 rounded-r-full pr-11 pl-6 font-body-m text-body-m",
                     isSelected ? "bg-bg-primary text-text-on-primary" : "text-text-muted hover:text-text-primary",
@@ -73,7 +90,7 @@ export const BoardCard = ({
                 <span className="truncate">{board.name}</span>
             </Link>
 
-            <Menu.Root defaultOpen={defaultIsMenuOpen}>
+            <Menu.Root isDisabled={isUnconfirmed} defaultOpen={defaultIsMenuOpen}>
                 {/*
                  * The IconButton goes through the trigger's render prop, so the trigger's glyph is
                  * fixed by this composition and can never come to reflect a chosen item.
@@ -98,7 +115,7 @@ export const BoardCard = ({
 
                 <Menu.Content>
                     <Menu.Item
-                        isDisabled={isEditDisabled}
+                        isDisabled={isEditDisabled || isUnconfirmed}
                         onClick={() => {
                             onEdit(board);
                         }}
@@ -108,6 +125,7 @@ export const BoardCard = ({
 
                     <Menu.Item
                         isDestructive={true}
+                        isDisabled={isUnconfirmed}
                         onClick={() => {
                             onDelete(board);
                         }}

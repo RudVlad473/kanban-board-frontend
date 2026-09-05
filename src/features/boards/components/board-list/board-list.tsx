@@ -16,6 +16,8 @@ import { usePrefetchAllBoards } from "@/features/boards/hooks/use-prefetch-all-b
 import { useRenameBoard, type RenameBoardArgs } from "@/features/boards/hooks/use-rename-board";
 import { createBoardsQueryOptions } from "@/features/boards/queries/boards-query";
 import type { AddBoardSubmitValues, Board } from "@/features/boards/schemas";
+import { useUnconfirmedIds } from "@/lib/client/use-unconfirmed-ids";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 import { buildBoardDetailPath, toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /*
@@ -54,6 +56,8 @@ export const BoardList = ({
      * on the client — every board is loaded in the background so a switch has something to paint.
      */
     usePrefetchAllBoards({ boards });
+    /* OPT-01: rows whose create is still in flight — their ids name no board upstream yet. */
+    const unconfirmedBoardIds = useUnconfirmedIds({ mutationKey: MUTATION_KEY.CREATE_BOARD });
     const pathname = usePathname();
     const router = useRouter();
     const {
@@ -177,6 +181,7 @@ export const BoardList = ({
                                     onEdit={setBoardBeingRenamed}
                                     onDelete={setBoardBeingDeleted}
                                     isEditDisabled={board.id === pendingRenameBoardId}
+                                    isUnconfirmed={unconfirmedBoardIds.has(board.id)}
                                 />
                             );
                         })}

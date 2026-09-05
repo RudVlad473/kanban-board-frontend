@@ -13,7 +13,9 @@ import { useMoveTask } from "@/features/tasks/hooks/use-move-task";
 import { useToggleSubtask } from "@/features/tasks/hooks/use-toggle-subtask";
 import { useUpdateTask } from "@/features/tasks/hooks/use-update-task";
 import { toSubtaskDetailCaption, type NamedTaskColumn } from "@/features/tasks/model";
+import { useUnconfirmedIds } from "@/lib/client/use-unconfirmed-ids";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 
 type Props = {
     boardId: string;
@@ -34,6 +36,8 @@ type Props = {
 export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask }: Props) => {
     const { moveTask, isPending: isMoving } = useMoveTask({ boardId });
     const { subtasks, toggleSubtask, isSubtaskPending } = useToggleSubtask({ boardId, taskId: task.id, columns });
+    /* OPT-01: a row whose create is unacknowledged carries a placeholder id, so a toggle would 404. */
+    const unconfirmedSubtaskIds = useUnconfirmedIds({ mutationKey: MUTATION_KEY.CREATE_SUBTASK });
     const { updateTask, isPending: isSaving } = useUpdateTask({ boardId });
     const [isEditing, setIsEditing] = useState(false);
     const currentColumnId = columns.find((column) => column.tasks.some((entry) => entry.id === task.id))?.id;
@@ -154,7 +158,10 @@ export const TaskDetailModal = ({ boardId, task, columns, onClose, onDeleteTask 
                                             <SubtaskChecklistRow
                                                 subtask={subtask}
                                                 onToggle={toggleSubtask}
-                                                isPending={isSubtaskPending(subtask.id)}
+                                                isPending={
+                                                    isSubtaskPending(subtask.id) ||
+                                                    unconfirmedSubtaskIds.has(subtask.id)
+                                                }
                                             />
                                         </li>
                                     );

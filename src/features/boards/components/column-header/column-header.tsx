@@ -28,6 +28,11 @@ type Props = {
     };
     /** T-03-31: locks this column's own mutations while a reorder it was moved by is unsettled. */
     areMutationsDisabled?: boolean;
+    /**
+     * OPT-01: the create has not been acknowledged. Unlike `areMutationsDisabled` this also shuts
+     * the menu itself — there is nothing inside it that could run yet, so opening it says nothing.
+     */
+    isUnconfirmed?: boolean;
     /** Storybook-only staging for the kebab menu's open state (see BoardCard's `defaultIsMenuOpen`). */
     defaultIsMenuOpen?: boolean;
 };
@@ -43,6 +48,7 @@ export const ColumnHeader = ({
     onDelete,
     handleProps,
     areMutationsDisabled = false,
+    isUnconfirmed = false,
     defaultIsMenuOpen = false,
 }: Props) => {
     const caption = toColumnCaption({ name: column.name, taskCount: column.tasks.length });
@@ -107,7 +113,9 @@ export const ColumnHeader = ({
              * A sibling of the heading, never inside it, which is also the first of the two
              * defences against a kebab click starting a drag: it never receives the drag listeners.
              */}
-            <Menu.Root defaultOpen={defaultIsMenuOpen}>
+            {/* Disabled at the ROOT, which is what Base UI wires to the trigger — a `render`-prop
+                IconButton's own `isDisabled` is dropped by the trigger's prop merge. */}
+            <Menu.Root isDisabled={isUnconfirmed} defaultOpen={defaultIsMenuOpen}>
                 <Menu.Trigger
                     render={
                         <IconButton
@@ -123,7 +131,7 @@ export const ColumnHeader = ({
                     {/* Both entries stay available on a lone column: renaming and deleting are each
                         meaningful there, unlike dragging (UI-SPEC zero-one-many/exactly-1-column). */}
                     <Menu.Item
-                        isDisabled={areMutationsDisabled}
+                        isDisabled={areMutationsDisabled || isUnconfirmed}
                         onClick={() => {
                             onRename(column);
                         }}
@@ -134,7 +142,7 @@ export const ColumnHeader = ({
                     {/* `isDestructive` is the shared danger treatment, not a local colour choice. */}
                     <Menu.Item
                         isDestructive={true}
-                        isDisabled={areMutationsDisabled}
+                        isDisabled={areMutationsDisabled || isUnconfirmed}
                         onClick={() => {
                             onDelete(column);
                         }}
