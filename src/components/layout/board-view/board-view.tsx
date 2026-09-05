@@ -222,7 +222,10 @@ export const BoardView = ({
                      * The column row scrolls horizontally; columns keep their width rather than
                      * wrapping. The one declaration governing the motion and its opt-out lives here.
                      */}
-                    <div className="flex min-h-0 flex-1 gap-6 overflow-x-auto scroll-smooth bg-bg-app p-6 motion-reduce:scroll-auto">
+                    <div
+                        data-testid="board-columns-scroll"
+                        className="flex min-h-0 flex-1 gap-6 overflow-x-auto scroll-smooth bg-bg-app p-6 motion-reduce:scroll-auto"
+                    >
                         {/* Item ids come from the same rendered array the map walks — the library requires render order. */}
                         <SortableContext
                             items={renderedColumns.map((column) => column.id)}

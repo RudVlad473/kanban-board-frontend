@@ -140,3 +140,62 @@ test.describe("BOARD-04: switching boards shows the loaded board immediately", (
         await expect(skeleton).toHaveCount(0);
     });
 });
+
+test.describe("a board switch lands at the start of the column row", () => {
+    test("resets the carried-over scroll offset when the destination board also overflows", async ({ page }) => {
+        // Arrange — two boards, five columns each, so both overflow the viewport (fact 5).
+        const account = seedAccount();
+        const suffix = randomUUID().slice(0, 8);
+        const boardA = seedBoard({ account, name: `E2E Scroll A ${suffix}` });
+        const boardAColumnNames = ["A1", "A2", "A3", "A4", "A5"].map((label) => `${label} ${suffix}`);
+        for (const name of boardAColumnNames) {
+            seedColumn({ account, boardId: boardA.id, name });
+        }
+        const boardB = seedBoard({ account, name: `E2E Scroll B ${suffix}` });
+        const boardBColumnNames = ["B1", "B2", "B3", "B4", "B5"].map((label) => `${label} ${suffix}`);
+        for (const name of boardBColumnNames) {
+            seedColumn({ account, boardId: boardB.id, name });
+        }
+
+        const boardBLink = page.getByRole("link", { name: `E2E Scroll B ${suffix}` });
+
+        // Act — sign in, then land on board A.
+        await page.goto(ROUTE.SIGN_IN);
+        await page.getByLabel("Email", { exact: true }).fill(account.email);
+        await page.getByLabel("Password", { exact: true }).fill(account.password);
+        await page.getByRole("button", { name: "Sign In" }).click();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
+
+        await page.goto(buildBoardDetailPath(boardA.id));
+        await expect(
+            page.getByRole("heading", { name: new RegExp(`^${boardAColumnNames[0]} \\(0\\)$`, "i") }),
+        ).toBeVisible();
+
+        const scrollRow = page.getByTestId("board-columns-scroll");
+
+        // Assert — board A's row genuinely overflows, or scrolling it to 400 proves nothing.
+        await expect.poll(() => scrollRow.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeGreaterThan(400);
+
+        // Act — scroll board A's row, and wait for the (scroll-smooth) write to actually land.
+        await scrollRow.evaluate((el) => {
+            el.scrollLeft = 400;
+        });
+        await expect.poll(() => scrollRow.evaluate((el) => el.scrollLeft)).toBe(400);
+
+        // Act — the switch itself.
+        await boardBLink.click();
+        await expect(
+            page.getByRole("heading", { name: new RegExp(`^${boardBColumnNames[0]} \\(0\\)$`, "i") }),
+        ).toBeVisible();
+
+        // Assert — board B's row also overflows, or a clamped-to-zero row would pass for the wrong reason.
+        await expect.poll(() => scrollRow.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeGreaterThan(400);
+
+        // Assert — the new board's row starts at 0, not carrying board A's offset (direct reads, not polls).
+        expect(await scrollRow.evaluate((el) => el.scrollLeft)).toBe(0);
+
+        // Assert — still 0 once the switch's own fresh read has landed, so a later re-render didn't restore it.
+        await page.waitForLoadState("networkidle");
+        expect(await scrollRow.evaluate((el) => el.scrollLeft)).toBe(0);
+    });
+});
