@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildQualityObservation, compareQualityObservation, type QualityBaselineEntry } from "./quality-baseline";
+import {
+    buildQualityObservation,
+    compareQualityObservation,
+    type QualityBaselineEntry,
+    type QualityTolerances,
+} from "./quality-baseline";
 
 const KEY = "e2e/quality-fixtures.e2e.spec.ts :: quality gates > passes";
 const SPEC = "e2e/quality-fixtures.e2e.spec.ts";
@@ -139,5 +144,46 @@ describe("compareQualityObservation", () => {
         // Assert — an absent flaky rule is not reported as an improvement either.
         expect(withoutFlaky.passed).toBe(true);
         expect(withoutFlaky.improvements).toEqual([]);
+    });
+
+    const FIXED_TOLERANCES: QualityTolerances = { layoutShiftFloor: 0, layoutShiftTolerance: 1 };
+
+    it("fails when the observed layout-shift score exceeds the allowed ceiling", () => {
+        // Act
+        const result = compareQualityObservation({
+            observation: buildQualityObservation({
+                key: KEY,
+                specRelativePath: SPEC,
+                axeRuleCounts: {},
+                evaluatedRuleTotal: 100,
+                layoutShiftScore: 0.2,
+            }),
+            entry: entry({ layoutShiftScore: 0.1 }),
+            tolerances: FIXED_TOLERANCES,
+        });
+
+        // Assert
+        expect(result.passed).toBe(false);
+        const message = !result.passed ? result.message : "";
+        expect(message).toContain("layout-shift");
+        expect(message).toContain("0.2");
+    });
+
+    it("passes when the observed layout-shift score is under the allowed ceiling", () => {
+        // Act
+        const result = compareQualityObservation({
+            observation: buildQualityObservation({
+                key: KEY,
+                specRelativePath: SPEC,
+                axeRuleCounts: {},
+                evaluatedRuleTotal: 100,
+                layoutShiftScore: 0.05,
+            }),
+            entry: entry({ layoutShiftScore: 0.1 }),
+            tolerances: FIXED_TOLERANCES,
+        });
+
+        // Assert
+        expect(result.passed).toBe(true);
     });
 });

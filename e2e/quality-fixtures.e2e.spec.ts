@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "./quality-fixtures";
+import { expect, isServerActionPost, test } from "./quality-fixtures";
 import { seedAccount, seedBoard, seedColumn, seedTask, type SeededAccount, type SeededBoard } from "./seed";
 import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 
@@ -65,6 +65,48 @@ const signInThenOpenBoard = async ({
  */
 const MAIN_MUTATION_BUDGET = 25;
 
+/*
+ * Bounded per the fixture's own decision record: a long fixed delay on a write re-opens the
+ * 2026-09-05 hazard. 1500ms is well under the CI-observed backend response window and short
+ * enough that the release-gate shape (`optimistic-guards.e2e.spec.ts`) is not needed here.
+ */
+const OPTIMISTIC_DELAY_MS = 1500;
+
+/** Comfortably under `OPTIMISTIC_DELAY_MS` — the paint must land well before the write settles. */
+const OPTIMISTIC_PAINT_BUDGET_MS = 800;
+
+/** Measured across the task-create interaction below: ~0.0000184 (input-inclusive). 0.05 leaves wide headroom. */
+const LAYOUT_SHIFT_BUDGET = 0.05;
+
+declare global {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- augmenting the global Window interface via declaration merging requires `interface`; `type` cannot merge
+    interface Window {
+        __qualityExcludingShiftScore?: number;
+    }
+}
+
+/*
+ * D-K's own falsification: an independent, input-EXCLUDING accumulator, self-contained (never
+ * referencing an outer Node-scope binding — this closure is serialized by `page.evaluate`) so it
+ * can run ALONGSIDE `layoutShiftTracker`'s input-including one over the exact same interaction.
+ */
+// comment-length-exempt: records why this probe is self-contained rather than reusing e2e/quality-fixtures.ts's own installer, which is not exported for direct test use
+const INSTALL_EXCLUDING_SHIFT_PROBE = () => {
+    const isLayoutShiftEntry = (
+        entry: PerformanceEntry,
+    ): entry is PerformanceEntry & { value: number; hadRecentInput: boolean } =>
+        "value" in entry && "hadRecentInput" in entry;
+
+    window.__qualityExcludingShiftScore = 0;
+    const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+            if (!isLayoutShiftEntry(entry) || entry.hadRecentInput) continue;
+            window.__qualityExcludingShiftScore = (window.__qualityExcludingShiftScore ?? 0) + entry.value;
+        }
+    });
+    observer.observe({ type: "layout-shift", buffered: true });
+};
+
 test.describe("quality-fixtures: the harness's own standing self-test", () => {
     test("qualityGates runs passively at teardown, and the axe factory scans the settled board", async ({
         page,
@@ -121,5 +163,94 @@ test.describe("quality-fixtures: the harness's own standing self-test", () => {
         // Assert — the same vacuity discipline, applied to CDP: a real session reports a non-empty array.
         const metrics = await cdp.send("Performance.getMetrics");
         expect(metrics.metrics.length).toBeGreaterThan(0);
+    });
+
+    // comment-length-exempt: records why this case is not a duplicate of optimistic-guards.e2e.spec.ts's own create-task case, which the next reader will otherwise conclude
+    /*
+     * The window this asserts is real and distinct from `optimistic-guards.e2e.spec.ts`'s own
+     * create-task case: that spec asserts WHICH CONTROLS are inert while a write is held; this one
+     * asserts the paint precedes the network for a write that is merely delayed, not held open.
+     * A future reader should not delete either as a duplicate of the other.
+     */
+    test("optimisticRoute delays the write while the optimistic card paints first", async ({
+        page,
+        optimisticRoute,
+    }) => {
+        // Arrange
+        const account = seedAccount();
+        const board = seedBoard({ account, name: `E2E Quality Optimistic ${randomUUID().slice(0, 8)}` });
+        seedColumn({ account, boardId: board.id, name: "Alpha" });
+        await signIn({ page, account, board });
+        /*
+         * Waits out the sign-in redirect's own trailing next-action POST to this same board URL —
+         * otherwise a listener attached here catches THAT response, not the create's, and reports
+         * the write as already observed before the create was even clicked.
+         */
+        await page.waitForLoadState("networkidle");
+
+        const title = `Quality Optimistic Task ${randomUUID().slice(0, 8)}`;
+        let delayedResponseObserved = false;
+        page.on("response", (response) => {
+            if (isServerActionPost(response.request())) delayedResponseObserved = true;
+        });
+        await optimisticRoute({ urlPattern: new RegExp(buildBoardDetailPath(board.id)), delayMs: OPTIMISTIC_DELAY_MS });
+
+        // Act — create a task through the real modal; the create is delayed, never held open.
+        await page.getByRole("button", { name: "+ Add New Task" }).click();
+        await page.getByRole("dialog").getByLabel("Title", { exact: true }).fill(title);
+        await page.getByRole("dialog").getByRole("button", { name: "Create Task" }).click();
+
+        // Assert — the optimistic card paints comfortably inside the budget.
+        const card = page.getByRole("button", { name: new RegExp(`^${title}`) });
+        await expect(card).toBeVisible({ timeout: OPTIMISTIC_PAINT_BUDGET_MS });
+
+        // Assert — and the delayed write has provably not been observed at that same instant.
+        expect(delayedResponseObserved).toBe(false);
+
+        // Let the delayed write settle before the case ends, so teardown never scans a page mid-write.
+        await expect.poll(() => delayedResponseObserved, { timeout: OPTIMISTIC_DELAY_MS + 5_000 }).toBe(true);
+    });
+
+    test("layoutShiftTracker measures a real interaction, including input-initiated shifts (D-K)", async ({
+        page,
+        layoutShiftTracker,
+    }) => {
+        // Arrange — a board with several existing tasks, so a new card reflows real content below it.
+        const account = seedAccount();
+        const board = seedBoard({ account, name: `E2E Quality Shift ${randomUUID().slice(0, 8)}` });
+        const column = seedColumn({ account, boardId: board.id, name: "Alpha" });
+        for (let index = 0; index < 5; index += 1) {
+            seedTask({ account, boardId: board.id, columnId: column.id, title: `Shift Task ${String(index)}` });
+        }
+        await signIn({ page, account, board });
+        await expect(page.getByRole("heading", { name: /^alpha \(5\)$/i })).toBeVisible();
+
+        // Assert — reading before start() rejects by name, not a trivially-satisfied zero.
+        await expect(layoutShiftTracker.getScore()).rejects.toThrow("observer was never attached");
+
+        // Act — both readings installed over the SAME interaction: the tracker's own, and D-K's probe.
+        await layoutShiftTracker.start();
+        await page.evaluate(INSTALL_EXCLUDING_SHIFT_PROBE);
+
+        const title = `Shift New Task ${randomUUID().slice(0, 8)}`;
+        await page.getByRole("button", { name: "+ Add New Task" }).click();
+        await page.getByRole("dialog").getByLabel("Title", { exact: true }).fill(title);
+        await page.getByRole("dialog").getByRole("button", { name: "Create Task" }).click();
+        await expect(page.getByRole("button", { name: new RegExp(`^${title}`) })).toBeVisible();
+
+        // Assert — the measured count, with headroom (see LAYOUT_SHIFT_BUDGET).
+        await layoutShiftTracker.assertMaxLayoutShift(LAYOUT_SHIFT_BUDGET);
+
+        // Assert — D-K's falsification: the input-including reading is not smaller than the excluding one.
+        const includingScore = await layoutShiftTracker.getScore();
+        const excludingScore = await page.evaluate(() => window.__qualityExcludingShiftScore ?? 0);
+
+        if (includingScore === excludingScore) {
+            console.log(
+                `[D-K] excluding (${String(excludingScore)}) and including (${String(includingScore)}) scores were EQUAL — see the SUMMARY for which of D-K's two explanations applies.`,
+            );
+        } else {
+            expect(includingScore).toBeGreaterThan(excludingScore);
+        }
     });
 });

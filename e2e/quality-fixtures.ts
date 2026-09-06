@@ -32,9 +32,6 @@ export const isServerActionPost = (request: Request): boolean =>
  */
 const TEARDOWN_TIMEOUT_BUDGET_MS = 15_000;
 
-/** `layoutShiftScore` has no real reading until task 3 wires the document-level observer. */
-const UNMEASURED_LAYOUT_SHIFT_SENTINEL = -1;
-
 const QUALITY_RECORD_ENV_VAR = "QUALITY_RECORD_MODE";
 const isRecordMode = (): boolean => process.env[QUALITY_RECORD_ENV_VAR] === "record";
 
@@ -138,6 +135,92 @@ export type FlickerTracker = {
     readonly assertNoFlicker: (args: { selector?: string; maxMutations: number }) => Promise<void>;
 };
 
+// comment-length-exempt: records the read/write asymmetry this fixture's delay form depends on, with the dates and measurements that back it — getting this wrong reproduces a defect this repo already paid for once
+/*
+ * A fixed delay on READS is proven safe here (`boards-switch.e2e.spec.ts` holds every read for
+ * 3000ms and is CI-green). A long fixed delay on a WRITE is not: `optimistic-guards.e2e.spec.ts`
+ * had to become a release GATE because a fixed hold outlived its assertions, widened the window for
+ * the shared nonprod backend to refuse the create, and turned a locally-green suite red on CI on
+ * 2026-09-05. That release-gate shape remains the right tool for a long write hold; this fixture's
+ * delay form is for a BOUNDED window only. What would make this false: a call site needing a delay
+ * long enough to reproduce the same hazard should use the release-gate shape instead, not raise
+ * `delayMs` here.
+ */
+export type OptimisticRoute = (args: {
+    urlPattern: string | RegExp;
+    delayMs: number;
+    match?: (request: Request) => boolean;
+}) => Promise<void>;
+
+type LayoutShiftFilterPolicy = "exclude-recent-input" | "include-recent-input";
+type LayoutShiftState = { score: number; unsupported: boolean };
+
+declare global {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- augmenting the global Window interface via declaration merging requires `interface`; `type` cannot merge
+    interface Window {
+        __uiLayoutShift?: Partial<Record<LayoutShiftFilterPolicy, LayoutShiftState>>;
+    }
+}
+
+// comment-length-exempt: records why this installer takes a required filtering policy with no default, which is the whole of D-K and easy to "simplify" away by a future edit
+/*
+ * ONE installer, shared by both readings (D-K): the filtering policy is a REQUIRED parameter with
+ * no default, so neither call site can inherit the other's answer by omission. The passive gate
+ * (below) passes `"exclude-recent-input"` — standard CLS semantics; `layoutShiftTracker.start()`
+ * passes `"include-recent-input"`, because the interaction under test IS the recent input.
+ */
+const installLayoutShiftObserver = (policy: LayoutShiftFilterPolicy) => {
+    // comment-length-exempt: records why this type guard is nested rather than a module-scope const, which the outer serialization boundary requires
+    /*
+     * The Layout Instability API's entry shape is not in the DOM lib — a type guard, never a cast
+     * (`strictTypeChecked` rejects an `as`). Declared INSIDE this function, not at module scope:
+     * this whole function is serialized by `page.evaluate`/`addInitScript` and re-run in the
+     * browser, where a reference to an outer Node-scope binding is a `ReferenceError`.
+     */
+    const isLayoutShiftEntry = (
+        entry: PerformanceEntry,
+    ): entry is PerformanceEntry & { value: number; hadRecentInput: boolean } =>
+        "value" in entry && "hadRecentInput" in entry;
+
+    window.__uiLayoutShift = window.__uiLayoutShift ?? {};
+    window.__uiLayoutShift[policy] = { score: 0, unsupported: false };
+
+    try {
+        const observer = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+                if (!isLayoutShiftEntry(entry)) continue;
+                if (policy === "exclude-recent-input" && entry.hadRecentInput) continue;
+
+                const state = window.__uiLayoutShift?.[policy];
+                if (state) state.score += entry.value;
+            }
+        });
+        observer.observe({ type: "layout-shift", buffered: true });
+    } catch {
+        window.__uiLayoutShift[policy].unsupported = true;
+    }
+};
+
+const EXCLUDE_RECENT_INPUT: LayoutShiftFilterPolicy = "exclude-recent-input";
+const INCLUDE_RECENT_INPUT: LayoutShiftFilterPolicy = "include-recent-input";
+
+const readLayoutShiftState = ({
+    page,
+    policy,
+}: {
+    page: Page;
+    policy: LayoutShiftFilterPolicy;
+}): Promise<LayoutShiftState | undefined> => page.evaluate((p) => window.__uiLayoutShift?.[p], policy);
+
+export type LayoutShiftTracker = {
+    /** Installs the shared observer with the input-INCLUDING policy (D-K) — call after the route has settled. */
+    readonly start: () => Promise<void>;
+    /** The input-inclusive running total. Fails by name — never returns 0 — when the observer never attached. */
+    readonly getScore: () => Promise<number>;
+    /** Named for what it measures, not `assertMaxCLS`: an input-inclusive total is not CLS (D-K). */
+    readonly assertMaxLayoutShift: (maxAllowed: number) => Promise<void>;
+};
+
 export type QualityFixtures = {
     /** A zero-argument factory, so a probe can chain `include`/`exclude`/`withTags` per case without a shared instance leaking one case's narrowing into the next. */
     readonly axe: () => AxeBuilder;
@@ -145,6 +228,10 @@ export type QualityFixtures = {
     readonly cdp: CDPSession;
     /** Opt-in per D-F: the threshold and selector are both defined against ONE chosen interaction. */
     readonly flickerTracker: FlickerTracker;
+    /** Opt-in per D-F: a passive blanket delay would re-open the 2026-09-05 hazard on every write in the suite at once. */
+    readonly optimisticRoute: OptimisticRoute;
+    /** Opt-in: the interaction-window reading, INCLUDING input-initiated shifts (D-K) — see the passive gate for the excluding half. */
+    readonly layoutShiftTracker: LayoutShiftTracker;
     /** Passive, `auto`. Never called by a test — see the fixture declaration below. */
     readonly qualityGates: undefined;
 };
@@ -211,8 +298,67 @@ export const test = base.extend<QualityFixtures>({
         { option: true },
     ],
 
+    optimisticRoute: [
+        async ({ page }, provideFixture) => {
+            await provideFixture(async ({ urlPattern, delayMs, match = isServerActionPost }) => {
+                await page.route(urlPattern, async (route, request) => {
+                    if (match(request)) {
+                        await new Promise((resolve) => setTimeout(resolve, delayMs));
+                    }
+
+                    await route.continue();
+                });
+            });
+        },
+        { option: true },
+    ],
+
+    layoutShiftTracker: [
+        async ({ page }, provideFixture) => {
+            const getScore = async (): Promise<number> => {
+                const state = await readLayoutShiftState({ page, policy: INCLUDE_RECENT_INPUT });
+
+                if (isNil(state)) {
+                    throw new Error(
+                        "layoutShiftTracker: getScore() was called but the observer was never attached — call start() first.",
+                    );
+                }
+
+                if (state.unsupported) {
+                    throw new Error(
+                        "layoutShiftTracker: the layout-shift entry type is not supported by this browser.",
+                    );
+                }
+
+                return state.score;
+            };
+
+            await provideFixture({
+                start: () => page.evaluate(installLayoutShiftObserver, INCLUDE_RECENT_INPUT),
+                getScore,
+                assertMaxLayoutShift: async (maxAllowed) => {
+                    const score = await getScore();
+
+                    if (score > maxAllowed) {
+                        throw new Error(
+                            `layoutShiftTracker: input-inclusive shift score ${String(score)} exceeds the allowed ${String(maxAllowed)}.`,
+                        );
+                    }
+                },
+            });
+        },
+        { option: true },
+    ],
+
     qualityGates: [
         async ({ page }, provideFixture, testInfo) => {
+            /*
+             * Setup, not teardown: an init script applies to every document created after it is
+             * registered, and this runs before the test body's first navigation (D-C — this is the
+             * standard-CLS half; the interaction-window half is `layoutShiftTracker` above).
+             */
+            await page.addInitScript(installLayoutShiftObserver, EXCLUDE_RECENT_INPUT);
+
             await provideFixture(undefined);
 
             testInfo.setTimeout(testInfo.timeout + TEARDOWN_TIMEOUT_BUDGET_MS);
@@ -231,6 +377,18 @@ export const test = base.extend<QualityFixtures>({
                 );
             }
 
+            const shiftState = await readLayoutShiftState({ page, policy: EXCLUDE_RECENT_INPUT });
+
+            if (isNil(shiftState)) {
+                throw new Error("qualityGates: the layout-shift observer never attached before teardown ran.");
+            }
+
+            if (shiftState.unsupported) {
+                throw new Error(
+                    'qualityGates: the layout-shift entry type is not supported by this browser — expected devices["Desktop Chrome"] to always support it.',
+                );
+            }
+
             const results = await runAxeAnalysis(page);
             const evaluatedRuleTotal =
                 results.passes.length +
@@ -245,7 +403,7 @@ export const test = base.extend<QualityFixtures>({
                 specRelativePath,
                 axeRuleCounts: buildAxeRuleCounts(results.violations),
                 evaluatedRuleTotal,
-                layoutShiftScore: UNMEASURED_LAYOUT_SHIFT_SENTINEL,
+                layoutShiftScore: shiftState.score,
             });
 
             if (isRecordMode()) {

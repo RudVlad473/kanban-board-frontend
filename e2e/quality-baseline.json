@@ -1,18 +1,30 @@
 {
-    "recordedAt": "2026-09-06T17:05:14.069Z",
+    "recordedAt": "2026-09-06T17:34:00.255Z",
     "note": "Committed accessibility/layout-shift baseline for e2e/quality-fixtures.ts (04-23). Record with `pnpm e2e:baseline <spec>`.",
     "tests": {
         "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > qualityGates runs passively at teardown, and the axe factory scans the settled board": {
             "axeRuleCounts": {},
             "flakyRuleIds": [],
             "evaluatedRuleFloor": 90,
-            "layoutShiftScore": -1
+            "layoutShiftScore": 0.000018374125162760416
         },
         "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > flickerTracker records a real board switch, rejects a zero budget, and cdp reports live metrics": {
             "axeRuleCounts": {},
             "flakyRuleIds": [],
             "evaluatedRuleFloor": 90,
-            "layoutShiftScore": -1
+            "layoutShiftScore": 0
+        },
+        "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > optimisticRoute delays the write while the optimistic card paints first": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > layoutShiftTracker measures a real interaction, including input-initiated shifts (D-K)": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
         }
     }
 }

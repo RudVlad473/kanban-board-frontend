@@ -66,6 +66,16 @@ export type QualityComparisonResult =
     | { readonly passed: true; readonly improvements: readonly QualityImprovement[] }
     | { readonly passed: false; readonly message: string; readonly improvements: readonly QualityImprovement[] };
 
+export type QualityTolerances = { readonly layoutShiftFloor: number; readonly layoutShiftTolerance: number };
+
+// comment-length-exempt: records that these two numbers are provisional and where the eventual real derivation lives, which the constants alone cannot say
+/*
+ * Both PROVISIONAL, re-derived from a whole-suite measurement in 04-24. `layoutShiftFloor` keeps
+ * a near-zero baseline from failing on any shift at all; `layoutShiftTolerance` is the multiplier
+ * applied to `max(recorded, layoutShiftFloor)`.
+ */
+export const DEFAULT_QUALITY_TOLERANCES: QualityTolerances = { layoutShiftFloor: 0.01, layoutShiftTolerance: 1.5 };
+
 const KEY_SEPARATOR = " :: ";
 
 // comment-length-exempt: records the empirically-checked Playwright 1.62.1 titlePath fact this key format deliberately duplicates
@@ -120,9 +130,11 @@ export const buildQualityObservation = ({
 export const compareQualityObservation = ({
     observation,
     entry,
+    tolerances = DEFAULT_QUALITY_TOLERANCES,
 }: {
     observation: QualityObservation;
     entry: QualityBaselineEntry | undefined;
+    tolerances?: QualityTolerances;
 }): QualityComparisonResult => {
     if (isNil(entry)) {
         return {
@@ -189,10 +201,22 @@ export const compareQualityObservation = ({
         }
     }
 
+    /*
+     * Rule 6 — the layout-shift half, one-directional in exactly the same way (D-K): a score UNDER
+     * the baseline has never failed and never will, matching the axe half's own asymmetry.
+     */
+    const shiftCeiling =
+        Math.max(entry.layoutShiftScore, tolerances.layoutShiftFloor) * tolerances.layoutShiftTolerance;
+    if (observation.layoutShiftScore > shiftCeiling) {
+        failures.push(
+            `layout-shift score ${String(observation.layoutShiftScore)} exceeds the allowed ceiling ${String(shiftCeiling)} (recorded ${String(entry.layoutShiftScore)}, floor ${String(tolerances.layoutShiftFloor)}, tolerance ${String(tolerances.layoutShiftTolerance)})`,
+        );
+    }
+
     if (failures.length > 0) {
         return {
             passed: false,
-            message: `Accessibility regression for "${observation.key}": ${failures.join("; ")}. Re-record with \`${recordCommand}\` once addressed.`,
+            message: `Quality regression for "${observation.key}": ${failures.join("; ")}. Re-record with \`${recordCommand}\` once addressed.`,
             improvements,
         };
     }
