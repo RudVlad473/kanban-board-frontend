@@ -12,9 +12,26 @@ force-pushing.
 ## Debug against the real app, not custom scripts
 
 When verifying UI/browser behavior (layout, scroll, responsive treatment, DOM state), drive it
-through the running dev server using Playwright MCP tools — do not write throwaway Node/JS
-scripts to poke at the DOM or simulate behavior out-of-browser. Scratch scripts drift from what
-the app actually does and get left behind as untracked cruft.
+through the running dev server with real Playwright — do not write throwaway Node/JS scripts to
+poke at the DOM or simulate behavior out-of-browser. Scratch scripts drift from what the app
+actually does and get left behind as untracked cruft.
+
+**MCP to explore, the CLI to pin** (`~/.claude/TOOLING_PREFERENCES.md` § _Driving a browser_ has
+the general rule). A Playwright spec IS driving the real app, so it is never the "throwaway script"
+the paragraph above rejects — that ban is on simulating the DOM outside a browser. When the MCP
+server is unavailable, the CLI covers every check; going blind is not the fallback.
+
+Use this repo's own `e2e` project for an ad-hoc probe — it needs no separate harness. Name the spec
+`e2e/zz-<name>-*.e2e.spec.ts` (`docs/review-brief.md`) and delete it once its run finishes. Pointing
+`E2E_PORT` at the running dev server makes `reuseExistingServer` attach to it instead of running the
+`pnpm build && next start` in `e2eWebServer`, so a probe costs seconds rather than a build:
+
+```bash
+E2E_PORT=3000 pnpm exec playwright test --project=e2e e2e/zz-<name>.e2e.spec.ts
+```
+
+Measured 2026-09-06: 7.7s against the dev server. `coverage:check` and `folders:check` both pass
+with such a spec present, so it needs no `// Covered by:` header and no home outside the repo.
 
 Run the browser headless — no visible window should pop up during automated verification.
 `@playwright/mcp` is headed by default (its own `--help` says so), so this is enforced via a
