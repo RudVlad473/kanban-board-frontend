@@ -199,3 +199,142 @@ test.describe("a board switch lands at the start of the column row", () => {
         expect(await scrollRow.evaluate((el) => el.scrollLeft)).toBe(0);
     });
 });
+
+/** One committed-DOM reading of `<main>`'s two board-area testids, taken from inside the browser. */
+type StackedAreaSample = { skeleton: boolean; board: boolean; height: number };
+
+declare global {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- augmenting the global Window interface via declaration merging requires `interface`; `type` cannot merge
+    interface Window {
+        __stackedBoardAreaSamples?: StackedAreaSample[];
+        __stackedBoardAreaObserver?: MutationObserver;
+    }
+}
+
+// comment-length-exempt: records what this case asserts and, as a segregated falsifiable note, the one thing it deliberately does not hold
+/*
+ * Asserts that no COMMITTED DOM state during a board switch has `<main>` holding a
+ * `board-view-skeleton` beside a `board-columns-scroll`, and that the scroll container's height
+ * never drops below 90% of its pre-switch baseline. A `MutationObserver` on `<main>` (both testids
+ * are direct children — fact 7) records every committed childList change, because
+ * `expect(...).toHaveCount(0)` polls and is satisfied the instant the frame ends (fact 8) — it is
+ * green today with the defect present and cannot pin this bug.
+ *
+ * NOT held: this is deterministic only GIVEN the switch actually suspends. If a future router
+ * change stopped the `[boardId]` segment suspending at all, the vacuity guards below would fail
+ * (catching a broken instrument) but a scenario where suspension itself disappears would not be
+ * distinguished from a real fix — that gap is inherent to observing a transient commit, not a
+ * weakness of this instrument.
+ */
+test.describe("a board switch never stacks two board areas", () => {
+    test("never commits a skeleton beside the live board, and never halves its height", async ({ page }) => {
+        // Arrange — two boards, five columns each, so the horizontal scrollbar genuinely exists (fact 10).
+        const account = seedAccount();
+        const suffix = randomUUID().slice(0, 8);
+        const boardA = seedBoard({ account, name: `E2E Stack A ${suffix}` });
+        const boardAColumnNames = ["SA1", "SA2", "SA3", "SA4", "SA5"].map((label) => `${label} ${suffix}`);
+        for (const name of boardAColumnNames) {
+            seedColumn({ account, boardId: boardA.id, name });
+        }
+        const boardB = seedBoard({ account, name: `E2E Stack B ${suffix}` });
+        const boardBColumnNames = ["SB1", "SB2", "SB3", "SB4", "SB5"].map((label) => `${label} ${suffix}`);
+        for (const name of boardBColumnNames) {
+            seedColumn({ account, boardId: boardB.id, name });
+        }
+
+        const boardBLink = page.getByRole("link", { name: `E2E Stack B ${suffix}` });
+        const scrollRow = page.getByTestId("board-columns-scroll");
+
+        // Act — sign in, then land on board A.
+        await page.goto(ROUTE.SIGN_IN);
+        await page.getByLabel("Email", { exact: true }).fill(account.email);
+        await page.getByLabel("Password", { exact: true }).fill(account.password);
+        await page.getByRole("button", { name: "Sign In" }).click();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
+
+        await page.goto(buildBoardDetailPath(boardA.id));
+        await expect(
+            page.getByRole("heading", { name: new RegExp(`^${boardAColumnNames[0]} \\(0\\)$`, "i") }),
+        ).toBeVisible();
+
+        // Assert — the baseline is a real laid-out height, or the 90%-of-baseline check below is trivially satisfiable.
+        const baseline = await scrollRow.evaluate((el) => Math.round(el.getBoundingClientRect().height));
+        expect(baseline).toBeGreaterThan(200);
+
+        // Arrange — install the recorder on `<main>` before the switch, so it observes the whole transition.
+        await page.evaluate(() => {
+            const main = document.querySelector("main");
+            if (!main) {
+                return;
+            }
+
+            const samples: StackedAreaSample[] = [];
+            window.__stackedBoardAreaSamples = samples;
+
+            const readSample = (): StackedAreaSample => {
+                const skeletonEl = main.querySelector('[data-testid="board-view-skeleton"]');
+                const boardEl = main.querySelector('[data-testid="board-columns-scroll"]');
+                /*
+                 * Raw `=== null` checks, not `isNil`: this callback is serialized into the browser by
+                 * `page.evaluate`, which cannot resolve the `es-toolkit` import from this module's scope.
+                 */
+                return {
+                    // eslint-disable-next-line local/prefer-is-nil -- see comment above; querySelector never returns undefined here, but isNil isn't reachable in this browser-context closure
+                    skeleton: skeletonEl !== null,
+                    // eslint-disable-next-line local/prefer-is-nil -- see comment above
+                    board: boardEl !== null,
+                    // eslint-disable-next-line local/prefer-is-nil -- see comment above
+                    height: boardEl === null ? 0 : Math.round(boardEl.getBoundingClientRect().height),
+                };
+            };
+
+            const pushIfChanged = (sample: StackedAreaSample): void => {
+                const previous = samples.at(-1);
+                if (
+                    previous?.skeleton !== sample.skeleton ||
+                    previous.board !== sample.board ||
+                    previous.height !== sample.height
+                ) {
+                    samples.push(sample);
+                }
+            };
+
+            pushIfChanged(readSample());
+            const observer = new MutationObserver(() => {
+                pushIfChanged(readSample());
+            });
+            observer.observe(main, { childList: true });
+            window.__stackedBoardAreaObserver = observer;
+        });
+
+        /*
+         * Ladder rung 2 applied first per the plan's amendment: two independent reviewers needed a
+         * delayed read to reproduce deterministically, because the default suspension window is one
+         * frame wide. The hold widens the observation window; it does not weaken what is asserted.
+         */
+        await holdEveryRead(page);
+
+        // Act — the switch itself.
+        await boardBLink.click();
+        await expect(
+            page.getByRole("heading", { name: new RegExp(`^${boardBColumnNames[0]} \\(0\\)$`, "i") }),
+        ).toBeVisible();
+        await page.waitForLoadState("networkidle");
+
+        const samples = await page.evaluate(() => {
+            const recorded = window.__stackedBoardAreaSamples ?? [];
+            window.__stackedBoardAreaObserver?.disconnect();
+            return recorded;
+        });
+
+        // Assert — vacuity guards: a silently-uninstalled observer must fail here, not pass everything.
+        expect(samples.length).toBeGreaterThan(0);
+        expect(samples.some((sample) => sample.board)).toBe(true);
+
+        // Assert — the mechanism: no committed sample ever holds both testids at once.
+        expect(samples.filter((sample) => sample.skeleton && sample.board)).toEqual([]);
+
+        // Assert — the user-visible symptom: the board area never collapses below 90% of its baseline.
+        expect(samples.filter((sample) => sample.board && sample.height < baseline * 0.9)).toEqual([]);
+    });
+});
