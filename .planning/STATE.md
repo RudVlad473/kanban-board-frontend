@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: "Completed 04-23-PLAN.md (quality-verification harness: passive gate, comparator, three opt-in instruments, record mode)"
-last_updated: "2026-09-06T17:44:43.540Z"
+stopped_at: "Completed 04-24-PLAN.md (whole-project quality gate rollout: lint enforcement, 79-test baseline, contention + CI proof) - trailing checkpoint:human-verify presented, unanswered"
+last_updated: "2026-09-06T20:22:45.211Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 04 execution started
-state_head: 3a19f5a26f618ee9e07609e6dc25db4c040e475a
+state_head: 30b85c6824612bd8eaf3f080353c9568f6c0ef21
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 117
-  completed_plans: 115
+  completed_plans: 116
 milestone_name: milestone
 ---
 
@@ -32,7 +32,7 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 ## Current Position
 
 Phase: 04 (Task & Subtask Workflow) — EXECUTING
-Plan: 2 of 25
+Plan: 3 of 25
 Plan 04-22's final `checkpoint:human-verify` gate is open and blocking.
 Status: Ready to execute
 Last activity: 2026-09-06 — Phase 04 execution started
@@ -72,6 +72,7 @@ Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 22/22 (awaitin
 | Phase 04 P13 | 55min | 3 tasks | 6 files |
 | Phase 04 P14 | 70min | 3 tasks | 6 files |
 | Phase 04 P23 | ~4h | 3 tasks | 11 files |
+| Phase 04 P24 | ~3.5h | 3 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,8 @@ Recent decisions affecting current work:
   shipped `isDragging` treatment, not a testing artifact.
 - [Phase 04]: 04-23: shared browser-side installers passed to page.evaluate/addInitScript must be fully self-contained (no outer Node-scope references) — a wrapping arrow referencing an outer function silently fails to install once serialized, with the error swallowed rather than surfaced
 - [Phase 04]: 04-23: D-K's include/exclude layout-shift falsification landed EQUAL on both interactions tried (empty board switch, task-create against 5 tasks) — this app produces near-zero, non-input-attributed shift for these interactions; DEFAULT_QUALITY_TOLERANCES stays provisional pending 04-24's whole-suite measurement
+- [Phase 04]: Phase 04, 04-24: A whole-suite baseline record's per-test outlier should be re-verified with a scoped, isolated re-record before being treated as permanent (ungated) — full-suite parallel-run contention can produce a spike an isolated re-record does not reproduce.
+- [Phase 04]: Phase 04, 04-24: ESLint's @typescript-eslint/no-restricted-imports (importNames + allowTypeImports) also catches a namespace import (import * as x from 'module') form, not only the named-import form — verified live against this repo's ESLint 10.8.1, closing a bypass 04-REVIEWS.md had flagged as open.
 
 ### Pending Todos
 
@@ -236,8 +239,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 **Resume file:** None
 
-Last session: 2026-09-06T17:44:43.115Z
-Stopped at: Completed 04-23-PLAN.md (quality-verification harness: passive gate, comparator, three opt-in instruments, record mode)
+Last session: 2026-09-06T20:22:44.794Z
+Stopped at: Completed 04-24-PLAN.md (whole-project quality gate rollout: lint enforcement, 79-test baseline, contention + CI proof) - trailing checkpoint:human-verify presented, unanswered
 (run 33805069347, conclusions read back per job). Phase 04's 04-22 human sign-off checkpoint is
 still open and blocking; it was NOT answered this session. Four follow-up todos were filed and are
 listed under Pending Todos.
