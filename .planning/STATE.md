@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Plan 04-22 task 4 — CI fully green at 140367b (run 33794249733); the human phase sign-off checkpoint is presented and blocking
-last_updated: "2026-09-04T09:10:00.000Z"
-last_activity: 2026-09-04
-last_activity_desc: Quick task 260904-e3z complete — pnpm verify pre-push hook and ci.yml drift guard, CI green at 21cf5d5
-state_head: 21cf5d5d75aa5dd1290f25956be54e2601bc951f
+stopped_at: Phase 04 quick-task batch closed — CI green at e0334cd (run 34024842114); the 04-22 human phase sign-off checkpoint is presented and blocking, and the review mode for 82c4ce0..e0334cd is undecided
+last_updated: "2026-09-06T09:30:00.000Z"
+last_activity: 2026-09-06
+last_activity_desc: Fixed the TASK-01 e2e settle-wait that quick task 260905-tz5 removed; CI green at e0334cd
+state_head: e0334cd
 progress:
   total_phases: 6
   completed_phases: 5
@@ -35,7 +35,7 @@ Phase: 04 (Task & Subtask Workflow) — EXECUTING
 Plan: 22 of 22 — all three tasks complete; `04-22-SUMMARY.md` written.
 Plan 04-22's final `checkpoint:human-verify` gate is open and blocking.
 Status: Awaiting human phase sign-off
-Last activity: 2026-09-05 - Completed quick task 260905-tz5: Show the 0 of N subtasks caption optimistically when creating a task with subtasks
+Last activity: 2026-09-06 - Restored the TASK-01 e2e settle-wait tz5 removed; CI green on all four jobs at e0334cd
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
 Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 22/22 (awaiting sign-off)
@@ -396,4 +396,37 @@ Push and CI were explicitly deferred to the orchestrator per this session's envi
 instructions (a Next dev server on port 3000 was already owned by the orchestrator, which also
 runs the push + `gh run watch` step). `260905-r15-SUMMARY.md` has the full narrative.
 
-**Next:** the blocking human phase sign-off checkpoint at the end of 04-22 — presented 2026-09-03. Also outstanding: push `005f2c9`/`f71bbdc` and confirm CI green for quick task `260905-r15`.
+**This session (2026-09-06, `/gsd-resume-work`):** Resumed from `HANDOFF.json` and cleared the red
+`e2e` job it paused on. The failure was real and deterministic in shape, not a flake.
+
+`tasks-create.e2e.spec.ts`'s `"0 of 2 subtasks"` assertion had been an implicit settle-wait: it could
+only paint once `createSubtasks` resolved and wrote `result.created` into the board entry, which
+guaranteed the fan-out had reached the server before `page.reload()`. The spec's own header comment
+said so. Quick task `260905-tz5` made that caption optimistic (placeholder rows staged in the create
+mutation's `onMutate`), so it now paints ~400ms BEFORE the fan-out request is issued at all — the
+fan-out only starts once the task create resolves, because it needs the server's task id. The reload
+then cancelled a write that had never left the browser. Measured over three runs: caption visible at
+~1806-1930ms, exactly one POST in flight, reload at ~2040-2338ms, post-reload caption count 0.
+
+Fixed test-side in `e0334cd` by awaiting the fan-out's own response before the reload, so the
+optimistic paint and the persistence are proven separately. Falsified both directions with the
+fan-out delayed 4s — without the wait it fails with CI's exact error at the exact assertion, twice;
+with it the same run passes — then 6/6 undelayed at `--workers=2 --repeat-each=3`. CI run
+34024842114 green on quality/secrets/e2e/visual.
+
+The underlying product hazard was filed rather than patched: there is a window in which the card
+claims subtasks no server has heard of, and a user who reloads inside it loses them with no toast.
+Closing it is a decision against D-07, not a fix —
+`.planning/todos/pending/2026-09-06-subtask-fan-out-is-lost-silently-when-the-user-leaves-right-after-create.md`
+carries the measured timeline and four options.
+
+Also noted, not filed: the first `git push` was refused by the pre-push hook when two browser test
+FILES failed to import `vitest.setup.ts` (`Failed to fetch dynamically imported module`) while
+1871/1871 tests passed and nothing asserted false. A clean rerun was 135/135 files, 2177/2177 tests.
+So `pnpm test` can fail the gate for Vite dev-server reasons under load.
+
+**Next:** two open items, both needing a human decision. (1) The blocking human phase sign-off
+checkpoint at the end of 04-22, presented 2026-09-03. (2) The review mode for the quick-task range
+`82c4ce0..e0334cd` — Claude `/code-review` only, the full three-way, or none; a `/code-review` was
+stopped mid-flight on 2026-09-05 and produced no findings. All three quick tasks (`260905-r15`,
+`260905-s0l`, `260905-tz5`) are pushed with CI green.
