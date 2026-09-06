@@ -88,6 +88,8 @@ export default defineConfig({
                         "src/**/*.integration.test.ts",
                         // Plain Node ESM with no jsdom/React dependency — belongs here, not "unit".
                         "scripts/**/*.unit.test.mjs",
+                        // The quality-gate comparator has no Playwright import (04-23) — a Node-environment unit test, same category as the two entries above.
+                        "e2e/**/*.unit.test.ts",
                     ],
                     env: {
                         EXTERNAL_API_BASE_URL: resolveTestApiBaseUrl(),
