@@ -1,6 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { SignJWT } from "jose";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount, type SeededAccount } from "./seed";
 import { E2E_CONFIG } from "./test-env";
 import { ROUTE } from "../src/lib/core/routing/routes";

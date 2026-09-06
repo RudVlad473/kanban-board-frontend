@@ -1,5 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount } from "./seed";
 import { COOKIE, THEME_COOKIE_MAX_AGE_SECONDS } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";

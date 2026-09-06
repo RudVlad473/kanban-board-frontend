@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount } from "./seed";
 import { signUpViaUi } from "./signed-up-user";
 import { E2E_CONFIG } from "./test-env";

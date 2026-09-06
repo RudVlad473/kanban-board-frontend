@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount, seedBoard, seedColumn, type SeededAccount, type SeededBoard } from "./seed";
 import { E2E_CONFIG } from "./test-env";
 import { EXTERNAL_PATH } from "../src/lib/core/api-contract/external-paths";

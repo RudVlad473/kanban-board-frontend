@@ -669,6 +669,41 @@ const eslintConfig = defineConfig([
         rules: { "local/prefer-is-nil": "error" },
     },
 
+    // comment-length-exempt: decision record for D-G/D-H/T-04-57 — the namespace-import coverage claim was empirically verified (not assumed) and the ignores entry's known limitation (no stale-entry check) both need to survive a future edit, not just this one
+    /*
+     * 12. e2e specs cannot silently opt out of the passive quality gate (D-G, T-04-57): an `auto`
+     * fixture only fires for a test built from `e2e/quality-fixtures.ts`'s extended `test` object,
+     * so importing Playwright's own `test`/`expect` directly skips it. `allowTypeImports` keeps a
+     * `type Page`/`type Locator`/`type Request` import working; verified on this repo's ESLint
+     * 10.8.1 to also catch a namespace `import * as` form (04-24 task 1 quotes both messages).
+     *
+     * `e2e/full-app.e2e.spec.ts` is excluded by name (D-H — its own header and
+     * `playwright.config.ts`'s `testIgnore` say why). Known limitation: no stale-`ignores` check
+     * exists for this the way `scripts/check-ci-gate-coverage.mjs` has one for its own exceptions —
+     * if that file is ever deleted, this entry silently becomes a no-op rather than an error.
+     */
+    {
+        files: ["e2e/**/*.e2e.spec.ts"],
+        ignores: ["e2e/full-app.e2e.spec.ts"],
+        plugins: { "@typescript-eslint": tseslint.plugin },
+        rules: {
+            "@typescript-eslint/no-restricted-imports": [
+                "error",
+                {
+                    paths: [
+                        {
+                            name: "@playwright/test",
+                            importNames: ["test", "expect"],
+                            allowTypeImports: true,
+                            message:
+                                'Import `test` and `expect` from "./quality-fixtures" instead — importing them from "@playwright/test" directly silently opts this spec out of the accessibility and layout-shift gates every other spec in the `e2e` project carries.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+
     // 9. Generated/vendored trees are never hand-edited or worth linting.
     globalIgnores([
         ".next/**",

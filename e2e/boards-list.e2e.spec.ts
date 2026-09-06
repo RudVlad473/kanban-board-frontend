@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
-
+import { expect, test } from "./quality-fixtures";
 import { seedAccount, seedBoard } from "./seed";
 import { ROUTE } from "../src/lib/core/routing/routes";
 

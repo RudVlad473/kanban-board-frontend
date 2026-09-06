@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Page, type Request } from "@playwright/test";
+import { type Page, type Request } from "@playwright/test";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount, seedBoard, seedColumn, seedTask, updateTaskOutOfBand } from "./seed";
 import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 

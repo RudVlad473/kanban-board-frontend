@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { decodeJwt } from "jose";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount } from "./seed";
 import { signUpViaUi, submitSignUpForm } from "./signed-up-user";
 import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
