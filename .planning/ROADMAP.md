@@ -512,7 +512,7 @@ register, and therefore that drift, as a side effect.
 
   8. No `*-action-storybook-stub.ts` file and no `serverActionStubAlias` entry exists for any
      Server Action this phase adds, and the full `browser` Vitest project passes without them.
-**Plans**: 20/22 plans executed
+**Plans**: 22/24 plans executed (04-23 and 04-24 added 2026-09-06 — additive test infrastructure, no REQ-ID)
 
 Plans:
 
@@ -594,6 +594,14 @@ to end on one path before any breadth is added.
 **Wave 17** *(blocked on 04-21)*
 
 - [ ] 04-22-PLAN.md — CONVENTIONS.md drift corrected, all eight criteria verified, mock comparison of every rendered surface, CI sign-off
+
+**Wave 18** *(blocked on 04-22)* — additive tooling scope, no user-facing requirement id
+
+- [ ] 04-23-PLAN.md — the Playwright quality-verification fixture layer: axe, cdp, flickerTracker, optimisticRoute, layoutShiftTracker, each proved in the failing direction as well as the passing one
+
+**Wave 19** *(blocked on 04-23)*
+
+- [ ] 04-24-PLAN.md — opt-in CDN-injected reactScan, ADR tech/0035 recording the harness's four scope decisions, reviewer-facing fixture inventory, full 20-gate run and CI sign-off
 
 **UI hint**: yes
 
