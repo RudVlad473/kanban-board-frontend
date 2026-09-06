@@ -1,6 +1,6 @@
 {
-    "recordedAt": "2026-09-06T18:55:20.647Z",
-    "note": "Committed accessibility/layout-shift baseline for e2e/quality-fixtures.ts (04-23). Record with `pnpm e2e:baseline <spec>`. Layout-shift ungated (set to 1) for one OPT-01 board-sidebar case: 04-24 measured a 0-to-0.0164 spread across three record-mode runs of the same interaction, too wide for any single global tolerance to cover without also covering a real regression — see the 04-24 pending todo.",
+    "recordedAt": "2026-09-06T19:20:56.844Z",
+    "note": "Committed accessibility/layout-shift baseline for e2e/quality-fixtures.ts (04-23). Record with `pnpm e2e:baseline <spec>`.",
     "tests": {
         "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > qualityGates runs passively at teardown, and the axe factory scans the settled board": {
             "axeRuleCounts": {},
@@ -364,9 +364,9 @@
         },
         "e2e/optimistic-guards.e2e.spec.ts :: ../e2e/optimistic-guards.e2e.spec.ts > OPT-01: an unconfirmed entity cannot be acted on > board: the sidebar row does not navigate until the create is confirmed, then it does": {
             "axeRuleCounts": {},
-            "flakyRuleIds": [],
+            "flakyRuleIds": ["color-contrast"],
             "evaluatedRuleFloor": 89,
-            "layoutShiftScore": 1
+            "layoutShiftScore": 0.000018374125162760416
         },
         "e2e/route-guard.e2e.spec.ts :: ../e2e/route-guard.e2e.spec.ts > AUTH-03: route guard > treats a tampered session cookie exactly as unauthenticated": {
             "axeRuleCounts": {

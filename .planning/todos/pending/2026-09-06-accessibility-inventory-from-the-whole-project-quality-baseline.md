@@ -35,22 +35,29 @@ so `landmark-one-main` fails there and everything on the page counts as `region`
 content. `page-has-heading-one` fires on the same 4 plus `boards-delete`, `boards-detail` and
 `theme` — likely a transient loading/empty state with no `<h1>` rendered yet at scan time.
 
-Two rule ids were classified flaky across the three record-mode runs (present in some but not
-all three, so they are ungated in both presence and count per D-E/D-L) and are NOT in the table
-above: `document-title` (1 test, `optimistic-guards.e2e.spec.ts`'s OPT-01 middle-click case) and
-`color-contrast` on one additional case (`theme.e2e.spec.ts`'s THEME-03 case — the 4/12 counted
-above is from the 3 stable occurrences elsewhere).
+Three rule ids were classified flaky across their spec's record-mode runs (present in some but
+not all observations, so they are ungated in both presence and count per D-E/D-L) and are NOT in
+the table above: `document-title` (1 test, `optimistic-guards.e2e.spec.ts`'s OPT-01 middle-click
+case), `color-contrast` on `theme.e2e.spec.ts`'s THEME-03 case (the 4/12 counted above is from
+the 3 stable occurrences elsewhere), and `color-contrast` on `optimistic-guards.e2e.spec.ts`'s
+OPT-01 sidebar-row case (found live during 04-24's own `pnpm verify` run — a fourth, independent
+observation the 3-repeat record run had not carried — and resolved by the documented remedy: a
+scoped re-record, `pnpm e2e:baseline e2e/optimistic-guards.e2e.spec.ts`, never a hand-edit).
 
-**One test's layout-shift score was left ungated, not merely flaky-classified**:
-`optimistic-guards.e2e.spec.ts`'s OPT-01 "board: the sidebar row does not navigate until the
-create is confirmed, then it does" case spread from 0 to 0.016419 across three record-mode runs
-of the *same* interaction — too wide for any single global tolerance to cover without also
-covering a real regression elsewhere. Its baseline entry's `layoutShiftScore` was hand-set to
-`1` (a sentinel far above any real CLS reading) so this one test's layout-shift half of the gate
-never fires; the axe half is untouched and still gated normally. `e2e/quality-baseline.ts`'s
-`DEFAULT_QUALITY_TOLERANCES` (`layoutShiftFloor: 0.01`, `layoutShiftTolerance: 1.5`) were
-confirmed, not raised, against the other 78 tests' spread (median 1.8e-5, second-highest
-recorded 0.00305 — both comfortably inside the existing constants' margin).
+**One test's layout-shift reading spiked in the whole-suite recording run, then did not
+reproduce on an isolated re-record.** `optimistic-guards.e2e.spec.ts`'s OPT-01 sidebar-row case
+read 0 twice and 0.016419 once across the whole-project 79-test, 3-repeat record run — a spread
+too wide to explain as this interaction's own behavior. The scoped re-record above (triggered by
+the `color-contrast` flake, not by this reading) re-ran the same interaction three more times in
+isolation and got three clean near-zero results (~1.8e-5, matching the suite's median). That
+points at full-suite resource contention during the original 79-test parallel run as the likely
+cause, not a defect in this interaction — so no test's `layoutShiftScore` was left permanently
+ungated in the committed baseline. `e2e/quality-baseline.ts`'s `DEFAULT_QUALITY_TOLERANCES`
+(`layoutShiftFloor: 0.01`, `layoutShiftTolerance: 1.5`) were confirmed, not raised, against the
+whole suite's clean spread (median 1.8e-5, highest stable-scoped reading 0.00305 — both
+comfortably inside the existing constants' margin). If a future whole-suite record run reproduces
+a similar spike on a different test, that would be evidence against the contention hypothesis and
+worth investigating as a real per-test flakiness source rather than assumed away a second time.
 
 ## Why it is filed rather than fixed
 

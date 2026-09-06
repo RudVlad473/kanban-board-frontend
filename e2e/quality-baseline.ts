@@ -68,13 +68,13 @@ export type QualityComparisonResult =
 
 export type QualityTolerances = { readonly layoutShiftFloor: number; readonly layoutShiftTolerance: number };
 
-// comment-length-exempt: records the measurement these two numbers are now derived from, and the one outlier deliberately excluded from it, both facts the constants alone cannot say
+// comment-length-exempt: records the measurement these two numbers are now derived from and a since-corrected finding worth keeping visible, neither of which the constants alone can say
 /*
- * MEASURED 2026-09-06 (04-24) against 78 of the 79 `e2e`-project tests' three-repeat record-mode
- * spread (median 1.8e-5, second-highest recorded 0.00305) — both values confirmed with wide
- * margin, not raised. The 79th (`optimistic-guards.e2e.spec.ts`'s OPT-01 sidebar-row case) spread
- * 0-to-0.0164 across three runs, too wide for any global tolerance to cover without also covering
- * a real regression; its own baseline entry is ungated instead (see the 04-24 pending todo).
+ * MEASURED 2026-09-06 (04-24) against the whole `e2e` project's three-repeat record-mode spread
+ * (median 1.8e-5, highest stable-scoped reading 0.00305) — both values confirmed with wide margin,
+ * not raised. One test spiked to 0.0164 in the whole-suite recording run; a scoped, isolated
+ * re-record of that spec alone did not reproduce it (three clean near-zero runs), pointing at
+ * full-suite resource contention rather than the interaction itself — see the 04-24 pending todo.
  * `layoutShiftFloor` keeps a near-zero baseline from failing on any shift at all;
  * `layoutShiftTolerance` is the multiplier applied to `max(recorded, layoutShiftFloor)`.
  */
