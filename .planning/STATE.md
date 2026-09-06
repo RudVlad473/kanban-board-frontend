@@ -1,19 +1,19 @@
 ---
-gsd_state_version: 1.0
+gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: Phase 04 quick-task batch closed — CI green at e0334cd (run 34024842114); the 04-22 human phase sign-off checkpoint is presented and blocking, and the review mode for 82c4ce0..e0334cd is undecided
-last_updated: "2026-09-06T09:30:00.000Z"
+stopped_at: "Completed 04-23-PLAN.md (quality-verification harness: passive gate, comparator, three opt-in instruments, record mode)"
+last_updated: "2026-09-06T17:44:43.540Z"
 last_activity: 2026-09-06
-last_activity_desc: Fixed the TASK-01 e2e settle-wait that quick task 260905-tz5 removed; CI green at e0334cd
-state_head: e0334cd
+last_activity_desc: Phase 04 execution started
+state_head: 3a19f5a26f618ee9e07609e6dc25db4c040e475a
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 114
-  completed_plans: 114
+  total_plans: 117
+  completed_plans: 115
 milestone_name: milestone
 ---
 
@@ -32,10 +32,10 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 ## Current Position
 
 Phase: 04 (Task & Subtask Workflow) — EXECUTING
-Plan: 22 of 22 — all three tasks complete; `04-22-SUMMARY.md` written.
+Plan: 2 of 25
 Plan 04-22's final `checkpoint:human-verify` gate is open and blocking.
-Status: Awaiting human phase sign-off
-Last activity: 2026-09-06 - Restored the TASK-01 e2e settle-wait tz5 removed; CI green on all four jobs at e0334cd
+Status: Ready to execute
+Last activity: 2026-09-06 — Phase 04 execution started
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
 Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 22/22 (awaiting sign-off)
@@ -71,6 +71,7 @@ Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 22/22 (awaitin
 | Phase 02.1 P12 | 55min | 3 tasks | 13 files |
 | Phase 04 P13 | 55min | 3 tasks | 6 files |
 | Phase 04 P14 | 70min | 3 tasks | 6 files |
+| Phase 04 P23 | ~4h | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,8 @@ Recent decisions affecting current work:
   fixture rather than suppress a resulting axe failure — D-21 forbids per-story a11y suppression.
   The `Lifted` story's caption-contrast failure was a real, previously-unexercised defect in the
   shipped `isDragging` treatment, not a testing artifact.
+- [Phase 04]: 04-23: shared browser-side installers passed to page.evaluate/addInitScript must be fully self-contained (no outer Node-scope references) — a wrapping arrow referencing an outer function silently fails to install once serialized, with the error swallowed rather than surfaced
+- [Phase 04]: 04-23: D-K's include/exclude layout-shift falsification landed EQUAL on both interactions tried (empty board switch, task-create against 5 tasks) — this app produces near-zero, non-input-attributed shift for these interactions; DEFAULT_QUALITY_TOLERANCES stays provisional pending 04-24's whole-suite measurement
 
 ### Pending Todos
 
@@ -231,8 +234,10 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-03
-Stopped at: Quick task `260903-ttt` complete and pushed — CI green on all four jobs at `153c096`
+**Resume file:** None
+
+Last session: 2026-09-06T17:44:43.115Z
+Stopped at: Completed 04-23-PLAN.md (quality-verification harness: passive gate, comparator, three opt-in instruments, record mode)
 (run 33805069347, conclusions read back per job). Phase 04's 04-22 human sign-off checkpoint is
 still open and blocking; it was NOT answered this session. Four follow-up todos were filed and are
 listed under Pending Todos.

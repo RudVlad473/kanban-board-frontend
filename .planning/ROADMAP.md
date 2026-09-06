@@ -512,7 +512,7 @@ register, and therefore that drift, as a side effect.
 
   8. No `*-action-storybook-stub.ts` file and no `serverActionStubAlias` entry exists for any
      Server Action this phase adds, and the full `browser` Vitest project passes without them.
-**Plans**: 22/24 plans executed (04-23 and 04-24 added 2026-09-06 — additive test infrastructure, no REQ-ID)
+**Plans**: 23/25 plans executed (04-23 and 04-24 added 2026-09-06 — additive test infrastructure, no REQ-ID)
 
 Plans:
 
@@ -589,15 +589,15 @@ to end on one path before any breadth is added.
 
 **Wave 16** *(blocked on 04-20)*
 
-- [ ] 04-21-PLAN.md — e2e specs for criteria 1, 2, 3, 5 and 7, with SYNC-01 proved against a real stale-version rejection
+- [x] 04-21-PLAN.md — e2e specs for criteria 1, 2, 3, 5 and 7, with SYNC-01 proved against a real stale-version rejection
 
 **Wave 17** *(blocked on 04-21)*
 
-- [ ] 04-22-PLAN.md — CONVENTIONS.md drift corrected, all eight criteria verified, mock comparison of every rendered surface, CI sign-off
+- [x] 04-22-PLAN.md — CONVENTIONS.md drift corrected, all eight criteria verified, mock comparison of every rendered surface, CI sign-off
 
 **Wave 18** *(blocked on 04-22)* — additive tooling scope, no user-facing requirement id
 
-- [ ] 04-23-PLAN.md — the Playwright quality-verification layer: a PASSIVE auto-fixture running an accessibility scan and a layout-shift check against a committed baseline, plus the opt-in axe, cdp, flickerTracker, optimisticRoute and layoutShiftTracker instruments, each proved in the failing direction as well as the passing one
+- [x] 04-23-PLAN.md — the Playwright quality-verification layer: a PASSIVE auto-fixture running an accessibility scan and a layout-shift check against a committed baseline, plus the opt-in axe, cdp, flickerTracker, optimisticRoute and layoutShiftTracker instruments, each proved in the failing direction as well as the passing one
 
 **Wave 19** *(blocked on 04-23)*
 
@@ -620,4 +620,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 14/14 | Complete    | 2026-08-27 |
-| 4. Task & Subtask Workflow | 20/22 | In Progress|  |
+| 4. Task & Subtask Workflow | 23/25 | In Progress|  |
