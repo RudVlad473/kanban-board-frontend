@@ -1,68 +1,37 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-06T13:41:50.233Z",
+  "timestamp": "2026-09-06T20:47:35.335Z",
   "phase": "04",
   "phase_name": "Task & Subtask Workflow",
   "phase_dir": ".planning/phases/04-task-subtask-workflow",
-  "plan": null,
-  "task": 2,
-  "total_tasks": 2,
+  "plan": 24,
+  "task": 4,
+  "total_tasks": 4,
   "status": "paused",
-  "pause_reason": "User is inserting an intermittent phase first: introducing new tools that let Claude identify subtle visual bugs. They will explain on resume. Do NOT start bug 2 until they have.",
   "completed_tasks": [
-    {
-      "id": 1,
-      "name": "Bug 1 — one-frame horizontal scrollbar flicker on a board switch (quick 260906-hze)",
-      "status": "done",
-      "commit": "4610525",
-      "detail": "Root cause was NOT the key={board.id} first suspected: boards/loading.tsx's Suspense fallback covers the nested [boardId] segment, so for one frame <main> held the live board AND a board-view-skeleton, both flex-1, halving the scroll container 647->324->647px and jumping the scrollbar with it. Fixed by moving boards/{page,loading}.tsx into a (index) route group. CI green on all four jobs at 4610525."
-    }
+    { "id": 1, "name": "Lint-enforce the quality gate across all 23 e2e specs", "status": "done", "commit": "99c0505" },
+    { "id": 2, "name": "Record the whole-project quality baseline, price the gate", "status": "done", "commit": "80cf6fc" },
+    { "id": 3, "name": "Full rollout + mid-flight fixes (flaky rule, 2 layout-shift ceiling misses)", "status": "done", "commit": "1c21b60" },
+    { "id": 4, "name": "Checkpoint: accept the cost, the baseline, and the CLAUDE.md pointer", "status": "in_progress", "progress": "checkpoint text ready in 04-24-PLAN.md; not yet presented to user" }
   ],
   "remaining_tasks": [
-    {
-      "id": 2,
-      "name": "Bug 2 — deleting a board does not optimistically redirect; the user stays on the deleted board until the server responds",
-      "status": "not_started",
-      "detail": "Measured in the user's 60fps recording (B:\\videos\\obs\\2026-09-06_12-46-22.mov): delete confirmed at t=32.88s, modal closes and the sidebar drops to 3 boards at 32.90s, but the board area keeps rendering the DELETED board's columns with a BLANK title until 33.42s — ~520ms stranded. The blank title is a second, separate visual defect inside that window."
-    }
+    { "id": 4, "name": "Present 04-24 checkpoint to user, get answer, continuation agent closes out 04-24", "status": "not_started" },
+    { "id": 5, "name": "Execute plan 04-25 (wave 20, last plan in phase 4)", "status": "not_started" },
+    { "id": 6, "name": "Phase 4 tail gates (aggregate_results, code_review_gate, regression_gate, verify_phase_goal, update_roadmap)", "status": "not_started" }
   ],
-  "blockers": [],
+  "blockers": [
+    { "description": "04-24's blocking checkpoint (accept cost/baseline/CLAUDE.md pointer, plus an unplanned layout-shift-tolerance question) is unanswered", "type": "human_action", "workaround": "none — requires human judgment call, see .continue-here.md remaining_work item 2" }
+  ],
   "async_jobs": [],
   "human_actions_pending": [
-    {
-      "action": "Explain the intermittent phase: the new tools for identifying subtle visual bugs",
-      "context": "The user paused specifically to introduce these before bug 2 is touched. Bug 2 is a sub-second visual defect, so those tools may well change how it should be investigated and pinned.",
-      "blocking": true
-    },
-    {
-      "action": "Decide the review mode for the older quick-task range 82c4ce0..e0334cd",
-      "context": "Carried since 2026-09-05. A /code-review was stopped mid-flight and produced no findings. Options: Claude /code-review only, the full three-way, or none.",
-      "blocking": false
-    },
-    {
-      "action": "Answer plan 04-22's checkpoint:human-verify phase sign-off",
-      "context": "Open and blocking phase 04 close-out since 2026-09-03.",
-      "blocking": false
-    }
+    { "action": "Answer 04-24's checkpoint (5 items from the plan + 1 new item on layout-shift tolerance under full-suite contention)", "context": "See .continue-here.md and 04-24-PLAN.md lines ~488-540", "blocking": true }
   ],
   "decisions": [
-    {
-      "decision": "Bug 1 fixed by moving boards/{page,loading}.tsx into a (index) route group, NOT by touching key={board.id}",
-      "rationale": "Next's loading.js wraps nested segments, so a fallback authored for /boards fired on every [boardId] switch. A route group is Next's own documented way to scope it. Confirmed empirically: emptying boards/loading.tsx removed the skeleton across 510 frames, and Codex independently reproduced RED and GREEN.",
-      "phase": "04"
-    },
-    {
-      "decision": "Temporary work goes inside the repo it is about — recorded as a global antipattern in ~/.claude/CLAUDE.md",
-      "rationale": "Five sibling scratch directories in ~/dev held 500MB; one was a re-clonable upstream clone, three were superseded drafts, and one held the ONLY copy of an open support ticket's evidence. The justification for going outside (gates would reject it / it would trigger a build) was false in my own case and is checkable in a minute.",
-      "phase": "cross-cutting"
-    },
-    {
-      "decision": "Browser verification: MCP to explore, Playwright CLI to pin",
-      "rationale": "An MCP finding is a hypothesis — a spec is re-runnable against unfixed and fixed code, which is what produces both-directions falsification. Recorded in ~/.claude/TOOLING_PREFERENCES.md and this repo's CLAUDE.md (707393a).",
-      "phase": "cross-cutting"
-    }
+    { "decision": "Approved installing @axe-core/playwright@4.13.0 despite SUS/too-new verdict", "rationale": "False-positive-prone heuristic on publish recency; package is legitimate (Deque monorepo, 9.6M weekly downloads)", "phase": "04" }
   ],
-  "uncommitted_files": [],
-  "next_action": "Ask the user to explain the intermittent phase (new tools for subtle visual bugs) BEFORE touching bug 2. Then push the three waiting commits: 707393a (frontend, needs the ~8min pre-push gate), 436abf1 (backend), 3b3952e (custom-ai-skills).",
-  "context_notes": "Nothing is running: the dev server and Gradle daemon were stopped, the seeded nonprod account 8q8vgt6to0zk and its two test boards were deleted, .e2e-seeded-users/ is empty. Bug 2's evidence is already measured and does not need re-deriving from the recording. Note for whoever resumes: the nonprod backend (159.195.114.230) refused CI connections twice today; kanban-board-backend/docs/incidents/2026-09-05-nonprod-syn-loss/ documents an open netcup ticket about that host, so an e2e failure may be infrastructure rather than code. custom-ai-skills has 276 unpushed commits, only 1 of them mine (3b3952e) — pre-existing, not part of this work."
+  "uncommitted_files": [
+    "M .planning/phases/04-task-subtask-workflow/04-24-SUMMARY.md"
+  ],
+  "next_action": "Check CI run 34058774827's final conclusion, then present 04-24's checkpoint to the user (including the new layout-shift-tolerance question), then continue per .continue-here.md",
+  "context_notes": "Sequential (no-worktree) execution — one executor at a time on this checkout. 04-23 and 04-24's code work are both done and pushed; only the human checkpoint stands between here and plan 04-25 (the last plan in phase 4)."
 }
