@@ -13,6 +13,9 @@ import { buildBoardDetailPath, ROUTE } from "../src/lib/core/routing/routes";
 
 const SIGN_IN_TIMEOUT_MS = 20_000;
 
+/** Typed into the form AND matched against the fan-out's request body, so the two cannot drift. */
+const SUBTASK_TITLES = ["Subtask One", "Subtask Two"] as const;
+
 const seedTwoColumnBoard = (): { account: SeededAccount; board: SeededBoard } => {
     const account = seedAccount();
     const board = seedBoard({ account, name: `E2E Task Create ${randomUUID().slice(0, 8)}` });
@@ -47,25 +50,41 @@ test.describe("TASK-01: create a task", () => {
         await dialog.getByLabel("Title", { exact: true }).fill(title);
         await dialog.getByLabel("Description", { exact: true }).fill("Fixture task description.");
         await dialog.getByRole("button", { name: "+ Add New Subtask" }).click();
-        await dialog.getByRole("textbox", { name: "Subtask 1", exact: true }).fill("Subtask One");
+        await dialog.getByRole("textbox", { name: "Subtask 1", exact: true }).fill(SUBTASK_TITLES[0]);
         await dialog.getByRole("button", { name: "+ Add New Subtask" }).click();
-        await dialog.getByRole("textbox", { name: "Subtask 2", exact: true }).fill("Subtask Two");
+        await dialog.getByRole("textbox", { name: "Subtask 2", exact: true }).fill(SUBTASK_TITLES[1]);
 
         // Act — Status defaults to the first column; choose the SECOND to prove the field is real.
         await dialog.getByRole("combobox").click();
         await page.getByRole("option", { name: "Doing" }).click();
-        await dialog.getByRole("button", { name: "Create Task" }).click();
 
         /*
-         * Assert — the card lands in the CHOSEN column; its appearance is itself the settle-wait
-         * (create is not optimistic), and the subtask fan-out's caption is polled for.
+         * Armed BEFORE the submit: the fan-out is only issued once the create resolves, and the
+         * reload below cancels it if it is still in flight. Matched on the typed titles because
+         * every Server Action posts to this same board URL.
          */
+        const subtaskFanOut = page.waitForResponse(
+            (response) =>
+                response.request().method() === "POST" &&
+                (response.request().postData() ?? "").includes(SUBTASK_TITLES[0]),
+        );
+
+        await dialog.getByRole("button", { name: "Create Task" }).click();
+
+        // Assert — the card lands in the CHOSEN column, carrying its caption from the first frame.
         const card = columnSection({ page, name: "Doing" }).getByRole("button", { name: new RegExp(`^${title}`) });
         await expect(card).toBeVisible();
         await expect(columnSection({ page, name: "Doing" }).getByText("0 of 2 subtasks")).toBeVisible();
         await expect(
             columnSection({ page, name: "Todo" }).getByRole("button", { name: new RegExp(`^${title}`) }),
         ).toHaveCount(0);
+
+        /*
+         * The caption above is optimistic (the create stages placeholder rows in its own onMutate),
+         * so it says nothing about the server — this response is what makes the reload a real
+         * persistence check rather than a race against a fan-out that never left the browser.
+         */
+        await subtaskFanOut;
 
         // Act — reload, the only way to tell an applied create from a modal-only artifact.
         await page.reload();
