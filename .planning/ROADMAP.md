@@ -597,11 +597,15 @@ to end on one path before any breadth is added.
 
 **Wave 18** *(blocked on 04-22)* — additive tooling scope, no user-facing requirement id
 
-- [ ] 04-23-PLAN.md — the Playwright quality-verification fixture layer: axe, cdp, flickerTracker, optimisticRoute, layoutShiftTracker, each proved in the failing direction as well as the passing one
+- [ ] 04-23-PLAN.md — the Playwright quality-verification layer: a PASSIVE auto-fixture running an accessibility scan and a layout-shift check against a committed baseline, plus the opt-in axe, cdp, flickerTracker, optimisticRoute and layoutShiftTracker instruments, each proved in the failing direction as well as the passing one
 
 **Wave 19** *(blocked on 04-23)*
 
-- [ ] 04-24-PLAN.md — opt-in CDN-injected reactScan, ADR tech/0035 recording the harness's four scope decisions, reviewer-facing fixture inventory, full 20-gate run and CI sign-off
+- [ ] 04-24-PLAN.md — the passive gate turned on across all 23 e2e specs, made non-bypassable by a lint rule, with the whole-project baseline recorded, its findings inventoried rather than fixed, and its wall-clock cost measured locally and on CI
+
+**Wave 20** *(blocked on 04-24)*
+
+- [ ] 04-25-PLAN.md — opt-in CDN-injected reactScan, ADR tech/0035 recording the harness's scope decisions and measured behaviours, reviewer-facing fixture inventory
 
 **UI hint**: yes
 
