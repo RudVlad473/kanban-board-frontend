@@ -208,6 +208,7 @@ verifying phase 03 wave 4) —
 | 260905-r15 | Key `BoardView` on board id in `BoardScreen` so a board switch mounts a fresh scroll row instead of carrying the previous board's `scrollLeft` | 2026-09-05 | 005f2c9 | Verified | [260905-r15-fix-the-millisecond-horizontal-scroll-fl](./quick/260905-r15-fix-the-millisecond-horizontal-scroll-fl/) |
 | 260905-s0l | Flush TanStack query notifications on the microtask queue so an in-column task reorder never paints the pre-move order after the drop (ADR tech/0034) | 2026-09-05 | 56d6f68 | Verified | [260905-s0l-fix-the-task-title-flicker-across-a-colu](./quick/260905-s0l-fix-the-task-title-flicker-across-a-colu/) |
 | 260905-tz5 | Stage typed subtask titles as placeholders in the task create's own `onMutate` so the card reads "0 of N subtasks" from the first optimistic frame; widen `useUnconfirmedIds` to plural `clientIds` | 2026-09-05 | 4f67a44 | Verified | [260905-tz5-show-the-0-of-n-subtasks-caption-optimis](./quick/260905-tz5-show-the-0-of-n-subtasks-caption-optimis/) |
+| 260906-hze | Move `boards/loading.tsx` and `boards/page.tsx` into a `(index)` route group so `/boards`'s Suspense fallback stops covering the nested `[boardId]` segment during a board switch | 2026-09-06 | 29b4d6e | Pending push/CI | [260906-hze-fix-the-remaining-one-frame-horizontal-s](./quick/260906-hze-fix-the-remaining-one-frame-horizontal-s/) |
 
 ### Roadmap Evolution
 
@@ -430,3 +431,36 @@ checkpoint at the end of 04-22, presented 2026-09-03. (2) The review mode for th
 `82c4ce0..e0334cd` — Claude `/code-review` only, the full three-way, or none; a `/code-review` was
 stopped mid-flight on 2026-09-05 and produced no findings. All three quick tasks (`260905-r15`,
 `260905-s0l`, `260905-tz5`) are pushed with CI green.
+
+**This session (2026-09-06, quick task `260906-hze`):** Fixed the one-frame stacked-board-area
+flicker FINDINGS.md root-caused: `app/(dashboard)/boards/loading.tsx` returned `<BoardViewSkeleton
+/>`, and Next's `loading.js` wraps its own `page.js` AND every nested segment below it — so that
+fallback also covered `/boards/[boardId]` and rendered inside the dashboard layout's `<main>`
+beside the board it was never meant to cover. Two `flex-1` children split the height 50/50: the
+board's scroll container measured 324px against a 647px baseline, and the horizontal scrollbar
+pinned to its bottom edge jumped with it. Fixed by moving both `boards/loading.tsx` and
+`boards/page.tsx` into a new `(index)` route group with `git mv` — Next's own documented mechanism
+for scoping a `loading.js` back to one route without changing the URL — no hand-rolled pathname
+guard, no new component.
+
+Falsified in both directions in a third `e2e/boards-switch.e2e.spec.ts` describe block, per the
+plan's amendment applying the read-hold on the first attempt: RED (`072c120`) failed on the first
+run with `{ board: true, height: 324, skeleton: true }` against a 647px baseline; GREEN (`29b4d6e`)
+passed, with BOARD-04's instant-paint case and the scroll-offset case both still passing in the
+same run. `boards-list`/`boards-detail` green (5/5) — `/boards` still redirects to the first board
+and still renders the empty state, at the same URL. Contention run 9/9 at `--repeat-each=3
+--workers=2`, zero flaky. `pnpm verify` green in 494s (all 20 gates, 2177/2177 unit/browser tests,
+75/75 e2e).
+
+**What is NOT closed by this task**, both explicitly out of scope: the combined vertical +
+horizontal scrollbar the user separately reported — FINDINGS never reproduced it and this fix only
+removes the plausible mechanism (two stacked board areas overflowing `<main>`), so a recurrence
+would mean a different cause, not an incomplete fix. And every live-app confirmation — no
+`mcp__playwright__*` tools were available to this executor; the plan's four `<orchestrator_checks>`
+(re-run FINDINGS' own rAF sampler on the real app; hard-load `/boards` under throttling to confirm
+its skeleton still paints; count `board-view-skeleton` elements on a hard board load, a predicted-
+not-measured side effect; and the vertical+horizontal scrollbar check at several viewport
+heights/zoom levels) are handed to the orchestrator unrun.
+
+Push and `gh run watch` still pending as of this entry — see `260906-hze-SUMMARY.md` for the
+final commit/CI state once posted.
