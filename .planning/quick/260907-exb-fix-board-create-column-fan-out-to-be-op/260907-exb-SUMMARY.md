@@ -16,7 +16,7 @@ affects: [board-create, board-view, e2e-suite, optimistic-writes]
 actuals:
   tokens: 17833
   tasks: 3
-  commits: 3
+  commits: 4
 
 tech-stack:
   added: []
@@ -123,8 +123,11 @@ staging on top, now meaningful because `BoardView` is mounted and watching befor
 1. **Core fix: decouple the fan-out from the navigate, restage optimistically** - `9ee9d44` (fix)
 2. **Browser/unit test coverage for the mount-time fan-out and widened picker** - `23671c5` (test)
 3. **e2e case rewrite around the measured navigation-stall mechanism** - `6717037` (test)
+4. **Root-caused fix for a post-push CI flake in the new toast auto-dismiss test** - `173fee5` (fix)
 
-**Plan metadata:** _pending — this SUMMARY / STATE.md / ROADMAP.md commit, made by the orchestrator per this project's `commit_docs` convention._
+**Plan metadata:** `dc92c3f` (orchestrator's SUMMARY/STATE.md/ROADMAP.md commit). A separate
+orchestrator-authored fix, `d554d43` (re-record `quality-fixtures.e2e.spec.ts`'s layout-shift
+ceiling), landed between commits 3 and 4 above and is not part of this task's own work.
 
 ## Files Created/Modified
 
@@ -311,8 +314,36 @@ introduces no new attack surface.
   CI, twice in four runs against identical component code"). Not a test this task touched, and
   unrelated to the fan-out/navigate mechanism. `gh run rerun --failed` reran only the failed
   `quality` job; it, and every other job, passed clean on the rerun.
-- **Final state: CI run 34115922800 is fully green** — `quality`, `secrets`, `visual`, `e2e` all
-  `success`. https://github.com/RudVlad473/kanban-board-frontend/actions/runs/34115922800
+- **CI run 34115922800 was fully green** — `quality`, `secrets`, `visual`, `e2e` all `success`.
+
+**5. [Rule 1 - Bug] A SECOND CI push (`d554d43`, orchestrator-authored) surfaced a genuine, root-caused flake in the new `"auto-dismisses the column-failure toast..."` browser test** — MOBILE-only in CI's one observed run (`34122272088`), DESKTOP passed.
+
+- **Found during:** the orchestrator's own CI run after pushing `d554d43`.
+- **Root-caused live, not guessed**, per this repo's systematic-debugging discipline: read Base UI's
+  actual `toast/viewport/ToastViewport.js`/`toast/store.js` source. `ToastStore.resumeTimers()` is a
+  ONE-SHOT unpause keyed off a single `areTimersPaused` boolean — not a continuous "stay unpaused"
+  guarantee. The test dispatched `window.dispatchEvent(new FocusEvent("focus"))` exactly ONCE, before
+  a 9-second real-timer wait. Deliberately injecting a SECOND, LATER `window` `blur` event partway
+  through that wait reproduced CI's EXACT error message
+  (`expected [Array(1)] to have a length of +0 but got 1`) — on BOTH device variants, not just MOBILE,
+  disproving an earlier hover/CSS-geometry hypothesis (the toast viewport's near-full-width mobile
+  strip, tested by deliberately injecting a stray pointer position into the toast's bounds both
+  before and after it mounted — neither reproduced a failure, since a real DOM `mouseenter` requires
+  an actual boundary-crossing pointer move, and `resumeTimers()`'s blanket unpause already clears any
+  hover-pause too). MOBILE-only in CI's one run was circumstantial — which device's window happened
+  to overlap a real CI parallel-worker tab-focus shift — not a device-conditional code path.
+- **Fix:** moved the focus dispatch INSIDE the `vi.waitFor` poll callback (re-dispatched every
+  250ms) instead of once before it, closing the window regardless of when a genuine blur lands.
+- **Verification:** with the injected mid-wait blur, the single-dispatch version fails with CI's
+  exact error message; the poll-based version passes. Full file 236/236 without any injected blur.
+- **Files modified:** `src/components/layout/board-view/board-view.test.tsx`.
+- **Committed in:** `173fee5`.
+
+**Final state: CI run 34125756241 is fully green** — `e2e`, `quality`, `secrets`, `visual` all
+`success` (`e2e` needed one `gh run rerun --failed` for three unrelated, pre-existing flakes — an
+axe-scan "instrument may not have installed" false-negative and two tests marked "flaky" that passed
+on retry, none touching board creation, columns, or anything this task modified).
+https://github.com/RudVlad473/kanban-board-frontend/actions/runs/34125756241
 
 ## User Setup Required
 
@@ -331,4 +362,4 @@ None — no external service configuration required.
 
 ## Self-Check: PASSED
 
-All created files verified present on disk; all three task commits (`9ee9d44`, `23671c5`, `6717037`) verified present in git history.
+All created files verified present on disk; all four commits (`9ee9d44`, `23671c5`, `6717037`, `173fee5`) verified present in git history.
