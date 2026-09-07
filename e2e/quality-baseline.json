@@ -1,5 +1,5 @@
 {
-    "recordedAt": "2026-09-07T07:11:32.029Z",
+    "recordedAt": "2026-09-07T10:13:41.260Z",
     "note": "Committed accessibility/layout-shift baseline for e2e/quality-fixtures.ts (04-23). Record with `pnpm e2e:baseline <spec>`.",
     "tests": {
         "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > qualityGates runs passively at teardown, and the axe factory scans the settled board": {
@@ -565,6 +565,12 @@
             "flakyRuleIds": [],
             "evaluatedRuleFloor": 90,
             "layoutShiftScore": 0
+        },
+        "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create a board — optimistic columns > navigates fast and paints the typed columns immediately, while the fan-out is still held": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.00026652018229166664
         }
     }
 }
