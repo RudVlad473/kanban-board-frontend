@@ -6,7 +6,7 @@ status: completed
 stopped_at: Phase 04 complete — all phases complete
 last_updated: "2026-09-07T08:25:05.275Z"
 last_activity: 2026-09-07
-last_activity_desc: Phase 04 complete
+last_activity_desc: Completed quick task 260907-exb: Fix board-create column fan-out to be optimistic
 state_head: 442dee30c47159ed9cadda4efe8d79ae1def10b3
 progress:
   total_phases: 6
@@ -33,7 +33,7 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 Phase: 04
 Plan: Not started
 Status: All phases complete
-Last activity: 2026-09-07 — Phase 04 complete
+Last activity: 2026-09-07 — Completed quick task 260907-exb: Fix board-create column fan-out to be optimistic
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
 Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 24/25 (04-25 remaining)
@@ -216,6 +216,7 @@ verifying phase 03 wave 4) —
 | 260905-s0l | Flush TanStack query notifications on the microtask queue so an in-column task reorder never paints the pre-move order after the drop (ADR tech/0034) | 2026-09-05 | 56d6f68 | Verified | [260905-s0l-fix-the-task-title-flicker-across-a-colu](./quick/260905-s0l-fix-the-task-title-flicker-across-a-colu/) |
 | 260905-tz5 | Stage typed subtask titles as placeholders in the task create's own `onMutate` so the card reads "0 of N subtasks" from the first optimistic frame; widen `useUnconfirmedIds` to plural `clientIds` | 2026-09-05 | 4f67a44 | Verified | [260905-tz5-show-the-0-of-n-subtasks-caption-optimis](./quick/260905-tz5-show-the-0-of-n-subtasks-caption-optimis/) |
 | 260906-hze | Move `boards/loading.tsx` and `boards/page.tsx` into a `(index)` route group so `/boards`'s Suspense fallback stops covering the nested `[boardId]` segment during a board switch | 2026-09-06 | 29b4d6e | Pending push/CI | [260906-hze-fix-the-remaining-one-frame-horizontal-s](./quick/260906-hze-fix-the-remaining-one-frame-horizontal-s/) |
+| 260907-exb | Fix BOARD-02's column fan-out to be optimistic: decouple it from the create navigate (which it was accidentally stalling until it settled) and stage placeholder columns under client ids on the new board's own mount | 2026-09-07 | 6717037 | Verified | [260907-exb-fix-board-create-column-fan-out-to-be-op](./quick/260907-exb-fix-board-create-column-fan-out-to-be-op/) |
 
 ### Roadmap Evolution
 
