@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: 04-24's checkpoint resolved (approved with amendments on items 2 and 6); plan CLOSED. CI run 34058774827 confirmed green on all 4 jobs. Proceeding to 04-25 (last plan, wave 20).
-last_updated: "2026-09-07T06:32:27.046Z"
-last_activity: 2026-09-06
+stopped_at: "04-25's code tasks (1-2) complete, committed, pushed, CI green on all 4 jobs (run 34094974444). Trailing checkpoint:human-verify unanswered — this is phase 4's LAST plan, so the checkpoint is the only remaining blocker before phase-close gates."
+last_updated: "2026-09-07T07:43:21.230Z"
+last_activity: 2026-09-07
 last_activity_desc: Phase 04 execution started
-state_head: 2b004738fd111664beacfcde13e40c9b222b71c4
+state_head: 5b8b4fce6ae2a6817bc33bbe69d219857228d85e
 progress:
   total_phases: 6
   completed_phases: 5
@@ -32,9 +32,9 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 ## Current Position
 
 Phase: 04 (Task & Subtask Workflow) — EXECUTING
-Plan: 24 of 25 complete (04-24 checkpoint resolved, plan CLOSED)
-Status: Ready to execute 04-25 (last plan, wave 20), then run phase-close gates
-Last activity: 2026-09-07 — 04-24 checkpoint resolved
+Plan: 25 of 25 — code tasks done, CI green, trailing checkpoint:human-verify unanswered (NOT closed)
+Status: 04-25's checkpoint is the only blocker on phase 4's close-out gates (last plan in the phase)
+Last activity: 2026-09-07 — 04-25 code tasks complete, CI green on all 4 jobs (run 34094974444)
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
 Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 24/25 (04-25 remaining)
@@ -125,6 +125,7 @@ Recent decisions affecting current work:
 - [Phase 04]: Phase 04, 04-24: A whole-suite baseline record's per-test outlier should be re-verified with a scoped, isolated re-record before being treated as permanent (ungated) — full-suite parallel-run contention can produce a spike an isolated re-record does not reproduce.
 - [Phase 04]: Phase 04, 04-24: ESLint's @typescript-eslint/no-restricted-imports (importNames + allowTypeImports) also catches a namespace import (import * as x from 'module') form, not only the named-import form — verified live against this repo's ESLint 10.8.1, closing a bypass 04-REVIEWS.md had flagged as open.
 - [Phase 04]: 04-24's checkpoint resolved 2026-09-07 — price accepted as measured, accessibility debt deferred to a post-phase-close ROADMAP-phase todo (orchestrator's responsibility), D-E drift bound stays reporting-only, full-app.e2e.spec.ts exclusion confirmed, 04-25's ADR not redirected, recurring layout-shift ceiling misses under full-suite contention filed as a todo for further investigation rather than a unilateral tolerance change.
+- [Phase 04]: 04-25 chose window.reactScan (the CDN bundle's own public entrypoint, set unconditionally at script top-level) over the lazily-set globalThis.__REACT_SCAN__ as the reactScan fixture's attachment-proof global, and put the proof in the fixture's own teardown rather than only in the throwaway probe, so any future caller inherits the same guarantee.
 
 ### Pending Todos
 
@@ -239,8 +240,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 **Resume file:** None
 
-Last session: 2026-09-07T06:32:25.800Z
-Stopped at: 04-24's checkpoint resolved (approved with amendments on items 2 and 6); plan CLOSED. CI run 34058774827 confirmed green on all 4 jobs. Proceeding to 04-25 (last plan, wave 20).
+Last session: 2026-09-07T07:43:19.828Z
+Stopped at: 04-25's code tasks (1-2) complete, committed, pushed, CI green on all 4 jobs (run 34094974444). Trailing checkpoint:human-verify unanswered — this is phase 4's LAST plan, so the checkpoint is the only remaining blocker before phase-close gates.
 (run 33805069347, conclusions read back per job). Phase 04's 04-22 human sign-off checkpoint is
 still open and blocking; it was NOT answered this session. Four follow-up todos were filed and are
 listed under Pending Todos.

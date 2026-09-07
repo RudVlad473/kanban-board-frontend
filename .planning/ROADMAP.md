@@ -512,7 +512,7 @@ register, and therefore that drift, as a side effect.
 
   8. No `*-action-storybook-stub.ts` file and no `serverActionStubAlias` entry exists for any
      Server Action this phase adds, and the full `browser` Vitest project passes without them.
-**Plans**: 24/25 plans executed (04-23 and 04-24 added 2026-09-06 — additive test infrastructure, no REQ-ID)
+**Plans**: 25/25 plans executed (04-23 and 04-24 added 2026-09-06 — additive test infrastructure, no REQ-ID)
 
 Plans:
 
@@ -605,7 +605,7 @@ to end on one path before any breadth is added.
 
 **Wave 20** *(blocked on 04-24)*
 
-- [ ] 04-25-PLAN.md — opt-in CDN-injected reactScan, ADR tech/0035 recording the harness's scope decisions and measured behaviours, reviewer-facing fixture inventory
+- [x] 04-25-PLAN.md — opt-in CDN-injected reactScan, ADR tech/0035 recording the harness's scope decisions and measured behaviours, reviewer-facing fixture inventory
 
 **UI hint**: yes
 
@@ -620,4 +620,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 14/14 | Complete    | 2026-08-27 |
-| 4. Task & Subtask Workflow | 24/25 | In Progress|  |
+| 4. Task & Subtask Workflow | 25/25 | In Progress|  |
