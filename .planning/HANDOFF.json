@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-09-07T16:44:57.714Z",
+  "phase": null,
+  "phase_name": "Between milestones (v1.0 complete, v1.1 not started)",
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [],
+  "remaining_tasks": [
+    { "id": 1, "name": "Open a quick task for the board-delete stranding bug (~520ms stale board content + blank title before the redirect lands), per 04-25's checkpoint item 2 — drive the investigation with e2e/quality-fixtures.ts's opt-in instruments", "status": "not_started" },
+    { "id": 2, "name": "File a todo to insert a new post-Phase-5 ROADMAP phase addressing the accessibility inventory (4 rule ids: region, landmark-one-main, page-has-heading-one, color-contrast) and introducing Web Vitals monitoring, per 04-24's checkpoint item 2 — this is the orchestrator's responsibility, not yet filed", "status": "not_started" },
+    { "id": 3, "name": "Decide on milestone completion: run /gsd-complete-milestone to archive v1.0, either before or after the two items above", "status": "not_started" }
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [
+    { "action": "Decide whether to complete/archive milestone v1.0 now or after the two outstanding items above land", "context": "Milestone v1.0 is 6/6 phases complete, CI green; /gsd-progress routed to Route D (all phases complete)", "blocking": false }
+  ],
+  "decisions": [
+    { "decision": "Board/columns fan-out fix (quick task 260907-exb) landed via decoupling the fan-out from the create navigate + optimistic placeholder staging, not the originally-planned onMutate-only fix", "rationale": "Task 1's live-browser investigation found the navigate doesn't commit until the fan-out settles, so onMutate staging alone couldn't help — fixed by triggering the fan-out from the destination component's own mount effect instead", "phase": "quick-260907-exb" },
+    { "decision": "A third, independent layout-shift ceiling-miss incident (2026-09-07) was re-recorded per the standard per-incident remedy, not investigated further", "rationale": "User chose 'investigate the mechanism further before deciding' at the 04-24 checkpoint; the pending todo was updated with all three incidents and flags a fourth as the trigger for the deferred tolerance decision", "phase": "04-24/quick-260907-exb" }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Open a GSD quick task for the board-delete stranding bug (stale board content and a blank title for ~520ms before the redirect lands, on delete) via /gsd-quick — drive the investigation with e2e/quality-fixtures.ts's opt-in instruments (flickerTracker, layoutShiftTracker, reactScan), per 04-25's checkpoint suggestion.",
+  "context_notes": "Milestone v1.0 is fully complete (6/6 phases, all CI green). /gsd-progress routed to Route D (all phases complete, ready for /gsd-complete-milestone). Two items are still open from this session's checkpoint decisions and were explicitly NOT done before pausing: (1) the board-delete quick task — what the user asked to do FIRST on resume, and (2) filing the post-Phase-5 accessibility+Web-Vitals phase todo. Do the board-delete quick task first, per the user's explicit instruction at pause time — do not default to /gsd-complete-milestone without doing this first."
+}
