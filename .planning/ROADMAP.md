@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Column Management** - Users shape a board's workflow by adding, naming, (completed 2026-08-27)
   reordering, and removing columns
 
-- [ ] **Phase 4: Task & Subtask Workflow** - Users create, inspect, edit, drag-and-drop move,
+- [x] **Phase 4: Task & Subtask Workflow** - Users create, inspect, edit, drag-and-drop move, (completed 2026-09-07)
   and delete tasks and their subtask checklists, with version-conflict reconciliation; opens by
   replacing the hand-written Server Action stubs with a generated one (folded in 2026-08-28)
 
@@ -620,4 +620,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Board Management | 16/16 | Complete    | 2026-08-26 |
 | 02.1. Testing strategy overhaul & code-quality retrofit | 15/15 | Complete    | 2026-08-22 |
 | 3. Column Management | 14/14 | Complete    | 2026-08-27 |
-| 4. Task & Subtask Workflow | 25/25 | In Progress|  |
+| 4. Task & Subtask Workflow | 25/25 | Complete    | 2026-09-07 |

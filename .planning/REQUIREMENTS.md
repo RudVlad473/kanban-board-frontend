@@ -34,24 +34,24 @@ Requirements for initial release. Each maps to a roadmap phase.
 
 ### Tasks
 
-- [ ] **TASK-01**: User can create a task within a column (title, optional description)
-- [ ] **TASK-02**: User can view a task's detail — title, description, subtasks checklist,
+- [x] **TASK-01**: User can create a task within a column (title, optional description)
+- [x] **TASK-02**: User can view a task's detail — title, description, subtasks checklist,
   current column
 
-- [ ] **TASK-03**: User can edit a task's title and description
+- [x] **TASK-03**: User can edit a task's title and description
 - [x] **TASK-04**: User can move a task between columns via drag-and-drop, applied
   optimistically and reconciled against the server
 
-- [ ] **TASK-05**: User can delete a task (cascades to its subtasks)
+- [x] **TASK-05**: User can delete a task (cascades to its subtasks)
 
 ### Subtasks
 
-- [ ] **SUBTASK-01**: User can add a subtask to a task
-- [ ] **SUBTASK-02**: User can toggle a subtask's completion state, independent of the task's
+- [x] **SUBTASK-01**: User can add a subtask to a task
+- [x] **SUBTASK-02**: User can toggle a subtask's completion state, independent of the task's
   column
 
-- [ ] **SUBTASK-03**: User can edit a subtask's title
-- [ ] **SUBTASK-04**: User can delete a subtask
+- [x] **SUBTASK-03**: User can edit a subtask's title
+- [x] **SUBTASK-04**: User can delete a subtask
 
 ### Theme
 
@@ -108,15 +108,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COLUMN-02 | Phase 3 | Complete |
 | COLUMN-03 | Phase 3 | Complete |
 | COLUMN-04 | Phase 3 | Complete |
-| TASK-01 | Phase 4 | Pending |
-| TASK-02 | Phase 4 | Pending |
-| TASK-03 | Phase 4 | Pending |
+| TASK-01 | Phase 4 | Complete |
+| TASK-02 | Phase 4 | Complete |
+| TASK-03 | Phase 4 | Complete |
 | TASK-04 | Phase 4 | Complete |
-| TASK-05 | Phase 4 | Pending |
-| SUBTASK-01 | Phase 4 | Pending |
-| SUBTASK-02 | Phase 4 | Pending |
-| SUBTASK-03 | Phase 4 | Pending |
-| SUBTASK-04 | Phase 4 | Pending |
+| TASK-05 | Phase 4 | Complete |
+| SUBTASK-01 | Phase 4 | Complete |
+| SUBTASK-02 | Phase 4 | Complete |
+| SUBTASK-03 | Phase 4 | Complete |
+| SUBTASK-04 | Phase 4 | Complete |
 | SYNC-01 | Phase 4 | Complete |
 
 **Coverage:**
