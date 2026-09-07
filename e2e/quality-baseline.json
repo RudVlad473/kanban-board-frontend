@@ -1,5 +1,5 @@
 {
-    "recordedAt": "2026-09-07T11:46:30.280Z",
+    "recordedAt": "2026-09-07T17:34:22.104Z",
     "note": "Committed accessibility/layout-shift baseline for e2e/quality-fixtures.ts (04-23). Record with `pnpm e2e:baseline <spec>`.",
     "tests": {
         "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > qualityGates runs passively at teardown, and the axe factory scans the settled board": {
@@ -571,6 +571,12 @@
             "flakyRuleIds": [],
             "evaluatedRuleFloor": 90,
             "layoutShiftScore": 0.00026652018229166664
+        },
+        "e2e/boards-delete.e2e.spec.ts :: ../e2e/boards-delete.e2e.spec.ts > board-delete stranding window > never shows the deleted board's content or a blank header title while the destination is still loading": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
         }
     }
 }
