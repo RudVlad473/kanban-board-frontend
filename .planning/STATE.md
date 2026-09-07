@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Task & Subtask Workflow
 status: executing
-stopped_at: "Completed 04-24-PLAN.md (whole-project quality gate rollout: lint enforcement, 79-test baseline, contention + CI proof) - trailing checkpoint:human-verify presented, unanswered"
-last_updated: "2026-09-06T20:22:45.211Z"
+stopped_at: 04-24's checkpoint resolved (approved with amendments on items 2 and 6); plan CLOSED. CI run 34058774827 confirmed green on all 4 jobs. Proceeding to 04-25 (last plan, wave 20).
+last_updated: "2026-09-07T06:32:27.046Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 04 execution started
-state_head: 30b85c6824612bd8eaf3f080353c9568f6c0ef21
+state_head: 2b004738fd111664beacfcde13e40c9b222b71c4
 progress:
   total_phases: 6
   completed_phases: 5
@@ -32,13 +32,12 @@ cover board create + initial columns (BOARD-02), board detail view, rename, and 
 ## Current Position
 
 Phase: 04 (Task & Subtask Workflow) — EXECUTING
-Plan: 3 of 25
-Plan 04-22's final `checkpoint:human-verify` gate is open and blocking.
-Status: Ready to execute
-Last activity: 2026-09-06 — Phase 04 execution started
+Plan: 24 of 25 complete (04-24 checkpoint resolved, plan CLOSED)
+Status: Ready to execute 04-25 (last plan, wave 20), then run phase-close gates
+Last activity: 2026-09-07 — 04-24 checkpoint resolved
 
 Progress: Milestone v1.0 — Phase 1: 38/38; Phase 02.1: 15/15; Phase 02.2: 9/9;
-Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 22/22 (awaiting sign-off)
+Phase 02: 15/15 (complete); Phase 03: 14/14 (complete); Phase 04: 24/25 (04-25 remaining)
 
 ## Performance Metrics
 
@@ -125,6 +124,7 @@ Recent decisions affecting current work:
 - [Phase 04]: 04-23: D-K's include/exclude layout-shift falsification landed EQUAL on both interactions tried (empty board switch, task-create against 5 tasks) — this app produces near-zero, non-input-attributed shift for these interactions; DEFAULT_QUALITY_TOLERANCES stays provisional pending 04-24's whole-suite measurement
 - [Phase 04]: Phase 04, 04-24: A whole-suite baseline record's per-test outlier should be re-verified with a scoped, isolated re-record before being treated as permanent (ungated) — full-suite parallel-run contention can produce a spike an isolated re-record does not reproduce.
 - [Phase 04]: Phase 04, 04-24: ESLint's @typescript-eslint/no-restricted-imports (importNames + allowTypeImports) also catches a namespace import (import * as x from 'module') form, not only the named-import form — verified live against this repo's ESLint 10.8.1, closing a bypass 04-REVIEWS.md had flagged as open.
+- [Phase 04]: 04-24's checkpoint resolved 2026-09-07 — price accepted as measured, accessibility debt deferred to a post-phase-close ROADMAP-phase todo (orchestrator's responsibility), D-E drift bound stays reporting-only, full-app.e2e.spec.ts exclusion confirmed, 04-25's ADR not redirected, recurring layout-shift ceiling misses under full-suite contention filed as a todo for further investigation rather than a unilateral tolerance change.
 
 ### Pending Todos
 
@@ -239,8 +239,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 **Resume file:** None
 
-Last session: 2026-09-06T20:22:44.794Z
-Stopped at: Completed 04-24-PLAN.md (whole-project quality gate rollout: lint enforcement, 79-test baseline, contention + CI proof) - trailing checkpoint:human-verify presented, unanswered
+Last session: 2026-09-07T06:32:25.800Z
+Stopped at: 04-24's checkpoint resolved (approved with amendments on items 2 and 6); plan CLOSED. CI run 34058774827 confirmed green on all 4 jobs. Proceeding to 04-25 (last plan, wave 20).
 (run 33805069347, conclusions read back per job). Phase 04's 04-22 human sign-off checkpoint is
 still open and blocking; it was NOT answered this session. Four follow-up todos were filed and are
 listed under Pending Todos.

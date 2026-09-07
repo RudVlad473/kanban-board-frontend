@@ -20,7 +20,8 @@ affects: [04-25]
 actuals:
   tokens: 13292
   tasks: 3
-  commits: 3
+  commits: 6
+  plan_head_before: c552bce23975138727ff3c7ff32c4c1db09bb367
 
 tech-stack:
   added: []
@@ -64,6 +65,7 @@ key-decisions:
   - "The 16 specs carrying a type-only Playwright import (`type Page`/`type Locator`/`type Request`) kept that import INLINE (`import { type Page } from \"@playwright/test\"`) rather than converting to a separate `import type { ... }` statement — minimizes the diff to exactly what the rule requires (removing `test`/`expect`), matching the plan's own 'only import lines changed' verification."
   - "One test's layout-shift score spiked to 0.016419 (vs. a suite median of 1.8e-5) in the whole-project 79-test, 3-repeat record run. Rather than permanently ungating it (the plan's fallback for a genuinely irreducible per-test outlier), a scoped isolated re-record of that one spec was run first — it produced three clean near-zero results, pointing at full-suite resource contention as the cause rather than the interaction itself. No test's layout-shift score is ungated in the committed baseline; DEFAULT_QUALITY_TOLERANCES (0.01 floor, 1.5 tolerance) were CONFIRMED with wide margin against the clean measurement, not raised."
   - "A flaky color-contrast finding on optimistic-guards.e2e.spec.ts's OPT-01 sidebar-row case, first observed during this plan's own `pnpm verify` run (a 4th independent observation the 3-repeat record hadn't carried), was resolved per the documented remedy: `pnpm e2e:baseline e2e/optimistic-guards.e2e.spec.ts` (scoped re-record), never a hand-edit of axeRuleCounts or flakyRuleIds."
+  - "A SECOND, independent layout-shift ceiling miss (auth.e2e.spec.ts's AUTH-04 case, 0.0199 vs a 0.015 ceiling) surfaced during the final push's own pre-push `pnpm verify` — resolved the same way (scoped re-record, landed back at the suite's near-zero baseline). Two such incidents across roughly five full-suite-scale runs post-baseline is a recurring pattern, not a one-off: it is flagged explicitly at the checkpoint below rather than silently absorbed by repeated re-recording, since the per-test re-record remedy treats each symptom but does not by itself say whether the CHOSEN global tolerance is adequate for full-suite-contention conditions specifically (as opposed to an isolated single-spec run, which has never reproduced either spike)."
 
 requirements-completed: []
 
@@ -107,7 +109,7 @@ status: complete
 
 1. **Task 1: The lint rule, and the 23 imports it makes mandatory** - `99c0505` (feat)
 2. **Task 2: Record the whole-project baseline, derive the tolerances, and price the gate** - `80cf6fc` (feat), followed by a same-task correction `30b85c6` (fix) after `pnpm verify` surfaced a flaky rule the 3-repeat record hadn't seen
-3. **Task 3: Contention, the full pipeline, and CI sign-off** - no additional commit (verification-only: contention run 0 flaky, `pnpm verify` green, push + CI green — nothing to fix)
+3. **Task 3: Contention, the full pipeline, and CI sign-off** - `1c21b60` (fix) — contention run itself was 0 flaky and needed no fix; the fix commit resolves a SECOND, independent layout-shift ceiling miss the docs-commit push's own pre-push `pnpm verify` surfaced (see Deviations #5)
 
 ## Files Created/Modified
 
@@ -160,14 +162,24 @@ See `key-decisions` in frontmatter for the two decisions with the most future-re
 - **Verification:** `e2e/quality-baseline.json`'s entry for this test now reads `layoutShiftScore: 0.000018374125162760416` (not `1`); `pnpm exec vitest run --project node e2e/quality-baseline.unit.test.ts` still 9/9.
 - **Committed in:** `30b85c6`
 
+**5. [Rule 1 - Bug] A SECOND, independent layout-shift ceiling miss, on a different test**
+- **Found during:** Task 3, the docs-commit push's own pre-push `pnpm verify` run (the 5th full-suite-scale run since the baseline was corrected)
+- **Issue:** `auth.e2e.spec.ts`'s AUTH-04 "sign-in rejects a wrong password" case scored `0.01990856255425347` against its `0.015` ceiling (recorded `0.000018374125162760416`, floor `0.01`, tolerance `1.5`) — the SAME class of finding as deviation #3/#4, on a DIFFERENT test. Two such incidents across roughly five full-suite-scale runs is a recurring pattern worth naming explicitly rather than treating each occurrence as isolated.
+- **Fix:** `pnpm e2e:baseline e2e/auth.e2e.spec.ts` (scoped re-record, the comparator's own prescribed remedy). The re-record's three isolated runs landed back at the suite's near-zero value (`0.000018374125162760416`) — again NOT reproducing the spike, matching the earlier finding's pattern exactly: an isolated re-record of a small number of tests has never once reproduced a spike a full 79-test, multi-worker parallel run has now produced twice.
+- **Files modified:** `e2e/quality-baseline.json`
+- **Verification:** `pnpm exec playwright test --project=e2e e2e/auth.e2e.spec.ts` — 12/12 passed.
+- **Committed in:** `1c21b60`
+- **Not resolved by this fix:** whether the CHOSEN global tolerance (`0.01` floor, `1.5x`) is adequate for full-suite-CONTENTION conditions specifically — as opposed to the isolated single-spec conditions every re-record measures. Both incidents point at the same open question, which is put to the human at the checkpoint below rather than answered unilaterally here (raising a global constant is exactly the kind of silent-widening this plan's own D-I forbids doing without a human decision).
+
 ---
 
-**Total deviations:** 4 auto-fixed (2 bugs found during the plan's own required checks, 1 bug caught by `pnpm verify` itself and fixed by the plan's own documented remedy, 1 self-correction of an earlier finding once better evidence arrived). **Impact on plan:** all four were within the plan's own anticipated failure modes (the format-check warning, the flaky-rule remedy, the outlier-exclusion escape hatch) or trivial format fixes; none changed scope, and none touched `src/` or `app/`.
+**Total deviations:** 5 auto-fixed (2 bugs found during the plan's own required checks, 2 bugs caught by `pnpm verify` itself and fixed by the plan's own documented remedy, 1 self-correction of an earlier finding once better evidence arrived). **Impact on plan:** all five were within the plan's own anticipated failure modes (the format-check warning, the flaky-rule/ceiling-miss remedy, the outlier-exclusion escape hatch) or trivial format fixes; none changed scope, and none touched `src/` or `app/`. The two layout-shift ceiling misses (deviations #3/#4 and #5) are, taken together, evidence a human should weigh at the checkpoint — see the last bullet of Issues Encountered.
 
 ## Issues Encountered
 
 - **The first baseline-record attempt hit 2 transient failures** (`boards-switch.e2e.spec.ts`'s stacked-board-area case timed out on `networkidle`; `optimistic-guards.e2e.spec.ts`'s drag-handle case timed out waiting for the control to enable) on the shared nonprod backend, matching the documented intermittent-TCP-drop class already recorded in `playwright.config.ts`'s own retry-rationale comment. A clean retry recorded all 79 keys with zero failures — treated as backend flakiness, not investigated further, per the plan's own instruction to only investigate a failure that recurs.
-- **CLAUDE.md's 5m14s `pnpm verify` baseline and `docs/review-brief.md`'s ~7min figure both disagree with this session's two measurements (8m53s and 9m6s).** Not resolved: this session ran an unusually dense sequence of e2e-heavy operations back to back (3 full-project runs at default workers, one 10-minute `--repeat-each=3 --workers=2` contention run, one full baseline recording), which plausibly left machine-level contention (browser process cleanup, OS cache pressure) that a single isolated `pnpm verify` run would not carry. The gate's own measured local delta (+13.2s/+8.1%) and CI delta (+33s/+15%) are both well-isolated single-variable measurements and are the numbers the 90s budget verdict rests on; the `pnpm verify` totals are reported as an additional data point, not as clean evidence of the gate's own cost in isolation.
+- **CLAUDE.md's 5m14s `pnpm verify` baseline and `docs/review-brief.md`'s ~7min figure both disagree with this session's measurements (532937ms/545839ms/514627ms across three separate green runs).** Not resolved: this session ran an unusually dense sequence of e2e-heavy operations back to back (multiple full-project runs at default workers, one 10-minute `--repeat-each=3 --workers=2` contention run, two full/scoped baseline recordings), which plausibly left machine-level contention (browser process cleanup, OS cache pressure) that a single isolated `pnpm verify` run would not carry. The gate's own measured local delta (+13.2s/+8.1%) and CI delta (+33s/+15%) are both well-isolated single-variable measurements and are the numbers the 90s budget verdict rests on; the `pnpm verify` totals are reported as an additional data point, not as clean evidence of the gate's own cost in isolation.
+- **Recurring layout-shift ceiling misses under full-suite contention, not yet fully explained.** Across roughly five full-79-test-project-scale runs taken after the baseline was recorded (two `pnpm verify` runs, one `--repeat-each=3 --workers=2` contention run, two more `pnpm verify` runs via the pre-push hook), TWO different tests (`optimistic-guards.e2e.spec.ts`'s OPT-01 sidebar case, then `auth.e2e.spec.ts`'s AUTH-04 wrong-password case) each scored a layout-shift value 1.3x-1000x their own near-zero recorded baseline exactly once, each time above the `0.01`-floor/`1.5`-tolerance ceiling (`0.015`) that covers every test's recorded value with generous headroom in isolation. Both times, a scoped re-record of the SAME spec — 3 more runs, no other tests running concurrently — landed back at the identical near-zero value every other test in the suite carries. This is consistent (not yet proven) with resource contention during a full-79-test parallel run producing occasional genuine measurement noise on the Layout Instability API, rather than either test having a real per-interaction defect. It has NOT been root-caused to a specific mechanism (GC pause, CPU throttling, or a genuinely borderline UI transition are all still plausible). Two incidents in five runs (a 40% observed rate) is enough of a pattern that continuing to re-record on each new occurrence, indefinitely, is not obviously the right long-term answer — surfaced explicitly at the checkpoint below (item 3) rather than decided unilaterally, since a hand-authored global tolerance uses cannot be `pnpm e2e:baseline`-derived and needs the same acceptance the initial constants got.
 
 ## User Setup Required
 
@@ -176,8 +188,42 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 - **04-25** (the `reactScan` fixture and the D-D/D-F ADR) can proceed: `e2e/quality-fixtures.ts` and `e2e/quality-baseline.ts` are unchanged in shape by this plan (only the baseline data and tolerance comment moved), and the `zz-` probe convention remains available.
-- The trailing `checkpoint:human-verify` task (below) is presented but **not yet answered** — this plan is NOT closed. A human needs to accept: (1) the measured price (+13.2s/+8.1% local, +33s/+15% CI, both inside the stated 90s budget, neither narrowing lever applied), (2) the filed accessibility backlog (4 rule ids, todo linked above), (3) D-E's one-directional drift bound at the now-much-larger scale (4 distinct rule ids across 79 tests, versus the self-test's near-zero baseline), (4) the `full-app.e2e.spec.ts` exclusion (D-H, unchanged from the plan), and (5) whether anything here should redirect 04-25's ADR before it is written.
+- The trailing `checkpoint:human-verify` task is **answered — plan CLOSED.** See "Checkpoint Resolution" below.
 - One pending todo carried forward from 04-23, still open: `.planning/todos/pending/2026-09-06-migrate-isserveractionpost-to-the-shared-quality-fixtures-export.md` (de-duplicating `isServerActionPost`) — out of this plan's scope, unaffected by this rollout.
+
+## Checkpoint Resolution
+
+**Resume-signal:** approved, with amendments on items 2 and 6 (of the `<how-to-verify>` list;
+item 6 was an addition raised outside the plan's own five numbered items, covering the
+un-anticipated layout-shift finding from Deviations #3-#5).
+
+1. **The price** — accepted as measured: +13.2s/+8.1% local, +33s/+15% CI, both inside the 90s
+   budget. Neither narrowing lever (scoping the axe scan to the main landmark; dropping the
+   best-practice rule family via tags) applied.
+2. **The accessibility baseline/debt** (4 rule ids: `region`, `landmark-one-main`,
+   `page-has-heading-one`, `color-contrast`) — **NOT resolved now.** The human wants a todo filed,
+   once phase 4 is fully closed, to insert a new ROADMAP phase after Phase 5 addressing this
+   accessibility debt AND introducing Web Vitals monitoring for the app. That todo is the
+   orchestrator's responsibility post-phase-close, not this checkpoint close-out's — it is not
+   filed by this commit.
+3. **The one-directional drift bound (D-E)** — accepted as proposed: reporting-only is enough for
+   now at this scale (4 distinct rule ids across 79 tests); no scheduled whole-suite re-record
+   escalation.
+4. **The `full-app.e2e.spec.ts` exclusion (D-H)** — confirmed, stays excluded.
+5. **Whether to redirect 04-25's ADR** — no redirect; 04-25 proceeds as planned.
+6. **The new, un-anticipated item** (recurring layout-shift ceiling misses under full-suite
+   contention, 2 incidents in ~5 full-suite runs, not yet root-caused — Deviations #3-#5 and
+   Issues Encountered above) — human chose **investigate the mechanism further before deciding**
+   whether to widen the global tolerance (`0.01` floor, `1.5x`) or keep re-recording per-incident.
+   Filed as `.planning/todos/pending/2026-09-07-investigate-recurring-layout-shift-ceiling-misses-under-full.md`
+   rather than investigated in this close-out session.
+
+Plan 04-24 is now fully closed. CI run `34058774827` (the same run `.continue-here.md` left
+in progress) is confirmed green on all 4 jobs (`secrets`, `quality`, `visual`, `e2e`) — the `e2e`
+job's initial run had 1 real failure plus 4 flaky retries; a rerun came back 0 failures, 78 passed,
+1 unrelated flaky (`boards-detail.e2e.spec.ts`), confirming the original failure was transient
+nonprod-backend contention (the documented intermittent-TCP-drop class), not a regression from
+this plan's changes.
 
 ---
 *Phase: 04-task-subtask-workflow*
