@@ -221,6 +221,50 @@ export type LayoutShiftTracker = {
     readonly assertMaxLayoutShift: (maxAllowed: number) => Promise<void>;
 };
 
+/* Version-pinned (D-D): an unpinned CDN URL is an unreviewed dependency that can change under a green suite. */
+const REACT_SCAN_BUNDLE_URL = "https://unpkg.com/react-scan@0.5.7/dist/auto.global.js";
+
+let reactScanBundlePromise: Promise<string> | undefined;
+
+const fetchReactScanBundleUncached = async (): Promise<string> => {
+    let response: Response;
+    try {
+        response = await fetch(REACT_SCAN_BUNDLE_URL);
+    } catch (error) {
+        throw new Error(
+            `reactScan: could not reach ${REACT_SCAN_BUNDLE_URL} — this is the one fixture in this file that needs the network; ${String(error)}`,
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            `reactScan: fetching ${REACT_SCAN_BUNDLE_URL} returned HTTP ${String(response.status)} — this is the one fixture in this file that needs the network.`,
+        );
+    }
+
+    return response.text();
+};
+
+/** Memoized at module scope so a multi-test run fetches once per worker, not once per test. */
+const fetchReactScanBundle = (): Promise<string> => {
+    reactScanBundlePromise ??= fetchReactScanBundleUncached().catch((error: unknown) => {
+        reactScanBundlePromise = undefined; // let a later test in this worker retry rather than caching a transient failure forever
+        throw error;
+    });
+
+    return reactScanBundlePromise;
+};
+
+declare global {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- augmenting the global Window interface via declaration merging requires `interface`; `type` cannot merge
+    interface Window {
+        /** Assigned by the fetched bundle itself (`Ku(); window.reactScan = Ku`) — the CDN build's own public entry point, empirically confirmed at 04-25 planning time (react-scan 0.5.7). */
+        reactScan?: (options?: Record<string, unknown>) => void;
+    }
+}
+
+export type ReactScan = () => Promise<void>;
+
 export type QualityFixtures = {
     /** A zero-argument factory, so a probe can chain `include`/`exclude`/`withTags` per case without a shared instance leaking one case's narrowing into the next. */
     readonly axe: () => AxeBuilder;
@@ -232,6 +276,8 @@ export type QualityFixtures = {
     readonly optimisticRoute: OptimisticRoute;
     /** Opt-in: the interaction-window reading, INCLUDING input-initiated shifts (D-K) — see the passive gate for the excluding half. */
     readonly layoutShiftTracker: LayoutShiftTracker;
+    /** Opt-in for a DIFFERENT reason than D-F: axe and layout-shift need no argument, but this needs a network fetch at setup time on a gate that now runs on every push (D-D). */
+    readonly reactScan: ReactScan;
     /** Passive, `auto`. Never called by a test — see the fixture declaration below. */
     readonly qualityGates: undefined;
 };
@@ -346,6 +392,38 @@ export const test = base.extend<QualityFixtures>({
                     }
                 },
             });
+        },
+        { option: true },
+    ],
+
+    reactScan: [
+        async ({ page }, provideFixture) => {
+            /*
+             * An object, not a bare `let`: TS narrows a `let` reassigned only inside a callback
+             * argument as if the reassignment always ran, making the check below dead code.
+             */
+            const state = { wasCalled: false };
+
+            await provideFixture(async () => {
+                const bundleText = await fetchReactScanBundle();
+                /*
+                 * Inline CONTENT, not a script tag pointing at the URL: `addInitScript` content runs
+                 * before any page script, so it can instrument React's own chunks; an appended tag
+                 * loads asynchronously and races the bundles it exists to wrap (T-04-52).
+                 */
+                await page.addInitScript({ content: bundleText });
+                state.wasCalled = true;
+            });
+
+            if (!state.wasCalled) return;
+
+            const attached = await page.evaluate(() => typeof window.reactScan === "function");
+
+            if (!attached) {
+                throw new Error(
+                    `reactScan: opted in, but "window.reactScan" was never installed after this test's navigations — the CDN bundle may have lost the race with the app's own scripts, or executed with no effect.`,
+                );
+            }
         },
         { option: true },
     ],
