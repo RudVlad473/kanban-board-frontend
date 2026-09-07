@@ -70,3 +70,81 @@ test.describe("BOARD-05: delete a board", () => {
         await expect(page.getByRole("button", { name: "Create your first board" })).toBeVisible();
     });
 });
+
+// comment-length-exempt: records the measured mechanism this case pins, why the hold targets the RSC request rather than the delete's own Server Action, and what widening buys over the real (short, flaky-under-CI) window
+/*
+ * 260907-q83: `usePathname()` does not move until `use-delete-board.ts`'s `router.replace` COMMITS
+ * — which needs a fresh RSC round trip for the destination — while the boards-list cache entry was
+ * already updated one line above it, synchronously. Measured against the real dev server (not this
+ * held-open case): ~700-820ms where the header's `<h1>` reads blank and the just-deleted board's own
+ * column heading is still painted, closing the instant the destination's RSC response lands.
+ *
+ * Held open here with `optimisticRoute`, matched on the `rsc` header rather than the default
+ * Server-Action match: the delete's own `deleteBoardAction` POST carries no `rsc` header and must
+ * stay unheld, or the mutation itself would never settle. Widening only the navigation's own round
+ * trip is what makes the window deterministic — the real one is too short to assert against
+ * reliably under CI contention.
+ */
+test.describe("board-delete stranding window", () => {
+    test("never shows the deleted board's content or a blank header title while the destination is still loading", async ({
+        page,
+        optimisticRoute,
+    }) => {
+        // Arrange — one account, two boards; the doomed one carries a column unique enough to assert on by name.
+        const account = seedAccount();
+        const suffix = randomUUID().slice(0, 8);
+        const doomedName = `E2E Strand Doomed ${suffix}`;
+        const survivorName = `E2E Strand Survivor ${suffix}`;
+        const doomed = seedBoard({ account, name: doomedName });
+        seedColumn({ account, boardId: doomed.id, name: "Strandcol" });
+        const survivor = seedBoard({ account, name: survivorName });
+
+        // Arrange — sign in, then open the board that is about to be deleted.
+        await page.goto(ROUTE.SIGN_IN);
+        await page.getByLabel("Email", { exact: true }).fill(account.email);
+        await page.getByLabel("Password", { exact: true }).fill(account.password);
+        await page.getByRole("button", { name: "Sign In" }).click();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
+
+        const sidebar = page.getByRole("navigation", { name: "Boards" });
+        await sidebar.getByRole("link", { name: doomedName }).click();
+        await expect(page).toHaveURL(new RegExp(`${buildBoardDetailPath(doomed.id)}$`));
+        const doomedColumnHeading = page.getByRole("heading", { name: /^strandcol \(0\)$/i });
+        await expect(doomedColumnHeading).toBeVisible();
+
+        // Arrange — open the menu and the confirm dialog BEFORE the hold, so opening them is never held.
+        await sidebar.getByRole("button", { name: `Board actions for ${doomedName}` }).click();
+        await page.getByRole("menuitem", { name: "Delete Board" }).click();
+        const confirmButton = page.getByRole("dialog").getByRole("button", { name: "Delete Board" });
+        await expect(confirmButton).toBeVisible();
+
+        // Arrange — widen the navigation's own round trip; the delete's own Server Action is untouched.
+        await optimisticRoute({
+            urlPattern: "**/*",
+            delayMs: 3000,
+            match: (request) => "rsc" in request.headers(),
+        });
+
+        // Act — the confirm click itself.
+        await confirmButton.click();
+
+        /*
+         * Sync point, not the assertion: the sidebar row leaves the instant `onMutate` lands. A
+         * polling `toBeHidden()`/`toBeVisible()` on the symptoms below would pass the moment the RSC
+         * hold releases instead — DIRECT reads pin it (`boards-switch.e2e.spec.ts`'s own note on this).
+         */
+        await expect(sidebar.getByRole("link", { name: doomedName })).toBeHidden();
+
+        // Assert — the mechanism, taken as direct reads while the destination's RSC response is still held open.
+        const headerHeadingCount = await page.locator("h1").count();
+        const headerText = headerHeadingCount > 0 ? await page.locator("h1").first().textContent() : null;
+        const doomedColumnVisible = await doomedColumnHeading.isVisible();
+
+        expect(headerText?.trim()).toBe(survivorName);
+        expect(doomedColumnVisible).toBe(false);
+
+        // Assert — the destination still lands once the hold releases.
+        await expect(page).toHaveURL(new RegExp(`${buildBoardDetailPath(survivor.id)}$`));
+        await expect(page.getByRole("heading", { level: 1, name: survivorName })).toBeVisible();
+    });
+});
