@@ -1,5 +1,5 @@
 {
-    "recordedAt": "2026-09-07T10:13:41.260Z",
+    "recordedAt": "2026-09-07T11:46:30.280Z",
     "note": "Committed accessibility/layout-shift baseline for e2e/quality-fixtures.ts (04-23). Record with `pnpm e2e:baseline <spec>`.",
     "tests": {
         "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > qualityGates runs passively at teardown, and the axe factory scans the settled board": {

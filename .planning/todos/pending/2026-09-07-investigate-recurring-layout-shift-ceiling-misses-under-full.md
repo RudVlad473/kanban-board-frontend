@@ -53,3 +53,17 @@ Two paths, not mutually exclusive:
    of 2) back to a human decision rather than raising the constant unilaterally.
 
 Either way, do not touch `DEFAULT_QUALITY_TOLERANCES` without a fresh human sign-off, per D-I.
+
+## Third incident (2026-09-07)
+
+A THIRD, independent ceiling miss — `e2e/quality-fixtures.e2e.spec.ts`'s own standing self-test
+("qualityGates runs passively at teardown, and the axe factory scans the settled board"), scored
+`0.020908344692654082` against the same `0.015` ceiling (recorded `0.000018374125162760416`).
+Surfaced by the pre-push `pnpm verify` gate on quick task 260907-exb's docs commit — a full local
+`e2e` run (80 tests, default workers), not the 04-24-style repeat-record. Re-recorded per the same
+documented remedy (`pnpm e2e:baseline e2e/quality-fixtures.e2e.spec.ts`); the isolated 3-run
+re-record was 12/12 clean, landing back at the identical near-zero value. Three incidents now
+(two different specs from 04-24, plus this one, across three separate measurement occasions) with
+no clear contention-side mechanism identified in any of them — per the Solution section above,
+this crosses the line the human's original answer named: bring this back for the data-driven
+tolerance call before treating a fourth occurrence as routine.
