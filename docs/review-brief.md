@@ -24,9 +24,9 @@ against the real deployed nonprod backend.
 | `pnpm test:browser` | real-DOM component tests in Chromium | the bulk of `pnpm test` |
 | `pnpm test:a11y` | the storybook project | — |
 | **`pnpm test`** | **all three vitest projects — this is the total one** | ~5min |
-| `pnpm exec playwright test --project=e2e` | the built app against the real nonprod backend | ~2min |
+| `pnpm exec playwright test --project=e2e` | the built app against the real nonprod backend, including the `qualityGates` accessibility + layout-shift check on every test (04-24) | ~2m21s (measured 2026-09-07) |
 | `pnpm test:visual` | Storybook screenshots; needs `CI=1` **and** a fresh `pnpm build-storybook`, or it silently compares nothing | — |
-| **`pnpm verify`** | **all 20 pre-push gates, everything above included** | ~7min |
+| **`pnpm verify`** | **all 20 pre-push gates, everything above included** | ~6m22s (measured 2026-09-07, isolated run — see docs/adr/tech/0035) |
 | `pnpm folders:check` `tsx:check` `comments:check` `actions:check` `coverage:check` `routes:check` `renders:check` `gates:check` | the individual convention gates, seconds each | <5s |
 
 `pnpm test:unit` reporting a confident pass while components are broken is a real trap here, not a
@@ -49,13 +49,28 @@ pnpm exec playwright show-trace test-results/<dir>/trace.zip
   defaulted to success.
 - **e2e** — a `page.route` delay on `next-action` POSTs. Release the hold before asserting the
   window has closed, or the writes the test makes afterwards are delayed too and the create under
-  test can be refused and rolled back (green locally, red on CI, 2026-09-05).
+  test can be refused and rolled back (green locally, red on CI, 2026-09-05). `optimisticRoute`
+  (see Fixtures below) is this hazard's fixture form — its default match predicate is
+  `isServerActionPost`, the same `next-action` discriminator.
 
 ### Fixtures
 
 `e2e/seed.ts`: `seedAccount`, `seedBoard`, `seedColumn`, `seedTask`, `seedSubtask`,
 `updateTaskOutOfBand`, `readBoardFull`. Name throwaway specs `e2e/zz-<reviewer>-*.e2e.spec.ts` and
 delete them once the run they belong to has finished.
+
+`e2e/quality-fixtures.ts` — the quality-verification harness (docs/adr/tech/0035). Import
+`test`/`expect` from here, not `@playwright/test` directly, or `pnpm lint` fails.
+
+| Fixture | Runs | What it does |
+| --- | --- | --- |
+| `qualityGates` | **automatically, every test** | Route-level axe scan + document layout-shift score, checked against `e2e/quality-baseline.json`. No call in any test body. |
+| `axe` | opt-in | A zero-argument `AxeBuilder` factory, for a case that needs its own `include`/`exclude`/`withTags` narrowing. |
+| `cdp` | opt-in | A live Chromium DevTools Protocol session. |
+| `flickerTracker` | opt-in | An in-page mutation counter, scoped to a chosen selector and a required `maxMutations` budget. |
+| `optimisticRoute` | opt-in | A bounded delay on matched writes (`next-action` by default), for observing docs/adr/tech/0030's optimistic window. |
+| `layoutShiftTracker` | opt-in | Shift attributable to ONE chosen interaction, including input-initiated entries the passive gate excludes. |
+| `reactScan` | opt-in | Injects a pinned CDN `react-scan` build to instrument React renders — the only fixture here that needs the network. |
 
 `pnpm e2e:seed account` gives a login to drive the app by hand; `pnpm e2e:cleanup` deletes
 everything seeded that way. The suite creates real accounts on a shared backend and reaps its own;
