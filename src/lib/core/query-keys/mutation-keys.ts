@@ -10,4 +10,5 @@ export const MUTATION_KEY = {
     CREATE_COLUMN: ["create-column"],
     CREATE_TASK: ["create-task"],
     CREATE_SUBTASK: ["create-subtask"],
+    DELETE_BOARD: ["delete-board"],
 } as const satisfies Record<string, readonly unknown[]>;

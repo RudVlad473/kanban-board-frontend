@@ -1,13 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { usePathname } from "next/navigation";
 
 import { SignOutButton } from "@/features/auth/components/sign-out-button/sign-out-button";
+import { useOpenBoardId } from "@/features/boards/hooks/use-open-board-id";
 import { createBoardsQueryOptions } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
 import { AddTaskButton } from "@/features/tasks/components/add-task-button/add-task-button";
-import { toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /**
  * The dashboard's own header bar. Takes the board list rather than the open board so plan 02-12's
@@ -20,8 +19,8 @@ type Props = {
 
 export const DashboardHeader = ({ displayName, boards: seedBoards }: Props) => {
     const { data: boards } = useQuery({ ...createBoardsQueryOptions(), initialData: seedBoards });
-    const pathname = usePathname();
-    const openBoardId = toBoardIdFromPath(pathname);
+    /* Resolves to a delete's own destination while it is still pending, not the stale URL — see the hook's own doc. */
+    const openBoardId = useOpenBoardId();
     /*
      * The same cache entry the sidebar row renders, so an optimistic rename reaches the title
      * in the same instant — no provider, because the QueryClient is the shared owner.

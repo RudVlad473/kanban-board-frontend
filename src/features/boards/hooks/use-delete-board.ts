@@ -13,7 +13,8 @@ import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
-import { buildBoardDetailPath } from "@/lib/core/routing/routes";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
+import { buildBoardDetailPath, toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /*
  * Authored copy only — the action returns a bare discriminant, so nothing the backend said can
@@ -44,6 +45,13 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
     const raiseFailureToast = useFailureToast({ fallback: DELETE_FAILURE_COPY });
 
     const mutation = useMutation({
+        /*
+         * Tagged so `useOpenBoardId` can read this mutation's own destination back out of TanStack's
+         * mutation cache while it is still pending — the same `useMutationState` shape
+         * `useUnconfirmedIds` already uses, never a bespoke override store (docs/adr/tech/0030).
+         */
+        mutationKey: MUTATION_KEY.DELETE_BOARD,
+
         mutationFn: async ({ boardId }: { boardId: string }) => {
             const result = await deleteBoardAction({ boardId });
 
@@ -81,6 +89,9 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
                 router.replace(destination);
             }
 
+            /* Parsed once, so `useOpenBoardId` can hand it to any reader still resolving the URL's stale id — see that hook's own doc for why `usePathname()` cannot answer this alone. */
+            const destinationBoardId = !isNil(destination) ? toBoardIdFromPath(destination) : null;
+
             /* Re-inserts THIS row only — a snapshot restore would also resurrect a board deleted since. */
             const undo = !isNil(removedBoard)
                 ? (current: Board[]) => {
@@ -96,7 +107,7 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
                   }
                 : null;
 
-            return { undo, didNavigate: !isNil(destination) };
+            return { undo, didNavigate: !isNil(destination), destinationBoardId };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
