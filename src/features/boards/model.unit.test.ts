@@ -791,4 +791,35 @@ describe("toInFlightColumns", () => {
         // Act & Assert
         expect(toInFlightColumns({ pending: [undefined], boardId: "board-1" })).toEqual([]);
     });
+
+    /* BOARD-02's fan-out shares this mutation key with the single-column create (`use-create-column.ts`). */
+    it("expands a fan-out's plural clientIds into one in-flight column per id", () => {
+        // Arrange
+        const pending = [
+            { boardId: "board-1", clientIds: ["c1", "c2", "c3"], colors: ["#49C4E5", "#8471F2", undefined] },
+        ];
+
+        // Act & Assert
+        expect(toInFlightColumns({ pending, boardId: "board-1" })).toEqual([
+            { id: "c1", color: "#49C4E5" },
+            { id: "c2", color: "#8471F2" },
+            { id: "c3", color: undefined },
+        ]);
+    });
+
+    /* A single-column create and a fan-out pending on the SAME board must both be counted, never one masking the other. */
+    it("combines a fan-out's plural ids with a sibling single-column create on the same board", () => {
+        // Arrange
+        const pending = [
+            { boardId: "board-1", clientIds: ["c1", "c2"], colors: ["#49C4E5", "#8471F2"] },
+            { boardId: "board-1", clientId: "solo", color: "#67E2AE" },
+        ];
+
+        // Act & Assert
+        expect(toInFlightColumns({ pending, boardId: "board-1" })).toEqual([
+            { id: "c1", color: "#49C4E5" },
+            { id: "c2", color: "#8471F2" },
+            { id: "solo", color: "#67E2AE" },
+        ]);
+    });
 });

@@ -6,16 +6,18 @@
 import { composeStories } from "@storybook/react";
 import { screen, within } from "@testing-library/react";
 import { isNil } from "es-toolkit";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { cdp, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
 import { createColumnAction } from "@/features/boards/actions/create-column-action";
 import { deleteColumnAction } from "@/features/boards/actions/delete-column-action";
 import { getBoardAction } from "@/features/boards/actions/get-board-action";
 import { renameColumnAction } from "@/features/boards/actions/rename-column-action";
 import { reorderColumnAction } from "@/features/boards/actions/reorder-column-action";
 import { buildCreateFailureToastId } from "@/features/boards/hooks/use-create-column";
+import { claimPendingColumnFanOut } from "@/features/boards/pending-column-fan-out";
 import { deleteSubtaskAction } from "@/features/tasks/actions/delete-subtask-action";
 import { deleteTaskAction } from "@/features/tasks/actions/delete-task-action";
 import { moveTaskAction } from "@/features/tasks/actions/move-task-action";
@@ -24,9 +26,21 @@ import { updateTaskAction } from "@/features/tasks/actions/update-task-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { createNextNavigationShim } from "@/test-utils/next-router-shims";
 import { getRaisedToastCount, getRaisedToasts, getRaisedToastTexts } from "@/test-utils/raised-toasts";
 
 import * as stories from "./board-view.stories";
+
+/*
+ * `use-run-pending-column-fan-out.ts` is the only hook this tree reaches into `next/navigation`
+ * for (every other hook here is router-free) — mirrors `board-list.test.tsx`'s own shim exactly.
+ */
+const mockRefresh = vi.hoisted(() => vi.fn());
+
+// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
+vi.mock("next/navigation", () =>
+    createNextNavigationShim({ pathname: () => "/boards/whatever", refresh: mockRefresh }),
+);
 
 const {
     Populated,
@@ -62,6 +76,7 @@ const {
  * own awaited result and `calls` is typed as its first parameter (04-CONTEXT.md D-01).
  */
 const createColumnStub = actionStub(createColumnAction);
+const createBoardColumnsStub = actionStub(createBoardColumnsAction);
 const getBoardStub = actionStub(getBoardAction);
 const renameColumnStub = actionStub(renameColumnAction);
 const deleteColumnStub = actionStub(deleteColumnAction);
@@ -541,6 +556,11 @@ const renameColumnFromHeader = async ({
 describeForEachDevice({
     name: "BoardView",
     body: () => {
+        beforeEach(() => {
+            // No stub reset here: the global `afterEach` resets every registered stub centrally.
+            mockRefresh.mockClear();
+        });
+
         it("renders one column per column, each captioned with its name and task count", async () => {
             // Act
             await render(<Populated />);
@@ -976,6 +996,271 @@ describeForEachDevice({
             // Assert
             expect(await screen.findByRole("heading", { name: "Add New Column" })).toBeInTheDocument();
             expect(await screen.findByLabelText("Column Name")).toHaveValue("Backlog");
+        });
+
+        /*
+         * BOARD-02's fan-out (docs/adr/tech/0030): staged, reconciled, rolled back and retried by
+         * `useRunPendingColumnFanOut` once THIS board mounts, never by the create flow itself.
+         * `claimPendingColumnFanOut` stands in for `createBoard`'s own claim, with known ids.
+         */
+        it("stages the typed columns under client-generated ids while the fan-out is held", async () => {
+            // Arrange
+            claimPendingColumnFanOut({
+                boardId: FIXTURE_BOARD_ID,
+                names: ["Todo", "Doing", "Done"],
+                clientIds: ["client-1", "client-2", "client-3"],
+            });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [], created: [] });
+            createBoardColumnsStub.hold();
+
+            // Act
+            await render(<EmptyBoard />);
+            await vi.waitFor(() => {
+                expect(createBoardColumnsStub.calls).toHaveLength(1);
+            });
+
+            // Assert — staged before the fan-out resolves: client ids, in the order typed, "(0)" tasks.
+            expect(getRenderedColumnNames()).toEqual(["Todo", "Doing", "Done"]);
+            const headings = Array.from(document.querySelectorAll('h2[id^="board-column-"]'));
+            expect(headings.map((heading) => heading.id)).toEqual([
+                "board-column-client-1",
+                "board-column-client-2",
+                "board-column-client-3",
+            ]);
+            expect(screen.getByRole("heading", { name: "Todo (0)" })).toBeInTheDocument();
+            expect(screen.getByRole("heading", { name: "Doing (0)" })).toBeInTheDocument();
+            expect(screen.getByRole("heading", { name: "Done (0)" })).toBeInTheDocument();
+
+            // Assert — every staged column is disabled until the server acknowledges it (OPT-01).
+            expect(screen.getByRole("button", { name: "Column actions for Todo" })).toBeDisabled();
+
+            createBoardColumnsStub.settle();
+        });
+
+        it("reconciles every staged column with the server's real id once the fan-out fully lands", async () => {
+            // Arrange
+            claimPendingColumnFanOut({
+                boardId: FIXTURE_BOARD_ID,
+                names: ["Todo", "Doing"],
+                clientIds: ["client-1", "client-2"],
+            });
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: [],
+                created: [
+                    { id: "server-1", name: "Todo", version: 0, position: 0, color: null },
+                    { id: "server-2", name: "Doing", version: 0, position: 1, color: null },
+                ],
+            });
+
+            // Act
+            await render(<EmptyBoard />);
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()).toEqual(["Todo", "Doing"]);
+            });
+            const headings = Array.from(document.querySelectorAll('h2[id^="board-column-"]'));
+            expect(headings.map((heading) => heading.id)).toEqual(["board-column-server-1", "board-column-server-2"]);
+            expect(screen.getByRole("button", { name: "Column actions for Todo" })).toBeEnabled();
+        });
+
+        it("keeps exactly what landed on a partial failure, never a stale placeholder beside a real one", async () => {
+            // Arrange
+            claimPendingColumnFanOut({
+                boardId: FIXTURE_BOARD_ID,
+                names: ["Todo", "Doing", "Done"],
+                clientIds: ["client-1", "client-2", "client-3"],
+            });
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: ["Doing"],
+                created: [
+                    { id: "server-1", name: "Todo", version: 0, position: 0, color: null },
+                    { id: "server-3", name: "Done", version: 0, position: 1, color: null },
+                ],
+            });
+
+            // Act
+            await render(<EmptyBoard />);
+
+            // Assert — two, never five: the survivors only, none of them still a placeholder.
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()).toEqual(["Todo", "Done"]);
+            });
+            expect(document.querySelectorAll('h2[id^="board-column-"]')).toHaveLength(2);
+        });
+
+        it("retires every placeholder and reports all three when the fan-out fails wholesale", async () => {
+            // Arrange
+            claimPendingColumnFanOut({
+                boardId: FIXTURE_BOARD_ID,
+                names: ["Todo", "Doing", "Done"],
+                clientIds: ["client-1", "client-2", "client-3"],
+            });
+            createBoardColumnsStub.queue({ status: RESULT_STATUS.ERROR });
+
+            // Act
+            await render(<EmptyBoard />);
+
+            // Assert — the board never claims a column the server never heard of.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create 3 column(s).");
+            });
+            expect(getRenderedColumnNames()).toEqual([]);
+            expect(screen.getByText("This board is empty. Create a new column to get started.")).toBeInTheDocument();
+        });
+
+        it("a retry owns no placeholders of its own — it appends only what lands", async () => {
+            // Arrange
+            claimPendingColumnFanOut({
+                boardId: FIXTURE_BOARD_ID,
+                names: ["Todo", "Doing"],
+                clientIds: ["client-1", "client-2"],
+            });
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: ["Doing"],
+                created: [{ id: "server-1", name: "Todo", version: 0, position: 0, color: null }],
+            });
+
+            // Act
+            await render(<EmptyBoard />);
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create 1 column(s).");
+            });
+            expect(getRenderedColumnNames()).toEqual(["Todo"]);
+
+            // Act — retry the one that failed; it lands.
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: [],
+                created: [{ id: "server-2", name: "Doing", version: 0, position: 1, color: null }],
+            });
+            await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+            // Assert — appended beside the survivor; the retry never staged or retired a placeholder.
+            await vi.waitFor(() => {
+                expect(getRenderedColumnNames()).toEqual(["Todo", "Doing"]);
+            });
+            expect(getRaisedToastTexts()).toHaveLength(0);
+            expect(createBoardColumnsStub.calls.map((call) => call.names)).toEqual([["Todo", "Doing"], ["Doing"]]);
+        });
+
+        it("refreshes the route once the mount-time fan-out settles", async () => {
+            // Arrange
+            claimPendingColumnFanOut({ boardId: FIXTURE_BOARD_ID, names: ["Todo"], clientIds: ["client-1"] });
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: [],
+                created: [{ id: "server-1", name: "Todo", version: 0, position: 0, color: null }],
+            });
+
+            // Act
+            await render(<EmptyBoard />);
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(mockRefresh).toHaveBeenCalled();
+            });
+        });
+
+        it("auto-dismisses the column-failure toast the mount-time fan-out raises", async () => {
+            // Arrange
+            claimPendingColumnFanOut({
+                boardId: FIXTURE_BOARD_ID,
+                names: ["Todo", "Doing"],
+                clientIds: ["client-1", "client-2"],
+            });
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: ["Doing"],
+                created: [{ id: "server-1", name: "Todo", version: 0, position: 0, color: null }],
+            });
+
+            // Act
+            await render(<EmptyBoard />);
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create 1 column(s).");
+            });
+
+            /*
+             * Base UI pauses every toast timer while the stack is hovered or the window is
+             * unfocused — resumed explicitly so this asserts the timeout, not the driver's focus.
+             */
+            window.dispatchEvent(new FocusEvent("focus"));
+
+            // Assert — past Base UI's 5000ms default, which this toast inherits.
+            await vi.waitFor(
+                () => {
+                    expect(getRaisedToastTexts()).toHaveLength(0);
+                },
+                { timeout: 9000, interval: 250 },
+            );
+        });
+
+        /*
+         * The load-bearing case: asserting only that "a toast was raised" would pass whether the
+         * second replaced the first or piled on top of it, which is the ambiguity this removes.
+         */
+        it("narrows one failure toast across successive retries and closes it when the last column lands", async () => {
+            // Arrange
+            claimPendingColumnFanOut({
+                boardId: FIXTURE_BOARD_ID,
+                names: ["Todo", "Doing", "Done"],
+                clientIds: ["client-1", "client-2", "client-3"],
+            });
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: ["Doing", "Done"],
+                created: [{ id: "server-1", name: "Todo", version: 0, position: 0, color: null }],
+            });
+
+            // Act
+            await render(<EmptyBoard />);
+
+            // Assert — exactly one toast, naming the two that failed.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toContain("Couldn't create 2 column(s).");
+
+            // Act — retry those two; one fails again.
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: ["Done"],
+                created: [{ id: "server-2", name: "Doing", version: 0, position: 1, color: null }],
+            });
+            await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+            // Assert — still ONE toast (same id, upserted), with a strictly smaller failed set.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create 1 column(s).");
+            });
+            expect(getRaisedToastTexts()).toHaveLength(1);
+
+            // Act — retry the last one; it succeeds.
+            createBoardColumnsStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                failedNames: [],
+                created: [{ id: "server-3", name: "Done", version: 0, position: 2, color: null }],
+            });
+            await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+            // Assert — the toast closes rather than naming a column that now exists.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(0);
+            });
+
+            /*
+             * Every attempt was scoped to exactly what was still failing, each set a strict subset
+             * of the one before it.
+             */
+            expect(createBoardColumnsStub.calls.map((call) => call.names)).toEqual([
+                ["Todo", "Doing", "Done"],
+                ["Doing", "Done"],
+                ["Done"],
+            ]);
         });
 
         /*

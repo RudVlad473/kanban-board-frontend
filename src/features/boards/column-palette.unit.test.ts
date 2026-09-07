@@ -7,7 +7,12 @@ import { describe, expect, it } from "vitest";
 import { COLUMN_DOT_TOKENS } from "@/features/boards/model";
 import { deltaEOk, HEX_COLOR_PATTERN } from "@/lib/core/styling/oklab";
 
-import { COLUMN_COLOR_PALETTE, pickNextColumnColor, resolveRenderedColumnColor } from "./column-palette";
+import {
+    COLUMN_COLOR_PALETTE,
+    pickColorsForNewColumns,
+    pickNextColumnColor,
+    resolveRenderedColumnColor,
+} from "./column-palette";
 
 /*
  * The three ids the shipped stories already stage per accent bucket (column-header.stories.tsx),
@@ -194,5 +199,34 @@ describe("pickNextColumnColor", () => {
         // Assert
         expect(picked).not.toBe(COLUMN_COLOR_PALETTE[0]);
         expect(picked.toUpperCase()).not.toBe(COLUMN_COLOR_PALETTE[0].toUpperCase());
+    });
+});
+
+describe("pickColorsForNewColumns", () => {
+    it("picks the first N distinct palette entries for N new columns on an empty board", () => {
+        // Act & Assert
+        expect(pickColorsForNewColumns({ existingColumns: [], count: 3 })).toEqual(COLUMN_COLOR_PALETTE.slice(0, 3));
+    });
+
+    /* Mirrors `create-board-columns-action.ts`'s own `createdSoFar` accumulator — each pick must see the ones already chosen in this same batch, not just the board's existing columns. */
+    it("threads each pick through the ones already chosen in this batch, never repeating one", () => {
+        // Act
+        const colors = pickColorsForNewColumns({ existingColumns: [], count: COLUMN_COLOR_PALETTE.length });
+
+        // Assert
+        expect(new Set(colors).size).toBe(COLUMN_COLOR_PALETTE.length);
+    });
+
+    it("continues past a board's existing columns rather than restarting the palette", () => {
+        // Arrange
+        const existingColumns = [{ id: "existing", color: COLUMN_COLOR_PALETTE[0] }];
+
+        // Act & Assert
+        expect(pickColorsForNewColumns({ existingColumns, count: 1 })).toEqual([COLUMN_COLOR_PALETTE[1]]);
+    });
+
+    it("returns an empty array for zero new columns", () => {
+        // Act & Assert
+        expect(pickColorsForNewColumns({ existingColumns: [], count: 0 })).toEqual([]);
     });
 });

@@ -17,12 +17,13 @@ import { BoardView } from "./board-view";
 
 /*
  * Visual-only CSF3 — `BoardView` is `features/boards/`, not a `components/ui/` primitive, so
- * per ADR tech/0011 it gets stories/axe coverage but no visual-spec entry. The decorator supplies
- * the bounded height the real dashboard column gives it, which is what makes a column scroll.
+ * per ADR tech/0011 it gets stories/axe coverage but no visual-spec entry. `nextjs.appDirectory`
+ * mounts the router `useRunPendingColumnFanOut` now calls `useRouter()` from.
  */
 const meta: Meta<typeof BoardView> = {
     component: BoardView,
-    parameters: { layout: "fullscreen" },
+    parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
+    /* The bounded height the real dashboard column gives it, which is what makes a column scroll. */
     decorators: [
         (Story) => {
             return (

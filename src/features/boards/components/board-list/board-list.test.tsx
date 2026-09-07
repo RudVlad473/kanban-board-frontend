@@ -215,50 +215,28 @@ describeForEachDevice({
             expect(await screen.findByRole("dialog")).toBeInTheDocument();
         });
 
+        // comment-length-exempt: records the measurement that makes this test's shape the correct one, since the two-line body otherwise reads as an accidentally-weak assertion
         /*
-         * The board route is read server-side, so a read that resolves before the columns exist
-         * renders an empty board — and the fan-out's own `refresh()` can land on the route being left.
+         * Measured live (260907-exb Task 1): running the column phase from HERE, concurrently with
+         * `router.push()`, stalled the WHOLE navigation until the fan-out settled — no URL change, no
+         * skeleton, nothing painted. `createBoard()` now only CLAIMS the phase
+         * (`claimPendingColumnFanOut`); `useRunPendingColumnFanOut` runs it once the new board's own
+         * route has mounted (`board-view.test.tsx` covers that half).
          */
-        it("refreshes the route it navigated to once the column fan-out has settled", async () => {
+        it("navigates without waiting on or running the column phase, which runs once the new board mounts", async () => {
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [], created: [] });
-            createBoardColumnsStub.hold();
 
-            // Act — navigate first, with the fan-out demonstrably still unresolved.
+            // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo"] });
+
+            // Assert — navigated immediately; the column phase never ran and nothing refreshed from here.
             await vi.waitFor(() => {
                 expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
             });
-
-            // Assert — nothing refreshed yet, so a refresh seen later cannot be the navigation's own.
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
             expect(mockRefresh).not.toHaveBeenCalled();
-
-            // Act
-            createBoardColumnsStub.settle();
-
-            // Assert
-            await vi.waitFor(() => {
-                expect(mockRefresh).toHaveBeenCalled();
-            });
-        });
-
-        it("closes the modal, navigates to the new board and raises no toast when every column lands", async () => {
-            // Arrange
-            await render(<Empty />);
-            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [], created: [] });
-
-            // Act
-            await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
-
-            // Assert
-            await vi.waitFor(() => {
-                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
-            });
-            expect(getRaisedToastTexts()).toHaveLength(0);
-            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
         });
 
         /*
@@ -326,26 +304,6 @@ describeForEachDevice({
             expect(getRenderedBoardNames()).toEqual(namesBefore);
             expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
             expect(mockPush).not.toHaveBeenCalled();
-        });
-
-        it("still closes the modal and navigates when some columns failed — whatever landed is kept", async () => {
-            // Arrange
-            await render(<Empty />);
-            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({
-                status: RESULT_STATUS.SUCCESS,
-                failedNames: ["Doing", "Done"],
-                created: [],
-            });
-
-            // Act
-            await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
-
-            // Assert
-            await vi.waitFor(() => {
-                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
-            });
-            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
         });
 
         /*
@@ -501,85 +459,6 @@ describeForEachDevice({
             } finally {
                 vi.useRealTimers();
             }
-        });
-
-        it("auto-dismisses the column-failure toast rather than leaving it on screen indefinitely", async () => {
-            // Arrange
-            await render(<Empty />);
-            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Doing"], created: [] });
-            await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing"] });
-            await vi.waitFor(() => {
-                expect(getRaisedToastTexts()[0]).toContain("Couldn't create 1 column(s).");
-            });
-
-            /*
-             * Base UI pauses every toast timer while the stack is hovered or the window is unfocused
-             * (`expandedOrOutOfFocus`), and the driver leaves the pointer over the viewport after the
-             * click. Resume explicitly so this asserts the timeout rather than the driver's focus state.
-             */
-            window.dispatchEvent(new FocusEvent("focus"));
-
-            // Assert — past Base UI's 5000ms default, which this toast must now inherit.
-            await vi.waitFor(
-                () => {
-                    expect(getRaisedToastTexts()).toHaveLength(0);
-                },
-                { timeout: 9000, interval: 250 },
-            );
-        });
-
-        /*
-         * The load-bearing case: asserting only that "a toast was raised" would pass whether the
-         * second replaced the first or piled on top of it, which is the ambiguity this removes.
-         */
-        it("narrows one failure toast across successive retries and closes it when the last column lands", async () => {
-            // Arrange
-            await render(<Empty />);
-            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
-            createBoardColumnsStub.queue({
-                status: RESULT_STATUS.SUCCESS,
-                failedNames: ["Doing", "Done"],
-                created: [],
-            });
-
-            // Act — create with three named columns, two of which fail.
-            await submitNewBoard({ name: "Launch", columns: ["Todo", "Doing", "Done"] });
-
-            // Assert — exactly one toast, naming the two that failed.
-            await vi.waitFor(() => {
-                expect(getRaisedToastTexts()).toHaveLength(1);
-            });
-            expect(getRaisedToastTexts()[0]).toContain("Couldn't create 2 column(s).");
-
-            // Act — retry those two; one fails again.
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: ["Done"], created: [] });
-            await userEvent.click(screen.getByRole("button", { name: "Retry" }));
-
-            // Assert — still ONE toast (same id, upserted), with a strictly smaller failed set.
-            await vi.waitFor(() => {
-                expect(getRaisedToastTexts()[0]).toContain("Couldn't create 1 column(s).");
-            });
-            expect(getRaisedToastTexts()).toHaveLength(1);
-
-            // Act — retry the last one; it succeeds.
-            createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [], created: [] });
-            await userEvent.click(screen.getByRole("button", { name: "Retry" }));
-
-            // Assert — the toast closes rather than naming a column that now exists.
-            await vi.waitFor(() => {
-                expect(getRaisedToastTexts()).toHaveLength(0);
-            });
-
-            /*
-             * Every attempt was scoped to exactly what was still failing, each set a strict subset
-             * of the one before it.
-             */
-            expect(createBoardColumnsStub.calls.map((call) => call.names)).toEqual([
-                ["Todo", "Doing", "Done"],
-                ["Doing", "Done"],
-                ["Done"],
-            ]);
         });
 
         it("opens the rename modal seeded with that row's current name", async () => {
