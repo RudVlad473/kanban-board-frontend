@@ -1,29 +1,34 @@
 {
   "version": "1.0",
-  "timestamp": "2026-09-07T16:44:57.714Z",
+  "timestamp": "2026-09-07T20:55:35.046Z",
   "phase": null,
-  "phase_name": "Between milestones (v1.0 complete, v1.1 not started)",
+  "phase_name": "Between milestones (v1.0 complete) — ad-hoc debug session in progress",
   "phase_dir": null,
   "plan": null,
   "task": null,
   "total_tasks": null,
   "status": "paused",
-  "completed_tasks": [],
-  "remaining_tasks": [
-    { "id": 1, "name": "Open a quick task for the board-delete stranding bug (~520ms stale board content + blank title before the redirect lands), per 04-25's checkpoint item 2 — drive the investigation with e2e/quality-fixtures.ts's opt-in instruments", "status": "not_started" },
-    { "id": 2, "name": "File a todo to insert a new post-Phase-5 ROADMAP phase addressing the accessibility inventory (4 rule ids: region, landmark-one-main, page-has-heading-one, color-contrast) and introducing Web Vitals monitoring, per 04-24's checkpoint item 2 — this is the orchestrator's responsibility, not yet filed", "status": "not_started" },
-    { "id": 3, "name": "Decide on milestone completion: run /gsd-complete-milestone to archive v1.0, either before or after the two items above", "status": "not_started" }
+  "completed_tasks": [
+    { "id": 1, "name": "Quick task 260907-q83: fix the board-delete stranding window", "status": "done", "commit": "a5328bf" },
+    { "id": 2, "name": "Debug session board-create-optimistic: video-driven investigation of the board-create optimistic-nav complaint", "status": "done", "commit": "d58d489" }
   ],
-  "blockers": [],
+  "remaining_tasks": [
+    { "id": 3, "name": "User picks a direction for gap 1 (the ~1-3s pre-navigate wait: 1a UX affordance vs 1b redesign the route to tolerate a pending id) and gap 2 (the ~100-300ms empty-state flicker: 2a leave it vs 2b special-case BoardScreen's invalidate)", "status": "not_started" },
+    { "id": 4, "name": "Spawn a continuation debug agent (or quick task) to implement the chosen direction(s) and re-verify", "status": "not_started" }
+  ],
+  "blockers": [
+    { "description": "Two confirmed, independent root causes in board creation's navigate/render flow — neither is a code bug to unilaterally patch; both require a product/UX decision before implementing", "type": "human_action", "workaround": "none — awaiting the user's pick" }
+  ],
   "async_jobs": [],
   "human_actions_pending": [
-    { "action": "Decide whether to complete/archive milestone v1.0 now or after the two outstanding items above land", "context": "Milestone v1.0 is 6/6 phases complete, CI green; /gsd-progress routed to Route D (all phases complete)", "blocking": false }
+    { "action": "Pick 1a or 1b for the ~1-3s pre-navigate wait, and 2a or 2b for the ~100-300ms empty-state flicker (or say \"leave both as-is\")", "context": "Debugger found two independent, confirmed root causes (see .planning/debug/board-create-optimistic.md Resolution + Current Focus sections) and deliberately did not force a fix, per this codebase's ADR-0029 ban on reintroducing override machinery without a decision", "blocking": true }
   ],
   "decisions": [
-    { "decision": "Board/columns fan-out fix (quick task 260907-exb) landed via decoupling the fan-out from the create navigate + optimistic placeholder staging, not the originally-planned onMutate-only fix", "rationale": "Task 1's live-browser investigation found the navigate doesn't commit until the fan-out settles, so onMutate staging alone couldn't help — fixed by triggering the fan-out from the destination component's own mount effect instead", "phase": "quick-260907-exb" },
-    { "decision": "A third, independent layout-shift ceiling-miss incident (2026-09-07) was re-recorded per the standard per-incident remedy, not investigated further", "rationale": "User chose 'investigate the mechanism further before deciding' at the 04-24 checkpoint; the pending todo was updated with all three incidents and flags a fourth as the trigger for the deferred tolerance decision", "phase": "04-24/quick-260907-exb" }
+    { "decision": "Applied one safe, independent fix: use-create-board.ts's onSuccess now seeds the [\"board\", newId] cache entry per ADR tech/0030 rule 4", "rationale": "Closes a real rule-4 gap (every mutation owning a cache entry must write it); verified via tsc clean + 324/324 unit tests + live A/B measurement that it does NOT close either reported symptom, so it is not being presented as a fix for the user's complaint", "phase": "debug/board-create-optimistic" },
+    { "decision": "Did NOT implement a fix for either confirmed root cause (the network-bound navigate wait, or the invalidate/optimistic-write race)", "rationale": "Gap 1 needs relaxing a deliberate T-02-54 membership guard or a UX-only affordance — both are product calls. Gap 2 needs touching BoardScreen's general per-switch invalidate (used by every board switch, not just create) for a create-only race — real regression risk without a clear seam. Both left for the user to choose a direction.", "phase": "debug/board-create-optimistic" },
+    { "decision": "Switched the message-shape Stop hook (~/.claude/state/message-shape-config.json) from blocking to advisory", "rationale": "User explicitly did not want to see the hook's raw stderr dump in the transcript again; advisory mode still logs violations silently but never blocks or prints to stderr", "phase": "session-tooling" }
   ],
-  "uncommitted_files": [],
-  "next_action": "Open a GSD quick task for the board-delete stranding bug (stale board content and a blank title for ~520ms before the redirect lands, on delete) via /gsd-quick — drive the investigation with e2e/quality-fixtures.ts's opt-in instruments (flickerTracker, layoutShiftTracker, reactScan), per 04-25's checkpoint suggestion.",
-  "context_notes": "Milestone v1.0 is fully complete (6/6 phases, all CI green). /gsd-progress routed to Route D (all phases complete, ready for /gsd-complete-milestone). Two items are still open from this session's checkpoint decisions and were explicitly NOT done before pausing: (1) the board-delete quick task — what the user asked to do FIRST on resume, and (2) filing the post-Phase-5 accessibility+Web-Vitals phase todo. Do the board-delete quick task first, per the user's explicit instruction at pause time — do not default to /gsd-complete-milestone without doing this first."
+  "uncommitted_files": ["?? .planning/debug/"],
+  "next_action": "On resume, present the two decision axes from .planning/debug/board-create-optimistic.md's Current Focus section to the user in plain text (1a/1b, 2a/2b). Once they pick, spawn a continuation agent (gsd-debug-session-manager, session_params: resume: true, slug: board-create-optimistic) carrying their chosen direction(s) to implement and re-verify. If they say \"leave both as-is\", update the debug file's status to resolved/wontfix-for-now and stop.",
+  "context_notes": "This session did two independent pieces of work: (1) finished and fully verified the board-delete stranding-window quick task (260907-q83) end to end, including live orchestrator verification and CI green — that one is genuinely done, no follow-up needed. (2) Investigated a NEW user-reported complaint (board creation still not optimistic, via a screen-recorded video) through /gsd-debug. I extracted and reviewed the video frames myself, found the mechanism by reading use-create-board.ts before the debugger even started, then handed off to gsd-debug-session-manager which confirmed it live, found a SECOND independent race (the empty-state flicker), applied one safe unrelated fix, and correctly refused to force either real fix without a product decision. The debug session file at .planning/debug/board-create-optimistic.md is the full source of truth — read its Resolution and Current Focus sections first. Also: cleaned up a leftover e2e-seeded account, deleted 55MB of scratch video frames (already written up in the debug file), and stopped an idle dev server before pausing."
 }
