@@ -1185,14 +1185,13 @@ describeForEachDevice({
             });
 
             /*
-             * Base UI pauses every toast timer while the stack is hovered or the window is
-             * unfocused — resumed explicitly so this asserts the timeout, not the driver's focus.
+             * Re-dispatched on every poll, not once: root-caused live that a LATER genuine `blur`
+             * (CI runs several parallel browser workers; a tab can lose real focus to a sibling at
+             * any point) re-pauses Base UI's dismiss timer with nothing left to clear it once.
              */
-            window.dispatchEvent(new FocusEvent("focus"));
-
-            // Assert — past Base UI's 5000ms default, which this toast inherits.
             await vi.waitFor(
                 () => {
+                    window.dispatchEvent(new FocusEvent("focus"));
                     expect(getRaisedToastTexts()).toHaveLength(0);
                 },
                 { timeout: 9000, interval: 250 },
