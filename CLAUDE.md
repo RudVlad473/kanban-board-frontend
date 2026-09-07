@@ -71,6 +71,11 @@ by 1.333×; `tokens/radius.tokens.json`'s radii were re-derived against the corr
 surface the conflict instead of following either silently — on 2026-08-27 the mock overruled
 `02-UI-SPEC.md`'s pinned-footer reading of `+ Create New Board`.
 
+Before hand-rolling a `MutationObserver`, a route delay, or a render counter to debug a specific
+interaction, check `e2e/quality-fixtures.ts`'s opt-in instruments (`flickerTracker`,
+`optimisticRoute`, `layoutShiftTracker`, `reactScan`) and the automatic accessibility/layout-shift
+gate (`docs/adr/tech/0035`) — the harness may already cover it.
+
 ## Reach for the platform's own primitive before building a mechanism
 
 Name the built-in you rejected, and why, before hand-rolling state machinery. This codebase has

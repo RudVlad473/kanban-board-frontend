@@ -12,14 +12,14 @@ provides:
   - "e2e/quality-fixtures.ts — a sixth fixture, reactScan: () => Promise<void>, opt-in, CDN-injected (react-scan@0.5.7 pinned), proving attachment at teardown by reading back window.reactScan"
   - "docs/adr/tech/0035-playwright-quality-verification-fixtures.md — the harness's permanent decision record, grouped by the four questions a future reader arrives with"
   - "docs/review-brief.md — extended with all six harness fixtures (the two automatic ones marked), the optimisticRoute sentence, and measured runtimes"
-  - "A proposed CLAUDE.md pointer (not applied — decided at the checkpoint below)"
+  - "CLAUDE.md — the proposed one-line pointer, approved at the checkpoint and applied verbatim to § 'Debug against the real app, not custom scripts'"
 
 affects: []
 
 actuals:
-  tokens: 8500
+  tokens: 9200
   tasks: 2
-  commits: 4
+  commits: 6
   plan_head_before: 39de834167d4ae42116e386befb76aba5e1cd358
 
 tech-stack:
@@ -48,12 +48,12 @@ coverage: []
 
 duration: ~1h40m (single continuous session, resumed after 04-24's checkpoint closed)
 completed: 2026-09-07
-status: halted
+status: complete
 ---
 
 # Phase 04 Plan 25: Playwright Quality-Verification Fixtures — reactScan and the Decision Record Summary
 
-**Adds the sixth quality-verification fixture (`reactScan`, CDN-injected react-scan@0.5.7, proven to attach against the real app via a deleted throwaway probe: 263 render events captured through the library's own `onRender` option), writes the harness's permanent decision record (`docs/adr/tech/0035`), and extends the reviewer-facing fixture inventory — plan NOT closed, its trailing `checkpoint:human-verify` is presented below, unanswered.**
+**Adds the sixth quality-verification fixture (`reactScan`, CDN-injected react-scan@0.5.7, proven to attach against the real app via a deleted throwaway probe: 263 render events captured through the library's own `onRender` option), writes the harness's permanent decision record (`docs/adr/tech/0035`), extends the reviewer-facing fixture inventory, and applies the approved `CLAUDE.md` pointer — checkpoint resolved, plan CLOSED. This is the last plan in Phase 4.**
 
 ## Performance
 
@@ -139,48 +139,29 @@ See `key-decisions` in frontmatter for the four with the most future-reader cons
 
 None - no external service configuration required. The probe's seeded account (`8qbti1ueoglc`) was created via `pnpm e2e:seed account` and deleted with `pnpm e2e:cleanup --users 8qbti1ueoglc`, scoped per CLAUDE.md's requirement; `.e2e-seeded-users/` confirmed empty afterward.
 
+## Checkpoint Resolution
+
+**Resume-signal:** approved.
+
+1. **The `CLAUDE.md` pointer** — approved as written, applied verbatim to § "Debug against the real app, not custom scripts" (the exact line quoted under Accomplishments above).
+2. **The board-delete stranding bug** (stale content + blank title for ~520ms before the redirect) — approved to open as a quick task next, driven with these instruments. Not investigated or fixed in this plan; the orchestrator initiates `/gsd-quick` for it after phase 4 closes.
+3. **Anything missing from the six fixtures** — nothing flagged; proceed with the six as-is.
+4. **The opt-in three staying manual** (`flickerTracker`/`optimisticRoute`/`layoutShiftTracker`) — accepted as designed, no always-on alternative wanted.
+
+Plan 04-25 is now fully closed — the last plan in phase 4.
+
 ## Next Phase Readiness
 
-**This plan is NOT closed.** Tasks 1 and 2 are complete, committed, and CI-green (run `34094974444`, all 4 jobs `success`). The plan's trailing `checkpoint:human-verify` task (`gate="blocking"`) is presented in full below and has not been answered. Phase 4's close-out gates (`aggregate_results` → `code_review_gate` → `regression_gate` → `verify_phase_goal` → `update_roadmap`) do not run until this checkpoint is resolved, since 04-25 is the last plan in the phase.
-
----
-
-## CHECKPOINT: Verification Required
-
-**Type:** human-verify
-**Gate:** blocking
-**Plan:** 04-25
-**Progress:** 2/2 code tasks complete (task 3 is this checkpoint)
-
-### What was built
-
-A quality-verification layer at `e2e/quality-fixtures.ts`, in two halves.
-
-**Automatic, on every one of the 79 tests in the `e2e` project, with no call in any test body:** a route-level accessibility scan and a cumulative layout-shift score for the document each test ends on. Both are checked against `e2e/quality-baseline.json`, which records what was already true so only NEW findings turn a build red — where "new" is either an unrecorded rule id OR a recorded rule now firing on more nodes than the baseline holds, since a violation spreading is a regression and a rule-id set cannot see it (D-L). A finding that DISAPPEARS, or shrinks, passes and is reported as an improvement, so fixing an accessibility issue never breaks the build of the person who fixed it — at the accepted cost that its entry stays in the baseline until someone re-records (D-E). A spec that imports Playwright's `test` object directly fails `pnpm lint`, in both the named and the namespace form.
-
-**Opt-in, because each needs a human to name an interaction:** `flickerTracker` (an in-page `MutationObserver` counting committed mutations per element against a budget), `optimisticRoute` (a bounded, deterministic delay on `next-action` writes only), `layoutShiftTracker` (shift attributable to one chosen interaction, INCLUDING the input-initiated entries the passive gate excludes — D-K), plus `cdp` and the CDN-injected `reactScan` (added this plan — injects a pinned `react-scan` build to instrument React renders, proven by a deleted throwaway probe).
-
-Its own standing spec proves each instrument both fires AND fails when uninstalled, and the comparator that decides pass/fail for the whole suite is unit-tested in both directions. ADR tech/0035 records the scope decisions and the measured behaviours; `docs/review-brief.md` lists the fixtures for reviewers and flags which two are automatic.
-
-### How to verify
-
-Everything measurable is already in the three plan SUMMARYs (04-23, 04-24, this one) with its number — read those first. What is left is judgement no gate makes.
-
-1. **The `CLAUDE.md` pointer.** Task 2 proposed a one-line addition to § "Debug against the real app, not custom scripts" naming the harness (quoted above, under Accomplishments), and deliberately did not apply it. Accept it as written, reword it, or decline. This is the only file in the repo where a future agent would reliably look, so declining means the harness is discoverable from the ADR and the review brief only.
-2. **The board-delete stranding bug this harness was built ahead of** — stale board content and a blank title on screen for roughly 520ms before the redirect lands — is deliberately NOT investigated here. Say whether you want it opened as a quick task next, driven with these instruments.
-3. **Anything missing for that investigation.** It is cheaper to add a fixture now, while the harness is the thing in context, than after. Say if you know you will want something these six do not give you.
-4. **The opt-in three.** `flickerTracker` and `optimisticRoute` stayed manual for a stated reason (they need a chosen interaction, and there is no honest whole-test reading of either). If you disagree — if you would rather have a crude always-on mutation counter than none — say so; that is a design call, and the ADR records the current one as falsifiable rather than settled.
-
-### Awaiting
-
-**Resume-signal:** Type "approved", or list what you want changed before this closes.
-
-Once answered, a continuation agent should close out this plan's SUMMARY (mirroring how 04-24's checkpoint was resolved), update `STATE.md`/`ROADMAP.md`, and then run phase 4's close-out gate sequence (`aggregate_results` → `code_review_gate` → `regression_gate` → `verify_phase_goal` → `update_roadmap`), since this is the last plan in the phase.
+- The quality-verification harness (04-23/04-24/04-25) is complete: six fixtures, a one-directional baseline gate across all 79 `e2e`-project tests, a permanent decision record (`docs/adr/tech/0035`), a reviewer-facing inventory (`docs/review-brief.md`), and a `CLAUDE.md` discoverability pointer.
+- **Follow-up queued, not part of this plan:** the board-delete stranding bug, to be opened as a quick task once phase 4 is confirmed closed.
+- **Follow-up queued from 04-24's checkpoint, also not part of this plan:** a post-phase-close ROADMAP-phase todo (accessibility debt + Web Vitals monitoring), filed by the orchestrator once phase 4 is confirmed closed.
+- Two pending todos carried forward, unaffected by this plan: `.planning/todos/pending/2026-09-06-migrate-isserveractionpost-to-the-shared-quality-fixtures-export.md` and `.planning/todos/pending/2026-09-07-investigate-recurring-layout-shift-ceiling-misses-under-full.md`.
+- **This is the last plan in phase 4.** Phase-close gates (`aggregate_results` → `code_review_gate` → `regression_gate` → `verify_phase_goal` → `update_roadmap`) run next.
 
 ---
 *Phase: 04-task-subtask-workflow*
-*Completed: 2026-09-07 (tasks 1-2; checkpoint pending)*
+*Completed: 2026-09-07*
 
 ## Self-Check: PASSED
 
-All 4 commits (`7a7eade`, `df81dde`, `fd93384`, `5b8b4fc`) confirmed present in `git log --oneline --all`. `docs/adr/tech/0035-playwright-quality-verification-fixtures.md` confirmed on disk. `e2e/zz-react-scan-probe.e2e.spec.ts` confirmed absent (`ls e2e/zz-*` — no matches). CI run `34094974444` confirmed green on all four jobs via `gh run view --json status,conclusion,jobs` (`quality`, `secrets`, `visual`, `e2e`, all `conclusion: success`).
+All 6 commits (`7a7eade`, `df81dde`, `fd93384`, `5b8b4fc`, `29fd39f`, plus the checkpoint-resolution commit) confirmed present in `git log --oneline --all`. `docs/adr/tech/0035-playwright-quality-verification-fixtures.md` confirmed on disk. `e2e/zz-react-scan-probe.e2e.spec.ts` confirmed absent (`ls e2e/zz-*` — no matches). `CLAUDE.md`'s new pointer confirmed present via `rg -q 'e2e/quality-fixtures.ts.*opt-in instruments' CLAUDE.md`. CI run `34094974444` confirmed green on all four jobs via `gh run view --json status,conclusion,jobs` (`quality`, `secrets`, `visual`, `e2e`, all `conclusion: success`).
