@@ -40,9 +40,12 @@ input-initiated shifts, which is what makes it standard CLS and comparable acros
 click wildly different numbers of things; the opt-in tracker includes them, because a shift
 caused by the interaction under test is by definition within the input's own window, so
 filtering it out there would score the instrument's whole subject at zero. 04-23 falsified this
-directly (D-K): over three repeat observations of a task-create interaction, the two readings
-came back IDENTICAL (`0.000018374125162760416` in both), because the shift measured was not
-itself input-attributed — evidence the filter did what it claims, not evidence it does nothing.
+directly (D-K), taking both readings over the SAME board switch: input-including and
+input-excluding both came back `0` on an empty-board switch, and both came back IDENTICAL
+(`0.000018374125162760416`) on a second interaction (a task-create against a 5-task column) —
+because the shift measured there was not itself input-attributed (`hadRecentInput` was `false` on
+it in both accumulators). Two interactions, zero disagreement between the filters — evidence the
+filter did what it claims on the interactions tried, not evidence it does nothing.
 
 **What would make this false:** a real regression visible only in the entries the passive
 reading excludes would call for a second, input-inclusive PASSIVE score, not a flipped filter on
