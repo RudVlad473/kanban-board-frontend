@@ -95,8 +95,14 @@ export const resolveDestinationAfterDelete = ({
     return remainingBoards.length === 0 ? ROUTE.BOARDS : buildBoardDetailPath(firstRemaining.id);
 };
 
-/** The subset of a create-column mutation's variables that a colour pick needs to see. */
-export type InFlightColumnCreate = { boardId: string; clientId: string; color?: string };
+/**
+ * The subset of a create-column mutation's variables that a colour pick needs to see — one column
+ * (`use-create-column.ts`) or several at once (`use-create-board-columns.ts`'s fan-out), which
+ * shares `MUTATION_KEY.CREATE_COLUMN` so the same `isUnconfirmed` guards reach it unchanged.
+ */
+export type InFlightColumnCreate =
+    | { boardId: string; clientId: string; color?: string }
+    | { boardId: string; clientIds: string[]; colors: (string | undefined)[] };
 
 /*
  * The in-flight creates on ONE board, shaped as columns so a colour pick can treat them as siblings.
@@ -112,7 +118,15 @@ export const toInFlightColumns = ({
 }): { id: string; color?: string }[] =>
     pending
         .filter((variables) => variables?.boardId === boardId)
-        .map((variables) => ({ id: variables?.clientId ?? "", color: variables?.color }));
+        .flatMap((variables) => {
+            if (isNil(variables)) {
+                return [];
+            }
+
+            return "clientIds" in variables
+                ? variables.clientIds.map((id, index) => ({ id, color: variables.colors[index] }))
+                : [{ id: variables.clientId, color: variables.color }];
+        });
 
 /**
  * The board's columns with one already appended — the reducer behind `useCreateColumn`'s optimistic

@@ -8,19 +8,13 @@ import { useRouter } from "next/navigation";
 
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
-import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
-import {
-    removeBoard,
-    toSubmittedColumnNames,
-    withBoardInsert,
-    withBoardReplace,
-    withColumnInsert,
-} from "@/features/boards/model";
+import { useCreateBoardColumns } from "@/features/boards/hooks/use-create-board-columns";
+import { removeBoard, toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
+import { claimPendingColumnFanOut } from "@/features/boards/pending-column-fan-out";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
-import type { Board, BoardFull } from "@/features/boards/schemas";
+import type { Board } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
-import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
@@ -44,15 +38,6 @@ const CREATE_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 
 const RETRY_ACTION_LABEL = "Retry";
 
-const buildColumnFailureTitle = (failedCount: number): string => `Couldn't create ${String(failedCount)} column(s).`;
-
-/**
- * A stable, board-scoped toast id. Load-bearing, not an incidental argument: Base UI's manager
- * upserts on an existing id, which is what makes a retry narrow one toast instead of stacking a
- * second beside a stale first.
- */
-export const buildColumnFailureToastId = (boardId: string): string => `board-columns-failed:${boardId}`;
-
 /**
  * One id per ATTEMPT — the WHOLE attempt, rows included.
  *
@@ -68,15 +53,24 @@ type CreateBoardVariables = { clientId: string; name: string };
 /** What a create was attempted with — a failed one is handed back so its Retry can reopen prefilled. */
 export type CreateBoardArgs = { name: string; columnRows: string[] };
 
+// comment-length-exempt: records why the column phase is handed off rather than run here, and the measurement behind that, which the two-line body below reads as an unexplained omission otherwise
 /**
  * Orchestrates BOARD-02's two-phase create — the board first, then one column per named row, only
  * if the board landed. Neither phase is waited on by the caller (D-05, reversed 2026-09-03): the
- * modal closes on submit, and each phase reports its own failure through its own toast.
+ * modal closes on submit, and the board phase reports its failure through its own toast.
+ *
+ * The column phase itself does NOT run here. Measured live (260907-exb Task 1): firing it
+ * concurrently with `router.push()` stalls the WHOLE navigation — no URL change, no skeleton, no
+ * columns — until the fan-out (and its own trailing `router.refresh()`) settle, because both share
+ * Next's single pending-transition commit. `createBoard()` instead claims it via
+ * `claimPendingColumnFanOut`, and `useRunPendingColumnFanOut` runs it once the new board's own route
+ * has actually mounted — see that hook and `use-create-board-columns.ts` for the rest of the phase.
  */
 export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) => void }) => {
     const router = useRouter();
     const toast = useToast();
     const queryClient = useQueryClient();
+    const { createColumns, retryColumns, raiseColumnFailureToast } = useCreateBoardColumns();
 
     /*
      * The sidebar's row appears on submit, not on settle — the panel reads this cache entry rather
@@ -126,60 +120,6 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
             );
         },
     });
-    const createColumnsMutation = useMutation({ mutationFn: createBoardColumnsAction, retry: false });
-
-    /**
-     * Runs the column phase for exactly the names given, returning the ones that still failed.
-     * Exported through the hook's return value so a retry can re-run it scoped to that subset.
-     */
-    const createColumns = async ({ boardId, names }: { boardId: string; names: string[] }): Promise<string[]> => {
-        const result = await createColumnsMutation
-            .mutateAsync({ boardId, names })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
-
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            // A wholesale failure leaves the set unchanged rather than reporting fewer failures than there are.
-            return names;
-        }
-
-        // comment-length-exempt: records the rule this write exists to satisfy and the navigation failure that leaving it to refresh() causes, which is what kept `prefetch` off the sidebar links
-        /*
-         * The fan-out writes the board entry itself (docs/adr/tech/0030 rule 4). It landed through
-         * the action's own `refresh()` alone until now, and `refresh()` never reaches a PREFETCHED
-         * route — so a board opened from a prefetched link rendered with none of its columns.
-         * `board-card.tsx` names this hook as one of the two blockers for turning `prefetch` on.
-         * A no-op when nothing has read this board yet, which is the usual case right after a create.
-         */
-        queryClient.setQueryData<BoardFull>(buildBoardQueryKey(boardId), (current) =>
-            isNil(current)
-                ? current
-                : {
-                      ...current,
-                      columns: result.created.reduce(
-                          (columns, column) => withColumnInsert({ columns, column: { ...column, tasks: [] } }),
-                          current.columns,
-                      ),
-                  },
-        );
-
-        return result.failedNames;
-    };
-
-    /**
-     * Re-runs the column phase for exactly the still-failing names. A retry that itself partially
-     * fails upserts the SAME toast id with the smaller set; one that fully succeeds closes it,
-     * because a toast still naming created columns would misreport what persisted.
-     */
-    const retryColumns = async ({ boardId, names }: { boardId: string; names: string[] }): Promise<void> => {
-        const stillFailingNames = await createColumns({ boardId, names });
-
-        if (stillFailingNames.length === 0) {
-            toast.close(buildColumnFailureToastId(boardId));
-            return;
-        }
-
-        raiseColumnFailureToast({ boardId, failedNames: stillFailingNames });
-    };
 
     /** Reports a board that never landed, offering the reopen that carries the typed values back. */
     const raiseCreateFailureToast = ({ args, status }: { args: CreateBoardArgs; status: ResultStatus }): void => {
@@ -206,20 +146,6 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
         });
     };
 
-    const raiseColumnFailureToast = ({ boardId, failedNames }: { boardId: string; failedNames: string[] }): void => {
-        toast.add({
-            id: buildColumnFailureToastId(boardId),
-            type: "danger",
-            title: buildColumnFailureTitle(failedNames.length),
-            actionProps: {
-                children: RETRY_ACTION_LABEL,
-                onClick: () => {
-                    void retryColumns({ boardId, names: failedNames });
-                },
-            },
-        });
-    };
-
     const createBoard = async (args: CreateBoardArgs): Promise<void> => {
         const outcome = await createBoardMutation
             .mutateAsync({ clientId: crypto.randomUUID(), name: args.name })
@@ -236,29 +162,15 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
 
         /* The SERVER's id, never the placeholder's — a client-generated id in the URL is a 404. */
         const boardId = outcome.board.id;
-        router.push(buildBoardDetailPath(boardId));
-
-        /*
-         * Fire-and-forget, as the task create's own fan-out is: awaiting it here held the create
-         * across TWO round trips, and D-04 keeps whatever landed regardless of who is watching.
-         */
         const names = toSubmittedColumnNames(args.columnRows);
 
+        /* Claimed BEFORE the push — see this hook's own doc for why the phase cannot run from here. */
         if (names.length > 0) {
-            void createColumns({ boardId, names }).then((failedNames) => {
-                /*
-                 * The navigation above races this fan-out: the new board's RSC read can resolve
-                 * before the columns exist, and the action's own `refresh()` then lands on the route
-                 * being LEFT. This one is ordered after the columns, on whatever route is now open.
-                 */
-                router.refresh();
-
-                if (failedNames.length > 0) {
-                    raiseColumnFailureToast({ boardId, failedNames });
-                }
-            });
+            claimPendingColumnFanOut({ boardId, names, clientIds: names.map(() => crypto.randomUUID()) });
         }
+
+        router.push(buildBoardDetailPath(boardId));
     };
 
-    return { createBoard, createColumns, retryColumns };
+    return { createBoard, createColumns, retryColumns, raiseColumnFailureToast };
 };

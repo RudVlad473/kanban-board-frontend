@@ -18,6 +18,7 @@ import { useCreateColumn } from "@/features/boards/hooks/use-create-column";
 import { useDeleteColumn, type DeleteColumnArgs } from "@/features/boards/hooks/use-delete-column";
 import { useRenameColumn, type RenameColumnArgs } from "@/features/boards/hooks/use-rename-column";
 import { useReorderColumns } from "@/features/boards/hooks/use-reorder-columns";
+import { useRunPendingColumnFanOut } from "@/features/boards/hooks/use-run-pending-column-fan-out";
 import { toColumnCaption } from "@/features/boards/model";
 import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull, ColumnFull } from "@/features/boards/schemas";
@@ -72,6 +73,11 @@ export const BoardView = ({
         initialData: seedBoard,
     });
     const renderedColumns = board.columns;
+    /*
+     * BOARD-02's column fan-out, run once THIS board has actually mounted — never from the create
+     * flow itself. See `use-run-pending-column-fan-out.ts`'s own doc for the measured reason.
+     */
+    useRunPendingColumnFanOut({ boardId: board.id });
     /*
      * The columns and cards on screen that the server has not acknowledged yet. Their ids are
      * client-generated placeholders, so every control that would send a request naming one is

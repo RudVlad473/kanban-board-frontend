@@ -71,6 +71,31 @@ export const pickNextColumnColor = ({
     });
 };
 
+/**
+ * `count` colours for `count` NEW columns, threaded through `pickNextColumnColor` one at a time so
+ * each pick sees the ones already chosen in this same batch — the client-side mirror of
+ * `create-board-columns-action.ts`'s own `createdSoFar` accumulator.
+ */
+export const pickColorsForNewColumns = ({
+    existingColumns,
+    count,
+}: {
+    existingColumns: RenderableColumn[];
+    count: number;
+}): string[] => {
+    const colors: string[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+        colors.push(
+            pickNextColumnColor({
+                columns: [...existingColumns, ...colors.map((color) => ({ id: "", color }))],
+            }),
+        );
+    }
+
+    return colors;
+};
+
 /** Exactly one of the two is ever set — the branch a header dot's `className`/`style` props read directly. */
 export type ColumnDotProps = { className: string | undefined; style: { backgroundColor: string } | undefined };
 
