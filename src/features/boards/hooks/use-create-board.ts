@@ -12,9 +12,10 @@ import { useCreateBoardColumns } from "@/features/boards/hooks/use-create-board-
 import { removeBoard, toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
 import { claimPendingColumnFanOut } from "@/features/boards/pending-column-fan-out";
 import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
-import type { Board } from "@/features/boards/schemas";
+import type { Board, BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
@@ -118,6 +119,13 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
             queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
                 withBoardReplace({ boards: current ?? [], boardId: clientId, board }),
             );
+
+            /*
+             * Seeds the open-board entry too (ADR tech/0030 rule 4) — a freshly minted id, so there
+             * is nothing to merge with. Does NOT close the new board's empty-state flash on first
+             * paint; see `.planning/debug/board-create-optimistic.md` for that separate race.
+             */
+            queryClient.setQueryData<BoardFull>(buildBoardQueryKey(board.id), { ...board, columns: [] });
         },
     });
 
