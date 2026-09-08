@@ -23,9 +23,9 @@ export type MoveTaskInput = z.infer<typeof moveTaskInputSchema>;
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 
 /*
- * `SaveSubtaskRequestDTO` declares `minLength: 1` and no maximum on create (04-BACKEND-FACTS.md T8
- * only found a hidden 32-char cap on UPDATE, out of this plan's scope) — so unlike
- * `taskTitleRowSchema` there is no length branch to pipe into, only the required-field message.
+ * `SaveSubtaskRequestDTO` now declares `minLength: 2` and `maxLength: 32`, so this `min(1)` and its
+ * absent ceiling both let through a title the backend refuses. Filed, not fixed:
+ * `.planning/todos/pending/2026-09-08-frontend-zod-schemas-diverge-from-the-regenerated-contract.md`.
  */
 export const subtaskTitleRowSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE);
 

@@ -276,6 +276,7 @@ export interface components {
             theme?: "LIGHT" | "DARK";
         };
         UpdateBoardRequestDTO: {
+            /** @example Platform Launch */
             name?: string;
             /** Format: int64 */
             version: number;
@@ -331,19 +332,28 @@ export interface components {
             version?: number;
         };
         SignupRequestDTO: {
+            /** @example Ada Lovelace */
             displayName?: string;
+            /** Format: email */
             email?: string;
+            /** @description 8-64 characters; must contain at least one uppercase letter, one lowercase letter, one digit, and one special character. */
             password?: string;
         };
         SigninRequestDTO: {
+            /** Format: email */
             email?: string;
+            /** @description 8-64 characters; must contain at least one uppercase letter, one lowercase letter, one digit, and one special character. */
             password?: string;
         };
         SaveBoardRequestDTO: {
+            /** @example Platform Launch */
             name: string;
+            /** @example 8qfkj52yzi0w */
+            id?: string;
         };
         SaveColumnRequestDTO: {
             name: string;
+            /** @example #1AB2C3 */
             color?: string;
         };
         SaveTaskRequestDTO: {

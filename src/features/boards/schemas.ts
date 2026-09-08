@@ -19,9 +19,9 @@ export const boardsSchema = boardSchema.array();
 export type Board = z.infer<typeof boardSchema>;
 
 /*
- * The only format authority a stored column colour has — the contract carries neither a `pattern`
- * nor a `maxLength` for it (springdoc emits a bare `type: string`), so a malformed value is
- * rejected here rather than coerced away, per this app's own boundary (docs/adr/tech/0024).
+ * The only format authority a stored column colour has: the create side declares
+ * `^#[0-9a-fA-F]{6}$` but `ColumnResponseDTO.color` is still a bare `type: string`, so a malformed
+ * READ is rejected here rather than coerced away, per this app's own boundary (docs/adr/tech/0024).
  */
 export const columnColorSchema = z.string().regex(HEX_COLOR_PATTERN);
 

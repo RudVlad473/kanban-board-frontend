@@ -55,9 +55,9 @@ export const TASK_TITLE_MAX_LENGTH = 32;
 const TASK_TITLE_LENGTH_MESSAGE = `Task title must be between 3 and ${String(TASK_TITLE_MAX_LENGTH)} characters.`;
 
 /*
- * `SaveTaskRequestDTO`'s own declared bounds, re-enforced on UPDATE too: `UpdateTaskRequestDTO`
- * declares none at all, so without this a title that could never have been created becomes savable
- * (04-RESEARCH.md Pitfall 4).
+ * Stricter than `SaveTaskRequestDTO`'s own declared minimum of 2, and re-enforced on UPDATE too:
+ * `UpdateTaskRequestDTO` declares the same 2, so without this a title that could never have been
+ * created through this app becomes savable (04-RESEARCH.md Pitfall 4).
  */
 export const taskTitleSchema = z
     .string()
