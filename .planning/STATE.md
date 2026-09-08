@@ -3,11 +3,11 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 04
 status: completed
-stopped_at: Phase 04 complete — all phases complete
-last_updated: "2026-09-07T08:25:05.275Z"
+stopped_at: "Completed quick task 260908-g4p: consolidated TanStack Query cache keys into QUERY_KEY"
+last_updated: "2026-09-08T12:31:59.933Z"
 last_activity: 2026-09-07
-last_activity_desc: Completed quick task 260907-q83: Fix the board-delete stranding window
-state_head: 442dee30c47159ed9cadda4efe8d79ae1def10b3
+last_activity_desc: "Completed quick task 260907-q83: Fix the board-delete stranding window"
+state_head: 5904e1d0fc18c81f20787d1b56c5feee30da2086
 progress:
   total_phases: 6
   completed_phases: 6
@@ -126,6 +126,7 @@ Recent decisions affecting current work:
 - [Phase 04]: 04-24's checkpoint resolved 2026-09-07 — price accepted as measured, accessibility debt deferred to a post-phase-close ROADMAP-phase todo (orchestrator's responsibility), D-E drift bound stays reporting-only, full-app.e2e.spec.ts exclusion confirmed, 04-25's ADR not redirected, recurring layout-shift ceiling misses under full-suite contention filed as a todo for further investigation rather than a unilateral tolerance change.
 - [Phase 04]: 04-25 chose window.reactScan (the CDN bundle's own public entrypoint, set unconditionally at script top-level) over the lazily-set globalThis.__REACT_SCAN__ as the reactScan fixture's attachment-proof global, and put the proof in the fixture's own teardown rather than only in the throwaway probe, so any future caller inherits the same guarantee.
 - [Phase 04]: 04-25's checkpoint resolved 2026-09-07 — CLAUDE.md pointer approved and applied verbatim to § 'Debug against the real app, not custom scripts'; board-delete stranding bug queued as a post-phase-close quick task; the six fixtures and the opt-in-three design both accepted as-is with no changes requested.
+- [Phase 04]: [quick task 260908-g4p]: Consolidated `BOARDS_QUERY_KEY`/`BOARD_QUERY_KEY_PREFIX` into one `QUERY_KEY` object in `src/lib/core/query-keys/query-keys.ts`, mirroring `MUTATION_KEY`; added a `keys:check` gate (blanks comments before matching so the nine files carrying the singular board key in load-bearing prose survive) wired into `pnpm verify`, `gates:check` and CI. Unblocks 260908-g5y, 260908-g61, 260908-g5z, 260908-g63 in that order.
 
 ### Pending Todos
 
@@ -218,6 +219,7 @@ verifying phase 03 wave 4) —
 | 260906-hze | Move `boards/loading.tsx` and `boards/page.tsx` into a `(index)` route group so `/boards`'s Suspense fallback stops covering the nested `[boardId]` segment during a board switch | 2026-09-06 | 29b4d6e | Verified | [260906-hze-fix-the-remaining-one-frame-horizontal-s](./quick/260906-hze-fix-the-remaining-one-frame-horizontal-s/) |
 | 260907-exb | Fix BOARD-02's column fan-out to be optimistic: decouple it from the create navigate (which it was accidentally stalling until it settled) and stage placeholder columns under client ids on the new board's own mount | 2026-09-07 | 6717037 | Verified | [260907-exb-fix-board-create-column-fan-out-to-be-op](./quick/260907-exb-fix-board-create-column-fan-out-to-be-op/) |
 | 260907-q83 | Fix the board-delete stranding window: resolve the open board from the delete's own destination via `useMutationState` while the URL is still stale, closing the ~700-820ms window of blank header title + deleted board's stale content | 2026-09-07 | 956eb3e | Verified | [260907-q83-investigate-and-fix-the-board-delete-str](./quick/260907-q83-investigate-and-fix-the-board-delete-str/) |
+| 260908-g4p | Consolidate every TanStack Query cache key into one `QUERY_KEY` declaration in `src/lib/core/query-keys/`, mirroring `MUTATION_KEY`, and add the `keys:check` gate | 2026-09-08 | 5904e1d | Verified | [260908-g4p-consolidate-every-tanstack-query-cache-k](./quick/260908-g4p-consolidate-every-tanstack-query-cache-k/) |
 
 ### Roadmap Evolution
 
@@ -242,11 +244,11 @@ Items acknowledged and carried forward from previous milestone close:
 
 **Resume file:** None
 
-Last session: 2026-09-07T07:54:20.222Z
-Stopped at: Phase 04 complete — all phases complete
-(run 33805069347, conclusions read back per job). Phase 04's 04-22 human sign-off checkpoint is
-still open and blocking; it was NOT answered this session. Four follow-up todos were filed and are
-listed under Pending Todos.
+Last session: 2026-09-08T12:31:12.484Z
+Stopped at: Completed quick task 260908-g4p: consolidated TanStack Query cache keys into QUERY_KEY.
+First of five sequenced same-day quick tasks (260908-g4p → 260908-g5y → 260908-g61 → 260908-g5z →
+260908-g63); the other four are unblocked to run in that order. Phase 04's 04-22 human sign-off
+checkpoint is still open and blocking from a prior session; it was NOT answered this session.
 
 **Quick task 260903-ttt (2026-09-03):** SOPS + age now carry local secrets. `secrets.enc.env` is
 committed ciphertext; `pnpm secrets:decrypt` reconstitutes `.env.local` from it plus the age key at
@@ -475,3 +477,32 @@ heights/zoom levels) are handed to the orchestrator unrun.
 
 Push and `gh run watch` still pending as of this entry — see `260906-hze-SUMMARY.md` for the
 final commit/CI state once posted.
+
+**This session (2026-09-08, quick task `260908-g4p`):** Collapsed `["boards"]` (declared in
+`boards-query.ts`) and `["board"]` (duplicated inside `board-query-key.ts` itself) into one
+`QUERY_KEY` object in `src/lib/core/query-keys/query-keys.ts`, mirroring the shipped
+`MUTATION_KEY` pattern. `buildBoardQueryKey` now spreads `QUERY_KEY.BOARD`; its ~30 callers were
+untouched. `BOARDS_QUERY_KEY` and `BOARD_QUERY_KEY_PREFIX` are both fully retired — their five
+importers (`board-query-defaults.tsx`, `dehydrate-boards.ts`, and the three boards mutation hooks)
+now import `QUERY_KEY`. Added `scripts/check-query-keys.mjs` (a `keys:check` gate blanking `//`
+and `/* */` comments before matching, since nine files carry the singular board key only inside
+load-bearing prose per docs/adr/tech/0030) wired into `package.json`, `verify.mjs` and `ci.yml`'s
+`quality` job in one commit.
+
+QK_BASE (the SHA this refactor started from) was `6d633c4`, captured explicitly rather than
+anchoring to `main` — this branch is 542 commits past `main`, which already carries 12 board-key
+lines on an untouched tree. The key-string identity diff against QK_BASE returned exit 0 with
+both sides exactly `{"board", "boards"}` — no key string moved or changed. The new gate was
+falsified in both directions per the plan's exact command chain: passed clean, failed 1 on a
+literal deliberately reintroduced into `boards-query.ts`, passed again after `git checkout`
+restored it, printing `BOTH DIRECTIONS CONFIRMED`. `tsc --noEmit`, `pnpm exec vitest run
+--project unit` (386/386), `--project browser board-view.test.tsx` (236/236), `--project node
+check-query-keys.unit.test.mjs` (6/6), all five named gate scripts, and `pnpm lint` all ran green.
+The e2e suite was deliberately not run (compile-level refactor, no runtime surface). Three task
+commits: `cd8acef`, `03616f3`, `5904e1d`.
+
+This is the first of five same-day sequenced quick tasks and must land before the other four
+(`260908-g5y`, `260908-g61`, `260908-g5z`, `260908-g63`), which rewrite overlapping files and were
+authored against this task's post-refactor import names. Not pushed — per the orchestrator's
+instruction, push and `gh run watch` are deferred to a batch-level step after all five settle.
+Full narrative: `260908-g4p-SUMMARY.md`.
