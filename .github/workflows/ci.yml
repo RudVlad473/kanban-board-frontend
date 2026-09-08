@@ -106,6 +106,9 @@ jobs:
             - name: Route declaration check
               run: pnpm routes:check
 
+            - name: Query key declaration check
+              run: pnpm keys:check
+
             - name: Route Handler ban check
               run: pnpm handlers:check
 

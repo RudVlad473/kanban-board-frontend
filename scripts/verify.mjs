@@ -66,6 +66,7 @@ export const VERIFY_STEPS = [
     checkStep({ id: "stories", checkFileName: "no-play-functions", ciAlias: "stories:check" }),
     checkStep({ id: "coverage", checkFileName: "coverage-pointers", ciAlias: "coverage:check" }),
     checkStep({ id: "routes", checkFileName: "routes", ciAlias: "routes:check" }),
+    checkStep({ id: "keys", checkFileName: "query-keys", ciAlias: "keys:check" }),
     checkStep({ id: "comments", checkFileName: "comment-length", ciAlias: "comments:check" }),
     checkStep({ id: "tsx", checkFileName: "tsx-declarations", ciAlias: "tsx:check" }),
     checkStep({ id: "renders", checkFileName: "story-only-renders", ciAlias: "renders:check" }),
