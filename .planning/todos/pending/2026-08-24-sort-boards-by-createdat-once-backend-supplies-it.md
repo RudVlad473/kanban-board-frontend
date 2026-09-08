@@ -32,6 +32,26 @@ Two live symptoms:
 This also contradicts D-12, which treats newest-first as a verified business fact. It is not a
 fact; it is a guess that usually holds.
 
+## Observation, 2026-09-08 — the backend now sends it
+
+Measured by quick task `260908-g5y` while pinning the create contract
+(`src/features/boards/actions/create-board-action.integration.test.ts`, run against the deployed
+nonprod backend). `POST /boards` answers **201** with a body carrying the field:
+
+```json
+{ "id": "2ggpg6zyfmud3", "name": "Create With Id 0q1w7chh", "version": 0, "createdAt": "2026-09-08T12:39:03.734078Z" }
+```
+
+Two caveats before this reads as "unblocked":
+
+- The regenerated `docs/api/kanban-board-openapi.json` still declares `BoardResponseDTO` as
+  `{ id, name, version }` with no `createdAt`, so the field arrives **undeclared** — the contract
+  has not caught up with the payload, and codegen will not surface it.
+- `boardSchema` (`src/features/boards/schemas.ts`) declares only `{ id, name, version }`, so the
+  field is dropped at this app's own boundary today and never reaches `Board`.
+- Only the CREATE response was observed. Whether `GET /boards` carries it too is **not** measured;
+  that is the read this todo actually depends on, and it must be checked before acting.
+
 ## Resolution
 
 Owner intends to add `createdAt` to the Board payload backend-side (stated 2026-08-24). Once it
