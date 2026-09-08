@@ -7,9 +7,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { getBoardsAction } from "@/features/boards/actions/get-boards-action";
 import type { Board } from "@/features/boards/schemas";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
-
-/** The one entry the sidebar and the header both read, which is what keeps them in step. */
-export const BOARDS_QUERY_KEY = ["boards"] as const;
+import { QUERY_KEY } from "@/lib/core/query-keys/query-keys";
 
 /*
  * `staleTime: Infinity` because the server, not a timer, decides when this is stale: the entry is
@@ -18,7 +16,7 @@ export const BOARDS_QUERY_KEY = ["boards"] as const;
  */
 export const createBoardsQueryOptions = () =>
     queryOptions({
-        queryKey: BOARDS_QUERY_KEY,
+        queryKey: QUERY_KEY.BOARDS,
         queryFn: async (): Promise<Board[]> => {
             const result = await getBoardsAction();
 

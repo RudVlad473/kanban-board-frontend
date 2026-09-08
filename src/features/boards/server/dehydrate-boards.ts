@@ -4,9 +4,9 @@ import "server-only";
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { cache } from "react";
 
-import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import { fetchBoards } from "@/features/boards/server/fetch-boards";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { QUERY_KEY } from "@/lib/core/query-keys/query-keys";
 
 /**
  * The board list read, handed to the client as a dehydrated cache entry rather than props.
@@ -20,7 +20,7 @@ export const dehydrateBoards = cache(async () => {
     const queryClient = new QueryClient();
 
     if (!loadFailed) {
-        queryClient.setQueryData(BOARDS_QUERY_KEY, boards);
+        queryClient.setQueryData(QUERY_KEY.BOARDS, boards);
     }
 
     return { state: dehydrate(queryClient), boards, loadFailed };

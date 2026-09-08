@@ -7,10 +7,10 @@ import { isNil } from "es-toolkit";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
-import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { QUERY_KEY } from "@/lib/core/query-keys/query-keys";
 
 /*
  * Authored copy only — the action returns bare discriminants, so nothing the backend said can
@@ -64,14 +64,14 @@ export const useRenameBoard = () => {
 
         onMutate: async ({ boardId, name }: RenameBoardArgs) => {
             // Or an in-flight read could land on top of the optimistic name and undo it.
-            await queryClient.cancelQueries({ queryKey: BOARDS_QUERY_KEY });
+            await queryClient.cancelQueries({ queryKey: QUERY_KEY.BOARDS });
 
             /* Captured BEFORE the write, so the rollback can restore THIS board's own name. */
             const previousName = queryClient
-                .getQueryData<Board[]>(BOARDS_QUERY_KEY)
+                .getQueryData<Board[]>(QUERY_KEY.BOARDS)
                 ?.find((board) => board.id === boardId)?.name;
 
-            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+            queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
                 current?.map((board) => (board.id === boardId ? { ...board, name } : board)),
             );
 
@@ -83,7 +83,7 @@ export const useRenameBoard = () => {
         onError: (error: unknown, { boardId }: RenameBoardArgs, context) => {
             if (!isNil(context?.previousName)) {
                 const restoredName = context.previousName;
-                queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+                queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
                     current?.map((board) => (board.id === boardId ? { ...board, name: restoredName } : board)),
                 );
             }
@@ -96,7 +96,7 @@ export const useRenameBoard = () => {
          * a refetch would spend a round trip to learn what this response just said.
          */
         onSuccess: ({ board }) => {
-            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+            queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
                 current?.map((entry) => (entry.id === board.id ? board : entry)),
             );
         },

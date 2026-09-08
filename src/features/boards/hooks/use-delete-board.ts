@@ -9,11 +9,11 @@ import { useRouter } from "next/navigation";
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteBoardAction } from "@/features/boards/actions/delete-board-action";
 import { removeBoard, resolveDestinationAfterDelete } from "@/features/boards/model";
-import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
+import { QUERY_KEY } from "@/lib/core/query-keys/query-keys";
 import { buildBoardDetailPath, toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 /*
@@ -65,17 +65,17 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
 
         onMutate: async ({ boardId }: { boardId: string }) => {
             // Or an in-flight read could land on top of the optimistic list and undo it.
-            await queryClient.cancelQueries({ queryKey: BOARDS_QUERY_KEY });
+            await queryClient.cancelQueries({ queryKey: QUERY_KEY.BOARDS });
 
             /* Captured BEFORE the removal, so the rollback can put this row back where it was. */
-            const boards = queryClient.getQueryData<Board[]>(BOARDS_QUERY_KEY) ?? [];
+            const boards = queryClient.getQueryData<Board[]>(QUERY_KEY.BOARDS) ?? [];
             const removedBoard = boards.find((board) => board.id === boardId);
             /* The neighbour it followed, so a create landing meanwhile cannot shift the anchor. */
             const afterBoardId = boards[boards.findIndex((board) => board.id === boardId) - 1]?.id ?? null;
 
             /* `setQueryData` returns what it wrote, which is the list the destination is resolved against. */
             const remainingBoards =
-                queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+                queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
                     removeBoard({ boards: current ?? [], boardId }),
                 ) ?? [];
             const destination = resolveDestinationAfterDelete({
@@ -114,7 +114,7 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
         onError: (error: unknown, { boardId }: { boardId: string }, context) => {
             if (!isNil(context?.undo)) {
                 const restore = context.undo;
-                queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) => restore(current ?? []));
+                queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) => restore(current ?? []));
             }
 
             /*

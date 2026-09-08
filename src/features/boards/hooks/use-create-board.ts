@@ -11,12 +11,12 @@ import { createBoardAction } from "@/features/boards/actions/create-board-action
 import { useCreateBoardColumns } from "@/features/boards/hooks/use-create-board-columns";
 import { removeBoard, toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
 import { claimPendingColumnFanOut } from "@/features/boards/pending-column-fan-out";
-import { BOARDS_QUERY_KEY } from "@/features/boards/queries/boards-query";
 import type { Board, BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
 import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
+import { QUERY_KEY } from "@/lib/core/query-keys/query-keys";
 import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /*
@@ -94,10 +94,10 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
         /* No snapshot taken: `onError` below reconciles by `clientId`, so there is nothing to restore. */
         onMutate: async ({ clientId, name }: CreateBoardVariables) => {
             // Or an in-flight read could land on top of the optimistic list and undo it.
-            await queryClient.cancelQueries({ queryKey: BOARDS_QUERY_KEY });
+            await queryClient.cancelQueries({ queryKey: QUERY_KEY.BOARDS });
 
             /* `version: 0` is inert placeholder filler — the server owns it, and success replaces it. */
-            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+            queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
                 withBoardInsert({ boards: current ?? [], board: { id: clientId, name, version: 0 } }),
             );
         },
@@ -108,7 +108,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
          */
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
         onError: (_error: unknown, { clientId }: CreateBoardVariables) => {
-            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+            queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
                 isNil(current) ? current : removeBoard({ boards: current, boardId: clientId }),
             );
         },
@@ -116,7 +116,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)
         onSuccess: ({ board }, { clientId }) => {
             /* The placeholder row is swapped for the server's real id and version — never inserted twice. */
-            queryClient.setQueryData<Board[]>(BOARDS_QUERY_KEY, (current) =>
+            queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
                 withBoardReplace({ boards: current ?? [], boardId: clientId, board }),
             );
 
