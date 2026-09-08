@@ -3,6 +3,11 @@
 > **Supersedes [`docs/adr/tech/0029`](./0029-optimistic-writes-via-the-ui.md)** — the four writes
 > that record moved off the mutation's own variables and onto the cache entry described here.
 
+> **Amended by [`docs/adr/tech/0036`](./0036-state-ownership-and-the-four-slot-mutation-convention.md)**
+> — the four rules below are unchanged; 0036 adds the state-ownership model that says which state
+> belongs in this cache at all, and the four-responsibility convention that says what a hook writing
+> it looks like.
+
 ## Decision Drivers
 
 - `tech/0029` put all four optimistic writes on TanStack Query's "via the UI" approach: each hook

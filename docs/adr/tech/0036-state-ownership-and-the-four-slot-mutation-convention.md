@@ -1,6 +1,6 @@
 # 0036 — Where state lives, and the four responsibilities every optimistic command accounts for
 
-> **Amends [`docs/adr/tech/0030`](./0030-optimistic-writes-via-the-query-cache.md)** — it does NOT
+> **Amends [`docs/adr/tech/0030-optimistic-writes-via-the-query-cache.md`](./0030-optimistic-writes-via-the-query-cache.md)** — it does NOT
 > replace it. 0030's four numbered rules stay live and unchanged; they govern how a cache write is
 > made correct. This record adds the two things 0030 never named: WHICH state belongs in the cache
 > at all, and what SHAPE a hook that writes it has.
@@ -22,7 +22,7 @@ won and the disagreement is stated.
 - The gap has been paid for three times, each time by a mechanism that duplicated something the
   platform already owned:
   1. **A hand-rolled optimistic-move override** with snapshot-and-compare staleness detection, where
-     the library's own cache write would have done it — `docs/adr/tech/0029`'s mechanism, whose
+     the library's own cache write would have done it — `docs/adr/tech/0029-optimistic-writes-via-the-ui.md`'s mechanism, whose
      helper `src/lib/client/optimistic-mutation.ts` was deleted in `3089a6a`
      (`refactor(04-15): finish the board-detail migration onto the query cache`).
   2. **A client context populated by an effect**, carrying data the server render already had —
@@ -64,18 +64,19 @@ thing being evicted.
 board is open; the user does, by clicking. The same server state — one `["board", id]` entry — serves
 every URL that names it. Conflating the two is exactly what produced `useOpenBoardId`: "which board
 is open" was treated as derivable state to be corrected, when it is an input to be moved. The fix was
-not a better corrector, it was moving the input synchronously (see the URL-lag record below).
+not a better corrector; it was moving the input through a call that lands in the same React commit —
+measured, with its numbers and its falsifier, in the URL-lag record below.
 
 **(d) A dedicated client store (TanStack Store, Zustand, Jotai) was considered and REJECTED**, on the
 grounds that this app has almost no client state to put in one. Re-derived 2026-09-08:
 
 - `rg -n 'createContext' src/ --glob '!*.test.*'` → four lines, but **exactly ONE real context**:
-  `src/components/ui/dropdown/dropdown-context.ts:9`. The other three are its own import at `:2`, and
-  two lines of *comment prose* — `src/features/boards/column-drag-model.ts:9` and
-  `src/features/tasks/task-drag-model.ts:18` — each explaining why that file does **not** create a
+  `src/components/ui/dropdown/dropdown-context.ts`:9. The other three are its own import at `:2`, and
+  two lines of *comment prose* — `src/features/boards/column-drag-model.ts`:9 and
+  `src/features/tasks/task-drag-model.ts`:18 — each explaining why that file does **not** create a
   context at module scope. (The task prompt that commissioned this record said "three call sites".
   The command says one; the command wins.)
-- `rg -n 'useContext\(' src/` → one line, `src/components/ui/dropdown/dropdown.tsx:57`.
+- `rg -n 'useContext\(' src/` → one line, `src/components/ui/dropdown/dropdown.tsx`:57.
 - `rg -n 'zustand|jotai|@tanstack' package.json` → one line, `"@tanstack/react-query": "5.101.4"`.
   No global-store dependency of any kind ships.
 
@@ -91,11 +92,11 @@ deliberately rather than by growing a third context.
 **(e) In-flight intent is a narrow tool, not a tier to reach for.** Its two legitimate uses are both
 about a *pending write*, not about *data*: gating a control while a write is in flight, and skipping
 work addressed to an id the server has not seen. `src/lib/client/use-unconfirmed-ids.ts` is the
-single implementation and has six call sites
-(`rg -n 'useUnconfirmedIds' src/ --glob '!*.test.*'`, 2026-09-08): `board-list.tsx:55`,
-`board-screen.tsx:68`, `board-view.tsx:95` and `:96`, `edit-task-modal.tsx:58`,
-`task-detail-modal.tsx:41`, plus `use-prefetch-all-boards.ts:33` and `use-open-board-columns.ts:31`
-inside hooks. Each asks "is this id acknowledged yet"; none asks "what is the value".
+single implementation, and `rg -n 'useUnconfirmedIds\(\{' src/ --glob '!*.test.*'` returns **eight**
+call sites on 2026-09-08: `use-prefetch-all-boards.ts:33`, `board-list.tsx:55`,
+`use-open-board-columns.ts:31`, `task-detail-modal.tsx:41`, `edit-task-modal.tsx:58`,
+`board-screen.tsx:68`, and `board-view.tsx:95` and `:96`. Each asks "is this id acknowledged yet";
+none asks "what is the value".
 
 Using it to correct a lagging URL — `useOpenBoardId` — was reaching for this tier to answer a
 question tier 2 owned. The fix was not a better filter. It was stopping the URL from lagging.
@@ -224,9 +225,9 @@ Derived from the shipped `onSuccess` bodies and the response DTOs, 2026-09-08:
 | `id` | column, task and subtask creates only | `onMutate` stages under a `crypto.randomUUID()` `clientId`; `onSuccess` swaps in the server's id (`withColumnReplace`, `withTaskReplace`, `withSubtaskRemove` + `withSubtaskInsert`) |
 | `position` | column and task writes | server-ordered; `ColumnResponseDTO.position`, `TaskResponseDTO.position` |
 
-**Not `createdAt`.** `BoardResponseDTO` declares it (`src/lib/core/api-contract/generated-types.ts:290`)
+**Not `createdAt`.** `BoardResponseDTO` declares it (`src/lib/core/api-contract/generated-types.ts`:290)
 and the create response carries it (measured 2026-09-08, `260908-g5y`), but `boardSchema`
-(`src/features/boards/schemas.ts:12-16`) is `{ id, name, version }`, so the field is dropped at the
+(`src/features/boards/schemas.ts`:12-16) is `{ id, name, version }`, so the field is dropped at the
 boundary and no `onSuccess` merges it. The commissioning plan predicted `version` and `createdAt`;
 the shipped bodies say `version`, `id` and `position`.
 
@@ -248,7 +249,7 @@ fan-out has staged placeholder columns into that entry and an assign would erase
 
 ## What stays banned
 
-`docs/adr/tech/0029` is superseded and stays superseded. Its shapes, re-affirmed by name:
+`docs/adr/tech/0029-optimistic-writes-via-the-ui.md` is superseded and stays superseded. Its shapes, re-affirmed by name:
 
 - **an override store** — a client-side holder of pending values parallel to the cache;
 - **a staleness guard comparing against the server's previous value** — 0029's rule 2, the submitted
@@ -335,7 +336,7 @@ optimistic-navigation case are what catch that.
   scope section which of them their hook legitimately leaves empty.
 - **`CLAUDE.md`'s "copy a shipped hook" instruction is now redundant for the shape** and is re-pointed
   at this record. What it still transmits that a table cannot — the authored toast-copy tables, the
-  `no-restricted-syntax` exemptions TanStack's positional callbacks require (`docs/adr/tech/0016`),
+  `no-restricted-syntax` exemptions TanStack's positional callbacks require (`docs/adr/tech/0016-named-object-parameters.md`),
   the `ActionRefusedError` throw shape — is worth reading an exemplar for, and that is what the
   re-pointed instruction says.
 - **`CONVENTIONS.md`'s two snapshot-restore claims are corrected** to the per-entity reconcile the
@@ -361,13 +362,13 @@ optimistic-navigation case are what catch that.
   one is not. The client mints 13 uniform base36 symbols
   (`src/features/boards/board-id.ts`, rejection-sampled at 252 so a bare `% 36` cannot bias the first
   four symbols), giving 36^13 ≈ 1.7e20. The accepted pattern is
-  `^[0-9a-z]{1,13}$` (`ValidationConstants.java:51-52`) — a **minimum of one** character, so the short
+  `^[0-9a-z]{1,13}$` (`kanban-board-backend/src/main/java/com/vrudenko/kanban_board/constant/ValidationConstants.java`:51-52) — a **minimum of one** character, so the short
   end of the accepted space is trivially enumerable, but the generators never emit there.
 
   **What would make it matter more**, in rising order of concern:
-  1. **The backend's own ids are not uniform.** `RandFlakeGenerator.java:122` renders a Snowflake
-     (`SEQUENCE_BITS = 22` at `:16`, `CUSTOM_EPOCH = 1514764800000L` — 2018-01-01Z — at `:28`) through
-     `Long.toString(payload, 36)`, currently 12 characters (`BoardId.java:36`,
+  1. **The backend's own ids are not uniform.** `kanban-board-backend/src/main/java/com/vrudenko/kanban_board/config/RandFlakeGenerator.java`:122 renders a Snowflake
+     (`SEQUENCE_BITS = 22` at its `:16`, `CUSTOM_EPOCH = 1514764800000L` — 2018-01-01Z — at its `:28`) through
+     `Long.toString(payload, 36)`, currently 12 characters (`kanban-board-backend/src/main/java/com/vrudenko/kanban_board/dto/annotation/BoardId.java`:36,
      `@Schema(example = "8qfkj52yzi0w")`). A time-derived id is far cheaper to enumerate than 36^12
      suggests: an attacker who knows roughly when a board was created is searching the sequence bits,
      not the whole space. Every server-generated board id in the system is in this class.
