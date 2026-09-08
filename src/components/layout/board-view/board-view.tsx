@@ -68,10 +68,19 @@ export const BoardView = ({
      * already optimistic and no override chain is needed (docs/adr/tech/0030). `initialData` is what
      * makes a story or a test that renders this bare still show its own fixture.
      */
-    const { data: board } = useQuery({
+    const { data } = useQuery({
         ...createBoardQueryOptions({ boardId: seedBoard.id }),
         initialData: seedBoard,
     });
+    // comment-length-exempt: records the runtime behaviour that contradicts the type, and the crash it caused, neither of which the `??` states
+    /*
+     * `initialData` types `data` as always defined and the runtime disagrees: REMOVING this entry
+     * while this component is still mounted — which a refused board create does to the entry it
+     * staged — leaves the observer holding `undefined` for one render, and this crashed on
+     * `board.columns` (measured 2026-09-08). The seed covers that render; the unmount follows it.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- see above: the type is wrong about a removed entry, not redundant
+    const board = data ?? seedBoard;
     const renderedColumns = board.columns;
     /*
      * BOARD-02's column fan-out, run once THIS board has actually mounted — never from the create

@@ -212,28 +212,29 @@ describeForEachDevice({
             expect(await screen.findByRole("dialog")).toBeInTheDocument();
         });
 
-        // comment-length-exempt: records the measurement that makes this test's shape the correct one, since the two-line body otherwise reads as an accidentally-weak assertion
         /*
-         * Measured live (260907-exb Task 1): running the column phase from HERE, concurrently with
-         * `router.push()`, stalled the WHOLE navigation until the fan-out settled — no URL change, no
-         * skeleton, nothing painted. `createBoard()` now only CLAIMS the phase
-         * (`claimPendingColumnFanOut`); `useRunPendingColumnFanOut` runs it once the new board's own
-         * route has mounted (`board-view.test.tsx` covers that half).
+         * `createBoard()` only CLAIMS the column phase (`claimPendingColumnFanOut`);
+         * `useRunPendingColumnFanOut` runs it once the new board's own route has mounted
+         * (`board-view.test.tsx` covers that half), which nothing here does.
          */
-        it("navigates without waiting on or running the column phase, which runs once the new board mounts", async () => {
+        it("moves the URL to the new board while the create is unresolved, without running the column phase", async () => {
             // Arrange
             await render(<Empty />);
             createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+            createBoardStub.hold();
 
             // Act
             await submitNewBoard({ name: "Launch", columns: ["Todo"] });
-
-            // Assert — navigated immediately; the column phase never ran and nothing refreshed from here.
             await vi.waitFor(() => {
-                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
+                expect(createBoardStub.calls).toHaveLength(1);
             });
+
+            // Assert — the URL already names the id the action was CALLED with, while that call is unresolved.
+            expect(window.location.pathname).toBe(buildBoardDetailPath(createBoardStub.calls[0].id));
             expect(createBoardColumnsStub.calls).toHaveLength(0);
             expect(mockRefresh).not.toHaveBeenCalled();
+
+            createBoardStub.settle();
         });
 
         /*
@@ -256,10 +257,10 @@ describeForEachDevice({
                 expect(createBoardStub.calls).toHaveLength(1);
             });
 
-            // Assert — newest-first behind an already-closed modal, and nobody navigated anywhere yet.
+            // Assert — newest-first behind an already-closed modal, with the URL already on the new board.
             expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
             expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
-            expect(mockPush).not.toHaveBeenCalled();
+            expect(window.location.pathname).toBe(buildBoardDetailPath(createBoardStub.calls[0].id));
 
             /*
              * Assert — the row already links to the id the action was CALLED with, while that call
@@ -274,21 +275,21 @@ describeForEachDevice({
             createBoardStub.settle();
 
             /*
-             * Assert — the row is not appended beside a second one, and the navigation reads its id
-             * off the response. The stub's canned board carries `STUB_BOARD_ID` rather than echoing
-             * the minted id, a divergence from the backend `actionStub`'s static queue cannot model.
+             * Assert — the settle appends no second row and moves nothing: the URL was already final
+             * before the response, so a landing create has no navigation left to make.
              */
             await vi.waitFor(() => {
-                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
+                expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
             });
-            expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
+            expect(window.location.pathname).toBe(buildBoardDetailPath(createBoardStub.calls[0].id));
         });
 
-        /* The other half of the same mechanism: a refusal must leave no trace of the optimistic row. */
+        /* The other half of the same mechanism: a refusal must leave no trace of the optimistic row, nor of the move it made. */
         it("removes the optimistic row and reports the failure in a toast when the create fails", async () => {
             // Arrange
             await render(<Populated />);
             const namesBefore = getRenderedBoardNames();
+            const pathBefore = window.location.pathname;
             createBoardStub.queue({ status: RESULT_STATUS.ERROR });
             createBoardStub.hold();
 
@@ -310,7 +311,8 @@ describeForEachDevice({
             });
             expect(getRenderedBoardNames()).toEqual(namesBefore);
             expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
-            expect(mockPush).not.toHaveBeenCalled();
+            /* Returned to the path the submit was made from — the move is undone, not merely unmade. */
+            expect(window.location.pathname).toBe(pathBefore);
         });
 
         /*
@@ -343,8 +345,9 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
+                expect(createBoardStub.calls).toHaveLength(1);
             });
+            expect(window.location.pathname).toBe(buildBoardDetailPath(createBoardStub.calls[0].id));
             expect(createBoardColumnsStub.calls).toHaveLength(0);
             expect(getRaisedToastTexts()).toHaveLength(0);
         });
@@ -368,7 +371,6 @@ describeForEachDevice({
             expect(getRaisedToastTexts()[0]).toContain("Choose a different name.");
             expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
             expect(createBoardColumnsStub.calls).toHaveLength(0);
-            expect(mockPush).not.toHaveBeenCalled();
         });
 
         /* Every other refusal keeps the generic copy — only the name clash has more to say. */
@@ -385,7 +387,6 @@ describeForEachDevice({
                 expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
             });
             expect(getRaisedToastTexts()[0]).toContain("Try again.");
-            expect(mockPush).not.toHaveBeenCalled();
         });
 
         /*
@@ -431,7 +432,7 @@ describeForEachDevice({
             });
             await submitNewBoard({ name: "Survivor", columns: [] });
             await vi.waitFor(() => {
-                expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));
+                expect(createBoardStub.calls).toHaveLength(2);
             });
             createBoardStub.settle();
 

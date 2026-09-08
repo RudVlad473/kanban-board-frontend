@@ -141,6 +141,16 @@ test.describe("OPT-01: an unconfirmed entity cannot be acted on", () => {
         await page.getByLabel("Board Name", { exact: true }).fill(name);
         await page.getByRole("button", { name: "Create New Board", exact: true }).click();
 
+        // comment-length-exempt: records why the click is made from ANOTHER board, which reads as an incidental extra step and is what keeps the assertion falsifiable
+        /*
+         * Back to the seeded board first. The create now moves the URL to the new board itself
+         * (260908-g5z), so clicking the row while standing on it would assert that a navigation to
+         * the CURRENT url changed nothing — true whether the guard holds or not. From another
+         * board, a followed `href` is a real navigation, and the membership guard would bounce it.
+         */
+        await page.goBack();
+        await expect(page).toHaveURL(openUrl);
+
         // Assert — the row is there, and activating it goes nowhere: its id names no board upstream.
         const row = page.getByRole("link", { name });
         await expect(row).toBeVisible();

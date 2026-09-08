@@ -1009,6 +1009,8 @@ describeForEachDevice({
                 boardId: FIXTURE_BOARD_ID,
                 names: ["Todo", "Doing", "Done"],
                 clientIds: ["client-1", "client-2", "client-3"],
+                colors: ["#49C4E5", "#8471F2", "#67E2AE"],
+                boardCreated: Promise.resolve(true),
             });
             createBoardColumnsStub.queue({ status: RESULT_STATUS.SUCCESS, failedNames: [], created: [] });
             createBoardColumnsStub.hold();
@@ -1043,6 +1045,8 @@ describeForEachDevice({
                 boardId: FIXTURE_BOARD_ID,
                 names: ["Todo", "Doing"],
                 clientIds: ["client-1", "client-2"],
+                colors: ["#49C4E5", "#8471F2"],
+                boardCreated: Promise.resolve(true),
             });
             createBoardColumnsStub.queue({
                 status: RESULT_STATUS.SUCCESS,
@@ -1071,6 +1075,8 @@ describeForEachDevice({
                 boardId: FIXTURE_BOARD_ID,
                 names: ["Todo", "Doing", "Done"],
                 clientIds: ["client-1", "client-2", "client-3"],
+                colors: ["#49C4E5", "#8471F2", "#67E2AE"],
+                boardCreated: Promise.resolve(true),
             });
             createBoardColumnsStub.queue({
                 status: RESULT_STATUS.SUCCESS,
@@ -1097,6 +1103,8 @@ describeForEachDevice({
                 boardId: FIXTURE_BOARD_ID,
                 names: ["Todo", "Doing", "Done"],
                 clientIds: ["client-1", "client-2", "client-3"],
+                colors: ["#49C4E5", "#8471F2", "#67E2AE"],
+                boardCreated: Promise.resolve(true),
             });
             createBoardColumnsStub.queue({ status: RESULT_STATUS.ERROR });
 
@@ -1117,6 +1125,8 @@ describeForEachDevice({
                 boardId: FIXTURE_BOARD_ID,
                 names: ["Todo", "Doing"],
                 clientIds: ["client-1", "client-2"],
+                colors: ["#49C4E5", "#8471F2"],
+                boardCreated: Promise.resolve(true),
             });
             createBoardColumnsStub.queue({
                 status: RESULT_STATUS.SUCCESS,
@@ -1149,7 +1159,13 @@ describeForEachDevice({
 
         it("refreshes the route once the mount-time fan-out settles", async () => {
             // Arrange
-            claimPendingColumnFanOut({ boardId: FIXTURE_BOARD_ID, names: ["Todo"], clientIds: ["client-1"] });
+            claimPendingColumnFanOut({
+                boardId: FIXTURE_BOARD_ID,
+                names: ["Todo"],
+                clientIds: ["client-1"],
+                colors: ["#49C4E5"],
+                boardCreated: Promise.resolve(true),
+            });
             createBoardColumnsStub.queue({
                 status: RESULT_STATUS.SUCCESS,
                 failedNames: [],
@@ -1171,6 +1187,8 @@ describeForEachDevice({
                 boardId: FIXTURE_BOARD_ID,
                 names: ["Todo", "Doing"],
                 clientIds: ["client-1", "client-2"],
+                colors: ["#49C4E5", "#8471F2"],
+                boardCreated: Promise.resolve(true),
             });
             createBoardColumnsStub.queue({
                 status: RESULT_STATUS.SUCCESS,
@@ -1208,6 +1226,8 @@ describeForEachDevice({
                 boardId: FIXTURE_BOARD_ID,
                 names: ["Todo", "Doing", "Done"],
                 clientIds: ["client-1", "client-2", "client-3"],
+                colors: ["#49C4E5", "#8471F2", "#67E2AE"],
+                boardCreated: Promise.resolve(true),
             });
             createBoardColumnsStub.queue({
                 status: RESULT_STATUS.SUCCESS,

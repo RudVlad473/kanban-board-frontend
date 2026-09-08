@@ -7,13 +7,7 @@ import { isNil } from "es-toolkit";
 
 import { useToast } from "@/components/ui/toast/use-toast";
 import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
-import { pickColorsForNewColumns } from "@/features/boards/column-palette";
-import {
-    toInFlightColumns,
-    withColumnInsert,
-    withColumnRemove,
-    type InFlightColumnCreate,
-} from "@/features/boards/model";
+import { withColumnInsert, withColumnRemove } from "@/features/boards/model";
 import type { BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
@@ -36,19 +30,32 @@ export const buildColumnFailureToastId = (boardId: string): string => `board-col
  * a RETRY, which owns no placeholders — so `useUnconfirmedIds` and `toInFlightColumns` can read them
  * back before anything has been written to the board entry (docs/adr/tech/0030).
  */
-type CreateColumnsVariables = { boardId: string; names: string[]; clientIds: string[]; colors: (string | undefined)[] };
+type CreateColumnsVariables = {
+    boardId: string;
+    names: string[];
+    clientIds: string[];
+    colors: (string | undefined)[];
+    /** Absent for a RETRY and for a board that already exists; inert to the two readers above, which read named fields. */
+    boardCreated?: Promise<boolean>;
+};
 
-// comment-length-exempt: records why this hook exists apart from `use-create-board.ts`, the measurement behind that split, and the mount-time contract it hands off to
+/**
+ * What `createColumns` reports — a bare `string[]` could not say "the board itself never landed".
+ * That arm exists so the caller can stay silent: the board's own toast is the one failure the user
+ * gets, and a `router.refresh()` against a path they are being rolled back from is worse than none.
+ */
+export type CreateColumnsOutcome = { boardLanded: true; failedNames: string[] } | { boardLanded: false };
+
+// comment-length-exempt: records why this hook exists apart from `use-create-board.ts` and the mount-time contract it hands off to, neither of which the body states
 /**
  * BOARD-02's column fan-out (docs/adr/tech/0030), split out of `use-create-board.ts` on purpose.
  *
- * `createBoard()` no longer calls this directly — measured live (260907-exb Task 1) that dispatching
- * the fan-out concurrently with `router.push()` stalls the WHOLE navigation until the fan-out (and
- * its own trailing `router.refresh()`) settle, because both share Next's single pending-transition
- * commit. `useRunPendingColumnFanOut` is the only intended caller of `createColumns`, run once the
- * new board has actually mounted — the earliest point anything is subscribed to the `["board", id]`
- * entry this hook's `onMutate` stages into. `board-list.tsx` still uses `retryColumns` and
- * `raiseColumnFailureToast` directly, since a retry's failure toast can fire from either surface.
+ * `createBoard()` does not call this directly. `useRunPendingColumnFanOut` is the only intended
+ * caller of `createColumns`, run once the new board has actually mounted — the earliest point
+ * anything is subscribed to the `["board", id]` entry this hook's `onMutate` stages into, and now
+ * also the point at which the board's own create may still be in flight. `board-list.tsx` still
+ * uses `retryColumns` and `raiseColumnFailureToast` directly, since a retry's failure toast can
+ * fire from either surface.
  */
 export const useCreateBoardColumns = () => {
     const toast = useToast();
@@ -56,7 +63,19 @@ export const useCreateBoardColumns = () => {
 
     const mutation = useMutation({
         mutationKey: MUTATION_KEY.CREATE_COLUMN,
-        mutationFn: async ({ boardId, names }: CreateColumnsVariables) => {
+        mutationFn: async ({ boardId, names, boardCreated }: CreateColumnsVariables) => {
+            // comment-length-exempt: records the measured backend refusal this gate exists for and why it sits here rather than around the whole mutation, neither recoverable from the two-line body
+            /*
+             * The gate, sited inside `mutationFn` so `onMutate`'s staging stays instant and only the
+             * DISPATCH waits: the URL now moves before the board is created, so this runs 300-1400ms
+             * ahead of it, and the backend answers `404 ENTITY_NOT_FOUND` for a column on a board id
+             * it has never seen (measured 2026-09-08 against the nonprod backend). A board that never
+             * landed throws instead, so `onError` retires the placeholders it staged.
+             */
+            if (!isNil(boardCreated) && !(await boardCreated)) {
+                throw new ActionRefusedError(RESULT_STATUS.ERROR);
+            }
+
             const result = await createBoardColumnsAction({ boardId, names });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
@@ -77,7 +96,15 @@ export const useCreateBoardColumns = () => {
                 return;
             }
 
-            /* `version: 0` is inert placeholder filler — the server owns it, and success replaces it. */
+            // comment-length-exempt: records why this write retires before it inserts, which reads as redundant beside an entry that is usually empty
+            /*
+             * Retires every OWNED id before re-inserting it, exactly as `onSuccess` below does, so
+             * this write is idempotent: `useCreateBoard` has already staged these same placeholders
+             * before the URL moved, and a plain append would show each typed column twice. The
+             * colours come from the same claim, so both writes name the same hexes.
+             *
+             * `version: 0` is inert placeholder filler — the server owns it, and success replaces it.
+             */
             queryClient.setQueryData<BoardFull>(queryKey, (current) =>
                 isNil(current)
                     ? current
@@ -96,7 +123,10 @@ export const useCreateBoardColumns = () => {
                                           tasks: [],
                                       },
                                   }),
-                              current.columns,
+                              clientIds.reduce(
+                                  (columns, columnId) => withColumnRemove({ columns, columnId }),
+                                  current.columns,
+                              ),
                           ),
                       },
             );
@@ -159,39 +189,30 @@ export const useCreateBoardColumns = () => {
         boardId,
         names,
         ownedClientIds = [],
+        colors = [],
+        boardCreated,
     }: {
         boardId: string;
         names: string[];
         ownedClientIds?: string[];
-    }): Promise<string[]> => {
-        /*
-         * Colours are picked HERE, once, rather than inside `onMutate` — `toInFlightColumns` reads
-         * them off `pending.state.variables`, which are fixed the moment `mutateAsync` is called, so
-         * a concurrent single-column create (`use-create-column.ts`) sees the SAME hexes this stages.
-         */
-        const colors =
-            ownedClientIds.length > 0
-                ? pickColorsForNewColumns({
-                      existingColumns: [
-                          ...(queryClient.getQueryData<BoardFull>(buildBoardQueryKey(boardId))?.columns ?? []),
-                          ...toInFlightColumns({
-                              pending: queryClient
-                                  .getMutationCache()
-                                  .findAll({ mutationKey: MUTATION_KEY.CREATE_COLUMN, status: "pending" })
-                                  .map((pending) => pending.state.variables as InFlightColumnCreate | undefined),
-                              boardId,
-                          }),
-                      ],
-                      count: names.length,
-                  })
-                : [];
-
+        /* The caller's, never re-picked here: `useCreateBoard` staged these same placeholders already. */
+        colors?: string[];
+        boardCreated?: Promise<boolean>;
+    }): Promise<CreateColumnsOutcome> => {
         const result = await mutation
-            .mutateAsync({ boardId, names, clientIds: ownedClientIds, colors })
+            .mutateAsync({ boardId, names, clientIds: ownedClientIds, colors, boardCreated })
             .catch(() => ({ status: RESULT_STATUS.ERROR, failedNames: names, created: [] }) as const);
 
+        /* Settled by now, and only a caller that passed one can reach this arm — a retry passes none. */
+        if (!isNil(boardCreated) && !(await boardCreated)) {
+            return { boardLanded: false };
+        }
+
         // A wholesale failure leaves the set unchanged rather than reporting fewer failures than there are.
-        return result.status !== RESULT_STATUS.SUCCESS ? names : result.failedNames;
+        return {
+            boardLanded: true,
+            failedNames: result.status !== RESULT_STATUS.SUCCESS ? names : result.failedNames,
+        };
     };
 
     /** Reports a fan-out that left columns missing, offering the Retry that re-runs just those names. */
@@ -215,7 +236,14 @@ export const useCreateBoardColumns = () => {
      * because a toast still naming created columns would misreport what persisted.
      */
     const retryColumns = async ({ boardId, names }: { boardId: string; names: string[] }): Promise<void> => {
-        const stillFailingNames = await createColumns({ boardId, names });
+        const outcome = await createColumns({ boardId, names });
+
+        /* Unreachable for a retry, which passes no `boardCreated` — a narrowing, not a branch. */
+        if (!outcome.boardLanded) {
+            return;
+        }
+
+        const stillFailingNames = outcome.failedNames;
 
         if (stillFailingNames.length === 0) {
             toast.close(buildColumnFailureToastId(boardId));

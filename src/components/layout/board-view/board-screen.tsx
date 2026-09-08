@@ -10,7 +10,9 @@ import { useEffect, useRef } from "react";
 import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton/board-view-skeleton";
 import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull } from "@/features/boards/schemas";
+import { useUnconfirmedIds } from "@/lib/client/use-unconfirmed-ids";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 import { toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 import { BoardView } from "./board-view";
@@ -62,6 +64,8 @@ export const BoardScreen = ({ initialBoard }: Props) => {
 
     /* Seeded with the board this mounted at, so the effect below fires on a SWITCH and never on load. */
     const lastRevalidatedBoardId = useRef(boardId);
+    /* The same primitive `usePrefetchAllBoards` skips on, for the same reason — see the effect below. */
+    const unconfirmedBoardIds = useUnconfirmedIds({ mutationKey: MUTATION_KEY.CREATE_BOARD });
 
     // comment-length-exempt: records why revalidation is triggered by the navigation rather than by a staleness timer, and the measured interaction failure the timer version caused
     /*
@@ -79,9 +83,22 @@ export const BoardScreen = ({ initialBoard }: Props) => {
             return;
         }
 
+        /* Marked handled either way: a board skipped below must not be revalidated by a later run of this effect. */
         lastRevalidatedBoardId.current = boardId;
+
+        // comment-length-exempt: records the measured race this skip closes, which the one-line guard reads as an unexplained special case
+        /*
+         * A board whose create is still in flight is skipped: nothing exists upstream to revalidate
+         * against, and the read's accurate zero-column answer would overwrite the placeholder columns
+         * the fan-out staged — the ~100-300ms empty/column oscillation
+         * `.planning/debug/board-create-optimistic.md` measured. Its own entry is the authoritative one.
+         */
+        if (unconfirmedBoardIds.has(boardId)) {
+            return;
+        }
+
         void queryClient.invalidateQueries({ queryKey: buildBoardQueryKey(boardId), exact: true });
-    }, [boardId, queryClient]);
+    }, [boardId, queryClient, unconfirmedBoardIds]);
 
     if (isNil(boardId)) {
         return null;
