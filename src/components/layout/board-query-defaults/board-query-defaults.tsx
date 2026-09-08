@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState, type PropsWithChildren } from "react";
 
 import { BOARD_QUERY_DEFAULTS } from "@/features/boards/queries/board-query";
-import { BOARD_QUERY_KEY_PREFIX } from "@/lib/core/query-keys/board-query-key";
+import { QUERY_KEY } from "@/lib/core/query-keys/query-keys";
 
 // comment-length-exempt: records why this sits in the layout ring rather than beside the query client it configures, which is a boundary decision a reader would otherwise "simplify" into an import the linter refuses
 /**
@@ -25,7 +25,7 @@ export const BoardQueryDefaults = ({ children }: PropsWithChildren) => {
      * would land after the observers below have already mounted and possibly fetched.
      */
     useState(() => {
-        queryClient.setQueryDefaults(BOARD_QUERY_KEY_PREFIX, BOARD_QUERY_DEFAULTS);
+        queryClient.setQueryDefaults(QUERY_KEY.BOARD, BOARD_QUERY_DEFAULTS);
 
         return null;
     });
