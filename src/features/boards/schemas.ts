@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { BOARD_ID_PATTERN } from "@/features/boards/board-id";
 import { taskFullSchema } from "@/lib/core/api-contract/task-schemas";
 import { HEX_COLOR_PATTERN } from "@/lib/core/styling/oklab";
 
@@ -83,8 +84,18 @@ export const boardNameSchema = z
     .min(1, REQUIRED_FIELD_MESSAGE)
     .max(BOARD_NAME_MAX_LENGTH, BOARD_NAME_LENGTH_MESSAGE);
 
-/** The object shape `createBoardAction` parses — never the raw argument it was handed. */
-export const createBoardInputSchema = z.object({ name: boardNameSchema });
+/*
+ * The client mints the id, so this is what refuses a hostile one before it reaches the upstream
+ * call — a Server Action is callable over the wire with any payload (T-02-45, docs/adr/tech/0024).
+ */
+export const boardIdSchema = z.string().regex(BOARD_ID_PATTERN);
+
+/*
+ * The object shape `createBoardAction` parses. `id` is REQUIRED: an absent one would fall back to
+ * the server-generated id, whose value the optimistic row cannot predict — the exact dependency
+ * this field exists to remove.
+ */
+export const createBoardInputSchema = z.object({ name: boardNameSchema, id: boardIdSchema });
 
 export type CreateBoardInput = z.infer<typeof createBoardInputSchema>;
 

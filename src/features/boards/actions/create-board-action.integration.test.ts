@@ -167,6 +167,24 @@ describe("the board create with a client-supplied id, against the real backend",
         );
     }, 60_000);
 
+    /*
+     * What `useCreateBoard`'s onSuccess rests on since 260908-g5y: it writes no boards-list row,
+     * so a backend that started normalising names would desync the sidebar silently. `.trim()` is
+     * all `boardNameSchema` does, so a doubled internal space is what the client can actually send.
+     */
+    it("echoes the name back byte for byte, doubled internal spacing included", async () => {
+        // Arrange
+        const name = `Verbatim  Spacing ${mintNameSuffix()}`;
+
+        // Act
+        const { status, body } = await createUpstream({ account: owner, name, id: mintTestBoardId() });
+
+        // Assert
+        expect(status).toBe(201);
+        const created = boardSchema.safeParse(body);
+        expect(created.success && created.data.name).toBe(name);
+    }, 60_000);
+
     /* An omitted id still works, which is what keeps the contract's `id` genuinely optional. */
     it("still accepts a create that supplies no id at all", async () => {
         // Act

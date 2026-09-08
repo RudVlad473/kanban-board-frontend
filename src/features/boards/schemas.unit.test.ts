@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { mintBoardId } from "@/features/boards/board-id";
 import {
     boardFullSchema,
     boardNameSchema,
@@ -231,20 +232,50 @@ describe("boardNameSchema", () => {
 
 describe("createBoardInputSchema", () => {
     it("yields the trimmed name for a well-formed input", () => {
+        // Arrange
+        const id = mintBoardId();
+
         // Act
-        const result = createBoardInputSchema.safeParse({ name: "  Platform Launch  " });
+        const result = createBoardInputSchema.safeParse({ name: "  Platform Launch  ", id });
 
         // Assert
         expect(result.success).toBe(true);
         expect(result.success && result.data.name).toBe("Platform Launch");
+        expect(result.success && result.data.id).toBe(id);
     });
 
     it("rejects an input whose name is missing", () => {
         // Act
-        const result = createBoardInputSchema.safeParse({});
+        const result = createBoardInputSchema.safeParse({ id: mintBoardId() });
 
         // Assert
         expect(result.success).toBe(false);
+    });
+
+    /*
+     * The id is REQUIRED, not optional: an absent one would fall through to the server-generated
+     * id, whose value the optimistic sidebar row cannot predict.
+     */
+    it("rejects an input carrying no id at all", () => {
+        // Act & Assert
+        expect(createBoardInputSchema.safeParse({ name: "Platform Launch" }).success).toBe(false);
+    });
+
+    /*
+     * The shapes `@BoardId` answers 400 to, refused here first — measured against the real backend
+     * in `create-board-action.integration.test.ts`. A `randomUUID` is what this hook minted until
+     * 260908-g5y, so it is the one an unwary revert would reintroduce.
+     */
+    it("refuses an id outside the backend's own base36 format", () => {
+        // Act & Assert
+        expect(createBoardInputSchema.safeParse({ name: "Platform Launch", id: crypto.randomUUID() }).success).toBe(
+            false,
+        );
+        expect(
+            createBoardInputSchema.safeParse({ name: "Platform Launch", id: mintBoardId().toUpperCase() }).success,
+        ).toBe(false);
+        expect(createBoardInputSchema.safeParse({ name: "Platform Launch", id: "a".repeat(14) }).success).toBe(false);
+        expect(createBoardInputSchema.safeParse({ name: "Platform Launch", id: "" }).success).toBe(false);
     });
 
     /*
@@ -252,12 +283,15 @@ describe("createBoardInputSchema", () => {
      * simply not part of the parsed output, so it can never reach the upstream call (T-02-43).
      */
     it("drops an unrelated userId supplied alongside the name", () => {
+        // Arrange
+        const id = mintBoardId();
+
         // Act
-        const result = createBoardInputSchema.safeParse({ name: "Platform Launch", userId: "someone-else" });
+        const result = createBoardInputSchema.safeParse({ name: "Platform Launch", id, userId: "someone-else" });
 
         // Assert
         expect(result.success).toBe(true);
-        expect(result.success && result.data).toEqual({ name: "Platform Launch" });
+        expect(result.success && result.data).toEqual({ name: "Platform Launch", id });
     });
 });
 

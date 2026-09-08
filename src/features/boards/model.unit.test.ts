@@ -19,7 +19,6 @@ import {
     toReorderTargetPosition,
     toSubmittedColumnNames,
     withBoardInsert,
-    withBoardReplace,
     withColumnInsert,
     withColumnRemove,
     withColumnRestore,
@@ -130,28 +129,6 @@ describe("withBoardInsert", () => {
         // Assert
         expect(next).toEqual([board, ...boards]);
         expect(boards).toHaveLength(2);
-    });
-});
-
-describe("withBoardReplace", () => {
-    it("merges the server's row over the placeholder at that id", () => {
-        // Arrange
-        const boards = [createBoard({ id: "placeholder", name: "Launch", version: 0 })];
-        const board = createBoard({ id: "real-board", name: "Launch", version: 3 });
-
-        // Act & Assert
-        expect(withBoardReplace({ boards, boardId: "placeholder", board })).toEqual([board]);
-    });
-
-    /* A rejected write must not resurrect a row something else already dropped. */
-    it("returns an equivalent list when the id names no board in it", () => {
-        // Arrange
-        const boards = createBoards(2);
-
-        // Act & Assert
-        expect(
-            withBoardReplace({ boards, boardId: "no-such-board", board: createBoard({ id: "real-board" }) }),
-        ).toEqual(boards);
     });
 });
 

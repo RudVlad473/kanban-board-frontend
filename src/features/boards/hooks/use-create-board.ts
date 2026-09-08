@@ -8,8 +8,9 @@ import { useRouter } from "next/navigation";
 
 import { NO_AUTO_DISMISS, useToast } from "@/components/ui/toast/use-toast";
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
+import { mintBoardId } from "@/features/boards/board-id";
 import { useCreateBoardColumns } from "@/features/boards/hooks/use-create-board-columns";
-import { removeBoard, toSubmittedColumnNames, withBoardInsert, withBoardReplace } from "@/features/boards/model";
+import { removeBoard, toSubmittedColumnNames, withBoardInsert } from "@/features/boards/model";
 import { claimPendingColumnFanOut } from "@/features/boards/pending-column-fan-out";
 import type { Board, BoardFull } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
@@ -48,7 +49,7 @@ const RETRY_ACTION_LABEL = "Retry";
 export const buildCreateFailureToastId = ({ name, columnRows }: CreateBoardArgs): string =>
     `board-create-failed:${JSON.stringify([name, columnRows])}`;
 
-/** What the create mutation is called with — the placeholder's id rides along so `onSuccess` can find it. */
+/** What the create mutation is called with — the id the client minted, which is also the board's final one. */
 type CreateBoardVariables = { clientId: string; name: string };
 
 /** What a create was attempted with — a failed one is handed back so its Retry can reopen prefilled. */
@@ -75,13 +76,13 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
 
     /*
      * The sidebar's row appears on submit, not on settle — the panel reads this cache entry rather
-     * than the RSC props, so the action's `refresh()` cannot reach it (docs/adr/tech/0030). The
-     * placeholder's `clientId` never leaves the cache; `createBoard` below navigates with the server's.
+     * than the RSC props, so the action's `refresh()` cannot reach it (docs/adr/tech/0030). The row
+     * is staged under the id `createBoard` minted, which is the id the board ends up having.
      */
     const createBoardMutation = useMutation({
         mutationKey: MUTATION_KEY.CREATE_BOARD,
-        mutationFn: async ({ name }: CreateBoardVariables) => {
-            const result = await createBoardAction({ name });
+        mutationFn: async ({ clientId, name }: CreateBoardVariables) => {
+            const result = await createBoardAction({ name, id: clientId });
 
             if (result.status !== RESULT_STATUS.SUCCESS) {
                 throw new ActionRefusedError(result.status);
@@ -96,7 +97,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
             // Or an in-flight read could land on top of the optimistic list and undo it.
             await queryClient.cancelQueries({ queryKey: QUERY_KEY.BOARDS });
 
-            /* `version: 0` is inert placeholder filler — the server owns it, and success replaces it. */
+            /* `version: 0` is the value a fresh board is actually seeded at, measured and pinned in `create-board-action.integration.test.ts`. */
             queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
                 withBoardInsert({ boards: current ?? [], board: { id: clientId, name, version: 0 } }),
             );
@@ -113,17 +114,18 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
             );
         },
 
-        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onSuccess positionally (ADR tech/0016 exemption)
-        onSuccess: ({ board }, { clientId }) => {
-            /* The placeholder row is swapped for the server's real id and version — never inserted twice. */
-            queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
-                withBoardReplace({ boards: current ?? [], boardId: clientId, board }),
-            );
+        /* No exemption needed here, unlike `onError`: the response is the only argument read now. */
+        onSuccess: ({ board }) => {
+            /*
+             * Deliberately writes no boards-list row: the staged one already carries the id, name
+             * and version the server answered with — the only three fields that entry holds —
+             * measured in `create-board-action.integration.test.ts`.
+             */
 
             /*
-             * Seeds the open-board entry too (ADR tech/0030 rule 4) — a freshly minted id, so there
-             * is nothing to merge with. Does NOT close the new board's empty-state flash on first
-             * paint; see `.planning/debug/board-create-optimistic.md` for that separate race.
+             * Seeds the open-board entry (ADR tech/0030 rule 4) — a board with no columns yet, so
+             * there is nothing to merge with. Does NOT close the new board's empty-state flash on
+             * first paint; see `.planning/debug/board-create-optimistic.md` for that separate race.
              */
             queryClient.setQueryData<BoardFull>(buildBoardQueryKey(board.id), { ...board, columns: [] });
         },
@@ -156,7 +158,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
 
     const createBoard = async (args: CreateBoardArgs): Promise<void> => {
         const outcome = await createBoardMutation
-            .mutateAsync({ clientId: crypto.randomUUID(), name: args.name })
+            .mutateAsync({ clientId: mintBoardId(), name: args.name })
             .then((result) => ({ didCreate: true as const, board: result.board }))
             .catch((error: unknown) => ({
                 didCreate: false as const,
@@ -168,7 +170,7 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
             return;
         }
 
-        /* The SERVER's id, never the placeholder's — a client-generated id in the URL is a 404. */
+        /* Read off the RESPONSE, so the push stays gated on a board the server has confirmed exists. */
         const boardId = outcome.board.id;
         const names = toSubmittedColumnNames(args.columnRows);
 

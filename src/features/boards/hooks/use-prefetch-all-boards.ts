@@ -25,9 +25,8 @@ const PREFETCH_STALE_TIME_MS = 5 * 60 * 1000;
  * waits for the read exactly as before. It costs one upstream call per board, issued once after
  * the list arrives — deliberate, and the reason the window above exists rather than no window.
  *
- * A board still being created is skipped: its id is a client-generated placeholder that names
- * nothing upstream until the create settles (see `useUnconfirmedIds`), and prefetching it would
- * spend a request on a guaranteed 404 — its own `onSuccess` writes the real board in anyway.
+ * A board still being created is skipped: its id names nothing upstream until the create settles
+ * (see `useUnconfirmedIds`), so prefetching it would spend a request on a guaranteed 404.
  */
 export const usePrefetchAllBoards = ({ boards }: { boards: Board[] }): void => {
     const queryClient = useQueryClient();

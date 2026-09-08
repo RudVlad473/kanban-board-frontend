@@ -264,12 +264,22 @@ describeForEachDevice({
             expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
             expect(mockPush).not.toHaveBeenCalled();
 
+            /*
+             * Assert — the row already links to the id the action was CALLED with, while that call
+             * is demonstrably unresolved. Nothing swaps an id later, so this is the board's final one.
+             */
+            expect(screen.getByRole("link", { name: "Launch" })).toHaveAttribute(
+                "href",
+                buildBoardDetailPath(createBoardStub.calls[0].id),
+            );
+
             // Act — let the write land.
             createBoardStub.settle();
 
             /*
-             * Assert — the placeholder is SWAPPED, not appended beside the server's row, and the
-             * navigation carries the id the server returned rather than the client-generated one.
+             * Assert — the row is not appended beside a second one, and the navigation reads its id
+             * off the response. The stub's canned board carries `STUB_BOARD_ID` rather than echoing
+             * the minted id, a divergence from the backend `actionStub`'s static queue cannot model.
              */
             await vi.waitFor(() => {
                 expect(mockPush).toHaveBeenCalledWith(buildBoardDetailPath(STUB_BOARD_ID));

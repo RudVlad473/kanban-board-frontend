@@ -16,9 +16,9 @@ import { verifySession } from "@/lib/server/dal";
 import { externalApi } from "@/lib/server/server-client";
 
 /**
- * `createBoardAction`'s own result (T-02-47). `CONFLICT`/`NOT_FOUND` are declared for parity
- * with `mapProblemCodeToStatus`'s return type, not because a create can reach them — it carries no
- * version and targets no existing id, and narrowing them away would trap a future create contract.
+ * `createBoardAction`'s own result (T-02-47). `CONFLICT`/`NOT_FOUND` are declared for parity with
+ * `mapProblemCodeToStatus`, not because a create reaches them. `DUPLICATE` now has two causes: a
+ * name already taken, or the client-minted `id` colliding (create-board-action.integration.test.ts).
  */
 export type CreateBoardResult = ActionResult<
     { board: Board },
@@ -30,7 +30,7 @@ export type CreateBoardResult = ActionResult<
  * then parse, then the upstream call. `userId` comes only from the verified session record, never
  * from this function's argument, even though the contract declares it client-suppliable (T-02-43).
  */
-export const createBoardAction = async ({ name }: { name: string }): Promise<CreateBoardResult> => {
+export const createBoardAction = async ({ name, id }: { name: string; id: string }): Promise<CreateBoardResult> => {
     const record = await verifySession();
     if (!record) {
         return { status: RESULT_STATUS.UNAUTHENTICATED };
@@ -41,14 +41,14 @@ export const createBoardAction = async ({ name }: { name: string }): Promise<Cre
      * arbitrary payload regardless of compile-time types, so this is real runtime defense
      * (T-02-45, see docs/adr/tech/0024).
      */
-    const parsed = createBoardInputSchema.safeParse({ name });
+    const parsed = createBoardInputSchema.safeParse({ name, id });
     if (!parsed.success) {
         return { status: RESULT_STATUS.INVALID, fieldErrors: zodErrorToFieldErrors(parsed.error) };
     }
 
     const { data, error } = await externalApi.POST(EXTERNAL_PATH.BOARDS, {
         params: { query: { userId: record.id } },
-        body: { name: parsed.data.name },
+        body: { name: parsed.data.name, id: parsed.data.id },
     });
 
     /*
