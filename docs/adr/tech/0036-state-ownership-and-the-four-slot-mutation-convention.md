@@ -188,9 +188,17 @@ which were deliberate. Held by review and by this record.
 
 ### revert is a per-entity reconcile, NOT a snapshot restore
 
-**No shipped hook restores a snapshot.** Every optimistic hook that can roll back reconciles its own
-effect out of the entry, and the four deletes each return an `undo` closure from `onMutate` and apply
-it in `onError`.
+A rollback here restores prior state — the four deletes genuinely put the removed row back. **What no
+shipped hook does is assign a captured whole-entry value.** The discriminator is what the `onError`
+write is a function OF:
+
+- **A snapshot restore** assigns a value captured in `onMutate`, ignoring whatever the entry holds at
+  revert time.
+- **The shipped shape** returns an `undo` closure from `onMutate` and applies it to `current` — the
+  LIVE entry — so it re-inserts one entity into whatever else has landed since:
+  `{ ...current, columns: context.undo(current) }` (`use-delete-task.ts`:117,
+  `use-delete-subtask.ts`:110, `use-delete-column.ts`:109), and
+  `setQueryData(QUERY_KEY.BOARDS, (current) => restore(current ?? []))` (`use-delete-board.ts`:122).
 
 The shipped reasons, quoted rather than paraphrased:
 
@@ -201,9 +209,12 @@ The shipped reasons, quoted rather than paraphrased:
 - `use-create-board.ts:95` — *"No snapshot taken: `onError` below reconciles by `clientId`, so there
   is nothing to restore."*
 
-Both are the same argument from opposite ends: **the entry at revert time is not the entry at apply
-time**, because a sibling mutation may have landed in between. A restore writes a whole-entry value
-that predates the sibling, so a correct write is erased by an unrelated failure.
+The three are the same argument from two ends: **the entry at revert time is not the entry at apply
+time**, because a sibling mutation may have landed in between. A blanket restore writes a whole-entry
+value that predates the sibling, so a correct write is erased by an unrelated failure. The deletes
+answer it by reconciling into `current`; `use-create-board.ts` answers it by taking no snapshot at
+all and removing its own row by `clientId`, because a blanket restore there would erase a second
+create that landed while this one flew — its own `onError` comment at `:135-136` says exactly that.
 
 This is also precisely why a generic `undo` helper would have been wrong. `use-delete-board.ts`'s
 closure re-inserts the removed board *after the neighbour it originally followed* (`afterBoardId`,
