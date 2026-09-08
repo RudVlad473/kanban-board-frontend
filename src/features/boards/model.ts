@@ -1,6 +1,7 @@
 import type { Announcements, UniqueIdentifier } from "@dnd-kit/core";
 import { isNil } from "es-toolkit";
 
+import { boardIdMintedAt } from "@/features/boards/board-id";
 import type { Board, Column, ColumnFull } from "@/features/boards/schemas";
 import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
@@ -49,9 +50,30 @@ export const removeBoard = ({ boards, boardId }: { boards: Board[]; boardId: str
 
 /**
  * The board list with one board already prepended — the reducer behind `useCreateBoard`'s optimistic
- * insert. Newest-first, matching the order `fetchBoards` reverses the upstream list into.
+ * insert. Newest-first, matching the order `sortBoardsNewestFirst` puts the upstream list into.
  */
 export const withBoardInsert = ({ boards, board }: { boards: Board[]; board: Board }): Board[] => [board, ...boards];
+
+/**
+ * When a board was created, as milliseconds — its `createdAt` when the backend sent one.
+ *
+ * The id fallback is not decoration: `BoardResponseDTO` declares no `required` array, so
+ * `createdAt` is absent-able by contract.
+ */
+const toCreatedAtMs = (board: Board): number => {
+    const declared = !isNil(board.createdAt) ? Date.parse(board.createdAt) : Number.NaN;
+
+    return !Number.isNaN(declared) ? declared : (boardIdMintedAt(board.id) ?? 0);
+};
+
+/**
+ * The board list newest-first — the order the sidebar renders and `/boards` auto-selects the top of.
+ *
+ * The id breaks a tie rather than leaving one to the input order: two boards created in the same
+ * millisecond would otherwise swap places between two reads of the same data.
+ */
+export const sortBoardsNewestFirst = (boards: Board[]): Board[] =>
+    [...boards].sort((left, right) => toCreatedAtMs(right) - toCreatedAtMs(left) || right.id.localeCompare(left.id));
 
 /**
  * The post-delete destination, or `null` when the user was not looking at the board that went

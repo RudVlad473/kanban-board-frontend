@@ -1,21 +1,32 @@
 import { describe, expect, it } from "vitest";
 
-import { BOARD_ID_PATTERN, mintBoardId } from "@/features/boards/board-id";
+import { boardIdMintedAt, BOARD_ID_PATTERN, mintBoardId } from "@/features/boards/board-id";
 
 const DRAW_COUNT = 10_000;
 
+/*
+ * Real ids from the nonprod backend with the `createdAt` it returned for each, captured 2026-09-08.
+ * They are what pins the epoch: nothing else in the repo states it, and a wrong one still mints
+ * ids the backend accepts.
+ */
+const BACKEND_MINTED = [
+    { id: "8qh29ckdqpds", createdAt: "2026-09-08T18:02:09.631254Z" },
+    { id: "8qh29jpgaigw", createdAt: "2026-09-08T18:02:13.337956Z" },
+    { id: "8qh29qhov3ls", createdAt: "2026-09-08T18:02:16.858560Z" },
+    { id: "8qh29xk70nwg", createdAt: "2026-09-08T18:02:20.527595Z" },
+];
+
 describe("mintBoardId", () => {
-    it("mints 13 characters drawn only from [0-9a-z], which is what the backend accepts", () => {
+    it("mints a value the backend's own id pattern accepts", () => {
         // Act
         const id = mintBoardId();
 
         // Assert
-        expect(id).toHaveLength(13);
         expect(id).toMatch(BOARD_ID_PATTERN);
     });
 
-    /* Every draw, not a sampled one: a rejection-sampling bug shows up as one stray symbol, rarely. */
-    it("never emits a character outside the alphabet across many draws", () => {
+    /* Every draw, not a sampled one: an id one symbol too long is answered 400, and would be rare. */
+    it("never exceeds the 13-symbol ceiling across many draws", () => {
         // Act
         const ids = Array.from({ length: DRAW_COUNT }, () => mintBoardId());
 
@@ -23,10 +34,7 @@ describe("mintBoardId", () => {
         expect(ids.filter((id) => !BOARD_ID_PATTERN.test(id))).toEqual([]);
     });
 
-    /*
-     * A collision is what the backend answers 409 to, and each attempt mints independently — so a
-     * repeat inside one run of 10k means the entropy is not what 36^13 claims.
-     */
+    /* A collision is what the backend answers 409 to, and the increment field is what prevents it. */
     it("yields a distinct value on every draw", () => {
         // Act
         const ids = Array.from({ length: DRAW_COUNT }, () => mintBoardId());
@@ -36,23 +44,51 @@ describe("mintBoardId", () => {
     });
 
     /*
-     * The rejection ceiling's own effect: folding raw bytes with `% 36` would make the first four
-     * symbols land ~1.14x more often, so an even spread across the alphabet is the observable claim.
+     * The ordering property the sidebar's newest-first list rests on — the old random mint had no
+     * such guarantee, and this is the one claim that distinguishes the two.
      */
-    it("spreads symbols across the whole alphabet rather than favouring the first four", () => {
+    it("mints ascending values, so a later board decodes as newer", () => {
         // Arrange
-        const counts = new Map<string, number>();
+        const ids = Array.from({ length: 1000 }, () => mintBoardId());
 
         // Act
-        for (const id of Array.from({ length: DRAW_COUNT }, () => mintBoardId())) {
-            for (const symbol of id) {
-                counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
-            }
-        }
+        const timestamps = ids.map((id) => boardIdMintedAt(id) ?? Number.NaN);
 
-        // Assert — 36 symbols over 130k draws; a 25% band is far wider than sampling noise.
-        const expected = (DRAW_COUNT * 13) / 36;
-        expect(counts.size).toBe(36);
-        expect([...counts.values()].filter((count) => Math.abs(count - expected) > expected * 0.25)).toEqual([]);
+        // Assert
+        expect(timestamps.filter((value, index) => index > 0 && value < timestamps[index - 1])).toEqual([]);
+    });
+
+    it("stamps the current time, decodable straight back out", () => {
+        // Act
+        const mintedAt = boardIdMintedAt(mintBoardId()) ?? Number.NaN;
+
+        // Assert
+        expect(Math.abs(mintedAt - Date.now())).toBeLessThan(1000);
+    });
+});
+
+describe("boardIdMintedAt", () => {
+    /* The epoch claim itself: a wrong constant shifts every one of these by a fixed offset. */
+    it.each(BACKEND_MINTED)("decodes $id to the createdAt the backend reported", ({ id, createdAt }) => {
+        // Act
+        const mintedAt = boardIdMintedAt(id);
+
+        // Assert — the snowflake carries whole milliseconds, `createdAt` carries microseconds.
+        expect(mintedAt).toBe(Math.floor(Date.parse(createdAt)));
+    });
+
+    /*
+     * The pre-snowflake mint drew 13 random base36 symbols, so it produced values up to 36^13 —
+     * hundreds of millions of years past the epoch. Ordering them as if they were timestamps would
+     * put every legacy board above every real one, which is the failure this branch prevents.
+     */
+    it("refuses a legacy random id rather than reading it as a far-future timestamp", () => {
+        // Assert
+        expect(boardIdMintedAt("zzzzzzzzzzzzz")).toBeNull();
+    });
+
+    it("refuses a value the backend's id pattern would refuse", () => {
+        // Assert
+        expect(boardIdMintedAt("NOT-AN-ID")).toBeNull();
     });
 });

@@ -27,7 +27,7 @@ const BoardsPage = async () => {
 
     /*
      * The same entry the sidebar renders at the top, because both read `fetchBoards()`'s own
-     * already-reversed array — sorting or reversing again here would land the redirect somewhere
+     * already-sorted array — sorting again here would land the redirect somewhere
      * other than the top of the panel.
      */
     if (result.boards.length === 0) {

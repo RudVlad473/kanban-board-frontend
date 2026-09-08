@@ -99,7 +99,11 @@ export const useCreateBoard = ({ onRetry }: { onRetry: (args: CreateBoardArgs) =
 
             /* `version: 0` is the value a fresh board is actually seeded at, measured and pinned in `create-board-action.integration.test.ts`. */
             queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
-                withBoardInsert({ boards: current ?? [], board: { id: clientId, name, version: 0 } }),
+                withBoardInsert({
+                    boards: current ?? [],
+                    /* Its own creation time, so the row keeps the top slot when a sorted server list replaces it. */
+                    board: { id: clientId, name, version: 0, createdAt: new Date().toISOString() },
+                }),
             );
 
             // comment-length-exempt: records why this entry needs no cancel and why the typed columns are staged HERE rather than at the mount that dispatches them, which is the frame the empty-board copy used to occupy

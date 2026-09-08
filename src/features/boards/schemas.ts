@@ -13,6 +13,12 @@ export const boardSchema = z.object({
     id: z.string(),
     name: z.string(),
     version: z.number(),
+    /*
+     * What the sidebar's newest-first ordering sorts on. LENIENT, like `columnFullSchema.color` and
+     * for the same reason: `BoardResponseDTO` declares no `required` array, so a board that arrives
+     * without it must still parse — `sortBoardsNewestFirst` falls back to the id's own snowflake.
+     */
+    createdAt: z.string().nullish().catch(null),
 });
 
 export const boardsSchema = boardSchema.array();

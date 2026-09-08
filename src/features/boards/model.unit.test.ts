@@ -13,6 +13,7 @@ import {
     removeBoard,
     resolveDestinationAfterDelete,
     shouldNudgeOnColumnCount,
+    sortBoardsNewestFirst,
     sortColumnsByPosition,
     sortTasksByPosition,
     toColumnDotToken,
@@ -129,6 +130,61 @@ describe("withBoardInsert", () => {
         // Assert
         expect(next).toEqual([board, ...boards]);
         expect(boards).toHaveLength(2);
+    });
+});
+
+describe("sortBoardsNewestFirst", () => {
+    it("orders by createdAt descending, whatever order the backend listed them in", () => {
+        // Arrange
+        const oldest = createBoard({ id: "a", name: "Oldest", createdAt: "2026-01-01T00:00:00Z" });
+        const middle = createBoard({ id: "b", name: "Middle", createdAt: "2026-06-01T00:00:00Z" });
+        const newest = createBoard({ id: "c", name: "Newest", createdAt: "2026-09-01T00:00:00Z" });
+
+        // Act
+        const next = sortBoardsNewestFirst([middle, oldest, newest]);
+
+        // Assert
+        expect(next.map((board) => board.name)).toEqual(["Newest", "Middle", "Oldest"]);
+    });
+
+    /*
+     * The reversal this replaced would pass every case above while failing this one: it encodes
+     * "the backend lists oldest-first", which is an assumption about its query rather than a fact.
+     */
+    it("does not rely on the upstream order, so a newest-first response stays newest-first", () => {
+        // Arrange
+        const older = createBoard({ id: "a", name: "Older", createdAt: "2026-01-01T00:00:00Z" });
+        const newer = createBoard({ id: "b", name: "Newer", createdAt: "2026-09-01T00:00:00Z" });
+
+        // Act
+        const next = sortBoardsNewestFirst([newer, older]);
+
+        // Assert
+        expect(next.map((board) => board.name)).toEqual(["Newer", "Older"]);
+    });
+
+    /* `BoardResponseDTO` declares no required fields, so an absent `createdAt` must still order. */
+    it("falls back to the id's own snowflake when createdAt is absent", () => {
+        // Arrange — real backend ids; `8qh29xk70nwg` was minted ~11s after `8qh29ckdqpds`.
+        const older = createBoard({ id: "8qh29ckdqpds", name: "Older", createdAt: null });
+        const newer = createBoard({ id: "8qh29xk70nwg", name: "Newer", createdAt: null });
+
+        // Act
+        const next = sortBoardsNewestFirst([older, newer]);
+
+        // Assert
+        expect(next.map((board) => board.name)).toEqual(["Newer", "Older"]);
+    });
+
+    it("leaves the input untouched", () => {
+        // Arrange
+        const boards = createBoards(3);
+
+        // Act
+        sortBoardsNewestFirst(boards);
+
+        // Assert
+        expect(boards.map((board) => board.name)).toEqual(createBoards(3).map((board) => board.name));
     });
 });
 

@@ -4,6 +4,7 @@ import "server-only";
 import { isNil } from "es-toolkit";
 import { cache } from "react";
 
+import { sortBoardsNewestFirst } from "@/features/boards/model";
 import { boardsSchema, type Board } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
@@ -53,9 +54,15 @@ export const fetchBoards = cache(async (): Promise<FetchBoardsResult> => {
         return { status: RESULT_STATUS.ERROR };
     }
 
+    // comment-length-exempt: corrects a backend fact this file asserted for two phases, and names the measurement that overturned it
     /*
-     * Newest-first ordering carried over from the deleted `useBoards()` — the backend returns
-     * oldest-first with no timestamp, so a plain reversal is equivalent (02-BACKEND-FACTS.md).
+     * Newest-first, sorted on `createdAt` rather than reversed.
+     *
+     * The reversal it replaces rested on "the backend returns oldest-first with no timestamp"
+     * (02-BACKEND-FACTS.md) — the second half of which is simply false: `BoardResponseDTO` declares
+     * `createdAt`, and the real nonprod backend sends it (measured 2026-09-08). A reversal is
+     * equivalent only while insertion order happens to match creation order, which is an
+     * assumption about the backend's own query, not something this app can hold.
      */
-    return { status: RESULT_STATUS.SUCCESS, boards: [...parsed.data].reverse() };
+    return { status: RESULT_STATUS.SUCCESS, boards: sortBoardsNewestFirst(parsed.data) };
 });
