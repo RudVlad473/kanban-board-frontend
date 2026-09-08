@@ -9,16 +9,14 @@ export const createNextNavigationShim = ({
     pathname,
     refresh,
     push = () => undefined,
-    replace = () => undefined,
 }: {
     /** A getter rather than a string when one suite drives several paths (dashboard-header.test.tsx). */
     pathname: string | (() => string);
     refresh: () => void;
     push?: (href: string) => void;
-    replace?: (href: string) => void;
 }) => ({
     usePathname: () => (typeof pathname === "function" ? pathname() : pathname),
-    useRouter: () => ({ refresh, push, replace }),
+    useRouter: () => ({ refresh, push }),
 });
 
 export const createNextLinkShim = () => ({

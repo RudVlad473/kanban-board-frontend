@@ -4,7 +4,6 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { isNil } from "es-toolkit";
-import { useRouter } from "next/navigation";
 
 import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
 import { deleteBoardAction } from "@/features/boards/actions/delete-board-action";
@@ -12,9 +11,8 @@ import { removeBoard, resolveDestinationAfterDelete } from "@/features/boards/mo
 import type { Board } from "@/features/boards/schemas";
 import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
-import { MUTATION_KEY } from "@/lib/core/query-keys/mutation-keys";
 import { QUERY_KEY } from "@/lib/core/query-keys/query-keys";
-import { buildBoardDetailPath, toBoardIdFromPath } from "@/lib/core/routing/routes";
+import { buildBoardDetailPath } from "@/lib/core/routing/routes";
 
 /*
  * Authored copy only — the action returns a bare discriminant, so nothing the backend said can
@@ -41,17 +39,9 @@ const DELETE_FAILURE_COPY = { title: "Couldn't delete board.", description: "Try
  */
 export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | null }) => {
     const queryClient = useQueryClient();
-    const router = useRouter();
     const raiseFailureToast = useFailureToast({ fallback: DELETE_FAILURE_COPY });
 
     const mutation = useMutation({
-        /*
-         * Tagged so `useOpenBoardId` can read this mutation's own destination back out of TanStack's
-         * mutation cache while it is still pending — the same `useMutationState` shape
-         * `useUnconfirmedIds` already uses, never a bespoke override store (docs/adr/tech/0030).
-         */
-        mutationKey: MUTATION_KEY.DELETE_BOARD,
-
         mutationFn: async ({ boardId }: { boardId: string }) => {
             const result = await deleteBoardAction({ boardId });
 
@@ -85,12 +75,27 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
             });
 
             if (!isNil(destination)) {
-                // `replace`, so the deleted board's address does not sit in the back history (T-02-70).
-                router.replace(destination);
+                /*
+                 * Decisions ─────────────────────────────────────────────────────────────────────
+                 * comment-length-exempt: records the measured reason the URL moves through the native call rather than `router.replace`, which a reader would otherwise "restore" and silently reopen the stranding window this shape exists to close (docs/adr/tech/0023)
+                 * The platform's own primitive, which Next 16 documents as integrating with the App
+                 * Router and keeping `usePathname()` in sync — it issues no RSC request, so the
+                 * pathname every reader resolves moves in the same commit as the cache write above.
+                 *
+                 * `router.replace` writes this same `replaceState`, but from a `useInsertionEffect`
+                 * on the NEXT router state: the address went on naming the just-deleted board for a
+                 * measured 247ms against a production build (594ms against dev) after the header
+                 * had already moved on — 260908-g61, 2026-09-08. That gap is what made "which board
+                 * is open" need a second source of truth, and a compensating hook to read it.
+                 *
+                 * `replaceState`, never `pushState`: the deleted board's address must not sit in the
+                 * back history (T-02-70). What would make this false: a Next release that stops
+                 * syncing `usePathname()` with the native call — `e2e/boards-delete.e2e.spec.ts`'s
+                 * stranding case is what catches that.
+                 * ───────────────────────────────────────────────────────────────────────────────
+                 */
+                window.history.replaceState(null, "", destination);
             }
-
-            /* Parsed once, so `useOpenBoardId` can hand it to any reader still resolving the URL's stale id — see that hook's own doc for why `usePathname()` cannot answer this alone. */
-            const destinationBoardId = !isNil(destination) ? toBoardIdFromPath(destination) : null;
 
             /* Re-inserts THIS row only — a snapshot restore would also resurrect a board deleted since. */
             const undo = !isNil(removedBoard)
@@ -107,7 +112,7 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
                   }
                 : null;
 
-            return { undo, didNavigate: !isNil(destination), destinationBoardId };
+            return { undo, didNavigate: !isNil(destination) };
         },
 
         // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (ADR tech/0016 exemption)
@@ -122,7 +127,7 @@ export const useDeleteBoard = ({ currentBoardId }: { currentBoardId: string | nu
              * with it — otherwise the sidebar shows a board nothing can navigate to any more.
              */
             if (context?.didNavigate === true) {
-                router.replace(buildBoardDetailPath(boardId));
+                window.history.replaceState(null, "", buildBoardDetailPath(boardId));
             }
 
             raiseFailureToast(error);

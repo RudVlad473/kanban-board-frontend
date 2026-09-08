@@ -4,13 +4,14 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isNil } from "es-toolkit";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { BoardViewSkeleton } from "@/features/boards/components/board-view-skeleton/board-view-skeleton";
-import { useOpenBoardId } from "@/features/boards/hooks/use-open-board-id";
 import { createBoardQueryOptions } from "@/features/boards/queries/board-query";
 import type { BoardFull } from "@/features/boards/schemas";
 import { buildBoardQueryKey } from "@/lib/core/query-keys/board-query-key";
+import { toBoardIdFromPath } from "@/lib/core/routing/routes";
 
 import { BoardView } from "./board-view";
 
@@ -35,13 +36,10 @@ type Props = {
  * Filed beside `BoardView` rather than in a folder of its own because the boundaries policy has no
  * `layout -> layout` rule: a sibling layout element cannot import one, and these two are one unit.
  *
- * `useOpenBoardId` rather than `useParams` — a layout above `[boardId]` is handed no params at
- * all, and that hook is also what keeps this reading the DESTINATION board while a delete for the
- * one in the URL is still pending, rather than the stale id `usePathname()` alone would still name
- * (260907-q83; `use-open-board-columns.ts` reads the plain, non-delete-aware id the same old way).
+ * The pathname rather than `useParams` — a layout above `[boardId]` is handed no params at all.
  */
 export const BoardScreen = ({ initialBoard }: Props) => {
-    const boardId = useOpenBoardId();
+    const boardId = toBoardIdFromPath(usePathname());
     const queryClient = useQueryClient();
     /*
      * `initialBoard` is used ONLY while it still describes the board in the URL. Because the layout

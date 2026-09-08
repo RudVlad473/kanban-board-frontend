@@ -30,7 +30,6 @@ import * as stories from "./board-list.stories";
  */
 const mockRefresh = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
-const mockReplace = vi.hoisted(() => vi.fn());
 /* A getter-backed holder, so one suite can drive the board-detail paths the branches turn on. */
 const currentPathname = vi.hoisted(() => ({ value: "" }));
 
@@ -40,7 +39,6 @@ vi.mock("next/navigation", () =>
         pathname: () => currentPathname.value,
         refresh: mockRefresh,
         push: mockPush,
-        replace: mockReplace,
     }),
 );
 
@@ -120,7 +118,6 @@ describeForEachDevice({
         beforeEach(() => {
             // No stub reset here: The global `afterEach` resets every registered stub centrally.
             mockPush.mockClear();
-            mockReplace.mockClear();
             mockRefresh.mockClear();
             currentPathname.value = ROUTE.BOARDS;
         });
@@ -743,6 +740,7 @@ describeForEachDevice({
             // Arrange — the board list route, so no board is open at all.
             await render(<Populated />);
             deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
+            const locationBefore = window.location.pathname;
 
             // Act
             await deleteBoardFromRow("Fixture Board 2");
@@ -751,13 +749,14 @@ describeForEachDevice({
             await vi.waitFor(() => {
                 expect(deleteBoardStub.calls).toEqual([{ boardId: Populated.args.boards?.[1]?.id }]);
             });
-            expect(mockReplace).not.toHaveBeenCalled();
+            expect(window.location.pathname).toBe(locationBefore);
             expect(mockPush).not.toHaveBeenCalled();
         });
 
         /*
-         * `replace`, not `push` — the deleted board's address must not sit in the back history
-         * for a user to walk into (T-02-70), and the URL has to show where they actually landed.
+         * REPLACING, not pushing — the deleted board's address must not sit in the back history
+         * (T-02-70). Asserted against the real browser address, which is what the delete now
+         * writes; `usePathname()` is shimmed here and would not move either way.
          */
         it("moves to the first remaining board, replacing the history entry, when the open board is deleted", async () => {
             // Arrange — the first board is the one being viewed.
@@ -765,15 +764,17 @@ describeForEachDevice({
             currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
             await render(<Populated />);
             deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
+            const historyLengthBefore = window.history.length;
 
             // Act
             await deleteBoardFromRow("Fixture Board 1");
 
-            // Assert — the top of the sidebar's own newest-first order, via replace.
+            // Assert — the top of the sidebar's own newest-first order, at the browser's own address.
             await vi.waitFor(() => {
-                expect(mockReplace).toHaveBeenCalledWith(buildBoardDetailPath(boards[1]?.id ?? ""));
+                expect(window.location.pathname).toBe(buildBoardDetailPath(boards[1]?.id ?? ""));
             });
-            expect(mockReplace).toHaveBeenCalledTimes(1);
+            // Replaced, not pushed: no new entry for the user to walk back into.
+            expect(window.history.length).toBe(historyLengthBefore);
             expect(mockPush).not.toHaveBeenCalled();
         });
 
@@ -789,7 +790,7 @@ describeForEachDevice({
 
             // Assert
             await vi.waitFor(() => {
-                expect(mockReplace).toHaveBeenCalledWith(ROUTE.BOARDS);
+                expect(window.location.pathname).toBe(ROUTE.BOARDS);
             });
         });
 
@@ -845,7 +846,7 @@ describeForEachDevice({
 
             // Assert — removed and moved off optimistically, before anything has been refused.
             expect(getRenderedBoardNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Board 1"));
-            expect(mockReplace).toHaveBeenCalledWith(buildBoardDetailPath(boards[1]?.id ?? ""));
+            expect(window.location.pathname).toBe(buildBoardDetailPath(boards[1]?.id ?? ""));
 
             // Act
             deleteBoardStub.settle();
@@ -855,7 +856,8 @@ describeForEachDevice({
                 expect(getRaisedToastTexts()).toEqual(["Couldn't delete board.Try again."]);
             });
             expect(getRenderedBoardNames()).toEqual(namesBefore);
-            expect(mockReplace).toHaveBeenLastCalledWith(buildBoardDetailPath(boards[0]?.id ?? ""));
+            // The address comes back with the row — the deleted board's own path, not the destination.
+            expect(window.location.pathname).toBe(buildBoardDetailPath(boards[0]?.id ?? ""));
             expect(mockPush).not.toHaveBeenCalled();
         });
 

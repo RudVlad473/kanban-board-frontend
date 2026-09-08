@@ -71,19 +71,24 @@ test.describe("BOARD-05: delete a board", () => {
     });
 });
 
-// comment-length-exempt: records the measured mechanism this case pins, why the hold targets the RSC request rather than the delete's own Server Action, and what widening buys over the real (short, flaky-under-CI) window
+// comment-length-exempt: records what this case pins now that the delete issues no navigation request at all, why the (now inert) RSC hold is deliberately kept, and the measured history the assertions descend from
 /*
- * 260907-q83: `usePathname()` does not move until `use-delete-board.ts`'s `router.replace` COMMITS
- * — which needs a fresh RSC round trip for the destination — while the boards-list cache entry was
- * already updated one line above it, synchronously. Measured against the real dev server (not this
- * held-open case): ~700-820ms where the header's `<h1>` reads blank and the just-deleted board's own
- * column heading is still painted, closing the instant the destination's RSC response lands.
+ * The delete moves the URL through `window.history.replaceState`, which issues no request and
+ * updates `usePathname()` in the same commit as the boards-list cache write beside it — so the
+ * header title, the board body and the address bar can never disagree about which board is open.
+ * This case pins that as DIRECT reads at the sync point below.
  *
- * Held open here with `optimisticRoute`, matched on the `rsc` header rather than the default
- * Server-Action match: the delete's own `deleteBoardAction` POST carries no `rsc` header and must
- * stay unheld, or the mutation itself would never settle. Widening only the navigation's own round
- * trip is what makes the window deterministic — the real one is too short to assert against
- * reliably under CI contention.
+ * History: until 260908-g61 the URL moved through `router.replace`, whose own `replaceState` runs
+ * from a `useInsertionEffect` on the next router state. That left readers resolving the deleted id
+ * — measured 151ms-819ms of blank `<h1>` beside the doomed board's own column (260907-q83), and a
+ * further 247ms (production build) where the address alone still named it (260908-g61).
+ *
+ * The `optimisticRoute` hold now delays NOTHING on this path: 260908-g61 measured zero `rsc`
+ * requests after the confirm click, on both a dev server and a production build. It is kept
+ * deliberately — a change that reintroduces a request-carrying navigation here would be widened by
+ * it and caught, which is exactly the regression this case exists for. It matches the `rsc` header
+ * rather than the default Server-Action match because the delete's own POST must stay unheld, or
+ * the mutation itself would never settle.
  */
 test.describe("board-delete stranding window", () => {
     test("never shows the deleted board's content or a blank header title while the destination is still loading", async ({
