@@ -93,11 +93,12 @@ quietly diverging. But check the whole document before declaring it inapplicable
 "doesn't apply here" note once kept TanStack Query's optimistic-updates guide out of consideration
 for a whole phase, which is more expensive than the divergence it was guarding against.
 
-**The current optimistic mechanism is `docs/adr/tech/0030` — optimistic writes via the query cache.**
-Every mutation hook reads and writes the one `["board", boardId]` entry: `onMutate` cancels queries,
-snapshots the entry into context and calls `setQueryData`; `onError` restores the snapshot; `onSuccess`
-merges the server response. Copy a shipped hook — `use-toggle-subtask.ts` or `use-move-task.ts` — rather
-than deriving a new shape.
+**The optimistic mechanism is `docs/adr/tech/0030` — how a cache write is made correct — amended by
+`docs/adr/tech/0036`, which adds where each kind of state lives and the four responsibilities every
+optimistic command accounts for.** Fill the slots from 0036's table, which also names the ones a given
+hook legitimately leaves empty. Read `use-toggle-subtask.ts` or `use-move-task.ts` for what a table
+cannot carry: the authored toast-copy tables, the `no-restricted-syntax` exemption TanStack's
+positional callbacks need, and the `ActionRefusedError` throw shape.
 
 ADR 0029 is **superseded**, and `3089a6a` deleted the `src/lib/client/optimistic-mutation.ts` helper it
 described along with `useOptimistic` and the render-time override folds. Do not reintroduce any of them:
