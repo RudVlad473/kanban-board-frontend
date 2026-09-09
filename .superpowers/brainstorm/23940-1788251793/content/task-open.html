@@ -1,0 +1,173 @@
+<h2>4e &middot; Opening a task &mdash; three presentations
+  <span style="font:500 11px ui-monospace,monospace;color:#7a8296">open item 16. Click any card. Real dimensions: columns 280px (w-70), modal 448px (28rem).</span>
+</h2>
+
+<div class="to-bar">
+  <button class="mock-button to-opt is-on" data-opt="modal">A &mdash; centred modal <em>(today)</em></button>
+  <button class="mock-button to-opt" data-opt="panel">B &mdash; right-side panel</button>
+  <button class="mock-button to-opt" data-opt="inline">C &mdash; in place</button>
+  <span class="to-sp"></span>
+  <button class="mock-button" id="toClose">Close task</button>
+</div>
+
+<p class="to-note" id="toNote"></p>
+
+<div class="to-stage" id="toStage">
+  <div class="to-board" id="toBoard">
+    <div class="to-col">
+      <div class="to-colh"><i style="background:#49C4E5"></i>TODO <span>(2)</span></div>
+      <div class="to-card" data-t="0"><b>Research pricing</b><div class="to-p"><s><u style="width:33%"></u></s><span>1/3</span></div></div>
+      <div class="to-card" data-t="1"><b>Audit empty states</b><div class="to-p"><s><u style="width:50%"></u></s><span>1/2</span></div></div>
+    </div>
+    <div class="to-col">
+      <div class="to-colh"><i style="background:#8471F2"></i>DOING <span>(3)</span></div>
+      <div class="to-card" data-t="2"><b>Build settings UI</b><div class="to-p"><s><u style="width:66%"></u></s><span>2/3</span></div></div>
+      <div class="to-card" data-t="3"><b>Design settings and search</b><div class="to-p"><s><u style="width:50%"></u></s><span>1/2</span></div></div>
+      <div class="to-card" data-t="4"><b>Vendor shortlist</b><div class="to-p"><s><u style="width:25%"></u></s><span>1/4</span></div></div>
+    </div>
+    <div class="to-col">
+      <div class="to-colh"><i style="background:#67E2AE"></i>DONE <span>(2)</span></div>
+      <div class="to-card" data-t="5"><b>Add account auth</b><div class="to-p"><s><u style="width:100%"></u></s><span>3/3</span></div></div>
+      <div class="to-card" data-t="6"><b>Billing page</b><div class="to-p"><s><u style="width:100%"></u></s><span>2/2</span></div></div>
+    </div>
+  </div>
+
+  <div class="to-scrim" id="toScrim"></div>
+  <div class="to-detail to-modal" id="toModal"></div>
+  <aside class="to-detail to-panel" id="toPanel"></aside>
+</div>
+
+<style>
+.to-bar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:10px 0 8px; }
+.to-opt.is-on { background:#635FC7; color:#fff; border-color:#635FC7; }
+.to-opt em { opacity:.7; font-style:normal; }
+.to-sp { flex:1; }
+.to-note { font:500 12px/1.6 ui-sans-serif,system-ui,sans-serif; color:#5b6274; margin:0 0 12px;
+  min-height:34px; max-width:96ch; }
+.to-note b { color:#000112; }
+.to-note code { font:11px ui-monospace,Menlo,monospace; background:#EDF0F8; padding:1px 5px; border-radius:3px; }
+
+.to-stage { position:relative; height:470px; overflow:hidden; background:#F4F7FD;
+  border:1px solid #E4EBFA; border-radius:8px; }
+.to-board { display:flex; gap:24px; padding:18px; height:100%; box-sizing:border-box;
+  transition:margin-right .26s cubic-bezier(.2,0,0,1); }
+.to-col { width:280px; flex:none; }               /* w-70, the real column width */
+.to-colh { display:flex; align-items:center; gap:8px; margin-bottom:12px;
+  font:700 12px/15px ui-sans-serif,system-ui,sans-serif; letter-spacing:2.4px;
+  text-transform:uppercase; color:#828FA3; }
+.to-colh i { width:11px; height:11px; border-radius:50%; flex:none; }
+.to-colh span { letter-spacing:0; }
+
+.to-card { background:#fff; border:1px solid #E4EBFA; border-radius:8px; padding:14px;
+  margin-bottom:10px; cursor:pointer;
+  transition:border-color .13s, background .13s, height .26s cubic-bezier(.2,0,0,1); }
+.to-card:hover { border-color:#D6DFEF; background:#FAFBFE; }
+.to-card b { display:block; font:700 15px/19px ui-sans-serif,system-ui,sans-serif; color:#000112; }
+.to-p { display:flex; align-items:center; gap:9px; margin-top:7px; }
+.to-p s { flex:1; height:3px; border-radius:2px; background:#E4EBFA; text-decoration:none; overflow:hidden; }
+.to-p u { display:block; height:100%; background:#635FC7; border-radius:2px; }
+.to-p span { font:700 12px/15px ui-sans-serif,system-ui,sans-serif; color:#828FA3;
+  font-variant-numeric:tabular-nums; }
+.to-card.is-open { border-color:#B9B4F0; }
+
+/* ---- shared detail body ---- */
+.to-detail { display:none; box-sizing:border-box; background:#fff; }
+.to-detail h4 { font:700 18px/23px ui-sans-serif,system-ui,sans-serif; color:#000112; margin:0 0 12px; }
+.to-detail p  { font:500 13px/23px ui-sans-serif,system-ui,sans-serif; color:#828FA3; margin:0 0 16px; }
+.to-detail .lab { font:700 12px/15px ui-sans-serif,system-ui,sans-serif; color:#828FA3; margin-bottom:8px; }
+.to-detail .st { display:flex; align-items:center; gap:9px; background:#F4F7FD; border-radius:4px;
+  padding:9px 11px; margin-bottom:7px; font:700 12px/15px ui-sans-serif,system-ui,sans-serif; color:#000112; }
+.to-detail .st i { width:15px; height:15px; border-radius:3px; border:1px solid #E4EBFA;
+  background:#fff; flex:none; }
+.to-detail .sel { margin-top:14px; border:1px solid #E4EBFA; border-radius:4px; padding:9px 11px;
+  font:500 13px/1 ui-sans-serif,system-ui,sans-serif; color:#000112; }
+
+/* ---- A: centred modal, 448px = 28rem ---- */
+.to-scrim { position:absolute; inset:0; background:rgba(0,1,18,.5); display:none; z-index:8; }
+.to-modal { position:absolute; top:50%; left:50%; width:448px; transform:translate(-50%,-50%);
+  border-radius:8px; padding:24px; z-index:9; box-shadow:0 10px 30px rgba(16,18,32,.2); }
+
+/* ---- B: right-side panel, the sidebar mechanism mirrored ---- */
+.to-panel { position:absolute; top:0; right:0; height:100%; width:400px; z-index:9;
+  border-left:1px solid #E4EBFA; padding:22px; overflow-y:auto;
+  transform:translateX(100%); transition:transform .26s cubic-bezier(.2,0,0,1); }
+.to-stage.is-panel .to-panel { display:block; transform:translateX(0); }
+.to-stage.is-panel .to-board { margin-right:400px; }
+
+/* ---- C: in place, inside the 280px column ---- */
+.to-card.inline-open { cursor:default; }
+.to-card.inline-open .to-inl { display:block; margin-top:12px; padding-top:12px; border-top:1px solid #E4EBFA; }
+.to-inl { display:none; }
+.to-inl p { font:500 13px/20px ui-sans-serif,system-ui,sans-serif; color:#828FA3; margin:0 0 12px; }
+.to-inl .st { font-size:11px; padding:7px 9px; }
+.to-warn { margin-top:12px; padding:9px 11px; border-radius:4px; background:#FDF3E7;
+  border:1px solid #E8CFA6; font:600 11px/1.5 ui-sans-serif,system-ui,sans-serif; color:#7A5B1E; }
+</style>
+
+<script>
+const TASKS = [
+  ["Research pricing","Compare the three vendor tiers and write up which one clears the compliance bar.",["Pull tier sheets","Check SOC2","Write summary"],1],
+  ["Audit empty states","Every surface that can be empty needs a designed empty state, not a blank panel.",["List surfaces","Design each"],1],
+  ["Build settings UI","We know what buttons we need, but the styling of the settings screen is still undecided.",["Sketch layout","Pick controls","Wire state"],2],
+  ["Design settings and search","Search has to work across boards, not just the open one.",["Scope search","Draft UI"],1],
+  ["Vendor shortlist","Narrow eleven vendors to three we would actually sign with.",["Collect list","Score them","Cut to five","Final three"],1],
+  ["Add account auth","Sign-in, sign-up and session handling against the real backend.",["Sign in","Sign up","Sessions"],3],
+  ["Billing page","Show the current plan and let a user change it.",["Plan display","Change flow"],2],
+];
+
+const NOTES = {
+  modal:`<b>A &mdash; centred modal, as it ships today.</b> The detail is 448px; the card you clicked is 280px and elsewhere on screen. Measured on the real morph prototype, the card travels <code>414px</code> right and <code>51px</code> down while growing 1.6&times; wide and 3.6&times; tall. The scrim hides the board, so <b>which column the task is in stops being visible</b> the moment you open it. This is also the presentation that forces <code>startViewTransition()</code>, the phase's only rule-5 carve-out.`,
+  panel:`<b>B &mdash; right-side panel.</b> The board stays on screen and simply gives up width &mdash; the same mechanism as the sidebar collapse, mirrored, which was already measured at a median <code>16.7ms</code>/frame with <b>0 frames over 20ms</b>. No travel, so no view transition and <b>no rule-5 carve-out</b>. The column the task lives in is still visible beside it. Matches what the phase's own reference set (Linear, Raycast, GitHub Projects) actually does.`,
+  inline:`<b>C &mdash; in place.</b> The constraint is arithmetic: the column is <code>280px</code> and the detail needs <code>448px</code>, so everything is squeezed to 62% of its intended width &mdash; and every card below is pushed down. Widening the column instead would displace every neighbouring column sideways inside a horizontally-scrolling container.`,
+};
+
+const stage = document.getElementById("toStage"), board = document.getElementById("toBoard"),
+      scrim = document.getElementById("toScrim"), modal = document.getElementById("toModal"),
+      panel = document.getElementById("toPanel"), note = document.getElementById("toNote");
+let opt = "modal", open = null;
+
+const body = (i, compact) => {
+  const [t, d, subs, done] = TASKS[i];
+  return `<h4>${t}</h4><p>${d}</p>
+    <div class="lab">Subtasks (${done} of ${subs.length})</div>
+    ${subs.map((s,n)=>`<div class="st"><i></i>${s}</div>`).join("")}
+    ${compact ? "" : `<div class="lab" style="margin-top:16px">Current status</div><div class="sel">Doing</div>`}`;
+};
+
+function render() {
+  document.querySelectorAll(".to-card").forEach(c => {
+    c.classList.remove("is-open","inline-open");
+    c.querySelector(".to-inl")?.remove();
+  });
+  scrim.style.display = modal.style.display = "none";
+  stage.classList.remove("is-panel");
+  note.innerHTML = NOTES[opt];
+  if (open === null) return;
+
+  const card = document.querySelector(`.to-card[data-t="${open}"]`);
+  card.classList.add("is-open");
+
+  if (opt === "modal") { modal.innerHTML = body(open); scrim.style.display = "block"; modal.style.display = "block"; }
+  else if (opt === "panel") { panel.innerHTML = body(open); stage.classList.add("is-panel"); }
+  else {
+    card.classList.add("inline-open");
+    const d = document.createElement("div");
+    d.className = "to-inl";
+    d.innerHTML = body(open, true) .replace(/<h4>.*?<\/h4>/, "")
+      + `<div class="to-warn">280px column vs 448px of content &mdash; 62% of intended width, and every card below is pushed down.</div>`;
+    card.appendChild(d);
+  }
+}
+
+document.querySelectorAll(".to-opt").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".to-opt").forEach(o => o.classList.toggle("is-on", o === b));
+  opt = b.dataset.opt; render();
+});
+document.querySelectorAll(".to-card").forEach(c => c.onclick = e => {
+  if (e.target.closest(".to-inl")) return;
+  open = +c.dataset.t; render();
+});
+document.getElementById("toClose").onclick = () => { open = null; render(); };
+scrim.onclick = () => { open = null; render(); };
+render();
+</script>
