@@ -1,0 +1,16 @@
+version: 2
+updates:
+    # Keeps the SHA pins in ci.yml and visual-baselines.yml current — see docs/adr/tech/0033.
+    # Without this, pinning an action to a commit SHA freezes it at that commit forever; this
+    # is what turns the freeze back into a maintained, reviewable update stream.
+    - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+
+    # Dependabot detects pnpm-lock.yaml under the "npm" ecosystem name (it has no separate
+    # "pnpm" identifier) and opens PRs that respect the lockfile.
+    - package-ecosystem: "npm"
+      directory: "/"
+      schedule:
+          interval: "weekly"

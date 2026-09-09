@@ -20,7 +20,7 @@ export const previewAnnotations = {
     parameters: {
         a11y: {
             /*
-             * D-21: an axe violation fails the story rather than merely annotating it — nothing ships
+             * An axe violation fails the story rather than merely annotating it — nothing ships
              * unverified.
              */
             test: "error",

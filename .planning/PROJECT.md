@@ -21,16 +21,17 @@ trust that every change is reliably persisted and reconciled against the real ba
 
 - ✓ Authentication — sign up, sign in, and route-guarded access — Phase 1
 - ✓ Theme — light/dark toggle persisted per account — Phase 1
+- ✓ Boards — create, view, rename, delete boards; sidebar list with collapse/expand — v1.0 (Phase 2)
+- ✓ Columns — add, rename, reorder, delete columns within a board — v1.0 (Phase 3)
+- ✓ Tasks — create, view detail, edit, drag-and-drop move, delete tasks — v1.0 (Phase 4)
+- ✓ Subtasks — add, edit, toggle-complete, delete subtask checklist items — v1.0 (Phase 4)
+- ✓ Sync — version-conflict detection with error + rollback on rejected writes — v1.0 (Phase 4)
 
 ### Active
 
 <!-- Current scope. Building toward these. Full requirement list with acceptance criteria: .planning/REQUIREMENTS.md -->
 
-- [ ] Boards — create, view, rename, delete boards; sidebar list with collapse/expand
-- [ ] Columns — add, rename, reorder, delete columns within a board
-- [ ] Tasks — create, view detail, edit, drag-and-drop move, delete tasks
-- [ ] Subtasks — add, edit, toggle-complete, delete subtask checklist items
-- [ ] Sync — version-conflict detection with error + rollback on rejected writes
+(None yet — v1.0 shipped every requirement in scope. Run `/gsd-new-milestone` to define v1.1.)
 
 ### Out of Scope
 
@@ -66,6 +67,12 @@ trust that every change is reliably persisted and reconciled against the real ba
 - **Scale**: "responsive, modest scale" — budget assumes ~30 tasks/column, ~20KB full-board
   payload; virtualization/large-scale rendering is explicitly deferred until that assumption
   breaks.
+- **Shipped state (v1.0, 2026-09-09)**: ~50,428 LOC (TS/TSX), 6 phases (1, 2, 02.1, 02.2, 3, 4),
+  117 plans, 1,327 files changed since project start. Known, tracked tech debt lives in each
+  phase's own archived `deferred-items.md` and in STATE.md's Deferred Items table — the largest
+  item is the `MIGRATION_EXEMPTIONS` ratchet (10 pre-existing component test suites still exempted
+  from the story-only-render gate, tracked in the Phase 2 archive's `02-15` entry and
+  `scripts/check-story-only-renders.mjs`).
 
 ## Constraints
 
@@ -119,6 +126,16 @@ trust that every change is reliably persisted and reconciled against the real ba
 | Runtime boundary validation always via zod `.safeParse()`, schema as source of truth, type via `z.infer` (ADR tech/0024) | Prevents an unchecked cast from an `openapi-fetch` response into a domain type | ✓ Locked |
 | Component tests render composed Storybook stories directly as JSX via `vitest-browser-react`'s `render()`, not `composeStories`' `.run()` (ADR tech/0025, supersedes tech/0021) | `.run()` hides the rendered React tree from deep interaction assertions (e.g. the real-`FormData`-on-submit test); direct rendering is a still-current, documented Storybook API, not a rejected pattern | ✓ Locked |
 | Forced sign-out (dead upstream credential) clears the session cookie via a new Route Handler, not inline from `server-client.ts`'s `onResponse` (ADR tech/0026) | Cookie mutation is illegal during any Server Component render (confirmed against real Next.js behavior + official docs); the prior inline `session.destroy()` silently failed, leaving a `/boards`⇄`/login` redirect loop until JWT expiry | ✓ Locked |
+| A `.tsx` file declares only components and their prop types; everything else moves to a co-located module (ADR tech/0027) | An in-file schema/transform/constant can't be unit-tested without rendering the component, can't be reused server-side, and becomes a second source of truth beside the feature's `schemas.ts` — a direct user decision (D-28), not a researched comparison | ✓ Locked |
+| JSX is always returned explicitly from a block body, never a concise-body arrow (ADR tech/0028) | `tech/0015` settled function declaration style but not body shape; measured 76:8 block-vs-concise split for named components already favored block bodies | ✓ Locked |
+| Optimistic writes read the mutation's own `variables` via `useOptimisticVariables`/`useMutationState` (ADR tech/0029) | Avoided three different hand-rolled optimistic mechanisms across four Phase 4 writes | ⊘ Superseded — see ADR tech/0030 (every write moved to the query cache; the hand-rolled override providers and `useOptimistic` were deleted) |
+| Every optimistic write goes through the TanStack Query cache, one entry per read, seeded by RSC via `HydrationBoundary` (ADR tech/0030) | `tech/0029`'s "via the UI" approach chained hook outputs into the next hook's inputs once more than one mutation targeted the same data; the cache removes the chain and gives every write one shared retirement rule | ✓ Locked — amended by ADR tech/0036 (adds state-ownership model and the four-slot mutation convention; 0030's four rules stay unchanged) |
+| A `components/ui/` primitive may import another primitive (ADR tech/0031) | The prior ban (an ESLint allow-list omission, never a deliberate decision) forced ten byte-identical copies of Modal's close control across every feature modal | ✓ Locked |
+| Real nonprod env values are committed as age-encrypted ciphertext (`secrets.enc.env`), decrypted via `sops` (ADR tech/0032) | Removed the per-clone/per-worktree manual `.env.local` copy chain, including a harness `Read(.env.*)` deny that made every prior workaround fragile | ✓ Locked |
+| The CI runtime layer (OS image, action tags) is pinned exactly, kept fresh via Dependabot (ADR tech/0033) | `runs-on: ubuntu-latest` and mutable action tags let GitHub migrate the environment underneath the pipeline without a repo change, surfacing as unexplained visual-baseline reds | ✓ Locked |
+| TanStack Query's notify scheduler is set to `queueMicrotask` once, at module scope (ADR tech/0034) | Fixed a real double-render flicker (every card in a reordered column changing title twice within ~3 frames), root-caused with a `rAF` sampler against the running dev server, not assumed | ✓ Locked |
+| Six Playwright quality-verification fixtures (`e2e/quality-fixtures.ts`): two always-on (axe scan, layout-shift score), four opt-in (`flickerTracker`, `optimisticRoute`, `layoutShiftTracker`, `reactScan`) (ADR tech/0035) | Codifies three plans' worth of scope decisions (04-23 through 04-25) with no other permanent home; a lint rule blocks any spec that imports `test`/`expect` from the module without the always-on pair | ✓ Locked |
+| State-ownership model plus the four responsibilities every optimistic command must account for, layered on top of 0030's cache-write rules (ADR tech/0036) | `CLAUDE.md`'s prior fix — "copy `use-toggle-subtask.ts` or `use-move-task.ts`" — transmitted a shape without the reasons behind it; this closes the gap the missing convention paid for three times (a hand-rolled override, a context-populated-by-effect, and one more shape) | ✓ Locked |
 
 *Legend: ✓ Locked = explicit Accepted status in the source ADR. ◐ Proposed = a clear chosen
 decision in prose ("Decision Outcome"), but no explicit Accepted/status marker in the
@@ -128,4 +145,4 @@ decision was genuinely made and later genuinely reversed by a later ADR — kept
 rather than deleted, since both halves of the history are worth keeping.*
 
 ---
-*Last updated: 2026-08-22 after Phase 02.1 (testing-strategy-overhaul-and-code-quality-retrofit)*
+*Last updated: 2026-09-09 after v1.0 milestone*

@@ -35,22 +35,18 @@ below) — there is no separate staging or production backend yet.
 ## Getting started
 
 ```bash
-pnpm install
+pnpm tools:install    # sops, gitleaks (the version CI pins) and age
+pnpm setup:worktree   # dependencies, route types, and your local env file
 ```
 
-Copy `.env.example` to `.env.local` and fill in the two required values (see
-[`SETUP.md`](./SETUP.md) for the exact steps and the traps a fresh clone should expect):
+`pnpm setup:worktree` is the only setup command — it installs dependencies, generates Next.js
+route types, and decrypts `secrets.enc.env` into your local env file. It needs the project's age
+private key at `~/.config/sops/age/keys.txt` first; without it the environment values cannot be
+decrypted, and **nothing in this repository can recover that key**, so back it up.
 
-```bash
-cp .env.example .env.local
-```
-
-- `EXTERNAL_API_BASE_URL` — the deployed non-production backend's base URL, including its `/api`
-  context path.
-- `SESSION_SECRET` — signs the session cookie. Generate one locally with
-  `openssl rand -base64 32`; never commit a real value. `pnpm build`/`pnpm dev` fail fast with a
-  clear error if this is unset (ADR tech/0001) — a default value would fail silently instead,
-  which is worse.
+See [`SETUP.md`](./SETUP.md) for how to obtain the key, the manual fallback for anyone who does
+not have it, and the traps a fresh clone should expect. Environment values themselves are
+documented in `.env.example` and in ADR [`tech/0032`](./docs/adr/tech/0032-committed-age-encrypted-secrets.md).
 
 ```bash
 pnpm dev          # http://localhost:3000

@@ -8,7 +8,7 @@ import { useToast } from "./use-toast";
 type ToastConfig = Parameters<ReturnType<typeof useToast>["add"]>[0];
 
 /*
- * Visual-only CSF3 (D-25) — behavioural assertions live in toast.test.tsx. A story can't drive
+ * Visual-only CSF3 — behavioural assertions live in toast.test.tsx. A story can't drive
  * useToast().add() from a play function, so each story seeds its own Toast.createToastManager()
  * and hands it to ToastProvider via toastManager, Base UI's documented outside-React-component API.
  */

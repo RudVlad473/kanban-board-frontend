@@ -1,5 +1,5 @@
 type ResolveDisplayNameInput = {
-    displayName?: string;
+    displayName?: string | null;
     email: string;
 };
 
@@ -27,13 +27,4 @@ export const resolveDisplayName = ({ displayName, email }: ResolveDisplayNameInp
     }
 
     return FALLBACK_DISPLAY_NAME;
-};
-
-/**
- * Narrow `FormData.get()`'s `string | File | null` to `""` on anything but a string — every auth
- * field is text, so a non-string value should surface, not silently stringify.
- */
-export const readFormField = ({ formData, key }: { formData: FormData; key: string }): string => {
-    const value = formData.get(key);
-    return typeof value === "string" ? value : "";
 };

@@ -1,3 +1,4 @@
+// Covered by: `src/components/ui/button/button.test.tsx`
 import { cva } from "class-variance-authority";
 
 /*
@@ -6,7 +7,7 @@ import { cva } from "class-variance-authority";
  * Disabled state is opacity-only; only `secondary`'s light fill also gets `text-text-muted` (01-06-SUMMARY.md addendum).
  */
 export const buttonVariants = cva(
-    "inline-flex items-center justify-center gap-2 rounded-lg font-body-m text-body-m [font-weight:var(--font-weight-body-m)] transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center gap-2 rounded-full font-body-m text-body-m transition-colors focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
     {
         variants: {
             variant: {

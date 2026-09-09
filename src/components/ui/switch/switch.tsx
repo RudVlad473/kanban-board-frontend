@@ -23,7 +23,7 @@ export const Switch = ({ label, isChecked, isDisabled = false, iconOn, iconOff, 
     return (
         /*
          * `Switch.Root`/`Switch.Thumb` supply role="switch", keyboard toggling and aria-checked
-         * state reporting from the library (D-15). `label` renders only into `aria-label` — the
+         * state reporting from the library. `label` renders only into `aria-label` — the
          * theme toggle this primitive unblocks has no visible text by design.
          */
         <BaseSwitch.Root

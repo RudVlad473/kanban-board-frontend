@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Checkbox } from "./checkbox";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (click/keyboard/controlled/error/disabled) live exclusively in checkbox.test.tsx.
  */
 const meta: Meta<typeof Checkbox> = {
@@ -31,11 +31,13 @@ export const Checked: Story = {
  */
 export const Hover: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&_[role=checkbox]]:bg-bg-app">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_[role=checkbox]]:bg-bg-app">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -45,11 +47,13 @@ export const Hover: Story = {
  */
 export const Focus: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&_[role=checkbox]]:outline-2 [&_[role=checkbox]]:outline-offset-2 [&_[role=checkbox]]:outline-ring-focus">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_[role=checkbox]]:outline-2 [&_[role=checkbox]]:outline-offset-2 [&_[role=checkbox]]:outline-ring-focus">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -72,15 +76,17 @@ export const Loading: Story = {
 };
 
 export const Sizes: Story = {
-    render: (args) => (
-        <div className="flex items-center gap-4">
-            <Checkbox {...args} size="sm" label="Small" defaultChecked />
+    render: (args) => {
+        return (
+            <div className="flex items-center gap-4">
+                <Checkbox {...args} size="sm" label="Small" defaultChecked={true} />
 
-            <Checkbox {...args} size="md" label="Medium" defaultChecked />
+                <Checkbox {...args} size="md" label="Medium" defaultChecked={true} />
 
-            <Checkbox {...args} size="lg" label="Large" defaultChecked />
-        </div>
-    ),
+                <Checkbox {...args} size="lg" label="Large" defaultChecked={true} />
+            </div>
+        );
+    },
 };
 
 /*
@@ -91,6 +97,17 @@ export const CheckedWithStrikethrough: Story = {
     args: {
         label: "Design the login flow",
         defaultChecked: true,
+        hasStrikethroughWhenChecked: true,
+    },
+};
+
+/*
+ * The other half of the opt-in: an incomplete subtask row. Its label must stay at full primary
+ * colour with no strikethrough, so the treatment reads as "completed" rather than "opted in".
+ */
+export const UncheckedWithStrikethroughOptIn: Story = {
+    args: {
+        label: "Design the login flow",
         hasStrikethroughWhenChecked: true,
     },
 };

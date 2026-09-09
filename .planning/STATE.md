@@ -1,53 +1,44 @@
 ---
-gsd_state_version: 1.0
+gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 02.1
-current_phase_name: "Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08"
-status: planning
-stopped_at: Phase 02 complete, ready to plan Phase 02.1
-last_updated: "2026-08-26T09:14:41.079Z"
-last_activity: 2026-08-26
-last_activity_desc: Phase 02 complete, transitioned to Phase 02.1
-state_head: 71e92e3968096b4db60da7bae62a94791fa0a5d5
+status: Awaiting next milestone
+stopped_at: "Completed quick task 260908-g4p: consolidated TanStack Query cache keys into QUERY_KEY"
+last_updated: "2026-09-09T07:05:49.738Z"
+last_activity: 2026-09-09
+last_activity_desc: Milestone v1.0 completed and archived
+state_head: b319b31906732c771c3b0c3429280953a6201610
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 78
-  completed_plans: 78
+  completed_phases: 6
+  total_plans: 117
+  completed_plans: 117
 milestone_name: milestone
+current_phase: 04
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-22)
+See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A signed-in user can create boards, organize tasks across columns via
 drag-and-drop, and trust that every change is reliably persisted and reconciled against the
 real backend.
-**Current focus:** Phase 02 — Board Management
-cover board create + initial columns (BOARD-02), board detail view, rename, and delete.
+**Current focus:** Planning next milestone (v1.1) — v1.0 shipped every requirement in scope.
 
 ## Current Position
 
-Phase: 02.1 — Testing strategy overhaul and code-quality retrofit: no-mocking policy, curl-based e2e seeding, Storybook-driven component tests, plus deferred code-review fixes from 02-08
-Phase 02 (Board Management): 10 of 15 plans complete. 02-10's Task 4 checkpoint is APPROVED
-(2026-08-25) after fixing 4 UI findings against the canonical design PDF. Wave 9 refactor plans
-(02-14, 02-15) were inserted per user decision, and 02-11/12/13 shifted to waves 11/12/13.
-Status: Ready to plan
-plan-checker-verified; the pause that blocked them (pull Phase 02.2 forward) is resolved, since
-02.2 shipped in full on 2026-08-22.
-Last activity: 2026-08-26 — Phase 02 complete, transitioned to Phase 02.1
-
-Progress: Milestone v1.0 — Phase 1: 38/38 plans; Phase 02.1: 15/15 plans; Phase 02.2: 9/9 plans;
-Phase 02: 10/15 plans (in progress)
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-09 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 78
+- Total plans completed: 117
 - Average duration: n/a
 - Total execution time: 0 hours
 
@@ -55,10 +46,11 @@ Phase 02: 10/15 plans (in progress)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 38 | - | - |
 | 02.1 | 15 | - | - |
 | 02.2 | 9 | - | - |
 | 02 | 16 | - | - |
+| 03 | 14 | - | - |
+| 04 | 25 | - | - |
 
 **Recent Trend:**
 
@@ -71,6 +63,10 @@ Phase 02: 10/15 plans (in progress)
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 02.1 P12 | 55min | 3 tasks | 13 files |
+| Phase 04 P13 | 55min | 3 tasks | 6 files |
+| Phase 04 P14 | 70min | 3 tasks | 6 files |
+| Phase 04 P23 | ~4h | 3 tasks | 11 files |
+| Phase 04 P24 | ~3.5h | 3 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -99,19 +95,53 @@ Recent decisions affecting current work:
   built from named fields goes through one named builder once a second call site needs the same
   shape, never a repeated inline template literal.
 
+- [Phase 04, plan 13]: `createTaskMoveAnnouncements`'s `onDragOver` was fixed to distinguish
+  within-column ("moved to position {i} of {N} in {Column}") from cross-column ("moved to
+  {Column}, position {i} of {N}") wording, per 04-UI-SPEC's Copywriting Contract — a real bug,
+  not a plan deviation, found while writing browser test coverage.
+
+- [Phase 04, plan 13]: `useTaskDragSensors` ships a plain, unguarded `KeyboardSensor` rather than
+  importing `use-column-drag-sensors.ts`'s guarded one — D-15 forbids the cross-feature import,
+  and it is unneeded: that hook's guard already falls through to the plain library handler for a
+  TASK drag. `board-view.tsx`'s shared `DndContext` keeps using `useColumnDragSensors()` alone.
+
+- [Phase 04, plan 14]: a browser test recovering a drag pointer's position after a hold-and-hover
+  MUST re-read the element's current position (`centerOf(source)`) rather than reuse a pre-drag
+  point — an intervening auto-scroll (Pitfall 8) moves the element on screen; reusing the stale
+  point produced a real, deterministic MOBILE-only flake in two new browser cases.
+
+- [Phase 04, plan 14]: a decorative Storybook backstop story (ADR tech/0025) that reproduces a
+  transient drag-only visual state (e.g. `opacity-50` lifted treatment) must narrow its OWN
+  fixture rather than suppress a resulting axe failure — D-21 forbids per-story a11y suppression.
+  The `Lifted` story's caption-contrast failure was a real, previously-unexercised defect in the
+  shipped `isDragging` treatment, not a testing artifact.
+- [Phase 04]: 04-23: shared browser-side installers passed to page.evaluate/addInitScript must be fully self-contained (no outer Node-scope references) — a wrapping arrow referencing an outer function silently fails to install once serialized, with the error swallowed rather than surfaced
+- [Phase 04]: 04-23: D-K's include/exclude layout-shift falsification landed EQUAL on both interactions tried (empty board switch, task-create against 5 tasks) — this app produces near-zero, non-input-attributed shift for these interactions; DEFAULT_QUALITY_TOLERANCES stays provisional pending 04-24's whole-suite measurement
+- [Phase 04]: Phase 04, 04-24: A whole-suite baseline record's per-test outlier should be re-verified with a scoped, isolated re-record before being treated as permanent (ungated) — full-suite parallel-run contention can produce a spike an isolated re-record does not reproduce.
+- [Phase 04]: Phase 04, 04-24: ESLint's @typescript-eslint/no-restricted-imports (importNames + allowTypeImports) also catches a namespace import (import * as x from 'module') form, not only the named-import form — verified live against this repo's ESLint 10.8.1, closing a bypass 04-REVIEWS.md had flagged as open.
+- [Phase 04]: 04-24's checkpoint resolved 2026-09-07 — price accepted as measured, accessibility debt deferred to a post-phase-close ROADMAP-phase todo (orchestrator's responsibility), D-E drift bound stays reporting-only, full-app.e2e.spec.ts exclusion confirmed, 04-25's ADR not redirected, recurring layout-shift ceiling misses under full-suite contention filed as a todo for further investigation rather than a unilateral tolerance change.
+- [Phase 04]: 04-25 chose window.reactScan (the CDN bundle's own public entrypoint, set unconditionally at script top-level) over the lazily-set globalThis.__REACT_SCAN__ as the reactScan fixture's attachment-proof global, and put the proof in the fixture's own teardown rather than only in the throwaway probe, so any future caller inherits the same guarantee.
+- [Phase 04]: 04-25's checkpoint resolved 2026-09-07 — CLAUDE.md pointer approved and applied verbatim to § 'Debug against the real app, not custom scripts'; board-delete stranding bug queued as a post-phase-close quick task; the six fixtures and the opt-in-three design both accepted as-is with no changes requested.
+- [Phase 04]: [quick task 260908-g4p]: Consolidated `BOARDS_QUERY_KEY`/`BOARD_QUERY_KEY_PREFIX` into one `QUERY_KEY` object in `src/lib/core/query-keys/query-keys.ts`, mirroring `MUTATION_KEY`; added a `keys:check` gate (blanks comments before matching so the nine files carrying the singular board key in load-bearing prose survive) wired into `pnpm verify`, `gates:check` and CI. Unblocks 260908-g5y, 260908-g61, 260908-g5z, 260908-g63 in that order.
+
 ### Pending Todos
 
 Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this session and moved to
 `.planning/todos/completed/`; this list now matches `.planning/todos/pending/` exactly (3 items).
+**Not re-audited since** — `.planning/todos/pending/` now holds 7 items total (this prose lists a
+subset); check the directory directly for the full, current list. Newest addition (2026-08-26):
+`pnpm storybook`'s dev server crashes on any story reaching `session.ts` (pre-existing, found while
+verifying phase 03 wave 4) —
+`.planning/todos/pending/2026-08-26-storybook-dev-server-crashes-on-any-story-reaching-session-ts.md`.
 
 - Trim `src/features/boards/schemas.unit.test.ts`'s rejection cases that just re-test zod's own
   primitives —
   `.planning/todos/pending/2026-08-21-trim-boards-schema-unit-tests-that-just-retest-zod.md`.
 
-- Reopen the local pre-commit gitleaks investigation — CI-only secret scanning was a deliberate
-  Phase 1 call (npm gitleaks wrappers rejected on supply-chain grounds); worth re-checking whether
-  the tooling landscape has better options now —
-  `.planning/todos/pending/2026-08-22-reopen-local-pre-commit-gitleaks-investigation.md`.
+- **DONE 2026-09-03 (quick task 260903-ttt)** — the local pre-commit gitleaks investigation is
+  closed: option 3 (checksum-pinned direct-binary install) was taken, and CI's previously unpinned
+  scanner version is now pinned in `ci.yml`. Moved to
+  `.planning/todos/completed/2026-08-22-reopen-local-pre-commit-gitleaks-investigation.md`.
 
 - Fold e2e seeding logic into a single service/module — `theme.e2e.spec.ts`'s
   `signUpDirectCapturingTheme()` duplicates `seed.ts`'s `seedAccount()` because the seed script
@@ -120,6 +150,15 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
   `.planning/todos/pending/2026-08-22-fold-e2e-seeding-logic-into-a-single-service-module.md`.
 
 ### Blockers/Concerns
+
+- **RESOLVED 2026-09-01 (`252c5b3`)** — the `sortable-column.test.tsx` reorder-rollback failure that
+  put `81568db`'s `useOptimistic` column-reorder refactor "under suspicion" was a **test-side race**,
+  not a regression. `useReorderColumns` raises the toast inside the transition's async body, but
+  `useOptimistic` drops the optimistic order only when the transition *completes*; the test polled
+  for the toast then read the order synchronously. `board-view.test.tsx:1423` covers the same
+  production path, already polls, and has never flaked — that sibling is the proof. Both rollback
+  cases now poll. Six consecutive green full runs (3 pre-fix, 3 post-fix), 1659/1659 each;
+  tsc/lint/comments:check clean; negative control fails by timeout in both device variants.
 
 - **RESOLVED 2026-08-24** — `pnpm comments:check` was red on `main` and CI *does* gate on it, so
   the `quality` job had been failing since 2026-08-22 (4+ consecutive runs), short-circuiting every
@@ -134,11 +173,11 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
   `onValueChange` receiving `"x"` instead of `"a"`). Count cut to 60 against a measured 41-char
   overflow threshold; 0 failures in 8 full runs, from 2-in-6 before.
 
-- `toast.test.tsx` races Base UI's 5s auto-dismiss — 1 failure in 8 `pnpm test` runs.
-  `renderToastHarness` renders a bare `<ToastProvider>` while the `Default` story sets `timeout: 0`,
-  so harness toasts vanish mid-test under load. Diagnosed but **not yet fixed** — one-line change
-  plus a verification loop. See
-  `.planning/todos/pending/2026-08-24-toast-harness-races-the-5s-auto-dismiss-under-load.md`.
+- **RESOLVED (confirmed 2026-09-02 in 04-22)** — `toast.test.tsx`'s race with Base UI's 5s
+  auto-dismiss is fixed: `toast.test.tsx:52` renders `<ToastProvider timeout={0}>`, matching the
+  `Default` story, so harness toasts no longer vanish mid-test under load. The todo is in
+  `.planning/todos/completed/`, alongside the dropdown `Disabled` hang. This entry had read "not yet
+  fixed" since 2026-08-24; the close-out audit found the fix already shipped.
 
 - **01-33's no-JS submission must-have does not actually hold** — `sign-up-form.tsx`'s
   `formAction` wraps `useActionState`'s `dispatch` in a plain client closure, so React can't
@@ -146,10 +185,26 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
   sure that's needed in 2026") — see `01-33-SUMMARY.md` coverage D4 if ever revisited. Still
   live: not addressed by any later plan.
 
-- Local `pnpm build` still fails without a real `SESSION_SECRET` in `.env.local` (pre-existing
-  gap; CI and the deployed Vercel build are unaffected — CI generates its own secret, Vercel has
-  per-environment secrets set). User was asked to run `vercel env pull --yes` to fix locally;
-  unconfirmed whether that happened.
+- **RESOLVED 2026-08-29** — local `pnpm build` no longer fails on a missing `SESSION_SECRET`.
+  Verified this session: `pnpm build` exit 0 against the current `.env.local`.
+
+- **RESOLVED 2026-08-29 (in 04-12)** — the 5 remaining MOBILE-only `board-view.test.tsx` keyboard
+  reorder failures (of the 20 first found; 15 were fixed in `eb1b80a`) were fixed by disabling the
+  column-body and task-card droppables outside their own drag kind, adopted from the stranded
+  worktree `worktree-agent-ae6e78084fa8fe8f8` and merged as `b0b141f`. `board-view.test.tsx` was
+  126/126 with zero skips as of 04-12's close, and remains so through 04-13 (now 148/148 with the
+  new keyboard-path coverage this plan added). The todo this entry pointed at is closed.
+
+- **RESOLVED 2026-08-29** — the sibling `kanban-board-backend` repo's targeted-user-delete reset
+  route (commits `14dd89d`/`c29a32d`) was local-only, unpushed to its `origin/main`, when quick task
+  260829-kyv's branch was created. Pushed this session (user-authorized); backend CI/CD deployed to
+  nonprod cleanly and the live `/api/docs` now confirms the new two-route `/admin/reset` contract.
+  ("backend still serves the old contract... must be redeployed") — not a regression to chase.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
 
 ### Roadmap Evolution
 
@@ -164,185 +219,307 @@ Refreshed 2026-08-24 — the two Storybook-mock spikes were resolved this sessio
 
 ## Deferred Items
 
-Items acknowledged and carried forward from previous milestone close:
+Items acknowledged and deferred at milestone close, most recent first:
 
-| Category | Item | Status | Deferred At |
-|----------|------|--------|-------------|
-| *(none)* | | | |
+| Category | Item | Status | Deferred At | Milestone |
+|----------------|--------------------------------------------------------------------------------------------------|-----------------|-------------|-----------|
+| debug_sessions | board-create-optimistic | verifying | 2026-09-09 | v1.0 |
+| quick_tasks | 260907-q83-investigate-and-fix-the-board-delete-str | unknown | 2026-09-09 | v1.0 |
+| seeds | SEED-001-animation-library-spike | dormant | 2026-09-09 | v1.0 |
+| todos | 2026-08-21-trim-boards-schema-unit-tests-that-just-retest-zod.md | (presence-only) | 2026-09-09 | v1.0 |
+| todos | 2026-08-22-fold-e2e-seeding-logic-into-a-single-service-module.md | (presence-only) | 2026-09-09 | v1.0 |
+| todos | 2026-08-24-sort-boards-by-createdat-once-backend-supplies-it.md | (presence-only) | 2026-09-09 | v1.0 |
+| todos | 2026-08-27-boards-create-e2e-401s-when-its-seed-session-is-evicted.md | (presence-only) | 2026-09-09 | v1.0 |
+| todos | 2026-08-27-sidebar-create-new-board-pinned-to-bottom-instead-of-flowing-under-the-list.md | (presence-only) | 2026-09-09 | v1.0 |
+| deferred_items | Phase 01: pre-existing flaky/broken browser-mode tests unrelated to the mock store | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02/02-02: `.claude/settings.local.json` format:check pre-existing failure | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02/02-09: `LayoutProps` tsc pre-existing failure | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02/02-10: boards sort/duplicate-name backend gaps, CONVENTIONS.md/ADR 0019 contradiction | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02/02-11: board creation and sign-out are not optimistic | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02/02-12: route-guard region assertion stale; duplicate-rename copy gap; env-file footgun | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02/02-13: soft-delete recovery window — future scope, not committed | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02/02-15: MIGRATION OWED — ten test suites exempted from the story-only-render gate | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02/02-16: create/delete optimism re-confirmed deferred; modal close button; column-remove alignment; board-detail caching | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02.2/02.2-04: `LayoutProps` tsc typegen artifact | acknowledged | 2026-09-09 | v1.0 |
+| deferred_items | Phase 02.2/02.2-05: comment-length gate self-referential gap (already RESOLVED in-file) | acknowledged | 2026-09-09 | v1.0 |
+
+**Known scanner artifact (not acknowledgeable, will keep resurfacing):** 10 `deferred_items` entries
+under Phase 02 are individual rows of the same GFM migration-debt table inside the 02-15 entry above
+(`src/components/ui/{dropdown,modal,text-field,button,checkbox,menu,icon-button,switch}.test.tsx`,
+`error-fallback.test.tsx`, `toast.test.tsx`). `parseDeferredTableItems` (gsd-tools' `uat.cjs`) unions
+GFM table rows as separate deferred items, and its only suppression mechanism is writing
+`resolved`/`done`/`pass` into a cell — which would be false, since these ten suites are still
+un-migrated (the whole point of the `MIGRATION_EXEMPTIONS` ratchet in ADR tech/0025 and
+`CONVENTIONS.md`). Accepted at v1.0 close (2026-09-09) rather than silently faked as resolved; expect
+these 10 to appear on every future `audit-open` scan until the suites are actually migrated.
 
 ## Session Continuity
 
-Last session: 2026-08-22T15:42:37.108Z
-Stopped at: Phase 02 complete, ready to plan Phase 02.1
+**Resume file:** None
 
-**This session:** Resumed from a HANDOFF.json pause at the Wave 7 (02.1-15) Task 3 human
-checkpoint — user replied "approved". Ran the phase's post-execution gate in full:
+Last session: 2026-09-08T12:31:12.484Z
+Stopped at: Completed quick task 260908-g4p: consolidated TanStack Query cache keys into QUERY_KEY.
+First of five sequenced same-day quick tasks (260908-g4p → 260908-g5y → 260908-g61 → 260908-g5z →
+260908-g63); the other four are unblocked to run in that order. Phase 04's 04-22 human sign-off
+checkpoint is still open and blocking from a prior session; it was NOT answered this session.
 
-1. **Code review** (`gsd-code-reviewer`, standard depth, 141 files): 0 critical, 2 warning, 3
-   info (02.1-REVIEW.md, commit `9679a83`).
+**Quick task 260903-ttt (2026-09-03):** SOPS + age now carry local secrets. `secrets.enc.env` is
+committed ciphertext; `pnpm secrets:decrypt` reconstitutes `.env.local` from it plus the age key at
+`~/.config/sops/age/keys.txt`, so a fresh worktree needs no copy from another checkout. CI's gitleaks
+was found UNPINNED (the action installs the latest release at run time) and is now pinned to 8.30.1
+in `ci.yml`, which is the single source of truth both `scripts/install-verified-tools.sh` and
+`pnpm gitleaks:check` parse. The gitleaks allowlist for `secrets.enc.env` is path-only and paired
+with `pnpm secrets:check`, which asserts the file is genuinely SOPS ciphertext — neither half ships
+alone. `pnpm setup:worktree` collapses the four-step fresh-worktree ritual into one command. ADR
+`docs/adr/tech/0032`. Every guard was falsified in both directions; verified independently by the
+orchestrator (16 guard unit tests pass in the `node` project, all three guards exit 0 on the good
+state). Full narrative: `260903-ttt-SUMMARY.md`.
 
-2. **Phase-goal verification** (`gsd-verifier`): independently re-checked all 22 D-01..D-22
-   truths against the live codebase (not SUMMARY claims) — all verified. Routed to
-   `human_needed` only for two process items: confirm the approval (already given) and decide
-   fix-vs-defer on the 4 review findings.
+**2026-08-29 session (`/gsd-resume-work`):** Recovered 04-12's three stranded worktree commits by
+cherry-pick, then diagnosed and fixed the resulting MOBILE keyboard column-reorder regression
+(root cause: `sortableKeyboardCoordinates` walks the droppable registry directly, so scoping only
+the collision function left cross-kind droppables enabled). Merged as `b0b141f`; also re-derived
+the project-wide radius scale after the tracer's checkpoint found a wrong DPI divisor. 04-12 closed
+at `159fef8` with `board-view.test.tsx` 126/126, zero skips. Full narrative: `04-12-SUMMARY.md`.
 
-3. **User chose "fix now"** — fixed all 4: promoted `THEME_COOKIE_MAX_AGE_SECONDS` into
-   `cookie-registry.ts` alongside `COOKIE.THEME`; added `buildClientCookieString()` as the
-   `document.cookie` counterpart to the existing server-side `createCookieClient()`, both
-   sharing `createBaseCookieOptions()`'s secure/sameSite/path policy (closes WR-01/WR-02);
-   corrected two stale `CONVENTIONS.md` claims and moved their todos to `completed/`
-   (IN-01/IN-02). User separately asked for the fix to generalize into a durable convention —
-   added a CONVENTIONS.md rule: any structured delimiter-joined string built from named fields
-   goes through one named builder once a 2nd call site needs the same shape (commits `5f3b62b`,
-   `eca3b5d`).
+**This session (2026-08-30):** Executed `04-13-PLAN.md`. Found most of its described production
+work already shipped as a side effect of 04-12's regression fix (the move action's
+`targetPosition`, T3's index math, within-column reorder wiring, the dead-control gate, and the
+Pitfall-8 keyboard-sensor guard). Added the missing artifact (`useTaskDragSensors`), fixed one
+genuine announcement-wording bug (RED `0bfca21` → GREEN `b9f4e91`), and added 21 browser cases plus
+2 e2e cases proving the keyboard path end to end, including under `--repeat-each=3 --workers=2`
+contention. All gates green: `pnpm test` 1529/1529, `pnpm lint`/`tsc`/`build` clean. Full
+narrative: `04-13-SUMMARY.md`.
 
-4. **VERIFICATION.md** updated to `status: passed` with a resolution note, then
-   `phase.complete` run — ROADMAP.md/STATE.md advanced, PROJECT.md's Key Decisions table gained
-   the 6 ADRs this phase produced (tech/0019-0024).
+**This session (2026-08-30, resumed):** Picked up `04-14-PLAN.md` mid-plan after a prior session
+died. Task 1 was already committed (`5b75d60`, test-only — production already shipped by 04-12).
+Task 2's WIP was uncommitted and green but incomplete: reviewed it, added the empty-column half of
+S-08's drop indicator (`isEmptyBodyInsertionPoint`), fixed a genuine MOBILE-only browser-test flake
+(Pitfall 8 auto-scroll not accounted for in the drag-hold-and-return test helper) and a real axe
+color-contrast defect the new `Lifted` story exposed in the shipped `isDragging` treatment,
+compressed several comment-length violations, then committed as `9d81673`. Task 3 (SYNC-01) found
+the production conflict branch already shipped (04-12); added the missing browser coverage proving
+revert/toast/no-client-re-read together, committed as `293f1cc`. All gates green: `pnpm test`
+1552/1552, `pnpm build`, `pnpm test:a11y` 217/217, visual 300/300 (no baseline changes — feature-
+ring, out of visual-regression scope), e2e 46/46 (the full project ran instead of the intended
+scoped `tasks-move.e2e.spec.ts` — a `--` filter-syntax mistake, harmless but noted). Full
+narrative: `04-14-SUMMARY.md`.
 
-All commits pushed as fast-forwards (`c701467..19ee0ca`). Phase 02.1 is fully closed: 15/15
-plans, 22/22 D-IDs verified, code review clean.
+**This session (2026-09-01, `/gsd-resume-work`):** Resumed from `HANDOFF.json`. Settled the one open
+correctness question from the previous session: the `sortable-column` reorder-rollback failure was a
+test race, not a regression from `81568db`'s `useOptimistic` rewrite — proved by the never-flaking
+polled sibling in `board-view.test.tsx:1423`, by six consecutive green full runs, and by a negative
+control that fails by timeout. Fixed test-only in `252c5b3`.
 
-**Next:** Phase 2 (Board Management) has 8/13 plans done. Waves 7-11 (02-09..13) were flagged
-stale (predated 02.1's RSC rebuild) and have now been fully replanned against the current
-codebase — `gsd-planner` regenerated all 5, `gsd-plan-checker` verified them clean (BOARD-01..06
-covered, dependency chain intact, all 02-REVIEWS.md findings incorporated). Two
-documentation-hygiene items (stale `02-VALIDATION.md`, `02-RESEARCH.md`'s unmarked open
-questions) filed as a pending todo, non-blocking. Phase 02.2 (Storybook test unification) is
-inserted after Phase 2 but not yet planned (no CONTEXT.md).
+**This session (2026-09-01, `/gsd-resume-work`, 2nd):** Finished the board-detail migration the
+previous session paused half-done. `BoardView` reads one `["board", boardId]` entry hydrated by
+`dehydrateBoard()`, and the rename/reorder/move hooks all write it — the three-hook `columns` chain
+is gone, as are `useOptimisticVariables` and both `apply*Pending*` folds. Two real defects fixed
+rather than typed around: `onSuccess` was assigning tasks-less/subtask-less mutation responses over
+`ColumnFull`/`TaskFull` (dropping tasks and subtasks), and `buildBoardQueryKey` was `"use client"`
+where `dehydrateBoard()` calls it from the server — the latter found only by driving the running
+app. ADR `tech/0030` written; `tech/0029` marked superseded. One CI e2e failure was real and caused
+by the conversion (the sidebar now settles before the client navigation, so BOARD-02 read a stale
+URL) and was fixed test-side. Commits `3089a6a`, `8395348`, `22f87d2`; CI run 33512659945 green on
+quality/secrets/e2e/visual.
 
-**This session (WSL, resumed via `/gsd-resume-work`):** Reconstructed a stale `HANDOFF.json`
-against actual git state — a fresh worktree-isolated `gsd-executor` had already applied plan
-02-09's BUG A fix and 8b spec amendment in a *different* live worktree
-(`agent-a738a127deda3ab5a`) than the handoff pointed at. Dispatched a new `gsd-executor` into
-that worktree to finish Task 4 (re-verify all 8 checkpoint observations headlessly via Chrome
-DevTools MCP, run full acceptance criteria, write `02-09-SUMMARY.md`); a sandbox guard forced it
-into its own fresh worktree instead, so it fast-forward-merged the prior commits in rather than
-editing the other worktree's git state directly. User approved the Task 4 checkpoint; the branch
-was rebased onto current `main` (which had advanced with unrelated commits in the meantime) and
-fast-forward merged — plan 02-09 is complete, 9/13 plans of Phase 02 done. Both worktrees and
-their branches cleaned up after merging.
+**This session, part 2:** Fixed a real a11y defect found by driving the app — a task moved into an
+EMPTY column announced nothing on either the keyboard or the pointer path, because
+`createTaskMoveAnnouncements` resolved its target by searching for a TASK and an empty column is
+handed over as its BODY droppable. No test caught it: every keyboard cross-column case uses
+`TasksAcrossColumns` (Column 2 holds a card), and the one empty-destination fixture was only ever
+driven by the pointer test, which never asserts the announcement (`5212cc7`). Then review item #5
+(both column modals take `onClose`; `isOpen` was always `true` and `onOpenChange`'s `true` branch
+unreachable — `022e04e`) and item #7 (`board-view.tsx` 466 -> 321 via `useBoardDragSession` and
+`useNewColumnReveal`, both in the layout ring because the drag session needs both features —
+`7939718`). CI run 33518793528 green on all four jobs.
 
-Also this session: added a `CLAUDE.md` rule requiring Playwright/Chrome DevTools MCP (headless)
-for UI debugging instead of scratch scripts, after finding two leftover `*.tmp.mjs` debug
-scripts in a worktree. Fixed two small duplications surfaced during a testing-architecture
-discussion — `formDataToObject` (deduped into `src/test-utils/`) and `SkeletonRow` (extracted
-into `src/components/ui/skeleton/`) — and captured three deeper open questions from that
-discussion as todos feeding Phase 02.2's eventual planning (action-stub aliasing vs. the
-no-mock policy, e2e-vs-mocked cookie coverage, centralizing `vi.mock` declarations). Added
-`docs/kanban-task-management-web-app.pdf` (115MB Figma export) as a gitignored, local-only
-reference file — over GitHub's 100MB limit, so never committed.
+**This session (2026-09-02, `/gsd-execute-phase 04`):** Manual close-out recovery of plan 04-22.
+`c0ab07e` (Task 1) was preserved and verified rather than re-run, per the `.continue-here.md`
+blocking constraint. Task 2 ran the full gate — `pnpm test` 1909/1909, `CI=1 pnpm test:visual`
+300/300 against a freshly built `storybook-static`, e2e 57/57, contention `--repeat-each=3
+--workers=2` 171/171 with zero flaky, build/build-storybook/lint/tsc/format and all nine check
+scripts exit 0 — and reconciled `04-VALIDATION.md` (Wave 0 resolved item by item, 20 map rows
+updated, sign-off answered; `nyquist_compliant` deliberately left `false` because
+`/gsd-validate-phase` was never run). Task 3 measured all six rendered surfaces in both themes
+against mock pages p4/p5/p6/p7/p11 and p14/p15/p16/p17/p21 through this project's own headless
+Playwright MCP. Two NEW divergences surfaced, not fixed: the Edit modal's subtask remove control
+sits 26px below its field centre (`subtask-editor-row.tsx:105`'s `mt-6` against
+`isLabelHidden={true}`), and the design line-heights reach no rendered element project-wide (the
+`leading-*` utility appears in zero `.tsx` files, so all 59 `text-*` token usages render at 1.5).
+Full narrative: `04-22-SUMMARY.md`.
 
-`HANDOFF.json` and both phase `.continue-here.md` checkpoint files removed as resolved/stale.
+**This session (2026-09-03, `/gsd-resume-work`):** Pushed the 24 waiting commits and drove CI to
+green. Four separate defects, three of them real product/config bugs rather than test issues:
 
-**This session:** Began dispatching Phase 02 Wave 8 (plan 02-10) — ISOLATION resolved to
-`harness-worktree`, no worktree/agent actually spawned yet. User interrupted to ask about
-alternatives to the action-stub and `renderWithProviders` test patterns; investigating surfaced
-that this exact ground was already captured in the prior session as 4 dated pending todos plus
-the Phase 02.2 ROADMAP insertion — nothing new needed researching from scratch. User then decided
-(offered 3 scopes: resolve stub-aliasing only / resolve all 4 testing todos / pull full Phase
-02.2 forward) to pull Phase 02.2 forward in full, ahead of Phase 02's remaining plans, rather
-than let 02-10/02-12/02-13 add three more instances of the stub pattern under review.
+1. **THEME-01** had been red on CI for five consecutive runs since `07e7969` gave every element a
+   200ms colour transition — a single `getComputedStyle` read right after the toggle returns the
+   interpolated value, which at t=0 is the START colour. Both colour assertions now poll (`9ef39c0`).
+2. **The full-app smoke was running in CI** against the explicit decision that it must not, and
+   against its own header comment: it matched the `e2e` project's `**/*.e2e.spec.ts` and CI runs
+   `--project e2e`. `testIgnore` plus a `smoke` project and `pnpm test:smoke` (`941df11`).
+3. **`prefetch={true}` on the sidebar board link** (`956aa9a`) hid every `refresh()`-delivered
+   update: `refresh()` updates the Router Cache entry for the route you are ON, never a prefetched
+   one, and the subtask fan-out and post-conflict re-read are both still `refresh()`-only. `6206025`
+   had rejected the prop for exactly this reason four commits earlier. Bisected, and measured 7/12
+   failing with it against 12/12 without, with the last CI-green commit 12/12 as control (`bc4ba75`).
+4. **The create-task modal could mount against an unknown column list.** `a9efe4a` correctly stopped
+   disabling the button on an absent `["board", boardId]` entry, but the modal still mounted as
+   `columns ?? []`, and `AddTaskModal` reads `columns.at(0)` once in `useForm`'s `defaultValues` — so
+   `columnId` pinned to `""` for the modal's life and `Create Task` silently did nothing. Failed 3 CI
+   runs running, never locally; CI's own DOM snapshot named it. Pinned by a browser case falsified
+   against the unfixed component (`bea3986`).
 
-Edited `.planning/ROADMAP.md`'s Phase 02.2 section: `depends_on` "Phase 2" → "Phase 1, Phase
-02.1"; title marked "(INSERTED, PULLED FORWARD)"; Goal/Requirements rewritten to name the driving
-todos; added a sequencing note. Verified via `roadmap milestone-scope` that the phase set is
-unchanged (no accidental milestone-scope break). Wrote `.planning/HANDOFF.json` and
-`.planning/phases/02-board-management/.continue-here.md` to record the pause.
+CI run 33756448713 green on quality/secrets/visual/e2e. Both mock divergences 04-22 surfaced were
+re-measured through the running app and are RESOLVED — the subtask remove control is 0px off its
+field centre (was 26px), and every type token on the boards surface renders its design line-height
+and weight, which `4b048b2` fixed after task 3 recorded the finding.
 
-**This session (resumed via `/gsd-resume-work`):** Discovered `HANDOFF.json` and
-`.planning/phases/02-board-management/.continue-here.md` were stale — both timestamped
-`2026-08-22T15:14:17Z`, predating Phase 02.2's actual planning/execution/verification, and their
-`uncommitted_files` list no longer matched a clean `git status`. Phase 02.2 had since shipped in
-full (9/9 plans, `02.2-VERIFICATION.md` 15/15 truths verified, commit `df10cb1`), including
-formally documenting the `*-action-storybook-stub.ts` pattern as a sanctioned ADR tech/0020
-carve-out rather than replacing it. Deleted both stale artifacts rather than following their
-outdated "run `/gsd-discuss-phase 02.2`" instruction.
+**This session (2026-09-04, quick task `260904-e3z`):** Wired the pre-push gate the 2026-09-03 todo
+asked for, in the two-tier shape Spike 2 measured (`.planning/quick/spike-pnpm-startup-and-pre-push-gates.md`).
+`scripts/verify.mjs` runs 20 ordered gates via `.husky/pre-push` — an e2e-token preflight, 11 fast
+check scripts dispatched via direct `node` (never `pnpm run`), then `next typegen`, `format:check`,
+`build`, `lint`, `test`, `e2e` last. `scripts/check-ci-gate-coverage.mjs` parses `ci.yml`'s `run:`
+steps and fails when a gate is covered by neither `VERIFY_STEPS` nor a written exception, wired into
+both `pnpm verify` and `ci.yml`'s own `quality` job so a `--no-verify` push still gets caught.
 
-**This session (2026-08-24, resumed via `/gsd-resume-work`):** Clean resume — no HANDOFF.json, no
-`.continue-here` checkpoint, no interrupted agent, no async jobs; working tree clean and `main`
-in sync with `origin/main` at `87c9994`. Confirmed the 4 PLAN-without-SUMMARY files
-(02-10..02-13) are simply unexecuted plans (Waves 8-11), not partial executions. Corrected the
-stale frontmatter `status`/`stopped_at`, which still read "ready to plan Phase 2" from the 02.2
-close-out.
+Measured a clean isolated `pnpm verify` run at **~5m14s** (313584ms self-reported, `time` agreed at
+5:14.25) — a little over the spike's ~4-5min budget, tracked to `lint`'s already-flagged 48-106s
+variance rather than the design; not re-tiered. A second run made concurrently with the real
+`git push` (contending with an earlier killed attempt) measured 11m5s, which is noise from resource
+contention on this box, not a repeat measurement of the design's own cost.
 
-**This session (spikes):** Resolved both Storybook-mock todos. `@storybook/nextjs-vite/navigation.mock`
-**rejected** — its subpath carries ADR tech/0021's `process is not defined` pitfall, and past that it
-only spies (`useRouter` delegates to real Next.js, needing an `AppRouterContext.Provider` the "browser"
-project never loads); hand-providing it fails on Vite dep-optimizer context duplication, and
-`optimizeDeps.exclude` cascades into unrelated `aria-query` CJS breakage. Recorded as an
-"Evaluated and rejected" section in `docs/adr/tech/0020`; the six-line hand-written shim stays.
+All falsifications passed and were reverted immediately: a formatting violation stopped
+`pnpm verify` at `[format]` naming the re-run command; a real `git push` carrying that violation was
+refused by the hook (`husky - pre-push script failed`) and `git push --no-verify` bypassed it
+cleanly; an unset `NONPROD_RESET_TOKEN` with no `.env.local` fallback refused in 0ms naming
+`pnpm secrets:decrypt` with no token value in the message; and the drift guard exited non-zero on
+both a fabricated `ci.yml` step and a fabricated job, each naming the offender.
 
-That killed the second todo's premise, so **ADR tech/0025's D-25 play-function ban was left
-untouched** — no exception needed. Closed the coverage gap the cheap way instead: `board-list.test.tsx`
-now asserts the D-19 shim's `refresh` spy after a real click. Also corrected CONVENTIONS.md, which
-misattributed the call to `refresh()` from `next/cache` (it is `router.refresh()` from
-`next/navigation`) in both places the rule appears, and upgraded its Enforcement line.
+CI green on all four jobs (`quality`, `secrets`, `e2e`, `visual`) at `21cf5d5`, run `33855852084`.
+Full narrative: `260904-e3z-SUMMARY.md`.
 
-Open scope note for 02-10: the convention's real subject — a *mutating Server Action's* refresh —
-still has zero call sites. `board-list.tsx:38`'s retry button is the repo's only `router.refresh()`
-and is not a mutation; 02-10 (create board) introduces the first real one.
+**This session (2026-09-05, quick task `260905-r15`):** Fixed the reported millisecond
+horizontal-scroll flicker's one confirmed root cause: `BoardScreen` reused the same `BoardView`
+element tree across a board switch (the dashboard layout does not re-render on a `[boardId]`
+change), so the horizontal column row was one DOM element and board A's `scrollLeft` carried into
+board B whenever B also overflowed. Fixed by keying the rendered `BoardView` on `board.id` —
+React's "resetting state with a key" — no effect, ref, or scroll bookkeeping added.
 
-**This session (pipeline fix):** CI's `quality` job had been red since 2026-08-22 on the "Comment
-length check" step, which sits before API-types drift, Build and Test — so those three, plus the
-dependent `visual` and `e2e` jobs, had not run at all for four consecutive pushes. Compressed both
-over-long comment blocks (`force-sign-out/route.ts` 10 prose lines → split into a 3-line ADR
-pointer above the handler and a 3-line guard note at the check itself, since ADR tech/0026 step 1
-already carried the full rationale verbatim; `session-bridge.e2e.spec.ts` 4 → 3).
+Falsified in both directions in `e2e/boards-switch.e2e.spec.ts`: RED (`f71bbdc`) failed on the
+offset assertion reading 400 where 0 was expected, against the unfixed code; GREEN (`005f2c9`)
+passed both the new case and the pre-existing BOARD-04 instant-paint case in the same run.
+`board-view.test.tsx` 218/218, the two neighbouring e2e specs (`optimistic-guards`,
+`boards-detail`) 8/8, and `pnpm verify`'s full 20-gate run (all three vitest projects, build, lint,
+tsc, format, and the full 74-test e2e suite) green in 7m40s.
 
-Verified everything the gate had been hiding: lint, all four check scripts, format, API-types
-drift, `pnpm build` (with a generated `SESSION_SECRET`, matching CI's own step) and `pnpm test` —
-566/566 across all five Vitest projects.
+**What is NOT proven:** the sub-frame flicker itself was never reproduced in headless Chromium at
+planning time (no intermediate painted frame at rAF granularity, and headless hides scrollbars) —
+what this closes is the carried-over scroll offset, the one confirmed scroll-state defect on a
+switch, not a direct recording of the reported flicker. The orchestrator's own browser check
+against the real app is what would close that remaining gap.
 
-Two further finds along the way. `pnpm routes:check` crashed locally (`EISDIR`) on a gitignored
-Vitest failure-screenshot *directory* named like a `.tsx` file; `check-comment-length.mjs` already
-guarded against exactly this but the other three checkers did not, so the guard was extracted to
-`scripts/glob-real-files.mjs` (with unit tests) and all four now glob through it. CI never hit this
-— it has no such directory — but it blocked running the gate locally. And `text-field.test.tsx`
-flakes once in ~3 full-suite runs; captured as a todo, not fixed.
+Push and CI were explicitly deferred to the orchestrator per this session's environment
+instructions (a Next dev server on port 3000 was already owned by the orchestrator, which also
+runs the push + `gh run watch` step). `260905-r15-SUMMARY.md` has the full narrative.
 
-**This session (flake fix):** Root-caused the `text-field.test.tsx` flake via `/gsd-resume-work` →
-systematic debugging. It was never a timeout margin or a cleanup race: the MOBILE truncation case
-types 200 characters, each its own driver round-trip (~731ms unloaded, ~20x under full-suite
-contention), which overran the 15s `testTimeout`; Vitest aborts the test but cannot cancel the
-in-flight keystroke stream, so the remaining presses drained into whichever input a later test had
-focused. The DESKTOP typing case was the victim — its `onValueChange` received `"x"`, not `"a"`.
-Measured the box's real overflow threshold (41 chars at both viewports) and cut 200 → 60, keeping a
-46% margin at 3x fewer round-trips. Verified 0 failures in 8 full `pnpm test` runs (2-in-6 before).
+**This session (2026-09-06, `/gsd-resume-work`):** Resumed from `HANDOFF.json` and cleared the red
+`e2e` job it paused on. The failure was real and deterministic in shape, not a flake.
 
-Added `.planning/LEARNINGS.md` — a project-level, cross-phase learnings file that did not exist
-(GSD's own `{NN}-LEARNINGS.md` files are per-phase and are overwritten wholesale by
-`/gsd-extract-learnings`, so hand-written knowledge cannot live there). Seeded with the two CI
-lessons and this flake's surprise. Also added a `userEvent.type()` sizing rule to CONVENTIONS.md.
+`tasks-create.e2e.spec.ts`'s `"0 of 2 subtasks"` assertion had been an implicit settle-wait: it could
+only paint once `createSubtasks` resolved and wrote `result.created` into the board entry, which
+guaranteed the fan-out had reached the server before `page.reload()`. The spec's own header comment
+said so. Quick task `260905-tz5` made that caption optimistic (placeholder rows staged in the create
+mutation's `onMutate`), so it now paints ~400ms BEFORE the fan-out request is issued at all — the
+fan-out only starts once the task create resolves, because it needs the server's task id. The reload
+then cancelled a write that had never left the browser. Measured over three runs: caption visible at
+~1806-1930ms, exactly one POST in flight, reload at ~2040-2338ms, post-reload caption count 0.
 
-One unrelated flake surfaced during verification and is diagnosed but unfixed: `toast.test.tsx`
-races Base UI's 5s auto-dismiss (see Blockers).
+Fixed test-side in `e0334cd` by awaiting the fan-out's own response before the reload, so the
+optimistic paint and the persistence are proven separately. Falsified both directions with the
+fan-out delayed 4s — without the wait it fails with CI's exact error at the exact assertion, twice;
+with it the same run passes — then 6/6 undelayed at `--workers=2 --repeat-each=3`. CI run
+34024842114 green on quality/secrets/e2e/visual.
 
-Resume file: none (stale checkpoint removed)
+The underlying product hazard was filed rather than patched: there is a window in which the card
+claims subtasks no server has heard of, and a user who reloads inside it loses them with no toast.
+Closing it is a decision against D-07, not a fix —
+`.planning/todos/pending/2026-09-06-subtask-fan-out-is-lost-silently-when-the-user-leaves-right-after-create.md`
+carries the measured timeline and four options.
 
-**This session (02-10 checkpoint close-out + Wave 9 planning):** Resumed `/gsd-execute-phase 2`
-with 02-10 halted on its unapproved Task 4 checkpoint (`02-10-UAT.md`, 4 UI findings). Per user
-decision: fixed the findings as commits on 02-10 (not a separate plan), and planned the Wave 9
-refactor insertion now (not deferred).
+Also noted, not filed: the first `git push` was refused by the pre-push hook when two browser test
+FILES failed to import `vitest.setup.ts` (`Failed to fetch dynamically imported module`) while
+1871/1871 tests passed and nothing asserted false. A clean rerun was 135/135 files, 2177/2177 tests.
+So `pnpm test` can fail the gate for Vite dev-server reasons under load.
 
-Dispatched a worktree executor to fix all 4 findings — read the canonical design source
-(`docs/kanban-task-management-web-app.pdf`, extracted via `pdftoppm`/poppler-utils since the file
-exceeds the Read tool's 100MB PDF limit) for exact reference: full-bleed selected sidebar row
-(`rounded-r-full`, padding moved from `<ul>` onto the row), `lucide-react`'s `PanelLeft` icon on
-every board row and "+ Create New Board", and a rebuilt theme toggle (static Sun/Moon icons
-flanking a plain `Switch`, inside a `bg-bg-app` container) — commits `69f642a`, `a1a9ccb`,
-`b703923`, `e5d85ae`, merged clean (`--ff-only`) and pushed. In parallel, dispatched `gsd-planner`
-to create `02-14`/`02-15` (Wave 9/10) and renumber `02-11/12/13` to waves 11/12/13 — committed as
-`203b0c2`, pushed.
+**Next:** two open items, both needing a human decision. (1) The blocking human phase sign-off
+checkpoint at the end of 04-22, presented 2026-09-03. (2) The review mode for the quick-task range
+`82c4ce0..e0334cd` — Claude `/code-review` only, the full three-way, or none; a `/code-review` was
+stopped mid-flight on 2026-09-05 and produced no findings. All three quick tasks (`260905-r15`,
+`260905-s0l`, `260905-tz5`) are pushed with CI green.
 
-Live-re-verified the fix in a real browser (Playwright, signed-in session, 3 boards, both themes)
-against the same PDF reference — all 4 findings confirmed fixed. **Task 4 checkpoint: APPROVED.**
-Fixed a Chrome-binary gap for Playwright/chrome-devtools-mcp along the way (`@playwright/mcp` and
-chrome-devtools-mcp both expect `/opt/google/chrome/chrome`; symlinked to the already-installed
-Chrome-for-Testing binary at `~/.cache/puppeteer/chrome/...` rather than adding a new apt repo).
-Added `.mcp.json` (`--headless` on the Playwright server — it is headed by default) and a
-CLAUDE.md note explaining the enforcement mechanism, since the prose-only instruction wasn't
-sufficient on its own.
+**This session (2026-09-06, quick task `260906-hze`):** Fixed the one-frame stacked-board-area
+flicker FINDINGS.md root-caused: `app/(dashboard)/boards/loading.tsx` returned `<BoardViewSkeleton
+/>`, and Next's `loading.js` wraps its own `page.js` AND every nested segment below it — so that
+fallback also covered `/boards/[boardId]` and rendered inside the dashboard layout's `<main>`
+beside the board it was never meant to cover. Two `flex-1` children split the height 50/50: the
+board's scroll container measured 324px against a 647px baseline, and the horizontal scrollbar
+pinned to its bottom edge jumped with it. Fixed by moving both `boards/loading.tsx` and
+`boards/page.tsx` into a new `(index)` route group with `git mv` — Next's own documented mechanism
+for scoping a `loading.js` back to one route without changing the URL — no hand-rolled pathname
+guard, no new component.
 
-Next: Resume Phase 02 at Wave 9 — plan `02-14-PLAN.md` (shared `RESULT_STATUS` enum, `usehooks-ts`
-boolean state) via `/gsd-execute-phase 2`.
+Falsified in both directions in a third `e2e/boards-switch.e2e.spec.ts` describe block, per the
+plan's amendment applying the read-hold on the first attempt: RED (`072c120`) failed on the first
+run with `{ board: true, height: 324, skeleton: true }` against a 647px baseline; GREEN (`29b4d6e`)
+passed, with BOARD-04's instant-paint case and the scroll-offset case both still passing in the
+same run. `boards-list`/`boards-detail` green (5/5) — `/boards` still redirects to the first board
+and still renders the empty state, at the same URL. Contention run 9/9 at `--repeat-each=3
+--workers=2`, zero flaky. `pnpm verify` green in 494s (all 20 gates, 2177/2177 unit/browser tests,
+75/75 e2e).
+
+**What is NOT closed by this task**, both explicitly out of scope: the combined vertical +
+horizontal scrollbar the user separately reported — FINDINGS never reproduced it and this fix only
+removes the plausible mechanism (two stacked board areas overflowing `<main>`), so a recurrence
+would mean a different cause, not an incomplete fix. And every live-app confirmation — no
+`mcp__playwright__*` tools were available to this executor; the plan's four `<orchestrator_checks>`
+(re-run FINDINGS' own rAF sampler on the real app; hard-load `/boards` under throttling to confirm
+its skeleton still paints; count `board-view-skeleton` elements on a hard board load, a predicted-
+not-measured side effect; and the vertical+horizontal scrollbar check at several viewport
+heights/zoom levels) are handed to the orchestrator unrun.
+
+Push and `gh run watch` still pending as of this entry — see `260906-hze-SUMMARY.md` for the
+final commit/CI state once posted.
+
+**This session (2026-09-08, quick task `260908-g4p`):** Collapsed `["boards"]` (declared in
+`boards-query.ts`) and `["board"]` (duplicated inside `board-query-key.ts` itself) into one
+`QUERY_KEY` object in `src/lib/core/query-keys/query-keys.ts`, mirroring the shipped
+`MUTATION_KEY` pattern. `buildBoardQueryKey` now spreads `QUERY_KEY.BOARD`; its ~30 callers were
+untouched. `BOARDS_QUERY_KEY` and `BOARD_QUERY_KEY_PREFIX` are both fully retired — their five
+importers (`board-query-defaults.tsx`, `dehydrate-boards.ts`, and the three boards mutation hooks)
+now import `QUERY_KEY`. Added `scripts/check-query-keys.mjs` (a `keys:check` gate blanking `//`
+and `/* */` comments before matching, since nine files carry the singular board key only inside
+load-bearing prose per docs/adr/tech/0030) wired into `package.json`, `verify.mjs` and `ci.yml`'s
+`quality` job in one commit.
+
+QK_BASE (the SHA this refactor started from) was `6d633c4`, captured explicitly rather than
+anchoring to `main` — this branch is 542 commits past `main`, which already carries 12 board-key
+lines on an untouched tree. The key-string identity diff against QK_BASE returned exit 0 with
+both sides exactly `{"board", "boards"}` — no key string moved or changed. The new gate was
+falsified in both directions per the plan's exact command chain: passed clean, failed 1 on a
+literal deliberately reintroduced into `boards-query.ts`, passed again after `git checkout`
+restored it, printing `BOTH DIRECTIONS CONFIRMED`. `tsc --noEmit`, `pnpm exec vitest run
+--project unit` (386/386), `--project browser board-view.test.tsx` (236/236), `--project node
+check-query-keys.unit.test.mjs` (6/6), all five named gate scripts, and `pnpm lint` all ran green.
+The e2e suite was deliberately not run (compile-level refactor, no runtime surface). Three task
+commits: `cd8acef`, `03616f3`, `5904e1d`.
+
+This is the first of five same-day sequenced quick tasks and must land before the other four
+(`260908-g5y`, `260908-g61`, `260908-g5z`, `260908-g63`), which rewrite overlapping files and were
+authored against this task's post-refactor import names. Not pushed — per the orchestrator's
+instruction, push and `gh run watch` are deferred to a batch-level step after all five settle.
+Full narrative: `260908-g4p-SUMMARY.md`.
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

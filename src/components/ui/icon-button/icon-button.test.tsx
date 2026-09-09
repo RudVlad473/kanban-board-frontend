@@ -24,7 +24,7 @@ const { Default, Disabled, Loading } = composeStories(stories);
 describeForEachDevice({
     name: "IconButton",
     body: () => {
-        // Shallow: copy, prop-driven aria/disabled/loading state — asserted through composed stories (D-08).
+        // Shallow: copy, prop-driven aria/disabled/loading state — asserted through composed stories.
         it("exposes the label prop as its accessible name even though it renders no visible text", async () => {
             // Act
             await render(<Default />);
@@ -94,7 +94,7 @@ describeForEachDevice({
             // Arrange
             const onClick = vi.fn();
             const screen = await render(
-                <IconButton label="Show password" icon={<Eye />} isDisabled onClick={onClick} />,
+                <IconButton label="Show password" icon={<Eye />} isDisabled={true} onClick={onClick} />,
             );
             const button = screen.getByRole("button", { name: "Show password" });
 
@@ -113,7 +113,7 @@ describeForEachDevice({
             // Arrange
             const onClick = vi.fn();
             const screen = await render(
-                <IconButton label="Show password" icon={<Eye />} isLoading onClick={onClick} />,
+                <IconButton label="Show password" icon={<Eye />} isLoading={true} onClick={onClick} />,
             );
             const button = screen.getByRole("button", { name: "Show password" });
 

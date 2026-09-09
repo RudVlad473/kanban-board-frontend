@@ -3,15 +3,28 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import boundaries from "eslint-plugin-boundaries";
+import checkFile from "eslint-plugin-check-file";
 import importX from "eslint-plugin-import-x";
 import noUnsanitized from "eslint-plugin-no-unsanitized";
 import preferArrowFunctions from "eslint-plugin-prefer-arrow-functions";
 import tailwindcss from "eslint-plugin-tailwindcss";
 import tseslint from "typescript-eslint";
 
+import { localRulesPlugin } from "./eslint-rules/prefer-is-nil.mjs";
+
+/** The esquery alternatives matching a ternary branch that yields nothing, for rule 8i below. */
+const emptyBranchSelectors = (branch) =>
+    [
+        `[${branch}.raw="null"]`,
+        `[${branch}.type="Identifier"][${branch}.name="undefined"]`,
+        `[${branch}.type="Literal"][${branch}.value=""]`,
+        `[${branch}.type="ArrayExpression"][${branch}.elements.length=0]`,
+        `[${branch}.type="ObjectExpression"][${branch}.properties.length=0]`,
+    ].join(", ");
+
 const eslintConfig = defineConfig([
     /*
-     * 1. Type-aware strict + stylistic tiers (D-26n) — projectService gives the type-aware tier
+     * 1. Type-aware strict + stylistic tiers — projectService gives the type-aware tier
      * real type information; tsconfigRootDir anchors resolution to this repo.
      */
     ...tseslint.configs.strictTypeChecked,
@@ -25,7 +38,7 @@ const eslintConfig = defineConfig([
                  * instead (see docs/adr/tech/0007).
                  */
                 projectService: {
-                    allowDefaultProject: ["*.config.mjs", "*.config.js", "scripts/*.mjs"],
+                    allowDefaultProject: ["*.config.mjs", "*.config.js", "scripts/*.mjs", "eslint-rules/*.mjs"],
                 },
                 tsconfigRootDir: import.meta.dirname,
             },
@@ -37,7 +50,7 @@ const eslintConfig = defineConfig([
      * tooling scripts, so it's turned off for just these (see docs/adr/tech/0007).
      */
     {
-        files: ["*.config.mjs", "*.config.js", "scripts/*.mjs"],
+        files: ["*.config.mjs", "*.config.js", "scripts/*.mjs", "eslint-rules/*.mjs"],
         ...tseslint.configs.disableTypeChecked,
     },
 
@@ -76,7 +89,18 @@ const eslintConfig = defineConfig([
         },
     },
 
-    // 4. Unused vars/args/caught-errors as error, with an underscore-prefix escape hatch (D-26o).
+    /*
+     * 3c. A boolean prop is written in full — `isLabelHidden={true}`, never the bare shorthand
+     * (fixable), which hides which of the two states is being asked for. The half no rule can
+     * check — omit a prop whose value equals the component's default — is in CONVENTIONS.md.
+     */
+    {
+        rules: {
+            "react/jsx-boolean-value": ["error", "always"],
+        },
+    },
+
+    // 4. Unused vars/args/caught-errors as error, with an underscore-prefix escape hatch.
     {
         rules: {
             "@typescript-eslint/no-unused-vars": [
@@ -91,7 +115,7 @@ const eslintConfig = defineConfig([
     },
 
     /*
-     * 4b. `type` over `interface` by default (D-26i) — stylisticTypeChecked's own default prefers
+     * 4b. `type` over `interface` by default — stylisticTypeChecked's own default prefers
      * `interface`, the opposite of this project's convention; override explicitly rather than
      * rewriting every object-shape type alias as an interface.
      */
@@ -108,7 +132,7 @@ const eslintConfig = defineConfig([
      */
 
     /*
-     * 5. Import order/grouping (D-26p) — eslint-plugin-import's fixer crashes under ESLint 10
+     * 5. Import order/grouping — eslint-plugin-import's fixer crashes under ESLint 10
      * (removed SourceCode method); import-x is the actively-maintained, ESLint-10-compatible fork
      * used here instead (see docs/adr/tech/0007).
      */
@@ -140,7 +164,7 @@ const eslintConfig = defineConfig([
                 },
             ],
 
-            // 6. No default exports (D-26j) — overridden below for Next.js framework-forced files.
+            // 6. No default exports — overridden below for Next.js framework-forced files.
             "import-x/no-default-export": "error",
         },
     },
@@ -161,11 +185,12 @@ const eslintConfig = defineConfig([
             "*.config.{ts,mjs,js}",
             "**/*.stories.tsx",
             /*
-             * Playwright's own `globalSetup` config option requires the referenced file to export
-             * its setup function as the default export (Playwright loads it that way itself) —
-             * same framework-forced category as the entries above.
+             * Playwright's own `globalSetup`/`globalTeardown` config options require the referenced
+             * file to export its function as the default export (Playwright loads it that way
+             * itself) — same framework-forced category as the entries above.
              */
             "e2e/global-setup.ts",
+            "e2e/global-teardown.ts",
             /*
              * Storybook's own framework-forced default-export files (main config + preview config),
              * same category as next.config.ts above.
@@ -219,8 +244,13 @@ const eslintConfig = defineConfig([
                             ],
                         },
                         {
+                            /*
+                             * `ui -> ui` is allowed (docs/adr/tech/0031); the acyclicity it used to
+                             * buy by construction is now bought by `import-x/no-cycle` in 7c.
+                             */
                             from: { element: { type: "ui" } },
                             allow: [
+                                { to: { element: { type: "ui" } } },
                                 { to: { element: { type: "lib-core" } } },
                                 { to: { element: { type: "lib-client" } } },
                             ],
@@ -272,6 +302,29 @@ const eslintConfig = defineConfig([
         files: ["src/components/ui/**/*.stories.tsx", "src/components/ui/**/*.test.tsx"],
         rules: {
             "boundaries/dependencies": "off",
+        },
+    },
+
+    /*
+     * 7c. Primitives stay acyclic (docs/adr/tech/0031). Graph traversal is the expensive part of
+     * this rule, so it is scoped to the one element type whose blanket sibling-import ban was
+     * lifted rather than run repository-wide.
+     */
+    {
+        files: ["src/components/ui/**/*.{ts,tsx}"],
+        plugins: {
+            "import-x": importX,
+        },
+        /*
+         * `import-x/parsers` is what makes this rule see anything: without it import-x cannot parse
+         * a `.tsx` dependency, so it walks an empty graph and reports a real cycle as clean.
+         */
+        settings: {
+            "import-x/parsers": { "@typescript-eslint/parser": [".ts", ".tsx", ".cts", ".mts"] },
+            "import-x/resolver": { typescript: true },
+        },
+        rules: {
+            "import-x/no-cycle": ["error", { maxDepth: Infinity, ignoreExternal: true }],
         },
     },
 
@@ -374,12 +427,37 @@ const eslintConfig = defineConfig([
                 /*
                  * 8g. D-06: ban composeStories' `.run()` repo-wide, incl. *.stories.tsx
                  * (docs/adr/tech/0025, supersedes tech/0021) — no-restricted-properties can't
-                 * express this since .run() is called on a differently-named object per file.
+                 * express this since.run() is called on a differently-named object per file.
                  */
                 {
                     selector: "CallExpression[callee.type='MemberExpression'][callee.property.name='run']",
                     message:
                         "composeStories' story-runner .run() is banned repo-wide (docs/adr/tech/0025-direct-composed-story-rendering.md, supersedes tech/0021) — render the composed story directly instead, e.g. `render(<Primary />)`. If this is a genuinely deliberate exception, add a `// eslint-disable-next-line no-restricted-syntax` with a one-line reason.",
+                },
+                /*
+                 * 8h: JSX is always returned explicitly (docs/adr/tech/0028). Scoped to a JSX body
+                 * rather than core `arrow-body-style: always`, which would also brace every
+                 * non-JSX one-liner — a far wider change than the decision this encodes.
+                 */
+                {
+                    selector: "ArrowFunctionExpression > JSXElement",
+                    message:
+                        "Return JSX with an explicit `return` inside a block body, never a concise body (docs/adr/tech/0028-jsx-return-style.md).",
+                },
+                {
+                    selector: "ArrowFunctionExpression > JSXFragment",
+                    message:
+                        "Return JSX with an explicit `return` inside a block body, never a concise body (docs/adr/tech/0028-jsx-return-style.md).",
+                },
+                /*
+                 * 8i: a leading empty branch — `null`, `undefined`, `""`, `[]` or `{}` — makes the reader hold a
+                 * negation to reach the only branch that produces a value (rationale: 8c750dc). A
+                 * pair of empty branches carries no such negation, so the selector excludes it.
+                 */
+                {
+                    selector: `ConditionalExpression:matches(${emptyBranchSelectors("consequent")}):not(:matches(${emptyBranchSelectors("alternate")}))`,
+                    message:
+                        'Put the branch that produces a value first: write `cond ? value : empty`, not `cond ? empty : value` — invert the condition. `empty` here is `null`, `undefined`, `""`, `[]` or `{}`. If both branches are genuinely empty (e.g. `null` vs `undefined` for a library default), the selector already exempts it.',
                 },
             ],
         },
@@ -421,6 +499,211 @@ const eslintConfig = defineConfig([
         ...noUnsanitized.configs.recommended,
     },
 
+    /*
+     * 10. Mechanical naming enforcement (2026-08-28). Every rule below encodes a convention
+     * CONVENTIONS.md already states; none introduces a new one. The PascalCase allowances are
+     * framework-forced, not stylistic — see docs/adr/tech/0029.
+     */
+    {
+        files: ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "e2e/**/*.ts", "visual/**/*.ts", "tokens/**/*.ts"],
+        plugins: { "@typescript-eslint": tseslint.plugin },
+        rules: {
+            "@typescript-eslint/naming-convention": [
+                "error",
+                {
+                    selector: "default",
+                    format: ["camelCase"],
+                    leadingUnderscore: "allowDouble",
+                    trailingUnderscore: "allow",
+                },
+                /*
+                 * A quoted key is external syntax this codebase does not name — an HTTP header,
+                 * an aria-* attribute, a CSS property. The taxonomy's declarative-DSL carve-out.
+                 */
+                { selector: ["objectLiteralProperty", "typeProperty"], modifiers: ["requiresQuotes"], format: null },
+                /*
+                 * An HTTP header name is external wire syntax, and Prettier's as-needed quoting
+                 * strips the quotes that would otherwise mark it as such.
+                 */
+                {
+                    selector: "objectLiteralProperty",
+                    filter: { regex: "^(Cookie|Set-Cookie|Content-Type|Authorization|Accept)$", match: true },
+                    format: null,
+                },
+                { selector: "import", format: ["camelCase", "PascalCase"] },
+                { selector: "typeLike", format: ["PascalCase"] },
+                { selector: "variable", format: ["camelCase", "UPPER_CASE"], leadingUnderscore: "allow" },
+                /*
+                 * A React context and a dnd-kit sensor subclass are constructor-like values used in
+                 * type position (`<Ctx.Provider>`), so both ecosystems spell them PascalCase.
+                 */
+                {
+                    selector: "variable",
+                    filter: { regex: "(Context|Sensor)$", match: true },
+                    format: ["PascalCase"],
+                },
+                { selector: "objectLiteralProperty", format: ["camelCase"], leadingUnderscore: "allowDouble" },
+                { selector: "parameter", format: ["camelCase"], leadingUnderscore: "allow" },
+            ],
+        },
+    },
+    {
+        /*
+         * 10a. JSX forces PascalCase: a lowercase JSX identifier is parsed as an HTML element, and
+         * Storybook's CSF names each story by its exported binding. Scoped to .tsx so a plain .ts
+         * module gets no such licence.
+         */
+        files: ["src/**/*.tsx", "app/**/*.tsx"],
+        plugins: { "@typescript-eslint": tseslint.plugin },
+        rules: {
+            "@typescript-eslint/naming-convention": [
+                "error",
+                {
+                    selector: "default",
+                    format: ["camelCase"],
+                    leadingUnderscore: "allowDouble",
+                    trailingUnderscore: "allow",
+                },
+                { selector: ["objectLiteralProperty", "typeProperty"], modifiers: ["requiresQuotes"], format: null },
+                /*
+                 * An HTTP header name is external wire syntax, and Prettier's as-needed quoting
+                 * strips the quotes that would otherwise mark it as such.
+                 */
+                {
+                    selector: "objectLiteralProperty",
+                    filter: { regex: "^(Cookie|Set-Cookie|Content-Type|Authorization|Accept)$", match: true },
+                    format: null,
+                },
+                { selector: "import", format: ["camelCase", "PascalCase"] },
+                { selector: "typeLike", format: ["PascalCase"] },
+                { selector: "variable", format: ["camelCase", "PascalCase", "UPPER_CASE"], leadingUnderscore: "allow" },
+                // A compound-component namespace member (`Toast.Root`) is itself a component.
+                {
+                    selector: "objectLiteralProperty",
+                    format: ["camelCase", "PascalCase"],
+                    leadingUnderscore: "allowDouble",
+                },
+                // Storybook hands a decorator the story as a component argument.
+                { selector: "parameter", format: ["camelCase", "PascalCase"], leadingUnderscore: "allow" },
+            ],
+        },
+    },
+    {
+        /*
+         * 10b. ADR tech/0012's enum-like constants mirror their own SCREAMING_SNAKE values as keys.
+         * Scoped to shared/non-feature code (app core, e2e, and their common test-utils), so no
+         * feature module gains the same licence.
+         */
+        files: ["src/lib/core/**/*.ts", "e2e/**/*.ts", "src/test-utils/**/*.ts"],
+        plugins: { "@typescript-eslint": tseslint.plugin },
+        rules: {
+            "@typescript-eslint/naming-convention": [
+                "error",
+                {
+                    selector: "default",
+                    format: ["camelCase"],
+                    leadingUnderscore: "allowDouble",
+                    trailingUnderscore: "allow",
+                },
+                { selector: ["objectLiteralProperty", "typeProperty"], modifiers: ["requiresQuotes"], format: null },
+                /*
+                 * An HTTP header name is external wire syntax, and Prettier's as-needed quoting
+                 * strips the quotes that would otherwise mark it as such.
+                 */
+                {
+                    selector: "objectLiteralProperty",
+                    filter: { regex: "^(Cookie|Set-Cookie|Content-Type|Authorization|Accept)$", match: true },
+                    format: null,
+                },
+                { selector: "import", format: ["camelCase", "PascalCase"] },
+                { selector: "typeLike", format: ["PascalCase"] },
+                { selector: "variable", format: ["camelCase", "UPPER_CASE"], leadingUnderscore: "allow" },
+                {
+                    selector: "objectLiteralProperty",
+                    format: ["camelCase", "UPPER_CASE"],
+                    leadingUnderscore: "allowDouble",
+                },
+                { selector: "parameter", format: ["camelCase"], leadingUnderscore: "allow" },
+            ],
+        },
+    },
+    {
+        /*
+         * 10c. Filename and folder shape — the half CONVENTIONS.md states and nothing checked:
+         * every component is a kebab-case folder holding a file of the same name, and every test
+         * suffix maps to a Vitest/Playwright project.
+         */
+        files: ["src/**/*", "app/**/*", "e2e/**/*", "visual/**/*", "scripts/**/*"],
+        plugins: { "check-file": checkFile },
+        rules: {
+            "check-file/filename-naming-convention": [
+                "error",
+                {
+                    "src/**/*.{ts,tsx}": "KEBAB_CASE",
+                    "app/**/*.{ts,tsx}": "KEBAB_CASE",
+                    "e2e/**/*.ts": "KEBAB_CASE",
+                    "visual/**/*.ts": "KEBAB_CASE",
+                    "scripts/**/*.mjs": "KEBAB_CASE",
+                },
+                { ignoreMiddleExtensions: true },
+            ],
+            "check-file/folder-naming-convention": [
+                "error",
+                {
+                    "src/features/*/": "KEBAB_CASE",
+                    "src/components/*/*/": "KEBAB_CASE",
+                    "src/features/*/components/*/": "KEBAB_CASE",
+                },
+            ],
+        },
+    },
+
+    /*
+     * 11. Prefer `isNil` over a raw null/undefined comparison. WARN on purpose: ~167 pre-existing
+     * sites are frozen behind the todo named in the rule's own doc comment, so erroring would fail
+     * the build immediately. Promoting it to "error" is that todo's finish line.
+     */
+    {
+        files: ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "e2e/**/*.ts", "visual/**/*.ts"],
+        plugins: { local: localRulesPlugin },
+        rules: { "local/prefer-is-nil": "error" },
+    },
+
+    // comment-length-exempt: decision record for D-G/D-H/T-04-57 — the namespace-import coverage claim was empirically verified (not assumed) and the ignores entry's known limitation (no stale-entry check) both need to survive a future edit, not just this one
+    /*
+     * 12. e2e specs cannot silently opt out of the passive quality gate (D-G, T-04-57): an `auto`
+     * fixture only fires for a test built from `e2e/quality-fixtures.ts`'s extended `test` object,
+     * so importing Playwright's own `test`/`expect` directly skips it. `allowTypeImports` keeps a
+     * `type Page`/`type Locator`/`type Request` import working; verified on this repo's ESLint
+     * 10.8.1 to also catch a namespace `import * as` form (04-24 task 1 quotes both messages).
+     *
+     * `e2e/full-app.e2e.spec.ts` is excluded by name (D-H — its own header and
+     * `playwright.config.ts`'s `testIgnore` say why). Known limitation: no stale-`ignores` check
+     * exists for this the way `scripts/check-ci-gate-coverage.mjs` has one for its own exceptions —
+     * if that file is ever deleted, this entry silently becomes a no-op rather than an error.
+     */
+    {
+        files: ["e2e/**/*.e2e.spec.ts"],
+        ignores: ["e2e/full-app.e2e.spec.ts"],
+        plugins: { "@typescript-eslint": tseslint.plugin },
+        rules: {
+            "@typescript-eslint/no-restricted-imports": [
+                "error",
+                {
+                    paths: [
+                        {
+                            name: "@playwright/test",
+                            importNames: ["test", "expect"],
+                            allowTypeImports: true,
+                            message:
+                                'Import `test` and `expect` from "./quality-fixtures" instead — importing them from "@playwright/test" directly silently opts this spec out of the accessibility and layout-shift gates every other spec in the `e2e` project carries.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+
     // 9. Generated/vendored trees are never hand-edited or worth linting.
     globalIgnores([
         ".next/**",
@@ -429,11 +712,15 @@ const eslintConfig = defineConfig([
         "src/lib/core/api-contract/generated-types.ts",
         // Stray worktree checkouts (isolation="worktree" executor dispatch) are never lint targets.
         ".claude/worktrees/**",
+        // The same, for a worktree added by hand: `eslint .` reported 710 errors in one on 2026-09-03.
+        ".worktrees/**",
         // MSW's own generated browser worker script (`msw init public/ --save`, plan 01-10) — vendored, never hand-edited.
         "public/mockServiceWorker.js",
         "storybook-static/**",
         "coverage/**",
         "test-results/**",
+        // Playwright's HTML reporter output; gitignored, but lint walked it after a failed run.
+        "playwright-report/**",
         "out/**",
         "build/**",
         "next-env.d.ts",

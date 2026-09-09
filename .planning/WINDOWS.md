@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 17
+open_count: 22
 waived_count: 0
-fixed_count: 6
-total_count: 23
-last_updated: 2026-08-25T16:26:55.940Z
+fixed_count: 8
+total_count: 30
+last_updated: 2026-08-28T13:51:50.354Z
 ---
 
 # Broken Windows Ledger
@@ -16,7 +16,7 @@ last_updated: 2026-08-25T16:26:55.940Z
 | id | phase | kind | file | line | description | status | reason | recorded_at | resolved_at |
 |----|-------|------|------|------|-------------|--------|--------|-------------|-------------|
 | 1 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | CI visual job (ci.yml) fails on master because no baseline PNGs exist yet under visual/__screenshots__ -- the manual visual-baselines.yml workflow_dispatch has never been run; Button+IconButton's 13 stories (26 light/dark assertions) need baselines generated post-merge via: gh workflow run "Visual baselines" --ref master, then download+commit the visual-baselines artifact | fixed |  | 2026-08-11T09:43:09.095Z | 2026-08-11T10:00:52.616Z |
-| 2 | 01 | deviation | style-dictionary.config.mjs |  | Style Dictionary's typographyDeclarations() emits --font-weight-<name>/--leading-<name>/--tracking-<name> as top-level namespaced custom properties; Tailwind v4 resolves --font-weight-<name> to the SAME utility class as --font-<name> (font-family), so the weight utility silently loses. Worked around locally in button.tsx via [font-weight:var(--font-weight-body-m)] arbitrary-property syntax -- future fix: rename to Tailwind's paired --text-<name>--font-weight/--line-height/--letter-spacing sub-property convention in style-dictionary.config.mjs (also update tokens/style-dictionary.build.test.ts's assertions) | open |  | 2026-08-11T09:43:25.361Z |  |
+| 2 | 01 | deviation | style-dictionary.config.mjs |  | Style Dictionary's typographyDeclarations() emits --font-weight-<name>/--leading-<name>/--tracking-<name> as top-level namespaced custom properties; Tailwind v4 resolves --font-weight-<name> to the SAME utility class as --font-<name> (font-family), so the weight utility silently loses. Worked around locally in button.tsx via [font-weight:var(--font-weight-body-m)] arbitrary-property syntax -- future fix: rename to Tailwind's paired --text-<name>--font-weight/--line-height/--letter-spacing sub-property convention in style-dictionary.config.mjs (also update tokens/style-dictionary.build.test.ts's assertions) | resolved | Fixed 2026-09-03: typographyDeclarations() now emits Tailwind v4's --text-<name>--font-weight/--line-height/--letter-spacing companions, so text-<name> alone carries all four; 72 hand-rolled declarations removed across 38 files and tokens/style-dictionary.build.test.ts updated. Verified in the running app: heading-s line-height 18px -> 15px, letter-spacing 2.4px now applied. | 2026-08-11T09:43:25.361Z | 2026-09-03T08:50:00.000Z |
 | 3 | 01 | deviation | N/A (tooling/environment) |  | Node's -e/require path resolution treats a bash-style /tmp/... path literally (mapping to C:\\tmp\\...), NOT the same location Git Bash's own /tmp resolves to (C:\\Users\\<user>\\AppData\\Local\\Temp\\...). Any node -e script reading a file that Bash/gh CLI just wrote to /tmp/... will silently ENOENT or read a stale/wrong file unless you use the real Windows-resolved path (visible in Read tool output) instead. Caused real confusion diagnosing a CI visual-baseline issue this session -- a hash comparison via node -e against the wrong path family produced misleading 'still broken' results. Prefer PowerShell's Get-FileHash (PowerShell tool, not Bash) for cross-tool file verification on Windows, or consistently stay within one tool (Bash-only or Node-only) for a given file path. | open |  | 2026-08-11T12:03:22.403Z |  |
 | 4 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-07 (TextField + Checkbox) added 17 new stories (34 light/dark assertions) to visual/primitives.visual.spec.ts, on top of Button/IconButton's already-baselined 13. No baseline PNGs exist yet for the new TextField/Checkbox entries -- same root cause as the now-fixed id 1 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. | fixed |  | 2026-08-11T12:55:01.000Z | 2026-08-11T13:17:41.225Z |
 | 5 | 01 | unrun-verify | visual/primitives.visual.spec.ts |  | Plan 01-08 (Switch + Dropdown) added 14 new stories (28 light/dark assertions) to visual/primitives.visual.spec.ts, on top of the existing 30. No baseline PNGs exist yet for the new Switch/Dropdown entries -- same root cause as ids 1/4 (the manual visual-baselines.yml workflow_dispatch must be re-run post-merge since it only captures baselines for stories that exist on master at dispatch time). Follow-up once this worktree merges: gh workflow run "Visual baselines" --ref master, then gh run download <run-id> --name visual-baselines --dir visual/__screenshots__, then commit. | fixed |  | 2026-08-11T15:35:12.302Z | 2026-08-11T15:45:20.532Z |
@@ -38,6 +38,13 @@ last_updated: 2026-08-25T16:26:55.940Z
 | 21 | 02 | unrun-verify | src/features/boards/server/fetch-boards.ts |  | Plan 02-11 wrapped fetchBoards in React's cache so the sidebar, the dashboard header and a board page's membership check share one upstream call per render, but no test asserts the call count. The plan's own behavior bullet ('loadBoards called twice within one server render performs exactly one upstream call') is therefore unproven: the e2e suite shows the app works, not that it issues one call rather than three. Needs either an instrumented integration test or a server-side call counter. | open |  | 2026-08-25T14:26:38.598Z |  |
 | 22 | 02 | deviation | app/api/session/force-sign-out/route.ts |  | Plan 02-11 widened the WR-01 logout-CSRF guard from Sec-Fetch-Site === 'same-origin' to an allow-list of {same-origin, none}. Making /boards a Server Component that calls the external API in its own render turned the forced-sign-out redirect into a real HTTP 307 on the document request, and Chromium carries the initiating navigation's Sec-Fetch-Site across that same-origin hop, so a visitor opening /boards directly arrived with 'none' and was 403'd out of the flow the handler exists to serve (measured 2026-08-25). 'none' is unforgeable by an attacker page and cross-site/same-site/absent are still rejected; SESSION-03's three cases still pass. Recorded as a dated amendment in docs/adr/tech/0026. Open because it is a security-control change made outside plan 02-11's own threat register and deserves a reviewer's explicit sign-off. | open |  | 2026-08-25T14:26:45.483Z |  |
 | 23 | 02 | stub | src/features/boards/components/board-list.tsx |  | BoardCard onDelete is a no-op; plan 02-13 supplies D-06's confirm modal | open |  | 2026-08-25T16:26:55.940Z |  |
+| 24 | 03 | unrun-verify | .planning/phases/03-column-management/03-BACKEND-FACTS.md |  | Column probe R1-R7 never observed: nonprod database down for all 14 attempts on 2026-08-26; every R section reads NOT YET OBSERVED | fixed |  | 2026-08-26T13:52:58.902Z | 2026-08-26T19:35:18.622Z |
+| 25 | 03 | unrun-verify | src/features/boards/components/column-header.tsx |  | 03-08: no live-app visual pass on the column kebab (Playwright MCP is not visible to spawned subagents); mock comparison done from the PDF only | open |  | 2026-08-27T12:13:08.402Z |  |
+| 26 | 03 | unrun-verify | src/features/boards/components/delete-column-confirm.tsx |  | No live-app visual pass on the delete confirmation or the destructive kebab entry — Playwright MCP is not visible to spawned subagents | open |  | 2026-08-27T12:53:48.822Z |  |
+| 27 | 03 | deviation | src/features/boards/actions/rename-column-action.integration.test.ts |  | R8: board path segment is inert on rename/reorder/delete; T-03-21 overstates what spelling boardId out protects against and needs re-scoping to the create endpoint | open |  | 2026-08-27T16:21:53.335Z |  |
+| 28 | 03 | deviation | src/features/boards/schemas.ts |  | R9: taskFullSchema.description widened to .nullish() after the backend was observed sending null; every read site in the tasks phase must handle string \| null \| undefined | open |  | 2026-08-27T16:21:57.475Z |  |
+| 29 | 04 | unmet-truth | src/components/ui/checkbox/checkbox.tsx |  | Completed-subtask label (text-text-primary/50, #7a7c87 on #f4f7fd) fails axe color-contrast at 3.86:1 vs WCAG AA 4.5:1; pnpm test:a11y red pending a mock-vs-accessibility decision | fixed |  | 2026-08-28T13:26:01.911Z | 2026-08-28T13:51:50.354Z |
+| 30 | 04 | deviation | .planning/phases/04-task-subtask-workflow/04-01-SUMMARY.md |  | Plan 04-01 left requirements-completed empty: its inherited requirements TASK-01..05, SUBTASK-01..04, SYNC-01 are unclaimed and must be claimed by a later plan in phase 04 | open |  | 2026-08-28T13:11:27.554Z |  |
 
 ````json
 [
@@ -60,10 +67,10 @@ last_updated: 2026-08-25T16:26:55.940Z
     "file": "style-dictionary.config.mjs",
     "line": null,
     "description": "Style Dictionary's typographyDeclarations() emits --font-weight-<name>/--leading-<name>/--tracking-<name> as top-level namespaced custom properties; Tailwind v4 resolves --font-weight-<name> to the SAME utility class as --font-<name> (font-family), so the weight utility silently loses. Worked around locally in button.tsx via [font-weight:var(--font-weight-body-m)] arbitrary-property syntax -- future fix: rename to Tailwind's paired --text-<name>--font-weight/--line-height/--letter-spacing sub-property convention in style-dictionary.config.mjs (also update tokens/style-dictionary.build.test.ts's assertions)",
-    "status": "open",
-    "reason": "",
+    "status": "resolved",
+    "reason": "Fixed 2026-09-03: emits Tailwind v4's --text-<name>--font-weight/--line-height/--letter-spacing companions, so text-<name> alone carries all four; 72 hand-rolled declarations removed across 38 files, build test updated. Verified live: heading-s line-height 18px -> 15px, letter-spacing 2.4px now applied.",
     "recorded_at": "2026-08-11T09:43:25.361Z",
-    "resolved_at": null
+    "resolved_at": "2026-09-03T08:50:00.000Z"
   },
   {
     "id": 3,
@@ -315,6 +322,90 @@ last_updated: 2026-08-25T16:26:55.940Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-25T16:26:55.940Z",
+    "resolved_at": null
+  },
+  {
+    "id": 24,
+    "kind": "unrun-verify",
+    "phase": "03",
+    "file": ".planning/phases/03-column-management/03-BACKEND-FACTS.md",
+    "line": null,
+    "description": "Column probe R1-R7 never observed: nonprod database down for all 14 attempts on 2026-08-26; every R section reads NOT YET OBSERVED",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-26T13:52:58.902Z",
+    "resolved_at": "2026-08-26T19:35:18.622Z"
+  },
+  {
+    "id": 25,
+    "kind": "unrun-verify",
+    "phase": "03",
+    "file": "src/features/boards/components/column-header.tsx",
+    "line": null,
+    "description": "03-08: no live-app visual pass on the column kebab (Playwright MCP is not visible to spawned subagents); mock comparison done from the PDF only",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T12:13:08.402Z",
+    "resolved_at": null
+  },
+  {
+    "id": 26,
+    "kind": "unrun-verify",
+    "phase": "03",
+    "file": "src/features/boards/components/delete-column-confirm.tsx",
+    "line": null,
+    "description": "No live-app visual pass on the delete confirmation or the destructive kebab entry — Playwright MCP is not visible to spawned subagents",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T12:53:48.822Z",
+    "resolved_at": null
+  },
+  {
+    "id": 27,
+    "kind": "deviation",
+    "phase": "03",
+    "file": "src/features/boards/actions/rename-column-action.integration.test.ts",
+    "line": null,
+    "description": "R8: board path segment is inert on rename/reorder/delete; T-03-21 overstates what spelling boardId out protects against and needs re-scoping to the create endpoint",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T16:21:53.335Z",
+    "resolved_at": null
+  },
+  {
+    "id": 28,
+    "kind": "deviation",
+    "phase": "03",
+    "file": "src/features/boards/schemas.ts",
+    "line": null,
+    "description": "R9: taskFullSchema.description widened to .nullish() after the backend was observed sending null; every read site in the tasks phase must handle string | null | undefined",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T16:21:57.475Z",
+    "resolved_at": null
+  },
+  {
+    "id": 29,
+    "kind": "unmet-truth",
+    "phase": "04",
+    "file": "src/components/ui/checkbox/checkbox.tsx",
+    "line": null,
+    "description": "Completed-subtask label (text-text-primary/50, #7a7c87 on #f4f7fd) fails axe color-contrast at 3.86:1 vs WCAG AA 4.5:1; pnpm test:a11y red pending a mock-vs-accessibility decision",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-28T13:26:01.911Z",
+    "resolved_at": "2026-08-28T13:51:50.354Z"
+  },
+  {
+    "id": 30,
+    "kind": "deviation",
+    "phase": "04",
+    "file": ".planning/phases/04-task-subtask-workflow/04-01-SUMMARY.md",
+    "line": null,
+    "description": "Plan 04-01 left requirements-completed empty: its inherited requirements TASK-01..05, SUBTASK-01..04, SYNC-01 are unclaimed and must be claimed by a later plan in phase 04",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-28T13:11:27.554Z",
     "resolved_at": null
   }
 ]

@@ -28,7 +28,7 @@ const Root = ({ className, toast, ...props }: RootProps) => {
 type ContentProps = Omit<ToastContentProps, "className"> & ClassNameProp;
 
 /*
- * Same panel treatment `Modal.Content` uses (`bg-bg-surface`/`rounded-lg`/`shadow-lg`, carried on
+ * Same panel treatment `Modal.Content` uses (`bg-bg-surface`/`rounded-md`/`shadow-lg`, carried on
  * Root above so the danger border wraps the whole card) — Content itself only owns the internal
  * layout (UI-SPEC "Toast placement/behavior": no new visual tokens needed).
  */
@@ -52,10 +52,7 @@ const Title = ({ className, children, ...props }: TitleProps) => {
     return (
         <BaseToast.Title
             title={tooltip}
-            className={cn(
-                "line-clamp-2 pr-6 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary",
-                className,
-            )}
+            className={cn("line-clamp-2 pr-6 font-body-m text-body-m text-text-primary", className)}
             {...props}
         >
             {children}
@@ -75,10 +72,7 @@ const Description = ({ className, children, ...props }: DescriptionProps) => {
     return (
         <BaseToast.Description
             title={tooltip}
-            className={cn(
-                "line-clamp-3 pr-6 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted",
-                className,
-            )}
+            className={cn("line-clamp-3 pr-6 font-body-l text-body-l text-text-muted", className)}
             {...props}
         >
             {children}
@@ -97,7 +91,7 @@ const Action = ({ className, ...props }: ActionProps) => {
     return (
         <BaseToast.Action
             className={cn(
-                "-ml-2 self-start rounded-sm px-2 py-1 font-body-m text-body-m [font-weight:var(--font-weight-body-m)] text-text-primary underline decoration-1 underline-offset-2 outline-none hover:no-underline focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2",
+                "-ml-2 self-start rounded-sm px-2 py-1 font-body-m text-body-m text-text-primary underline decoration-1 underline-offset-2 outline-none hover:no-underline focus-visible:ring-2 focus-visible:ring-ring-focus focus-visible:ring-offset-2",
                 className,
             )}
             {...props}
@@ -125,22 +119,39 @@ const Close = ({ className, ...props }: CloseProps) => {
 export const Toast = { Root, Content, Title, Description, Action, Close };
 
 const ToastList = () => {
-    const { toasts } = useToast();
+    const { toasts, close } = useToast();
     return (
         <>
-            {toasts.map((toast) => (
-                <Toast.Root key={toast.id} toast={toast}>
-                    <Toast.Content>
-                        <Toast.Title>{toast.title}</Toast.Title>
+            {toasts.map((toast) => {
+                return (
+                    <Toast.Root
+                        key={toast.id}
+                        toast={toast}
+                        /*
+                         * The whole card dismisses, because a toast with no auto-dismiss sits over
+                         * the sidebar's create control at mobile width. Interactive descendants are
+                         * excluded, or Retry would dismiss the toast holding the values it replays.
+                         */
+                        onClick={(event) => {
+                            if (event.target instanceof Element && event.target.closest("button, a")) {
+                                return;
+                            }
 
-                        {toast.description ? <Toast.Description>{toast.description}</Toast.Description> : null}
+                            close(toast.id);
+                        }}
+                    >
+                        <Toast.Content>
+                            <Toast.Title>{toast.title}</Toast.Title>
 
-                        <Toast.Action />
-                    </Toast.Content>
+                            {toast.description ? <Toast.Description>{toast.description}</Toast.Description> : null}
 
-                    <Toast.Close />
-                </Toast.Root>
-            ))}
+                            <Toast.Action />
+                        </Toast.Content>
+
+                        <Toast.Close />
+                    </Toast.Root>
+                );
+            })}
         </>
     );
 };

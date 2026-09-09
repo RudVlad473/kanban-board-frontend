@@ -9,12 +9,13 @@ import { render } from "vitest-browser-react";
 
 import { DEVICE_TYPE } from "@/lib/core/viewport/viewport-breakpoints";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { getBackdropElement } from "@/test-utils/modal-backdrop";
 
 import { Modal } from "./modal";
 import * as stories from "./modal.stories";
 import { Button } from "../button/button";
 
-const { Closed, Open, WithDescription } = composeStories(stories);
+const { Closed, LongContent, Open, WithDescription } = composeStories(stories);
 
 type RootProps = ComponentProps<typeof Modal.Root>;
 
@@ -42,21 +43,6 @@ const renderModal = (props: RootProps = {}) =>
             </Modal.Root>
         </div>,
     );
-
-/*
- * The floating backdrop `<div>` (no ARIA role of its own) rendered by `Modal.Content` — the
- * dialog's own popup gets `role="dialog"`, so filtering it out unambiguously isolates the backdrop
- * regardless of DOM order.
- */
-const getBackdropElement = () => {
-    const backdrop = Array.from(document.querySelectorAll<HTMLElement>("[data-open]")).find(
-        (el) => el.getAttribute("role") !== "dialog",
-    );
-    if (!backdrop) {
-        throw new Error("Modal backdrop element not found — is the dialog open?");
-    }
-    return backdrop;
-};
 
 /*
  * ADR tech/0014: every primitive's whole suite runs at both viewports; the padding test below
@@ -92,14 +78,63 @@ describeForEachDevice({
             );
         });
 
+        it("gives every Modal.Content a labelled close control that dismisses the dialog", async () => {
+            // Arrange
+            const screen = await render(<Open />);
+            const close = screen.getByRole("button", { name: "Close" });
+
+            // Assert — a real <button>, so it is in the tab order without a tabindex of its own.
+            await expect.element(close).toBeVisible();
+            await expect.element(close).toBeEnabled();
+            expect(close.element().tagName).toBe("BUTTON");
+
+            // Act
+            await close.click();
+
+            // Assert
+            await expect.element(screen.getByRole("dialog")).not.toBeInTheDocument();
+        });
+
+        it("pins the close control outside the scrolling region, so overflowing content neither clips it nor scrolls it away", async () => {
+            /*
+             * Deep: layout. Inside the scroll region the control keeps its pinned look only by an
+             * accident of which ancestor establishes its containing block; outside it, it cannot
+             * move at all. The last-child position keeps it last in the tab order.
+             */
+            const screen = await render(<LongContent />);
+            const dialog = screen.getByRole("dialog").element() as HTMLElement;
+            const scrollRegion = dialog.firstElementChild as HTMLElement;
+            const close = screen.getByRole("button", { name: "Close" }).element();
+            expect(scrollRegion.scrollHeight).toBeGreaterThan(scrollRegion.clientHeight);
+
+            // Assert — a sibling of the scroll region, not a descendant of it.
+            expect(scrollRegion.contains(close)).toBe(false);
+            expect(dialog.lastElementChild?.contains(close)).toBe(true);
+
+            // Assert — fully inside the panel that clips to its own rounded bounds.
+            const dialogRect = dialog.getBoundingClientRect();
+            const beforeScroll = close.getBoundingClientRect();
+            expect(beforeScroll.top).toBeGreaterThanOrEqual(dialogRect.top);
+            expect(beforeScroll.right).toBeLessThanOrEqual(dialogRect.right);
+            expect(beforeScroll.bottom).toBeLessThanOrEqual(dialogRect.bottom);
+
+            // Act
+            scrollRegion.scrollTop = scrollRegion.scrollHeight;
+
+            // Assert
+            const afterScroll = close.getBoundingClientRect();
+            expect(afterScroll.top).toBe(beforeScroll.top);
+            expect(afterScroll.right).toBe(beforeScroll.right);
+        });
+
         it("traps Tab focus inside the dialog — tabbing past the last focusable element wraps to the first rather than escaping to the page behind it", async () => {
             // Arrange
             const screen = await renderModal({ defaultOpen: true });
             const input = screen.getByRole("textbox", { name: "Confirmation text" });
-            const confirm = screen.getByRole("button", { name: "Confirm" });
+            const close = screen.getByRole("button", { name: "Close" });
 
-            // Act — focus the last focusable element inside the dialog (Confirm), then Tab once more.
-            confirm.element().focus();
+            // Act — focus the last focusable element inside the dialog (Close), then Tab once more.
+            close.element().focus();
             await userEvent.tab();
 
             /*
@@ -154,7 +189,7 @@ describeForEachDevice({
                 return <p key={position}>{`Activity entry ${position} — long content to force scrolling.`}</p>;
             });
             const screen = await render(
-                <Modal.Root defaultOpen>
+                <Modal.Root defaultOpen={true}>
                     <Modal.Content>
                         <Modal.Title>Task activity</Modal.Title>
 
@@ -185,7 +220,7 @@ describeForEachDevice({
              * must resolve to different real padding per viewport, not just both class names present.
              */
             const screen = await render(
-                <Modal.Root defaultOpen>
+                <Modal.Root defaultOpen={true}>
                     <Modal.Content>
                         <Modal.Title>Task activity</Modal.Title>
                     </Modal.Content>

@@ -25,7 +25,7 @@ describeForEachDevice({
     body: () => {
         /*
          * Shallow: copy, prop-driven aria/disabled rendering — asserted through composed stories
-         * (D-08). Switch is a controlled component that does not self-toggle (see below), so only
+         * Switch is a controlled component that does not self-toggle (see below), so only
          * static rendered states belong here — any toggle transition is Deep interaction behaviour.
          */
         it("is found by role switch with the label as its accessible name, and renders no visible text", async () => {
@@ -84,7 +84,7 @@ describeForEachDevice({
             // Arrange
             const onCheckedChange = vi.fn();
             const screen = await render(
-                <Switch label="Toggle dark mode" isDisabled onCheckedChange={onCheckedChange} />,
+                <Switch label="Toggle dark mode" isDisabled={true} onCheckedChange={onCheckedChange} />,
             );
             const toggle = screen.getByRole("switch", { name: "Toggle dark mode" });
 

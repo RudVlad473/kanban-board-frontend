@@ -1,0 +1,17 @@
+# Archived Quick Tasks
+
+- [260829-kyv-regenerate-openapi-contract-from-backend](260829-kyv-regenerate-openapi-contract-from-backend/260829-kyv-SUMMARY.md)
+- [260903-ttt-wire-sops-age-for-local-secret-managemen](260903-ttt-wire-sops-age-for-local-secret-managemen/260903-ttt-SUMMARY.md)
+- [260904-e3z-wire-the-pre-push-verify-hook-per-spike-](260904-e3z-wire-the-pre-push-verify-hook-per-spike-/260904-e3z-SUMMARY.md)
+- [260904-s6o-implement-column-colour-end-to-end-on-th](260904-s6o-implement-column-colour-end-to-end-on-th/260904-s6o-SUMMARY.md)
+- [260905-r15-fix-the-millisecond-horizontal-scroll-fl](260905-r15-fix-the-millisecond-horizontal-scroll-fl/260905-r15-SUMMARY.md)
+- [260905-s0l-fix-the-task-title-flicker-across-a-colu](260905-s0l-fix-the-task-title-flicker-across-a-colu/260905-s0l-SUMMARY.md)
+- [260905-tz5-show-the-0-of-n-subtasks-caption-optimis](260905-tz5-show-the-0-of-n-subtasks-caption-optimis/260905-tz5-SUMMARY.md)
+- [260906-hze-fix-the-remaining-one-frame-horizontal-s](260906-hze-fix-the-remaining-one-frame-horizontal-s/260906-hze-SUMMARY.md)
+- [260907-exb-fix-board-create-column-fan-out-to-be-op](260907-exb-fix-board-create-column-fan-out-to-be-op/260907-exb-SUMMARY.md)
+- [260907-q83-investigate-and-fix-the-board-delete-str](260907-q83-investigate-and-fix-the-board-delete-str/260907-q83-SUMMARY.md)
+- [260908-g4p-consolidate-every-tanstack-query-cache-k](260908-g4p-consolidate-every-tanstack-query-cache-k/260908-g4p-SUMMARY.md)
+- [260908-g5y-accept-a-client-supplied-board-id-on-cre](260908-g5y-accept-a-client-supplied-board-id-on-cre/260908-g5y-SUMMARY.md)
+- [260908-g5z-optimistic-board-create-navigation-via-t](260908-g5z-optimistic-board-create-navigation-via-t/260908-g5z-SUMMARY.md)
+- [260908-g61-eradicate-useopenboardid-by-making-the-d](260908-g61-eradicate-useopenboardid-by-making-the-d/260908-g61-SUMMARY.md)
+- [260908-g63-adr-amending-tech-0030-with-the-state-ti](260908-g63-adr-amending-tech-0030-with-the-state-ti/260908-g63-SUMMARY.md)

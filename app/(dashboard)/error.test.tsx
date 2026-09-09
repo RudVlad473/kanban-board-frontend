@@ -1,9 +1,13 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
 
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { createNextLinkShim } from "@/test-utils/next-router-shims";
 
 import DashboardError from "./error";
+
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode
+vi.mock("next/link", () => createNextLinkShim());
 
 /*
  * Route error boundary — exempt from the stories requirement per docs/adr/tech/0021's carve-out.

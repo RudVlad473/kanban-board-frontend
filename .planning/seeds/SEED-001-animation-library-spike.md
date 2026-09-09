@@ -5,6 +5,10 @@ planted: 2026-08-11
 planted_during: v1.0 / Phase 01 (foundation-auth-preferences)
 trigger_when: "once core board/task CRUD functionality (Phase 2+) is stable and the team wants a visual-polish pass"
 scope: medium
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-09-09
+  status: dormant
 ---
 
 # SEED-001: Spike an animation library for later-stage visual polish

@@ -21,14 +21,16 @@ import { cleanup as cleanupVitestBrowserReactRender } from "vitest-browser-react
 
 /*
  * Registers @testing-library/jest-dom's matchers (toBeDisabled, toHaveAccessibleName, etc.)
- * once for every Vitest Browser Mode test file (D-26).
+ * once for every Vitest Browser Mode test file.
  */
 import "@testing-library/jest-dom/vitest";
+
+import { assertNoUnqueuedActionCalls, resetAllActionStubs } from "@/test-utils/action-stub-registry";
 
 import { previewAnnotations } from "./.storybook/preview-annotations";
 
 /*
- * Loads the generated Tailwind v4 @theme stylesheet into every Browser Mode test page (D-24's
+ * Loads the generated Tailwind v4 @theme stylesheet into every Browser Mode test page (the
  * harness pattern), mirroring `.storybook/preview.ts` — without it, style-driven assertions see
  * unstyled browser defaults instead of real rendered values.
  */
@@ -42,7 +44,7 @@ import "./src/styles/globals.css";
 setProjectAnnotations([a11yAddonAnnotations, previewAnnotations, { testingLibraryRender: render }]);
 
 /*
- * D-04: single centralized cleanup for the "browser" project, replacing the 11 per-file
+ * Single centralized cleanup for the "browser" project, replacing the 11 per-file
  * `document.body.innerHTML = ""` copies. Calls each render mechanism's own `cleanup()` rather
  * than a raw DOM wipe, which broke `.run()`'s next call in the same file (docs/adr/tech/0025).
  */
@@ -50,4 +52,12 @@ afterEach(async () => {
     cleanupTestingLibraryRender();
     await cleanupVitestBrowserReactRender();
     clearAllMocks();
+
+    /*
+     * Every registered Server Action stub resets here, centrally, with no opt-out. Reset
+     * first so leftovers cannot leak into the next test when the assert throws; assert second so
+     * the report lands where a hook's `.catch` cannot swallow it (action-stub-registry.ts).
+     */
+    resetAllActionStubs();
+    assertNoUnqueuedActionCalls();
 });

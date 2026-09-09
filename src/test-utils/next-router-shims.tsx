@@ -9,24 +9,24 @@ export const createNextNavigationShim = ({
     pathname,
     refresh,
     push = () => undefined,
-    replace = () => undefined,
 }: {
     /** A getter rather than a string when one suite drives several paths (dashboard-header.test.tsx). */
     pathname: string | (() => string);
     refresh: () => void;
     push?: (href: string) => void;
-    replace?: (href: string) => void;
 }) => ({
     usePathname: () => (typeof pathname === "function" ? pathname() : pathname),
-    useRouter: () => ({ refresh, push, replace }),
+    useRouter: () => ({ refresh, push }),
 });
 
 export const createNextLinkShim = () => ({
     __esModule: true,
-    default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => (
-        // eslint-disable-next-line no-restricted-syntax -- this IS the next/link stand-in itself (see file doc comment above), not a component opting out of it
-        <a href={href} className={className}>
-            {children}
-        </a>
-    ),
+    default: ({ href, className, children }: { href: string; className?: string; children?: ReactNode }) => {
+        return (
+            // eslint-disable-next-line no-restricted-syntax -- this IS the next/link stand-in itself (see file doc comment above), not a component opting out of it
+            <a href={href} className={className}>
+                {children}
+            </a>
+        );
+    },
 });

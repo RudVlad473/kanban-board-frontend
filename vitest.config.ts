@@ -6,6 +6,7 @@ import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
+import { serverActionStubPlugin } from "./scripts/vite-plugin-server-action-stub.mjs";
 import { resolveTestApiBaseUrl } from "./src/test-utils/api-base-url";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -37,52 +38,24 @@ const serverOnlyAlias = {
 };
 const aliasWithServerOnlyStub = [...alias, serverOnlyAlias];
 
-/*
- * Real stub modules (not Vitest mocks; must stay before the general `@` alias) for every Server
- * Action a story test imports — real import chains reach `node:crypto`, unbundlable in a browser
- * test page. Formally carved out in docs/adr/tech/0020's "Server Action alias carve-out".
- */
-const serverActionStubAlias = [
-    {
-        find: "@/features/auth/actions/sign-in",
-        replacement: path.resolve(rootDir, "src/test-utils/sign-in-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/auth/actions/sign-up",
-        replacement: path.resolve(rootDir, "src/test-utils/sign-up-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/auth/actions/sign-out",
-        replacement: path.resolve(rootDir, "src/test-utils/sign-out-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/theme/actions/update-theme",
-        replacement: path.resolve(rootDir, "src/test-utils/update-theme-action-storybook-stub.ts"),
-    },
-    /*
-     * The columns entry must precede the board one — Vite matches a string `find` by prefix, so
-     * `create-board` would otherwise swallow `create-board-columns` too.
-     */
-    {
-        find: "@/features/boards/actions/create-board-columns",
-        replacement: path.resolve(rootDir, "src/test-utils/create-board-columns-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/create-board",
-        replacement: path.resolve(rootDir, "src/test-utils/create-board-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/rename-board",
-        replacement: path.resolve(rootDir, "src/test-utils/rename-board-action-storybook-stub.ts"),
-    },
-    {
-        find: "@/features/boards/actions/delete-board",
-        replacement: path.resolve(rootDir, "src/test-utils/delete-board-action-storybook-stub.ts"),
-    },
-];
-
 export default defineConfig({
     test: {
+        coverage: {
+            provider: "v8",
+            reportsDirectory: "coverage",
+            reporter: ["text", "html", "lcov", "json-summary"],
+            exclude: [
+                "**/*.config.{js,mjs,ts}",
+                "scripts/**",
+                "e2e/**",
+                "visual/**",
+                "**/*.stories.tsx",
+                "src/test-utils/**",
+                "**/*.d.ts",
+                "src/lib/core/api-contract/generated-types.ts",
+            ],
+            // No thresholds yet — set them from the first real measurement, not a blind guess.
+        },
         projects: [
             {
                 resolve: { alias },
@@ -98,17 +71,25 @@ export default defineConfig({
                 test: {
                     /*
                      * Real-backend integration project (CONVENTIONS.md's test-location table) — no
-                     * mock server stands in for the external API (GC-22); every call dials the
+                     * mock server stands in for the external API; every call dials the
                      * deployed nonprod backend directly, the same path the deployed app uses.
                      */
                     name: "node",
                     sequence: { groupOrder: 0 },
                     environment: "node",
+                    globalSetup: ["./src/test-utils/vitest-nonprod-cleanup.ts"],
                     include: [
-                        "src/lib/server/session.test.ts",
+                        /*
+                         * A Node-environment unit test: pure logic whose module graph reaches
+                         * `node:crypto`, so jsdom cannot host it. A pattern, never a literal path —
+                         * the previous hardcoded entry meant a second such file would silently not run.
+                         */
+                        "src/**/*.node.test.ts",
                         "src/**/*.integration.test.ts",
                         // Plain Node ESM with no jsdom/React dependency — belongs here, not "unit".
                         "scripts/**/*.unit.test.mjs",
+                        // The quality-gate comparator has no Playwright import (04-23) — a Node-environment unit test, same category as the two entries above.
+                        "e2e/**/*.unit.test.ts",
                     ],
                     env: {
                         EXTERNAL_API_BASE_URL: resolveTestApiBaseUrl(),
@@ -117,7 +98,8 @@ export default defineConfig({
                 },
             },
             {
-                resolve: { alias: [...serverActionStubAlias, ...alias] },
+                resolve: { alias },
+                plugins: [serverActionStubPlugin({ rootDir })],
                 test: {
                     name: "browser",
                     sequence: { groupOrder: 1 },
@@ -165,15 +147,16 @@ export default defineConfig({
                 },
             },
             {
+                resolve: { alias },
                 /*
-                 * Stories render components importing real Server Action modules, but Storybook's
-                 * Vitest-driven rendering has no server/client build split for them — the same
-                 * `serverActionStubAlias` used by "browser" above stands in here too.
+                 * Listed first as documentation of intent only — what actually orders the transform
+                 * ahead of @storybook/nextjs-vite's own transforms, so its AST reader sees raw
+                 * TypeScript, is its `enforce: "pre"`, which Vite honours regardless of position.
                  */
-                resolve: {
-                    alias: [...serverActionStubAlias, ...alias],
-                },
-                plugins: [storybookTest({ configDir: path.join(rootDir, ".storybook") })],
+                plugins: [
+                    serverActionStubPlugin({ rootDir }),
+                    storybookTest({ configDir: path.join(rootDir, ".storybook") }),
+                ],
                 test: {
                     name: "storybook",
                     sequence: { groupOrder: 2 },

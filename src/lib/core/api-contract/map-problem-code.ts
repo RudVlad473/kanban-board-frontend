@@ -1,3 +1,5 @@
+import { isNil } from "es-toolkit";
+
 import { PROBLEM_CODE, type ProblemCode } from "@/lib/core/api-contract/problem-detail";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 
@@ -17,8 +19,13 @@ const UPSTREAM_CODE_TO_STATUS: Partial<Record<ProblemCode, UpstreamFailureStatus
     [PROBLEM_CODE.OPTIMISTIC_LOCK_CONFLICT]: RESULT_STATUS.CONFLICT,
     [PROBLEM_CODE.DUPLICATE_RESOURCE]: RESULT_STATUS.DUPLICATE,
     [PROBLEM_CODE.UNAUTHENTICATED]: RESULT_STATUS.UNAUTHENTICATED,
-    /* One branch for both 403 and 404, so a caller cannot probe which ids exist (see result-status.ts). */
+    /*
+     * One branch for both 403 and 404, so a caller cannot probe which ids exist (see
+     * result-status.ts). `ENTITY_NOT_FOUND` joins `ACCESS_DENIED` here for the identical reason —
+     * a double-submit delete (04-BACKEND-FACTS.md T6) must read the same as a forbidden id (T-04-42).
+     */
     [PROBLEM_CODE.ACCESS_DENIED]: RESULT_STATUS.NOT_FOUND,
+    [PROBLEM_CODE.ENTITY_NOT_FOUND]: RESULT_STATUS.NOT_FOUND,
 };
 
 /**
@@ -27,4 +34,4 @@ const UPSTREAM_CODE_TO_STATUS: Partial<Record<ProblemCode, UpstreamFailureStatus
  * Takes `undefined` directly, since `parseProblemDetail` returns null for anything it cannot read.
  */
 export const mapProblemCodeToStatus = (code: ProblemCode | undefined): UpstreamFailureStatus =>
-    (code === undefined ? undefined : UPSTREAM_CODE_TO_STATUS[code]) ?? RESULT_STATUS.ERROR;
+    (!isNil(code) ? UPSTREAM_CODE_TO_STATUS[code] : undefined) ?? RESULT_STATUS.ERROR;

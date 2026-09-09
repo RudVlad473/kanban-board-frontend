@@ -1,3 +1,4 @@
+// Covered by: `e2e/theme.e2e.spec.ts`
 import "server-only";
 
 import { COOKIE, THEME_COOKIE_MAX_AGE_SECONDS } from "@/lib/core/cookies/cookie-registry";

@@ -1,19 +1,15 @@
 {
     "radius": {
+        "$description": "Two slots, because the mock only ever uses two true corner radii. Buttons are absent on purpose: every button in the mock is a pill (its radius is exactly half its height), so buttons carry `rounded-full` rather than a value from this scale — a fixed token would be wrong at any height but the one it was measured at.\n\nConversion: the mock is a 1440 CSS px wide design, so a 600 DPI render is 12000 px wide and the divisor is 12000 / 1440 = 8.3333 px per CSS px. An earlier revision of this file used 600 / 96 = 6.25, which over-reads every measurement by 1.3333x; that is what put `md` at 24px and `lg` at 28px. Re-derived 2026-08-29 against PDF page 1 (controls) and page 4 (surfaces), each calibrated independently: page 1's Button Primary (L) measures 400px tall at 600 DPI against a 48px design height, and page 4's task card measures 2332px wide against a 280px design width — both give 8.3333.",
         "sm": {
             "$type": "dimension",
             "$value": "4px",
-            "$description": "Text Field / Dropdown corner radius — measured from PDF page 1 'Text Field (Idle)' frame: 27px at a 600 DPI render, converted to CSS px (27 / (600/96) = 4.32px, rounded to 4px)."
+            "$description": "Control corner radius — text field, dropdown trigger, subtask checkbox. Measured from PDF page 1 'Text Field (Idle)': 27px at 600 DPI = 3.24 CSS px, rounded to 4px. Unchanged by the 2026-08-29 re-derivation: the old 6.25 divisor gave 4.32px, which rounded to the same 4px by coincidence."
         },
         "md": {
             "$type": "dimension",
-            "$value": "24px",
-            "$description": "Button Secondary corner radius — measured from PDF page 1 'Button Secondary' frame: 152px at a 600 DPI render, converted to CSS px (152 / (600/96) = 24.32px, rounded to 24px)."
-        },
-        "lg": {
-            "$type": "dimension",
-            "$value": "28px",
-            "$description": "Button Primary (L) corner radius — measured from PDF page 1 'Button Primary (L)' frame: 180px at a 600 DPI render, converted to CSS px (180 / (600/96) = 28.8px, rounded to 28px)."
+            "$value": "8px",
+            "$description": "Surface corner radius — task cards, columns, modals, toasts, dropdown and menu popups, and every other panel on `bg-surface`. Measured from PDF page 4's task card: a 61.5px corner arc at 600 DPI = 7.4 CSS px, rounded to 8px. Was 24px, which was the Button Secondary pill read through the wrong divisor; no surface in the mock is anywhere near that round."
         }
     }
 }

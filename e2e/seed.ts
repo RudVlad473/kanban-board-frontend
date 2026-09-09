@@ -1,6 +1,9 @@
 import { spawnSync } from "node:child_process";
 
+import { isNil } from "es-toolkit";
+
 import { E2E_CONFIG } from "./test-env";
+import { recordSeededUserId, SEED_SCOPE } from "../src/test-utils/seeded-user-registry";
 
 export type SeededAccount = {
     id: string;
@@ -18,7 +21,16 @@ export type SeededBoard = { id: string; name: string; version: number };
  */
 const runSeedScript = (args: string[]): string => {
     const result = spawnSync("bash", ["e2e/seed.sh", ...args], {
-        env: { ...process.env, EXTERNAL_API_BASE_URL: E2E_CONFIG.EXTERNAL_API_BASE_URL },
+        /*
+         * `E2E_SEED_SKIP_REGISTRY` because `seedAccount` records the id itself, into the scope
+         * `globalTeardown` reads — letting the script also record it would list the same account
+         * twice and 404 the whole delete batch on the second, already-deleted id.
+         */
+        env: {
+            ...process.env,
+            EXTERNAL_API_BASE_URL: E2E_CONFIG.EXTERNAL_API_BASE_URL,
+            E2E_SEED_SKIP_REGISTRY: "1",
+        },
         encoding: "utf8",
     });
 
@@ -29,7 +41,11 @@ const runSeedScript = (args: string[]): string => {
     return result.stdout;
 };
 
-export const seedAccount = (): SeededAccount => JSON.parse(runSeedScript(["account"])) as SeededAccount;
+export const seedAccount = (): SeededAccount => {
+    const account = JSON.parse(runSeedScript(["account"])) as SeededAccount;
+    recordSeededUserId({ scope: SEED_SCOPE.PLAYWRIGHT, id: account.id });
+    return account;
+};
 
 export const seedBoard = ({ account, name }: { account: SeededAccount; name: string }): SeededBoard =>
     JSON.parse(
@@ -65,7 +81,125 @@ export const seedColumn = ({
         ]),
     ) as SeededColumn;
 
-export type SeededBoardFull = SeededBoard & { columns: { id: string; name: string; position: number }[] };
+export type SeededTask = { id: string; title: string; version: number; position: number };
+
+/**
+ * Creates one task on an already-seeded column — the same "one call at a time" rule as
+ * `seedColumn`. `description` is optional and omitted from the wire body entirely when unset
+ * (T9: an explicit `""` is refused with 400), for specs that need a task with real description text.
+ */
+export const seedTask = ({
+    account,
+    boardId,
+    columnId,
+    title,
+    description,
+}: {
+    account: SeededAccount;
+    boardId: string;
+    columnId: string;
+    title: string;
+    description?: string;
+}): SeededTask =>
+    JSON.parse(
+        runSeedScript([
+            "task",
+            "--jsession",
+            account.jsessionId,
+            "--user",
+            account.id,
+            "--board",
+            boardId,
+            "--column",
+            columnId,
+            "--title",
+            title,
+            ...(!isNil(description) ? ["--description", description] : []),
+        ]),
+    ) as SeededTask;
+
+/**
+ * SYNC-01's out-of-band write: bumps a task's `version` through the SAME seeded session that
+ * created it (never a second sign-in), so a conflict spec can make the UI's already-loaded
+ * `version` stale without spending the account's other session slot.
+ */
+export const updateTaskOutOfBand = ({
+    account,
+    boardId,
+    columnId,
+    taskId,
+    title,
+    version,
+}: {
+    account: SeededAccount;
+    boardId: string;
+    columnId: string;
+    taskId: string;
+    title: string;
+    version: number;
+}): SeededTask =>
+    JSON.parse(
+        runSeedScript([
+            "task-update",
+            "--jsession",
+            account.jsessionId,
+            "--user",
+            account.id,
+            "--board",
+            boardId,
+            "--column",
+            columnId,
+            "--task",
+            taskId,
+            "--title",
+            title,
+            "--version",
+            String(version),
+        ]),
+    ) as SeededTask;
+
+export type SeededSubtask = { id: string; title: string; isCompleted: boolean; version: number };
+
+/** Creates one subtask on an already-seeded task — the same "one call at a time" rule as `seedTask`. */
+export const seedSubtask = ({
+    account,
+    boardId,
+    columnId,
+    taskId,
+    title,
+}: {
+    account: SeededAccount;
+    boardId: string;
+    columnId: string;
+    taskId: string;
+    title: string;
+}): SeededSubtask =>
+    JSON.parse(
+        runSeedScript([
+            "subtask",
+            "--jsession",
+            account.jsessionId,
+            "--user",
+            account.id,
+            "--board",
+            boardId,
+            "--column",
+            columnId,
+            "--task",
+            taskId,
+            "--title",
+            title,
+        ]),
+    ) as SeededSubtask;
+
+/*
+ * `columns[].tasks` is widened here rather than in a second type: existing callers destructure
+ * only `id`/`name`/`position` and stay unaffected, while TASK-05's cascade specs need to read a
+ * task's own id back from the real backend — the "read the board, don't infer it" proof.
+ */
+export type SeededBoardFull = SeededBoard & {
+    columns: { id: string; name: string; position: number; tasks: { id: string; title: string }[] }[];
+};
 
 /**
  * Reads a board back through the real backend — the board-detail UI is Phase 3 scope, so a spec

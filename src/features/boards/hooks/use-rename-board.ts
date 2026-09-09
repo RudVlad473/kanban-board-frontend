@@ -1,12 +1,16 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { createContext, useContext, useState } from "react";
+// Covered by: `src/features/boards/components/board-list/board-list.test.tsx`
 
-import { useToast } from "@/components/ui/toast/use-toast";
-import { renameBoardAction } from "@/features/boards/actions/rename-board";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isNil } from "es-toolkit";
+
+import { useFailureToast } from "@/components/ui/toast/use-failure-toast";
+import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
 import type { Board } from "@/features/boards/schemas";
+import { ActionRefusedError } from "@/lib/core/api-contract/action-refused-error";
 import { RESULT_STATUS, type ResultStatus } from "@/lib/core/api-contract/result-status";
+import { QUERY_KEY } from "@/lib/core/query-keys/query-keys";
 
 /*
  * Authored copy only — the action returns bare discriminants, so nothing the backend said can
@@ -17,7 +21,7 @@ const GENERIC_RENAME_FAILURE = { title: "Couldn't rename board.", description: "
 
 /*
  * Only the branches with something distinct to tell the user. `CONFLICT` is deliberately absent:
- * a stale version keeps D-15's generic path in this phase, because explaining it is SYNC-01's job
+ * A stale version keeps the generic path in this phase, because explaining it is SYNC-01's job
  * (Phase 4) and half-building that reconciliation would be worse than not starting it.
  */
 const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; description: string }>> = {
@@ -38,86 +42,72 @@ const RENAME_FAILURE_COPY: Partial<Record<ResultStatus, { title: string; descrip
 export type RenameBoardArgs = { boardId: string; name: string; version: number };
 
 /**
- * The one board whose name the UI is asserting ahead of the server. `previousName` is what the row
- * showed at submit time, and it is what retires the override: see `applyRenameOverride`.
+ * BOARD-04's optimistic rename, as TanStack Query's cache-based optimistic update: the
+ * pending name is written into the `boards` entry both the sidebar and the header read, so they
+ * change in the same instant with no shared owner and no provider (docs/adr/tech/0019).
  */
-export type RenameOverride = { boardId: string; previousName: string; name: string };
+export const useRenameBoard = () => {
+    const raiseFailureToast = useFailureToast({ copy: RENAME_FAILURE_COPY, fallback: GENERIC_RENAME_FAILURE });
+    const queryClient = useQueryClient();
 
-type RenameOverrideStore = {
-    override: RenameOverride | null;
-    setOverride: (override: RenameOverride | null) => void;
-};
+    const mutation = useMutation({
+        mutationFn: async (args: RenameBoardArgs) => {
+            const result = await renameBoardAction(args);
 
-/**
- * Shared so the sidebar row and the dashboard header assert the new name in the same instant. The
- * provider is optional: without one, `useRenameBoard` falls back to state local to its own caller.
- */
-export const RenameOverrideContext = createContext<RenameOverrideStore | null>(null);
+            if (result.status !== RESULT_STATUS.SUCCESS) {
+                throw new ActionRefusedError(result.status);
+            }
 
-export const useRenameOverride = (): RenameOverride | null => useContext(RenameOverrideContext)?.override ?? null;
+            return result;
+        },
+        retry: false,
 
-/**
- * Applies the override to a supplied board array, returning a new array in which only the matching
- * entry's name differs. The `previousName` guard retires a stale override by pure derivation
- * (T-02-63) — see 02-12-SUMMARY.md for why derivation replaced clearing state during render.
- */
-export const applyRenameOverride = ({
-    boards,
-    override,
-}: {
-    boards: Board[];
-    override: RenameOverride | null;
-}): Board[] => {
-    if (override === null) {
-        return boards;
-    }
+        onMutate: async ({ boardId, name }: RenameBoardArgs) => {
+            // Or an in-flight read could land on top of the optimistic name and undo it.
+            await queryClient.cancelQueries({ queryKey: QUERY_KEY.BOARDS });
 
-    return boards.map((board) =>
-        board.id === override.boardId && board.name === override.previousName
-            ? { ...board, name: override.name }
-            : board,
-    );
-};
+            /* Captured BEFORE the write, so the rollback can restore THIS board's own name. */
+            const previousName = queryClient
+                .getQueryData<Board[]>(QUERY_KEY.BOARDS)
+                ?.find((board) => board.id === boardId)?.name;
 
-/**
- * BOARD-04's optimistic rename (D-15). The apply and the rollback live in local state, never a
- * query cache — reads never go through `useQuery` under docs/adr/tech/0019, so there is no cache
- * entry to patch; this is the shape `use-theme-preference.ts` already ships and that ADR names.
- */
-export const useRenameBoard = ({ boards }: { boards: Board[] }) => {
-    const toast = useToast();
-    const sharedStore = useContext(RenameOverrideContext);
-    const [localOverride, setLocalOverride] = useState<RenameOverride | null>(null);
-    const mutation = useMutation({ mutationFn: renameBoardAction, retry: false });
+            queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
+                current?.map((board) => (board.id === boardId ? { ...board, name } : board)),
+            );
 
-    const override = sharedStore ? sharedStore.override : localOverride;
-    const setOverride = sharedStore ? sharedStore.setOverride : setLocalOverride;
+            /* Restores THIS name only — a snapshot restore would also undo a sibling rename. */
+            return { previousName };
+        },
 
-    const renameBoard = async ({ boardId, name, version }: RenameBoardArgs): Promise<{ didRename: boolean }> => {
-        const previousName = boards.find((board) => board.id === boardId)?.name ?? name;
+        // eslint-disable-next-line no-restricted-syntax -- TanStack calls onError positionally (error, variables, context); the shape is dictated by that external API, not this project (ADR tech/0016 exemption, as in sign-in-action.ts)
+        onError: (error: unknown, { boardId }: RenameBoardArgs, context) => {
+            if (!isNil(context?.previousName)) {
+                const restoredName = context.previousName;
+                queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
+                    current?.map((board) => (board.id === boardId ? { ...board, name: restoredName } : board)),
+                );
+            }
 
-        // Optimistic: the sidebar and the header both assert the new name before the action is called.
-        setOverride({ boardId, previousName, name });
+            raiseFailureToast(error);
+        },
 
-        const result = await mutation
-            .mutateAsync({ boardId, name, version })
-            .catch(() => ({ status: RESULT_STATUS.ERROR }) as const);
+        /*
+         * The action returns the written board, version included, so this IS the settled value —
+         * a refetch would spend a round trip to learn what this response just said.
+         */
+        onSuccess: ({ board }) => {
+            queryClient.setQueryData<Board[]>(QUERY_KEY.BOARDS, (current) =>
+                current?.map((entry) => (entry.id === board.id ? board : entry)),
+            );
+        },
+    });
 
-        if (result.status !== RESULT_STATUS.SUCCESS) {
-            // Dropping the override restores the previous name exactly — the raw props still carry it.
-            setOverride(null);
-            toast.add({ type: "danger", ...(RENAME_FAILURE_COPY[result.status] ?? GENERIC_RENAME_FAILURE) });
+    /* The toast and the rollback both live in `onError`, so this only reports what the caller needs. */
+    const renameBoard = async (args: RenameBoardArgs): Promise<{ didRename: boolean }> =>
+        mutation
+            .mutateAsync(args)
+            .then(() => ({ didRename: true }))
+            .catch(() => ({ didRename: false }));
 
-            return { didRename: false };
-        }
-
-        // Left in place on success: it retires itself once the refreshed props carry the new name.
-        return { didRename: true };
-    };
-
-    return {
-        renameBoard,
-        isPending: mutation.isPending,
-        boards: applyRenameOverride({ boards, override }),
-    };
+    return { renameBoard, isPending: mutation.isPending };
 };

@@ -10,6 +10,11 @@ concurrency:
     group: "ci-${{ github.ref }}"
     cancel-in-progress: true
 
+# Default GITHUB_TOKEN scope for every job (docs/adr/tech/0033); a job that needs more
+# declares its own `permissions:` escalation rather than widening this default.
+permissions:
+    contents: read
+
 env:
     NEXT_TELEMETRY_DISABLED: "1"
     # The deployed nonprod backend's real address (GC-22: no mock server remains anywhere in the
@@ -20,19 +25,24 @@ env:
 
 jobs:
     # GC-06: the authoritative secret scan (D-26h — hooks are a convenience, CI is the gate).
-    # No local pre-commit half exists for this control: the Task 1 checkpoint rejected both
-    # candidate npm gitleaks wrappers on supply-chain grounds (single-maintainer, low-star
-    # repackagings of a third-party binary), and this project has no devcontainer/direct-binary
-    # convention to fall back on for a vetted local binary — see 01-18-SUMMARY.md. This job uses
-    # the official gitleaks/gitleaks-action instead, which downloads and runs the real gitleaks
-    # binary itself (no pnpm/Node steps needed — unlike the other jobs below, it isn't consuming
-    # this project's own dependency tree). No `needs:` — a secret is worth reporting even when
-    # the build is broken, and this scan is fast enough not to wait behind `quality`.
+    # A local pre-commit half now exists and is ADDITIVE, never a replacement: .husky/pre-commit
+    # scans staged changes with the same gitleaks release this job pins. 01-18-SUMMARY.md's
+    # reasoning for having no local half is superseded rather than reversed — it rejected the
+    # single-maintainer npm repackagings that were then the only option, and installing the
+    # official release binary directly (`pnpm tools:install`, checksum-verified) makes that
+    # objection moot. GITLEAKS_VERSION below is what makes local and CI the same scanner rather
+    # than two that happen to share a name; docs/adr/tech/0032 has the full record.
+    #
+    # This job uses the official gitleaks/gitleaks-action, which downloads and runs the real
+    # gitleaks binary itself (no pnpm/Node steps needed — unlike the other jobs below, it isn't
+    # consuming this project's own dependency tree). No `needs:` — a secret is worth reporting
+    # even when the build is broken, and this scan is fast enough not to wait behind `quality`.
+    # Only this job sees full history; the local hook covers staged changes alone.
     secrets:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 15
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
               with:
                   # gitleaks-action diffs baseRef^..headRef from the push/PR event payload; a
                   # shallow checkout (the default `fetch-depth: 1` used by the other jobs below)
@@ -40,22 +50,39 @@ jobs:
                   # a full-history re-scan on every run — see the action's own README.
                   fetch-depth: 0
 
+            # Decisions ───────────────────────────────────────────────────────────────────
+            # GITLEAKS_VERSION is pinned, and this literal is the single source of truth for
+            # it. Observed 2026-09-03 at the pinned action SHA (src/gitleaks.js): with the var
+            # unset the action calls `getLatestRelease()` and installs whatever is newest at
+            # run time — so the rule set actually enforced changes between runs with nothing
+            # in the repo recording which one passed, and a green history proves nothing about
+            # today's rules. Cost accepted: a newly published rule is not picked up until the
+            # pin is bumped (docs/adr/tech/0032).
+            #
+            # Two readers parse this literal — scripts/install-verified-tools.sh installs it
+            # locally, scripts/check-gitleaks-version.mjs fails when the local binary differs.
+            # Writing the version anywhere else is the drift both of them exist to prevent.
+            #
+            # False if: the action stops honouring GITLEAKS_VERSION, or a second
+            # GITLEAKS_VERSION assignment appears in this file (check-gitleaks-version.mjs
+            # fails on the ambiguity rather than guessing).
             - name: Scan for secrets
               uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GITLEAKS_VERSION: "8.30.1"
 
     quality:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 15
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: pnpm/action-setup@v4
+            - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
               with:
-                  node-version: 24
+                  node-version: 24.19.0
                   cache: "pnpm"
 
             - run: pnpm install --frozen-lockfile
@@ -79,6 +106,9 @@ jobs:
             - name: Route declaration check
               run: pnpm routes:check
 
+            - name: Query key declaration check
+              run: pnpm keys:check
+
             - name: Route Handler ban check
               run: pnpm handlers:check
 
@@ -93,11 +123,32 @@ jobs:
             - name: Story-only render check
               run: pnpm renders:check
 
+            - name: Component folder-name check
+              run: pnpm folders:check
+
+            - name: Server Action verb check
+              run: pnpm actions:check
+
             - name: Format check
               run: pnpm format:check
 
             - name: Comment length check
               run: pnpm comments:check
+
+            - name: Coverage pointer check
+              run: pnpm coverage:check
+
+            # scripts/check-ci-gate-coverage.mjs's own regression pin reads this file, so this
+            # step is itself covered by the entry pnpm verify's VERIFY_STEPS carries for it.
+            - name: Gate coverage check
+              run: pnpm gates:check
+
+            # In `quality` rather than `secrets` because the `secrets` job deliberately has no
+            # Node/pnpm setup. Without this step the assertion pairing gitleaks' allowlist entry
+            # would run only in a local hook, and a machine without that hook could push plaintext
+            # straight past the allowlisted scan (docs/adr/tech/0032).
+            - name: Encrypted secrets check
+              run: pnpm secrets:check
 
             - name: API types drift
               run: |
@@ -119,40 +170,36 @@ jobs:
             - name: Build
               run: pnpm build
 
+            # The token is what lets `vitest-nonprod-cleanup.ts`'s own teardown delete this job's
+            # seeded accounts. Without it that teardown refuses and defers to the step below, which
+            # then does all the work rather than acting as the safety net it is described as — so
+            # the accounts survive anything that stops the two steps running back to back.
             - name: Test
               run: pnpm test
+              env:
+                  NONPROD_RESET_TOKEN: ${{ secrets.NONPROD_RESET_TOKEN }}
 
-            # GC-23: `pnpm test`'s "node" Vitest project includes `src/**/*.integration.test.ts`
-            # (added by plan 01-32), which makes real authenticated calls against nonprod and
-            # therefore creates real accounts/sessions there — this job needs the same cleanup
-            # the `e2e` job below already needs. `if: always()` runs it after a failed suite too,
-            # since a failure mid-suite is exactly the case most likely to leave partial state
-            # behind. The response status is checked explicitly (not just piped through `curl -f`
-            # or similar) so a wrong/rotated secret fails the job loudly instead of the cleanup
-            # silently becoming a no-op.
-            - name: Reset nonprod state
+            # GC-23/260829-kyv: `pnpm test`'s "node" project's own globalSetup/globalTeardown pair
+            # (vitest-nonprod-cleanup.ts) already deletes what it seeded, so this is a no-op safety
+            # net for a cancelled or crashed job, scoped to this job's own accounts, not a full wipe.
+            - name: Clean up seeded nonprod accounts
               if: always()
-              run: |
-                  status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
-                    -H "X-Reset-Token: ${{ secrets.NONPROD_RESET_TOKEN }}" \
-                    https://kanban-board-rud-vlad-473-nonprod.duckdns.org/api/admin/reset)
-                  if [ "$status" != "204" ]; then
-                    echo "Reset endpoint returned $status, expected 204" >&2
-                    exit 1
-                  fi
+              run: pnpm e2e:cleanup
+              env:
+                  NONPROD_RESET_TOKEN: ${{ secrets.NONPROD_RESET_TOKEN }}
 
     visual:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 15
         needs: quality
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: pnpm/action-setup@v4
+            - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
               with:
-                  node-version: 24
+                  node-version: 24.19.0
                   cache: "pnpm"
 
             - run: pnpm install --frozen-lockfile
@@ -168,24 +215,24 @@ jobs:
 
             - name: Upload Playwright report
               if: failure()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
               with:
                   name: playwright-report
                   path: playwright-report/
                   retention-days: 7
 
     e2e:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 15
         needs: quality
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: pnpm/action-setup@v4
+            - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
               with:
-                  node-version: 24
+                  node-version: 24.19.0
                   cache: "pnpm"
 
             - run: pnpm install --frozen-lockfile
@@ -208,25 +255,18 @@ jobs:
               env:
                   NONPROD_RESET_TOKEN: ${{ secrets.NONPROD_RESET_TOKEN }}
 
-            # GC-23: this job's suite runs against the real, built application (playwright.config.ts's
-            # e2e webServer), creating real accounts/sessions in nonprod's shared database. `if: always()`
-            # runs it after a failed suite too, since a failure mid-suite is exactly the case most
-            # likely to leave partial state behind. The response status is checked explicitly so a
-            # wrong/rotated secret fails the job loudly instead of the cleanup silently becoming a no-op.
-            - name: Reset nonprod state
+            # GC-23/260829-kyv: `playwright.config.ts`'s own globalSetup/globalTeardown pair already
+            # deletes what this run seeded, so this is a no-op safety net for a cancelled or crashed
+            # job, scoped to this job's own accounts, not a full wipe.
+            - name: Clean up seeded nonprod accounts
               if: always()
-              run: |
-                  status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
-                    -H "X-Reset-Token: ${{ secrets.NONPROD_RESET_TOKEN }}" \
-                    https://kanban-board-rud-vlad-473-nonprod.duckdns.org/api/admin/reset)
-                  if [ "$status" != "204" ]; then
-                    echo "Reset endpoint returned $status, expected 204" >&2
-                    exit 1
-                  fi
+              run: pnpm e2e:cleanup
+              env:
+                  NONPROD_RESET_TOKEN: ${{ secrets.NONPROD_RESET_TOKEN }}
 
             - name: Upload Playwright report
               if: failure()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
               with:
                   name: playwright-e2e-report
                   path: playwright-report/

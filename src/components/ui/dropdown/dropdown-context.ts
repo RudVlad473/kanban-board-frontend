@@ -1,3 +1,4 @@
+// Covered by: `src/components/ui/dropdown/dropdown.test.tsx`
 import { createContext } from "react";
 
 /*

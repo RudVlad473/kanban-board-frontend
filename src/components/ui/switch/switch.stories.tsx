@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { Switch } from "./switch";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (keyboard/click/controlled/hit-area) live exclusively in switch.test.tsx.
  */
 const meta: Meta<typeof Switch> = {
@@ -36,21 +36,25 @@ export const Hover: Story = {
         defaultChecked: true,
     },
     decorators: [
-        (Story) => (
-            <div className="[&_[role=switch]>span]:bg-bg-primary-hover">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_[role=switch]>span]:bg-bg-primary-hover">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
 export const Focus: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&_[role=switch]]:outline-2 [&_[role=switch]]:outline-offset-2 [&_[role=switch]]:outline-ring-focus">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_[role=switch]]:outline-2 [&_[role=switch]]:outline-offset-2 [&_[role=switch]]:outline-ring-focus">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -61,15 +65,17 @@ export const Disabled: Story = {
 };
 
 export const Sizes: Story = {
-    render: (args) => (
-        <div className="flex items-center gap-4">
-            <Switch {...args} size="sm" label="Small" defaultChecked />
+    render: (args) => {
+        return (
+            <div className="flex items-center gap-4">
+                <Switch {...args} size="sm" label="Small" defaultChecked={true} />
 
-            <Switch {...args} size="md" label="Medium" defaultChecked />
+                <Switch {...args} size="md" label="Medium" defaultChecked={true} />
 
-            <Switch {...args} size="lg" label="Large" defaultChecked />
-        </div>
-    ),
+                <Switch {...args} size="lg" label="Large" defaultChecked={true} />
+            </div>
+        );
+    },
 };
 
 /*

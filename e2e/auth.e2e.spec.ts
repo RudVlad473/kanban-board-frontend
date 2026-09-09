@@ -1,14 +1,16 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { decodeJwt } from "jose";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount } from "./seed";
+import { signUpViaUi, submitSignUpForm } from "./signed-up-user";
 import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
 
 const FRESH_PASSWORD = "E2eFreshPassword123!";
-/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
+/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with the empty state. */
 const PROTECTED_LANDMARK = "Boards";
 
 test.describe("AUTH-01: sign up", () => {
@@ -20,16 +22,7 @@ test.describe("AUTH-01: sign up", () => {
         const freshEmail = `e2e-${randomUUID()}@example.com`;
 
         // Act
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(freshEmail);
-        /*
-         * "Letters and spaces" only (GC-02) — a digit-bearing fixture name like "E2E Tester" now
-         * fails the sign-up form's own name validation, so this fixture must satisfy the same
-         * rules as the password fixture below.
-         */
-        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
-        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
+        await signUpViaUi({ page, email: freshEmail, password: FRESH_PASSWORD });
 
         // Assert
         await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
@@ -59,6 +52,25 @@ test.describe("AUTH-01: sign up", () => {
 
         const themeCookie = cookies.find((cookie) => cookie.name === COOKIE.THEME);
         expect(themeCookie).toBeDefined();
+    });
+
+    /*
+     * Every other fixture here fills the optional Name, which is how a nameless account went
+     * unexercised while sign-up reported a CREATED one as failed (the backend answers 201 with
+     * `"displayName": null`).
+     */
+    test("creates an account when the optional Name is left blank, falling back to the email local part", async ({
+        page,
+    }) => {
+        // Arrange
+        const localPart = `e2e-noname-${randomUUID()}`;
+
+        // Act
+        await signUpViaUi({ page, email: `${localPart}@example.com`, password: FRESH_PASSWORD, displayName: "" });
+
+        // Assert
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await expect(page.getByText(localPart, { exact: true })).toBeVisible();
     });
 });
 
@@ -139,11 +151,7 @@ test.describe("AUTH-06: sign-up rejects a payload failing the shared schema", ()
          * A digit-bearing name (charset) and an 8-char-under password (length, chained before
          * complexity per schemas.ts's own comment, so "short" reports length only).
          */
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill("User123");
-        await page.getByLabel("Password", { exact: true }).fill("short");
-        await page.getByRole("button", { name: "Create Account" }).click();
+        await submitSignUpForm({ page, email, displayName: "User123", password: "short" });
 
         // Assert
         /*
@@ -167,12 +175,7 @@ test.describe("AUTH-07: sign-up rejects a duplicate email", () => {
         const email = `e2e-signup-dup-${randomUUID()}@example.com`;
 
         // Act — first sign-up succeeds and signs the account in.
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
-        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await signUpViaUi({ page, email, password: FRESH_PASSWORD });
 
         /*
          * Sign out first — proxy.ts redirects a signed-in visitor away from /register entirely, so
@@ -183,11 +186,7 @@ test.describe("AUTH-07: sign-up rejects a duplicate email", () => {
         await expect(page).toHaveURL(new RegExp(`${ROUTE.SIGN_IN}$`));
 
         // Act — second sign-up, same email.
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill("End To End Tester");
-        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
+        await submitSignUpForm({ page, email, password: FRESH_PASSWORD });
 
         // Assert
         /*
@@ -241,4 +240,55 @@ test.describe("sign-out", () => {
      * 02.2-05-SUMMARY.md's coverage ledger for the reason (a proxy.ts/Server Action interaction),
      * restated in 02.2-09's ADR amendment.
      */
+});
+
+test.describe("AUTH-05: the sign-in and sign-up cross-links", () => {
+    /*
+     * A sentinel on `window` is the observable, not the URL: both a client navigation and a full
+     * document load end on the right route, and only a reload wipes the sentinel.
+     */
+    const navigatesWithoutReloading = async ({
+        page,
+        from,
+        linkName,
+        to,
+    }: {
+        page: Page;
+        from: string;
+        linkName: string;
+        to: string;
+    }): Promise<void> => {
+        await page.goto(from);
+        await page.evaluate(() => {
+            (window as unknown as { __didNotReload?: boolean }).__didNotReload = true;
+        });
+
+        await page.getByRole("link", { name: linkName }).click();
+
+        await expect(page).toHaveURL(new RegExp(`${to}$`));
+        expect(await page.evaluate(() => (window as unknown as { __didNotReload?: boolean }).__didNotReload)).toBe(
+            true,
+        );
+    };
+
+    test("moves from sign in to sign up without a full page load", async ({ page }) => {
+        await navigatesWithoutReloading({
+            page,
+            from: ROUTE.SIGN_IN,
+            linkName: "Create Account",
+            to: ROUTE.SIGN_UP,
+        });
+    });
+
+    test("moves from sign up to sign in without a full page load", async ({ page }) => {
+        await navigatesWithoutReloading({ page, from: ROUTE.SIGN_UP, linkName: "Sign In", to: ROUTE.SIGN_IN });
+    });
+
+    test("moves from the landing page to sign in without a full page load", async ({ page }) => {
+        await navigatesWithoutReloading({ page, from: ROUTE.HOME, linkName: "Sign In", to: ROUTE.SIGN_IN });
+    });
+
+    test("moves from the landing page to sign up without a full page load", async ({ page }) => {
+        await navigatesWithoutReloading({ page, from: ROUTE.HOME, linkName: "Create Account", to: ROUTE.SIGN_UP });
+    });
 });

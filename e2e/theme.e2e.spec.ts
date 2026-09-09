@@ -1,15 +1,18 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount } from "./seed";
+import { signUpViaUi } from "./signed-up-user";
 import { E2E_CONFIG } from "./test-env";
 import { EXTERNAL_PATH } from "../src/lib/core/api-contract/external-paths";
 import { ROUTE } from "../src/lib/core/routing/routes";
 import { isTheme, THEME, type Theme } from "../src/lib/core/theme/theme";
+import { recordSeededUserId, SEED_SCOPE } from "../src/test-utils/seeded-user-registry";
 
 const TOGGLE_NAME = "Toggle dark mode";
-/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
+/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with the empty state. */
 const PROTECTED_LANDMARK = "Boards";
 
 // Matches the backend's password/display-name rules (e2e/seed.sh's SEED_PASSWORD comment).
@@ -17,6 +20,16 @@ const ACCOUNT_PASSWORD = "E2eThemePwd1!";
 const ACCOUNT_DISPLAY_NAME = "Theme Fixture Tester";
 
 const readBodyBackgroundColor = (page: Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+
+/*
+ * `07e7969` gave every element a 200ms colour transition, so a single read taken right after the
+ * click returns the interpolated value — at t=0 that is the START colour, which is why a synchronous
+ * read reported "unchanged" on five consecutive CI runs. Poll until the transition has landed.
+ */
+const expectBodyBackgroundColor = ({ page, not, color }: { page: Page; not: boolean; color: string }) =>
+    not
+        ? expect.poll(() => readBodyBackgroundColor(page)).not.toBe(color)
+        : expect.poll(() => readBodyBackgroundColor(page)).toBe(color);
 
 const isDarkScopeApplied = (html: string) => /<html[^>]*\bclass="[^"]*\bdark\b[^"]*"/.test(html);
 
@@ -29,7 +42,7 @@ const waitForThemeCookie = ({ page, theme }: { page: Page; theme: Theme }) =>
 
 /**
  * Signs up directly against the real backend, capturing the assigned theme `seedAccount()`'s
- * script (D-07) doesn't return — a pre-mutation baseline for THEME-03's untouched account.
+ * script doesn't return — a pre-mutation baseline for THEME-03's untouched account.
  */
 const signUpDirectCapturingTheme = async (): Promise<{ email: string; password: string; theme: Theme }> => {
     const email = `e2e-theme-cross-${randomUUID()}@example.com`;
@@ -38,15 +51,14 @@ const signUpDirectCapturingTheme = async (): Promise<{ email: string; password: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password: ACCOUNT_PASSWORD, displayName: ACCOUNT_DISPLAY_NAME }),
     });
-    const identity: unknown = await response.json();
-    const rawTheme =
-        typeof identity === "object" && identity !== null && "theme" in identity
-            ? (identity as { theme?: unknown }).theme
-            : undefined;
-    const theme = typeof rawTheme === "string" ? rawTheme : undefined;
-    if (!response.ok || !isTheme(theme)) {
-        throw new Error(`signUpDirectCapturingTheme: expected a theme-carrying signup response, got: ${String(theme)}`);
+    const identity = (await response.json()) as { id?: unknown; theme?: unknown };
+    const theme = typeof identity.theme === "string" ? identity.theme : undefined;
+    if (!response.ok || !isTheme(theme) || typeof identity.id !== "string") {
+        throw new Error(
+            `signUpDirectCapturingTheme: expected an id/theme-carrying signup response, got: ${String(theme)}`,
+        );
     }
+    recordSeededUserId({ scope: SEED_SCOPE.PLAYWRIGHT, id: identity.id });
     return { email, password: ACCOUNT_PASSWORD, theme };
 };
 
@@ -61,12 +73,7 @@ test.describe("THEME-01: theme persistence", () => {
     }) => {
         // Arrange
         const email = `e2e-theme-${randomUUID()}@example.com`;
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill(ACCOUNT_DISPLAY_NAME);
-        await page.getByLabel("Password", { exact: true }).fill(ACCOUNT_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await signUpViaUi({ page, email, displayName: ACCOUNT_DISPLAY_NAME, password: ACCOUNT_PASSWORD });
 
         const toggle = page.getByRole("switch", { name: TOGGLE_NAME });
         const initialChecked = await toggle.getAttribute("aria-checked");
@@ -78,8 +85,7 @@ test.describe("THEME-01: theme persistence", () => {
 
         // Assert — toggling changes the toggle state, a visible surface colour, and the cookie.
         await expect(toggle).toHaveAttribute("aria-checked", initialChecked === "true" ? "false" : "true");
-        const toggledColor = await readBodyBackgroundColor(page);
-        expect(toggledColor).not.toBe(initialColor);
+        await expectBodyBackgroundColor({ page, not: true, color: initialColor });
         await waitForThemeCookie({ page, theme: toggledTheme });
 
         // Act
@@ -124,8 +130,7 @@ test.describe("THEME-01: theme persistence", () => {
 
         // Assert — both the interface and the persisted preference return to where they started.
         await expect(toggleAfterSignIn).toHaveAttribute("aria-checked", initialChecked ?? "false");
-        const finalColor = await readBodyBackgroundColor(page);
-        expect(finalColor).toBe(initialColor);
+        await expectBodyBackgroundColor({ page, not: false, color: initialColor });
         await waitForThemeCookie({ page, theme: originalTheme });
         const finalReloadResponse = await page.reload();
         if (!finalReloadResponse) {
@@ -145,12 +150,7 @@ test.describe("THEME-02: unauthenticated toggle writes only the client-side cook
     test("leaves the signed-in account's stored theme preference untouched", async ({ page }) => {
         // Arrange — a fresh account via sign-up (session slot 1 of 2).
         const email = `e2e-theme-unauth-${randomUUID()}@example.com`;
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(email);
-        await page.getByLabel("Name", { exact: true }).fill(ACCOUNT_DISPLAY_NAME);
-        await page.getByLabel("Password", { exact: true }).fill(ACCOUNT_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await signUpViaUi({ page, email, displayName: ACCOUNT_DISPLAY_NAME, password: ACCOUNT_PASSWORD });
 
         const initialChecked = await page.getByRole("switch", { name: TOGGLE_NAME }).getAttribute("aria-checked");
 
@@ -192,7 +192,7 @@ test.describe("THEME-03: cross-account isolation", () => {
     test("toggling one account's theme leaves a second account's stored preference untouched", async ({ page }) => {
         /*
          * Arrange — two real accounts; account B's own default theme is captured at creation,
-         * since seedAccount() (D-07) doesn't return it and this test needs a pre-mutation baseline.
+         * since seedAccount() doesn't return it and this test needs a pre-mutation baseline.
          */
         const accountA = seedAccount();
         const accountB = await signUpDirectCapturingTheme();

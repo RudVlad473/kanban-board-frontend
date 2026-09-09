@@ -14,6 +14,7 @@ const recognisedCases: { code: ProblemCode; status: ResultStatus }[] = [
     { code: PROBLEM_CODE.DUPLICATE_RESOURCE, status: RESULT_STATUS.DUPLICATE },
     { code: PROBLEM_CODE.UNAUTHENTICATED, status: RESULT_STATUS.UNAUTHENTICATED },
     { code: PROBLEM_CODE.ACCESS_DENIED, status: RESULT_STATUS.NOT_FOUND },
+    { code: PROBLEM_CODE.ENTITY_NOT_FOUND, status: RESULT_STATUS.NOT_FOUND },
 ];
 
 describe("mapProblemCodeToStatus", () => {

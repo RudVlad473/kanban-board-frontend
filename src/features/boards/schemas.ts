@@ -1,47 +1,53 @@
 import { z } from "zod";
 
+import { BOARD_ID_PATTERN } from "@/features/boards/board-id";
+import { taskFullSchema } from "@/lib/core/api-contract/task-schemas";
+import { HEX_COLOR_PATTERN } from "@/lib/core/styling/oklab";
+
 /**
- * Runtime-verified shape replacing the deleted `isBoard`/`isBoardArray` guards (D-12) — the
+ * Runtime-verified shape replacing the deleted `isBoard`/`isBoardArray` guards — the
  * contract declares no `required` array, so a raw cast to `Board` can't be trusted (see
  * docs/adr/tech/0024).
  */
-export const BoardSchema = z.object({
+export const boardSchema = z.object({
     id: z.string(),
     name: z.string(),
     version: z.number(),
+    /*
+     * What the sidebar's newest-first ordering sorts on. LENIENT, like `columnFullSchema.color` and
+     * for the same reason: `BoardResponseDTO` declares no `required` array, so a board that arrives
+     * without it must still parse — `sortBoardsNewestFirst` falls back to the id's own snowflake.
+     */
+    createdAt: z.string().nullish().catch(null),
 });
 
-export const boardsSchema = BoardSchema.array();
+export const boardsSchema = boardSchema.array();
 
-export type Board = z.infer<typeof BoardSchema>;
+export type Board = z.infer<typeof boardSchema>;
+
+/*
+ * The only format authority a stored column colour has: the create side declares
+ * `^#[0-9a-fA-F]{6}$` but `ColumnResponseDTO.color` is still a bare `type: string`, so a malformed
+ * READ is rejected here rather than coerced away, per this app's own boundary (docs/adr/tech/0024).
+ */
+export const columnColorSchema = z.string().regex(HEX_COLOR_PATTERN);
 
 /*
  * The full-board containment hierarchy, composed a level at a time. None of the four response
  * shapes declares a `required` array, so a cast at any level would be a claim rather than a fact
- * (see docs/adr/tech/0024).
+ * (docs/adr/tech/0024). Its task and subtask levels moved to the core ring.
  */
-export const subtaskSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    isCompleted: z.boolean(),
-    version: z.number(),
-});
-
-export const taskFullSchema = z.object({
-    id: z.string(),
-    title: z.string(),
-    // The contract declares `description` optional; a task without one is well-formed, not malformed.
-    description: z.string().optional(),
-    version: z.number(),
-    position: z.number(),
-    subtasks: subtaskSchema.array(),
-});
-
 export const columnFullSchema = z.object({
     id: z.string(),
     name: z.string(),
     version: z.number(),
     position: z.number(),
+    /*
+     * Both `null` (every column today) and an absent key must parse. LENIENT where
+     * `createColumnInputSchema` is strict: nested in `boardFullSchema`, a refusal here would fail
+     * the WHOLE board's parse over one dot, on a field with no edit endpoint to repair it.
+     */
+    color: columnColorSchema.nullish().catch(null),
     tasks: taskFullSchema.array(),
 });
 
@@ -52,30 +58,50 @@ export const boardFullSchema = z.object({
     columns: columnFullSchema.array(),
 });
 
-export type Subtask = z.infer<typeof subtaskSchema>;
-
-export type TaskFull = z.infer<typeof taskFullSchema>;
-
 export type ColumnFull = z.infer<typeof columnFullSchema>;
 
 export type BoardFull = z.infer<typeof boardFullSchema>;
+
+/*
+ * What a column mutation's own response parses as. Derived rather than restated so the two can never
+ * drift: `ColumnResponseDTO` returns no tasks, so `columnFullSchema` would fail every successful call.
+ */
+export const columnSchema = columnFullSchema.omit({ tasks: true });
+
+export type Column = z.infer<typeof columnSchema>;
 
 /*
  * Duplicated verbatim from auth's own unexported constant rather than imported — a feature may not
  * import another feature (CONVENTIONS.md), and this is the UI-SPEC Copywriting Contract's wording.
  */
 const REQUIRED_FIELD_MESSAGE = "Can't be empty";
-const BOARD_NAME_LENGTH_MESSAGE = "Board name must be 64 characters or fewer.";
+/* Exported so a TextField's `characterLimit` and the rule it counts against stay one number. */
+export const BOARD_NAME_MAX_LENGTH = 64;
+const BOARD_NAME_LENGTH_MESSAGE = `Board name must be ${String(BOARD_NAME_MAX_LENGTH)} characters or fewer.`;
 
 /*
  * 64 is the backend's own measured ceiling, binary-searched against the real nonprod backend on
  * 2026-08-25 — 64 accepted, 65 rejected — closing 02-BACKEND-FACTS.md P4's Escalate item, which
  * only knew the limit lay between 1 and 1000 and left a conservative 100 in its place.
  */
-export const boardNameSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).max(64, BOARD_NAME_LENGTH_MESSAGE);
+export const boardNameSchema = z
+    .string()
+    .trim()
+    .min(1, REQUIRED_FIELD_MESSAGE)
+    .max(BOARD_NAME_MAX_LENGTH, BOARD_NAME_LENGTH_MESSAGE);
 
-/** The object shape `createBoardAction` parses — never the raw argument it was handed. */
-export const createBoardInputSchema = z.object({ name: boardNameSchema });
+/*
+ * The client mints the id, so this is what refuses a hostile one before it reaches the upstream
+ * call — a Server Action is callable over the wire with any payload (T-02-45, docs/adr/tech/0024).
+ */
+export const boardIdSchema = z.string().regex(BOARD_ID_PATTERN);
+
+/*
+ * The object shape `createBoardAction` parses. `id` is REQUIRED: an absent one would fall back to
+ * the server-generated id, whose value the optimistic row cannot predict — the exact dependency
+ * this field exists to remove.
+ */
+export const createBoardInputSchema = z.object({ name: boardNameSchema, id: boardIdSchema });
 
 export type CreateBoardInput = z.infer<typeof createBoardInputSchema>;
 
@@ -108,25 +134,30 @@ export const editBoardFormSchema = z.object({ name: boardNameSchema });
 
 export type EditBoardFormValues = z.infer<typeof editBoardFormSchema>;
 
-const COLUMN_NAME_LENGTH_MESSAGE = "Column name must be between 3 and 32 characters.";
+export const COLUMN_NAME_MAX_LENGTH = 32;
+const COLUMN_NAME_LENGTH_MESSAGE = `Column name must be between 3 and ${String(COLUMN_NAME_MAX_LENGTH)} characters.`;
+
+/* Exported so a TextField's `characterMinimum` and the rule it counts against stay one number. */
+export const COLUMN_NAME_MIN_LENGTH = 3;
 
 /** The backend's own enforced bounds, mirrored verbatim (02-BACKEND-FACTS.md P6). */
 export const columnNameSchema = z
     .string()
     .trim()
-    .min(3, COLUMN_NAME_LENGTH_MESSAGE)
-    .max(32, COLUMN_NAME_LENGTH_MESSAGE);
+    .min(COLUMN_NAME_MIN_LENGTH, COLUMN_NAME_LENGTH_MESSAGE)
+    .max(COLUMN_NAME_MAX_LENGTH, COLUMN_NAME_LENGTH_MESSAGE);
 
 /*
  * Deliberately separate from `columnNameSchema`, not a relaxation of it: a blank row is now a user
- * error to correct rather than input to drop (D-02a), and it earns the required-field copy, not the
+ * error to correct rather than input to drop, and it earns the required-field copy, not the
  * length copy. `.pipe` rather than stacked `.min`s so the blank case can never report length.
  */
 export const columnNameRowSchema = z.string().trim().min(1, REQUIRED_FIELD_MESSAGE).pipe(columnNameSchema);
 
 /*
- * Rows are validated with `columnNameRowSchema`, not `columnNameSchema` — a blank row blocks
- * submission with the required-field copy rather than the length copy (D-02a).
+ * Rows reuse `columnNameRowSchema`, the same rule every single-field column form uses: a blank row
+ * blocks the submit (product-owner decision 2026-09-03). The `columnNameFormRowSchema` that
+ * admitted one is deleted, not merely unused — no form wants the looser rule now.
  */
 export const addBoardFormSchema = z.object({
     name: boardNameSchema,
@@ -152,3 +183,65 @@ export const createBoardColumnsInputSchema = z.object({
 });
 
 export type CreateBoardColumnsInput = z.infer<typeof createBoardColumnsInputSchema>;
+
+/*
+ * `columnNameRowSchema` rather than bare `columnNameSchema`: 03-UI-SPEC's Copywriting Contract gives
+ * a blank column name the required-field copy and only an out-of-bounds one the length copy, and
+ * that split is exactly what the row schema already pipes (it reuses the 3-32 bound, never restates it).
+ */
+export const createColumnInputSchema = z.object({
+    boardId: z.string().min(1),
+    name: columnNameRowSchema,
+    color: columnColorSchema.optional(),
+});
+
+export type CreateColumnInput = z.infer<typeof createColumnInputSchema>;
+
+/*
+ * `version` is required here for the same reason `renameBoardInputSchema` requires it one level up:
+ * the column *update* body requires it while the create body has no such field.
+ */
+export const renameColumnInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+    name: columnNameRowSchema,
+    version: z.number().int(),
+});
+
+export type RenameColumnInput = z.infer<typeof renameColumnInputSchema>;
+
+/*
+ * `min(0)` mirrors `ReorderColumnRequestDTO`'s own `minimum: 0` — the floor that stops a forged
+ * negative or fractional wire payload at this app's boundary rather than upstream (T-03-06).
+ */
+export const reorderColumnInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+    version: z.number().int(),
+    targetPosition: z.number().int().min(0),
+});
+
+export type ReorderColumnInput = z.infer<typeof reorderColumnInputSchema>;
+
+/*
+ * A delete has no request body, so the two ids are the entire untrusted surface — and they select the
+ * target of a hard cascade that takes every task with it (ADR domain/0002).
+ */
+export const deleteColumnInputSchema = z.object({
+    boardId: z.string().min(1),
+    columnId: z.string().min(1),
+});
+
+export type DeleteColumnInput = z.infer<typeof deleteColumnInputSchema>;
+
+/*
+ * Both column forms carry only the name, since the board id, column id and version come from the
+ * RSC-supplied column rather than from anything the user can type (mirrors `editBoardFormSchema`).
+ */
+export const addColumnFormSchema = z.object({ name: columnNameRowSchema });
+
+export type AddColumnFormValues = z.infer<typeof addColumnFormSchema>;
+
+export const renameColumnFormSchema = z.object({ name: columnNameRowSchema });
+
+export type RenameColumnFormValues = z.infer<typeof renameColumnFormSchema>;

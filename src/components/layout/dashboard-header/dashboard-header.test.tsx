@@ -21,12 +21,12 @@ import * as stories from "./dashboard-header.stories";
 const routerState = vi.hoisted(() => ({ pathname: "/" }));
 const mockRefresh = vi.hoisted(() => vi.fn());
 
-// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest (D-19)
+// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
 vi.mock("next/navigation", () =>
     createNextNavigationShim({ pathname: () => routerState.pathname, refresh: mockRefresh }),
 );
 
-// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (D-19, see comment above)
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (see comment above)
 vi.mock("next/link", () => createNextLinkShim());
 
 const { OpenBoard, NoBoardSelected, BoardAbsentFromList } = composeStories(stories);

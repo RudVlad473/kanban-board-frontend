@@ -1,15 +1,36 @@
+import type { Active, Over } from "@dnd-kit/core";
 import { describe, expect, it } from "vitest";
 
+import { reorderColumns } from "@/features/boards/column-drag-model";
 import {
+    createColumnReorderAnnouncements,
     buildColumnRowPath,
+    COLUMN_COUNT_NUDGE_THRESHOLD,
+    COLUMN_DOT_TOKENS,
     createEmptyColumnRows,
     DEFAULT_COLUMN_ROW_COUNT,
+    isColumnDestinationVisible,
     removeBoard,
     resolveDestinationAfterDelete,
+    shouldNudgeOnColumnCount,
+    sortBoardsNewestFirst,
+    sortColumnsByPosition,
+    sortTasksByPosition,
+    toColumnDotToken,
+    toReorderTargetPosition,
     toSubmittedColumnNames,
+    withBoardInsert,
+    withColumnInsert,
+    withColumnRemove,
+    withColumnRestore,
+    withColumnReplace,
+    toInFlightColumns,
 } from "@/features/boards/model";
+import type { ColumnFull } from "@/features/boards/schemas";
+import type { TaskFull } from "@/lib/core/api-contract/task-schemas";
 import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
-import { createBoards } from "@/test-utils/factories/board";
+import { createBoard, createBoards } from "@/test-utils/factories/board";
+import { createColumnsFull, createTasksFull } from "@/test-utils/factories/board-full";
 
 describe("toSubmittedColumnNames", () => {
     it("returns the trimmed rows in the order given", () => {
@@ -21,18 +42,27 @@ describe("toSubmittedColumnNames", () => {
     });
 
     /*
-     * D-02a: a blank row is blocked at validation, so one reaching here is a real name the user
-     * can see on screen — dropping it would understate what the create attempted.
+     * A row left blank is omitted from the create sequence rather than blocking the submit, the
+     * rule the task form's own subtask rows already follow.
      */
-    it("keeps a blank row rather than dropping it", () => {
+    it("drops a blank and a whitespace-only row", () => {
         // Act
-        const names = toSubmittedColumnNames(["Todo", "  ", "Done"]);
+        const names = toSubmittedColumnNames(["Todo", "  ", "", "Done"]);
 
         // Assert
-        expect(names).toEqual(["Todo", "", "Done"]);
+        expect(names).toEqual(["Todo", "Done"]);
     });
 
-    /* D-02a keeps 0 rows valid: removing every row still creates a board with no columns. */
+    /* Dropping every row is legal: a board with no columns is a supported state, not a failure. */
+    it("returns an empty array when every row is blank", () => {
+        // Act
+        const names = toSubmittedColumnNames(["", "   "]);
+
+        // Assert
+        expect(names).toEqual([]);
+    });
+
+    /* Removing every row still creates a board with no columns. */
     it("returns an empty array when there are no rows at all", () => {
         // Act
         const names = toSubmittedColumnNames([]);
@@ -59,13 +89,13 @@ describe("createEmptyColumnRows", () => {
         expect(rows).toEqual([]);
     });
 
-    /* D-01a: the form opens with one row, never zero and never several. */
-    it("returns a single row at the form's own default count", () => {
+    /* The form opens with no rows: a blank one would block the submit rather than be dropped. */
+    it("returns no rows at the form's own default count", () => {
         // Act
         const rows = createEmptyColumnRows(DEFAULT_COLUMN_ROW_COUNT);
 
         // Assert
-        expect(rows).toHaveLength(1);
+        expect(rows).toHaveLength(0);
     });
 
     it("returns rows that are distinct objects, so editing one never edits another", () => {
@@ -85,6 +115,194 @@ describe("buildColumnRowPath", () => {
         // Act & Assert
         expect(buildColumnRowPath(0)).toBe("columns.0.value");
         expect(buildColumnRowPath(4)).toBe("columns.4.value");
+    });
+});
+
+describe("withBoardInsert", () => {
+    it("prepends the board, leaving the input untouched", () => {
+        // Arrange
+        const boards = createBoards(2);
+        const board = createBoard({ id: "new-board", name: "Launch" });
+
+        // Act
+        const next = withBoardInsert({ boards, board });
+
+        // Assert
+        expect(next).toEqual([board, ...boards]);
+        expect(boards).toHaveLength(2);
+    });
+});
+
+describe("sortBoardsNewestFirst", () => {
+    it("orders by createdAt descending, whatever order the backend listed them in", () => {
+        // Arrange
+        const oldest = createBoard({ id: "a", name: "Oldest", createdAt: "2026-01-01T00:00:00Z" });
+        const middle = createBoard({ id: "b", name: "Middle", createdAt: "2026-06-01T00:00:00Z" });
+        const newest = createBoard({ id: "c", name: "Newest", createdAt: "2026-09-01T00:00:00Z" });
+
+        // Act
+        const next = sortBoardsNewestFirst([middle, oldest, newest]);
+
+        // Assert
+        expect(next.map((board) => board.name)).toEqual(["Newest", "Middle", "Oldest"]);
+    });
+
+    /*
+     * The reversal this replaced would pass every case above while failing this one: it encodes
+     * "the backend lists oldest-first", which is an assumption about its query rather than a fact.
+     */
+    it("does not rely on the upstream order, so a newest-first response stays newest-first", () => {
+        // Arrange
+        const older = createBoard({ id: "a", name: "Older", createdAt: "2026-01-01T00:00:00Z" });
+        const newer = createBoard({ id: "b", name: "Newer", createdAt: "2026-09-01T00:00:00Z" });
+
+        // Act
+        const next = sortBoardsNewestFirst([newer, older]);
+
+        // Assert
+        expect(next.map((board) => board.name)).toEqual(["Newer", "Older"]);
+    });
+
+    /* `BoardResponseDTO` declares no required fields, so an absent `createdAt` must still order. */
+    it("falls back to the id's own snowflake when createdAt is absent", () => {
+        // Arrange — real backend ids; `8qh29xk70nwg` was minted ~11s after `8qh29ckdqpds`.
+        const older = createBoard({ id: "8qh29ckdqpds", name: "Older", createdAt: null });
+        const newer = createBoard({ id: "8qh29xk70nwg", name: "Newer", createdAt: null });
+
+        // Act
+        const next = sortBoardsNewestFirst([older, newer]);
+
+        // Assert
+        expect(next.map((board) => board.name)).toEqual(["Newer", "Older"]);
+    });
+
+    it("leaves the input untouched", () => {
+        // Arrange
+        const boards = createBoards(3);
+
+        // Act
+        sortBoardsNewestFirst(boards);
+
+        // Assert
+        expect(boards.map((board) => board.name)).toEqual(createBoards(3).map((board) => board.name));
+    });
+});
+
+describe("withColumnInsert", () => {
+    it("appends the column, leaving the input untouched", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 2 });
+        const [column] = createColumnsFull({ count: 1 });
+
+        // Act
+        const next = withColumnInsert({ columns, column });
+
+        // Assert
+        expect(next).toEqual([...columns, column]);
+        expect(columns).toHaveLength(2);
+    });
+});
+
+describe("withColumnRemove", () => {
+    it("drops the named column, leaving the rest in order", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+
+        // Act & Assert
+        expect(withColumnRemove({ columns, columnId: columns[1].id })).toEqual([columns[0], columns[2]]);
+    });
+
+    it("returns an equivalent list when the id names no column in it", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 2 });
+
+        // Act & Assert
+        expect(withColumnRemove({ columns, columnId: "no-such-column" })).toEqual(columns);
+    });
+});
+
+describe("withColumnRestore", () => {
+    // comment-length-exempt: records the reviewer-reproduced case this pins and the reading it rules out, which is exactly what an index-based restore gets wrong
+    /*
+     * Reported by a code reviewer 2026-09-04, reproduced by running it: delete Bravo from
+     * [Alpha, Bravo, Charlie], let a sibling reorder move Charlie to the front, then fail the
+     * delete. An index captured before the delete restores Bravo at index 1 — [Charlie, Bravo,
+     * Alpha] — which is neither where it was nor where the sibling reorder put things. Anchored on
+     * the column it FOLLOWED, it lands after Alpha wherever Alpha now is.
+     */
+    it("puts a column back after the one it followed, even when a sibling moved meanwhile", () => {
+        // Arrange
+        const [alpha, bravo, charlie] = createColumnsFull({ count: 3 });
+        const afterDelete = withColumnRemove({ columns: [alpha, bravo, charlie], columnId: bravo.id });
+        const afterSiblingReorder = [charlie, alpha];
+
+        // Act
+        const restored = withColumnRestore({
+            columns: afterSiblingReorder,
+            column: bravo,
+            afterColumnId: alpha.id,
+        });
+
+        // Assert
+        expect(afterDelete.map((column) => column.id)).toEqual([alpha.id, charlie.id]);
+        expect(restored.map((column) => column.id)).toEqual([charlie.id, alpha.id, bravo.id]);
+    });
+
+    it("restores a column that was first back to the front", () => {
+        // Arrange
+        const [alpha, bravo] = createColumnsFull({ count: 2 });
+
+        // Act
+        const restored = withColumnRestore({ columns: [bravo], column: alpha, afterColumnId: null });
+
+        // Assert
+        expect(restored.map((column) => column.id)).toEqual([alpha.id, bravo.id]);
+    });
+
+    /* The anchor itself can be deleted while the rollback is pending; appending is the only answer left. */
+    it("appends when the column it followed is gone too", () => {
+        // Arrange
+        const [alpha, bravo, charlie] = createColumnsFull({ count: 3 });
+
+        // Act
+        const restored = withColumnRestore({ columns: [charlie], column: bravo, afterColumnId: alpha.id });
+
+        // Assert
+        expect(restored.map((column) => column.id)).toEqual([charlie.id, bravo.id]);
+    });
+});
+
+describe("withColumnReplace", () => {
+    /* docs/adr/tech/0030 rule 2: the response carries no tasks, so an assign would empty the column. */
+    it("merges the server's column over the placeholder, keeping the tasks it already held", () => {
+        // Arrange
+        const [placeholder] = createColumnsFull({ count: 1 });
+        const columns = [{ ...placeholder, id: "placeholder", tasks: createTasksFull(2) }];
+
+        // Act
+        const [merged] = withColumnReplace({
+            columns,
+            columnId: "placeholder",
+            column: { id: "real-column", name: "Backlog", version: 4, position: 7 },
+        });
+
+        // Assert
+        expect(merged).toMatchObject({ id: "real-column", name: "Backlog", version: 4, position: 7 });
+        expect(merged.tasks).toEqual(columns[0].tasks);
+    });
+
+    it("returns an equivalent list when the id names no column in it", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 2 });
+
+        // Act & Assert
+        expect(
+            withColumnReplace({
+                columns,
+                columnId: "no-such-column",
+                column: { id: "real-column", name: "Backlog", version: 0, position: 0 },
+            }),
+        ).toEqual(columns);
     });
 });
 
@@ -116,7 +334,7 @@ describe("removeBoard", () => {
     });
 });
 
-/* D-08's three branches, each assertable here rather than through a router. */
+/* The three branches, each assertable here rather than through a router. */
 describe("resolveDestinationAfterDelete", () => {
     it("returns the first remaining board's path when the deleted board was the one being viewed", () => {
         // Arrange
@@ -175,5 +393,466 @@ describe("resolveDestinationAfterDelete", () => {
                 currentBoardId: null,
             }),
         ).toBeNull();
+    });
+});
+
+/* The contract carries no colour field, so the dot's hue derives from the column's own id. */
+describe("toColumnDotToken", () => {
+    it("returns the same accent every time for the same id", () => {
+        // Act & Assert
+        expect(toColumnDotToken({ id: "8p9ekduj9uyo" })).toBe(toColumnDotToken({ id: "8p9ekduj9uyo" }));
+    });
+
+    it("only ever returns one of the three authorized accents", () => {
+        // Arrange
+        const ids = ["a", "8p9ekduj9uyo", "zzzz", "", "column-42", "ÄÖÜ"];
+
+        // Act & Assert
+        ids.forEach((id) => {
+            expect(COLUMN_DOT_TOKENS).toContain(toColumnDotToken({ id }));
+        });
+    });
+
+    it("spreads a realistic set of ids across more than one accent", () => {
+        // Arrange
+        const ids = ["8p9ekduj9uyo", "8p9ho68ok8hs", "7q2mvbn4xa1c", "3k8dlqp0zzt5", "9w1rsyc6ee2n"];
+
+        // Act
+        const distinct = new Set(ids.map((id) => toColumnDotToken({ id })));
+
+        // Assert
+        expect(distinct.size).toBeGreaterThan(1);
+    });
+
+    /*
+     * The regression this keying exists for: positions renumber contiguously on delete
+     * (03-BACKEND-FACTS R2/R3), so a position-keyed hue repainted every surviving column.
+     */
+    it("leaves every surviving column's accent unchanged when an earlier column is deleted", () => {
+        // Arrange
+        const ids = ["8p9ekduj9uyo", "8p9ho68ok8hs", "7q2mvbn4xa1c", "3k8dlqp0zzt5"];
+        const before = ids.map((id) => toColumnDotToken({ id }));
+
+        // Act
+        const survivors = ids.slice(1);
+        const after = survivors.map((id) => toColumnDotToken({ id }));
+
+        // Assert
+        expect(after).toEqual(before.slice(1));
+    });
+});
+
+/*
+ * Every fixture in this suite is authored in creation order, where array index and `position` are
+ * the same number — which is exactly why nothing caught the read-order defect. These cases author
+ * the disagreement deliberately (03-14-SUMMARY.md).
+ */
+describe("sortColumnsByPosition", () => {
+    /** The shape the real backend returns after a reorder: array order and `position` disagree. */
+    const createShuffledColumns = (): ColumnFull[] => {
+        const [first, second, third] = createColumnsFull({ count: 3 });
+
+        return [
+            { ...first, position: 2 },
+            { ...second, position: 0 },
+            { ...third, position: 1 },
+        ];
+    };
+
+    it("orders columns by their position rather than by the array order they arrived in", () => {
+        // Arrange
+        const columns = createShuffledColumns();
+
+        // Act
+        const ordered = sortColumnsByPosition(columns);
+
+        // Assert
+        expect(ordered.map((column) => column.position)).toEqual([0, 1, 2]);
+        expect(ordered.map((column) => column.id)).toEqual([columns[1].id, columns[2].id, columns[0].id]);
+    });
+
+    it("leaves an array that already agrees with its positions exactly as it was", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act & Assert
+        expect(sortColumnsByPosition(columns)).toEqual(columns);
+    });
+
+    /* `Array.prototype.sort` sorts in place, and this input is `cache()`d data other derivations read. */
+    it("never mutates the array it was given", () => {
+        // Arrange
+        const columns = createShuffledColumns();
+        const orderBefore = columns.map((column) => column.id);
+
+        // Act
+        sortColumnsByPosition(columns);
+
+        // Assert
+        expect(columns.map((column) => column.id)).toEqual(orderBefore);
+    });
+
+    it("keeps columns sharing a position in the relative order they arrived in", () => {
+        // Arrange
+        const [first, second, third] = createColumnsFull({ count: 3 });
+        const columns = [
+            { ...first, position: 1 },
+            { ...second, position: 1 },
+            { ...third, position: 0 },
+        ];
+
+        // Act
+        const ordered = sortColumnsByPosition(columns);
+
+        // Assert
+        expect(ordered.map((column) => column.id)).toEqual([third.id, first.id, second.id]);
+    });
+
+    it("returns an empty array for a board holding no columns at all", () => {
+        // Act & Assert
+        expect(sortColumnsByPosition([])).toEqual([]);
+    });
+});
+
+/*
+ * The within-column half of the same rule (D-11). Every fixture writes tasks in creation order, so
+ * the fixtures here are deliberately shuffled — authoring them in position order is exactly what
+ * hid the missing sort until now (04-RESEARCH.md Pitfall 15).
+ */
+describe("sortTasksByPosition", () => {
+    const createShuffledTasks = (): TaskFull[] => {
+        const [first, second, third] = createTasksFull(3);
+
+        return [
+            { ...first, position: 2 },
+            { ...second, position: 0 },
+            { ...third, position: 1 },
+        ];
+    };
+
+    it("orders tasks by their position rather than by the array order they arrived in", () => {
+        // Arrange
+        const tasks = createShuffledTasks();
+
+        // Act
+        const ordered = sortTasksByPosition(tasks);
+
+        // Assert
+        expect(ordered.map((task) => task.position)).toEqual([0, 1, 2]);
+        expect(ordered.map((task) => task.id)).toEqual([tasks[1].id, tasks[2].id, tasks[0].id]);
+    });
+
+    it("leaves an array that already agrees with its positions exactly as it was", () => {
+        // Arrange
+        const tasks = createTasksFull(4);
+
+        // Act & Assert
+        expect(sortTasksByPosition(tasks)).toEqual(tasks);
+    });
+
+    /* `Array.prototype.sort` sorts in place, and this input is `cache()`d data other derivations read. */
+    it("never mutates the array it was given", () => {
+        // Arrange
+        const tasks = createShuffledTasks();
+        const orderBefore = tasks.map((task) => task.id);
+
+        // Act
+        const ordered = sortTasksByPosition(tasks);
+
+        // Assert
+        expect(tasks.map((task) => task.id)).toEqual(orderBefore);
+        expect(ordered).not.toBe(tasks);
+    });
+
+    it("keeps tasks sharing a position in the relative order they arrived in", () => {
+        // Arrange
+        const [first, second, third] = createTasksFull(3);
+        const tasks = [
+            { ...first, position: 1 },
+            { ...second, position: 1 },
+            { ...third, position: 0 },
+        ];
+
+        // Act
+        const ordered = sortTasksByPosition(tasks);
+
+        // Assert
+        expect(ordered.map((task) => task.id)).toEqual([third.id, first.id, second.id]);
+    });
+
+    it("returns an empty array for a column holding no tasks at all", () => {
+        // Act & Assert
+        expect(sortTasksByPosition([])).toEqual([]);
+    });
+});
+
+/*
+ * The predicate that decides whether dnd-kit's own keyboard scroll is warranted. Its boundaries are
+ * what separate "the destination is on screen already" from "past the fold" (03-14-SUMMARY.md).
+ */
+describe("isColumnDestinationVisible", () => {
+    const visibleBox = { left: 0, right: 1440 };
+
+    it("accepts a destination sitting wholly inside the visible box", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 936, right: 1216 }, visibleBox })).toBe(true);
+    });
+
+    it("accepts a destination flush against either edge of the visible box", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 0, right: 280 }, visibleBox })).toBe(true);
+        expect(isColumnDestinationVisible({ destination: { left: 1160, right: 1440 }, visibleBox })).toBe(true);
+    });
+
+    /* The past-the-fold case dnd-kit's own scroll must keep handling, or keyboard reach is lost. */
+    it("rejects a destination whose far edge is past the fold, even by a pixel", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: 1161, right: 1441 }, visibleBox })).toBe(false);
+    });
+
+    it("rejects a destination that starts behind the box's near edge", () => {
+        // Act & Assert
+        expect(isColumnDestinationVisible({ destination: { left: -4, right: 276 }, visibleBox })).toBe(false);
+    });
+
+    /* The row does not start at the viewport's own origin once the dashboard sidebar is beside it. */
+    it("measures against the box it was given, not the viewport", () => {
+        // Act & Assert
+        expect(
+            isColumnDestinationVisible({
+                destination: { left: 628, right: 908 },
+                visibleBox: { left: 300, right: 1440 },
+            }),
+        ).toBe(true);
+        expect(
+            isColumnDestinationVisible({
+                destination: { left: 100, right: 380 },
+                visibleBox: { left: 300, right: 1440 },
+            }),
+        ).toBe(false);
+    });
+});
+
+/*
+ * All three assert one observed fact (03-BACKEND-FACTS.md § R1): the wire's `targetPosition` is
+ * where the moved column ENDS UP, so the value sent must be the index `reorderColumns` actually put
+ * it at. Reading the moved column back out of the reordered array is what makes that falsifiable.
+ */
+describe("toReorderTargetPosition", () => {
+    it("sends the moved column's final index for a forward move", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act
+        const targetPosition = toReorderTargetPosition({ toIndex: 2 });
+
+        // Assert
+        expect(targetPosition).toBe(2);
+        expect(reorderColumns({ columns, fromIndex: 0, toIndex: 2 })[targetPosition]).toEqual(columns[0]);
+    });
+
+    it("sends the moved column's final index for a backward move", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act
+        const targetPosition = toReorderTargetPosition({ toIndex: 1 });
+
+        // Assert
+        expect(targetPosition).toBe(1);
+        expect(reorderColumns({ columns, fromIndex: 3, toIndex: 1 })[targetPosition]).toEqual(columns[3]);
+    });
+
+    it("stays inside the board's own index range for every from/to pair", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 4 });
+
+        // Act & Assert
+        for (let fromIndex = 0; fromIndex < columns.length; fromIndex += 1) {
+            for (let toIndex = 0; toIndex < columns.length; toIndex += 1) {
+                const targetPosition = toReorderTargetPosition({ toIndex });
+
+                expect(targetPosition).toBeGreaterThanOrEqual(0);
+                expect(targetPosition).toBeLessThanOrEqual(columns.length - 1);
+                expect(reorderColumns({ columns, fromIndex, toIndex })[targetPosition]).toEqual(columns[fromIndex]);
+            }
+        }
+    });
+});
+
+/*
+ * D-05 resolves the "first crosses 8" as *exceeds* 8, and testing one exact transition is what
+ * makes "once only" true by construction rather than by remembering.
+ */
+describe("shouldNudgeOnColumnCount", () => {
+    it("fires only on the create whose resulting count is exactly one past the threshold", () => {
+        // Act & Assert
+        expect(shouldNudgeOnColumnCount({ nextCount: COLUMN_COUNT_NUDGE_THRESHOLD + 1 })).toBe(true);
+        expect(shouldNudgeOnColumnCount({ nextCount: COLUMN_COUNT_NUDGE_THRESHOLD })).toBe(false);
+        expect(shouldNudgeOnColumnCount({ nextCount: COLUMN_COUNT_NUDGE_THRESHOLD + 2 })).toBe(false);
+        expect(shouldNudgeOnColumnCount({ nextCount: 2 })).toBe(false);
+    });
+});
+
+/* dnd-kit's own event shapes, reduced to the id each announcement actually reads. */
+const createActive = (id: string): Active => ({
+    id,
+    data: { current: undefined },
+    rect: { current: { initial: null, translated: null } },
+});
+
+const createOver = (id: string): Over => ({
+    id,
+    rect: { width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 },
+    disabled: false,
+    data: { current: undefined },
+});
+
+/*
+ * The four strings are asserted in full, not by substring, so an edit to 03-UI-SPEC's Copywriting
+ * Contract fails here rather than shipping silently.
+ */
+describe("createColumnReorderAnnouncements", () => {
+    it("names the column, its 1-based position and the three keys when a column is picked up", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act
+        const announcement = announcements.onDragStart({ active: createActive(columns[0].id) });
+
+        // Assert
+        expect(announcement).toBe(
+            "Picked up Fixture Column 1, position 1 of 3. Use left and right arrow keys to move, space to drop, escape to cancel.",
+        );
+    });
+
+    it("reports the column's new 1-based position while it is being moved", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act
+        const announcement = announcements.onDragOver({
+            active: createActive(columns[0].id),
+            over: createOver(columns[2].id),
+        });
+
+        // Assert
+        expect(announcement).toBe("Fixture Column 1 moved to position 3 of 3.");
+    });
+
+    it("reports the dropped position on drop and the original position on cancel", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+        const active = createActive(columns[0].id);
+
+        // Act
+        const dropped = announcements.onDragEnd({ active, over: createOver(columns[1].id) });
+        const cancelled = announcements.onDragCancel({ active, over: null });
+
+        // Assert
+        expect(dropped).toBe("Fixture Column 1 dropped at position 2 of 3.");
+        expect(cancelled).toBe("Move cancelled. Fixture Column 1 returned to position 1 of 3.");
+    });
+
+    /* dnd-kit reads an undefined announcement as "say nothing" — the right outcome for a drag that reached no target. */
+    it("says nothing when the drag reached no target or names a column that is not on the board", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act & Assert
+        expect(announcements.onDragOver({ active: createActive(columns[0].id), over: null })).toBeUndefined();
+        expect(announcements.onDragStart({ active: createActive("no-such-column") })).toBeUndefined();
+    });
+
+    /*
+     * The library fires one `onDragOver` on the lift itself, over the column's own droppable —
+     * announcing it would overwrite "Picked up …" before a screen reader ever reached it.
+     */
+    it("says nothing when the column is only over its own place", () => {
+        // Arrange
+        const columns = createColumnsFull({ count: 3 });
+        const announcements = createColumnReorderAnnouncements({ columns });
+
+        // Act
+        const announcement = announcements.onDragOver({
+            active: createActive(columns[0].id),
+            over: createOver(columns[0].id),
+        });
+
+        // Assert
+        expect(announcement).toBeUndefined();
+    });
+});
+
+/*
+ * The pick's view of creates that have not written their optimistic insert yet. Without them a
+ * second create issued in the same turn re-picks the first one's colour, and `color` has no edit
+ * endpoint, so that duplicate is permanent.
+ */
+describe("toInFlightColumns", () => {
+    it("shapes this board's pending creates as columns carrying their picked colour", () => {
+        // Arrange
+        const pending = [
+            { boardId: "board-1", clientId: "c1", color: "#49C4E5" },
+            { boardId: "board-1", clientId: "c2", color: "#8471F2" },
+        ];
+
+        // Act & Assert
+        expect(toInFlightColumns({ pending, boardId: "board-1" })).toEqual([
+            { id: "c1", color: "#49C4E5" },
+            { id: "c2", color: "#8471F2" },
+        ]);
+    });
+
+    /* A create on another board is not a sibling — counting it would burn this board's entry 0. */
+    it("excludes pending creates belonging to a different board", () => {
+        // Arrange
+        const pending = [
+            { boardId: "board-2", clientId: "other", color: "#49C4E5" },
+            { boardId: "board-1", clientId: "mine", color: "#8471F2" },
+        ];
+
+        // Act & Assert
+        expect(toInFlightColumns({ pending, boardId: "board-1" })).toEqual([{ id: "mine", color: "#8471F2" }]);
+    });
+
+    it("tolerates a pending mutation whose variables are not readable yet", () => {
+        // Act & Assert
+        expect(toInFlightColumns({ pending: [undefined], boardId: "board-1" })).toEqual([]);
+    });
+
+    /* BOARD-02's fan-out shares this mutation key with the single-column create (`use-create-column.ts`). */
+    it("expands a fan-out's plural clientIds into one in-flight column per id", () => {
+        // Arrange
+        const pending = [
+            { boardId: "board-1", clientIds: ["c1", "c2", "c3"], colors: ["#49C4E5", "#8471F2", undefined] },
+        ];
+
+        // Act & Assert
+        expect(toInFlightColumns({ pending, boardId: "board-1" })).toEqual([
+            { id: "c1", color: "#49C4E5" },
+            { id: "c2", color: "#8471F2" },
+            { id: "c3", color: undefined },
+        ]);
+    });
+
+    /* A single-column create and a fan-out pending on the SAME board must both be counted, never one masking the other. */
+    it("combines a fan-out's plural ids with a sibling single-column create on the same board", () => {
+        // Arrange
+        const pending = [
+            { boardId: "board-1", clientIds: ["c1", "c2"], colors: ["#49C4E5", "#8471F2"] },
+            { boardId: "board-1", clientId: "solo", color: "#67E2AE" },
+        ];
+
+        // Act & Assert
+        expect(toInFlightColumns({ pending, boardId: "board-1" })).toEqual([
+            { id: "c1", color: "#49C4E5" },
+            { id: "c2", color: "#8471F2" },
+            { id: "solo", color: "#67E2AE" },
+        ]);
     });
 });

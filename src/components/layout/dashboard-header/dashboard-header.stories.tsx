@@ -6,7 +6,7 @@ import { createBoards } from "@/test-utils/factories/board";
 import { DashboardHeader } from "./dashboard-header";
 
 /*
- * Visual-only CSF3 (D-25). Each story declares the path it renders at through Storybook's own
+ * Visual-only CSF3. Each story declares the path it renders at through Storybook's own
  * Next.js navigation parameter, which `dashboard-header.test.tsx` reads back so the two can never
  * disagree about which path a story is staging.
  */

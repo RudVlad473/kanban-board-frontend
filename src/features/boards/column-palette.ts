@@ -1,0 +1,110 @@
+import { isNil } from "es-toolkit";
+
+import { toColumnAccentIndex, toColumnDotToken } from "@/features/boards/model";
+import { deltaEOk } from "@/lib/core/styling/oklab";
+
+/*
+ * Entries 0-2 are the shipped `--color-accent-column-N` values, in `COLUMN_DOT_TOKENS` order — the
+ * alignment `resolveRenderedColumnColor` needs. Six is the ceiling, not a preference: a 7th entry
+ * cannot clear ΔE_ok 0.15 at the mock's own lightness — measurements in quick task 260904-s6o.
+ */
+export const COLUMN_COLOR_PALETTE = ["#49C4E5", "#8471F2", "#67E2AE", "#FD8C7B", "#F093FE", "#F2C50E"] as const;
+
+/** The narrow shape the picker needs — never the full `ColumnFull`, so this module has no schema dependency. */
+type RenderableColumn = { id: string; color?: string | null };
+
+/**
+ * The colour a column actually RENDERS on its header dot — the stored colour when present, or the
+ * id-derived fallback when it is null/absent. This is why a legacy neighbour cannot be collided
+ * with: the picker below compares against what is on screen, never the raw stored value alone.
+ */
+export const resolveRenderedColumnColor = ({ id, color }: RenderableColumn): string =>
+    color ?? COLUMN_COLOR_PALETTE[toColumnAccentIndex({ id })];
+
+/*
+ * The backend preserves the case it is sent and CSS ignores it, so `#49c4e5` and `#49C4E5` are two
+ * strings painting one dot — compared raw, the stored one reads as unused and collides.
+ */
+const normaliseHex = (hex: string): string => hex.toUpperCase();
+
+/*
+ * Excludes the candidate's own occurrences in `used`: a candidate is always itself a member once
+ * every entry is rendered, and comparing it against itself is a zero that would poison every
+ * candidate's minimum equally, collapsing "maximise the minimum" to an arbitrary tie.
+ */
+const minDistanceToUsed = ({ candidate, used }: { candidate: string; used: readonly string[] }): number =>
+    Math.min(
+        ...used
+            .filter((entry) => normaliseHex(entry) !== normaliseHex(candidate))
+            .map((entry) => deltaEOk({ hexA: candidate, hexB: entry })),
+    );
+
+/**
+ * The first palette entry not already RENDERED; once all are, the LEAST-USED, ties broken by
+ * maximum minimum ΔE_ok then palette order. Counting (not set membership) is what makes the
+ * saturated branch spread: a set loses multiplicity and one entry then wins every call forever.
+ */
+export const pickNextColumnColor = ({
+    columns,
+}: {
+    columns: RenderableColumn[];
+}): (typeof COLUMN_COLOR_PALETTE)[number] => {
+    const used = columns.map((column) => resolveRenderedColumnColor(column));
+    const usageOf = (entry: string): number =>
+        used.filter((rendered) => normaliseHex(rendered) === normaliseHex(entry)).length;
+
+    const firstUnused = COLUMN_COLOR_PALETTE.find((entry) => usageOf(entry) === 0);
+    if (!isNil(firstUnused)) {
+        return firstUnused;
+    }
+
+    return COLUMN_COLOR_PALETTE.reduce((best, candidate) => {
+        const usageDelta = usageOf(candidate) - usageOf(best);
+
+        return usageDelta === 0
+            ? minDistanceToUsed({ candidate, used }) > minDistanceToUsed({ candidate: best, used })
+                ? candidate
+                : best
+            : usageDelta < 0
+              ? candidate
+              : best;
+    });
+};
+
+/**
+ * `count` colours for `count` NEW columns, threaded through `pickNextColumnColor` one at a time so
+ * each pick sees the ones already chosen in this same batch — the client-side mirror of
+ * `create-board-columns-action.ts`'s own `createdSoFar` accumulator.
+ */
+export const pickColorsForNewColumns = ({
+    existingColumns,
+    count,
+}: {
+    existingColumns: RenderableColumn[];
+    count: number;
+}): string[] => {
+    const colors: string[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+        colors.push(
+            pickNextColumnColor({
+                columns: [...existingColumns, ...colors.map((color) => ({ id: "", color }))],
+            }),
+        );
+    }
+
+    return colors;
+};
+
+/** Exactly one of the two is ever set — the branch a header dot's `className`/`style` props read directly. */
+export type ColumnDotProps = { className: string | undefined; style: { backgroundColor: string } | undefined };
+
+/**
+ * The id-derived accent CLASS for a null/absent stored colour, or an inline `backgroundColor` for
+ * a stored one — a runtime hex can never be a Tailwind class. One branch, so the two render sites
+ * (the header dot and the drag-overlay's copy of it) cannot drift apart on how they pick.
+ */
+export const toColumnDotProps = ({ id, color }: RenderableColumn): ColumnDotProps =>
+    isNil(color)
+        ? { className: toColumnDotToken({ id }), style: undefined }
+        : { className: undefined, style: { backgroundColor: color } };

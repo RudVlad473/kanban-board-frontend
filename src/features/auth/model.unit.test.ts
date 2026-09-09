@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { readFormField, resolveDisplayName } from "./model";
+import { resolveDisplayName } from "./model";
 
 describe("resolveDisplayName", () => {
     it("returns the trimmed name when one is present", () => {
@@ -73,31 +73,5 @@ describe("resolveDisplayName", () => {
         for (const result of results) {
             expect(result).not.toBe("");
         }
-    });
-});
-
-describe("readFormField", () => {
-    it("returns the string value for a text field", () => {
-        // Arrange
-        const formData = new FormData();
-        formData.set("email", "jamie@example.com");
-
-        // Act & Assert
-        expect(readFormField({ formData, key: "email" })).toBe("jamie@example.com");
-    });
-
-    /* A File (or a missing key) is not text, so it surfaces as empty rather than stringifying. */
-    it("returns an empty string for a non-string value", () => {
-        // Arrange
-        const formData = new FormData();
-        formData.set("avatar", new File([], "avatar.png"));
-
-        // Act & Assert
-        expect(readFormField({ formData, key: "avatar" })).toBe("");
-    });
-
-    it("returns an empty string when the key is absent entirely", () => {
-        // Act & Assert
-        expect(readFormField({ formData: new FormData(), key: "email" })).toBe("");
     });
 });

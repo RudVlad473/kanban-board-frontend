@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { DEVICE_TYPE, VIEWPORT_SIZES } from "../src/lib/core/viewport/viewport-breakpoints";
 
@@ -37,6 +37,21 @@ const storyIds = [
     "components-ui-text-field--sizes",
     "components-ui-text-field--long-value",
     "components-ui-text-field--loading", // plan 01-16, Task 1
+    // The in-box character counter — the slot's only visual-regression cover.
+    "components-ui-text-field--character-counter",
+    "components-ui-text-field--character-counter-filled",
+    "components-ui-text-field--character-counter-length-invalid",
+    "components-ui-text-field--character-counter-required-empty",
+    // Textarea (plan 04-05, Task 2) — nine stories.
+    "components-ui-textarea--idle",
+    "components-ui-textarea--focused",
+    "components-ui-textarea--filled",
+    "components-ui-textarea--error",
+    "components-ui-textarea--error-message-without-error",
+    "components-ui-textarea--disabled",
+    "components-ui-textarea--loading",
+    "components-ui-textarea--with-description",
+    "components-ui-textarea--long-value",
     // Checkbox (plan 01-07, Task 2) — nine stories.
     "components-ui-checkbox--unchecked",
     "components-ui-checkbox--checked",
@@ -46,6 +61,7 @@ const storyIds = [
     "components-ui-checkbox--disabled",
     "components-ui-checkbox--sizes",
     "components-ui-checkbox--checked-with-strikethrough",
+    "components-ui-checkbox--unchecked-with-strikethrough-opt-in", // plan 04-05, Task 3
     "components-ui-checkbox--loading", // plan 01-23
     // Switch (plan 01-08, Task 1) — seven stories.
     "components-ui-switch--off",
@@ -64,7 +80,7 @@ const storyIds = [
     "components-ui-dropdown--disabled",
     "components-ui-dropdown--long-item-list",
     "components-ui-dropdown--loading", // plan 01-16, Task 2
-    // Modal (plan 01-09, Task 1) — six stories, the seventh and final primitive (D-13/D-28).
+    // Modal (plan 01-09, Task 1) — six stories, the seventh and final primitive.
     "components-ui-modal--open",
     "components-ui-modal--with-description",
     "components-ui-modal--with-footer-actions",
@@ -110,6 +126,16 @@ const PORTAL_SELECTOR_BY_PREFIX = [
 /* Bounded so a deliberately-closed story (`menu--closed`) falls back to its trigger, not a failure. */
 const PORTAL_WAIT_MS = 5_000;
 
+/* Without this, modal--long-content screenshots wherever focus left it scrolled: 2 failures in 3 runs. */
+const resetScrollPositions = async (target: Locator): Promise<void> => {
+    await target.evaluate((element) => {
+        for (const node of [element, ...element.querySelectorAll("*")]) {
+            node.scrollTop = 0;
+            node.scrollLeft = 0;
+        }
+    });
+};
+
 const gotoStory = async ({ page, url, storyId }: { page: Page; url: string; storyId: string }) => {
     await page.goto(url);
     /*
@@ -128,11 +154,13 @@ const gotoStory = async ({ page, url, storyId }: { page: Page; url: string; stor
         const candidate = page.locator(`${portal[1]} >> visible=true`).first();
         try {
             await candidate.waitFor({ state: "visible", timeout: PORTAL_WAIT_MS });
+            await resetScrollPositions(candidate);
             return candidate;
         } catch {
             return root;
         }
     }
+    await resetScrollPositions(root);
     return root;
 };
 

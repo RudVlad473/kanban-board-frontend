@@ -18,3 +18,7 @@ visual/__screenshots__/
 .planning/
 docs/
 CONVENTIONS.md
+
+# scripts/record-quality-baseline.mjs's scratch observation log (04-23) — gitignored, and
+# .prettierignore is checked separately since `e2e/` itself is not ignored here.
+.quality-observations.jsonl

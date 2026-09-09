@@ -101,3 +101,14 @@ Sources:
   record's seeding mechanism preserves the intent of.
 - `e2e/global-setup.ts:18-44` — the one-time `POST /admin/reset` step this record's per-test
   seeding stays separate from.
+
+## Amendment (2026-08-29, quick task 260829-kyv)
+
+The two references above to `globalSetup`'s `POST /admin/reset` (line 62-64's "run once for the
+whole suite" and line 102's "one-time step") describe a full-database wipe — the mechanism that
+existed when this ADR was written. That mechanism is superseded: `globalSetup` now probes reset
+capability without deleting anything, and `globalTeardown` deletes only the accounts each run
+itself created. The decision this ADR actually records — a working reset capability as a hard
+precondition the suite refuses to run without — is preserved unchanged by the probe; only *how*
+that precondition is proved, and how cleanup happens afterward, changed. See SETUP.md's
+`NONPROD_RESET_TOKEN` section and 260829-kyv-SUMMARY.md for the full mechanism.

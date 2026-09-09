@@ -4,9 +4,14 @@ title: Fold e2e seeding logic into a single service/module
 area: testing
 severity: minor
 files:
+
   - e2e/seed.ts
   - e2e/seed.sh
   - e2e/theme.e2e.spec.ts
+
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-09-09
 ---
 
 ## Problem

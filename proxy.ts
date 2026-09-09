@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isProtectedPath, isPublicPath, ROUTE } from "@/lib/core/routing/routes";
+import { isProtectedPath, isPublicPath, PATHNAME_HEADER, ROUTE } from "@/lib/core/routing/routes";
 import { session, SESSION_COOKIE_NAME } from "@/lib/server/session";
 
 /*
@@ -27,7 +27,15 @@ const proxy = async (request: NextRequest): Promise<NextResponse> => {
         return NextResponse.redirect(new URL(ROUTE.BOARDS, request.url));
     }
 
-    return NextResponse.next();
+    /*
+     * The pathname, carried forward so `app/(dashboard)/layout.tsx` can resolve the open board's
+     * id: it holds the board's hydration boundary but sits ABOVE `[boardId]`, so it receives no
+     * `params` of its own and has no other way to learn which board is open.
+     */
+    const headers = new Headers(request.headers);
+    headers.set(PATHNAME_HEADER, pathname);
+
+    return NextResponse.next({ request: { headers } });
 };
 
 export default proxy;

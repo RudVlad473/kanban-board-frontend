@@ -1,17 +1,22 @@
 import { describe, expect, it } from "vitest";
 
+import { mintBoardId } from "@/features/boards/board-id";
 import {
     boardFullSchema,
     boardNameSchema,
     boardsSchema,
     columnFullSchema,
+    addBoardFormSchema,
     columnNameRowSchema,
     columnNameSchema,
+    columnSchema,
     createBoardColumnsInputSchema,
     createBoardInputSchema,
+    createColumnInputSchema,
     deleteBoardInputSchema,
     renameBoardInputSchema,
-    taskFullSchema,
+    renameColumnInputSchema,
+    reorderColumnInputSchema,
 } from "@/features/boards/schemas";
 import { createBoard, createBoards } from "@/test-utils/factories/board";
 import { createBoardFull, createColumnFull, createTaskFull } from "@/test-utils/factories/board-full";
@@ -135,28 +140,53 @@ describe("columnFullSchema", () => {
         // Act & Assert
         expect(columnFullSchema.safeParse(withoutTasks).success).toBe(false);
     });
-});
 
-describe("taskFullSchema", () => {
-    it("rejects a task holding a malformed subtask", () => {
+    /* Case is preserved verbatim, never normalized — the mixed-case round trip the create action's own suite proves against the real backend. */
+    it("parses a colour in uppercase, lowercase and mixed case, preserving the case verbatim", () => {
         // Act & Assert
-        expect(
-            taskFullSchema.safeParse({ ...createTaskFull(), subtasks: [{ id: "s1", title: "Subtask", version: 0 }] })
-                .success,
-        ).toBe(false);
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "#49C4E5" }).success).toBe(true);
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: "#49c4e5" }).success).toBe(true);
+        const mixed = columnFullSchema.safeParse({ ...createColumnFull(), color: "#49C4e5" });
+        expect(mixed.success).toBe(true);
+        expect(mixed.success && mixed.data.color).toBe("#49C4e5");
     });
 
-    /* The contract declares `description` optional, so its absence is well-formed, not malformed. */
-    it("accepts a task with no description", () => {
+    /* The shape every column that exists today returns, and no key at all — the app must be correct whichever the backend emits. */
+    it("parses a column whose colour is null, and one with no colour key at all", () => {
         // Arrange
-        const { description: _description, ...withoutDescription } = createTaskFull();
+        const { color: _color, ...withoutColor } = createColumnFull();
 
+        // Act & Assert
+        expect(columnFullSchema.safeParse({ ...createColumnFull(), color: null }).success).toBe(true);
+        expect(columnFullSchema.safeParse(withoutColor).success).toBe(true);
+    });
+
+    /*
+     * The check the OpenAPI contract cannot make (springdoc emits a bare `type: string`). Refused
+     * on WRITE, where the caller can still be told; degraded on read — see the test below.
+     */
+    it("rejects a colour missing its hash, of the wrong length, or holding non-hex characters on write", () => {
+        // Arrange
+        const valid = { boardId: "b1", name: "Todo" };
+
+        // Act & Assert
+        expect(createColumnInputSchema.safeParse({ ...valid, color: "49C4E5" }).success).toBe(false);
+        expect(createColumnInputSchema.safeParse({ ...valid, color: "#49C4E" }).success).toBe(false);
+        expect(createColumnInputSchema.safeParse({ ...valid, color: "#GGGGGG" }).success).toBe(false);
+        expect(createColumnInputSchema.safeParse({ ...valid, color: "#49C4E5" }).success).toBe(true);
+    });
+
+    /*
+     * Nested in `boardFullSchema`, so refusing here would fail the WHOLE board's parse over one
+     * column's field — unloadable, and `color` has no edit endpoint to repair it with.
+     */
+    it("degrades a malformed stored colour to null on read, leaving the rest of the board parseable", () => {
         // Act
-        const result = taskFullSchema.safeParse(withoutDescription);
+        const result = columnFullSchema.safeParse({ ...createColumnFull(), color: "red" });
 
         // Assert
         expect(result.success).toBe(true);
-        expect(result.success && result.data.description).toBeUndefined();
+        expect(result.data?.color).toBeNull();
     });
 });
 
@@ -202,20 +232,50 @@ describe("boardNameSchema", () => {
 
 describe("createBoardInputSchema", () => {
     it("yields the trimmed name for a well-formed input", () => {
+        // Arrange
+        const id = mintBoardId();
+
         // Act
-        const result = createBoardInputSchema.safeParse({ name: "  Platform Launch  " });
+        const result = createBoardInputSchema.safeParse({ name: "  Platform Launch  ", id });
 
         // Assert
         expect(result.success).toBe(true);
         expect(result.success && result.data.name).toBe("Platform Launch");
+        expect(result.success && result.data.id).toBe(id);
     });
 
     it("rejects an input whose name is missing", () => {
         // Act
-        const result = createBoardInputSchema.safeParse({});
+        const result = createBoardInputSchema.safeParse({ id: mintBoardId() });
 
         // Assert
         expect(result.success).toBe(false);
+    });
+
+    /*
+     * The id is REQUIRED, not optional: an absent one would fall through to the server-generated
+     * id, whose value the optimistic sidebar row cannot predict.
+     */
+    it("rejects an input carrying no id at all", () => {
+        // Act & Assert
+        expect(createBoardInputSchema.safeParse({ name: "Platform Launch" }).success).toBe(false);
+    });
+
+    /*
+     * The shapes `@BoardId` answers 400 to, refused here first — measured against the real backend
+     * in `create-board-action.integration.test.ts`. A `randomUUID` is what this hook minted until
+     * 260908-g5y, so it is the one an unwary revert would reintroduce.
+     */
+    it("refuses an id outside the backend's own base36 format", () => {
+        // Act & Assert
+        expect(createBoardInputSchema.safeParse({ name: "Platform Launch", id: crypto.randomUUID() }).success).toBe(
+            false,
+        );
+        expect(
+            createBoardInputSchema.safeParse({ name: "Platform Launch", id: mintBoardId().toUpperCase() }).success,
+        ).toBe(false);
+        expect(createBoardInputSchema.safeParse({ name: "Platform Launch", id: "a".repeat(14) }).success).toBe(false);
+        expect(createBoardInputSchema.safeParse({ name: "Platform Launch", id: "" }).success).toBe(false);
     });
 
     /*
@@ -223,12 +283,15 @@ describe("createBoardInputSchema", () => {
      * simply not part of the parsed output, so it can never reach the upstream call (T-02-43).
      */
     it("drops an unrelated userId supplied alongside the name", () => {
+        // Arrange
+        const id = mintBoardId();
+
         // Act
-        const result = createBoardInputSchema.safeParse({ name: "Platform Launch", userId: "someone-else" });
+        const result = createBoardInputSchema.safeParse({ name: "Platform Launch", id, userId: "someone-else" });
 
         // Assert
         expect(result.success).toBe(true);
-        expect(result.success && result.data).toEqual({ name: "Platform Launch" });
+        expect(result.success && result.data).toEqual({ name: "Platform Launch", id });
     });
 });
 
@@ -261,8 +324,40 @@ describe("columnNameSchema", () => {
 });
 
 /*
+ * The create form no longer has a row rule of its own — `addBoardFormSchema` reuses
+ * `columnNameRowSchema`, so a blank row blocks the submit here exactly as it does in every
+ * single-field column form (product-owner decision 2026-09-03).
+ */
+describe("addBoardFormSchema", () => {
+    it("refuses a blank column row rather than accepting it to be dropped later", () => {
+        // Act
+        const result = addBoardFormSchema.safeParse({
+            name: "Platform Launch",
+            columns: [{ value: "Todo" }, { value: "" }],
+        });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.error?.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("refuses a whitespace-only column row", () => {
+        expect(addBoardFormSchema.safeParse({ name: "Platform Launch", columns: [{ value: "   " }] }).success).toBe(
+            false,
+        );
+    });
+
+    it("accepts rows that all carry a valid name, and an empty row list", () => {
+        expect(addBoardFormSchema.safeParse({ name: "Platform Launch", columns: [{ value: "Todo" }] }).success).toBe(
+            true,
+        );
+        expect(addBoardFormSchema.safeParse({ name: "Platform Launch", columns: [] }).success).toBe(true);
+    });
+});
+
+/*
  * Deliberately a separate export from `columnNameSchema`, not a relaxation of it: a blank row is a
- * user error to correct (D-02a) and earns the required-field copy, not the length copy.
+ * user error to correct and earns the required-field copy, not the length copy.
  */
 describe("columnNameRowSchema", () => {
     it("rejects an empty and a whitespace-only row with the required-field copy", () => {
@@ -405,5 +500,106 @@ describe("createBoardColumnsInputSchema", () => {
 
         // Act & Assert
         expect(createBoardColumnsInputSchema.safeParse({ boardId: "board-id", names: tooMany }).success).toBe(false);
+    });
+});
+
+/*
+ * `ColumnResponseDTO` returns no `tasks`, so parsing a create/rename/reorder response with
+ * `columnFullSchema` would fail on every successful call.
+ */
+describe("columnSchema", () => {
+    it("accepts a response-shaped column with no tasks key, which columnFullSchema refuses", () => {
+        // Arrange
+        const { tasks: _tasks, ...columnResponse } = createColumnFull();
+
+        // Act
+        const result = columnSchema.safeParse(columnResponse);
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual(columnResponse);
+        expect(columnFullSchema.safeParse(columnResponse).success).toBe(false);
+    });
+});
+
+describe("createColumnInputSchema", () => {
+    it("accepts a board id with a valid column name", () => {
+        // Act
+        const result = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Todo" });
+
+        // Assert
+        expect(result.success).toBe(true);
+        expect(result.success && result.data).toEqual({ boardId: "8okxhwo6oq2o", name: "Todo" });
+    });
+
+    /* The Copywriting Contract splits the two refusals: a blank name earns the required copy, never the length copy. */
+    it("reports the required-field copy for a blank name rather than the length copy", () => {
+        // Act
+        const result = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "   " });
+
+        // Assert
+        expect(result.success).toBe(false);
+        expect(result.error?.issues[0]?.message).toBe("Can't be empty");
+    });
+
+    it("reports the length copy on either side of the backend's own 3-to-32 bound", () => {
+        // Act
+        const oneCharacter = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "A" });
+        const twoCharacters = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "To" });
+        const thirtyThree = createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "a".repeat(33) });
+
+        // Assert
+        expect(oneCharacter.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
+        expect(twoCharacters.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
+        expect(thirtyThree.error?.issues[0]?.message).toBe("Column name must be between 3 and 32 characters.");
+    });
+
+    /* T-03-01: the board id selects the parent resource, so an empty one must fail before it resolves a path. */
+    it("rejects an empty board id", () => {
+        // Act & Assert
+        expect(createColumnInputSchema.safeParse({ boardId: "", name: "Todo" }).success).toBe(false);
+    });
+
+    /* A forged Server Action payload is refused at this app's own boundary — the contract carries no format check at all. */
+    it("accepts a valid colour, accepts its absence, and rejects a malformed one", () => {
+        // Act & Assert
+        expect(
+            createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Todo", color: "#49C4E5" }).success,
+        ).toBe(true);
+        expect(createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Todo" }).success).toBe(true);
+        expect(
+            createColumnInputSchema.safeParse({ boardId: "8okxhwo6oq2o", name: "Todo", color: "not-a-colour" }).success,
+        ).toBe(false);
+    });
+});
+
+/*
+ * T-03-04: the column *update* body requires `version` while the create body has no such field, so a
+ * rename built by analogy to create is rejected on every attempt unless this boundary refuses first.
+ */
+describe("renameColumnInputSchema", () => {
+    it("rejects an input carrying both ids and a name but no version", () => {
+        // Arrange
+        const withoutVersion = { boardId: "8okxhwo6oq2o", columnId: "column-1", name: "In Progress" };
+
+        // Act & Assert
+        expect(renameColumnInputSchema.safeParse(withoutVersion).success).toBe(false);
+        expect(renameColumnInputSchema.safeParse({ ...withoutVersion, version: 3 }).success).toBe(true);
+    });
+});
+
+/*
+ * T-03-06: `minimum: 0` is the contract's own floor, so a forged negative or fractional wire payload
+ * is refused at this app's boundary before it ever reaches the backend.
+ */
+describe("reorderColumnInputSchema", () => {
+    it("accepts a zero target position and rejects a negative or fractional one", () => {
+        // Arrange
+        const base = { boardId: "8okxhwo6oq2o", columnId: "column-1", version: 3 };
+
+        // Act & Assert
+        expect(reorderColumnInputSchema.safeParse({ ...base, targetPosition: 0 }).success).toBe(true);
+        expect(reorderColumnInputSchema.safeParse({ ...base, targetPosition: -1 }).success).toBe(false);
+        expect(reorderColumnInputSchema.safeParse({ ...base, targetPosition: 1.5 }).success).toBe(false);
     });
 });

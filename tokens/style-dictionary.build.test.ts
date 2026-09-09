@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { createConfig } from "../style-dictionary.config.mjs";
 
 /**
- * D-12: a pipeline-level test asserting the Style Dictionary build's generated CSS actually
+ * A pipeline-level test asserting the Style Dictionary build's generated CSS actually
  * contains the expected token values, separate from any component test — a broken token edit
  * fails here with one clear error instead of N confusing component-test failures.
  */
@@ -65,16 +65,54 @@ describe("style dictionary token pipeline (D-12)", () => {
             "--font-heading-xl: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;",
         );
         expect(css).toContain("--text-heading-xl: 24px;");
-        expect(css).toContain("--font-weight-heading-xl: 700;");
-        expect(css).toContain("--leading-heading-xl: 30px;");
+        expect(css).toContain("--text-heading-xl--font-weight: 700;");
+        expect(css).toContain("--text-heading-xl--line-height: 30px;");
     });
 
-    it("carries font-heading-s's letter-spacing as a distinct --tracking-* custom property", async () => {
+    /*
+     * The mock's sixth type role (04-UI-SPEC.md C-02), which Phase 1 omitted because nothing
+     * rendered a task card. Typography is mode-invariant: it is declared once in @theme and the
+     * .dark block never overrides it, which is what makes it resolve identically in both themes.
+     */
+    it("declares font-heading-m's four custom properties in the @theme block and overrides none of them in .dark, so it resolves identically in both themes", async () => {
+        // Arrange
+        const declarations = [
+            "--font-heading-m: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;",
+            "--text-heading-m: 15px;",
+            "--text-heading-m--font-weight: 700;",
+            "--text-heading-m--line-height: 19px;",
+        ];
+
+        // Act
+        const css = await buildFullCss();
+        const themeBlock = css.slice(css.indexOf("@theme"), css.indexOf(".dark"));
+        const darkBlock = css.slice(css.indexOf(".dark"));
+
+        // Assert
+        for (const declaration of declarations) {
+            expect(themeBlock).toContain(declaration);
+        }
+        expect(darkBlock).not.toContain("heading-m");
+    });
+
+    /*
+     * Kerning and case are the entire difference between heading-s and body-m at 12px; heading-m
+     * carries neither, so a --tracking-* property here would mean the wrong role was copied.
+     */
+    it("gives text-heading-m no --letter-spacing companion, unlike text-heading-s", async () => {
+        // Act
+        const css = await buildFullCss();
+
+        // Assert
+        expect(css).not.toContain("--text-heading-m--letter-spacing");
+    });
+
+    it("carries text-heading-s's letter-spacing as Tailwind's own --letter-spacing companion", async () => {
         // Act
         const css = await buildModeCss({ mode: "light", platform: "css" });
 
         // Assert
-        expect(css).toContain("--tracking-heading-s: 2.4px;");
+        expect(css).toContain("--text-heading-s--letter-spacing: 2.4px;");
     });
 
     it("has every one of the six DTCG categories contribute at least one custom property to the generated stylesheet", async () => {
@@ -99,6 +137,40 @@ describe("style dictionary token pipeline (D-12)", () => {
         // Assert
         expect(themeBlock).toContain("--color-bg-app: #F4F7FD;");
         expect(darkBlock).toContain("--color-bg-app: #20212C;");
+    });
+
+    it("gives all three column-dot accents the identical hex in the @theme block and the .dark block (U-03)", async () => {
+        // Arrange
+        const dots = [
+            ["--color-accent-column-1", "#49C4E5"],
+            ["--color-accent-column-2", "#8471F2"],
+            ["--color-accent-column-3", "#67E2AE"],
+        ] as const;
+
+        // Act
+        const css = await buildFullCss();
+        const themeBlock = css.slice(css.indexOf("@theme"), css.indexOf(".dark"));
+        const darkBlock = css.slice(css.indexOf(".dark"));
+
+        // Assert
+        for (const [property, hex] of dots) {
+            expect(themeBlock).toContain(`${property}: ${hex};`);
+            expect(darkBlock).toContain(`${property}: ${hex};`);
+        }
+    });
+
+    it("resolves the two ghost-column gradient stops to a different hex per theme, unlike the column dots", async () => {
+        // Act
+        const [light, dark] = await Promise.all([
+            buildModeCss({ mode: "light", platform: "css" }),
+            buildModeCss({ mode: "dark", platform: "css-dark" }),
+        ]);
+
+        // Assert
+        expect(light).toContain("--color-bg-column-add-from: #E9EFFA;");
+        expect(light).toContain("--color-bg-column-add-to: #EEF3FC;");
+        expect(dark).toContain("--color-bg-column-add-from: #23242F;");
+        expect(dark).toContain("--color-bg-column-add-to: #21222D;");
     });
 
     it("rebuilds with a changed token value rather than silently serving a stale artefact", async () => {

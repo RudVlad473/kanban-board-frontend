@@ -5,6 +5,7 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
+import { isNil } from "es-toolkit";
 import { expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -14,7 +15,31 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { TextField } from "./text-field";
 import * as stories from "./text-field.stories";
 
-const { Idle, Error, Disabled, Loading, Password } = composeStories(stories);
+const {
+    Idle,
+    HiddenLabel,
+    Error: ErrorState,
+    Disabled,
+    Loading,
+    Password,
+    CharacterCounter,
+    CharacterCounterFilled,
+    CharacterCounterUnderMinimum,
+    CharacterCounterLengthInvalid,
+    CharacterCounterRequiredEmpty,
+} = composeStories(stories);
+
+/*
+ * The field's visual box — a flex row wrapping the input and, on error, the message. It carries the
+ * border, the size and the disabled treatment, so anything asserting those reads it, not the input.
+ */
+const getFieldBox = (input: Element): HTMLElement => {
+    const box = input.parentElement;
+    if (isNil(box)) {
+        throw new Error("Field box not found — is the input still wrapped?");
+    }
+    return box;
+};
 
 /*
  * ADR tech/0014: every primitive's suite runs at both viewports by default; the width test below
@@ -23,7 +48,7 @@ const { Idle, Error, Disabled, Loading, Password } = composeStories(stories);
 describeForEachDevice({
     name: "TextField",
     body: () => {
-        // Shallow: copy, prop-driven aria wiring, disabled/busy rendering — through composed stories (D-08).
+        // Shallow: copy, prop-driven aria wiring, disabled/busy rendering — through composed stories.
         it("associates the visible label with the input as its accessible name", async () => {
             // Act
             await render(<Idle />);
@@ -32,9 +57,21 @@ describeForEachDevice({
             expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
         });
 
+        /* isLabelHidden trades the label's layout box for nothing else — the accessible name stays. */
+        it("keeps the label as the accessible name but out of the layout when isLabelHidden", async () => {
+            // Act
+            await render(<HiddenLabel />);
+
+            // Assert
+            const input = screen.getByRole("textbox", { name: "Email" });
+            const label = document.querySelector<HTMLLabelElement>(`label[for="${input.id}"]`);
+            expect(label?.textContent).toBe("Email");
+            expect(label?.getBoundingClientRect().height).toBeLessThanOrEqual(1);
+        });
+
         it("renders the error message, marks the input invalid, and exposes the message as its accessible description when hasError", async () => {
             // Act
-            await render(<Error />);
+            await render(<ErrorState />);
 
             // Assert
             const input = screen.getByRole("textbox", { name: "Password" });
@@ -42,6 +79,45 @@ describeForEachDevice({
             expect(message).toBeVisible();
             expect(input).toHaveAttribute("aria-invalid", "true");
             expect(input.getAttribute("aria-describedby")).toContain(message.id);
+        });
+
+        /*
+         * An error must cost the field no height. In flow it grew the form by 23.5px mid-click, and
+         * a control's mousedown and mouseup then landed on different elements, silently losing the
+         * click (04-15-CHECKPOINT.md). Asserted as height, not as a class name.
+         */
+        it("shows its error message without extending the field below the input", async () => {
+            // Act
+            await render(<ErrorState />);
+
+            // Assert — the message is shown, but sits outside the field's own box.
+            const input = screen.getByRole("textbox", { name: "Password" });
+            const root = input.closest<HTMLElement>("[class*='flex-col']");
+            const overhang =
+                (root?.getBoundingClientRect().bottom ?? 0) - getFieldBox(input).getBoundingClientRect().bottom;
+            expect(screen.getByText("Can't be empty")).toBeVisible();
+            expect(overhang).toBeLessThanOrEqual(1);
+        });
+
+        /*
+         * PDF p1's "Text Field (Error)" renders the message INSIDE the field box, right-aligned and
+         * vertically centred — the placement that lets the slot cost no layout height and overlap no
+         * sibling control. Asserted as measured geometry, not as a class name.
+         */
+        it("renders its error message inside the input's own box rather than beneath it", async () => {
+            // Act
+            await render(<ErrorState />);
+
+            // Assert
+            const input = screen.getByRole("textbox", { name: "Password" });
+            const boxRect = getFieldBox(input).getBoundingClientRect();
+            const inputRect = input.getBoundingClientRect();
+            const messageRect = screen.getByText("Can't be empty").getBoundingClientRect();
+            expect(messageRect.top).toBeGreaterThanOrEqual(boxRect.top - 1);
+            expect(messageRect.bottom).toBeLessThanOrEqual(boxRect.bottom + 1);
+            expect(messageRect.right).toBeLessThanOrEqual(boxRect.right - 1);
+            // Beside the value, never over it — the input's own box ends where the message begins.
+            expect(messageRect.left).toBeGreaterThanOrEqual(inputRect.right);
         });
 
         it("renders disabled when isDisabled", async () => {
@@ -103,11 +179,11 @@ describeForEachDevice({
 
         it("renders the danger border using the same semantic token as Checkbox when hasError", async () => {
             // Arrange
-            const screen = await render(<TextField label="Password" hasError errorMessage="Can't be empty" />);
+            const screen = await render(<TextField label="Password" hasError={true} errorMessage="Can't be empty" />);
             const input = screen.getByRole("textbox", { name: "Password" });
 
             // Act
-            const borderColor = getComputedStyle(input.element()).borderColor;
+            const borderColor = getComputedStyle(getFieldBox(input.element())).borderColor;
 
             // Assert — border-border-danger (#C93F3C), same as Checkbox.
             expect(borderColor).toBe("rgb(201, 63, 60)");
@@ -127,7 +203,7 @@ describeForEachDevice({
         it("prevents typing when isDisabled", async () => {
             // Arrange
             const onValueChange = vi.fn();
-            const screen = await render(<TextField label="Email" isDisabled onValueChange={onValueChange} />);
+            const screen = await render(<TextField label="Email" isDisabled={true} onValueChange={onValueChange} />);
             const input = screen.getByRole("textbox", { name: "Email" });
 
             // Act — a disabled input never becomes the active element, proving suppression is real.
@@ -142,10 +218,10 @@ describeForEachDevice({
         it("refuses focus and typing when isLoading", async () => {
             // Arrange
             const onValueChange = vi.fn();
-            const screen = await render(<TextField label="Email" isLoading onValueChange={onValueChange} />);
+            const screen = await render(<TextField label="Email" isLoading={true} onValueChange={onValueChange} />);
             const input = screen.getByRole("textbox", { name: "Email" });
 
-            // Act — isLoading composes into native disabled (GC-17), same suppression as isDisabled.
+            // Act — isLoading composes into native disabled, same suppression as isDisabled.
             (input.element() as HTMLInputElement).focus();
             expect(input.element()).not.toBe(document.activeElement);
             await userEvent.keyboard("z");
@@ -160,18 +236,21 @@ describeForEachDevice({
              * class always outranks isBusy's own class on specificity; cursor stays the sole
              * busy-vs-disabled differentiator (mirrors Checkbox's GC-14 precedent).
              */
-            const loading = await render(<TextField label="Loading field" isLoading />);
+            const loading = await render(<TextField label="Loading field" isLoading={true} />);
             const loadingInput = loading.getByRole("textbox", { name: "Loading field" });
-            const disabled = await render(<TextField label="Disabled field" isDisabled />);
+            const disabled = await render(<TextField label="Disabled field" isDisabled={true} />);
             const disabledInput = disabled.getByRole("textbox", { name: "Disabled field" });
 
             // Act
             const loadingStyle = getComputedStyle(loadingInput.element());
             const disabledStyle = getComputedStyle(disabledInput.element());
 
-            // Assert — loading visually matches disabled (same opacity), but a distinct cursor.
-            expect(loadingStyle.opacity).toBe("0.5");
-            expect(disabledStyle.opacity).toBe("0.5");
+            /*
+             * Assert — loading visually matches disabled (same opacity, dimmed on the box that owns
+             * the border), but a distinct cursor.
+             */
+            expect(getComputedStyle(getFieldBox(loadingInput.element())).opacity).toBe("0.5");
+            expect(getComputedStyle(getFieldBox(disabledInput.element())).opacity).toBe("0.5");
             expect(loadingStyle.cursor).toBe("progress");
             expect(disabledStyle.cursor).not.toBe("progress");
         });
@@ -272,16 +351,153 @@ describeForEachDevice({
             expect(filledWidth).toBe(emptyWidth);
         });
 
+        /*
+         * The counter's own copy is the whole point of the slot: a limit the user can see before
+         * they cross it, in ~30px that cannot truncate at any field width.
+         */
+        it("counts the typed characters against the limit inside the message slot", async () => {
+            // Arrange
+            const screen = await render(<CharacterCounter />);
+            const input = screen.getByRole("textbox", { name: "Column Name" });
+
+            // Act
+            await userEvent.type(input.element(), "ab");
+
+            // Assert
+            await expect.element(screen.getByText("2/32")).toBeVisible();
+        });
+
+        /*
+         * Two bounds, one slot: while the value is too SHORT the upper limit is not what stands in
+         * the user's way, so the counter counts toward the lower one and swaps once it is met.
+         */
+        it("counts toward the minimum while under it, and toward the limit once it is met", async () => {
+            // Arrange
+            const screen = await render(<CharacterCounterUnderMinimum />);
+            const input = screen.getByRole("textbox", { name: "Column Name" });
+
+            /* Read exactly: a substring matcher would find "2/3" inside "2/32" and pass either way. */
+            const counterText = () => screen.container.querySelector('[aria-hidden="true"].tabular-nums')?.textContent;
+
+            // Assert — staged at two characters, one short of the minimum.
+            await expect.poll(counterText).toBe("2/3 min");
+
+            // Act — reaching the minimum.
+            await userEvent.type(input.element(), "c");
+
+            // Assert
+            await expect.poll(counterText).toBe("3/32");
+        });
+
+        /* An always-on counter on an untouched empty field is noise, so it waits for a first character. */
+        it("shows no counter while the value is empty", async () => {
+            // Act
+            const screen = await render(<CharacterCounter />);
+
+            // Assert
+            expect(screen.container.textContent).not.toContain("0/32");
+        });
+
+        /*
+         * Precedence, half one: an empty value is the required-field case and keeps its prose, which
+         * already fits the slot. A "0/32" there would lose the only word the user needs.
+         */
+        it("keeps the required-empty prose in the slot instead of a counter when the value is empty", async () => {
+            // Act
+            const screen = await render(<CharacterCounterRequiredEmpty />);
+
+            // Assert
+            await expect.element(screen.getByText("Can't be empty")).toBeVisible();
+            expect(screen.container.textContent).not.toContain("0/32");
+        });
+
+        /*
+         * Precedence, half two: a non-empty value is a length case, so the slot shows the counter and
+         * the prose that truncated to "Column name must be between 3 and…" there moves out of sight
+         * without leaving `aria-describedby`.
+         */
+        it("replaces the length prose with a red counter once the value is non-empty, keeping the prose as the accessible description", async () => {
+            // Arrange
+            const screen = await render(<CharacterCounterLengthInvalid />);
+            const input = screen.getByRole("textbox", { name: "Column Name" });
+
+            // Act
+            const counter = screen.getByText("2/32").element() as HTMLElement;
+
+            // Assert — the counter is what the eye gets, and it fits the slot whole.
+            await expect.element(screen.getByText("2/32")).toBeVisible();
+            expect(counter.scrollWidth).toBeLessThanOrEqual(counter.clientWidth + 1);
+
+            // Assert — the prose is still what assistive tech gets, in full and out of the layout.
+            const describedById = input.element().getAttribute("aria-describedby") ?? "";
+            const message = screen.container.querySelector(`[id="${describedById}"]`);
+            expect(message?.textContent).toBe("Column name must be between 3 and 32 characters.");
+            expect(message?.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+
+            // Assert — polled past globals.css's 200ms colour transition, which reads mid-flight.
+            await expect.poll(() => getComputedStyle(counter).color).toBe("rgb(201, 63, 60)");
+        });
+
+        /*
+         * The rule the slot exists for. Below the field in flow the message grew the form 23.5px
+         * mid-click and swallowed the click (04-15-CHECKPOINT.md); the counter costs the same zero.
+         */
+        it("costs the field no height when the counter appears, valid or invalid", async () => {
+            // Arrange
+            const quiet = await render(<CharacterCounter />);
+            const quietInput = quiet.getByRole("textbox", { name: "Column Name" });
+            const quietRoot = quietInput.element().closest<HTMLElement>("[class*='flex-col']");
+            const baselineRootHeight = quietRoot?.getBoundingClientRect().height ?? 0;
+            const baselineBoxHeight = getFieldBox(quietInput.element()).getBoundingClientRect().height;
+
+            // Act — the counter appears on the first character.
+            await userEvent.type(quietInput.element(), "ab");
+            await expect.element(quiet.getByText("2/32")).toBeVisible();
+
+            // Assert
+            expect(quietRoot?.getBoundingClientRect().height).toBe(baselineRootHeight);
+            expect(getFieldBox(quietInput.element()).getBoundingClientRect().height).toBe(baselineBoxHeight);
+
+            /*
+             * Arrange — the same field length-invalid. Reached through this render's own container,
+             * not a role locator: both fields carry the same label and the locator is page-wide.
+             */
+            const invalid = await render(<CharacterCounterLengthInvalid />);
+            const invalidInput = invalid.container.querySelector("input");
+            const invalidRoot = invalidInput?.closest<HTMLElement>("[class*='flex-col']");
+
+            // Assert
+            expect(invalidRoot?.getBoundingClientRect().height).toBe(baselineRootHeight);
+            expect(getFieldBox(invalidInput as Element).getBoundingClientRect().height).toBe(baselineBoxHeight);
+        });
+
+        /* Same slot as the message: inside the box, right-aligned, never over the value. */
+        it("renders the counter inside the input's own box rather than beneath it", async () => {
+            // Arrange
+            const screen = await render(<CharacterCounterFilled />);
+            const input = screen.getByRole("textbox", { name: "Column Name" });
+
+            // Act
+            const boxRect = getFieldBox(input.element()).getBoundingClientRect();
+            const counterRect = screen.getByText("2/32").element().getBoundingClientRect();
+
+            // Assert
+            expect(counterRect.top).toBeGreaterThanOrEqual(boxRect.top - 1);
+            expect(counterRect.bottom).toBeLessThanOrEqual(boxRect.bottom + 1);
+            expect(counterRect.right).toBeLessThanOrEqual(boxRect.right - 1);
+            expect(counterRect.left).toBeGreaterThanOrEqual(input.element().getBoundingClientRect().right);
+        });
+
         it("fills its container's width at any viewport, with no fixed desktop-only width", async () => {
             // Arrange — no wrapping width constraint; page.viewport already resized the test iframe.
             const screen = await render(<TextField label="Email" />);
             const input = screen.getByRole("textbox", { name: "Email" });
 
             // Act
-            const inputWidth = input.element().getBoundingClientRect().width;
+            const boxWidth = getFieldBox(input.element()).getBoundingClientRect().width;
 
             // Assert — within a small tolerance of the real viewport width.
-            expect(inputWidth).toBeGreaterThan(window.innerWidth - 20);
+            expect(boxWidth).toBeGreaterThan(window.innerWidth - 20);
         });
     },
 });

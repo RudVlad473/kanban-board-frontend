@@ -77,16 +77,21 @@ the deep-interaction tests it was expected to also serve. The pre-10.x direct-re
   Consequences section already documents for `no-restricted-properties`. Keeping the `.run()` ban
   file-scope-unqualified (matching every file, stories included) sidesteps that hazard entirely
   rather than risk re-triggering it.
-- D-08's research gate is settled: real `"use server"` Server Actions cannot execute inside
+- D-08's research gate is settled: real `"use server"` Server Actions cannot be used inside
   `@storybook/nextjs-vite`'s Vite-driven Vitest rendering — its bundling has no RSC-aware transform
-  for `"use server"` exports, so it attempts to bundle the action's real dependency graph (reaching
-  `node:crypto`, the external API client) into a browser-loadable bundle, which fails outright.
-  This is a currently open, named gap in Storybook's own issue tracker (`github.com/storybookjs/
-  storybook` discussion #31127), not a version-specific bug already fixed upstream. The whole-module
-  `serverActionStubAlias` in `vitest.config.ts` therefore stays; interaction coverage that depends
-  on a real action's effect (redirect, cookie write, backend-rejection message) moves to Playwright
-  e2e instead, which runs against a real Next.js server. See `docs/adr/tech/0020`'s D-19 carve-out
-  section for the formal wording of what stays a shim and why — not duplicated here.
+  for `"use server"` exports, so it attempts to bundle the action's real dependency graph into a
+  browser-loadable bundle, which fails outright. This is a currently open, named gap in Storybook's
+  own issue tracker (`github.com/storybookjs/storybook` discussion #31127), not a version-specific
+  bug already fixed upstream. **Corrected 2026-08-28:** this paragraph said the failure reached
+  `node:crypto` and the external API client, which overstated how far evaluation gets. Measured
+  (`.planning/spikes/action-stub-automation/FINDINGS.md`, Question 1), the action cannot even be
+  IMPORTED — `next/cache`'s `refresh()` throws `ReferenceError: process is not defined` first, before
+  `verifySession` pulls `node:crypto` in. Every Server Action is therefore doubled at build time;
+  as of phase 04 that is a `"use server"` transform rather than the `serverActionStubAlias` register
+  this paragraph named, which no longer exists. Interaction coverage that depends on a real action's
+  effect (redirect, cookie write, backend-rejection message) moves to Playwright e2e instead, which
+  runs against a real Next.js server. See `docs/adr/tech/0020`'s doubling carve-out for the formal
+  wording of what stays a double and why — not duplicated here.
 
 ## Consequences
 
@@ -125,6 +130,27 @@ the wrong fix (one composed story fed varying props) is banned by this same reco
 "Story-only render check" step of CI's `quality` job. The rule is about the render, not the import
 graph: a type-only import is never flagged, and a sibling component rendered inside a host component
 the test file declares is.
+
+**Amended 2026-08-28.** `renders:check` originally saw only half this record's rule. It flagged
+"rendered the raw component", detected through the import graph, and was structurally blind to
+"rendered a composed story but re-configured it" — the wrong fix its own message names. Found when
+a user asked why `sign-in-form.test.tsx`'s `renderSignInForm` was permitted: that helper is a
+zero-argument alias for one composed story and overrides nothing, so it never violated this record,
+but the audit prompted by the question found `sidebar.test.tsx` spreading `defaultIsExpanded` and
+`children` onto a composed story reached through a helper parameter. That file is not exempt, and
+the gate passed anyway, because the story arrived as a parameter binding rather than an import.
+
+`findStoryPropOverrideViolations` now covers it: it resolves composed-story bindings through plain
+aliases, destructured defaults (`{ story: Story = Expanded }`) and typed parameters
+(`{ story: typeof Expanded }`), then fails on any such element carrying attributes or JSX children.
+Children count as a prop, which is what `<Story>{children}</Story>` overrides with no attribute to
+show for it. It reports outside `MIGRATION_EXEMPTIONS` deliberately: those ceilings count direct
+renders, so folding a second violation class into them would shift every count and trip the ratchet
+on ten suites that never changed. Repository-wide result after fixing `sidebar.test.tsx`: zero.
+
+The checker's fix guidance was corrected in the same pass. It had claimed this record bans "a render
+helper declared in the test file", which it does not and never did — the ban is on re-configuring a
+story, wherever the props are written.
 
 **This gate is not yet repository-wide, and the scope of what it does not cover is deliberately
 stated rather than implied.** It is fully enforced for new and touched files and for

@@ -3,6 +3,7 @@
  * dynamic path builder below) instead of a literal; `pnpm routes:check` fails the build if one
  * reappears. Follows ADR tech/0012's `as const` pattern, keys deliberately not mirroring values.
  */
+import { isNil } from "es-toolkit";
 export const ROUTE = {
     HOME: "/",
     SIGN_IN: "/login",
@@ -27,7 +28,7 @@ const BOARD_DETAIL_PATH_PATTERN = new RegExp(`^${ROUTE.BOARDS}/([^/]+)$`);
 export const toBoardIdFromPath = (pathname: string): string | null => {
     const match = BOARD_DETAIL_PATH_PATTERN.exec(pathname);
 
-    return match === null ? null : match[1];
+    return !isNil(match) ? match[1] : null;
 };
 
 /**
@@ -43,3 +44,10 @@ export const isProtectedPath = (pathname: string): boolean =>
     PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
 export const isPublicPath = (pathname: string): boolean => (PUBLIC_PATHS as readonly string[]).includes(pathname);
+
+/**
+ * The request header `proxy.ts` stamps the pathname onto, so a Server Component can resolve the
+ * open board's id — a layout receives no `params` for a segment below it, and the board is
+ * hydrated by the dashboard layout rather than by the board page (docs/adr/tech/0030).
+ */
+export const PATHNAME_HEADER = "x-kanban-pathname";

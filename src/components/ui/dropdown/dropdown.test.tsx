@@ -11,7 +11,7 @@ import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { Dropdown } from "./dropdown";
 import * as stories from "./dropdown.stories";
 
-const { Closed, Loading, OpenWithSelection } = composeStories(stories);
+const { Closed, Disabled, Loading, OpenWithSelection } = composeStories(stories);
 
 type RootProps = ComponentProps<typeof Dropdown.Root>;
 
@@ -55,7 +55,7 @@ describeForEachDevice({
             expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
         });
 
-        // D-26y: two near-identical open-key cases, parametrized rather than hand-repeated.
+        // Two near-identical open-key cases, parametrized rather than hand-repeated.
         for (const [key, keyName] of [
             [" ", "Space"],
             ["{Enter}", "Enter"],
@@ -156,6 +156,18 @@ describeForEachDevice({
             // Assert
             expect(screen.getByRole("option", { name: "Doing" })).toHaveAttribute("aria-selected", "true");
             expect(screen.getByRole("option", { name: "Todo" })).toHaveAttribute("aria-selected", "false");
+        });
+
+        it("shows a disabled, non-busy trigger with the list absent when the root isDisabled", async () => {
+            // Act
+            await render(<Disabled />);
+            const trigger = screen.getByRole("combobox", { name: "Select a status" });
+
+            // Assert — disabled without aria-busy, which is isLoading's alone.
+            expect(trigger).toBeDisabled();
+            expect(trigger).toHaveAttribute("data-disabled");
+            expect(trigger).toHaveAttribute("aria-busy", "false");
+            expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
         });
 
         it("shows a disabled, aria-busy trigger with a spinner in place of the chevron when isLoading", async () => {
@@ -266,8 +278,8 @@ describeForEachDevice({
             const lastRadius = getComputedStyle(getActiveElement()).borderRadius;
 
             // Assert — rounded top on first, rounded bottom on last, square (equal corners) on middle.
-            expect(firstRadius).toBe("24px 24px 4px 4px");
-            expect(lastRadius).toBe("4px 4px 24px 24px");
+            expect(firstRadius).toBe("8px 8px 4px 4px");
+            expect(lastRadius).toBe("4px 4px 8px 8px");
             const middleCorners = middleRadius.split(" ");
             expect(new Set(middleCorners).size).toBe(1);
         });
@@ -280,7 +292,7 @@ describeForEachDevice({
              */
             const screen = await render(
                 <div style={{ marginLeft: `${String(window.innerWidth - 220)}px`, width: "200px" }}>
-                    <Dropdown.Root defaultOpen>
+                    <Dropdown.Root defaultOpen={true}>
                         <Dropdown.Trigger placeholder="Select a board" />
 
                         <Dropdown.Content>
@@ -306,7 +318,7 @@ describeForEachDevice({
              * owns the scroll — see dropdown.tsx's Content comment for the regression this guards.
              */
             const screen = await render(
-                <Dropdown.Root defaultOpen>
+                <Dropdown.Root defaultOpen={true}>
                     <Dropdown.Trigger placeholder="Select a board" />
 
                     <Dropdown.Content>
@@ -352,7 +364,7 @@ describeForEachDevice({
                     <Dropdown.Content>
                         <Dropdown.Item value="todo">Todo</Dropdown.Item>
 
-                        <Dropdown.Item value="doing" isDisabled>
+                        <Dropdown.Item value="doing" isDisabled={true}>
                             Doing
                         </Dropdown.Item>
 

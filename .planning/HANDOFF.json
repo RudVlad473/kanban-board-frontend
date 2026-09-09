@@ -1,38 +1,34 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-25T21:47:42.474Z",
-  "phase": "02",
-  "phase_name": "Board Management",
-  "phase_dir": ".planning/phases/02-board-management",
-  "plan": 16,
-  "task": 4,
-  "total_tasks": 4,
+  "timestamp": "2026-09-07T20:55:35.046Z",
+  "phase": null,
+  "phase_name": "Between milestones (v1.0 complete) — ad-hoc debug session in progress",
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
   "status": "paused",
   "completed_tasks": [
-    {"id": 1, "name": "Extract shared error-code mapping + create's duplicate-name branch (D-01)", "status": "done", "commit": "6bcbf0a"},
-    {"id": 2, "name": "Close the rename modal on submit, not on settle (D-02)", "status": "done", "commit": "36a13e7"},
-    {"id": 3, "name": "Instant pending feedback via loading.tsx (D-03)", "status": "done", "commit": "beb0a81"},
-    {"id": "fix-1", "name": "Key the board-detail Suspense boundary on boardId (fixes D-03 regression found at first checkpoint)", "status": "done", "commit": "56ada39"},
-    {"id": "fix-2", "name": "Dedupe the board-detail fetch with React cache(), matching fetch-boards.ts's pattern", "status": "done", "commit": "937a40d"},
-    {"id": "fix-3", "name": "Fix a stale rename-modal assertion Task 2 left red in a sibling test file", "status": "done", "commit": "46b3d75"},
-    {"id": 4, "name": "checkpoint:human-verify — sign off duplicate-name copy, instant rename close, instant-pending board switching", "status": "in_progress", "progress": "Presented twice. Round 1 (pre-fixes) surfaced a real regression (skeleton not showing on board switch) plus 5 other findings. Round 1's fixes (56ada39/937a40d/46b3d75) are committed and the checkpoint was re-presented. Awaiting the user's live re-verification, specifically step 4 (board-switching skeleton) which cannot be proven on localhost's fast round-trip — both the broken and fixed versions look instant locally."}
+    { "id": 1, "name": "Quick task 260907-q83: fix the board-delete stranding window", "status": "done", "commit": "a5328bf" },
+    { "id": 2, "name": "Debug session board-create-optimistic: video-driven investigation of the board-create optimistic-nav complaint", "status": "done", "commit": "d58d489" }
   ],
-  "remaining_tasks": [],
+  "remaining_tasks": [
+    { "id": 3, "name": "User picks a direction for gap 1 (the ~1-3s pre-navigate wait: 1a UX affordance vs 1b redesign the route to tolerate a pending id) and gap 2 (the ~100-300ms empty-state flicker: 2a leave it vs 2b special-case BoardScreen's invalidate)", "status": "not_started" },
+    { "id": 4, "name": "Spawn a continuation debug agent (or quick task) to implement the chosen direction(s) and re-verify", "status": "not_started" }
+  ],
   "blockers": [
-    {"description": "Task 4 is a checkpoint:human-verify with gate=\"blocking-human\" — cannot be auto-approved in any mode, must wait for the user's actual response.", "type": "human_action", "workaround": "none — this is by design"}
+    { "description": "Two confirmed, independent root causes in board creation's navigate/render flow — neither is a code bug to unilaterally patch; both require a product/UX decision before implementing", "type": "human_action", "workaround": "none — awaiting the user's pick" }
   ],
   "async_jobs": [],
   "human_actions_pending": [
-    {"action": "Re-verify plan 02-16's Task 4 checkpoint live against the running dev server, especially step 4 (click between the two seeded boards — skeleton should show every time now, no lingering previous board) and step 3 (block the rename request in DevTools, confirm rollback still fires after the modal has already closed).", "context": "gate=\"blocking-human\"; the orchestrator already ran Playwright verification itself for everything reproducible on localhost (D-01 duplicate-name copy confirmed working both ways, D-02 rename-close-timing confirmed working) but step 4's timing genuinely cannot be distinguished fixed-vs-broken on a fast local network.", "blocking": true}
+    { "action": "Pick 1a or 1b for the ~1-3s pre-navigate wait, and 2a or 2b for the ~100-300ms empty-state flicker (or say \"leave both as-is\")", "context": "Debugger found two independent, confirmed root causes (see .planning/debug/board-create-optimistic.md Resolution + Current Focus sections) and deliberately did not force a fix, per this codebase's ADR-0029 ban on reintroducing override machinery without a decision", "blocking": true }
   ],
   "decisions": [
-    {"decision": "Authored 02-16-PLAN.md via the gsd-planner agent (not hand-authored, despite the prior session's handoff recommending hand-authoring against the 02-12 template).", "rationale": "User's explicit choice when asked; wanted the planner's own rigor (fresh acceptance criteria, threat model) over the faster hand-authored path.", "phase": "02"},
-    {"decision": "Kept optimistic board-creation and delete-adjacent work deferred (re-confirmed, not reopened) when the user re-raised it during 02-16's checkpoint.", "rationale": "No new information changed the prior sessions' analysis (backend/ADR-0002 constraints for delete; create still needs the general optimistic pattern extended, already tracked under 02-11). User's explicit choice.", "phase": "02"},
-    {"decision": "Continued using the headed (globally-installed plugin) Playwright integration for this session rather than restarting to load the project's own headless .mcp.json-scoped server.", "rationale": "User's explicit choice, to avoid losing session context mid-checkpoint; a visible browser window is the accepted tradeoff for this session only.", "phase": "02"},
-    {"decision": "Declined to add experimental.staleTimes.dynamic to next.config.ts (would stop the board-detail fetch refetching on every navigation).", "rationale": "Confirmed real gap, but a genuine architectural addition needing an ADR-0019 amendment, not a quick fix. User chose to log it and revisit later rather than implement now.", "phase": "02"},
-    {"decision": "Declined to fix two new UX findings now (missing close-X on create/edit-board modals; column-remove-X vertically misaligned 4px against its input).", "rationale": "Both confirmed real via live testing but outside 02-16's declared scope (D-01/02/03). User chose to leave them logged as backlog rather than expand this plan.", "phase": "02"}
+    { "decision": "Applied one safe, independent fix: use-create-board.ts's onSuccess now seeds the [\"board\", newId] cache entry per ADR tech/0030 rule 4", "rationale": "Closes a real rule-4 gap (every mutation owning a cache entry must write it); verified via tsc clean + 324/324 unit tests + live A/B measurement that it does NOT close either reported symptom, so it is not being presented as a fix for the user's complaint", "phase": "debug/board-create-optimistic" },
+    { "decision": "Did NOT implement a fix for either confirmed root cause (the network-bound navigate wait, or the invalidate/optimistic-write race)", "rationale": "Gap 1 needs relaxing a deliberate T-02-54 membership guard or a UX-only affordance — both are product calls. Gap 2 needs touching BoardScreen's general per-switch invalidate (used by every board switch, not just create) for a create-only race — real regression risk without a clear seam. Both left for the user to choose a direction.", "phase": "debug/board-create-optimistic" },
+    { "decision": "Switched the message-shape Stop hook (~/.claude/state/message-shape-config.json) from blocking to advisory", "rationale": "User explicitly did not want to see the hook's raw stderr dump in the transcript again; advisory mode still logs violations silently but never blocks or prints to stderr", "phase": "session-tooling" }
   ],
-  "uncommitted_files": [],
-  "next_action": "Wait for the user's live re-verification of Task 4 (see human_actions_pending). On \"approved\": dispatch a continuation gsd-executor (isolation=\"worktree\", forking from phase branch tip 1357144 — the open worktree at .claude/worktrees/agent-ac3f899bca0a918da can be discarded, its 3 fix commits already sit on the phase branch) to stop the dev server, write and commit 02-16-SUMMARY.md (requirements-completed: [BOARD-02, BOARD-03, BOARD-04]), then resume execute-phase.md's orchestrator steps: merge/cleanup (nothing to merge if the executor commits directly — verify), post-merge build/test gate, update STATE.md/ROADMAP.md tracking, aggregate_results, code_review_gate, regression_gate, verify_phase_goal, update_roadmap to close out phase 02. If the user reports issues instead: dispatch another fix-and-recheckpoint continuation the same way the two prior rounds worked.",
-  "context_notes": "This is the tail end of phase 02 (Board Management) — all of BOARD-01 through BOARD-06 have been delivered across 15 prior plans; 02-16 is a supplemental plan for UX/quality follow-ups the user approved mid-phase (shared error-code mapping, rename-modal close timing, instant-pending navigation skeletons) rather than deferring them. The checkpoint round has been unusually long because the FIRST live-verification pass surfaced a genuine regression (the loading skeleton not showing) plus several tangential findings (missing modal close buttons, a cookie/httpOnly question, a refetch-caching gap) that all needed real investigation rather than guesswork. Two executor dispatches this session also hit transient API connection drops mid-task (not real failures — see Critical Anti-Patterns below); both recovered cleanly with no lost work because commits are atomic per-task. The remaining work is purely the human checkpoint sign-off plus the mechanical phase-close-out steps once it lands."
+  "uncommitted_files": ["?? .planning/debug/"],
+  "next_action": "On resume, present the two decision axes from .planning/debug/board-create-optimistic.md's Current Focus section to the user in plain text (1a/1b, 2a/2b). Once they pick, spawn a continuation agent (gsd-debug-session-manager, session_params: resume: true, slug: board-create-optimistic) carrying their chosen direction(s) to implement and re-verify. If they say \"leave both as-is\", update the debug file's status to resolved/wontfix-for-now and stop.",
+  "context_notes": "This session did two independent pieces of work: (1) finished and fully verified the board-delete stranding-window quick task (260907-q83) end to end, including live orchestrator verification and CI green — that one is genuinely done, no follow-up needed. (2) Investigated a NEW user-reported complaint (board creation still not optimistic, via a screen-recorded video) through /gsd-debug. I extracted and reviewed the video frames myself, found the mechanism by reading use-create-board.ts before the debugger even started, then handed off to gsd-debug-session-manager which confirmed it live, found a SECOND independent race (the empty-state flicker), applied one safe unrelated fix, and correctly refused to force either real fix without a product decision. The debug session file at .planning/debug/board-create-optimistic.md is the full source of truth — read its Resolution and Current Focus sections first. Also: cleaned up a leftover e2e-seeded account, deleted 55MB of scratch video frames (already written up in the debug file), and stopped an idle dev server before pausing."
 }

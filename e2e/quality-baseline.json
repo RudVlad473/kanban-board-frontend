@@ -1,0 +1,600 @@
+{
+    "recordedAt": "2026-09-08T15:24:30.267Z",
+    "note": "Committed accessibility/layout-shift baseline for e2e/quality-fixtures.ts (04-23). Record with `pnpm e2e:baseline <spec>`.",
+    "tests": {
+        "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > qualityGates runs passively at teardown, and the axe factory scans the settled board": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > flickerTracker records a real board switch, rejects a zero budget, and cdp reports live metrics": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > optimisticRoute delays the write while the optimistic card paints first": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > layoutShiftTracker measures a real interaction, including input-initiated shifts (D-K)": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-01: sign up > creates an account, lands on the board list, and sets an httpOnly session cookie whose value is an opaque JWT": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000027020772298177082
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-01: sign up > creates an account when the optional Name is left blank, falling back to the email local part": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000027020772298177082
+        },
+        "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create a board > creates a board with its named columns in order and lists each new board in the sidebar": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/boards-delete.e2e.spec.ts :: ../e2e/boards-delete.e2e.spec.ts > BOARD-05: delete a board > deletes a board with its columns, moves to the remaining board, then to the empty state": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-02: sign in > signs in a freshly created account and stays signed in across a full page reload": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0
+        },
+        "e2e/boards-list.e2e.spec.ts :: ../e2e/boards-list.e2e.spec.ts > BOARD-01: sidebar board list > shows the signed-in user's own seeded boards and a matching count": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-04: sign-in rejects a wrong password > shows the anti-enumeration message and sets no session cookie": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-05: sign-in rejects a payload failing the shared schema > shows field-level errors and sets no session cookie": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 7
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/boards-detail.e2e.spec.ts :: ../e2e/boards-detail.e2e.spec.ts > BOARD-03: open a board and see its contents > auto-selects the first board, renders its columns, and shows the zero-boards screen to an account with none": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-06: sign-up rejects a payload failing the shared schema > shows field-level errors and sets no session cookie": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 12
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000027020772298177082
+        },
+        "e2e/boards-list.e2e.spec.ts :: ../e2e/boards-list.e2e.spec.ts > BOARD-02: cross-account board isolation > never shows a board seeded under a different account": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-07: sign-up rejects a duplicate email > shows the duplicate-account message on a second sign-up with the same email and sets no session cookie": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 10
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > sign-out > signs out and the board list redirects back to sign-in afterward": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/boards-rename.e2e.spec.ts :: ../e2e/boards-rename.e2e.spec.ts > BOARD-04: rename a board > renames a board from its sidebar overflow menu and keeps the new name across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-05: the sign-in and sign-up cross-links > moves from sign in to sign up without a full page load": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 8
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-05: the sign-in and sign-up cross-links > moves from sign up to sign in without a full page load": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000027020772298177082
+        },
+        "e2e/boards-detail.e2e.spec.ts :: ../e2e/boards-detail.e2e.spec.ts > BOARD-03: open a board and see its contents > board switch: a task deleted before leaving a board is still gone on returning to it": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.00026652018229166664
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-05: the sign-in and sign-up cross-links > moves from the landing page to sign in without a full page load": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000719375212987264
+        },
+        "e2e/auth.e2e.spec.ts :: ../e2e/auth.e2e.spec.ts > AUTH-05: the sign-in and sign-up cross-links > moves from the landing page to sign up without a full page load": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 8
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000719375212987264
+        },
+        "e2e/boards-detail.e2e.spec.ts :: ../e2e/boards-detail.e2e.spec.ts > BOARD-03: open a board and see its contents > board switch: paints a previously visited board while that board's own read is held": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/boards-switch.e2e.spec.ts :: ../e2e/boards-switch.e2e.spec.ts > BOARD-04: switching boards shows the loaded board immediately > paints the already-loaded board on switch, then replaces it with the fresh read": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/columns-create.e2e.spec.ts :: ../e2e/columns-create.e2e.spec.ts > COLUMN-01: create a column > appends a column from the ghost column and keeps it last across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/columns-create.e2e.spec.ts :: ../e2e/columns-create.e2e.spec.ts > COLUMN-01: create a column > creates the first column from the empty state and leaves that state showing it": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/columns-delete.e2e.spec.ts :: ../e2e/columns-delete.e2e.spec.ts > COLUMN-04: delete a column > deletes a column from its header kebab and keeps it gone across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/columns-delete.e2e.spec.ts :: ../e2e/columns-delete.e2e.spec.ts > COLUMN-04: delete a column > removes the tasks the deleted column held from the board view too": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/columns-rename.e2e.spec.ts :: ../e2e/columns-rename.e2e.spec.ts > COLUMN-02: rename a column > renames a column from its header kebab and keeps the new name across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/boards-switch.e2e.spec.ts :: ../e2e/boards-switch.e2e.spec.ts > a board switch lands at the start of the column row > resets the carried-over scroll offset when the destination board also overflows": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/columns-delete.e2e.spec.ts :: ../e2e/columns-delete.e2e.spec.ts > COLUMN-04: delete a column > leaves the column in place when the confirmation is declined": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/columns-reorder.e2e.spec.ts :: ../e2e/columns-reorder.e2e.spec.ts > COLUMN-03: reorder columns > moves a column two positions with a multi-step pointer drag and keeps that order across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/columns-delete.e2e.spec.ts :: ../e2e/columns-delete.e2e.spec.ts > COLUMN-04: delete a column > falls through to the shared empty state once the last column is deleted": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/cookie-policy.e2e.spec.ts :: ../e2e/cookie-policy.e2e.spec.ts > COOKIE-01: default scope with no theme cookie > renders the default (light) document scope in a fresh context": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/cookie-policy.e2e.spec.ts :: ../e2e/cookie-policy.e2e.spec.ts > COOKIE-02: real theme cookie attributes > sets a non-httpOnly, Lax, root-path theme cookie with a roughly one-year lifetime": {
+            "axeRuleCounts": {
+                "color-contrast": 3,
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/boards-switch.e2e.spec.ts :: ../e2e/boards-switch.e2e.spec.ts > a board switch never stacks two board areas > never commits a skeleton beside the live board, and never halves its height": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/cookie-policy.e2e.spec.ts :: ../e2e/cookie-policy.e2e.spec.ts > COOKIE-03: session-vs-theme lifetime isolation > the session cookie keeps its own ~7-day expiry, unaffected by the theme cookie's ~1-year one": {
+            "axeRuleCounts": {
+                "color-contrast": 3,
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/columns-reorder.e2e.spec.ts :: ../e2e/columns-reorder.e2e.spec.ts > COLUMN-03: reorder columns > moves a column one position by keyboard and keeps that order across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/cookie-policy.e2e.spec.ts :: ../e2e/cookie-policy.e2e.spec.ts > COOKIE-04: cross-client value isolation across a toggle > toggling the theme leaves the session cookie's value byte-identical": {
+            "axeRuleCounts": {
+                "color-contrast": 3,
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/cookie-policy.e2e.spec.ts :: ../e2e/cookie-policy.e2e.spec.ts > COOKIE-05: tampered theme cookie values are ignored > a theme cookie value of \"purple\" renders the default scope, no error page": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/optimistic-guards.e2e.spec.ts :: ../e2e/optimistic-guards.e2e.spec.ts > OPT-01: an unconfirmed entity cannot be acted on > task: the card's drag handle is disabled until the create is confirmed, then enabled": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/cookie-policy.e2e.spec.ts :: ../e2e/cookie-policy.e2e.spec.ts > COOKIE-05: tampered theme cookie values are ignored > a theme cookie value of \"dark\" renders the default scope, no error page": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/cookie-policy.e2e.spec.ts :: ../e2e/cookie-policy.e2e.spec.ts > COOKIE-05: tampered theme cookie values are ignored > a theme cookie value of \"\" renders the default scope, no error page": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/columns-reorder.e2e.spec.ts :: ../e2e/columns-reorder.e2e.spec.ts > COLUMN-03: reorder columns > writes nothing when a lifted column is moved and then cancelled": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/route-guard.e2e.spec.ts :: ../e2e/route-guard.e2e.spec.ts > AUTH-03: route guard > redirects an unauthenticated visitor away from the board list and never paints it": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/optimistic-guards.e2e.spec.ts :: ../e2e/optimistic-guards.e2e.spec.ts > OPT-01: an unconfirmed entity cannot be acted on > column: its own controls are disabled until the create is confirmed, then enabled": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/route-guard.e2e.spec.ts :: ../e2e/route-guard.e2e.spec.ts > AUTH-03: route guard > redirects an unauthenticated visitor away from a board detail path, covering the /boards prefix": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/route-guard.e2e.spec.ts :: ../e2e/route-guard.e2e.spec.ts > AUTH-03: route guard > redirects a signed-in visitor away from the sign-in route to the board list": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0
+        },
+        "e2e/optimistic-guards.e2e.spec.ts :: ../e2e/optimistic-guards.e2e.spec.ts > OPT-01: an unconfirmed entity cannot be acted on > board: the sidebar row does not navigate until the create is confirmed, then it does": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": ["color-contrast"],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/route-guard.e2e.spec.ts :: ../e2e/route-guard.e2e.spec.ts > AUTH-03: route guard > treats a tampered session cookie exactly as unauthenticated": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/optimistic-guards.e2e.spec.ts :: ../e2e/optimistic-guards.e2e.spec.ts > OPT-01: an unconfirmed entity cannot be acted on > board: a middle click on the unconfirmed row opens nothing either": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": ["document-title"],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/route-guard.e2e.spec.ts :: ../e2e/route-guard.e2e.spec.ts > AUTH-03: route guard > treats an expired session cookie exactly as unauthenticated": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/session-bridge.e2e.spec.ts :: ../e2e/session-bridge.e2e.spec.ts > SESSION-01: forced sign-out on a dead upstream credential > redirects and renders no board content or raw upstream error text": {
+            "axeRuleCounts": {
+                "landmark-one-main": 1,
+                "region": 6
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/optimistic-guards.e2e.spec.ts :: ../e2e/optimistic-guards.e2e.spec.ts > OPT-01: an unconfirmed entity cannot be acted on > subtask: the edit modal's row for an unconfirmed subtask has no live controls": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/session-bridge.e2e.spec.ts :: ../e2e/session-bridge.e2e.spec.ts > SESSION-02: session rotation across two real sign-ins > produces a different session cookie value on a second sign-in for the same account": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000027020772298177082
+        },
+        "e2e/session-bridge.e2e.spec.ts :: ../e2e/session-bridge.e2e.spec.ts > SESSION-03: force-sign-out route rejects non-same-origin requests (WR-01 CSRF guard) > a cross-site Sec-Fetch-Site header is rejected and leaves the session cookie intact": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/session-bridge.e2e.spec.ts :: ../e2e/session-bridge.e2e.spec.ts > SESSION-03: force-sign-out route rejects non-same-origin requests (WR-01 CSRF guard) > a request with no Sec-Fetch-Site header at all fails closed and leaves the session cookie intact": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/tasks-conflict.e2e.spec.ts :: ../e2e/tasks-conflict.e2e.spec.ts > SYNC-01: a real stale-version rejection > task edit conflict: reverts, raises the distinct toast, and the board re-read shows the server's actual state": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/session-bridge.e2e.spec.ts :: ../e2e/session-bridge.e2e.spec.ts > SESSION-03: force-sign-out route rejects non-same-origin requests (WR-01 CSRF guard) > a same-origin Sec-Fetch-Site header still destroys the session cookie and redirects to sign-in": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/subtasks.e2e.spec.ts :: ../e2e/subtasks.e2e.spec.ts > SUBTASK-02: toggle a subtask > subtask toggle: flips a subtask's completion and it persists across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0
+        },
+        "e2e/tasks-conflict.e2e.spec.ts :: ../e2e/tasks-conflict.e2e.spec.ts > SYNC-01: a real stale-version rejection > task move conflict: reverts the column, raises the distinct toast, and the board re-read shows the server's actual state": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/tasks-create.e2e.spec.ts :: ../e2e/tasks-create.e2e.spec.ts > TASK-01: create a task > task create: fills the create form, chooses a column, and the card survives a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/subtasks.e2e.spec.ts :: ../e2e/subtasks.e2e.spec.ts > SUBTASK-01/03/04: add, rename and delete a subtask without pressing Save Changes > subtask editor: an add, a rename and a delete each persist across a reload with the edit modal's submit never pressed": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0
+        },
+        "e2e/tasks-create.e2e.spec.ts :: ../e2e/tasks-create.e2e.spec.ts > TASK-01: create a task > task create: a task created with no subtasks renders with no caption at all": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/tasks-delete.e2e.spec.ts :: ../e2e/tasks-delete.e2e.spec.ts > TASK-05: delete a task > task delete: deletes a task from its detail view and cascades to its subtasks, read back from the backend": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/tasks-detail.e2e.spec.ts :: ../e2e/tasks-detail.e2e.spec.ts > TASK-02: view task detail > task detail: shows a seeded task's title, description, checklist and current column": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/tasks-edit.e2e.spec.ts :: ../e2e/tasks-edit.e2e.spec.ts > TASK-03: edit a task > task edit: changes the title and description, and both persist across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0
+        },
+        "e2e/tasks-delete.e2e.spec.ts :: ../e2e/tasks-delete.e2e.spec.ts > TASK-05: delete a task > task delete: leaves the task and its subtasks untouched when the confirmation is declined": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/tasks-detail.e2e.spec.ts :: ../e2e/tasks-detail.e2e.spec.ts > TASK-02: view task detail > task detail: renders no description block at all for a task created without one": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/theme.e2e.spec.ts :: ../e2e/theme.e2e.spec.ts > THEME-01: theme persistence > toggles, persists across a reload, persists across sign-out and sign-in, and toggles back": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0
+        },
+        "e2e/theme.e2e.spec.ts :: ../e2e/theme.e2e.spec.ts > THEME-02: unauthenticated toggle writes only the client-side cookie > leaves the signed-in account's stored theme preference untouched": {
+            "axeRuleCounts": {
+                "color-contrast": 3,
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000027020772298177082
+        },
+        "e2e/tasks-move.e2e.spec.ts :: ../e2e/tasks-move.e2e.spec.ts > TASK-04: move a task between columns > task move: drags a task into another, empty column and keeps it there across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/theme.e2e.spec.ts :: ../e2e/theme.e2e.spec.ts > THEME-03: cross-account isolation > toggling one account's theme leaves a second account's stored preference untouched": {
+            "axeRuleCounts": {
+                "page-has-heading-one": 1
+            },
+            "flakyRuleIds": ["color-contrast"],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/tasks-move.e2e.spec.ts :: ../e2e/tasks-move.e2e.spec.ts > TASK-04: move a task between columns > task reorder: settles with no leftover transform or hidden card on the drop frame": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/tasks-move.e2e.spec.ts :: ../e2e/tasks-move.e2e.spec.ts > TASK-04: move a task between columns > task move: drags a task above the destination's first card and lands it there": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/tasks-move.e2e.spec.ts :: ../e2e/tasks-move.e2e.spec.ts > TASK-04: move a task between columns > task move: drags a task below the destination's last card and lands it there": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.003049696180555556
+        },
+        "e2e/tasks-move.e2e.spec.ts :: ../e2e/tasks-move.e2e.spec.ts > TASK-04: move a task between columns > task move: moves a task into another column by keyboard and keeps it there across a reload": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/tasks-move.e2e.spec.ts :: ../e2e/tasks-move.e2e.spec.ts > TASK-04: move a task between columns > task move: writes nothing when a lifted task is moved and then cancelled": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0
+        },
+        "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create a board — optimistic columns > navigates fast and paints the typed columns immediately, while the fan-out is still held": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.00026652018229166664
+        },
+        "e2e/boards-delete.e2e.spec.ts :: ../e2e/boards-delete.e2e.spec.ts > board-delete stranding window > never shows the deleted board's content or a blank header title while the destination is still loading": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 89,
+            "layoutShiftScore": 0.000018374125162760416
+        },
+        "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create a board — optimistic navigation > moves the URL and paints the new board with its typed columns while the create is still held": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.003049696180555556
+        },
+        "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create a board — a refused create > rolls the URL back to the path submitted from, with one toast and no column toast beside it": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.0017397867838541666
+        },
+        "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create a board — a refused create > leaves a user who navigated away mid-flight where they chose to be": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 90,
+            "layoutShiftScore": 0.002319715711805556
+        }
+    }
+}

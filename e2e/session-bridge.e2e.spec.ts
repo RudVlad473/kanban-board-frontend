@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { SignJWT } from "jose";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount } from "./seed";
+import { signUpViaUi } from "./signed-up-user";
 import { E2E_CONFIG } from "./test-env";
 import { COOKIE } from "../src/lib/core/cookies/cookie-registry";
 import { ROUTE } from "../src/lib/core/routing/routes";
 import { THEME } from "../src/lib/core/theme/theme";
 
-/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with D-10's empty state. */
+/* The sidebar landmark, not the old `/boards` placeholder heading plan 02-11 replaced with the empty state. */
 const PROTECTED_LANDMARK = "Boards";
 const FRESH_PASSWORD = "SessionRotationPwd1!";
 
@@ -82,12 +84,7 @@ test.describe("SESSION-02: session rotation across two real sign-ins", () => {
         const freshEmail = `e2e-session-rotation-${randomUUID()}@example.com`;
 
         // Act — sign-up (backend session #1).
-        await page.goto(ROUTE.SIGN_UP);
-        await page.getByLabel("Email", { exact: true }).fill(freshEmail);
-        await page.getByLabel("Name", { exact: true }).fill("Session Rotation Tester");
-        await page.getByLabel("Password", { exact: true }).fill(FRESH_PASSWORD);
-        await page.getByRole("button", { name: "Create Account" }).click();
-        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await signUpViaUi({ page, email: freshEmail, password: FRESH_PASSWORD });
 
         const cookiesAfterFirst = await context.cookies();
         const firstSessionCookie = cookiesAfterFirst.find((cookie) => cookie.name === COOKIE.SESSION);

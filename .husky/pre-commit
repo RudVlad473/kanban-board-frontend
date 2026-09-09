@@ -1,1 +1,2 @@
+bash scripts/secrets.sh precommit
 pnpm exec lint-staged

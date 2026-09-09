@@ -1,6 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { SignJWT } from "jose";
 
+import { expect, test } from "./quality-fixtures";
 import { seedAccount, type SeededAccount } from "./seed";
 import { E2E_CONFIG } from "./test-env";
 import { ROUTE } from "../src/lib/core/routing/routes";
@@ -9,7 +10,7 @@ import { THEME } from "../src/lib/core/theme/theme";
 const SESSION_COOKIE_NAME = "session";
 /*
  * The sidebar landmark. Was the `/boards` placeholder heading until plan 02-11 replaced that page
- * with D-10's empty state, which left the old assertion passing for the wrong reason.
+ * with the empty state, which left the old assertion passing for the wrong reason.
  */
 const PROTECTED_LANDMARK = "Boards";
 

@@ -17,7 +17,7 @@ describe("buildBoardDetailPath", () => {
 
 describe("isProtectedPath", () => {
     /*
-     * A parametrised loop over the path families (D-26y), covering the board list path, every
+     * A parametrised loop over the path families, covering the board list path, every
      * path beneath it, and the near-miss case — a path beginning with the same characters but
      * continuing without a separator must not be treated as protected.
      */

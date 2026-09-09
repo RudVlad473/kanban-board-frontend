@@ -1,6 +1,7 @@
+// Covered by: `e2e/auth.e2e.spec.ts`
 import type { PropsWithChildren } from "react";
 
-import { ThemeToggle } from "@/features/theme/components/theme-toggle";
+import { ThemeToggle } from "@/features/theme/components/theme-toggle/theme-toggle";
 import { THEME } from "@/lib/core/theme/theme";
 import { themeCookie } from "@/lib/server/cookies/theme-cookie";
 

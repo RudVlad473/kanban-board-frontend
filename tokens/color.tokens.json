@@ -27,6 +27,16 @@
         "grey": {
             "900": { "$type": "color", "$value": "#000112", "$description": "Deepest-contrast dark-mode element" },
             "800": { "$type": "color", "$value": "#20212C", "$description": "App background (dark theme)" },
+            "775": {
+                "$type": "color",
+                "$value": "#21222D",
+                "$description": "Ghost `+ New Column` placeholder gradient, bottom stop (dark theme). Sampled from PDF p13 @ (822,740). Stored pre-composited against bg-app rather than as the PDF's source alpha, since this pipeline emits flat hex for every other token."
+            },
+            "750": {
+                "$type": "color",
+                "$value": "#23242F",
+                "$description": "Ghost `+ New Column` placeholder gradient, top stop (dark theme). Sampled from PDF p13 @ (822,130). Stored pre-composited against bg-app rather than as the PDF's source alpha, for the same reason as grey.775."
+            },
             "700": {
                 "$type": "color",
                 "$value": "#2B2C37",
@@ -45,6 +55,39 @@
             },
             "200": { "$type": "color", "$value": "#E4EBFA", "$description": "Borders/dividers (light theme)" },
             "100": { "$type": "color", "$value": "#F4F7FD", "$description": "App background (light theme)" }
+        },
+        "cyan": {
+            "400": {
+                "$type": "color",
+                "$value": "#49C4E5",
+                "$description": "Decorative column-header dot for board position 0 (U-03). Sampled from PDF p3 and p13 @ (24,98) — the same value in both themes."
+            }
+        },
+        "violet": {
+            "400": {
+                "$type": "color",
+                "$value": "#8471F2",
+                "$description": "Decorative column-header dot for board position 1 (U-03). Sampled from PDF p3 and p13 @ (253,98) — the same value in both themes."
+            }
+        },
+        "mint": {
+            "400": {
+                "$type": "color",
+                "$value": "#67E2AE",
+                "$description": "Decorative column-header dot for board position 2 (U-03). Sampled from PDF p3 and p13 @ (487,98) — the same value in both themes."
+            }
+        },
+        "blue": {
+            "75": {
+                "$type": "color",
+                "$value": "#E9EFFA",
+                "$description": "Ghost `+ New Column` placeholder gradient, top stop (light theme). Sampled from PDF p3 @ (822,130). Stored pre-composited against bg-app rather than as the PDF's source alpha, since this pipeline emits flat hex for every other token."
+            },
+            "50": {
+                "$type": "color",
+                "$value": "#EEF3FC",
+                "$description": "Ghost `+ New Column` placeholder gradient, bottom stop (light theme). Sampled from PDF p3 @ (822,740). Stored pre-composited against bg-app rather than as the PDF's source alpha, for the same reason as blue.75."
+            }
         },
         "white": {
             "$type": "color",

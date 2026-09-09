@@ -1,3 +1,4 @@
+// Covered by: `src/features/auth/schemas.unit.test.ts`
 import type { ZodError } from "zod";
 
 /**

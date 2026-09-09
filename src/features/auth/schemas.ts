@@ -1,3 +1,4 @@
+import { isNil } from "es-toolkit";
 import { z } from "zod";
 
 /*
@@ -7,9 +8,19 @@ import { z } from "zod";
 export const REQUIRED_FIELD_MESSAGE = "Can't be empty";
 const EMAIL_FORMAT_MESSAGE = "Enter a valid email address.";
 const PASSWORD_LENGTH_MESSAGE = "Password must be between 8 and 64 characters.";
+
+/*
+ * The sign-up field states the rule before a submit can fail it. It must name EVERY class the
+ * schema below enforces — an incomplete hint is worse than none, because a user who follows it
+ * exactly still fails. Pinned by `schemas.unit.test.ts`.
+ */
+export const PASSWORD_REQUIREMENT_HINT =
+    "At least 8 characters, with an upper and lower case letter, a number, and a special character.";
 const PASSWORD_COMPLEXITY_MESSAGE =
     "Password must include an uppercase letter, a lowercase letter, a number, and a special character.";
-const DISPLAY_NAME_LENGTH_MESSAGE = "Name must be between 3 and 32 characters.";
+/* Exported so a TextField's `characterLimit` and the rule it counts against stay one number. */
+export const DISPLAY_NAME_MAX_LENGTH = 32;
+const DISPLAY_NAME_LENGTH_MESSAGE = `Name must be between 3 and ${String(DISPLAY_NAME_MAX_LENGTH)} characters.`;
 const DISPLAY_NAME_CHARSET_MESSAGE = "Name can only contain letters and spaces.";
 
 /*
@@ -21,12 +32,12 @@ export const signUpSchema = z.object({
     displayName: z
         .string()
         .optional()
-        .transform((value) => (value === undefined || value.trim() === "" ? undefined : value))
+        .transform((value) => (!isNil(value) && value.trim() !== "" ? value : undefined))
         .pipe(
             z
                 .string()
                 .min(3, DISPLAY_NAME_LENGTH_MESSAGE)
-                .max(32, DISPLAY_NAME_LENGTH_MESSAGE)
+                .max(DISPLAY_NAME_MAX_LENGTH, DISPLAY_NAME_LENGTH_MESSAGE)
                 /*
                  * Unicode letters and spaces only — HANDOFF.json's "letters and spaces" read as any
                  * Unicode letter, not ASCII-only (flagged assumption, see the plan's rationale).

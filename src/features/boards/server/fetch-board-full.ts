@@ -1,7 +1,9 @@
 import "server-only";
 
+import { isNil } from "es-toolkit";
 import { cache } from "react";
 
+import { sortColumnsByPosition, sortTasksByPosition } from "@/features/boards/model";
 import { boardFullSchema, type BoardFull } from "@/features/boards/schemas";
 import { EXTERNAL_PATH } from "@/lib/core/api-contract/external-paths";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
@@ -19,7 +21,7 @@ const UNREACHABLE_BOARD_STATUSES = new Set([403, 404]);
 
 /**
  * `fetchBoardFull()`'s own result — a bare discriminant on every non-ok branch, never upstream
- * response text, so no caller can leak what the backend said to the client (D-21, T-02.1-04).
+ * response text, so no caller can leak what the backend said to the client (T-02.1-04).
  */
 export type FetchBoardFullResult =
     | { status: typeof RESULT_STATUS.SUCCESS; board: BoardFull }
@@ -47,7 +49,7 @@ const fetchBoardFullById = cache(async (boardId: string): Promise<FetchBoardFull
      * than trust the generated type, mirroring `fetchBoards`.
      */
     const upstreamError: unknown = error;
-    if (upstreamError !== undefined) {
+    if (!isNil(upstreamError)) {
         return UNREACHABLE_BOARD_STATUSES.has(response.status)
             ? { status: RESULT_STATUS.NOT_FOUND }
             : { status: RESULT_STATUS.ERROR };
@@ -63,7 +65,20 @@ const fetchBoardFullById = cache(async (boardId: string): Promise<FetchBoardFull
         return { status: RESULT_STATUS.ERROR };
     }
 
-    return { status: RESULT_STATUS.SUCCESS, board: parsed.data };
+    /*
+     * The ONE ordering site, now covering both levels: every consumer downstream is
+     * position-ordered by construction, so no component sorts a column or a task list and the
+     * optimistic `arrayMove` composes with display order (COLUMN-03).
+     */
+    return {
+        status: RESULT_STATUS.SUCCESS,
+        board: {
+            ...parsed.data,
+            columns: sortColumnsByPosition(parsed.data.columns).map((column) => {
+                return { ...column, tasks: sortTasksByPosition(column.tasks) };
+            }),
+        },
+    };
 });
 
 /**

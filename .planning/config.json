@@ -1,15 +1,23 @@
 {
   "workflow": {
-    "human_verify_mode": "mid-flight",
-    "auto_advance": false,
     "_auto_chain_active": false,
-    "use_worktrees": true,
     "plan_check": true,
     "verifier": true,
     "research": true,
-    "subagent_timeout": 900000
+    "subagent_timeout": 900000,
+    "build_command": "pnpm build",
+    "test_command": "pnpm test",
+    "test_gate_timeout": 900,
+    "nyquist_validation": false,
+    "discuss_mode": "assumptions",
+    "pattern_mapper": false,
+    "post_planning_gaps": false,
+    "security_enforcement": false,
+    "ui_phase": false,
+    "auto_prune_state": true,
+    "inline_plan_threshold": 3,
+    "use_worktrees": false
   },
-  "model_profile": "quality",
   "git": {
     "branching_strategy": "phase"
   },
@@ -23,5 +31,18 @@
     "gsd-code-reviewer": "global:lsp-first-navigation",
     "gsd-debugger": "global:lsp-first-navigation",
     "gsd-verifier": "global:lsp-first-navigation"
+  },
+  "granularity": "coarse",
+  "fast_mode": {
+    "enabled": true
+  },
+  "model_profile": "balanced",
+  "review": {
+    "default_reviewers": [
+      "agy"
+    ],
+    "models": {
+      "agy": "gemini-3.1-pro-high"
+    }
   }
 }

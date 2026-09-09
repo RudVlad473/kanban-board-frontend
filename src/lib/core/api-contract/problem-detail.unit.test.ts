@@ -40,6 +40,27 @@ describe("parseProblemDetail", () => {
     });
 
     /*
+     * `errors` is a side channel; `code` is what every caller branches on. Dropping a malformed map
+     * keeps a specific backend error specific, where failing the whole parse would silently
+     * downgrade it to INTERNAL_ERROR at the one moment the real code matters.
+     */
+    it.each([
+        { name: "values that are not strings", errors: { email: 42 } },
+        { name: "a non-object", errors: "must not be blank" },
+        { name: "an array", errors: ["must not be blank"] },
+    ])("drops a malformed errors map ($name) but still parses the problem", ({ errors }) => {
+        // Arrange
+        const body: unknown = { ...VALID_PROBLEM_DETAIL, code: PROBLEM_CODE.VALIDATION_FAILED, errors };
+
+        // Act
+        const result = parseProblemDetail(body);
+
+        // Assert
+        expect(result?.code).toBe(PROBLEM_CODE.VALIDATION_FAILED);
+        expect(result?.errors).toBeUndefined();
+    });
+
+    /*
      * The literal 409 body the real backend answered a stale-version board update with
      * (02-BACKEND-FACTS.md P3) — quoted verbatim so the enum entry is pinned to an observation.
      */
@@ -64,7 +85,31 @@ describe("parseProblemDetail", () => {
     });
 
     /*
-     * Parametrised over the rejection-case families (D-26y) rather than a near-identical `it()`
+     * T6: the double-delete body a real 404 carries, quoted verbatim so the enum entry is pinned to
+     * an observation (04-BACKEND-FACTS.md T6).
+     */
+    it("parses the entity-not-found body the backend returns for a missing or already-deleted entity", () => {
+        // Arrange
+        const body: unknown = {
+            type: "about:blank",
+            title: "Not Found",
+            status: 404,
+            detail: "Task was not found",
+            instance: "/api/boards/8okxhwo6oq2o/columns/8okxhwo6oq2p/tasks/8okxhwo6oq2q",
+            code: "ENTITY_NOT_FOUND",
+        };
+
+        // Act
+        const result = parseProblemDetail(body);
+
+        // Assert
+        expect(result).not.toBeNull();
+        expect(result?.code).toBe(PROBLEM_CODE.ENTITY_NOT_FOUND);
+        expect(result?.status).toBe(404);
+    });
+
+    /*
+     * Parametrised over the rejection-case families rather than a near-identical `it()`
      * per shape — each case isolates exactly one reason a value is not a well-formed problem
      * response.
      */

@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
+import { isNil } from "es-toolkit";
 import { jwtVerify, SignJWT } from "jose";
 
 import { COOKIE } from "@/lib/core/cookies/cookie-registry";
@@ -29,13 +30,9 @@ export type SessionPayload = {
 export const SESSION_COOKIE_NAME = COOKIE.SESSION;
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // seven days, absolute expiry (ADR tech/0001)
 
-/**
- * Runtime guard for an unverified value claiming to be a `SessionPayload` — used by `verify()`
- * below and by the auth actions guarding a raw upstream response widened through `unknown`
- * (the generated type says `content?: never` for this operation's success case).
- */
-export const isSessionPayload = (value: unknown): value is SessionPayload => {
-    if (typeof value !== "object" || value === null) {
+/** The identity fields both guards below require, whatever a display name turns out to be. */
+const hasIdentityCore = (value: unknown): boolean => {
+    if (typeof value !== "object" || isNil(value)) {
         return false;
     }
 
@@ -44,13 +41,47 @@ export const isSessionPayload = (value: unknown): value is SessionPayload => {
     return (
         typeof candidate.id === "string" &&
         typeof candidate.email === "string" &&
-        typeof candidate.displayName === "string" &&
         isTheme(candidate.theme as string | undefined)
     );
 };
 
 /**
- * The identity plus the backend's own session credential (GC-18) — what the session cookie
+ * Runtime guard for an unverified value claiming to be a `SessionPayload` — used by `verify()`
+ * below and by the auth actions guarding a raw upstream response widened through `unknown`
+ * (the generated type says `content?: never` for this operation's success case).
+ */
+export const isSessionPayload = (value: unknown): value is SessionPayload => {
+    if (!hasIdentityCore(value)) {
+        return false;
+    }
+
+    return typeof (value as Record<string, unknown>).displayName === "string";
+};
+
+/*
+ * The same identity as read off a sign-in/sign-up RESPONSE, where a nameless account's name is
+ * absent or explicitly `null` — confirmed 2026-09-03 against the deployed nonprod backend, whose
+ * 201 the generated contract's `displayName?: string` does not describe.
+ */
+export type UpstreamIdentity = Omit<SessionPayload, "displayName"> & { displayName?: string | null };
+
+/**
+ * Runtime guard for an upstream identity — deliberately NOT `isSessionPayload`. Guarding a
+ * response with the cookie's own guard rejects every nameless account, reporting a created
+ * account as a failed one.
+ */
+export const isUpstreamIdentity = (value: unknown): value is UpstreamIdentity => {
+    if (!hasIdentityCore(value)) {
+        return false;
+    }
+
+    const { displayName } = value as Record<string, unknown>;
+
+    return isNil(displayName) || typeof displayName === "string";
+};
+
+/**
+ * The identity plus the backend's own session credential — what the session cookie
  * actually carries and what `verify`/`verifyToken` return. Kept separate from `SessionPayload`
  * so callers guarding a bare upstream response body aren't forced to supply a credential.
  */

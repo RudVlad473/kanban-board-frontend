@@ -1,3 +1,4 @@
+// Covered by: `src/features/auth/components/sign-in-form/sign-in-form.test.tsx`
 import type { ProblemCode } from "@/lib/core/api-contract/problem-detail";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
 

@@ -87,7 +87,7 @@ const Item = ({ isDisabled = false, isDestructive = false, className, children, 
         <BaseMenu.Item
             disabled={isDisabled}
             className={cn(
-                "flex cursor-pointer items-center gap-2 rounded-sm px-4 py-3 font-body-l text-body-l [font-weight:var(--font-weight-body-l)] outline-none data-[disabled]:cursor-not-allowed data-[disabled]:text-text-muted data-[disabled]:opacity-50 data-[highlighted]:bg-bg-app first:data-[highlighted]:rounded-t-md last:data-[highlighted]:rounded-b-md",
+                "flex cursor-pointer items-center gap-2 rounded-sm px-4 py-3 font-body-l text-body-l outline-none data-[disabled]:cursor-not-allowed data-[disabled]:text-text-muted data-[disabled]:opacity-50 data-[highlighted]:bg-bg-app first:data-[highlighted]:rounded-t-md last:data-[highlighted]:rounded-b-md",
                 isDestructive ? "text-text-danger" : "text-text-primary",
                 className,
             )}

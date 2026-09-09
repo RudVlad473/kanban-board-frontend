@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Eye } from "lucide-react";
 
 import { TextField } from "./text-field";
 
 /*
- * Visual-only CSF3 (D-25) — no play function anywhere in this file. Behavioural assertions
+ * Visual-only CSF3 — no play function anywhere in this file. Behavioural assertions
  * (typing, error announcement, disabled, overflow) live exclusively in text-field.test.tsx.
  */
 const meta: Meta<typeof TextField> = {
@@ -20,17 +20,24 @@ type Story = StoryObj<typeof TextField>;
 
 export const Idle: Story = {};
 
+/* A row inside an already-labelled group: the label stays announced but takes no layout space. */
+export const HiddenLabel: Story = {
+    args: { isLabelHidden: true },
+};
+
 /*
  * Focus is staged via class application on a wrapping decorator, never a real `.focus()` call or
  * a play function (D-25 keeps stories visual-only).
  */
 export const Focused: Story = {
     decorators: [
-        (Story) => (
-            <div className="[&_input]:ring-2 [&_input]:ring-ring-focus [&_input]:ring-offset-2">
-                <Story />
-            </div>
-        ),
+        (Story) => {
+            return (
+                <div className="[&_input]:ring-2 [&_input]:ring-ring-focus [&_input]:ring-offset-2">
+                    <Story />
+                </div>
+            );
+        },
     ],
 };
 
@@ -50,6 +57,59 @@ export const Error: Story = {
         hasError: true,
         errorMessage: "Can't be empty",
     },
+};
+
+/*
+ * The counter states the bound before it is crossed, in ~30px that cannot truncate at any field
+ * width — unlike the length prose, which the 348px board-modal field cuts at "…between 3 and".
+ * That 348px is staged here rather than at each test's call site.
+ */
+const inBoardModalField: Decorator = (Story) => {
+    return (
+        <div style={{ width: "348px" }}>
+            <Story />
+        </div>
+    );
+};
+
+/** Empty and untouched: the counter stays quiet until the first character. */
+export const CharacterCounter: Story = {
+    args: { label: "Column Name", characterLimit: 32 },
+    decorators: [inBoardModalField],
+};
+
+export const CharacterCounterFilled: Story = {
+    args: { label: "Column Name", characterLimit: 32, defaultValue: "ab" },
+    decorators: [inBoardModalField],
+};
+
+/* Under the minimum the denominator is the blocking bound, qualified so `/3` is not read as a max. */
+export const CharacterCounterUnderMinimum: Story = {
+    args: { label: "Column Name", characterLimit: 32, characterMinimum: 3, defaultValue: "ab" },
+    decorators: [inBoardModalField],
+};
+
+/* Length-invalid: the counter turns red and the prose it replaces goes to aria-describedby. */
+export const CharacterCounterLengthInvalid: Story = {
+    args: {
+        label: "Column Name",
+        characterLimit: 32,
+        defaultValue: "ab",
+        hasError: true,
+        errorMessage: "Column name must be between 3 and 32 characters.",
+    },
+    decorators: [inBoardModalField],
+};
+
+/* Empty and invalid: the required-field copy already fits the slot, so it keeps it. */
+export const CharacterCounterRequiredEmpty: Story = {
+    args: {
+        label: "Column Name",
+        characterLimit: 32,
+        hasError: true,
+        errorMessage: "Can't be empty",
+    },
+    decorators: [inBoardModalField],
 };
 
 export const Disabled: Story = {
@@ -90,15 +150,17 @@ export const Password: Story = {
 };
 
 export const Sizes: Story = {
-    render: (args) => (
-        <div className="flex w-64 flex-col gap-4">
-            <TextField {...args} size="sm" label="Small" />
+    render: (args) => {
+        return (
+            <div className="flex w-64 flex-col gap-4">
+                <TextField {...args} size="sm" label="Small" />
 
-            <TextField {...args} size="md" label="Medium" />
+                <TextField {...args} size="md" label="Medium" />
 
-            <TextField {...args} size="lg" label="Large" />
-        </div>
-    ),
+                <TextField {...args} size="lg" label="Large" />
+            </div>
+        );
+    },
 };
 
 /*
@@ -107,9 +169,11 @@ export const Sizes: Story = {
  * state's visual baseline.
  */
 export const LongValue: Story = {
-    render: (args) => (
-        <div style={{ width: "320px" }}>
-            <TextField {...args} defaultValue={"x".repeat(300)} />
-        </div>
-    ),
+    render: (args) => {
+        return (
+            <div style={{ width: "320px" }}>
+                <TextField {...args} defaultValue={"x".repeat(300)} />
+            </div>
+        );
+    },
 };

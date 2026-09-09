@@ -2,6 +2,47 @@
 @import "./tokens.css";
 @import "./fonts.css";
 
-@source not "../../.planning";
+/*
+ * Planning docs write utility classes with literal placeholders (`--font-weight-{token}`, `-*`,
+ * `...`); Tailwind's scanner turns them into rules that fail to parse, taking the whole stylesheet
+ * with them and 500-ing every dev page. A git worktree is scanned as its OWN root, so its copy of
+ * `.planning` is reached through neither `.gitignore` nor the first rule — hence all three.
+ */
+@source not "../../.planning/**/*";
+@source not "../../.claude/worktrees/**/*";
+@source not "../../.worktrees/**/*";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+    /*
+     * A theme switch swaps every colour token at once, so without this it snaps. Colour properties
+     * only — transforms and enter/exit animations are untouched, and a Tailwind `transition-*`
+     * utility overrides this base rule rather than stacking with it.
+     */
+    @media (prefers-reduced-motion: no-preference) {
+        *,
+        *::before,
+        *::after {
+            transition-property: color, background-color, border-color, outline-color, fill, stroke;
+            transition-duration: 200ms;
+            transition-timing-function: ease;
+        }
+    }
+
+    /*
+     * Chrome paints its own background and text colour on an autofilled input and neither is a
+     * property CSS can set — only the inset shadow trick reaches it, and it must repaint on the
+     * theme swap too, which is why the tokens are read rather than hard-coded.
+     */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+        -webkit-box-shadow: inset 0 0 0 1000px var(--color-bg-surface);
+        -webkit-text-fill-color: var(--color-text-primary);
+        caret-color: var(--color-text-primary);
+        /* Chrome's own fade back to yellow; long enough that the override wins for any real session. */
+        transition: background-color 100000s ease-in-out 0s;
+    }
+}

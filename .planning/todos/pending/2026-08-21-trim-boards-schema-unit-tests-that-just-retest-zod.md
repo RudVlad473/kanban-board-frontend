@@ -4,7 +4,12 @@ title: Trim boards schema unit tests that just re-test zod's own primitives
 area: testing
 severity: minor
 files:
+
   - src/features/boards/schemas.unit.test.ts
+
+audit_acknowledged:
+  milestone: v1.0
+  at: 2026-09-09
 ---
 
 ## Problem

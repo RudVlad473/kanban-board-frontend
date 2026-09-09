@@ -1,14 +1,15 @@
 import { Dialog } from "@base-ui/react/dialog";
 import type {
-    DialogCloseProps,
     DialogDescriptionProps,
     DialogPopupProps,
     DialogRootProps,
     DialogTitleProps,
     DialogTriggerProps,
 } from "@base-ui/react/dialog";
+import { X } from "lucide-react";
 import type { ComponentProps, PropsWithChildren } from "react";
 
+import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { cn } from "@/lib/core/styling/cn";
 import type { ClassNameProp } from "@/types/props";
 
@@ -74,12 +75,25 @@ const Content = ({ className, children, ...props }: ContentProps) => {
 
             <Dialog.Popup
                 className={cn(
-                    "fixed top-1/2 left-1/2 z-50 max-h-[calc(100vh-6rem)] w-[min(90vw,28rem)] -translate-1/2 overflow-hidden rounded-lg bg-bg-surface shadow-lg outline-none",
+                    "fixed top-1/2 left-1/2 z-50 max-h-[calc(100vh-6rem)] w-[min(90vw,28rem)] -translate-1/2 overflow-hidden rounded-md bg-bg-surface shadow-lg outline-none",
                     className,
                 )}
                 {...props}
             >
                 <div className="max-h-[calc(100vh-6rem)] overflow-y-auto p-4 md:p-6">{children}</div>
+
+                {/* Sibling of the scroll region, not a child: inside it the control would scroll
+                    away with the content. Last, so it stays last in the tab order. */}
+                <Dialog.Close
+                    render={
+                        <IconButton
+                            type="button"
+                            label="Close"
+                            icon={<X />}
+                            className="absolute top-1 right-1 md:top-2 md:right-2"
+                        />
+                    }
+                />
             </Dialog.Popup>
         </Dialog.Portal>
     );
@@ -88,26 +102,13 @@ const Content = ({ className, children, ...props }: ContentProps) => {
 type TitleProps = Omit<DialogTitleProps, "className"> & ClassNameProp;
 
 const Title = ({ className, ...props }: TitleProps) => {
-    return (
-        <Dialog.Title
-            className={cn(
-                "font-heading-l text-heading-l [font-weight:var(--font-weight-heading-l)] text-text-primary",
-                className,
-            )}
-            {...props}
-        />
-    );
+    return <Dialog.Title className={cn("font-heading-l text-heading-l text-text-primary", className)} {...props} />;
 };
 
 type DescriptionProps = Omit<DialogDescriptionProps, "className"> & ClassNameProp;
 
 const Description = ({ className, ...props }: DescriptionProps) => {
-    return (
-        <Dialog.Description
-            className={cn("font-body-l text-body-l [font-weight:var(--font-weight-body-l)] text-text-muted", className)}
-            {...props}
-        />
-    );
+    return <Dialog.Description className={cn("font-body-l text-body-l text-text-muted", className)} {...props} />;
 };
 
 type FooterProps = ComponentProps<"div">;
@@ -121,10 +122,8 @@ const Footer = ({ className, ...props }: FooterProps) => {
     return <div className={cn("flex items-center justify-end gap-4", className)} {...props} />;
 };
 
-type CloseProps = Omit<DialogCloseProps, "className"> & ClassNameProp;
-
-const Close = ({ className, ...props }: CloseProps) => {
-    return <Dialog.Close className={className} {...props} />;
-};
-
-export const Modal = { Root, Trigger, Content, Title, Description, Footer, Close };
+/*
+ * No `Close` part: `Content` renders the dismiss control itself, so a consumer-composed one would be
+ * a second way to do the same thing. Reintroduce it only if a modal needs a close in its own body.
+ */
+export const Modal = { Root, Trigger, Content, Title, Description, Footer };

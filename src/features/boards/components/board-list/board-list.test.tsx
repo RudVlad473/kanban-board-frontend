@@ -1,0 +1,879 @@
+/*
+ * Composed from the plain React renderer package, not the Next.js-aware Storybook framework
+ * package — the latter eagerly imports real Next.js internals this "browser" project doesn't
+ * load the Vite plugin for (see docs/adr/tech/0021).
+ */
+import { composeStories } from "@storybook/react";
+import { screen, within } from "@testing-library/react";
+import { beforeEach, expect, it, vi } from "vitest";
+import { userEvent } from "vitest/browser";
+import { render } from "vitest-browser-react";
+
+import { createBoardAction } from "@/features/boards/actions/create-board-action";
+import { createBoardColumnsAction } from "@/features/boards/actions/create-board-columns-action";
+import { deleteBoardAction } from "@/features/boards/actions/delete-board-action";
+import { renameBoardAction } from "@/features/boards/actions/rename-board-action";
+import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
+import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
+import { actionStub } from "@/test-utils/action-stub-registry";
+import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
+import { createBoard } from "@/test-utils/factories/board";
+import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
+import { getRaisedToastTexts } from "@/test-utils/raised-toasts";
+
+import * as stories from "./board-list.stories";
+
+/*
+ * `next/link`/`next/navigation` are the D-19 environment-shim exception (see the vi.mock below) —
+ * every other seam this file used to stub (`useBoards`) is gone: `BoardList` is RSC-fed via props
+ * now, so there is no business-logic hook left to mock.
+ */
+const mockRefresh = vi.hoisted(() => vi.fn());
+const mockPush = vi.hoisted(() => vi.fn());
+/* A getter-backed holder, so one suite can drive the board-detail paths the branches turn on. */
+const currentPathname = vi.hoisted(() => ({ value: "" }));
+
+// eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
+vi.mock("next/navigation", () =>
+    createNextNavigationShim({
+        pathname: () => currentPathname.value,
+        refresh: mockRefresh,
+        push: mockPush,
+    }),
+);
+
+// eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (see comment above)
+vi.mock("next/link", () => createNextLinkShim());
+
+const { Populated, Empty, LoadFailed, AddBoardOpen, RenameOpen, DeleteOpen, SingleBoard } = composeStories(stories);
+
+/** The id every create-board success below queues, and so the id a landed create navigates to. */
+const STUB_BOARD_ID = "stub-board-id";
+
+/*
+ * One recorder per action, looked up off the imported binding — `queue` accepts only that action's
+ * own awaited result and `calls` is typed as its first parameter (04-CONTEXT.md D-01).
+ */
+const createBoardStub = actionStub(createBoardAction);
+const createBoardColumnsStub = actionStub(createBoardColumnsAction);
+const renameBoardStub = actionStub(renameBoardAction);
+const deleteBoardStub = actionStub(deleteBoardAction);
+
+/*
+ * Opens the create modal, fills the board name, then adds and fills a row per requested column.
+ * The form opens with one row, so row 1 is filled in place and the rest are appended.
+ */
+const submitNewBoard = async ({ name, columns }: { name: string; columns: string[] }): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: "+ Create New Board" }));
+    /*
+     * `fill` rather than `type`: this suite drives up to four fields, and per-keystroke typing is
+     * what pushes it past the 15s budget when all five Vitest projects run concurrently.
+     */
+    await userEvent.fill(await screen.findByLabelText("Board Name"), name);
+
+    /*
+     * Every row is added here: the modal seeds none, so zero requested columns needs no cleanup.
+     * A row left as "" is the blank-row case — adding it and filling nothing is the point.
+     */
+    for (const [index, columnName] of columns.entries()) {
+        await userEvent.click(screen.getByRole("button", { name: "+ Add New Column" }));
+
+        if (columnName !== "") {
+            await userEvent.fill(screen.getByLabelText(`Column ${String(index + 1)}`), columnName);
+        }
+    }
+
+    await userEvent.click(screen.getByRole("button", { name: "Create New Board" }));
+};
+
+/*
+ * Read off the DOM rather than by role: Base UI marks the tree outside an open dialog `aria-hidden`,
+ * so a role query would report zero rows exactly when a failed rename's rollback needs reading.
+ */
+const getRenderedBoardNames = (): (string | null)[] =>
+    Array.from(document.querySelectorAll("ul > li > a")).map((link) => link.textContent);
+
+/** Opens a row's overflow menu, activates its delete entry, and confirms in the modal that opens. */
+const deleteBoardFromRow = async (rowName: string): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: `Board actions for ${rowName}` }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete Board" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Delete Board" }));
+};
+
+/** Opens a row's overflow menu, activates its edit entry, retypes the name and submits. */
+const renameBoardFromRow = async ({ rowName, nextName }: { rowName: string; nextName: string }): Promise<void> => {
+    await userEvent.click(screen.getByRole("button", { name: `Board actions for ${rowName}` }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Board" }));
+    await userEvent.fill(await screen.findByLabelText("Board Name"), nextName);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+};
+
+/*
+ * ADR tech/0014: every component's behavioral suite runs at both viewports by default. BoardList
+ * has no viewport-conditional behavior of its own (carried over from `sidebar.test.tsx`, plan 02-09).
+ */
+describeForEachDevice({
+    name: "BoardList",
+    body: () => {
+        beforeEach(() => {
+            // No stub reset here: The global `afterEach` resets every registered stub centrally.
+            mockPush.mockClear();
+            mockRefresh.mockClear();
+            currentPathname.value = ROUTE.BOARDS;
+        });
+
+        it("renders one row per board and the matching ALL BOARDS caption when populated", async () => {
+            // Act
+            await render(<Populated />);
+
+            // Assert
+            expect(screen.getByText("ALL BOARDS (3)")).toBeInTheDocument();
+            expect(screen.getByRole("link", { name: "Fixture Board 1" })).toBeInTheDocument();
+            expect(screen.getByRole("link", { name: "Fixture Board 2" })).toBeInTheDocument();
+            expect(screen.getByRole("link", { name: "Fixture Board 3" })).toBeInTheDocument();
+        });
+
+        it("renders a zero count and no rows when there are no boards", async () => {
+            // Act
+            await render(<Empty />);
+
+            // Assert
+            expect(screen.getByText("ALL BOARDS (0)")).toBeInTheDocument();
+            expect(screen.queryAllByRole("link")).toHaveLength(0);
+        });
+
+        it("renders the authored load-failure copy and a retry control", async () => {
+            // Act
+            await render(<LoadFailed />);
+
+            // Assert
+            expect(screen.getByText("Couldn't load your boards.")).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Try again." })).toBeInTheDocument();
+        });
+
+        /*
+         * First automated assertion that a `router.refresh()` call site fires (CONVENTIONS.md's
+         * refresh rule was code-review-only) — via the D-19 shim's spy from an ordinary test, not
+         * a story `play()`, so docs/adr/tech/0025's D-25 ban needs no exception.
+         */
+        it("refreshes the route when retry is pressed after a load failure", async () => {
+            // Arrange
+            mockRefresh.mockClear();
+            await render(<LoadFailed />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Try again." }));
+
+            // Assert
+            expect(mockRefresh).toHaveBeenCalledOnce();
+        });
+
+        it("renders the sidebar create control with the Copywriting Contract's copy", async () => {
+            // Act
+            await render(<Populated />);
+
+            // Assert
+            expect(screen.getByRole("button", { name: "+ Create New Board" })).toBeInTheDocument();
+        });
+
+        it("renders the create control even when the board list failed to load", async () => {
+            // Act
+            await render(<LoadFailed />);
+
+            // Assert
+            expect(screen.getByRole("button", { name: "+ Create New Board" })).toBeInTheDocument();
+        });
+
+        it("keeps the add-board modal closed on first render", async () => {
+            // Act
+            await render(<Empty />);
+
+            // Assert
+            expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        });
+
+        it("opens the add-board modal when the create control is activated", async () => {
+            // Arrange
+            await render(<Empty />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "+ Create New Board" }));
+
+            // Assert
+            expect(await screen.findByRole("dialog")).toBeInTheDocument();
+            expect(screen.getByRole("heading", { name: "Add New Board" })).toBeInTheDocument();
+        });
+
+        it("renders the add-board modal when staged open", async () => {
+            // Act
+            await render(<AddBoardOpen />);
+
+            // Assert
+            expect(await screen.findByRole("dialog")).toBeInTheDocument();
+        });
+
+        /*
+         * `createBoard()` only CLAIMS the column phase (`claimPendingColumnFanOut`);
+         * `useRunPendingColumnFanOut` runs it once the new board's own route has mounted
+         * (`board-view.test.tsx` covers that half), which nothing here does.
+         */
+        it("moves the URL to the new board while the create is unresolved, without running the column phase", async () => {
+            // Arrange
+            await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+            createBoardStub.hold();
+
+            // Act
+            await submitNewBoard({ name: "Launch", columns: ["Todo"] });
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(1);
+            });
+
+            // Assert — the URL already names the id the action was CALLED with, while that call is unresolved.
+            expect(window.location.pathname).toBe(buildBoardDetailPath(createBoardStub.calls[0].id));
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
+            expect(mockRefresh).not.toHaveBeenCalled();
+
+            createBoardStub.settle();
+        });
+
+        /*
+         * BOARD-02's optimistic insert (docs/adr/tech/0030): the row is on screen while the action is
+         * demonstrably still unresolved, which is the claim a settle-then-assert test cannot make.
+         */
+        it("shows the new board in the sidebar before the create resolves", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            createBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ id: STUB_BOARD_ID, name: "Launch" }),
+            });
+            createBoardStub.hold();
+
+            // Act
+            await submitNewBoard({ name: "Launch", columns: [] });
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(1);
+            });
+
+            // Assert — newest-first behind an already-closed modal, with the URL already on the new board.
+            expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
+            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
+            expect(window.location.pathname).toBe(buildBoardDetailPath(createBoardStub.calls[0].id));
+
+            /*
+             * Assert — the row already links to the id the action was CALLED with, while that call
+             * is demonstrably unresolved. Nothing swaps an id later, so this is the board's final one.
+             */
+            expect(screen.getByRole("link", { name: "Launch" })).toHaveAttribute(
+                "href",
+                buildBoardDetailPath(createBoardStub.calls[0].id),
+            );
+
+            // Act — let the write land.
+            createBoardStub.settle();
+
+            /*
+             * Assert — the settle appends no second row and moves nothing: the URL was already final
+             * before the response, so a landing create has no navigation left to make.
+             */
+            await vi.waitFor(() => {
+                expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
+            });
+            expect(window.location.pathname).toBe(buildBoardDetailPath(createBoardStub.calls[0].id));
+        });
+
+        /* The other half of the same mechanism: a refusal must leave no trace of the optimistic row, nor of the move it made. */
+        it("removes the optimistic row and reports the failure in a toast when the create fails", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            const pathBefore = window.location.pathname;
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            createBoardStub.hold();
+
+            // Act
+            await submitNewBoard({ name: "Launch", columns: [] });
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(1);
+            });
+
+            // Assert — the optimistic row stands while the refusal is still in flight.
+            expect(getRenderedBoardNames()).toEqual(["Launch", ...namesBefore]);
+
+            // Act
+            createBoardStub.settle();
+
+            // Assert — the row is withdrawn and the refusal is reported in the toast stack.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+            });
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
+            /* Returned to the path the submit was made from — the move is undone, not merely unmade. */
+            expect(window.location.pathname).toBe(pathBefore);
+        });
+
+        /*
+         * A blank row left on screen is dropped on the way to the create sequence rather than
+         * blocking the submit, matching how the task form treats a blank subtask row.
+         */
+        /* Reversed 2026-09-03: a blank row is a user error, so the submit is refused before any action runs. */
+        it("refuses the submit on a blank column row instead of dropping it from the sequence", async () => {
+            // Arrange
+            await render(<Empty />);
+
+            // Act
+            await submitNewBoard({ name: "Launch", columns: ["Todo", "", "Done"] });
+
+            // Assert — nothing left the browser, and the modal is still open on the offending row.
+            await expect.element(screen.getByText("Can't be empty", { exact: true })).toBeVisible();
+            expect(createBoardStub.calls).toHaveLength(0);
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
+            await expect.element(screen.getByRole("heading", { name: "Add New Board" })).toBeVisible();
+        });
+
+        /* No rows are seeded, so a column-less create needs nothing removed first. */
+        it("creates a board with no columns when no row is added", async () => {
+            // Arrange
+            await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.SUCCESS, board: createBoard({ id: STUB_BOARD_ID }) });
+
+            // Act
+            await submitNewBoard({ name: "Launch", columns: [] });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(1);
+            });
+            expect(window.location.pathname).toBe(buildBoardDetailPath(createBoardStub.calls[0].id));
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
+            expect(getRaisedToastTexts()).toHaveLength(0);
+        });
+
+        /*
+         * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE (probed 2026-08-25)
+         * — the same refusal rename already explains, now recognised on create too.
+         */
+        it("names the clash in the failure toast when the board name is already taken", async () => {
+            // Arrange
+            await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.DUPLICATE });
+
+            // Act
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+
+            // Assert — told why, with nothing created to navigate to and no column phase attempted.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("A board with that name already exists.");
+            });
+            expect(getRaisedToastTexts()[0]).toContain("Choose a different name.");
+            expect(screen.queryByRole("heading", { name: "Add New Board" })).not.toBeInTheDocument();
+            expect(createBoardColumnsStub.calls).toHaveLength(0);
+        });
+
+        /* Every other refusal keeps the generic copy — only the name clash has more to say. */
+        it("keeps the generic create-failure copy for a refusal with nothing distinct to say", async () => {
+            // Arrange
+            await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+
+            // Act
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+            });
+            expect(getRaisedToastTexts()[0]).toContain("Try again.");
+        });
+
+        /*
+         * The trade-off closing on submit was accepted on: a refused create may cost the user a
+         * click, never what they typed — name and every column row come back as they left them.
+         */
+        it("reopens the modal prefilled with the whole attempt when the toast's Retry is clicked", async () => {
+            // Arrange
+            await render(<Empty />);
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            await submitNewBoard({ name: "Platform Launch", columns: ["Todo", "Doing"] });
+            const region = await screen.findByRole("region", { name: "Notifications" });
+
+            // Act
+            await userEvent.click(await within(region).findByRole("button", { name: "Retry" }));
+
+            // Assert
+            await expect.element(screen.getByRole("heading", { name: "Add New Board" })).toBeVisible();
+            await expect.element(screen.getByLabelText("Board Name")).toHaveValue("Platform Launch");
+            await expect.element(screen.getByLabelText("Column 1")).toHaveValue("Todo");
+            await expect.element(screen.getByLabelText("Column 2")).toHaveValue("Doing");
+        });
+
+        /*
+         * The concurrent case a snapshot rollback cannot serve: the second create is in the cache
+         * entry but not in the first one's snapshot, so restoring that snapshot deletes it.
+         */
+        it("keeps a board that landed while an earlier create was still in flight and then failed", async () => {
+            // Arrange — the first create is held unresolved, so the second runs on top of it.
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            createBoardStub.hold();
+            await submitNewBoard({ name: "Doomed", columns: [] });
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(1);
+            });
+
+            // Act — the second create lands while the first is still flying, then the first refuses.
+            createBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ id: STUB_BOARD_ID, name: "Survivor" }),
+            });
+            await submitNewBoard({ name: "Survivor", columns: [] });
+            await vi.waitFor(() => {
+                expect(createBoardStub.calls).toHaveLength(2);
+            });
+            createBoardStub.settle();
+
+            // Assert — only the refused row is withdrawn; the landed one survives its rollback.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+            });
+            expect(getRenderedBoardNames()).toEqual(["Survivor", ...namesBefore]);
+        });
+
+        /*
+         * The Retry is the ONLY route back to the typed name and rows, so a toast that expires
+         * takes the whole attempt with it. Fake timers reach Base UI's `setTimeout`.
+         */
+        it("keeps the create-failure toast on screen past the auto-dismiss window the column toast obeys", async () => {
+            // Arrange
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            try {
+                await render(<Empty />);
+                createBoardStub.queue({ status: RESULT_STATUS.ERROR });
+                await submitNewBoard({ name: "Platform Launch", columns: ["Todo"] });
+                await vi.waitFor(() => {
+                    expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+                });
+
+                // Act — past the 5000ms provider default, with the stack neither hovered nor blurred.
+                window.dispatchEvent(new FocusEvent("focus"));
+                await vi.advanceTimersByTimeAsync(9000);
+
+                // Assert
+                expect(getRaisedToastTexts()[0]).toContain("Couldn't create board.");
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it("opens the rename modal seeded with that row's current name", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Board actions for Fixture Board 2" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Board" }));
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Edit Board" })).toBeInTheDocument();
+            expect(await screen.findByLabelText("Board Name")).toHaveValue("Fixture Board 2");
+        });
+
+        it("renders the rename modal when staged open", async () => {
+            // Act
+            await render(<RenameOpen />);
+
+            // Assert
+            expect(await screen.findByLabelText("Board Name")).toHaveValue("Fixture Board 1");
+        });
+
+        /*
+         * The whole point, plus the timing: the row asserts the new name and the modal is
+         * already gone while the write is still in flight, and no other row is touched by it.
+         */
+        it("closes the modal and shows the new name in that row before the rename resolves", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+            renameBoardStub.hold();
+
+            // Act — submit, then observe while the action is still unresolved.
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert — applied optimistically and already dismissed, with the write demonstrably still open.
+            await vi.waitFor(() => {
+                expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
+            });
+            expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
+
+            // Act — let the write land.
+            renameBoardStub.settle();
+
+            // Assert — the name stays and nothing was announced, the modal having closed long before.
+            await vi.waitFor(() => {
+                expect(renameBoardStub.calls).toHaveLength(1);
+            });
+            expect(getRenderedBoardNames()).toEqual(["Platform Relaunch", ...namesBefore.slice(1)]);
+            expect(getRaisedToastTexts()).toHaveLength(0);
+        });
+
+        /*
+         * WR-01 (02-REVIEW.md): the rename hook's shared `isPending` flag must be scoped to the
+         * board actually being renamed, or opening board 2 while board 1's rename is in flight
+         * would incorrectly show board 2's own modal as pending — full rationale in 02-REVIEW.md.
+         */
+        it("does not show an unrelated board's edit modal as pending while another row's rename is in flight", async () => {
+            // Arrange
+            await render(<Populated />);
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+            renameBoardStub.hold();
+
+            // Act — start a rename on row 1; the modal closes instantly while its write is held.
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Act — open Edit Board on an unrelated row while row 1's rename is still unresolved.
+            await userEvent.click(screen.getByRole("button", { name: "Board actions for Fixture Board 2" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Edit Board" }));
+
+            // Assert — board 2's own modal is not pending, even though board 1's rename hasn't settled.
+            expect(await screen.findByRole("heading", { name: "Edit Board" })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Save Changes" })).toBeEnabled();
+
+            renameBoardStub.settle();
+        });
+
+        /*
+         * WR-02 (02-REVIEW.md): a second submit on the same row before the first settled could
+         * roll back to a stale name/version. Disabling that row's Edit Board entry while its
+         * rename is in flight closes that window — full rationale in 02-REVIEW.md.
+         */
+        it("keeps the same row's Edit Board entry inert while its own rename is in flight", async () => {
+            // Arrange
+            await render(<Populated />);
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+            renameBoardStub.hold();
+
+            // Act — submit a rename on row 1; the modal closes instantly while the write is held.
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Act — reopen the row's overflow menu before its rename has settled.
+            await userEvent.click(screen.getByRole("button", { name: "Board actions for Platform Relaunch" }));
+
+            // Assert — the entry is disabled outright, so it can never be activated while pending.
+            expect(await screen.findByRole("menuitem", { name: "Edit Board" })).toHaveAttribute(
+                "aria-disabled",
+                "true",
+            );
+            expect(screen.queryByRole("heading", { name: "Edit Board" })).not.toBeInTheDocument();
+
+            renameBoardStub.settle();
+        });
+
+        it("sends the row's own id and current version with the rename", async () => {
+            // Arrange
+            await render(<Populated />);
+            renameBoardStub.queue({
+                status: RESULT_STATUS.SUCCESS,
+                board: createBoard({ name: "Platform Relaunch", version: 1 }),
+            });
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(renameBoardStub.calls).toHaveLength(1);
+            });
+            expect(renameBoardStub.calls[0]).toEqual({
+                boardId: Populated.args.boards?.[0]?.id,
+                name: "Platform Relaunch",
+                version: Populated.args.boards?.[0]?.version,
+            });
+        });
+
+        /*
+         * The load-bearing rollback case: asserting only that the renamed row reverted would pass
+         * whether or not the override had leaked into a neighbouring row on the way back out.
+         */
+        it("restores the whole rendered name set and announces the reason when a rename fails", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            renameBoardStub.queue({ status: RESULT_STATUS.ERROR });
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert — identical to the pre-submit set, not merely "the renamed row reverted".
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+        });
+
+        /* T-02-61: the toast carries this project's own copy and nothing taken from the response. */
+        it("raises the authored rename-failure copy, with no text from the rejection", async () => {
+            // Arrange
+            await render(<Populated />);
+            renameBoardStub.queue({ status: RESULT_STATUS.ERROR });
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("Couldn't rename board.Try again.");
+        });
+
+        /*
+         * SYNC-01's reconciliation experience is Phase 4 scope, so a stale version deliberately
+         * keeps the GENERIC copy — explaining it properly is that phase's job, not a half-built one.
+         */
+        it("keeps the generic copy for a stale-version conflict", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            renameBoardStub.queue({ status: RESULT_STATUS.CONFLICT });
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("Couldn't rename board.Try again.");
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+        });
+
+        /*
+         * The backend refuses a duplicate board name with 409 DUPLICATE_RESOURCE (probed
+         * 2026-08-25) — a distinct outcome from a stale version, so it earns its own copy.
+         */
+        it("names the clash when a rename is refused for a duplicate board name", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            renameBoardStub.queue({ status: RESULT_STATUS.DUPLICATE });
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Fixture Board 2" });
+
+            // Assert — rolled back, and told why, rather than a bare "try again".
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("A board with that name already exists.Choose a different name.");
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+        });
+
+        it("tells the user to sign in again when the rename is refused as unauthenticated", async () => {
+            // Arrange
+            await render(<Populated />);
+            renameBoardStub.queue({ status: RESULT_STATUS.UNAUTHENTICATED });
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe("Your session has expired.Sign in again to rename this board.");
+        });
+
+        it("says the board is gone when the rename is refused as not visible to this account", async () => {
+            // Arrange
+            await render(<Populated />);
+            renameBoardStub.queue({ status: RESULT_STATUS.NOT_FOUND });
+
+            // Act
+            await renameBoardFromRow({ rowName: "Fixture Board 1", nextName: "Platform Relaunch" });
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(1);
+            });
+            expect(getRaisedToastTexts()[0]).toBe(
+                "That board is no longer available.Refresh to see your current boards.",
+            );
+        });
+
+        it("opens the confirm modal naming that row's own board when its delete entry is activated", async () => {
+            // Arrange
+            await render(<Populated />);
+
+            // Act
+            await userEvent.click(screen.getByRole("button", { name: "Board actions for Fixture Board 2" }));
+            await userEvent.click(await screen.findByRole("menuitem", { name: "Delete Board" }));
+
+            // Assert — that board is named, and nothing has been deleted yet.
+            expect(await screen.findByRole("heading", { name: "Delete this board?" })).toBeInTheDocument();
+            expect(screen.getByText(/'Fixture Board 2' board\?/)).toBeInTheDocument();
+            expect(deleteBoardStub.calls).toHaveLength(0);
+        });
+
+        it("renders the delete confirmation when staged open", async () => {
+            // Act
+            await render(<DeleteOpen />);
+
+            // Assert
+            expect(await screen.findByRole("heading", { name: "Delete this board?" })).toBeInTheDocument();
+            expect(screen.getByText(/'Fixture Board 1' board\?/)).toBeInTheDocument();
+        });
+
+        it("sends the row's own id with the delete and moves nobody when it was not the open board", async () => {
+            // Arrange — the board list route, so no board is open at all.
+            await render(<Populated />);
+            deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
+            const locationBefore = window.location.pathname;
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 2");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(deleteBoardStub.calls).toEqual([{ boardId: Populated.args.boards?.[1]?.id }]);
+            });
+            expect(window.location.pathname).toBe(locationBefore);
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        /*
+         * REPLACING, not pushing — the deleted board's address must not sit in the back history
+         * (T-02-70). Asserted against the real browser address, which is what the delete now
+         * writes; `usePathname()` is shimmed here and would not move either way.
+         */
+        it("moves to the first remaining board, replacing the history entry, when the open board is deleted", async () => {
+            // Arrange — the first board is the one being viewed.
+            const boards = Populated.args.boards ?? [];
+            currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
+            await render(<Populated />);
+            deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
+            const historyLengthBefore = window.history.length;
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 1");
+
+            // Assert — the top of the sidebar's own newest-first order, at the browser's own address.
+            await vi.waitFor(() => {
+                expect(window.location.pathname).toBe(buildBoardDetailPath(boards[1]?.id ?? ""));
+            });
+            // Replaced, not pushed: no new entry for the user to walk back into.
+            expect(window.history.length).toBe(historyLengthBefore);
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        it("lands on the board-list route when the open board was the last one", async () => {
+            // Arrange
+            const boards = SingleBoard.args.boards ?? [];
+            currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
+            await render(<SingleBoard />);
+            deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 1");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(window.location.pathname).toBe(ROUTE.BOARDS);
+            });
+        });
+
+        /*
+         * BOARD-05's optimistic removal (docs/adr/tech/0030): the row is gone while the action is
+         * demonstrably still unresolved, which is the claim a settle-then-assert test cannot make.
+         */
+        it("removes the row from the sidebar before the delete resolves", async () => {
+            // Arrange
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            deleteBoardStub.queue({ status: RESULT_STATUS.SUCCESS });
+            deleteBoardStub.hold();
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 2");
+            await vi.waitFor(() => {
+                expect(deleteBoardStub.calls).toHaveLength(1);
+            });
+
+            // Assert — and the confirmation is already closed, since nothing is left to wait on.
+            expect(getRenderedBoardNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Board 2"));
+            expect(screen.queryByRole("heading", { name: "Delete this board?" })).not.toBeInTheDocument();
+
+            // Act — let the write land.
+            deleteBoardStub.settle();
+
+            // Assert — nothing flashes back, and the removal is not applied a second time.
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toHaveLength(0);
+            });
+            expect(getRenderedBoardNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Board 2"));
+        });
+
+        /*
+         * A refusal restores BOTH halves of the optimistic write — the row and the address that
+         * named it — or the sidebar would show a board the user can no longer navigate back to.
+         */
+        it("restores the row and returns the viewer to the board when the delete fails", async () => {
+            // Arrange — the first board is the one being viewed, so the delete moves the user too.
+            const boards = Populated.args.boards ?? [];
+            currentPathname.value = buildBoardDetailPath(boards[0]?.id ?? "");
+            await render(<Populated />);
+            const namesBefore = getRenderedBoardNames();
+            deleteBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            deleteBoardStub.hold();
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 1");
+            await vi.waitFor(() => {
+                expect(deleteBoardStub.calls).toHaveLength(1);
+            });
+
+            // Assert — removed and moved off optimistically, before anything has been refused.
+            expect(getRenderedBoardNames()).toEqual(namesBefore.filter((name) => name !== "Fixture Board 1"));
+            expect(window.location.pathname).toBe(buildBoardDetailPath(boards[1]?.id ?? ""));
+
+            // Act
+            deleteBoardStub.settle();
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(getRaisedToastTexts()).toEqual(["Couldn't delete board.Try again."]);
+            });
+            expect(getRenderedBoardNames()).toEqual(namesBefore);
+            // The address comes back with the row — the deleted board's own path, not the destination.
+            expect(window.location.pathname).toBe(buildBoardDetailPath(boards[0]?.id ?? ""));
+            expect(mockPush).not.toHaveBeenCalled();
+        });
+
+        it("closes the confirmation once the delete settles, whichever way it went", async () => {
+            // Arrange
+            deleteBoardStub.queue({ status: RESULT_STATUS.ERROR });
+            await render(<Populated />);
+
+            // Act
+            await deleteBoardFromRow("Fixture Board 1");
+
+            // Assert
+            await vi.waitFor(() => {
+                expect(screen.queryByRole("heading", { name: "Delete this board?" })).not.toBeInTheDocument();
+            });
+        });
+    },
+});
