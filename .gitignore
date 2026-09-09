@@ -76,3 +76,6 @@ storybook-static/
 .superpowers/**/state/
 .superpowers/**/.last-port
 .superpowers/**/.last-token
+
+# Filmstrip runs: contact sheets and change series for motion review, replaced on every run.
+.motion/

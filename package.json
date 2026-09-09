@@ -48,7 +48,8 @@
         "setup:worktree": "bash scripts/setup-worktree.sh",
         "secrets:encrypt": "bash scripts/secrets.sh encrypt",
         "secrets:decrypt": "bash scripts/secrets.sh decrypt",
-        "secrets:verify": "bash scripts/secrets.sh verify"
+        "secrets:verify": "bash scripts/secrets.sh verify",
+        "filmstrip": "node scripts/filmstrip.mjs"
     },
     "dependencies": {
         "@base-ui/react": "1.7.0",
