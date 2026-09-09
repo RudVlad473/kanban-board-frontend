@@ -19,14 +19,17 @@ and pretending otherwise is how a defect ships under a green suite (`docs/adr/te
 
 ## The rules the defects keep breaking
 
-Six recur often enough to be worth stating before the table:
+Seven recur often enough to be worth stating before the table:
 
 1. **An inline `style.transition` overrides the stylesheet's whole list**, not just the property
    you named. Setting one for a FLIP and leaving it disables everything else on that element.
 2. **A transition cannot interpolate from `auto`**, and `align-self` cannot interpolate at all.
    Growth needs a concrete start value and a frame boundary — `void el.offsetHeight` inside one
    task is not enough; `requestAnimationFrame` is.
-6. **A class used to seed a start value must also suppress the transition.** Otherwise applying it
+6. **`getBoundingClientRect` includes transforms; `offsetLeft`/`offsetTop` do not.** Aim at the
+   settled layout position, or an in-flight FLIP will send the thing somewhere its target has
+   already left.
+7. **A class used to seed a start value must also suppress the transition.** Otherwise applying it
    animates *into* the start value, and removing it merely reverses a fade that never arrived.
 3. **A `position: fixed` clone has no stretching parent**, so it collapses to its content whatever
    the source measured.
@@ -63,6 +66,7 @@ Six recur often enough to be worth stating before the table:
 | 23 | The kebab blinked out the instant a column was lifted | The clone was stripped of `.ckb` as well as `.menu`, so the panel stopped being a picture of the column that was grabbed | User | e2e: the overlay contains a `.ckb` at opacity 1 and no `.menu` |
 | 24 | Two kebabs on screen while a dropped column landed | The panel kept its kebab all the way down while the slot's own reappeared 120ms after the drop — offset by the overlay's 10px padding, so they read as two | User | e2e: sample both across the settle; the count of visible kebabs never exceeds 1 |
 | 25 | The dashed slot painted over the column it crossed, intermittently | Every column is positioned, so paint order is DOM order; during the FLIP the slot and its neighbour genuinely overlap, and whichever came later in the list won | User, in slow motion; quantified with `elementFromPoint` | e2e: sample a neighbour's card centre across the FLIP; it is topmost on every frame. Was occluded on **12 of 57** |
+| 26 | Dropping a column far from where it lands showed it in two places | Two faults compounding: the slot repopulated on a fixed 120ms while the 180ms flight was still running, and the panel was aimed at a rect that included the FLIP's in-flight `translate`, so on a long throw it never arrived at all | User, on a video | e2e: after a long drop, no frame has the panel >40px from the slot *while* the slot's header is visible. Was **5 frames**; the panel's final gap was also never 0 |
 | 21 | The slot growing into the lane was too much motion for the interaction | Growth is a second animation competing with the flight, on a gesture that repeats | User | Judgement, not assertion — the height change is real and correct either way (see below) |
 
 ## What is not mechanically catchable
