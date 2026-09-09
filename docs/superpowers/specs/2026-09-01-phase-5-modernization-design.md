@@ -1159,6 +1159,66 @@ and a strategy that executes perfectly produce the same zero. **Any harness asse
 of something needs a positive control** — here, counting the API calls — or it cannot distinguish
 "clean" from "never ran".
 
+## Making the view transition "more dynamic", and what it costs
+
+The un-named `startViewTransition()` is a root cross-fade, which is why it reads as clean but
+low-effort. Structure is added by giving elements a `view-transition-name` so they morph
+individually. Prototyped in `task-open-v7.html` on the title, description and subtask list:
+
+| | dead frames | dead time | frames morphing |
+|---|---|---|---|
+| unnamed (root cross-fade) | 20 / 44 | 320ms | — |
+| **named parts** | 22 / 56 | **352ms** | 20 |
+
+**Making it more dynamic makes it more expensive, not less** — the input block scales with the
+transition, so the better it looks the longer the panel refuses clicks. This is the argument for
+the sequenced fade and the directional entry standing: both are structural, and both cost zero.
+
+## Push or overlay — how the panel docks
+
+Reported that on a full board, opening the panel "shifts everything too much and feels rushy".
+Measured, and the cause is not what it looks like.
+
+**The columns never move.** Displacement is **0 of 6 columns** in both docking modes, because the
+board is left-aligned and already overflows: narrowing its container changes what is *visible*,
+not where anything sits. The sensation is entirely the board **scrolling**, and the scroll is
+something this session added — a `scrollIntoView` to keep the opened card clear of the panel.
+
+With the target card already on screen and the board scrolled right:
+
+| dock | board scrolls | card travels | card clears panel |
+|---|---|---|---|
+| push | **382px** | 382px | yes |
+| overlay | **0** | 0 | no |
+
+From a cold scroll position the push case measured **737px** — three-quarters of a column-set
+sliding away for the act of opening a detail view.
+
+**Recommended: overlay, and drop the reveal.** Four reasons.
+
+1. **Rule 2.** The user opened a panel. The columns did not move, so nothing about them should
+   move. Pushing displaces content as a side effect of an action that was not about that content.
+2. The reveal was **an assumption, not a requirement**. The card's contents are now in the panel,
+   larger. Keeping the 280px card visible alongside its own 400px expansion is redundant, and it
+   is what costs the 382–737px of travel.
+3. **The reference set overlays** — Jira, Linear, GitHub Projects all float the detail over the
+   list rather than reflowing it.
+4. **The sidebar-mirror argument that produced `push` was wrong on intent.** Collapsing the sidebar
+   is *about* reclaiming space, so the board flowing into it is the point. Opening a task panel is
+   about showing detail; space reclamation is not the goal, so borrowing the sidebar's behaviour
+   imported a justification that does not transfer.
+
+The accepted cost is that the panel covers ~400px of board, including possibly the card just
+clicked. On a narrow laptop that is a meaningful fraction — but the board still scrolls, so nothing
+is unreachable, and it is strictly less disruptive than the modal's full-board scrim that this
+phase already rejected.
+
+## Closing is slower than opening
+
+Set to **360ms close against 220ms open** (was symmetric at 220). Opening races an intention the
+user has already formed; closing is a dismissal, and a panel that vanishes at the same speed it
+arrived reads as a glitch rather than as a movement. Asymmetry here is the point, not an oversight.
+
 ## Typeface — Manrope, decided 2026-09-09
 
 Supersedes Inter, chosen on 2026-09-01. The decision came from reviewing `type-board.html`, and
