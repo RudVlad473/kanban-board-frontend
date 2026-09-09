@@ -1682,6 +1682,21 @@ uncovered cells inherit.
 **Rejected: `⌘1`–`⌘9` on the first nine rows.** The affordance is only honest if the bindings
 exist, and adding them is scope creep out of this phase.
 
+### `view-transition-name` on a list row creates a stacking context
+
+Found 2026-09-09 in `board-edit-v2.html`, by the user watching it rather than by any check.
+Naming each sidebar row — which the delete transition below requires — makes **every row its own
+stacking context**, so a `z-index` set *inside* one row can no longer rise above the next row. The
+kebab menu rendered behind the board names below it, half-legible, while every assertion about it
+passed: it was in the DOM, it had the right size, and it was on top within its own row.
+
+The fix is to lift **the row**, not the thing inside it (`li.menu-open { z-index: 20 }`).
+
+**This is a prediction about the shipping code, not only the prototype.** `BoardCard` renders a
+Base UI `Menu` inside the same `<li>` that will carry the name, so it hits this the moment the
+transition lands. Verified in the prototype with `elementFromPoint` at the menu's own centre —
+the check that distinguishes "painted" from "painted on top", which a snapshot assertion does not.
+
 ## Open items added by this session
 
 11. Adopt or reject proposed rules 6–9. Rules 6 and 7 both have a named failure already present in

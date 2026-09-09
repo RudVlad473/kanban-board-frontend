@@ -185,6 +185,15 @@
             li.menu-open > .kb {
                 opacity: 1;
             }
+            /*
+             * `view-transition-name` makes each row its own stacking context, so a z-index INSIDE
+             * one row cannot rise above the next row — the menu painted behind the names below it.
+             * The lift has to be applied to the row itself. Naming list items silently changes
+             * paint order for anything that escapes their bounds.
+             */
+            li.menu-open {
+                z-index: 20;
+            }
             .kb:hover {
                 background: var(--border);
                 color: var(--text);
