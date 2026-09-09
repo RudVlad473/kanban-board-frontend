@@ -1786,6 +1786,16 @@ is its own session.
 captures as `afterBoardId`, with a fading danger tint — something genuinely un-happened, and that
 is the one case where reversal is animated.
 
+## Every prototype defect is logged with the assertion that would catch it
+
+`2026-09-09-phase-5-defect-log.md` carries all 18 found so far: what broke, why, who caught it,
+and the test that would fail. **Every one was found by a person looking at the thing**, and every
+one passed whatever verification existed at the time.
+
+Its value is not the list — it is the five recurring causes the list exposes, and the last column,
+which is honest about the three defects no assertion reaches. A plan implementing one of these
+surfaces takes its rows and writes that column as real tests.
+
 ## Backend asks — where an endpoint change would buy real UX
 
 Opened 2026-09-09 on the user's instruction to call these out rather than design around them.
