@@ -10,8 +10,9 @@ file holds only what is and is not covered.
 Phase 5's prototypes were organised by *surface* — material, transitions, overlays, landing. That
 ordering makes a gap invisible when it falls between two surfaces, and one did: **every column
 mutation**. `use-create-column`, `use-rename-column`, `use-delete-column` and
-`use-reorder-columns` all ship today, none appears in `G1`–`G8`, and none has a prototype.
-Re-indexing the same prototypes by *entity × operation* surfaced it in one pass.
+`use-reorder-columns` all ship today and none appeared in `G1`–`G8`. Re-indexing the same
+prototypes by *entity × operation* surfaced it in one pass. **All four have been prototyped since
+(`column-crud-v17`) and none is signed off** — the row reads `◑`.
 
 The operation list is not invented here. It is the 21 mutation hooks under
 `src/features/*/hooks/`, so a row cannot quietly omit something the app can already do.
@@ -22,6 +23,7 @@ The operation list is not invented here. It is the 21 mutation hooks under
 |---|---|
 | ✅ | a prototype shows this operation's own motion |
 | ◐ | only a fragment is prototyped — the trigger, the toast, the button — never the operation |
+| ◑ | prototyped end to end, **not yet signed off** — the surface exists and works, refinement is open |
 | ❌ | nothing |
 | — | the app has no such operation |
 
@@ -35,7 +37,7 @@ Paths are relative to `.superpowers/brainstorm/`; `S1` is `23940-1788251793/cont
 | Entity | Create | Read | Update | Delete | Move / reorder |
 |---|---|---|---|---|---|
 | **Board** | ✅ `S1/sidebar-boards-v1` | ✅ `S1/board-switch-v3`, `S1/sidebar-boards-v4` | ✅ `S1/board-edit-v2` | ✅ `S1/board-edit-v2` | — |
-| **Column** | ❌ | ✅ `S1/load2-v2`, `S1/handoff-v4` | ❌ | ❌ | ❌ |
+| **Column** | ◑ `S1/column-crud-v17` | ✅ `S1/load2-v2`, `S1/handoff-v4` | ◑ `S1/column-crud-v17` | ◑ `S1/column-crud-v17` | ◑ `S1/column-crud-v17` |
 | **Task** | ◐ `S2/header` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ❌ | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
 | **Subtask** | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ❌ | — |
 | **Account** | ✅ `S1/auth-v4` | ✅ `S1/auth-v4` | — | — | — |
@@ -87,32 +89,36 @@ existing kebab; `EditBoardModal` is deleted by it. The board title slides inside
 `document.startViewTransition` covering the row's departure, the rail's move and the board swap.
 Reconciling it with §4c's directional board switch is deferred to its own session.
 
-### Column — G9, the empty row
+### Column — G9, all four prototyped, none signed off
 
-**Create — ❌**
-Today: `add-column-placeholder` — PDF p3's ghost column, a real `<button>` spanning the column's
-full height — opening `add-column-modal`.
-Carries over: `load2-v2`/`handoff-v4` is a close fit and nobody has noticed — it already choreographs
-a column's contents arriving, which is exactly what a new column does on landing.
-`empty.html`'s drop zone is the same surface in a different state.
+**State on 2026-09-09: `column-crud-v17.html` is one working surface covering all four operations.**
+Thirteen defects were found and fixed against it in a single sitting (log entries 15–26). The user's
+verdict at close: *"what we have now feels better, but still needs a bit of refining"* — so the row
+is `◑`, not `✅`, and G9 stays open.
 
-**Update (rename) — ❌**
-Today: `rename-column-modal`, from `column-header`'s kebab (`Menu` + `IconButton`).
-Carries over: identical in shape to board rename — same kebab mechanism from `menu-v2`, same
-inline-vs-modal question from `task-open`. These two cells should be decided together or they will
-diverge.
+**Create — ◑ decided in shape.** The ghost column is replaced by a **34px rail** at the board's end
+(fixed footprint, label as an overlay) **plus `+ Column` in the board header**, reachable at any
+scroll position; the rail carries a low-key dismiss, safe only because the header button survives
+it. Creation is **inline** — the column exists immediately and its header opens in edit mode — so
+`add-column-modal` goes the way of `EditBoardModal`. Measured: the ghost was 210px / **15.3%** of a
+1374px canvas; the rail is **2.5%**.
 
-**Delete — ❌**
-Today: `delete-column-confirm`, same construction as the board one.
-Carries over: same as board delete, plus the harder half — a column leaving takes horizontal space
-with it and the board must reflow. `sidebar.html` is the only prototype in the set that animates a
-container's width; `drag-v3`'s source-slot collapse is the only one that shows a board making room.
+**Update (rename) — ◑ decided in shape.** Inline in the header, from the kebab that already ships.
+**One complication that does not apply to the board:** the column caption *is* the drag handle, a
+`<button>`, and `contenteditable` inside a button is not viable — so the name must be **swapped**
+for an editable node with font, letter-spacing, uppercase and line box pinned to the handle's.
 
-**Reorder — ❌**
-Today: `sortable-column` + `use-column-drag-sensors` + `use-reorder-columns`.
-Carries over: `drag-v3` is the whole choreography — lift, carry, source-slot collapse, drop
-settle — but it drags *cards*. Whether `scale(1.03)` and a 2px lift read the same on a 280px-wide
-full-height column is unknown and is the one question in G9 with no analogue anywhere in the set.
+**Delete — ◑ decided in shape.** Kebab → confirm → the board closes up through
+`startViewTransition`. Measured: 28 frames over 492ms with it, 12 over 148ms without — and that
+148ms is the scrim fade alone, with the columns simply jumping.
+
+**Reorder — ◑ the least settled, and the source of most of the defect log.** §2's vocabulary at
+column scale: a DragOverlay carries the motion, the source slot collapses to a dashed ghost, the
+board FLIPs at **160ms** (deliberately shorter than the 180ms settle, because a reorder is direct
+manipulation). Decided along the way: **no scale** — scale is proportional and column height ranges
+over an order of magnitude, so one value is a different gesture per column; the carried panel is
+**content height** while the slot it leaves is **lane-tall**; and the panel sheds its chrome in
+flight so its removal is a swap of like for like.
 
 ### Task
 
@@ -150,6 +156,26 @@ do not are column reorder (drag) and task delete (a non-optimistic wait).
 Second, four rename/edit flows are modals, and Phase 5 has already decided once that a modal over
 a surface is the wrong shape. Board rename, column rename and subtask rename are the same decision
 three times; taking it once closes three cells.
+
+## Resume here — 2026-09-09
+
+**Where to pick up:** `column-crud-v17.html`, served by
+`node scripts/serve-static.mjs .superpowers/brainstorm 6110`.
+
+Open, in the order they are likely to matter:
+
+1. **G9 sign-off.** Everything works; the refinement is not finished. Drive the four operations and
+   list what still reads wrong before touching anything else.
+2. **The remaining `◐` cells** — task create, subtask rename, subtask delete — plus task delete,
+   which is still `❌` and is the one non-optimistic wait in the app.
+3. **G2**, which eight cells inherit and which the board-create and column-delete prototypes have
+   now given a first treatment twice over.
+4. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
+   zero calls to the real View Transitions API.
+
+**Do not re-derive:** the defect log's **seven recurring causes** explain most of what went wrong
+today, and every one of the 26 entries names the assertion that would catch it. Read that file
+before writing new motion code, not after.
 
 ## Keeping it true
 
