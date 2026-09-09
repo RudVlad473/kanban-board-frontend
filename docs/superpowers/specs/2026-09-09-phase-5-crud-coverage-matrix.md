@@ -34,7 +34,7 @@ Paths are relative to `.superpowers/brainstorm/`; `S1` is `23940-1788251793/cont
 
 | Entity | Create | Read | Update | Delete | Move / reorder |
 |---|---|---|---|---|---|
-| **Board** | ✅ `S1/sidebar-boards-v1` | ✅ `S1/board-switch-v3`, `S1/sidebar-boards-v4` | ◐ `S2/header` | ◐ `S2/menu-v2`, `S1/toast-v3` | — |
+| **Board** | ✅ `S1/sidebar-boards-v1` | ✅ `S1/board-switch-v3`, `S1/sidebar-boards-v4` | ✅ `S1/board-edit-v2` | ✅ `S1/board-edit-v2` | — |
 | **Column** | ❌ | ✅ `S1/load2-v2`, `S1/handoff-v4` | ❌ | ❌ | ❌ |
 | **Task** | ◐ `S2/header` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ❌ | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
 | **Subtask** | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ❌ | — |
@@ -80,19 +80,12 @@ mechanisms exist and are measured; what is missing is the decision to point them
 lands in (`v2`–`v4`). Decisions in the design doc under "The sidebar board list, and creating a
 board". The modal half is also the phase's first `Modal` treatment, so it is a first pass at G2.
 
-**Update (rename) — ◐**
-Today: `edit-board-modal`, opened from the header kebab.
-Carries over: `header.html` already designs the *result* — the title's one-frame swap, chosen over
-a slide because a rename has no direction — and `title-v2` the settle. What is missing is
-everything before that frame. **`task-open`'s inline-edit decision is the live question here:**
-Phase 5 already concluded a modal on top of a surface is two surfaces where one will do, and the
-board title is a `contenteditable` candidate for the same reason the task title was.
+**Update (rename) — ✅ closed 2026-09-09** by `board-edit-v2`. Inline in the row, entered from the
+existing kebab; `EditBoardModal` is deleted by it. The board title slides inside a masked well.
 
-**Delete — ◐**
-Today: `delete-board-confirm` — a `Modal` with `variant="destructive"` and a `secondary` cancel.
-Carries over: `menu-v2` for the kebab that opens it, `toast-v3` for the outcome,
-`buttons-v4`'s destructive press. Missing: the confirm modal's own motion (G2) and the board
-leaving the sidebar list. `sidebar.html`'s collapse is the nearest mechanism for the second.
+**Delete — ✅ closed 2026-09-09** by `board-edit-v2`. Kebab → confirm → one
+`document.startViewTransition` covering the row's departure, the rail's move and the board swap.
+Reconciling it with §4c's directional board switch is deferred to its own session.
 
 ### Column — G9, the empty row
 

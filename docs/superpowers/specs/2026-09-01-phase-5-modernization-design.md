@@ -1697,6 +1697,69 @@ Base UI `Menu` inside the same `<li>` that will carry the name, so it hits this 
 transition lands. Verified in the prototype with `elementFromPoint` at the menu's own centre —
 the check that distinguishes "painted" from "painted on top", which a snapshot assertion does not.
 
+## Board rename and delete — decided 2026-09-09
+
+Prototyped as `board-edit-v1.html` (modal vs inline, and delete's two cases) and
+`board-edit-v2.html` (adopted).
+
+**Both flows start from the row's own three-dot menu.** No new entry point — `BoardCard` already
+renders `Edit Board` / `Delete Board` and that stays the way in.
+
+### Rename — inline, replacing the modal
+
+`edit-board-modal` holds **exactly one text field**: a modal, a scrim and a "Save Changes" button
+to change one word, covering both places the name is visible while it does it. The row's own name
+becomes `contenteditable` in place instead — the same element, so nothing is swapped and there is
+no layout to absorb. Enter commits, Esc cancels. This is the third surface to arrive at that
+construction, after the task title and description.
+
+**`EditBoardModal` is deleted by this**, exactly as the panel work deletes `EditTaskModal`. The
+same decision now covers two of the four rename flows; column rename is the third and should
+follow rather than diverge.
+
+**The board title slides.** A masked vertical slide inside a fixed 26px well: the outgoing line
+rises out while the incoming rises in, 180ms out against 200ms in on `--ease-standard`.
+
+This does **not** reopen §4d, which rejected a slide for rename on the grounds that a rename has no
+direction. §4d's rejected candidate was the *directional* slide used for a board switch, which
+implies the title travelled in from another board. A masked replacement inside a stationary well
+implies substitution, not travel — a different claim, and the true one.
+
+### Delete — the kebab, a confirm, and one view transition
+
+Two cases from one action, because `use-delete-board` rewrites the URL with
+`window.history.replaceState` **in the same commit** as the cache write (deliberately —
+`router.replace` left the address naming a deleted board for a measured 247ms):
+
+- **A background board.** A row leaves. Nothing else moves.
+- **The open board.** The row leaves, the selection rail moves, and the whole board view is
+  replaced.
+
+The second ran as three independent clocks and read as janky. It now runs through
+**`document.startViewTransition`**, with every row and both columns as named units, so the list
+closing over the deleted row is the `group` animation rather than an authored keyframe and the
+sidebar and board move on one clock.
+
+**The existing hook is already the right shape.** `startViewTransition` requires its callback to
+apply the DOM change synchronously, which is exactly what the cache write plus `replaceState`
+already do. This is a wrapper, not a rewrite.
+
+Nothing overrides `::view-transition-old/new`. The UA cross-fade is complementary under
+`plus-lighter` and therefore invisible where pixels agree; a custom curve is what made unchanged
+text visibly fade in v9–v12. `:root` is un-named, since `view-transition-name: root` is a reserved
+value that fails to parse.
+
+**§4c is deliberately not reused here, and reconciling them is deferred.** `board-switch-v3` is
+adopted and is *directional* — but after a delete the source board no longer exists, so a
+directional slide would imply travel that did not happen, which is §4d's own argument. §4c also
+uses **zero** calls to the real API; it is a CSS simulation. Re-proving it against
+`startViewTransition`, and deciding how a directional switch and a non-directional delete coexist,
+is its own session.
+
+**Rollback stays rule 2's licensed exception.** The row returns to the position the hook already
+captures as `afterBoardId`, with a fading danger tint — something genuinely un-happened, and that
+is the one case where reversal is animated.
+
 ## Open items added by this session
 
 11. Adopt or reject proposed rules 6–9. Rules 6 and 7 both have a named failure already present in
