@@ -54,6 +54,9 @@ Five recur often enough to be worth stating before the table:
 | 16 | The dashed slot arrived at full height in one frame | Rule 2 above — `align-self: stretch`, then `min-height` from `auto` | User | e2e: sample the slot's height across the transition; the midpoint is strictly between start and end |
 | 17 | The slot animated on the first drag only | Rule 1 above — the FLIP's inline `transition: translate …` disabled height and opacity from the second drag on | User | e2e: **drag twice** and assert both animate. A single-drag test passes through this defect |
 | 18 | Columns flapped between N and N−1 with the pointer still | The swap moved the dragged slot's own rect under the pointer, satisfying the reverse test immediately | User | e2e: hold the pointer after a swap, dispatch N identical moves, assert one distinct order |
+| 19 | The lifted column's header lingered visibly before fading | The source's contents faded out over 120ms while the clone — sitting exactly on top — began to move, so the two separated mid-fade | User, on a video | e2e: the source's children are `opacity: 0` with `transition-property: none` on the frame the drag starts |
+| 20 | The dashed border lit and faded *after* the drop | The slot's box was transitioned, so its tint and dashes animated out once the gesture was already over | User | e2e: after the drop, the column's `border-style` and `min-height` are back at rest values within one frame |
+| 21 | The slot growing into the lane was too much motion for the interaction | Growth is a second animation competing with the flight, on a gesture that repeats | User | Judgement, not assertion — the height change is real and correct either way (see below) |
 
 ## What is not mechanically catchable
 
@@ -68,6 +71,9 @@ Two more that resist assertion entirely:
   DOM; the difference is the size of the thing you are carrying relative to what it represents.
 - **Whether an affordance feels "bulky" for how often it is used.** #6's 15.3% is measurable
   *after* someone decides that a rare action should not hold permanent space.
+- **How much motion a repeated gesture can carry** (#21). Growth and fade were both correct; one
+  of them was simply too much for something a user does several times in a row. Frequency of the
+  gesture, not the quality of the animation, is what decides it.
 
 The lesson those three carry is the one `docs/adr/tech/0037` already records, restated with a wider
 sample: **verification narrows the search, it does not replace the look.**
