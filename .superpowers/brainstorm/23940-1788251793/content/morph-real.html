@@ -1,0 +1,191 @@
+<h2>4b &middot; Does the morph disturb the column?</h2>
+<p class="subtitle">This one is not a mockup animation &mdash; it calls the real
+<code>document.startViewTransition()</code>. <strong>Click any card.</strong> Scroll the column first if
+you like; try one near the bottom.</p>
+
+<style>
+.rv { --purple:#635FC7; --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA; --hov:#D6DFEF;
+      --mute:#66707F; --title:#000112;
+      font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif; }
+.rv.dark { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --hov:#4C4E60; --mute:#828FA3; --title:#FFFFFF; }
+.rv-wrap { display:grid; grid-template-columns:280px 1fr; gap:20px; align-items:start;
+           background:var(--app); border-radius:10px; padding:18px; position:relative; }
+.rv-colh { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:2.2px;
+           text-transform:uppercase; color:var(--mute); margin-bottom:12px; }
+.rv-colh i { width:11px; height:11px; border-radius:50%; background:#49C4E5; display:block; }
+.rv-list { height:330px; overflow-y:auto; padding-right:6px; }
+.rv-card { background:var(--surf); border:1px solid var(--line); border-radius:8px; padding:12px 13px;
+           margin-bottom:10px; cursor:pointer; transition:border-color 130ms ease, background-color 130ms ease; }
+.rv-card:hover { border-color:var(--hov); }
+.rv.dark .rv-card:hover { background:#31323E; }
+.rv-card .t { font-size:14px; font-weight:700; line-height:17px; color:var(--title); letter-spacing:-.12px; }
+.rv-card .m { font-size:11px; font-weight:700; color:var(--mute); margin-top:7px; font-variant-numeric:tabular-nums; }
+
+.rv-scrim { position:fixed; inset:0; background:rgba(0,1,18,.5); z-index:40; display:none; }
+.rv-scrim.on { display:block; }
+.rv-modal { position:fixed; top:50%; left:50%; width:400px; margin:-140px 0 0 -200px; z-index:41;
+            background:var(--surf); border:1px solid var(--line); border-radius:8px; padding:20px;
+            display:none; box-shadow:0 12px 40px rgba(16,18,32,.22); }
+.rv-modal.on { display:block; }
+.rv-modal .t { font-size:16px; font-weight:700; color:var(--title); letter-spacing:-.2px; }
+.rv-modal p { font-size:12px; color:var(--mute); line-height:1.65; margin-top:10px; }
+.rv-modal .sub { display:flex; align-items:center; gap:9px; font-size:12px; font-weight:700;
+                 color:var(--title); margin-top:9px; }
+.rv-modal .bx { width:15px; height:15px; border-radius:3px; border:1px solid var(--line); flex:none; }
+.rv-modal .bx.on { background:var(--purple); border-color:var(--purple); }
+.rv-close { margin-top:16px; }
+
+::view-transition-group(task-morph) { animation-duration:320ms;
+  animation-timing-function:cubic-bezier(.2,0,0,1); }
+::view-transition-old(task-morph), ::view-transition-new(task-morph) { animation-duration:320ms; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+    animation-duration:0s !important; }
+}
+
+.probe { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; line-height:1.9;
+         white-space:pre; background:var(--surf); border:1px solid var(--line); border-radius:8px;
+         padding:14px 16px; color:var(--title); }
+.probe b { color:var(--purple); }
+.ok  { color:#2E7D32; font-weight:700; }
+.bad { color:#C93F3C; font-weight:700; }
+.rv-note { margin-top:18px; padding:14px 16px; border-left:3px solid #635FC7;
+  background:rgba(99,95,199,.06); border-radius:0 8px 8px 0; font-size:13px; line-height:1.6; }
+</style>
+
+<div style="display:flex; gap:10px; align-items:center; margin:14px 0 16px">
+  <label style="font-size:13px; display:flex; gap:7px; align-items:center">
+    <input type="checkbox" id="novt"> Disable view transitions (compare)
+  </label>
+  <button class="mock-button" onclick="document.querySelectorAll('.rv').forEach(e=>e.classList.toggle('dark'))">Light / dark</button>
+  <span id="support" style="font-size:12px"></span>
+</div>
+
+<div class="rv rv-wrap" id="rv">
+  <div>
+    <div class="rv-colh"><i></i> Todo <span style="margin-left:auto;letter-spacing:0">12</span></div>
+    <div class="rv-list" id="list"></div>
+  </div>
+  <div>
+    <div class="label" style="margin-bottom:8px">Layout probe &mdash; measured live</div>
+    <div class="probe" id="probe">Click a card to measure.</div>
+    <div class="rv-note" style="margin-top:14px">
+      The probe records the column's <code>scrollHeight</code>, its <code>scrollTop</code>, and the
+      viewport <code>y</code> of card #9 immediately before the transition starts and again after it
+      commits. If the morph disturbed the column, these would differ.
+    </div>
+  </div>
+</div>
+
+<div class="rv rv-scrim" id="scrim" onclick="closeTask()"></div>
+<div class="rv rv-modal" id="modal">
+  <div class="t" id="mtitle">Task</div>
+  <p>Wire the preferences panel to the persisted theme action, then confirm it survives a refresh.</p>
+  <div class="sub"><span class="bx on"></span>Draft the layout</div>
+  <div class="sub"><span class="bx on"></span>Hook up the switch</div>
+  <div class="sub"><span class="bx"></span>Write the tests</div>
+  <button class="mock-button rv-close" onclick="closeTask()">Close</button>
+</div>
+
+<div class="rv-note">
+  <strong>Why it cannot reflow, in one line:</strong> the card's box is never mutated. The browser
+  animates a <em>snapshot</em> of the card's rect toward a snapshot of the modal's rect, in the
+  view-transition overlay layer above the page. The list underneath is untouched, which is exactly why
+  this is worth reaching for instead of hand-rolling a FLIP morph &mdash; a hand-rolled one really would
+  have to pull the card out of flow and leave a placeholder.
+</div>
+
+<div class="rv-note">
+  <strong>Two real edge cases this raises, both worth writing into the spec.</strong>
+  <br>&bull; <strong>Name uniqueness.</strong> <code>view-transition-name</code> must be unique per
+  document state, so it is applied to the <em>clicked</em> card only, never to every card. Naming all
+  12 (or 200) would both break the transition and cost real snapshot time.
+  <br>&bull; <strong>Closing after a scroll.</strong> If you scroll the column while the modal is open,
+  the card's rect may be off-screen on close and the morph would animate toward nothing. The guard is
+  to check the card's rect against the viewport at close time and skip the morph if it is not visible
+  &mdash; falling back to the plain fade. Try it: open a card, scroll the list, then close.
+</div>
+
+<h3 style="margin-top:24px">Settled?</h3>
+<div class="options">
+  <div class="option" data-choice="yes" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Yes &mdash; no reflow, ship the morph</h3><p>Including the two guards above.</p></div>
+  </div>
+  <div class="option" data-choice="scrollbad" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>The scroll-then-close case bothers me</h3><p>I want a better answer than falling back to a fade.</p></div>
+  </div>
+  <div class="option" data-choice="no" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Still not convinced</h3><p>Something else about this feels wrong.</p></div>
+  </div>
+</div>
+
+<script>
+const TASKS = ['Build settings UI','Research pricing points','Add account management','Design settings',
+  'Q3 roadmap draft','Vendor shortlist','Billing page copy','Audit empty states','Refresh the icon set',
+  'Sunset the old modal','Write migration notes','Fix the sidebar scroll'];
+const list = document.getElementById('list');
+list.innerHTML = TASKS.map((t,i)=>
+  `<div class="rv-card" data-i="${i}" onclick="openTask(this)"><div class="t">${t}</div>
+   <div class="m">${i%4}/${(i%4)+2}</div></div>`).join('');
+
+const modal = document.getElementById('modal'), scrim = document.getElementById('scrim');
+let openCard = null;
+const supported = typeof document.startViewTransition === 'function';
+document.getElementById('support').innerHTML = supported
+  ? '<span class="ok">startViewTransition supported</span>'
+  : '<span class="bad">not supported in this browser — falls back to a plain open</span>';
+
+const snap = () => { const l = document.getElementById('list');
+  const c9 = l.children[8].getBoundingClientRect();
+  return { scrollHeight:l.scrollHeight, scrollTop:Math.round(l.scrollTop), card9y:Math.round(c9.top),
+           card9h:Math.round(c9.height) }; };
+
+function report(before, after, label){
+  const same = JSON.stringify(before) === JSON.stringify(after);
+  const row = (k) => `  ${k.padEnd(13,' ')} ${String(before[k]).padStart(6,' ')}  →  ${String(after[k]).padStart(6,' ')}`;
+  document.getElementById('probe').innerHTML =
+    `<b>${label}</b>\n` + ['scrollHeight','scrollTop','card9y','card9h'].map(row).join('\n') +
+    `\n\n  ${same ? '<span class="ok">identical — no reflow</span>'
+                 : '<span class="bad">CHANGED — the column moved</span>'}`;
+}
+
+function run(fn){
+  if (!supported || document.getElementById('novt').checked) { fn(); return { finished:Promise.resolve() }; }
+  return document.startViewTransition(fn);
+}
+
+function openTask(card){
+  const before = snap();
+  openCard = card;
+  card.style.viewTransitionName = 'task-morph';
+  const t = run(() => {
+    card.style.viewTransitionName = '';
+    document.getElementById('mtitle').textContent = card.querySelector('.t').textContent;
+    modal.classList.add('on'); scrim.classList.add('on');
+    modal.style.viewTransitionName = 'task-morph';
+  });
+  t.finished.then(() => report(before, snap(), 'open  ' + card.querySelector('.t').textContent));
+}
+
+function closeTask(){
+  if (!openCard) return;
+  const before = snap();
+  const r = openCard.getBoundingClientRect();
+  const lr = document.getElementById('list').getBoundingClientRect();
+  const visible = r.bottom > lr.top + 4 && r.top < lr.bottom - 4;
+  const card = openCard; openCard = null;
+  const mutate = () => {
+    modal.style.viewTransitionName = '';
+    modal.classList.remove('on'); scrim.classList.remove('on');
+    if (visible) card.style.viewTransitionName = 'task-morph';
+  };
+  if (!visible) { mutate(); card.style.viewTransitionName = '';
+    report(before, snap(), 'close (card scrolled out — morph skipped)'); return; }
+  const t = run(mutate);
+  t.finished.then(() => { card.style.viewTransitionName = '';
+    report(before, snap(), 'close ' + card.querySelector('.t').textContent); });
+}
+</script>

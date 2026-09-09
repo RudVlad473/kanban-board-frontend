@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dashboard header — Phase 5</title>
+<style>
+  :root{
+    --bg-app:#F4F7FD; --bg-surface:#FFFFFF; --primary:#635FC7; --primary-hover:#5854BE;
+    --border:#E4EBFA; --border-hover:#D6DFEF; --muted:#66707F; --ink:#000112;
+    --ease: cubic-bezier(.2,0,0,1); --d: 130ms;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0e0f14;color:#e6e8ee;font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .page{max-width:1000px;margin:0 auto;padding:28px 24px 90px}
+  h1{font-size:22px;margin:0 0 4px;font-weight:650;letter-spacing:-.01em}
+  .sub{color:#9aa1b1;margin:0 0 18px;font-size:13.5px}
+  h2{font-size:15px;margin:34px 0 6px;font-weight:640}
+  .note{color:#9aa1b1;font-size:13px;margin:0 0 12px;line-height:1.55}
+  .banner{background:#2a2410;border:1px solid #6b5a17;border-radius:8px;padding:12px 14px;margin:0 0 18px;font-size:13.5px;color:#f0dfa8}
+  .banner b{color:#ffe89a}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 10px;position:sticky;top:0;z-index:20;
+       background:#0e0f14;padding:10px 0;border-bottom:1px solid #23252e}
+  button.ctl{background:#1b1d26;border:1px solid #333644;color:#e6e8ee;border-radius:6px;padding:8px 13px;font:inherit;font-size:13px;cursor:pointer}
+  button.ctl:hover{border-color:#4b4f61}
+  button.ctl.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .stage{background:#15161d;border:1px solid #262935;border-radius:10px;overflow:hidden;margin-bottom:14px}
+  .stage-hd{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid #262935;font-size:12.5px;color:#9aa1b1}
+  .stage-hd .tag{font-weight:650;color:#e6e8ee}
+  .v{font-size:11.5px;padding:2px 8px;border-radius:99px;border:1px solid}
+  .bad{color:#ffb0a8;border-color:#7a3b34;background:#2b1614}
+  .good{color:#a8e6b8;border-color:#2f6b41;background:#12241a}
+
+  /* ---- real header at real geometry ---- */
+  .hdr{height:73px;background:var(--bg-surface);border-bottom:1px solid var(--border);
+       display:flex;align-items:center;gap:16px;padding:0 24px;color:var(--ink);
+       font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
+  .well{min-width:0;height:36px;line-height:36px;overflow:hidden;position:relative;flex:1 1 auto}
+  .well .t{font-size:24px;font-weight:800;white-space:nowrap;position:absolute;inset:0;
+           display:flex;align-items:center}
+  .right{margin-left:auto;display:flex;align-items:center;gap:16px;flex:0 0 auto}
+  .who{font-weight:600;font-size:14px}
+  .b{height:40px;padding:0 18px;border:1px solid transparent;font-weight:700;font-size:14px;
+     font-family:inherit;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+  .b.r4{border-radius:4px}
+  .b.rfull{border-radius:99px}
+  .b.pri{background:var(--primary);color:#fff}
+  .b.sec{background:var(--bg-surface);color:var(--ink);border-color:var(--border)}
+
+  /* today: opacity-only, and NOT in the transition list */
+  .today .b{transition:color .15s linear,background-color .15s linear,border-color .15s linear}
+  .today .b[data-off]{opacity:.5;cursor:not-allowed}
+
+  /* proposed: token-derived disabled, carried by the colour transition that already exists */
+  .prop .b{transition:background-color var(--d) linear,color var(--d) linear,border-color var(--d) linear}
+  .prop .b.pri[data-off]{background:var(--bg-app);color:var(--muted);border-color:var(--border);cursor:not-allowed}
+  .prop .b.sec[data-off]{background:var(--bg-app);color:var(--muted);cursor:not-allowed}
+
+  /* spinner for the pending Sign Out */
+  .sp{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;
+      display:none;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .b[data-busy] .sp{display:inline-block}
+
+  /* title well behaviours */
+  .well .t{transition:none}
+  .slide .t.out{transform:translateY(calc(-1 * var(--dir) * 36px));opacity:1;
+                transition:transform 190ms var(--ease)}
+  .slide .t.in{transform:translateY(calc(var(--dir) * 36px));transition:none}
+  .slide .t.in.go{transform:translateY(0);transition:transform 190ms var(--ease)}
+  .fade .t.out{opacity:0;transition:opacity 160ms linear}
+  .fade .t.in{opacity:0;transition:none}
+  .fade .t.in.go{opacity:1;transition:opacity 160ms linear}
+
+  body.honour-rm .prop .b,
+  body.honour-rm .slide .t,
+  body.honour-rm .fade .t{transition-duration:0ms !important}
+  body.honour-rm .sp{animation:none}
+
+  .m{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#c3c8d6;background:#1a1c24;
+     border:1px solid #262935;border-radius:7px;padding:11px 13px;white-space:pre;overflow-x:auto;margin:12px 0 0}
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+  .opt{border:1px solid #2c303c;border-radius:9px;padding:14px 16px;background:#15161d;cursor:pointer}
+  .opt:hover{border-color:#454a5c}.opt.sel{border-color:var(--primary);background:#1a1830}
+  .opt h4{margin:0 0 6px;font-size:14px}.opt p{margin:0;font-size:13px;color:#9aa1b1;line-height:1.45}
+  .kill{background:#161a17;border:1px solid #2c4034;border-radius:9px;padding:13px 16px;margin-top:10px;font-size:13.5px;color:#b8d6c4}
+  .kill b{color:#dff3e6}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Dashboard header</h1>
+<p class="sub">Smaller than the sidebar, and mostly a question of which state changes currently snap.</p>
+
+<div class="banner"><b>prefers-reduced-motion is ON for you.</b> Forced off here. Toggle <b>“Honour reduced motion”</b> to see your machine's render.</div>
+
+<div class="bar">
+  <button class="ctl on" id="tog">▶ Toggle enabled / disabled</button>
+  <button class="ctl" id="busy">▶ Press “Sign Out”</button>
+  <button class="ctl" id="slow">Slow motion 0.25×</button>
+  <button class="ctl" id="rm">Honour reduced motion</button>
+</div>
+
+<h2>1 · The one state change here that genuinely snaps</h2>
+<p class="note"><code>+ Add New Task</code> is disabled until the open board has a column. Create that first column
+and the button becomes usable — a state change the user caused. Measured just now: it is a hard
+<b>1 → 0.5 opacity jump</b>, zero intermediate frames, because Tailwind's <code>transition-colors</code>
+does not list <code>opacity</code>. The same is true of <code>Sign Out</code> while its action is pending.</p>
+
+<div class="stage">
+  <div class="stage-hd"><span class="tag">TODAY</span><span class="v bad">opacity 1 → 0.5 in one frame · translucent brand fill</span></div>
+  <div class="hdr today" id="hA">
+    <div class="well"><span class="t">Platform Launch</span></div>
+    <div class="right">
+      <button class="b pri rfull" data-add>+ Add New Task</button>
+      <span class="who">Andre</span>
+      <button class="b sec rfull" data-so><span class="sp"></span>Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="stage-hd"><span class="tag">PROPOSED</span><span class="v good">a real disabled colour · 130ms · rides the transition that already exists</span></div>
+  <div class="hdr prop" id="hB">
+    <div class="well"><span class="t">Platform Launch</span></div>
+    <div class="right">
+      <button class="b pri r4" data-add>+ Add New Task</button>
+      <span class="who">Andre</span>
+      <button class="b sec r4" data-so><span class="sp"></span>Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<p class="note">Disabled stops being “the brand colour, faded” and becomes its own token trio — surface
+<code>--bg-app</code>, text <code>--text-muted</code>, border <code>--border</code>. That is a
+<i>colour</i> change, so it rides <code>transition-colors</code> at 130ms with no new property, no opacity,
+and no geometry — rule 1 and rule 3 both hold. It also reads better: a translucent fill washes the label
+out along with the button, which is why the current disabled state is hard to read at all.
+<code>Sign Out</code> picks up the same idle → loading contract the spec already fixed for the auth form.
+Both buttons also show the app-wide 4px radius replacing <code>rounded-full</code>.</p>
+
+<h2>2 · The board title</h2>
+<p class="note">Two different events land on the same element and the spec only settles one of them.
+The title well is <b>already</b> <code>overflow:hidden</code> at exactly one line-height (36px, measured) —
+so the masked slide needs no new wrapper, just two stacked spans inside the box that is already there.</p>
+
+<div class="bar" style="border:0;position:static;padding-bottom:0">
+  <button class="ctl" id="sw">▶ Switch board (down the sidebar)</button>
+  <button class="ctl" id="swu">▶ Switch board (up)</button>
+  <button class="ctl" id="ren">▶ Rename the open board</button>
+  <button class="ctl" id="xf">▶ Crossfade (rejected — rule 4)</button>
+</div>
+
+<div class="stage">
+  <div class="stage-hd"><span class="tag">TITLE WELL</span><span class="v" id="tv">idle</span></div>
+  <div class="hdr prop slide" id="hC" style="--dir:1">
+    <div class="well" id="wellC"><span class="t">Platform Launch</span></div>
+    <div class="right">
+      <button class="b pri r4">+ Add New Task</button><span class="who">Andre</span>
+      <button class="b sec r4">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<div class="options" id="opts">
+  <div class="opt sel" data-choice="swap" onclick="pick(this)">
+    <h4>Rename → one-frame swap (recommended)</h4>
+    <p>A rename has no direction. Sliding it implies the title travelled from somewhere, which is
+    rule 2's complaint. Rule 4 explicitly allows the one-frame swap; the board switch keeps its
+    directional slide because navigation <i>does</i> have a direction.</p>
+  </div>
+  <div class="opt" data-choice="slide" onclick="pick(this)">
+    <h4>Rename → slide too</h4>
+    <p>One mechanism for every title change, so there is only one thing to build and test. Cost: the
+    direction is invented, and the sidebar row renaming underneath it does not slide, so the two
+    disagree about what just happened.</p>
+  </div>
+</div>
+
+<h2>3 · What I am deliberately <i>not</i> adding</h2>
+<div class="kill">
+  <b>No scroll-elevation on the header.</b> The obvious restrained-precision move is a border or surface
+  that reacts as content scrolls under the header. Measured: nothing ever scrolls under it. The board
+  scrolls <i>horizontally</i> in its own container and each column scrolls <i>vertically</i> in its own —
+  <code>main.scrollHeight === main.clientHeight</code> (647 = 647). There is no trigger, so the state would
+  never fire. Recording it here so a later reader does not "fix the oversight".
+</div>
+
+<div class="m">measured in the running app
+  + Add New Task   enabled→disabled   opacity samples over 260ms: [0.5] only    0 intermediate frames
+                   disabled→enabled   opacity samples over 260ms: [1]   only    0 intermediate frames
+                   transition-property = color, background-color, border-color, outline-color,
+                                         text-decoration-color, fill, stroke, --tw-gradient-*
+                                         → opacity is absent, so disabled:opacity-50 can never animate
+
+  h1 title well    overflow hidden · text-overflow ellipsis · white-space nowrap
+                   height 36px · line-height 36px · font-size 24px
+                   → the mask rule 4 asks for already exists
+
+  header           height 73px · border-bottom 1px #E4EBFA
+  main             scrollHeight 647 = clientHeight 647   → never scrolled under</div>
+
+<script>
+  let off=false, honour=false, slow=false;
+  const A=document.getElementById('hA'), B=document.getElementById('hB');
+  function setOff(v){ off=v; [A,B].forEach(h=>h.querySelectorAll('[data-add]').forEach(b=>{
+    if(off) b.setAttribute('data-off',''); else b.removeAttribute('data-off'); })); }
+  document.getElementById('tog').onclick=()=>setOff(!off);
+  document.getElementById('busy').onclick=()=>{
+    [A,B].forEach(h=>h.querySelectorAll('[data-so]').forEach(b=>{
+      b.setAttribute('data-off',''); b.setAttribute('data-busy','');
+      b.childNodes[1].nodeValue='Signing out…';
+      setTimeout(()=>{ b.removeAttribute('data-off'); b.removeAttribute('data-busy'); b.childNodes[1].nodeValue='Sign Out'; },1800); }));
+  };
+  document.getElementById('slow').onclick=e=>{ slow=!slow; e.target.classList.toggle('on',slow);
+    document.documentElement.style.setProperty('--d', slow?'520ms':'130ms'); };
+  document.getElementById('rm').onclick=e=>{ honour=!honour; e.target.classList.toggle('on',honour);
+    document.body.classList.toggle('honour-rm',honour); };
+
+  const NAMES=['Platform Launch','Marketing Plan','Roadmap Q4','Platform Launch (renamed)'];
+  let ni=0; const well=document.getElementById('wellC'), hC=document.getElementById('hC'), tv=document.getElementById('tv');
+  function change(mode, dir, label){
+    tv.textContent=label;
+    hC.classList.remove('slide','fade'); hC.classList.add(mode==='fade'?'fade':'slide');
+    hC.style.setProperty('--dir', dir);
+    const old=well.querySelector('.t'); if(!old||well.querySelectorAll('.t').length>1) return;
+    ni=(ni+1)%NAMES.length;
+    const nw=document.createElement('span'); nw.className='t in'; nw.textContent=NAMES[ni];
+    well.appendChild(nw);
+    if(mode==='swap'){ old.remove(); nw.className='t'; tv.textContent=label+' — swapped in one frame'; return; }
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      old.classList.add('out'); nw.classList.add('go');
+      setTimeout(()=>{ old.remove(); nw.className='t'; }, honour?0:260);
+    }));
+  }
+  document.getElementById('sw').onclick =()=>change('slide', 1,'board switch · from below');
+  document.getElementById('swu').onclick=()=>change('slide',-1,'board switch · from above');
+  document.getElementById('ren').onclick=()=>change(window.renameMode==='slide'?'slide':'swap',1,'rename');
+  document.getElementById('xf').onclick =()=>change('fade', 1,'crossfade — both strings inked at once');
+  function pick(el){ document.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel');
+    window.renameMode=el.dataset.choice;
+    if(window.brainstorm) window.brainstorm.choice(el.dataset.choice,{text:el.querySelector('h4').textContent}); }
+  window.renameMode='swap';
+</script>
+</div>
+</body>
+</html>

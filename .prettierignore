@@ -19,6 +19,10 @@ visual/__screenshots__/
 docs/
 CONVENTIONS.md
 
+# Brainstorm prototypes are a historical design record, not application source — reformatting them
+# would rewrite what was actually reviewed on a given date.
+.superpowers/
+
 # scripts/record-quality-baseline.mjs's scratch observation log (04-23) — gitignored, and
 # .prettierignore is checked separately since `e2e/` itself is not ignored here.
 .quality-observations.jsonl

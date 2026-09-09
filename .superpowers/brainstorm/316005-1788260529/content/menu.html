@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dropdown &amp; Menu — Phase 5</title>
+<style>
+  :root{ --bg-surface:#FFFFFF; --bg-app:#F4F7FD; --border:#E4EBFA; --muted:#66707F; --ink:#000112;
+         --danger:#EA5555; --primary:#635FC7; --ease:cubic-bezier(.2,0,0,1); --in:120ms; --out:100ms; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0e0f14;color:#e6e8ee;font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .page{max-width:1000px;margin:0 auto;padding:28px 24px 90px}
+  h1{font-size:22px;margin:0 0 4px;font-weight:650;letter-spacing:-.01em}
+  .sub{color:#9aa1b1;margin:0 0 16px;font-size:13.5px}
+  h2{font-size:15px;margin:32px 0 6px;font-weight:640}
+  .note{color:#9aa1b1;font-size:13px;margin:0 0 12px;line-height:1.55}
+  .banner{background:#2a2410;border:1px solid #6b5a17;border-radius:8px;padding:12px 14px;margin:0 0 16px;font-size:13.5px;color:#f0dfa8}
+  .banner b{color:#ffe89a}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0;position:sticky;top:0;z-index:60;
+       background:#0e0f14;padding:10px 0;border-bottom:1px solid #23252e}
+  button.ctl{background:#1b1d26;border:1px solid #333644;color:#e6e8ee;border-radius:6px;padding:8px 13px;font:inherit;font-size:13px;cursor:pointer}
+  button.ctl:hover{border-color:#4b4f61}
+  button.ctl.on{background:var(--primary);border-color:var(--primary);color:#fff}
+
+  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .stage{background:#15161d;border:1px solid #262935;border-radius:10px;overflow:visible}
+  .stage-hd{padding:9px 12px;border-bottom:1px solid #262935;font-size:12px;color:#9aa1b1}
+  .stage-hd b{color:#e6e8ee;display:block;font-size:12.5px}
+  .surf{background:var(--bg-app);padding:26px 18px 130px;position:relative;
+        font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
+  .trig{width:44px;height:44px;border-radius:4px;background:transparent;border:1px solid var(--border);
+        display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);
+        transition:background-color 130ms linear,border-color 130ms linear}
+  .trig:hover{background:var(--bg-surface);border-color:#D6DFEF}
+  .trig i{display:block;width:4px;height:4px;border-radius:50%;background:currentColor;
+          box-shadow:0 -6px currentColor,0 6px currentColor}
+  .pop{position:absolute;top:78px;left:18px;width:192px;background:var(--bg-surface);
+       border:1px solid var(--border);border-radius:6px;box-shadow:0 1px 2px rgba(16,18,32,.04);
+       padding:4px;z-index:5;transform-origin:0 -4px}
+  .pop[hidden]{display:none}
+  .mi{padding:11px 14px;border-radius:4px;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer;
+      transition:background-color 110ms linear}
+  .mi:hover{background:var(--bg-app)}
+  .mi.dz{color:var(--danger)}
+
+  /* today — appears with nothing */
+  .today .pop{transition:none}
+  /* fade */
+  .fade .pop{transition:opacity var(--in) linear}
+  .fade .pop.enter{opacity:0}
+  .fade .pop.exit{opacity:0;transition-duration:var(--out)}
+  /* scale */
+  .scale .pop{transition:opacity var(--in) linear, transform 150ms var(--ease)}
+  .scale .pop.enter{opacity:0;transform:scale(.96)}
+  .scale .pop.exit{opacity:0;transform:scale(.96);transition-duration:var(--out)}
+
+  body.honour-rm .pop{transition-duration:0ms !important}
+
+  .m{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#c3c8d6;background:#1a1c24;
+     border:1px solid #262935;border-radius:7px;padding:11px 13px;white-space:pre;overflow-x:auto;margin:12px 0 0}
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+  .opt{border:1px solid #2c303c;border-radius:9px;padding:14px 16px;background:#15161d;cursor:pointer}
+  .opt:hover{border-color:#454a5c}.opt.sel{border-color:var(--primary);background:#1a1830}
+  .opt h4{margin:0 0 6px;font-size:14px}.opt p{margin:0;font-size:13px;color:#9aa1b1;line-height:1.45}
+  .free{background:#161a17;border:1px solid #2c4034;border-radius:9px;padding:13px 16px;margin-top:12px;font-size:13.5px;color:#b8d6c4}
+  .free b{color:#dff3e6}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:10px}
+  th,td{border:1px solid #262935;padding:7px 10px;text-align:left}
+  th{background:#1a1c24;color:#e6e8ee;font-weight:600}
+  td{color:#c3c8d6}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Dropdown &amp; Menu</h1>
+<p class="sub">Neither primitive has any enter or exit transition today. Base UI hands us nearly all of this for free.</p>
+
+<div class="banner"><b>prefers-reduced-motion is ON for you.</b> Forced off here.
+Toggle <b>“Honour reduced motion”</b> to see your machine's render.</div>
+
+<div class="bar">
+  <button class="ctl" id="open">▶ Open all three</button>
+  <button class="ctl" id="close">▶ Close all three</button>
+  <button class="ctl" id="slow">Slow motion 0.25×</button>
+  <button class="ctl" id="rm">Honour reduced motion</button>
+</div>
+
+<div class="row3">
+  <div class="stage"><div class="stage-hd"><b>TODAY</b>no transition — it is just there</div>
+    <div class="surf today" id="s1"><button class="trig" onclick="tog('s1')"><i></i></button>
+      <div class="pop" hidden><div class="mi">Edit Board</div><div class="mi dz">Delete Board</div></div></div></div>
+  <div class="stage"><div class="stage-hd"><b>FADE — recommended</b>opacity only · 120ms in / 100ms out</div>
+    <div class="surf fade" id="s2"><button class="trig" onclick="tog('s2')"><i></i></button>
+      <div class="pop" hidden><div class="mi">Edit Board</div><div class="mi dz">Delete Board</div></div></div></div>
+  <div class="stage"><div class="stage-hd"><b>FADE + SCALE</b>the usual choice — and the one that resamples</div>
+    <div class="surf scale" id="s3"><button class="trig" onclick="tog('s3')"><i></i></button>
+      <div class="pop" hidden><div class="mi">Edit Board</div><div class="mi dz">Delete Board</div></div></div></div>
+</div>
+
+<h2>Why not the scale, given it is the conventional choice</h2>
+<p class="note">Because it is the settle you just rejected on the board title, only worse. I ran both candidates
+against the <b>real</b> Base UI menu in the running app, not a mockup:</p>
+
+<table>
+  <tr><th>candidate</th><th>transform values observed</th><th>ends at</th><th>text resampled</th></tr>
+  <tr><td>fade</td><td><code>["none"]</code> — one value, every frame</td><td><code>none</code></td><td>no</td></tr>
+  <tr><td>fade + scale</td><td><code>matrix(.96) → .968 → .982 → .989 → .994 → .996 → .998 → .9992 → .9998 → matrix(1) → none</code></td><td><code>none</code></td><td><b>yes, every frame</b></td></tr>
+</table>
+
+<p class="note">A menu is <i>entirely</i> text at 15px. Scaling it means every glyph is resampled at a fractional
+factor for the whole animation, and then the layer is dropped at the end and the antialiasing flips back —
+the exact mechanism behind the title settle. The 24px title was the mild case. So the same constraint applies:
+<b>animate opacity, never transform, on anything whose content is text.</b></p>
+
+<div class="options" id="opts">
+  <div class="opt sel" data-choice="fade" onclick="pick(this)">
+    <h4>Fade only (recommended)</h4>
+    <p>120ms in, 100ms out, opacity alone. Satisfies rule 2 without inventing a direction the menu never
+    travelled from, and leaves the text rasterised identically throughout. Applies to both
+    <code>menu.tsx</code> and <code>dropdown.tsx</code>.</p>
+  </div>
+  <div class="opt" data-choice="scale" onclick="pick(this)">
+    <h4>Fade + scale from the anchor</h4>
+    <p>The conventional treatment, and Base UI even supplies <code>--transform-origin</code> for it. Cost:
+    the resampling above, plus a geometric implication — the menu did not grow out of the trigger, it
+    appeared.</p>
+  </div>
+</div>
+
+<h2>What Base UI already gives us</h2>
+<div class="free">
+  <b>The exit animation needs no bookkeeping at all.</b> I expected to need a <code>keepMounted</code> flag or
+  an exit-state machine. Measured against the real component: Base UI stamps <code>data-closed</code> +
+  <code>data-ending-style</code> and then <b>waits for the CSS transition to finish before unmounting</b> —
+  a 200ms transition kept the node alive for 242ms. Pure CSS on the element that already carries the
+  attributes. Nothing in <code>menu.tsx</code> or <code>dropdown.tsx</code> gains a single line of state.
+  <br><br>
+  <b>And keyboard users are handled for us.</b> Base UI stamps <code>data-instant</code> when the menu was
+  opened by keyboard or assistive tech, meaning "animate instantly". Honouring it is free, and it is the
+  correct accessibility behaviour — a keyboard user driving the menu should not wait on a fade.
+  <br><br>
+  <b>One asymmetry to record:</b> <code>Select</code> (which <code>Dropdown</code> wraps) exposes
+  <code>data-open/closed/starting-style/ending-style/side/align</code> but <b>no <code>data-instant</code></b>.
+  So the dropdown cannot get the keyboard suppression the menu gets for free. Worth knowing before someone
+  writes a shared helper that assumes both behave the same.
+</div>
+
+<div class="m">measured against the real Base UI 1.7.0 menu in the running app
+
+  enter (real mouse click)   t=10  data-open data-starting-style   opacity 0     transform none
+                             t=25  data-open                      opacity 0     transform none
+                             …     opacity 0 → .139 → .278 → .417 → .555 → .695 → .833 → .972 → 1
+                             transform: "none" at every frame
+
+  exit                       t=2   data-closed data-ending-style   opacity 1
+                             …     opacity 1 → .833 → .667 → .5 → .333 → .166 → 0
+                             t≈100 UNMOUNTED  (Base UI awaited the transition)
+
+  instant suppression        real mouse click        → no data-instant   (animate)
+                             keyboard ArrowDown      → no data-instant   (animate)
+                             keyboard/AT activation  → data-instant=click (do not animate)
+                             note: detail===0 is how Base UI detects keyboard, so a programmatic
+                             el.click() in a test is classified as KEYBOARD and will not animate.</div>
+
+<script>
+  let honour=false, slow=false;
+  function tog(id){ const p=document.querySelector('#'+id+' .pop'); p.hidden ? show(p) : hide(p); }
+  function show(p){ if(!p.hidden) return; p.hidden=false; p.classList.add('enter');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>p.classList.remove('enter'))); }
+  function hide(p){ if(p.hidden) return; p.classList.add('exit');
+    setTimeout(()=>{ p.hidden=true; p.classList.remove('exit'); }, honour?0:(slow?420:110)); }
+  document.getElementById('open').onclick=()=>document.querySelectorAll('.pop').forEach(show);
+  document.getElementById('close').onclick=()=>document.querySelectorAll('.pop').forEach(hide);
+  document.getElementById('slow').onclick=e=>{ slow=!slow; e.target.classList.toggle('on',slow);
+    document.documentElement.style.setProperty('--in', slow?'480ms':'120ms');
+    document.documentElement.style.setProperty('--out', slow?'400ms':'100ms'); };
+  document.getElementById('rm').onclick=e=>{ honour=!honour; e.target.classList.toggle('on',honour);
+    document.body.classList.toggle('honour-rm',honour); };
+  function pick(el){ document.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel');
+    if(window.brainstorm) window.brainstorm.choice(el.dataset.choice,{text:el.querySelector('h4').textContent}); }
+</script>
+</div>
+</body>
+</html>

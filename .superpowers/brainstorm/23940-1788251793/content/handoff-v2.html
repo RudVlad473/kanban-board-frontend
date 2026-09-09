@@ -1,0 +1,167 @@
+<h2>7c &middot; Dial the handoff</h2>
+<p class="subtitle">No-overlap is guaranteed by construction here: each column's content starts exactly
+when its own skeleton ends. What is left to tune is <em>how much it announces itself</em>.</p>
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+.hf { --stag:60ms; --out:80ms; --in:120ms; --k:1;
+      --purple:#635FC7; --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA; --line-2:#DCE3F2;
+      --mute:#66707F; --title:#000112; --skel:#E9EEF8;
+      font-family:"Inter", ui-sans-serif, system-ui, sans-serif; }
+.hf.dark { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --line-2:#494C5E; --mute:#828FA3;
+           --title:#FFFFFF; --skel:#31323E; }
+.hf-box { background:var(--app); border-radius:10px; padding:20px; }
+.stg { position:relative; height:200px; }
+.cw { position:absolute; top:0; width:132px; }
+.h { font-size:9px; font-weight:700; letter-spacing:1.7px; text-transform:uppercase;
+     color:var(--mute); margin-bottom:9px; display:flex; align-items:center; gap:6px; }
+.h i { width:9px; height:9px; border-radius:50%; background:#49C4E5; }
+.k { background:var(--surf); border:1px solid var(--line); border-radius:8px; padding:9px 10px; margin-bottom:8px; }
+.k .t { font-size:11px; font-weight:600; color:var(--title); line-height:14px; }
+.k .pb { height:3px; border-radius:2px; background:var(--line); margin-top:7px; overflow:hidden; }
+.k .pb i { display:block; height:100%; background:var(--purple); border-radius:2px; }
+.kk { border:1px solid var(--line); border-radius:8px; padding:9px 10px; margin-bottom:8px; background:var(--surf); }
+.kk .l1 { height:9px; border-radius:3px; background:var(--skel); }
+.kk .l2 { height:3px; border-radius:2px; background:var(--skel); margin-top:9px; width:70%; }
+.skh { height:9px; width:76px; border-radius:3px; background:var(--skel); margin-bottom:13px; }
+.lay { position:absolute; inset:0; }
+
+/* content begins exactly when its own skeleton ends — overlap is impossible by construction */
+.run .l-sk .cw { animation:sk-out calc(var(--out) * var(--k)) linear both;
+                 animation-delay:calc(var(--i) * var(--stag) * var(--k)); }
+.run .l-ct .cw { animation:ct-in calc(var(--in) * var(--k)) cubic-bezier(.2,0,0,1) both;
+                 animation-delay:calc((var(--i) * var(--stag) + var(--out)) * var(--k)); }
+@keyframes sk-out { to { opacity:0; } }
+@keyframes ct-in { from { opacity:0; } to { opacity:1; } }
+.l-ct .cw { opacity:0; }
+@media (prefers-reduced-motion: reduce) {
+  .run .l-sk .cw, .run .l-ct .cw { animation-duration:0s !important; animation-delay:0s !important; }
+}
+
+.ctrls { display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; margin:16px 0 14px; }
+.ctrl { display:flex; flex-direction:column; gap:5px; }
+.ctrl label { font-size:11px; font-weight:700; color:#444; }
+.ctrl input[type=range] { width:200px; }
+.ctrl .val { font-family:ui-monospace,Menlo,monospace; font-size:11px; color:#635FC7; font-weight:700; }
+.presets { display:flex; gap:8px; margin-bottom:6px; }
+.total { font-family:ui-monospace,Menlo,monospace; font-size:11.5px; color:#555; margin-top:4px; }
+.hf-note { margin-top:18px; padding:14px 16px; border-left:3px solid #635FC7;
+  background:rgba(99,95,199,.06); border-radius:0 8px 8px 0; font-size:13px; line-height:1.6; }
+</style>
+
+<div class="presets">
+  <button class="mock-button" onclick="preset(180,210,310,this)">What you saw</button>
+  <button class="mock-button" onclick="preset(60,80,120,this)">Slight (default)</button>
+  <button class="mock-button" onclick="preset(35,60,90,this)">Barely there</button>
+  <button class="mock-button" onclick="preset(0,70,110,this)">No stagger</button>
+  <button class="mock-button" onclick="document.querySelectorAll('.hf').forEach(e=>e.classList.toggle('dark'))">Light / dark</button>
+</div>
+
+<div class="ctrls">
+  <div class="ctrl"><label>Stagger between columns</label>
+    <input type="range" id="s1" min="0" max="200" step="5" value="60" oninput="apply()">
+    <span class="val" id="v1">60ms</span></div>
+  <div class="ctrl"><label>Skeleton fade out</label>
+    <input type="range" id="s2" min="40" max="300" step="10" value="80" oninput="apply()">
+    <span class="val" id="v2">80ms</span></div>
+  <div class="ctrl"><label>Content fade in</label>
+    <input type="range" id="s3" min="60" max="400" step="10" value="120" oninput="apply()">
+    <span class="val" id="v3">120ms</span></div>
+  <div class="ctrl">
+    <button class="mock-button" onclick="replay()">Replay</button>
+  </div>
+  <div class="ctrl"><label>Viewing speed (does not change the numbers)</label>
+    <div style="display:flex;gap:6px">
+      <button class="mock-button" onclick="speed(1,this)">1&times;</button>
+      <button class="mock-button" onclick="speed(4,this)">4&times; slower</button>
+      <button class="mock-button" onclick="speed(10,this)">10&times; slower</button>
+    </div>
+  </div>
+</div>
+<div class="total" id="total"></div>
+
+<div class="hf hf-box" id="hf" style="margin-top:14px">
+  <div class="stg">
+    <div class="lay l-sk">
+      <div class="cw" style="left:0;--i:0"><div class="skh"></div><div class="kk"><div class="l1"></div><div class="l2"></div></div><div class="kk"><div class="l1"></div><div class="l2"></div></div></div>
+      <div class="cw" style="left:144px;--i:1"><div class="skh"></div><div class="kk"><div class="l1"></div><div class="l2"></div></div></div>
+      <div class="cw" style="left:288px;--i:2"><div class="skh"></div><div class="kk"><div class="l1"></div><div class="l2"></div></div><div class="kk"><div class="l1"></div><div class="l2"></div></div></div>
+    </div>
+    <div class="lay l-ct">
+      <div class="cw" style="left:0;--i:0"><div class="h"><i></i>Todo</div><div class="k"><div class="t">Build settings UI</div><div class="pb"><i style="width:66%"></i></div></div><div class="k"><div class="t">Research pricing</div><div class="pb"><i style="width:20%"></i></div></div></div>
+      <div class="cw" style="left:144px;--i:1"><div class="h"><i style="background:#8471F2"></i>Doing</div><div class="k"><div class="t">Design settings</div><div class="pb"><i style="width:50%"></i></div></div></div>
+      <div class="cw" style="left:288px;--i:2"><div class="h"><i style="background:#67E2AE"></i>Done</div><div class="k"><div class="t">Add account auth</div><div class="pb"><i style="width:100%"></i></div></div><div class="k"><div class="t">Billing page</div><div class="pb"><i style="width:100%"></i></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="hf-note">
+  <strong>Whatever you land on applies to the board&rarr;board transition too.</strong> They are the
+  same mechanism — a Suspense boundary per column plus a CSS enter animation — so letting them differ
+  would mean the same event feels like two different things depending on whether you arrived by
+  navigation or by first load.
+  <br><br>
+  <strong>Why "no stagger" is still on the table.</strong> The stagger's justification was honesty about
+  a real per-column wait. If the columns resolve together in practice (one RSC payload, one flush), a
+  stagger is decoration pretending to be latency — and the argument that killed the strength meter
+  applies here too. Worth deciding on what the data actually does rather than on how it looks at 3
+  columns.
+</div>
+
+<h3 style="margin-top:22px">Tell me the numbers, or pick a preset</h3>
+<div class="options">
+  <div class="option" data-choice="slight" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Slight &mdash; 60 / 80 / 120</h3><p>Perceptible order, no performance. Total ~320ms.</p></div>
+  </div>
+  <div class="option" data-choice="barely" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Barely there &mdash; 35 / 60 / 90</h3><p>You would struggle to describe it, which may be the point. Total ~220ms.</p></div>
+  </div>
+  <div class="option" data-choice="none" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>No stagger &mdash; 0 / 70 / 110</h3><p>One clean swap for the whole board. Total ~180ms.</p></div>
+  </div>
+</div>
+
+<script>
+let t;
+function apply(){
+  const s = +document.getElementById('s1').value,
+        o = +document.getElementById('s2').value,
+        i = +document.getElementById('s3').value;
+  const el = document.getElementById('hf');
+  el.style.setProperty('--stag', s + 'ms');
+  el.style.setProperty('--out', o + 'ms');
+  el.style.setProperty('--in', i + 'ms');
+  document.getElementById('v1').textContent = s + 'ms';
+  document.getElementById('v2').textContent = o + 'ms';
+  document.getElementById('v3').textContent = i + 'ms';
+  document.getElementById('total').textContent =
+    'stagger ' + s + 'ms · out ' + o + 'ms · in ' + i + 'ms   →   full board settled in '
+    + (2 * s + o + i) + 'ms';
+  const k = +(getComputedStyle(document.getElementById('hf')).getPropertyValue('--k') || 1);
+  if (k > 1) document.getElementById('total').textContent +=
+    '   (playing at ' + k + '\u00d7 slower so it is watchable)';
+  replay();
+}
+function preset(s, o, i){
+  document.getElementById('s1').value = s;
+  document.getElementById('s2').value = o;
+  document.getElementById('s3').value = i;
+  apply();
+}
+function replay(){
+  const el = document.getElementById('hf');
+  el.classList.remove('run'); void el.offsetWidth; el.classList.add('run');
+}
+function speed(k, btn){
+  document.getElementById('hf').style.setProperty('--k', k);
+  document.querySelectorAll('.ctrl .mock-button').forEach(b => { b.style.opacity = '.55'; });
+  if (btn) btn.style.opacity = '1';
+  apply();
+}
+apply();
+</script>

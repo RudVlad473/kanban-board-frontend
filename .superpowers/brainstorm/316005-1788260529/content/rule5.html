@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rule 5 — animation never gates interaction</title>
+<style>
+  :root{ --bg-app:#F4F7FD; --bg-surface:#FFFFFF; --border:#E4EBFA; --muted:#66707F; --ink:#000112;
+         --primary:#635FC7; --ease:cubic-bezier(.2,0,0,1); --dur:220ms; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0e0f14;color:#e6e8ee;font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .page{max-width:1020px;margin:0 auto;padding:28px 24px 90px}
+  h1{font-size:22px;margin:0 0 4px;font-weight:650;letter-spacing:-.01em}
+  .sub{color:#9aa1b1;margin:0 0 18px;font-size:13.5px}
+  h2{font-size:15px;margin:32px 0 6px;font-weight:640}
+  .note{color:#9aa1b1;font-size:13px;margin:0 0 12px;line-height:1.55}
+  .rule{background:#171a2b;border:1px solid #3b3f66;border-left:3px solid var(--primary);
+        border-radius:8px;padding:14px 16px;margin:0 0 18px;font-size:14px;color:#dfe3f5;line-height:1.6}
+  .rule b{color:#fff}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0;position:sticky;top:0;z-index:60;
+       background:#0e0f14;padding:10px 0;border-bottom:1px solid #23252e}
+  button.ctl{background:#1b1d26;border:1px solid #333644;color:#e6e8ee;border-radius:6px;padding:8px 13px;font:inherit;font-size:13px;cursor:pointer}
+  button.ctl:hover{border-color:#4b4f61}
+  button.ctl.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .stage{background:#15161d;border:1px solid #262935;border-radius:10px;overflow:hidden;margin-bottom:14px}
+  .stage-hd{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-bottom:1px solid #262935;font-size:12.5px;color:#9aa1b1}
+  .stage-hd .tag{font-weight:650;color:#e6e8ee}
+  .v{font-size:11.5px;padding:2px 8px;border-radius:99px;border:1px solid}
+  .pass{color:#a8e6b8;border-color:#2f6b41;background:#12241a}
+  .fail{color:#ffb0a8;border-color:#7a3b34;background:#2b1614}
+  .warn{color:#f0dfa8;border-color:#6b5a17;background:#2a2410}
+
+  .mini{height:190px;background:var(--bg-app);position:relative;display:flex;overflow:hidden;
+        font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;color:var(--ink)}
+  .mp{width:220px;flex:0 0 auto;background:var(--bg-surface);border-right:1px solid var(--border);overflow:hidden;
+      transition:width var(--dur) var(--ease)}
+  .mini.collapsed .mp{width:0;border-right-color:transparent}
+  .mpi{width:220px;flex:0 0 220px;padding:16px}
+  .mpi .b{font-weight:800;font-size:16px;margin-bottom:12px}
+  .mpi .r{height:30px;border-radius:0 15px 15px 0;margin-right:16px;padding-left:12px;display:flex;align-items:center;
+          font-size:12px;font-weight:700;color:var(--muted)}
+  .mpi .r.s{background:var(--primary);color:#fff}
+  .mc{flex:1;min-width:0;padding:16px}
+  .mc h4{margin:0 0 10px;font-size:16px;font-weight:800}
+  .mc .card{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;
+            font-size:12px;font-weight:700;margin-bottom:8px;width:150px}
+  .pill{position:absolute;left:0;bottom:20px;width:36px;height:36px;border-radius:0 18px 18px 0;
+        background:var(--primary);border:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .pill i{width:14px;height:14px;border-radius:3px;background:#fff;display:block}
+
+  /* BAD — my original: translated off-screen, pointer-events none, delayed */
+  .bad .pill{opacity:0;transform:translateX(-100%);pointer-events:none;
+             transition:opacity 130ms linear, transform 130ms var(--ease)}
+  .bad.collapsed .pill{opacity:1;transform:translateX(0);pointer-events:auto;transition-delay:var(--dur)}
+  /* GOOD — in place and live from frame 0; only opacity animates */
+  .good .pill{opacity:0;pointer-events:none;transition:opacity 130ms linear}
+  .good.collapsed .pill{opacity:1;pointer-events:auto;transition-delay:140ms}
+  .good.collapsing .pill{pointer-events:auto}
+
+  .m{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#c3c8d6;background:#1a1c24;
+     border:1px solid #262935;border-radius:7px;padding:11px 13px;white-space:pre;overflow-x:auto;margin:10px 0 0}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:10px}
+  th,td{border:1px solid #262935;padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#1a1c24;color:#e6e8ee;font-weight:600}td{color:#c3c8d6}
+  .options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
+  .opt{border:1px solid #2c303c;border-radius:9px;padding:14px 16px;background:#15161d;cursor:pointer}
+  .opt:hover{border-color:#454a5c}.opt.sel{border-color:var(--primary);background:#1a1830}
+  .opt h4{margin:0 0 6px;font-size:13.5px}.opt p{margin:0;font-size:12.5px;color:#9aa1b1;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Rule 5 — animation never gates interaction</h1>
+<p class="sub">Your constraint, written to be falsifiable, then run against everything already decided.</p>
+
+<div class="rule">
+  <b>Rule 5.</b> Where no real work is happening, the user can act at any point during the motion. Motion may
+  <i>describe</i> a state change; it may never <i>delay</i> one.
+  <br><br>
+  Where there genuinely is a wait — an RSC fetch, a mutation in flight — the animation may cover that wait,
+  but it may not add latency of its own.
+  <br><br>
+  <b>The test:</b> at every frame of the animation, is the control the user is reaching for hit-testable?
+  Not visible — <i>hit-testable</i>. That is a measurement, not a judgement.
+</div>
+
+<div class="bar">
+  <button class="ctl" id="run">▶ Collapse both</button>
+  <button class="ctl" id="audit">▶ Run the hit-test audit</button>
+  <button class="ctl" id="slow">Slow motion 0.25×</button>
+</div>
+
+<h2>Where it bites: my own sidebar design</h2>
+<p class="note">I delayed the expand pill until the panel had fully gone, so two things never moved at once.
+That was a rule-1 instinct applied where rule 5 governs. For 220ms after you collapse the sidebar there is
+<b>no way to re-expand it with the mouse</b>. Try clicking the bottom-left corner immediately after collapsing.</p>
+
+<div class="stage">
+  <div class="stage-hd"><span class="tag">AS I DESIGNED IT</span><span class="v fail">expand target dead for 220ms</span></div>
+  <div class="mini bad" id="m1">
+    <div class="mp"><div class="mpi"><div class="b">kanban</div><div class="r s">Platform Launch</div><div class="r">Marketing Plan</div><div class="r">Roadmap</div></div></div>
+    <div class="mc"><h4>Platform Launch</h4><div class="card">Build settings UI</div><div class="card">QA the auth flow</div></div>
+    <button class="pill" id="pill1"><i></i></button>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="stage-hd"><span class="tag">CORRECTED</span><span class="v pass">live from frame 0 · only opacity animates</span></div>
+  <div class="mini good" id="m2">
+    <div class="mp"><div class="mpi"><div class="b">kanban</div><div class="r s">Platform Launch</div><div class="r">Marketing Plan</div><div class="r">Roadmap</div></div></div>
+    <div class="mc"><h4>Platform Launch</h4><div class="card">Build settings UI</div><div class="card">QA the auth flow</div></div>
+    <button class="pill" id="pill2"><i></i></button>
+  </div>
+</div>
+
+<p class="note">The fix is the same shape as what the menu already does: the control sits in its final position and
+is live from the first frame, and only its <i>appearance</i> animates. It is briefly clickable while still
+invisible — which is exactly the trade rule 5 asks for, and exactly what Base UI's menu does today.</p>
+
+<div class="m" id="out">press “Run the hit-test audit” — it samples elementFromPoint at the pill's centre every frame…</div>
+
+<h2>The audit across everything already decided</h2>
+<table>
+  <tr><th>moment</th><th>real work behind it?</th><th>verdict</th></tr>
+  <tr><td>Menu / dropdown open (variant 3)</td><td>no</td><td><b style="color:#a8e6b8">passes</b> — item hit-testable at 28ms, opacity 0, <code>pointer-events:auto</code> every frame, 0 blocked frames</td></tr>
+  <tr><td>Sidebar collapse → expand pill</td><td>no</td><td><b style="color:#ffb0a8">failed as designed</b> — fixed above</td></tr>
+  <tr><td>Card → task-detail morph (320ms view transition)</td><td>no — it is local state</td><td><b style="color:#ffb0a8">fails</b> — see below</td></tr>
+  <tr><td>Board → board directional load</td><td><b>yes</b> — RSC fetch</td><td><b style="color:#a8e6b8">exempt</b> — the animation covers a real wait</td></tr>
+  <tr><td>Skeleton → content handoff (0/70/110)</td><td><b>yes</b> — RSC fetch</td><td><b style="color:#a8e6b8">exempt</b></td></tr>
+  <tr><td>Drag lift / drop settle (160ms)</td><td>no</td><td><b style="color:#f0dfa8">needs a check</b> — can the card be grabbed again mid-settle?</td></tr>
+  <tr><td>Optimistic in-flight tint</td><td><b>yes</b> — PATCH in flight</td><td><b style="color:#a8e6b8">exempt</b>, and colour-only anyway</td></tr>
+  <tr><td>Rollback travel (220ms)</td><td>no — the failure already landed</td><td><b style="color:#f0dfa8">needs a check</b></td></tr>
+  <tr><td>Title masked slide (190ms)</td><td>varies</td><td><b style="color:#a8e6b8">passes</b> — the title is not a control</td></tr>
+</table>
+
+<h2>The one real conflict: the card → modal morph</h2>
+<p class="note">The spec records this as decided — a 320ms same-document <code>startViewTransition()</code>.
+Measured in the running app just now:</p>
+
+<div class="m">during document.startViewTransition()   (320ms animation)
+  elementFromPoint at a fixed z-index:99999 button
+      returns HTML on 12 of 12 sampled frames — the live DOM is not hit-testable
+      for the whole transition. Pointer input is dead.
+
+  keydown listeners
+      12 of 12 delivered, first at 2ms — keyboard is NOT hit-tested, so Escape,
+      Tab and typing all keep working throughout.
+
+  → the block is pointer-only, and it is inherent to the API, not to our timing.
+    Shortening the duration shortens the block; it does not remove it.</div>
+
+<div class="options" id="opts">
+  <div class="opt" data-choice="keep" onclick="pick(this)">
+    <h4>Keep the morph as specified</h4>
+    <p>Argue that opening a task <i>is</i> committing to the modal, so 320ms of dead pointer is acceptable
+    for that one gesture. Keyboard still works. Rule 5 gets a written, dated carve-out naming the API as
+    the cause.</p>
+  </div>
+  <div class="opt sel" data-choice="shorten" onclick="pick(this)">
+    <h4>Keep it, shortened to ~180ms (recommended)</h4>
+    <p>Same effect, roughly half the dead window, still clearly a morph. The carve-out is still needed but is
+    much cheaper. 320ms was chosen before this constraint existed.</p>
+  </div>
+  <div class="opt" data-choice="drop" onclick="pick(this)">
+    <h4>Drop the morph</h4>
+    <p>Open the modal with a front-loaded fade like the menu — nothing blocks, no carve-out, rule 5 holds
+    everywhere with no exceptions. Cost: loses the single most distinctive transition in the phase.</p>
+  </div>
+</div>
+
+<script>
+  let slow=false;
+  const m1=document.getElementById('m1'), m2=document.getElementById('m2');
+  let collapsed=false;
+  document.getElementById('run').onclick=()=>{ collapsed=!collapsed;
+    [m1,m2].forEach(m=>m.classList.toggle('collapsed',collapsed));
+    document.getElementById('run').textContent = collapsed?'▶ Expand both':'▶ Collapse both'; };
+  document.getElementById('slow').onclick=e=>{ slow=!slow; e.target.classList.toggle('on',slow);
+    document.documentElement.style.setProperty('--dur', slow?'880ms':'220ms'); };
+
+  // elementFromPoint is VIEWPORT-relative, so each stage must be scrolled into view
+  // and probed on its own — probing both at once silently measured an off-screen element.
+  async function auditOne(mini, pill){
+    mini.classList.remove('collapsed');
+    mini.scrollIntoView({block:'center'});
+    await new Promise(r=>setTimeout(r,260));
+    const probe=()=>{ const b=pill.getBoundingClientRect();
+      const cx=b.x+b.width/2, cy=b.y+b.height/2;
+      const inView = cy>=0 && cy<=innerHeight && cx>=0 && cx<=innerWidth;
+      const el=inView? document.elementFromPoint(cx,cy) : null;
+      return { inView, live: !!(el && (el===pill || pill.contains(el))),
+               pe:getComputedStyle(pill).pointerEvents, op:+(+getComputedStyle(pill).opacity).toFixed(2) }; };
+    const s=[]; const t0=performance.now();
+    mini.classList.add('collapsed');
+    await new Promise(res=>{ const tick=()=>{ const t=performance.now()-t0;
+      s.push({t:Math.round(t), ...probe()});
+      if(t<(slow?1400:520)) requestAnimationFrame(tick); else res(); }; requestAnimationFrame(tick); });
+    if (s.some(x=>!x.inView)) return { error:'stage was off-screen for '+s.filter(x=>!x.inView).length+' frames — measurement void' };
+    const f=s.find(x=>x.live);
+    return { firstLive: f? f.t : null, dead: s.filter(x=>!x.live).length, total: s.length, opAtFirstLive: f? f.op : null };
+  }
+  document.getElementById('audit').onclick=async()=>{
+    const out=document.getElementById('out');
+    out.textContent='running…';
+    const bad  = await auditOne(m1, document.getElementById('pill1'));
+    const good = await auditOne(m2, document.getElementById('pill2'));
+    collapsed=true; document.getElementById('run').textContent='▶ Expand both';
+    const line=(label,r)=> r.error ? '  '+label.padEnd(14)+r.error
+      : '  '+label.padEnd(14)+'first hittable at '+String(r.firstLive===null?'never':r.firstLive+'ms').padStart(7)+
+        '   dead frames: '+r.dead+' of '+r.total+
+        (r.opAtFirstLive!==null? '   (opacity there: '+r.opAtFirstLive+')':'');
+    out.textContent =
+      'hit-test at the expand pill\'s centre, every frame after collapse begins\n'+
+      '(each stage scrolled into view and probed separately — elementFromPoint is viewport-relative)\n\n'+
+      line('as designed', bad)+'\n'+
+      line('corrected', good)+'\n\n'+
+      '  the corrected pill is live while still fading in, which is the same trade\n'+
+      '  Base UI\'s own menu already makes (item hittable at opacity 0).';
+  };
+  function pick(el){ document.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel');
+    if(window.brainstorm) window.brainstorm.choice(el.dataset.choice,{text:el.querySelector('h4').textContent}); }
+</script>
+</div>
+</body>
+</html>

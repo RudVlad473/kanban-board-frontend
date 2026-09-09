@@ -1,0 +1,231 @@
+<h2>4 &middot; Transitions</h2>
+<p class="subtitle">Two different mechanisms, two different risk profiles. Calm borders from 3b applied throughout.</p>
+
+<div style="display:flex; gap:10px; align-items:center; margin:14px 0 18px">
+  <button class="mock-button" onclick="replay4()">Replay</button>
+  <button class="mock-button" onclick="slow4(this)" id="sb4">Slow motion: off</button>
+  <button class="mock-button" onclick="document.querySelectorAll('.tr').forEach(e=>e.classList.toggle('dark'))">Light / dark</button>
+</div>
+
+<style>
+.tr { --u:1s; --purple:#635FC7; --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA; --hov:#D6DFEF;
+      --mute:#66707F; --title:#000112;
+      font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif; }
+.tr.slow { --u:3.5s; }
+.tr.dark { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --hov:#4C4E60; --mute:#828FA3; --title:#FFFFFF; }
+
+.tr-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.tr-box { background:var(--app); border-radius:10px; padding:16px; overflow:hidden; }
+.tr-h { font-size:10px; letter-spacing:1.6px; text-transform:uppercase; font-weight:700; margin-bottom:12px; }
+.tr-st { position:relative; height:230px; }
+.tr-cap { font-size:12px; color:var(--mute); margin-top:10px; line-height:1.5; }
+
+.mini { position:absolute; width:190px; background:var(--surf); border:1px solid var(--line);
+        border-radius:8px; padding:11px 12px; box-sizing:border-box; }
+.mini .mt { font-size:13px; font-weight:700; line-height:16px; color:var(--title); letter-spacing:-.12px; }
+.mini .mm { font-size:10px; font-weight:700; color:var(--mute); margin-top:6px; font-variant-numeric:tabular-nums; }
+.scrim { position:absolute; inset:0; background:rgba(0,1,18,.5); border-radius:8px; opacity:0; }
+
+/* ============== ROW 1 : card -> modal ============== */
+.dtl { position:absolute; box-sizing:border-box; background:var(--surf); border:1px solid var(--line);
+       border-radius:8px; padding:11px 12px; overflow:hidden; }
+.dtl .mt { font-size:13px; font-weight:700; line-height:16px; color:var(--title); letter-spacing:-.12px; }
+.dtl .body { opacity:0; }
+.dtl .body p { font-size:11px; color:var(--mute); line-height:1.6; margin-top:8px; }
+.dtl .sub { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--title);
+            font-weight:700; margin-top:7px; }
+.dtl .bx { width:13px; height:13px; border-radius:3px; border:1px solid var(--line); flex:none; }
+.dtl .bx.on { background:var(--purple); border-color:var(--purple); }
+
+/* today: modal pops in the middle, card just sits there */
+.m-old .card1 { top:26px; left:0; }
+.m-old .scrim { animation:sc calc(var(--u)*3) both; }
+.m-old .dtl   { top:34px; left:60px; width:300px; height:160px; opacity:0;
+                animation:old-pop calc(var(--u)*3) both; }
+.m-old .dtl .body { animation:bodyin calc(var(--u)*3) both; }
+@keyframes sc { 0%,20% { opacity:0; } 33%,88% { opacity:1; } 100% { opacity:0; } }
+@keyframes old-pop {
+  0%,20%   { opacity:0; transform:scale(.96); }
+  30%,88%  { opacity:1; transform:scale(1); }
+  100%     { opacity:0; transform:scale(.96); }
+}
+@keyframes bodyin { 0%,26% { opacity:0; } 36%,88% { opacity:1; } 100% { opacity:0; } }
+
+/* proposed: the card itself becomes the modal */
+.m-new .scrim { animation:sc calc(var(--u)*3) both; }
+.m-new .morph { top:26px; left:0; width:190px; height:56px; animation:morph calc(var(--u)*3) both; }
+.m-new .morph .body { animation:bodyin2 calc(var(--u)*3) both; }
+.m-new .ghost { top:26px; left:0; height:56px; opacity:0; animation:ghost calc(var(--u)*3) both;
+                background:transparent; border-style:dashed; }
+@keyframes morph {
+  0%,20%   { top:26px; left:0; width:190px; height:56px; border-radius:8px; }
+  40%,88%  { top:34px; left:60px; width:300px; height:160px; border-radius:10px; }
+  100%     { top:26px; left:0; width:190px; height:56px; border-radius:8px; }
+}
+@keyframes bodyin2 { 0%,28% { opacity:0; } 42%,88% { opacity:1; } 96%,100% { opacity:0; } }
+@keyframes ghost { 0%,22% { opacity:0; } 32%,86% { opacity:1; } 96%,100% { opacity:0; } }
+.m-new .morph { animation-timing-function:cubic-bezier(.2,0,0,1); z-index:3; }
+
+/* ============== ROW 2 : board -> board ============== */
+.bcol { position:absolute; top:26px; width:118px; }
+.bcol .bh { font-size:9px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase;
+            color:var(--mute); margin-bottom:8px; }
+.bcol .bk { background:var(--surf); border:1px solid var(--line); border-radius:8px; padding:8px 9px;
+            font-size:11px; font-weight:700; color:var(--title); margin-bottom:7px; line-height:14px; }
+.layer { position:absolute; inset:0; }
+
+.b-old .l-a { animation:oldA calc(var(--u)*3) steps(1,end) both; }
+.b-old .l-b { animation:oldB calc(var(--u)*3) steps(1,end) both; }
+@keyframes oldA { 0%,45% { opacity:1; } 45.01%,100% { opacity:0; } }
+@keyframes oldB { 0%,45% { opacity:0; } 45.01%,100% { opacity:1; } }
+
+.b-new .l-a { animation:newA calc(var(--u)*3) both; }
+.b-new .l-b { animation:newB calc(var(--u)*3) both; }
+@keyframes newA { 0%,38% { opacity:1; transform:translateY(0); }
+                  48%,100% { opacity:0; transform:translateY(3px); } }
+@keyframes newB { 0%,46% { opacity:0; transform:translateY(-3px); }
+                  60%,100% { opacity:1; transform:translateY(0); } }
+.b-new .l-a, .b-new .l-b { animation-timing-function:cubic-bezier(.2,0,0,1); }
+.b-new .l-b .bcol:nth-child(2) { animation:stag calc(var(--u)*3) both; }
+.b-new .l-b .bcol:nth-child(3) { animation:stag2 calc(var(--u)*3) both; }
+@keyframes stag  { 0%,48% { opacity:0; } 62%,100% { opacity:1; } }
+@keyframes stag2 { 0%,50% { opacity:0; } 64%,100% { opacity:1; } }
+
+.tr-note { margin-top:8px; padding:14px 16px; border-left:3px solid #635FC7;
+  background:rgba(99,95,199,.06); border-radius:0 8px 8px 0; font-size:13px; line-height:1.6; }
+.warn { border-left-color:#C93F3C; background:rgba(201,63,60,.06); }
+</style>
+
+<div class="label" style="margin-bottom:8px">Card &rarr; task detail &nbsp;&middot;&nbsp; same document, no framework support needed</div>
+<div class="tr tr-row" id="row1">
+  <div class="tr-box m-old">
+    <div class="tr-h" style="color:#66707F">Today</div>
+    <div class="tr-st">
+      <div class="mini card1"><div class="mt">Build settings UI</div><div class="mm">2/3</div></div>
+      <div class="scrim"></div>
+      <div class="dtl">
+        <div class="mt">Build settings UI</div>
+        <div class="body">
+          <p>Wire the preferences panel to the persisted theme action.</p>
+          <div class="sub"><span class="bx on"></span>Draft the layout</div>
+          <div class="sub"><span class="bx on"></span>Hook up the switch</div>
+          <div class="sub"><span class="bx"></span>Write the tests</div>
+        </div>
+      </div>
+    </div>
+    <div class="tr-cap">The card stays where it is, dims under the scrim, and an unrelated panel appears
+      in the middle. Two representations of one task on screen at once.</div>
+  </div>
+
+  <div class="tr-box m-new">
+    <div class="tr-h" style="color:#635FC7">Proposed &mdash; morph</div>
+    <div class="tr-st">
+      <div class="mini ghost"></div>
+      <div class="scrim"></div>
+      <div class="dtl morph">
+        <div class="mt">Build settings UI</div>
+        <div class="body">
+          <p>Wire the preferences panel to the persisted theme action.</p>
+          <div class="sub"><span class="bx on"></span>Draft the layout</div>
+          <div class="sub"><span class="bx on"></span>Hook up the switch</div>
+          <div class="sub"><span class="bx"></span>Write the tests</div>
+        </div>
+      </div>
+    </div>
+    <div class="tr-cap">The card <em>is</em> the modal. It grows from where you clicked, leaving a dashed
+      slot behind, and shrinks back into it on close &mdash; so you never lose your place in the column.</div>
+  </div>
+</div>
+
+<div class="label" style="margin-bottom:8px">Board &rarr; board &nbsp;&middot;&nbsp; a real route change</div>
+<div class="tr tr-row" id="row2">
+  <div class="tr-box b-old">
+    <div class="tr-h" style="color:#66707F">Today</div>
+    <div class="tr-st">
+      <div class="layer l-a">
+        <div class="bcol" style="left:0"><div class="bh">Todo</div><div class="bk">Build settings UI</div><div class="bk">Research pricing</div></div>
+        <div class="bcol" style="left:130px"><div class="bh">Doing</div><div class="bk">Design settings</div></div>
+        <div class="bcol" style="left:260px"><div class="bh">Done</div><div class="bk">Add auth</div></div>
+      </div>
+      <div class="layer l-b">
+        <div class="bcol" style="left:0"><div class="bh">Backlog</div><div class="bk">Q3 roadmap</div></div>
+        <div class="bcol" style="left:130px"><div class="bh">Review</div><div class="bk">Pricing deck</div><div class="bk">Vendor list</div></div>
+        <div class="bcol" style="left:260px"><div class="bh">Shipped</div><div class="bk">Billing page</div></div>
+      </div>
+    </div>
+    <div class="tr-cap">One frame. The board is simply different, with nothing to say a navigation
+      occurred &mdash; on a slow read it looks like a glitch.</div>
+  </div>
+
+  <div class="tr-box b-new">
+    <div class="tr-h" style="color:#635FC7">Proposed &mdash; keyed crossfade</div>
+    <div class="tr-st">
+      <div class="layer l-a">
+        <div class="bcol" style="left:0"><div class="bh">Todo</div><div class="bk">Build settings UI</div><div class="bk">Research pricing</div></div>
+        <div class="bcol" style="left:130px"><div class="bh">Doing</div><div class="bk">Design settings</div></div>
+        <div class="bcol" style="left:260px"><div class="bh">Done</div><div class="bk">Add auth</div></div>
+      </div>
+      <div class="layer l-b">
+        <div class="bcol" style="left:0"><div class="bh">Backlog</div><div class="bk">Q3 roadmap</div></div>
+        <div class="bcol" style="left:130px"><div class="bh">Review</div><div class="bk">Pricing deck</div><div class="bk">Vendor list</div></div>
+        <div class="bcol" style="left:260px"><div class="bh">Shipped</div><div class="bk">Billing page</div></div>
+      </div>
+    </div>
+    <div class="tr-cap">Outgoing board falls 3px and fades; incoming rises 3px into place, columns
+      staggered ~30ms apart. Plain CSS keyed on <code>boardId</code> &mdash; no view transitions at all.</div>
+  </div>
+</div>
+
+<div class="tr-note warn">
+  <strong>Verified constraint.</strong> <code>react@19.2.8</code> exports no <code>ViewTransition</code>
+  (nor <code>unstable_ViewTransition</code>), and <code>next@16.3.0</code>'s config schema has no
+  <code>viewTransition</code> key &mdash; it exists only inside the bundled
+  <code>react-dom-experimental</code>. React's <code>&lt;ViewTransition&gt;</code> route morph would
+  require the React experimental channel plus a Next canary. For a repo with pinned deps, required CI
+  checks and committed visual baselines, that is a foundation change disguised as polish. Hence the
+  split above: the card&rarr;modal morph uses <code>document.startViewTransition()</code>, which is
+  plain DOM and works today; the board&rarr;board change gets the cheap keyed crossfade instead.
+</div>
+
+<div class="tr-note">
+  <strong>The morph degrades cleanly.</strong> <code>document.startViewTransition</code> is
+  feature-detected: where it is unsupported the modal simply opens as it does today. That makes it
+  progressive enhancement rather than a dependency, and means it needs no visual-baseline changes
+  &mdash; the start and end states are identical to the current ones, only the 300ms between them differs.
+</div>
+
+<h3 style="margin-top:24px">What do you want to take forward?</h3>
+<div class="options" data-multiselect>
+  <div class="option" data-choice="morph" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Card &rarr; modal morph</h3><p>Native <code>startViewTransition</code>, feature-detected, no dependency change.</p></div>
+  </div>
+  <div class="option" data-choice="crossfade" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Board &rarr; board keyed crossfade</h3><p>Plain CSS. Cheap, no experimental anything.</p></div>
+  </div>
+  <div class="option" data-choice="experimental" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Actually, do go experimental</h3><p>Take React experimental + Next canary to get the real route morph. I want the ceiling, not the safe option.</p></div>
+  </div>
+  <div class="option" data-choice="morphonly" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>Morph only &mdash; skip board&rarr;board</h3><p>Board switching is fine as an instant swap; don't spend anything on it.</p></div>
+  </div>
+</div>
+
+<script>
+function replay4(){
+  document.querySelectorAll('#row1, #row2').forEach(p=>{
+    p.querySelectorAll('.scrim,.dtl,.morph,.ghost,.body,.l-a,.l-b,.bcol').forEach(el=>{
+      const a=el.style.animation; el.style.animation='none'; void el.offsetWidth; el.style.animation=a||'';
+    });
+  });
+}
+function slow4(btn){
+  const on = !document.querySelector('.tr').classList.contains('slow');
+  document.querySelectorAll('.tr').forEach(e=>e.classList.toggle('slow', on));
+  btn.textContent='Slow motion: '+(on?'on':'off'); replay4();
+}
+setTimeout(replay4,250);
+</script>

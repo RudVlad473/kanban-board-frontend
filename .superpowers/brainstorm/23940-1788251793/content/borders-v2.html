@@ -1,0 +1,142 @@
+<h2>3b &middot; Border contrast</h2>
+<p class="subtitle">Light and dark shown together, because the bug was that the state borders never adapted between them. Step through the three levels &mdash; the middle one is my recommendation.</p>
+
+<div style="display:flex; gap:10px; align-items:center; margin:14px 0 6px" id="lvbar">
+  <button class="mock-button" onclick="setLv('current',this)">1 &middot; As you saw it</button>
+  <button class="mock-button" onclick="setLv('calm',this)">2 &middot; Calm (recommended)</button>
+  <button class="mock-button" onclick="setLv('min',this)">3 &middot; Barely there</button>
+</div>
+<p class="subtitle" style="margin-bottom:16px" id="lvdesc">&nbsp;</p>
+
+<style>
+.cs { --purple:#635FC7; font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif; }
+.cs-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.pane { border-radius:10px; padding:18px; }
+.pane.light { --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA; --mute:#66707F; --title:#000112;
+              background:var(--app); }
+.pane.dark  { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --mute:#828FA3; --title:#FFFFFF;
+              background:var(--app); }
+.pane-h { font-size:10px; letter-spacing:1.6px; text-transform:uppercase; font-weight:700;
+          color:var(--mute); margin-bottom:14px; }
+
+/* ---- level 1: brand colours, not theme-aware (the bug) ---- */
+.lv-current .pane.light { --hov:#C3CEE6; --pend:#B9B4F0; --err:#C93F3C; }
+.lv-current .pane.dark  { --hov:#5A5E73; --pend:#B9B4F0; --err:#C93F3C; }
+/* ---- level 2: derived from --line, per theme ---- */
+.lv-calm .pane.light { --hov:#D6DFEF; --pend:#D1D6F2; --err:#DCB7C1; }
+.lv-calm .pane.dark  { --hov:#4C4E60; --pend:#4B4A78; --err:#6F3F48; }
+/* ---- level 3: minimum readable step ---- */
+.lv-min .pane.light { --hov:#DEE6F5; --pend:#DCE0F6; --err:#E9D2D6; }
+.lv-min .pane.dark  { --hov:#46495A; --pend:#45456A; --err:#5B3F45; }
+
+.q { position:relative; background:var(--surf); border:1px solid var(--line); border-radius:8px;
+     padding:12px 13px; margin-bottom:9px; overflow:hidden;
+     transition:border-color 130ms ease, background-color 130ms ease; }
+.q .qt { font-size:14px; font-weight:700; line-height:17px; color:var(--title); letter-spacing:-.12px; }
+.q .qm { font-size:11px; font-weight:700; color:var(--mute); margin-top:7px;
+         font-variant-numeric:tabular-nums; }
+.q .tagx { position:absolute; right:11px; top:11px; font-size:9px; font-weight:700; letter-spacing:1.2px;
+           text-transform:uppercase; color:var(--mute); }
+
+.q.hov { border-color:var(--hov); }
+.pane.light .q.hov { background:#FAFBFE; }
+.pane.dark  .q.hov { background:#31323E; }
+.q.pend { border-color:var(--pend); }
+.q.err  { border-color:var(--err); }
+.q.pend .wire { position:absolute; left:0; bottom:0; height:2px; width:38%; background:var(--pend);
+  border-radius:2px; animation:wz 1.6s cubic-bezier(.5,0,.5,1) infinite; }
+@keyframes wz { 0% { transform:translateX(-100%);} 100% { transform:translateX(360%);} }
+
+.q.live { cursor:grab; }
+.q.live:hover { border-color:var(--hov); }
+.pane.light .q.live:hover { background:#FAFBFE; }
+.pane.dark  .q.live:hover { background:#31323E; }
+
+.hexes { white-space:pre; margin-top:14px; font-size:11px; line-height:1.9; color:var(--mute);
+         font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+.sw { display:inline-block; width:9px; height:9px; border-radius:2px; vertical-align:middle;
+      margin-right:6px; border:1px solid rgba(128,128,128,.35); }
+.cs-note { margin-top:20px; padding:14px 16px; border-left:3px solid #635FC7;
+  background:rgba(99,95,199,.06); border-radius:0 8px 8px 0; font-size:13px; line-height:1.6; }
+</style>
+
+<div class="cs lv-calm" id="cs">
+  <div class="cs-row">
+    <div class="pane light">
+      <div class="pane-h">Light</div>
+      <div class="q"><div class="qt">Research pricing points</div><div class="qm">0/5</div><span class="tagx">rest</span></div>
+      <div class="q hov"><div class="qt">Build settings UI</div><div class="qm">2/3</div><span class="tagx">hover</span></div>
+      <div class="q pend"><div class="qt">Add account management</div><div class="qm">4/4</div><span class="tagx">in flight</span><span class="wire"></span></div>
+      <div class="q err"><div class="qt">Design settings</div><div class="qm">1/2</div><span class="tagx">rolled back</span></div>
+      <div class="q live"><div class="qt">Hover me for real</div><div class="qm">3/6</div></div>
+      <div class="hexes" id="hx-l"></div>
+    </div>
+
+    <div class="pane dark">
+      <div class="pane-h">Dark</div>
+      <div class="q"><div class="qt">Research pricing points</div><div class="qm">0/5</div><span class="tagx">rest</span></div>
+      <div class="q hov"><div class="qt">Build settings UI</div><div class="qm">2/3</div><span class="tagx">hover</span></div>
+      <div class="q pend"><div class="qt">Add account management</div><div class="qm">4/4</div><span class="tagx">in flight</span><span class="wire"></span></div>
+      <div class="q err"><div class="qt">Design settings</div><div class="qm">1/2</div><span class="tagx">rolled back</span></div>
+      <div class="q live"><div class="qt">Hover me for real</div><div class="qm">3/6</div></div>
+      <div class="hexes" id="hx-d"></div>
+    </div>
+  </div>
+</div>
+
+<div class="cs-note">
+  <strong>The real fix is structural, not a nicer hex.</strong> State borders should be defined as a
+  fixed step away from <code>--border</code> in whichever theme is active &mdash; not as
+  <code>color.purple.500</code> and <code>color.red.500</code>, which are fill colours chosen to carry
+  white text at 4.5:1. A 1px hairline on a resting card has no contrast obligation at all: it is
+  decoration, and the state it signals is always carried by something else too (the toast, the
+  <code>aria-busy</code>, the card's position). That is why it can afford to be this quiet, and it is
+  why level 1 looked wrong in both themes at once.
+</div>
+
+<h3 style="margin-top:24px">Which step size?</h3>
+<div class="options">
+  <div class="option" data-choice="calm" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Level 2 &mdash; calm</h3><p>Readable at a glance, never shouts. Derived per theme from <code>--border</code>.</p></div>
+  </div>
+  <div class="option" data-choice="min" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Level 3 &mdash; barely there</h3><p>Quieter still. Relies more on the toast and position to carry the state.</p></div>
+  </div>
+  <div class="option" data-choice="between" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Between 2 and 3</h3><p>Neither is quite it &mdash; I'll say which way.</p></div>
+  </div>
+  <div class="option" data-choice="split" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>Different steps per state</h3><p>e.g. hover at level 3, but rolled-back at level 2 since it reports a failure.</p></div>
+  </div>
+</div>
+
+<script>
+const DESC = {
+  current: 'Brand colours used directly, identical hex in both themes — the version you flagged.',
+  calm:    'Each state derived from that theme’s own --border: hover one step, in-flight blended 15% toward purple, rolled-back 30% toward red.',
+  min:     'Half the step of level 2. The border is nearly a hint; the toast and card position do most of the work.'
+};
+function setLv(l, btn){
+  const cs = document.getElementById('cs');
+  cs.className = 'cs lv-' + l;
+  document.getElementById('lvdesc').textContent = DESC[l];
+  [...document.querySelectorAll('#lvbar .mock-button')].forEach(b =>
+    b.style.opacity = (b === btn ? '1' : '.55'));
+  paint();
+}
+function paint(){
+  [['light','hx-l'],['dark','hx-d']].forEach(([cls,id]) => {
+    const p = document.querySelector('.pane.' + cls), s = getComputedStyle(p);
+    const rows = [['rest','--line'],['hover','--hov'],['in flight','--pend'],['rolled back','--err']];
+    document.getElementById(id).innerHTML = rows.map(([n,v]) => {
+      const c = s.getPropertyValue(v).trim();
+      return '<span class="sw" style="background:'+c+'"></span>' + n.padEnd(12,' ') + c;
+    }).join('<br>');
+  });
+}
+setLv('calm', document.querySelectorAll('#lvbar .mock-button')[1]);
+</script>

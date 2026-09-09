@@ -1,0 +1,201 @@
+<h2>3 &middot; Optimistic state</h2>
+<p class="subtitle">The card has just been dropped into <strong>Doing</strong>. The PATCH is in flight. Two outcomes &mdash; it succeeds, or it fails and rolls back. Tilt is gone, per your last call.</p>
+
+<div style="display:flex; gap:10px; align-items:center; margin:14px 0 18px">
+  <button class="mock-button" onclick="replay3()">Replay</button>
+  <button class="mock-button" onclick="slow3(this)" id="sb3">Slow motion: off</button>
+  <button class="mock-button" onclick="document.querySelectorAll('.op').forEach(e=>e.classList.toggle('dark'))">Light / dark</button>
+</div>
+
+<style>
+.op { --u:1s; --purple:#635FC7; --red:#C93F3C; --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA;
+      --mute:#66707F; --title:#000112;
+      font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif; }
+.op.slow { --u:3s; }
+.op.dark { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --mute:#828FA3; --title:#FFFFFF; }
+
+.op-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+.op-box { background:var(--app); border-radius:10px; padding:16px; }
+.op-h { font-size:10px; letter-spacing:1.6px; text-transform:uppercase; font-weight:700; margin-bottom:12px; }
+.op-stage { position:relative; height:190px; }
+.oc { position:absolute; width:190px; }
+.oc.a { left:0; } .oc.b { left:210px; }
+.oh { display:flex; align-items:center; gap:6px; font-size:10px; font-weight:700; letter-spacing:2px;
+      text-transform:uppercase; color:var(--mute); height:26px; }
+.od { width:9px; height:9px; border-radius:50%; }
+.a .od { background:#49C4E5; } .b .od { background:#8471F2; }
+
+.k { position:absolute; left:0; width:190px; height:56px; box-sizing:border-box; background:var(--surf);
+     border:1px solid var(--line); border-radius:8px; padding:9px 11px; font-size:12px; font-weight:700;
+     line-height:15px; color:var(--title); overflow:hidden; }
+.k small { display:block; font-weight:700; font-size:10px; color:var(--mute); margin-top:5px;
+           font-variant-numeric:tabular-nums; }
+.k .wire { position:absolute; left:0; bottom:0; height:2px; width:40%; background:var(--purple);
+           border-radius:2px; opacity:0; }
+.ringy { position:absolute; width:190px; height:56px; border-radius:8px; border:2px solid var(--purple);
+         opacity:0; pointer-events:none; }
+.tst { position:absolute; right:0; bottom:0; width:200px; background:var(--surf);
+       border:1px solid var(--line); border-left:3px solid var(--red); border-radius:8px; padding:9px 11px;
+       font-size:11px; font-weight:700; color:var(--title); opacity:0; }
+.tst small { display:block; font-weight:500; font-size:10px; color:var(--mute); margin-top:3px; }
+
+/* ---------- SUCCESS / today : deliberately no animation at all ---------- */
+.s-old .moved { top:26px; }
+
+/* ---------- SUCCESS / proposed ---------- */
+.s-new .moved { top:26px; animation:s-border calc(var(--u)*3) both; }
+.s-new .wire  { animation:s-wire calc(var(--u)*3) both; }
+.s-new .ringy { top:26px; left:210px; animation:s-ring calc(var(--u)*3) both; }
+@keyframes s-border {
+  0%,50%   { border-color:#B9B4F0; }
+  60%,100% { border-color:var(--line); }
+}
+@keyframes s-wire {
+  0%   { opacity:1; transform:translateX(-100%); }
+  50%  { opacity:1; transform:translateX(475%); }
+  53%,100% { opacity:0; transform:translateX(475%); }
+}
+@keyframes s-ring { 0%,50% { opacity:0; } 56% { opacity:.85; } 78%,100% { opacity:0; } }
+
+/* ---------- FAILURE / today : instant teleport ---------- */
+.f-old .moved { top:26px; left:210px; animation:f-old-jump calc(var(--u)*3) steps(1,end) both; }
+.f-old .below { top:90px; left:210px; animation:f-old-slide calc(var(--u)*3) both; }
+.f-old .tst   { animation:f-toast calc(var(--u)*3) both; }
+@keyframes f-old-jump { 0%,50% { transform:none; } 50.01%,100% { transform:translate(-210px,64px); } }
+@keyframes f-old-slide { 0%,50% { transform:none; } 50.01%,100% { transform:translateY(-64px); } }
+
+/* ---------- FAILURE / proposed : it travels back ---------- */
+.f-new .moved { top:26px; left:210px;
+  animation:f-new-move calc(var(--u)*3) both, f-new-border calc(var(--u)*3) both; }
+.f-new .below { top:90px; left:210px; animation:f-new-slide calc(var(--u)*3) both; }
+.f-new .wire  { animation:s-wire calc(var(--u)*3) both; }
+.f-new .tst   { animation:f-toast calc(var(--u)*3) both; }
+@keyframes f-new-move {
+  0%,50%  { transform:none; }
+  58%     { transform:translate(-105px,32px) scale(1.02); }
+  68%,100%{ transform:translate(-210px,64px) scale(1); }
+}
+@keyframes f-new-border {
+  0%,50%   { border-color:#B9B4F0; }
+  52%,70%  { border-color:var(--red); }
+  92%,100% { border-color:var(--line); }
+}
+@keyframes f-new-slide { 0%,53% { transform:none; } 63%,100% { transform:translateY(-64px); } }
+@keyframes f-toast { 0%,52% { opacity:0; transform:translateY(6px); }
+                     60%,88% { opacity:1; transform:translateY(0); } 100% { opacity:0; } }
+.f-new .moved, .f-new .below { animation-timing-function:cubic-bezier(.2,0,0,1); }
+
+.op-cap { font-size:12px; color:var(--mute); margin-top:10px; line-height:1.5; }
+.op-note { margin-top:20px; padding:14px 16px; border-left:3px solid #635FC7;
+  background:rgba(99,95,199,.06); border-radius:0 8px 8px 0; font-size:13px; line-height:1.6; }
+</style>
+
+<div class="label" style="margin-bottom:8px">Outcome 1 &mdash; the move succeeds</div>
+<div class="op op-row" id="r-succ">
+  <div class="op-box s-old">
+    <div class="op-h" style="color:#66707F">Today</div>
+    <div class="op-stage">
+      <div class="oc a"><div class="oh"><span class="od"></span>Todo</div></div>
+      <div class="oc b"><div class="oh"><span class="od"></span>Doing</div></div>
+      <div class="oc a"><div class="k" style="top:26px">Research pricing points<small>0/5</small></div></div>
+      <div class="oc b">
+        <div class="k moved">Build settings UI<small>2/3</small></div>
+        <div class="k" style="top:90px">Design settings<small>1/2</small></div>
+      </div>
+    </div>
+    <div class="op-cap">Nothing happens, because nothing is painted. <code>isMoving</code> sets
+      <code>aria-busy</code> and disables the handle &mdash; both invisible. In flight and settled are
+      the same pixels.</div>
+  </div>
+
+  <div class="op-box s-new">
+    <div class="op-h" style="color:#635FC7">Proposed</div>
+    <div class="op-stage">
+      <div class="oc a"><div class="oh"><span class="od"></span>Todo</div></div>
+      <div class="oc b"><div class="oh"><span class="od"></span>Doing</div></div>
+      <div class="oc a"><div class="k" style="top:26px">Research pricing points<small>0/5</small></div></div>
+      <div class="oc b">
+        <div class="k moved">Build settings UI<small>2/3</small><span class="wire"></span></div>
+        <div class="k" style="top:90px">Design settings<small>1/2</small></div>
+      </div>
+      <div class="ringy"></div>
+    </div>
+    <div class="op-cap">Border carries a purple tint while in flight, with a 2px indeterminate wire on
+      the bottom edge. On settle the tint releases and a single ring confirms. Colour only, per the rule.</div>
+  </div>
+</div>
+
+<div class="label" style="margin-bottom:8px">Outcome 2 &mdash; the move fails and rolls back</div>
+<div class="op op-row" id="r-fail">
+  <div class="op-box f-old">
+    <div class="op-h" style="color:#C93F3C">Today</div>
+    <div class="op-stage">
+      <div class="oc a"><div class="oh"><span class="od"></span>Todo</div></div>
+      <div class="oc b"><div class="oh"><span class="od"></span>Doing</div></div>
+      <div class="oc a"><div class="k" style="top:26px">Research pricing points<small>0/5</small></div></div>
+      <div class="k moved">Build settings UI<small>2/3</small></div>
+      <div class="k below">Design settings<small>1/2</small></div>
+      <div class="tst">Couldn't move task.<small>Try again.</small></div>
+    </div>
+    <div class="op-cap">The pending variable retires and the card is simply gone from where you put it,
+      reappearing elsewhere in the same frame. The toast is the only evidence a move was ever attempted.</div>
+  </div>
+
+  <div class="op-box f-new">
+    <div class="op-h" style="color:#635FC7">Proposed</div>
+    <div class="op-stage">
+      <div class="oc a"><div class="oh"><span class="od"></span>Todo</div></div>
+      <div class="oc b"><div class="oh"><span class="od"></span>Doing</div></div>
+      <div class="oc a"><div class="k" style="top:26px">Research pricing points<small>0/5</small></div></div>
+      <div class="k moved">Build settings UI<small>2/3</small><span class="wire"></span></div>
+      <div class="k below">Design settings<small>1/2</small></div>
+      <div class="tst">Couldn't move task.<small>Try again.</small></div>
+    </div>
+    <div class="op-cap">The card <em>travels back</em> along the reverse path and the border flashes red
+      before decaying. You see where it went, so the toast confirms rather than explains.</div>
+  </div>
+</div>
+
+<div class="op-note">
+  <strong>This is the one place geometry is licensed outside a drag.</strong> The rule from screen 1b
+  reserves movement for when something genuinely moved &mdash; and in a rollback something genuinely
+  <em>un</em>moved. Animating the reversal is not decoration; it is the only way the user learns that
+  the thing they did was undone rather than that the board was always like this. Everything else here
+  is still colour-only.
+</div>
+
+<h3 style="margin-top:24px">Which parts do you want?</h3>
+<div class="options" data-multiselect>
+  <div class="option" data-choice="tint" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Pending border tint</h3><p>In-flight cards carry a purple-tinted border until settle.</p></div>
+  </div>
+  <div class="option" data-choice="wire" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>The 2px indeterminate wire</h3><p>The travelling progress line on the card's bottom edge. Drop it if the tint alone says enough.</p></div>
+  </div>
+  <div class="option" data-choice="ring" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Settle confirmation ring</h3><p>The single pulse when the server agrees.</p></div>
+  </div>
+  <div class="option" data-choice="rollback" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>Animated rollback</h3><p>The card travels back instead of teleporting. The one I would fight for.</p></div>
+  </div>
+</div>
+
+<script>
+function replay3(){
+  document.querySelectorAll('#r-succ, #r-fail').forEach(p=>{
+    p.querySelectorAll('.moved,.below,.wire,.ringy,.tst').forEach(el=>{
+      const a=el.style.animation; el.style.animation='none'; void el.offsetWidth; el.style.animation=a||'';
+    });
+  });
+}
+function slow3(btn){
+  const on = !document.querySelector('.op').classList.contains('slow');
+  document.querySelectorAll('.op').forEach(e=>e.classList.toggle('slow', on));
+  btn.textContent='Slow motion: '+(on?'on':'off'); replay3();
+}
+setTimeout(replay3,250);
+</script>

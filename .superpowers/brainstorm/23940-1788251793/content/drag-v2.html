@@ -1,0 +1,183 @@
+<h2>2 &middot; Drag choreography</h2>
+<p class="subtitle">A card moving from <strong>Todo</strong> into <strong>Doing</strong>. Same move, both panes. Use <em>slow motion</em> &mdash; the whole difference is in 300ms.</p>
+
+<div style="display:flex; gap:10px; align-items:center; margin:14px 0 18px">
+  <button class="mock-button" onclick="replay()">Replay</button>
+  <button class="mock-button" onclick="toggleSlow(this)" id="slowbtn">Slow motion: off</button>
+  <button class="mock-button" onclick="document.querySelectorAll('.dg').forEach(e=>e.classList.toggle('dark'))">Light / dark</button>
+</div>
+
+<style>
+.dg { --u:1s; --purple:#635FC7; --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA; --mute:#66707F;
+      --title:#000112; font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif; }
+.dg.slow { --u:3s; }
+.dg.dark { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --mute:#828FA3; --title:#FFFFFF; }
+
+.dg-wrap { background:var(--app); border-radius:10px; padding:18px; margin-bottom:16px; }
+.dg-tag { font-size:10px; letter-spacing:1.6px; text-transform:uppercase; font-weight:700; margin-bottom:14px; }
+.stage { margin:0 auto; position:relative; height:250px; width:440px; max-width:100%; }
+.col { position:absolute; top:0; width:200px; }
+.col.a { left:0; } .col.b { left:240px; }
+.hd { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; letter-spacing:2.2px;
+      text-transform:uppercase; color:var(--mute); height:30px; }
+.dot { width:11px; height:11px; border-radius:50%; }
+.a .dot { background:#49C4E5; } .b .dot { background:#8471F2; }
+.cnt { margin-left:auto; letter-spacing:0; font-size:10px; padding:1px 6px; border-radius:20px;
+       background:var(--line); color:var(--mute); font-variant-numeric:tabular-nums; }
+
+.cd { position:absolute; left:0; width:200px; height:56px; box-sizing:border-box;
+      background:var(--surf); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+      font-size:13px; font-weight:700; line-height:16px; color:var(--title); letter-spacing:-.1px; }
+.cd small { display:block; font-weight:700; font-size:10px; color:var(--mute); margin-top:6px;
+            font-variant-numeric:tabular-nums; }
+.bar { position:absolute; left:0; width:200px; height:3px; border-radius:2px; background:var(--purple); opacity:0; }
+
+/* ============ PANE 1 - TODAY ============ */
+.old .drag  { top:106px; animation: o-drag calc(var(--u)*3) linear both; z-index:3; }
+.old .a3    { top:172px; animation: o-a3   calc(var(--u)*3) both; }
+.old .b1    { top:40px;  animation: o-b1   calc(var(--u)*3) both; }
+.old .land  { top:40px;  opacity:0; animation: o-land calc(var(--u)*3) steps(1,end) both; z-index:2; }
+.old .obar  { top:96px;  animation: o-bar  calc(var(--u)*3) steps(1,end) both; }
+
+@keyframes o-drag {
+  0%,20%   { transform:none; opacity:1; }
+  20.01%   { opacity:.5; }
+  60%      { transform:translate(240px,-66px); opacity:.5; }
+  60.01%,100% { transform:translate(240px,-66px); opacity:0; }
+}
+@keyframes o-a3 { 0%,30% { transform:none; } 36.7%,100% { transform:translateY(-66px); } }
+@keyframes o-b1 { 0%,33% { transform:none; } 39.7%,100% { transform:translateY(66px); } }
+@keyframes o-land { 0%,60% { opacity:0; } 60.01%,100% { opacity:1; } }
+@keyframes o-bar { 0%,33% { opacity:0; } 33.01%,60% { opacity:1; } 60.01%,100% { opacity:0; } }
+
+/* ============ PANE 2 - PROPOSED ============ */
+.new .drag { top:106px; z-index:5;
+  animation: n-lift calc(var(--u)*3) both, n-travel calc(var(--u)*3) both; }
+.new .slot  { top:106px; animation: n-slot calc(var(--u)*3) both; }
+.new .a3    { top:172px; animation: n-a3   calc(var(--u)*3) both; }
+.new .b1    { top:40px;  animation: n-b1   calc(var(--u)*3) both; }
+.new .nbar  { top:96px;  animation: n-bar  calc(var(--u)*3) both; }
+.new .ring  { top:40px; left:240px; position:absolute; width:200px; height:56px; border-radius:8px;
+              border:2px solid var(--purple); opacity:0; animation:n-ring calc(var(--u)*3) both; z-index:6; }
+
+@keyframes n-lift {
+  0%,20%     { transform:scale(1) rotate(0deg); box-shadow:0 1px 2px rgba(16,18,32,.04); }
+  25%        { transform:scale(1.03) rotate(-1.6deg); box-shadow:0 10px 24px rgba(16,18,32,.16); }
+  55%        { transform:scale(1.03) rotate(-1.6deg); box-shadow:0 10px 24px rgba(16,18,32,.16); }
+  66%,100%   { transform:scale(1) rotate(0deg); box-shadow:0 1px 2px rgba(16,18,32,.04); }
+}
+@keyframes n-travel {
+  0%,20%   { translate:0 0; }
+  60%      { translate:240px -66px; }
+  100%     { translate:240px -66px; }
+}
+@keyframes n-slot { 0%,25% { height:56px; opacity:.55; } 34%,100% { height:0px; opacity:0; } }
+@keyframes n-a3   { 0%,25% { transform:none; } 34%,100% { transform:translateY(-66px); } }
+@keyframes n-b1   { 0%,30% { transform:none; } 39%,100% { transform:translateY(66px); } }
+@keyframes n-bar  { 0%,29% { opacity:0; transform:scaleX(.4); } 34%,58% { opacity:1; transform:scaleX(1); }
+                    62%,100% { opacity:0; transform:scaleX(1); } }
+@keyframes n-ring { 0%,60% { opacity:0; } 64% { opacity:.9; } 82%,100% { opacity:0; } }
+
+.new .drag { animation-timing-function: cubic-bezier(.2,.8,.2,1), cubic-bezier(.25,.1,.15,1); }
+.new .slot, .new .a3, .new .b1 { animation-timing-function: cubic-bezier(.2,0,0,1); }
+.new .slot { position:absolute; left:0; width:200px; border:1px dashed var(--line);
+             border-radius:8px; background:transparent; }
+
+.dg-notes { display:grid; grid-template-columns:1fr 1fr; gap:18px; font-size:13px; line-height:1.55; }
+.dg-notes ul { margin:6px 0 0; padding-left:18px; } .dg-notes li { margin-bottom:6px; }
+</style>
+
+<div class="dg old dg-wrap" id="p-old">
+  <div class="dg-tag" style="color:#66707F">Today &mdash; what ships right now</div>
+  <div class="stage">
+    <div class="col a"><div class="hd"><span class="dot"></span>Todo<span class="cnt">3</span></div></div>
+    <div class="col b"><div class="hd"><span class="dot"></span>Doing<span class="cnt">1</span></div></div>
+    <div class="col a">
+      <div class="cd" style="top:40px">Research pricing points<small>0/5</small></div>
+      <div class="cd drag">Build settings UI<small>2/3</small></div>
+      <div class="cd a3">Add account management<small>4/4</small></div>
+    </div>
+    <div class="col b">
+      <div class="cd b1">Design settings and search<small>1/2</small></div>
+      <div class="cd land">Build settings UI<small>2/3</small></div>
+      <div class="bar obar"></div>
+    </div>
+  </div>
+</div>
+
+<div class="dg new dg-wrap" id="p-new">
+  <div class="dg-tag" style="color:#635FC7">Proposed &mdash; lift, carry, settle</div>
+  <div class="stage">
+    <div class="col a"><div class="hd"><span class="dot"></span>Todo<span class="cnt">3</span></div></div>
+    <div class="col b"><div class="hd"><span class="dot"></span>Doing<span class="cnt">1</span></div></div>
+    <div class="col a">
+      <div class="cd" style="top:40px">Research pricing points<small>0/5</small></div>
+      <div class="slot"></div>
+      <div class="cd a3">Add account management<small>4/4</small></div>
+    </div>
+    <div class="col b">
+      <div class="cd b1">Design settings and search<small>1/2</small></div>
+      <div class="bar nbar"></div>
+    </div>
+    <div class="cd drag" style="left:0">Build settings UI<small>2/3</small></div>
+    <div class="ring"></div>
+  </div>
+</div>
+
+<div class="dg-notes">
+  <div>
+    <div class="label">What is genuinely already good</div>
+    <ul>
+      <li>Neighbours already animate &mdash; <code>useSortable</code>'s default transition is passed through, so the reflow is not a jump today</li>
+      <li>There is a real insertion bar, drawn in the gutter so it does not wait on reflow</li>
+      <li>Motion is dropped entirely under <code>prefers-reduced-motion</code>, not merely shortened</li>
+      <li>The keyboard drag path is carefully built &mdash; better than most kanban apps ship</li>
+    </ul>
+  </div>
+  <div>
+    <div class="label">The four things that change</div>
+    <ul>
+      <li><strong>DragOverlay.</strong> The card leaves the list and is carried above it &mdash; scale 1.03, a 1.6&deg; tilt, a real shadow. Today it stays in place at 50% opacity, so you appear to be smearing a copy rather than holding a card</li>
+      <li><strong>The source slot collapses</strong> to a dashed ghost instead of the card simply becoming translucent, so the column visibly makes room</li>
+      <li><strong>The drop settles</strong> &mdash; scale and tilt release over ~160ms on a decelerate curve, rather than the transform snapping. This is the single biggest one</li>
+      <li><strong>The landing is confirmed</strong> by a brief ring, which is also where the pending-PATCH state will live &mdash; screen 3</li>
+    </ul>
+  </div>
+</div>
+
+<h3 style="margin-top:24px">How does the choreography read?</h3>
+<div class="options">
+  <div class="option" data-choice="good" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>That's it &mdash; lift, carry, settle</h3><p>Ship this choreography.</p></div>
+  </div>
+  <div class="option" data-choice="notilt" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Right, but drop the tilt</h3><p>Scale and shadow only &mdash; the 1.6&deg; rotation is too playful for this language.</p></div>
+  </div>
+  <div class="option" data-choice="calmer" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Too much &mdash; calm it down</h3><p>Smaller lift, no ring flash, shorter everything.</p></div>
+  </div>
+  <div class="option" data-choice="more" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>Not enough &mdash; push further</h3><p>I want the movement to be more pronounced than this.</p></div>
+  </div>
+</div>
+
+<script>
+function replay(){
+  document.querySelectorAll('#p-old, #p-new').forEach(p=>{
+    p.querySelectorAll('.drag,.a3,.b1,.land,.obar,.nbar,.slot,.ring').forEach(el=>{
+      const a = el.style.animation; el.style.animation='none'; void el.offsetWidth; el.style.animation=a||'';
+    });
+  });
+}
+function toggleSlow(btn){
+  const on = document.querySelectorAll('.dg')[0].classList.toggle('slow');
+  document.querySelectorAll('.dg').forEach(e=>e.classList.toggle('slow', on));
+  btn.textContent = 'Slow motion: ' + (on?'on':'off');
+  replay();
+}
+setTimeout(replay, 250);
+</script>

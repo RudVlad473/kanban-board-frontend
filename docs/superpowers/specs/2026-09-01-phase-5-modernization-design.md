@@ -779,3 +779,194 @@ Baseline impact:
     rather than a manual check. Note the trap that made the first run of it worthless:
     `elementFromPoint` is **viewport-relative**, so an off-screen element silently reports as
     unhittable — scroll into view and assert the point is in the viewport before trusting a result.
+
+---
+
+# Amendment — 2026-09-09
+
+Review session held against the prototypes themselves, eight days after the design was agreed.
+Everything below is dated to this session; the sections above are unchanged except where a
+correction is noted here.
+
+## How the design becomes something that cannot drift
+
+Agreed 2026-09-09, replacing no prior decision — the question had not been asked. The problem it
+answers: the repo's existing anchor is a 115MB gitignored PDF that exceeds the read limit of every
+tool that would check it, requires `pdftoppm` plus DPI arithmetic to inspect, and **carried a wrong
+divisor (÷6.25 against the correct ÷8.3333, over-reading by 1.333×) for long enough that
+`tokens/radius.tokens.json` had to be re-derived on 2026-08-29.** A PDF also cannot carry an
+animation, which is most of this phase.
+
+The principle: **express a decision as a value or a measurement, never as a picture or a
+paragraph.** Three layers, in dependency order.
+
+1. **Tokens are the contract.** The DTCG → Style Dictionary → Tailwind pipeline exists but has
+   **no motion category** — verified 2026-09-09, `tokens/` holds breakpoint, color ×3, radius,
+   shadow, spacing, typography and nothing else. A `motion.tokens.json` carrying this phase's
+   durations (70 / 110 / 130 / 180 / 220ms), its two curves (`cubic-bezier(.2,0,0,1)`,
+   `cubic-bezier(0,.85,.25,1)`) and rule 3's four border states makes mock and app read one
+   source, so those values cannot drift rather than being caught after they have.
+2. **A settled mock becomes a Storybook story.** Storybook is already the visual-regression
+   harness — prebuilt `storybook-static/`, Playwright `toHaveScreenshot`, axe at error severity.
+   Promoting a prototype into a story makes "does the build still match the design" the existing
+   `pnpm test:visual` gate rather than new infrastructure.
+3. **Motion is enforced by traces, not pictures.** Per animated moment, two artifacts: a
+   **filmstrip** (fixed-offset samples composited into one contact sheet, for a human or a model to
+   look at) and a **computed-value trace** (per-frame `getComputedStyle` / `elementFromPoint` →
+   JSON: opacity steps, distinct transform values, dead-frame count). The JSON is the gate because
+   it is deterministic and diffable; the filmstrip is the eyeball check. **This is not new
+   tooling — it is the method that produced this document** ("opacity steps: 5", "legible at 55ms",
+   "0 of 33 dead frames", "transform values seen: `['none']`"), promoted from ad-hoc measurement
+   into standing fixtures. `e2e/quality-fixtures.ts` is the home; `flickerTracker` and
+   `layoutShiftTracker` are already this shape.
+
+Rejected: **video as a design artifact.** It cannot be diffed, cannot be asserted on, and cannot be
+read by a model at all — the open `board-create-optimistic` debug session already needed ffmpeg
+frame extraction to make a screen recording usable. Frames and numbers are the only two forms that
+survive the trip.
+
+## The prototypes are now tracked
+
+`.gitignore` previously carried a blanket `.superpowers/`, so the entire visual record behind this
+phase — 44 files — existed in one copy, on no branch, in no diff, backed up by nothing. Changed
+2026-09-09 to track the prototypes while still excluding `**/state/`, `**/.last-port` and
+`**/.last-token`, which hold pids, ports and a 64-hex local server token that gitleaks would
+rightly refuse.
+
+`.superpowers/brainstorm/index.html` was added the same day: a rail-plus-frame index over both
+sessions in the order of this document, with version chains collapsed per row and the adopted
+revision marked — and the gaps below rendered as entries **in position**, so the absences are
+visible while skimming rather than only discoverable by reading this file.
+
+## Gaps found on review
+
+Numbered `G1`–`G8` and carried in the index. None of these were known on 2026-09-01; each is
+either a decision recorded in prose with no prototype behind it, or a surface neither the document
+nor the mocks ever covered.
+
+| | Gap | Status |
+|---|---|---|
+| **G1** | Reduced-motion variants, every animation | **open — largest** |
+| **G2** | Modal enter / exit | open |
+| **G3** | Toast enter / exit motion | open |
+| **G4** | Overflow affordance, columns and board list | open |
+| **G5** | Subtask check · task edit · subtask CRUD | open |
+| **G6** | Task delete collapse | open |
+| **G7** | Theme switch, light ↔ dark | open |
+| **G8** | Inter's justifications, tested where they apply | open, re-scoped |
+
+- **G1** is the one that voids the phase for part of its audience. The policy is "reduce, don't
+  remove" and this document states every animation therefore carries two acceptance criteria — yet
+  measured 2026-09-09, only **15 of 44** prototypes carry a `prefers-reduced-motion` guard at all,
+  and the reduced variant is designed nowhere. What a reduced-motion user sees today is undefined
+  and inconsistent across the set, not a designed variant.
+- **G2** verified: `src/components/ui/modal/modal.tsx` contains **zero** motion classes — no
+  transition, no duration, no data-state styling. Dropdown and Menu received a fully measured
+  treatment; Modal carries create-board, rename, delete-confirm, task-detail and edit-task.
+- **G3** verified: one `transition-colors`, on the close button. §5e designed the stripe geometry,
+  never the toast's own motion.
+- **G4** — **`src/hooks/use-overflow-indicator.ts` already exists** and is consumed by
+  `dropdown.tsx` alone. The mechanism is in-repo and unused by exactly the two scroll regions this
+  document names as lacking an affordance. Cheapest gap here.
+- **G7** — this document mentions the theme toggle **zero times**, yet
+  `src/features/theme/components/theme-toggle/` ships. It is a user-caused whole-app colour change,
+  squarely rule 2, and rule 3 gives all four border states separate light and dark values.
+- **G8 re-scoped, correcting the first reading.** `controls-v3.html` (§5c) does contain a live
+  five-way font switcher — Plus Jakarta Sans, Inter, Geist, IBM Plex Sans, Manrope — so the
+  typeface *was* compared. It was compared **on form controls**, while the two justifications this
+  document gives (legibility at 11–13px, real tabular figures carrying the column counts and the
+  `2/3` caption) both live on the board, which the switcher never shows.
+
+## Prototype defects found and fixed
+
+Three of the four review findings were defects in the prototypes rather than open questions. Each
+is fixed in a new revision rather than edited in place, so what was reviewed on 2026-09-01 stays
+readable.
+
+**§3 settle ring → `optimistic-v4.html`.** Reported as "the border highlight is a bit wider than
+it's supposed to be."
+
+*A first reading of this — that it was a 1px→2px change on the card's own border, violating rules 1
+and 2 — was wrong, and is recorded because the wrong version is the more attractive one.* `.ringy`
+is a separately positioned overlay carrying `pointer-events:none`; nothing reflows and no geometry
+rule is engaged. The actual defect is narrower: it drew `2px solid var(--purple)` — `#635FC7`, a
+**fill** token — which is exactly rule 3's rejected row, and it sat on top of a `s-border` keyframe
+that was *already* doing the correct thing (`#B9B4F0` → `--line`, a 1px colour excursion). The
+confirmation was being stated twice, once correctly and once loudly. v4 makes the ring
+`1px solid #B9B4F0`, matching the excursion beneath it. Verified: `1px rgb(185, 180, 240)`.
+
+Left as-is and worth a look during planning: `.ringy` is a fixed `190×56`, so it aligns only with
+the one card size the prototype uses.
+
+**§5 right panel → `auth-v4.html`.** Reported as the blue background cropping wrongly. The panel
+applied a right-edge `linear-gradient` *and* `mask-image: radial-gradient(ellipse 70% 60% at 50%
+45%, ...)`. A radial ellipse falls off toward **every** edge, so its left falloff landed mid-panel
+over the `--app` fill and read as a hard vertical seam rather than a crop. This document specifies
+a fade "at the right edge"; the radial mask was simply the wrong instrument. v4 uses
+`linear-gradient(to right, #000 58%, transparent 100%)`.
+
+**§5 pill buttons → `auth-v4.html`.** Reported as wanting to leave pill buttons behind — which is
+already this document's decision ("Buttons **4px** … replaces `rounded-full`, one line in
+`button-variants.ts`, app-wide"). The three auth prototypes simply predate it and still carried
+`border-radius:20px`, while `landing.html` had already been re-rendered at 4px. Nothing to
+re-decide; v4 applies the adopted geometry. Verified: `.cta` computes `4px`.
+
+**§4b morph under reduced motion — not a defect, and not fixable in the page.** Reported as the
+card not morphing. `morph-real.html` carries no `prefers-reduced-motion` guard of its own, so the
+suppression is the **user agent's**, applied to `startViewTransition()` itself. Measured on the
+real prototype, 650ms sample window:
+
+| context | animation samples | still running at 650ms |
+|---|---|---|
+| `no-preference` | **148** | 10 |
+| `reduce` | **20** | 0 |
+
+The View Transition API reports as available in both, so this is suppression, not absence. **No
+in-page toggle can undo it** — the animation the UA declined to run cannot be restored by author
+CSS. Reviewing full motion requires overriding the preference at the browser level: DevTools ▸
+Rendering ▸ *Emulate CSS media feature `prefers-reduced-motion`* ▸ `no-preference`. The index now
+detects the setting and surfaces that instruction only when it is actually active, since it
+silently changes what every mock shows.
+
+This is the **second** time the reduced-motion policy has been discovered by a prototype appearing
+broken on the reviewer's own machine. It is the argument for G1 being ranked first.
+
+## Four further rules — proposed 2026-09-09, NOT yet adopted
+
+Raised in response to "are there other rules like rule 5 worth hammering down". Recorded as
+proposals so that adopting or rejecting them is a decision someone makes, not something that
+happens by drift. The first two are the ones worth arguing about.
+
+**Proposed rule 6 — reduced motion changes duration and distance, never information.** Every state
+currently communicated by motion must remain communicated under `reduce`, via colour, opacity or an
+instant swap. Test: emulate `prefers-reduced-motion: reduce` and assert each end state is still
+reachable and distinguishable. This is the rule that turns "reduce, don't remove" from a policy
+into something checkable, and G1 is it failing today.
+
+**Proposed rule 7 — nothing animates on first paint.** Mount and hydration must not replay enter
+animations. The concrete hazard is this repo's own: `CLAUDE.md` records that `loading.tsx` is the
+navigation fallback and that **BoardView remounts on `refresh()`**, so a board enter animation
+re-fires on every optimistic refresh — many times a minute in normal use. Test: count animation
+starts within *N*ms of load and expect zero for content already present.
+
+**Proposed rule 8 — an animation may not outlive the state it describes.** A 200ms settle over an
+80ms PATCH claims "in flight" for 120ms after it is not. This generalises the reasoning that
+already dropped the 2px wire ("most of these PATCHes resolve under 200ms, so it would flash and
+vanish"). Test: assert animation end ≤ state resolution + tolerance.
+
+**Proposed rule 9 — motion must be interruptible.** Re-triggering mid-flight continues from the
+current visual position; it never queues and never snaps back to the origin. Distinct from rule 5,
+which guarantees the click *lands* but says nothing about what happens once it lands mid-animation.
+The cases are spamming the sidebar collapse, double board-switch, and rapid subtask toggling. Test:
+fire the trigger at frame *N*, assert no positional discontinuity beyond a threshold and no replay
+from the origin.
+
+## Open items added by this session
+
+11. Adopt or reject proposed rules 6–9. Rules 6 and 7 both have a named failure already present in
+    the codebase; 8 and 9 are real but less urgent.
+12. Decide which of G1–G8 enter Phase 5's scope and which are deferred. G1 is not optional if the
+    "reduce, don't remove" policy is to mean anything.
+13. `.ringy`'s fixed `190×56` should derive from the card it confirms.
+14. Landing copy remains undecided — unchanged from open item 1, restated because the v4 auth
+    prototypes still carry placeholder strings.

@@ -70,4 +70,9 @@ storybook-static/
 
 .env
 .env*.local
-.superpowers/
+
+# Brainstorm prototypes are a phase's visual record and are tracked; server state is not — it
+# holds pids, ports and a local auth token.
+.superpowers/**/state/
+.superpowers/**/.last-port
+.superpowers/**/.last-token

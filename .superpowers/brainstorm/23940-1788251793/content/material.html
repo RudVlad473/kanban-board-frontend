@@ -1,0 +1,125 @@
+<h2>1 &middot; The material</h2>
+<p class="subtitle">Same palette, same type, same layout &mdash; different physical material. <strong>Hover the cards.</strong> Everything here is live, not a picture.</p>
+
+<style>
+.kb { --purple:#635FC7; --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA; --mute:#66707F;
+      --title:#000112; font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif; }
+.kb.dark { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --mute:#828FA3; --title:#FFFFFF; }
+.kb-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:8px; }
+.kb-pane { background:var(--app); border-radius:10px; padding:20px 18px 24px; min-height:340px; }
+.kb-tag { font-size:10px; letter-spacing:1.6px; text-transform:uppercase; font-weight:700;
+          color:var(--mute); margin-bottom:16px; }
+.kb-colhead { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700;
+              letter-spacing:2.4px; text-transform:uppercase; color:var(--mute); margin-bottom:14px; }
+.kb-dot { width:15px; height:15px; border-radius:50%; background:#49C4E5; }
+
+/* ---------- TODAY: mock-exact ---------- */
+.kb-old .kb-card { background:var(--surf); border-radius:8px; padding:23px 16px;
+  box-shadow:0 4px 6px 0 rgba(43,44,55,.10); margin-bottom:20px; cursor:grab; }
+.kb-old .kb-card:hover .kb-t { color:var(--purple); }
+.kb-old .kb-t { font-size:15px; font-weight:700; line-height:19px; color:var(--title); }
+.kb-old .kb-m { font-size:12px; font-weight:700; color:var(--mute); margin-top:8px; }
+
+/* ---------- PROPOSED: restrained precision ---------- */
+.kb-new .kb-card { background:var(--surf); border-radius:8px; padding:14px 14px 12px;
+  border:1px solid var(--line); box-shadow:0 1px 2px rgba(16,18,32,.04);
+  margin-bottom:10px; cursor:grab; position:relative;
+  transition:border-color 130ms ease, box-shadow 130ms ease, transform 130ms ease; }
+.kb.dark .kb-new .kb-card { box-shadow:none; }
+.kb-new .kb-card:hover { border-color:#C9D3E8; box-shadow:0 2px 6px rgba(16,18,32,.07);
+  transform:translateY(-1px); }
+.kb.dark .kb-new .kb-card:hover { border-color:#565A6E; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+.kb-new .kb-card::before { content:""; position:absolute; left:0; top:10px; bottom:10px; width:2px;
+  border-radius:0 2px 2px 0; background:var(--purple); opacity:0;
+  transition:opacity 130ms ease; }
+.kb-new .kb-card:hover::before { opacity:1; }
+.kb-new .kb-t { font-size:15px; font-weight:700; line-height:19px; color:var(--title);
+  letter-spacing:-.15px; }
+.kb-new .kb-meta { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.kb-bar { flex:1; height:3px; border-radius:2px; background:var(--line); overflow:hidden; }
+.kb-bar i { display:block; height:100%; border-radius:2px; background:var(--purple);
+  transition:width 220ms cubic-bezier(.2,0,0,1); }
+.kb-num { font-size:11px; font-weight:700; color:var(--mute);
+  font-variant-numeric:tabular-nums; }
+.kb-new .kb-colhead { justify-content:flex-start; }
+.kb-count { margin-left:auto; letter-spacing:0; font-size:11px; padding:1px 7px; border-radius:20px;
+  background:var(--line); color:var(--mute); font-variant-numeric:tabular-nums; }
+
+.kb-notes { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:14px;
+  font-size:13px; line-height:1.55; }
+.kb-notes ul { margin:6px 0 0; padding-left:18px; }
+.kb-notes li { margin-bottom:5px; }
+.kb-sw { display:flex; gap:10px; align-items:center; margin:18px 0 4px; }
+</style>
+
+<div class="kb-sw">
+  <button class="mock-button" onclick="document.querySelectorAll('.kb').forEach(e=>e.classList.toggle('dark'))">Toggle light / dark</button>
+  <span class="label">both themes matter here &mdash; the mock's shadow does almost nothing in dark mode</span>
+</div>
+
+<div class="kb kb-grid">
+  <div class="kb-pane kb-old">
+    <div class="kb-tag">Today &mdash; mock-exact</div>
+    <div class="kb-colhead"><span class="kb-dot"></span> Todo (3)</div>
+    <div class="kb-card"><div class="kb-t">Build settings UI</div><div class="kb-m">2 of 3 subtasks</div></div>
+    <div class="kb-card"><div class="kb-t">Research pricing points</div><div class="kb-m">0 of 5 subtasks</div></div>
+    <div class="kb-card"><div class="kb-t">Add account management</div><div class="kb-m">4 of 4 subtasks</div></div>
+  </div>
+
+  <div class="kb-pane kb-new">
+    <div class="kb-tag" style="color:#635FC7">Proposed &mdash; restrained precision</div>
+    <div class="kb-colhead"><span class="kb-dot"></span> Todo <span class="kb-count">3</span></div>
+    <div class="kb-card"><div class="kb-t">Build settings UI</div>
+      <div class="kb-meta"><span class="kb-bar"><i style="width:66%"></i></span><span class="kb-num">2/3</span></div></div>
+    <div class="kb-card"><div class="kb-t">Research pricing points</div>
+      <div class="kb-meta"><span class="kb-bar"><i style="width:0%"></i></span><span class="kb-num">0/5</span></div></div>
+    <div class="kb-card"><div class="kb-t">Add account management</div>
+      <div class="kb-meta"><span class="kb-bar"><i style="width:100%"></i></span><span class="kb-num">4/4</span></div></div>
+  </div>
+</div>
+
+<div class="kb-notes">
+  <div>
+    <div class="label">What today does</div>
+    <ul>
+      <li>Elevation carried entirely by one diffuse shadow that is nearly invisible on <code>#F4F7FD</code> and completely invisible in dark mode</li>
+      <li>23px vertical padding &mdash; only 3 cards fit before scrolling</li>
+      <li>Hover changes the title colour and nothing else; the card itself is inert</li>
+      <li>Subtask progress is prose you have to read</li>
+    </ul>
+  </div>
+  <div>
+    <div class="label">What changes</div>
+    <ul>
+      <li><strong>Hairline border replaces the shadow</strong> as the primary edge &mdash; works identically in both themes. Shadow demoted to a 1px ambient hint</li>
+      <li><strong>Density:</strong> 14px padding, 10px gutter &mdash; ~40% more cards visible</li>
+      <li><strong>Hover is a real affordance:</strong> border brightens, 1px lift, purple grab-rail appears on the left edge. 130ms</li>
+      <li><strong>Progress becomes glanceable</strong> &mdash; a 3px bar plus tabular <code>2/3</code></li>
+      <li>Purple is now spent on <em>only</em> focus, grab-affordance and progress</li>
+    </ul>
+  </div>
+</div>
+
+<h3 style="margin-top:26px">Does this read as the right material?</h3>
+<div class="options" data-multiselect>
+  <div class="option" data-choice="yes" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Yes &mdash; this is the direction</h3>
+      <p>Border-led elevation, tighter density, hover as affordance.</p></div>
+  </div>
+  <div class="option" data-choice="denser" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Right idea, but go further on density</h3>
+      <p>Tighter still &mdash; more cards per screen matters more than breathing room.</p></div>
+  </div>
+  <div class="option" data-choice="softer" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Too austere &mdash; keep some softness</h3>
+      <p>Bring back a real shadow; the hairline alone feels cold.</p></div>
+  </div>
+  <div class="option" data-choice="rail" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>Drop the purple grab-rail</h3>
+      <p>The left-edge accent on hover is one flourish too many.</p></div>
+  </div>
+</div>

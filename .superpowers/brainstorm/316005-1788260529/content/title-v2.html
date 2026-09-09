@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Title well — the settle</title>
+<style>
+  :root{ --bg-surface:#FFFFFF; --border:#E4EBFA; --muted:#66707F; --ink:#000112;
+         --primary:#635FC7; --bg-app:#F4F7FD; --ease:cubic-bezier(.2,0,0,1); --d:190ms; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0e0f14;color:#e6e8ee;font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .page{max-width:1000px;margin:0 auto;padding:28px 24px 90px}
+  h1{font-size:22px;margin:0 0 4px;font-weight:650;letter-spacing:-.01em}
+  .sub{color:#9aa1b1;margin:0 0 16px;font-size:13.5px}
+  h2{font-size:15px;margin:30px 0 6px;font-weight:640}
+  .note{color:#9aa1b1;font-size:13px;margin:0 0 12px;line-height:1.55}
+  .banner{background:#2a2410;border:1px solid #6b5a17;border-radius:8px;padding:12px 14px;margin:0 0 16px;font-size:13.5px;color:#f0dfa8}
+  .banner b{color:#ffe89a}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0;position:sticky;top:0;z-index:20;
+       background:#0e0f14;padding:10px 0;border-bottom:1px solid #23252e}
+  button.ctl{background:#1b1d26;border:1px solid #333644;color:#e6e8ee;border-radius:6px;padding:8px 13px;font:inherit;font-size:13px;cursor:pointer}
+  button.ctl:hover{border-color:#4b4f61}
+  button.ctl.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .stage{background:#15161d;border:1px solid #262935;border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .stage-hd{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid #262935;font-size:12.5px;color:#9aa1b1}
+  .stage-hd .tag{font-weight:650;color:#e6e8ee}
+  .v{font-size:11.5px;padding:2px 8px;border-radius:99px;border:1px solid}
+  .bad{color:#ffb0a8;border-color:#7a3b34;background:#2b1614}
+  .good{color:#a8e6b8;border-color:#2f6b41;background:#12241a}
+
+  .hdr{height:73px;background:var(--bg-surface);border-bottom:1px solid var(--border);
+       display:flex;align-items:center;gap:16px;padding:0 24px;color:var(--ink);
+       font-family:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
+  .well{min-width:0;height:36px;overflow:hidden;position:relative;flex:1 1 auto}
+  .t{font-size:24px;font-weight:800;white-space:nowrap;position:absolute;left:0;right:0;height:36px;
+     line-height:36px;display:block}
+  .right{margin-left:auto;display:flex;align-items:center;gap:16px;flex:0 0 auto}
+  .who{font-weight:600;font-size:14px}
+  .b{height:40px;padding:0 18px;border:1px solid transparent;border-radius:4px;font-weight:700;font-size:14px;
+     font-family:inherit;display:inline-flex;align-items:center;cursor:pointer}
+  .b.pri{background:var(--primary);color:#fff}
+  .b.sec{background:var(--bg-surface);color:var(--ink);border-color:var(--border)}
+
+  /* ---- A: transform-driven (what I showed you) ---- */
+  .xf .t{top:0}
+  .xf .t.out{transform:translateY(calc(-1 * var(--dir) * 36px));transition:transform var(--d) var(--ease)}
+  .xf .t.in{transform:translateY(calc(var(--dir) * 36px))}
+  .xf .t.in.go{transform:translateY(0);transition:transform var(--d) var(--ease)}
+
+  /* ---- B: layout-driven — no transform is ever applied ---- */
+  .lay .t{top:0}
+  .lay .t.out{top:calc(-1 * var(--dir) * 36px);transition:top var(--d) var(--ease)}
+  .lay .t.in{top:calc(var(--dir) * 36px)}
+  .lay .t.in.go{top:0;transition:top var(--d) var(--ease)}
+
+  body.honour-rm .t{transition-duration:0ms !important}
+
+  .m{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#c3c8d6;background:#1a1c24;
+     border:1px solid #262935;border-radius:7px;padding:11px 13px;white-space:pre;overflow-x:auto;margin:12px 0 0}
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+  .opt{border:1px solid #2c303c;border-radius:9px;padding:14px 16px;background:#15161d;cursor:pointer}
+  .opt:hover{border-color:#454a5c}.opt.sel{border-color:var(--primary);background:#1a1830}
+  .opt h4{margin:0 0 6px;font-size:14px}.opt p{margin:0;font-size:13px;color:#9aa1b1;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>The title settle you spotted</h1>
+<p class="sub">You were right, and it is not a layout bug — measured x is <b>0.000 at every frame</b> in both versions.</p>
+
+<div class="banner">
+  <b>What you saw.</b> While a <code>transform</code> is applied the browser composites the text on its own
+  layer and antialiases it in <b>grayscale</b>. The moment the transform ends it drops back to normal
+  <b>subpixel (RGB)</b> antialiasing. The glyph edges gain and lose colour fringing, and the eye reads that
+  as a small sideways nudge that "firms up" at the end. Nothing moved. The pixels changed.
+  <br><br>This is the same effect the spec already cites when it rejected the landing-page parallax:
+  <i>"text translated at fractional pixels re-rasterises and reads soft."</i>
+</div>
+
+<div class="bar">
+  <button class="ctl" id="a">▶ A · transform  (what you saw)</button>
+  <button class="ctl on" id="b">▶ B · layout    (the fix)</button>
+  <button class="ctl" id="both">▶ Both at once</button>
+  <button class="ctl" id="slow">Slow motion 0.25×</button>
+  <button class="ctl" id="rm">Honour reduced motion</button>
+</div>
+<p class="note">Fire them a few times each, and watch the moment the new title <i>arrives</i>. In A it settles.
+In B it does not, because no transform is ever applied — so the text is rasterised the same way for the whole
+journey and at rest.</p>
+
+<div class="stage">
+  <div class="stage-hd"><span class="tag">A — transform: translateY()</span><span class="v bad">layer promotion · AA flips at the end</span></div>
+  <div class="hdr xf" id="hA" style="--dir:1">
+    <div class="well" id="wA"><span class="t">Platform Launch</span></div>
+    <div class="right"><button class="b pri">+ Add New Task</button><span class="who">Andre</span><button class="b sec">Sign Out</button></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="stage-hd"><span class="tag">B — animate <code>top</code> inside the same mask</span><span class="v good">transform: none at every frame · AA never changes</span></div>
+  <div class="hdr lay" id="hB" style="--dir:1">
+    <div class="well" id="wB"><span class="t">Platform Launch</span></div>
+    <div class="right"><button class="b pri">+ Add New Task</button><span class="who">Andre</span><button class="b sec">Sign Out</button></div>
+  </div>
+</div>
+
+<h2>Why animating layout is fine here</h2>
+<p class="note">The usual objection is that <code>top</code> costs a layout pass per frame while
+<code>transform</code> is compositor-only. That objection is about animating <i>big</i> subtrees. This is
+two absolutely-positioned spans inside a 36px box — and we already measured that animating the entire
+sidebar's width, with six columns and 72 cards reflowing behind it, holds a flat 16.7ms/frame. Two spans
+are far below that. Correct rendering is worth more than a compositor optimisation nobody can perceive.</p>
+
+<div class="options" id="opts">
+  <div class="opt sel" data-choice="layout" onclick="pick(this)">
+    <h4>B — layout-driven (recommended)</h4>
+    <p>Animate <code>top</code> inside the existing mask. No layer promotion at any point, so the
+    antialiasing is identical mid-flight and at rest, and there is no settle. Applies to the board title and
+    to any other masked text move this phase introduces.</p>
+  </div>
+  <div class="opt" data-choice="none" onclick="pick(this)">
+    <h4>Drop the slide entirely</h4>
+    <p>Every title change — switch and rename alike — becomes a one-frame swap. No settle because there is
+    no animation. Cost: the header stops being part of the same gesture as the columns during a board
+    switch, which was the reason the spec chose the slide over a swap.</p>
+  </div>
+</div>
+
+<div class="m" id="out">press a button above to run the measurement…</div>
+
+<script>
+  const NAMES=['Marketing Plan','Roadmap Q4','Platform Launch','Design System'];
+  let iA=0,iB=0, honour=false, slow=false;
+  function change(hdr, well, dirFlip){
+    if(well.querySelectorAll('.t').length>1) return null;
+    const dir = dirFlip? -1: 1; hdr.style.setProperty('--dir',dir);
+    const old = well.querySelector('.t');
+    const idx = (hdr.id==='hA') ? (iA=(iA+1)%NAMES.length) : (iB=(iB+1)%NAMES.length);
+    const nw=document.createElement('span'); nw.className='t in'; nw.textContent=NAMES[idx];
+    well.appendChild(nw);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      old.classList.add('out'); nw.classList.add('go');
+      setTimeout(()=>{ old.remove(); nw.className='t'; }, honour?0:(slow?800:260));
+    }));
+    return nw;
+  }
+  async function measure(hdr, well, label){
+    const s=[]; const t0=performance.now();
+    await new Promise(r=>{ const tick=()=>{ const t=performance.now()-t0; const wb=well.getBoundingClientRect();
+      [...well.querySelectorAll('.t')].forEach(e=>{ const bb=e.getBoundingClientRect();
+        s.push({ x:+(bb.x-wb.x).toFixed(3), y:+(bb.y-wb.y).toFixed(2), tf:getComputedStyle(e).transform }); });
+      if(t<(slow?1000:420)) requestAnimationFrame(tick); else r(); }; requestAnimationFrame(tick); });
+    const xs=[...new Set(s.map(p=>p.x))];
+    const tfs=[...new Set(s.map(p=>p.tf))];
+    const ys=[...new Set(s.map(p=>p.y))];
+    return label.padEnd(26)+' distinct x: '+JSON.stringify(xs)+
+           '   distinct y count: '+ys.length+
+           '\n'.padEnd(28)+' transform values seen: '+(tfs.length===1&&tfs[0]==='none' ? 'none  (never promoted)' : tfs.length+' incl. matrix()  → layer promotion');
+  }
+  const hA=document.getElementById('hA'), hB=document.getElementById('hB');
+  const wA=document.getElementById('wA'), wB=document.getElementById('wB');
+  const out=document.getElementById('out');
+  document.getElementById('a').onclick=async()=>{ change(hA,wA); out.textContent=await measure(hA,wA,'A · transform'); };
+  document.getElementById('b').onclick=async()=>{ change(hB,wB); out.textContent=await measure(hB,wB,'B · layout (top)'); };
+  document.getElementById('both').onclick=async()=>{ change(hA,wA); change(hB,wB);
+    const [a,b]=await Promise.all([measure(hA,wA,'A · transform'),measure(hB,wB,'B · layout (top)')]);
+    out.textContent=a+'\n\n'+b; };
+  document.getElementById('slow').onclick=e=>{ slow=!slow; e.target.classList.toggle('on',slow);
+    document.documentElement.style.setProperty('--d', slow?'760ms':'190ms'); };
+  document.getElementById('rm').onclick=e=>{ honour=!honour; e.target.classList.toggle('on',honour);
+    document.body.classList.toggle('honour-rm',honour); };
+  function pick(el){ document.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel');
+    if(window.brainstorm) window.brainstorm.choice(el.dataset.choice,{text:el.querySelector('h4').textContent}); }
+</script>
+</div>
+</body>
+</html>
