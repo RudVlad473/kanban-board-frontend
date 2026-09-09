@@ -1269,10 +1269,15 @@ rejected on 2026-09-01 at 9 frames. Doubled glyphs read as blur, which is most o
 smooth" was. Fixed by sequencing them — out over 90ms, in over 140ms starting at 90ms — so one is
 always finished before the other begins. **Verified in both directions: 15 frames before, 0 after.**
 
-**2. The root group was cross-fading the whole panel underneath the named parts.** Every element
-that had not changed — the ✕, the "Current status" label, the hint — was being re-faded on top of
-the three groups actually carrying the change. `::view-transition-old(root)` and `new(root)` are
-now `animation:none`.
+**2. ~~The root group was cross-fading the whole panel underneath the named parts.~~ REVERTED in
+`task-open-v10.html` — this fix was wrong and made the transition worse than any version before
+it.** `::view-transition-old(root), ::view-transition-new(root) { animation:none; opacity:1 }` does
+not disable the root transition. It pins **both** root snapshots fully opaque, so the new state is
+visible from frame 0 while every named group animates underneath an opaque cover, and the only
+visible event is the snapshots being removed at the end — a hard cut. Measured: `oldRoot` and
+`newRoot` both `1` across all 50 sampled frames, root fading on **0** of them. After the revert,
+root fades on 13. The chrome it covers barely changes, so its cross-fade was invisible anyway;
+suppressing it bought nothing and cost the whole effect.
 
 **3. The snapshots were being stretched.** `::view-transition-old/new` are bitmaps, and when a
 group changes size — a four-subtask task replacing a two-subtask one — the default sizing scales
@@ -1286,6 +1291,21 @@ carries `cubic-bezier(.2,0,0,1)`.
 **5. No reduced-motion guard.** Added, per this document's own CSS block. Note what it can and
 cannot do: it removes the *animation*, never the API's input block, which is a property of
 `startViewTransition()` and not of its duration.
+
+### The second harness failure of the session
+
+v9 was verified as `framesTitleBothInked: 0` and reported as fixed. That number was true and
+meaningless: nothing was visible at all, so of course no two strings were inked together. The
+measurement checked the named groups in isolation and never asked whether they were on screen.
+
+This is the same failure as the swap-strategy harness earlier in this amendment, in a new costume:
+**an assertion about an absence passed because the thing it measured never ran.** The first time,
+the tell was `startViewTransition` having been called zero times. Here it would have been root
+opacity never leaving 1. Both are positive controls that were not there.
+
+The rule, stated once so it stops recurring: **when asserting that something does not happen,
+measure that the surrounding mechanism did happen.** A silent pass and a real pass are otherwise
+indistinguishable.
 
 **The input cost is unchanged at 336ms** — identical before and after. Tuning bought fidelity, not
 latency, which is worth stating precisely because the earlier named-versus-unnamed measurement
