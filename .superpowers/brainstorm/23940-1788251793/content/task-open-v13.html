@@ -161,7 +161,18 @@
    still belongs on the group, where it animates the box; it just cannot drive an opacity fade. */
 ::view-transition-old(*) { animation:vt-out 150ms linear both; }
 ::view-transition-new(*) { animation:vt-in 210ms linear 150ms both; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration:420ms; }
+/* Do not snapshot the window at all. Everything without a name is captured into `root`, which is
+   the whole viewport, and the `*` rules above were sequencing it — fading the entire board out and
+   back, the global wash. Restoring root's concurrent cross-fade was not enough: measured on a
+   text-free strip of board background, a concurrent plus-lighter root still lifted luminance
+   +1.9/246.8 for 271ms, and on the column header +4.2/241.2 for 318ms. Only removing root's name
+   reaches zero — 0.00 deviation on every one of 29 frames, both strips.
+   Unnamed content then renders LIVE beneath the named slots instead of being captured, which is
+   also the honest description of this transition: nothing outside the panel is changing. The one
+   consequence is that unnamed content no longer cross-fades, so the board card's open-highlight
+   moves via its own CSS colour transition instead of through the snapshot — which is what rule 1
+   asks for anyway. */
+:root { view-transition-name: none; }
 
 /* 3. The snapshots are bitmaps. When a group changes size — a task with four subtasks replacing
       one with two — the default sizing stretches them to fit, distorting every glyph. Pin them to
@@ -170,12 +181,14 @@
   object-fit:none; object-position:top left; overflow:clip;
 }
 
-/* 4. v9 tried to suppress the root cross-fade with `animation:none; opacity:1`. That does not
-      disable it — it pins BOTH root snapshots fully opaque, so the new state is visible from frame
-      0 and every named group animates underneath an opaque cover. Measured: oldRoot and newRoot
-      both 1 for the whole transition, and the only visible event was the snapshots being removed
-      at the end, i.e. a hard cut. Root keeps its default cross-fade; the chrome it covers barely
-      changes, so that cross-fade is invisible anyway, and the named groups draw above it. */
+/* 4. v9 tried to suppress the root cross-fade with `animation:none; opacity:1`. That is the wrong
+      lever: it does not remove the snapshot, it pins BOTH root snapshots fully opaque, so the new
+      state is visible from frame 0 and every named group animates underneath an opaque cover — a
+      hard cut. `view-transition-name:none` on :root is the lever that actually removes it, above.
+      v13's first cut kept root and let the universal rules sequence it, which is worse than either:
+      a 150ms hole where neither snapshot is opaque reads as the whole window blinking. Reported
+      from the video, not caught by any measurement here — every check was scoped to a named group,
+      so the one element covering the entire viewport was the one nothing looked at. */
 
 /* 5. The setting removes the animation; it cannot remove the API's own input block. */
 @media (prefers-reduced-motion: reduce) {
