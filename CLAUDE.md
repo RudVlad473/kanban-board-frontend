@@ -16,10 +16,33 @@ through the running dev server with real Playwright — do not write throwaway N
 poke at the DOM or simulate behavior out-of-browser. Scratch scripts drift from what the app
 actually does and get left behind as untracked cruft.
 
-**MCP to explore, the CLI to pin** (`~/.claude/TOOLING_PREFERENCES.md` § _Driving a browser_ has
-the general rule). A Playwright spec IS driving the real app, so it is never the "throwaway script"
-the paragraph above rejects — that ban is on simulating the DOM outside a browser. When the MCP
-server is unavailable, the CLI covers every check; going blind is not the fallback.
+**MCP to explore, the CLI to pin, the filmstrip to watch.** Route on the question being asked, not
+on the surface being checked (`~/.claude/TOOLING_PREFERENCES.md` § _Driving a browser_ carries the
+general MCP-vs-CLI reasoning):
+
+| The question                                                                           | Reach for                                                                                               |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| "What does this even do?" — mechanism unknown, each look decides the next poke         | `mcp__playwright__*`: one live page across tool calls, adjustable mid-flight                            |
+| "Does it still do X?" — mechanism known, the answer must survive a re-run              | `E2E_PORT=3000 pnpm exec playwright test --project=e2e e2e/zz-<name>.e2e.spec.ts`                       |
+| "What does this animation do across its 420ms?" — timing, easing, a transition's shape | `pnpm filmstrip --url <url> --name <slug> --trigger '<js>'` (`docs/adr/tech/0037`)                      |
+| "Did this primitive's pixels change?" — static appearance                              | `pnpm build-storybook && CI=1 pnpm test:visual` (both halves required — see _CI green is the sign-off_) |
+
+**Motion is the case an assertion cannot settle.** A spec can confirm a class flipped and a box
+moved while the transition still reads as a cut — that is how thirteen revisions passed every green
+check on 2026-09-09 and were caught only by the user watching a recording. Reach for the filmstrip
+whenever the claim contains a duration, an easing, a fade, or the word "smooth", and read the
+contact sheet before believing the numbers beside it. `--region` names the area you expect to
+change; the run then reports whether anything moved _outside_ it, which is the check that was
+missing. Phase 5's prototypes need a server first — `node scripts/serve-static.mjs
+.superpowers/brainstorm 6110` — and `.motion/` prunes itself to five runs, so it needs no cleanup.
+
+Claude in Chrome (`mcp__claude-in-chrome__*`) is not configured here, so nothing routes to it. It
+drives your real logged-in Chrome, which Playwright's clean profile cannot; when a task genuinely
+needs that, say so rather than substituting a Playwright run.
+
+A Playwright spec IS driving the real app, so it is never the "throwaway script" the paragraph
+above rejects — that ban is on simulating the DOM outside a browser. When the MCP server is
+unavailable, the CLI covers every check; going blind is not the fallback.
 
 Use this repo's own `e2e` project for an ad-hoc probe — it needs no separate harness. Name the spec
 `e2e/zz-<name>-*.e2e.spec.ts` (`docs/review-brief.md`) and delete it once its run finishes. Pointing
@@ -49,8 +72,8 @@ do not fall back to the other one.
 
 **Verify before presenting to the user, always.** Before reporting a fix, a finding, or a check as
 done — a `checkpoint:human-verify`, a verifier's `human_needed` routing, a code-review item marked
-fixed, anything — drive it through the running app yourself first (Playwright/Chrome DevTools MCP,
-headless) and report what you actually observed. A subagent's "could not confirm," a verifier's
+fixed, anything — drive it through the running app yourself first, headless, via whichever tool the
+router above selects, and report what you actually observed. A subagent's "could not confirm," a verifier's
 "static evidence is strong," or your own read of the code are all still unverified claims until
 something has actually clicked through the app. This applies even when the thing being checked was
 only ever _flagged_ as needing a human look (not reported broken) — verify it yourself first
