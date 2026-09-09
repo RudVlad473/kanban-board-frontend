@@ -1292,6 +1292,35 @@ carries `cubic-bezier(.2,0,0,1)`.
 cannot do: it removes the *animation*, never the API's input block, which is a property of
 `startViewTransition()` and not of its duration.
 
+### What was actually wrong: the duration, again
+
+v10 was reported as no better than v9 — still snapping. It was, and every measurement in this
+section had been passing while the thing on screen was a cut. The proxies (opacity samples, frame
+counts, double-ink counts) were all true and all beside the point.
+
+Settled by rendering the transition as a **filmstrip** — screenshots at fixed offsets, then read
+as images rather than as numbers. That is the artifact this amendment's own "motion is enforced by
+traces, not pictures" section specifies for exactly this situation, and it was not used until the
+numbers had failed three times.
+
+| offset | v10 | v11 (420ms) |
+|---|---|---|
+| 50ms | old, fully solid | old at ~60% |
+| 110ms | **new, fully solid** | old at ~35% |
+| 170ms | new, solid | new at ~50% |
+| 230ms | new, solid | new at ~85% |
+| 290ms+ | new, solid | settled |
+
+**v10 had zero transitional frames; v11 has four.** The whole swap had been ~250ms for a *total
+content replacement* — different title, different description, a different number of subtask rows.
+Raised to 420ms (170ms out, then 250ms in) and the identical mechanism reads as a movement.
+
+This is the third time in this amendment that a duration was wrong for its distance: the inline
+expansion at 515px in 220ms, the panel's close at the same speed as its open, and now a full
+content replacement in 250ms. **The timing table in this document is not a set of values to apply
+by role — it is a starting point that has to be re-derived per change.** Stated once here so the
+next surface does not rediscover it a fourth time.
+
 ### The second harness failure of the session
 
 v9 was verified as `framesTitleBothInked: 0` and reported as fixed. That number was true and
