@@ -51,7 +51,7 @@ Five recur often enough to be worth stating before the table:
 | 13 | Dragging selected text across every column it crossed | `user-select: none` was lost when two prototypes merged | User, on a video | e2e: `getSelection().toString()` is empty after a drag |
 | 14 | A full-height column lifted as a stack of cards | Rule 3 above — the clone collapsed to content | User | e2e: overlay height equals the intended source measure |
 | 15 | Kebab stayed lit on the dashed drag slot | Rule 5's specificity twin (see #5) | User, on a screenshot | e2e: the source column's kebab has `display: none` while dragging |
-| 16 | The dashed slot arrived at full height in one frame | Rule 2 above — `align-self: stretch`, then `min-height` from `auto` | User | e2e: sample the slot's height across the transition; the midpoint is strictly between start and end |
+| 16 | The dashed slot arrived at full height in one frame | Rule 2 above — `align-self: stretch`, then `min-height` from `auto` | User | e2e: sample the slot's height across the transition; the midpoint is strictly between start and end. **Superseded by #21** — the growth was then removed as too much motion, so the surviving value of this row is rule 2, not the fix |
 | 17 | The slot animated on the first drag only | Rule 1 above — the FLIP's inline `transition: translate …` disabled height and opacity from the second drag on | User | e2e: **drag twice** and assert both animate. A single-drag test passes through this defect |
 | 18 | Columns flapped between N and N−1 with the pointer still | The swap moved the dragged slot's own rect under the pointer, satisfying the reverse test immediately | User | e2e: hold the pointer after a swap, dispatch N identical moves, assert one distinct order |
 | 19 | The lifted column's header lingered visibly before fading | The source's contents faded out over 120ms while the clone — sitting exactly on top — began to move, so the two separated mid-fade | User, on a video | e2e: the source's children are `opacity: 0` with `transition-property: none` on the frame the drag starts |
@@ -65,7 +65,7 @@ became meaningful once the defect was already suspected. The filmstrip narrows t
 single-frame step and a non-monotonic wash are both real signals — but neither would have been
 looked at without a person saying "that feels off".
 
-Two more that resist assertion entirely:
+Three more resist assertion entirely:
 
 - **Whether a lifted column reads as a column or as a stack of tasks.** Both states are correct
   DOM; the difference is the size of the thing you are carrying relative to what it represents.
