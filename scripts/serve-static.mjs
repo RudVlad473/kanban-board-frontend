@@ -12,12 +12,16 @@ const [, , rootArg = "storybook-static", portArg = "6007"] = process.argv;
 const root = path.resolve(rootArg);
 const port = Number(portArg);
 
+/*
+ * Text types carry an explicit charset: without one a browser guesses, and Chrome resolves a
+ * UTF-8 document that lacks its own <meta charset> as windows-1252, rendering "✕" as "âœ•".
+ */
 const MIME_TYPES = {
-    ".css": "text/css",
-    ".html": "text/html",
-    ".js": "text/javascript",
-    ".json": "application/json",
-    ".map": "application/json",
+    ".css": "text/css; charset=utf-8",
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".map": "application/json; charset=utf-8",
     ".png": "image/png",
     ".svg": "image/svg+xml",
     ".woff": "font/woff",

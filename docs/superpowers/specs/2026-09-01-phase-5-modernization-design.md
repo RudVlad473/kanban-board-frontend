@@ -1034,6 +1034,49 @@ The cases are spamming the sidebar collapse, double board-switch, and rapid subt
 fire the trigger at frame *N*, assert no positional discontinuity beyond a threshold and no replay
 from the origin.
 
+## Editing in the panel — three findings from v4
+
+Reported against `task-open-v3.html`: the editable fields gave no cue, editing shifted the layout,
+the subtask strike-through switched on rather than drawing, and C still read as instant. All four
+were real; two of them share one cause.
+
+**A re-render destroys the animation it was supposed to play.** `render()` rebuilt the panel on
+every mutation, so the subtask row was recreated *already* in its final state and the CSS
+transition had nothing to run from. Toggling the class in place is the whole fix. This is the same
+shape as the settle-ring error earlier in this amendment — the artifact was correct and the thing
+driving it was not — and it is worth stating as a rule of its own: **if a state change must
+animate, mutate the node; do not re-render it.**
+
+**`contenteditable` on the same element removes the layout shift by construction.** Swapping the
+title `<div>` for an `<input>` measured at +2px on the box and **−8px** on the description below
+it. Editing the element in place swaps nothing, so the measured deltas are 0/0/0. The focus ring
+is drawn with `outline`, which paints outside the border box and cannot displace anything — rule
+1's own focus carve-out, reused here for a reason it was not written for.
+
+**A duration is only defensible relative to its distance.** C was always interpolating — 16
+distinct heights, measured — and still read as instant, because 515px of growth in 220ms is about
+2300px/s. The panel travels 400px in the same 220ms and reads fine because it is a *slide*, not an
+eightfold size change. Raised to 420ms. **The lesson is that this document's timing table cannot
+be applied by role; it has to be applied per distance.**
+
+Also fixed here: the strike-through draws left-to-right as a scaled pseudo-element rather than
+`text-decoration`, which cannot be transitioned. It scales the *line*, never the text, so rule 4's
+prohibition on transforming text is untouched.
+
+## A served charset is part of the artifact
+
+Found 2026-09-09 while checking the new glyphs. `scripts/serve-static.mjs` sent `text/html` with
+no charset, so Chrome fell back to **windows-1252** and every prototype without its own
+`<meta charset>` mojibaked — `✕` rendering as `âœ•`. This was not new: `sidebar.html` and
+`rule5.html` from the original session carry raw `·×—""→▶` and had been rendering wrongly in the
+index the whole time.
+
+Fixed at the server rather than in the files, specifically so the historical prototypes did not
+have to be rewritten to display correctly. Verified inert for the visual-regression suite before
+changing it: Storybook's own `index.html` and `iframe.html` both declare `charset="utf-8"`, and a
+page served through the unmodified server already resolved to UTF-8 — so the header can only agree
+with what was already happening there. `serve-static.unit.test.mjs` stays green, 8/8.
+
 ## Typeface — Manrope, decided 2026-09-09
 
 Supersedes Inter, chosen on 2026-09-01. The decision came from reviewing `type-board.html`, and
