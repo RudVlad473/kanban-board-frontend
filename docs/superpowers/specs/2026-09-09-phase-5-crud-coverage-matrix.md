@@ -34,7 +34,7 @@ Paths are relative to `.superpowers/brainstorm/`; `S1` is `23940-1788251793/cont
 
 | Entity | Create | Read | Update | Delete | Move / reorder |
 |---|---|---|---|---|---|
-| **Board** | ❌ | ✅ `S1/board-switch-v3` | ◐ `S2/header` | ◐ `S2/menu-v2`, `S1/toast-v3` | — |
+| **Board** | ✅ `S1/sidebar-boards-v1` | ✅ `S1/board-switch-v3`, `S1/sidebar-boards-v4` | ◐ `S2/header` | ◐ `S2/menu-v2`, `S1/toast-v3` | — |
 | **Column** | ❌ | ✅ `S1/load2-v2`, `S1/handoff-v4` | ❌ | ❌ | ❌ |
 | **Task** | ◐ `S2/header` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ❌ | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
 | **Subtask** | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ❌ | — |
@@ -76,13 +76,9 @@ mechanisms exist and are measured; what is missing is the decision to point them
 
 ### Board
 
-**Create — ❌**
-Today: `add-board-modal` — a `Modal` with a name field and a repeating column-name row driven by
-`use-create-board-columns`, plus a second entry point in `boards-empty-state`.
-Carries over: G2's modal motion (unbuilt, blocks this); `buttons-v4` for submit and its pending
-state; `optimistic-v5`'s in-flight → settled for the board appearing in the sidebar;
-`empty.html` for the empty-list → first-board handoff. The repeating column rows are the one part
-with no analogue — a row being added to a growing form is not in the set.
+**Create — ✅ closed 2026-09-09** by `sidebar-boards-v1`, together with the sidebar surface it
+lands in (`v2`–`v4`). Decisions in the design doc under "The sidebar board list, and creating a
+board". The modal half is also the phase's first `Modal` treatment, so it is a first pass at G2.
 
 **Update (rename) — ◐**
 Today: `edit-board-modal`, opened from the header kebab.

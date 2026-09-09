@@ -1604,6 +1604,84 @@ The press is **90ms, chosen rather than measured**, and it is below what a scree
 `duration.press` token exists until one has, per `tokens/motion.tokens.json`'s own rule that a
 duration nobody measured is drift wearing a token's costume.
 
+## The sidebar board list, and creating a board — decided 2026-09-09
+
+Raised as "a pretty basic generic list". Prototyped as `sidebar-boards-v1.html` (four row
+treatments plus a live create flow) through `v4.html` (adopted).
+
+**Why it reads as generic is measurable.** Each row carries exactly one thing — its name — in a
+44px box with 8px of air, under an identical `PanelLeft` glyph repeated on every row, beside a
+kebab that permanently reserves 44px of a 300px panel. Three boards produce three near-identical
+stripes. Measured on an eight-board list: **519px today against 383px adopted**, 26% shorter for
+the same content.
+
+### The row
+
+| | Adopted | Replaces |
+|---|---|---|
+| Height | 36px, 2px apart | 44px, 8px apart |
+| Radius | 4px | full-bleed `rounded-r-full` pill |
+| Selected | 2px purple left rail + `bg-app` tint + weight | solid purple slab, white text |
+| Leading | per-board monogram, hue hashed from `board.id` | the same `PanelLeft` glyph on every row |
+| Kebab | revealed on `:hover` and `:focus-within`, reserving no width | always rendered, `pr-11` reserved |
+
+The rail matches the grab-rail the card hover already adopted, so selection and affordance stop
+speaking two dialects. The monogram's hue is hashed from the **id, never the index** — the column
+palette settled that already, because deleting an entry renumbers positions and repaints every
+survivor. Both `id` and `name` are in the sidebar's own payload, so the monogram **paints on the
+first frame**.
+
+**No per-board count.** `taskFullSchema` has no completion field — `isCompleted` exists only on
+`subtask` — so a `5/12` invents a notion of "done" the data model cannot express, and the
+alternatives are a guess (*"in a column named Done"*) or broken on the common case (subtask
+completion reads `0/0` for a board of subtask-less tasks). A raw count is honest but near-static.
+Separately, anything richer than name comes from `usePrefetchAllBoards`, which fires in an effect
+*after* the list paints, so every such value pops in raggedly, board by board.
+
+**The palette caps at six**, so past six boards the monogram hues repeat by pigeonhole (measured:
+eight boards put three on `#67E2AE`). The **letter** is the durable identifier; the hue is a
+secondary cue.
+
+### The column outline
+
+The open board's columns appear as sub-rows, each carrying the dot colour its column header
+already shows.
+
+- **Collapsed by default, and selecting a board does not open it.** Strictly manual, so a board
+  with many columns can never ambush the list.
+- **The chevron is its own control, never the row.** The row navigates; a control that does two
+  things depending on where you land inside it cannot be described. A board with no columns gets
+  no chevron rather than an inert one.
+- **Cap at six, then `+ N more`.** Six is the column palette's own ceiling — past it the dots
+  repeat and stop telling columns apart, which is exactly where the outline stops paying for
+  itself. Collapsing forgets the expansion, so reopening starts capped. Rejected: an inner scroll
+  (nests a scrollbar inside a panel that already scrolls — G4's own complaint) and no rule at all
+  (one open board triples the sidebar, 619px against ~230px collapsed).
+
+**Both disclosures animate `grid-template-rows: 0fr → 1fr`, never a transform** — rows of text,
+rule 4 — which reaches an unknown height without measuring one in JS. Late rows animate their own
+height and opacity while the track is already `1fr`, so the container follows their growth instead
+of two animations contending for the same pixels. No stagger, matching §7c's dialled 0ms.
+
+**Both were silently missing at first, and the filmstrip is what caught it.** `repaint()` rebuilt
+the list's `innerHTML` on every toggle, so the element was *born* expanded and had no previous
+value to interpolate from. The numbers, same trigger: **v3 one frame over 0ms** — a cut — against
+**v4 13 frames over 165ms** for the disclosure and 12 over 174ms for the overflow reveal. A
+class-flip in the DOM looked correct and read as instant.
+
+### Creating a board into it
+
+The modal enters at 160ms position and 120ms opacity on the adopted curves. Column rows animate
+`height` and `opacity` only, so no glyph re-rasterises while the form grows. The new row **lands
+at full size immediately** — the create is optimistic and the row genuinely exists, so delaying it
+would be the animation lying about the state; only the tint and a crawl rail recede.
+
+This is also the phase's first modal treatment, so it is a first pass at **G2**, which eight other
+uncovered cells inherit.
+
+**Rejected: `⌘1`–`⌘9` on the first nine rows.** The affordance is only honest if the bindings
+exist, and adding them is scope creep out of this phase.
+
 ## Open items added by this session
 
 11. Adopt or reject proposed rules 6–9. Rules 6 and 7 both have a named failure already present in
