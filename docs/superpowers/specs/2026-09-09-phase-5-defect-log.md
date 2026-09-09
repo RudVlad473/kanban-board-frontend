@@ -19,12 +19,15 @@ and pretending otherwise is how a defect ships under a green suite (`docs/adr/te
 
 ## The rules the defects keep breaking
 
-Five recur often enough to be worth stating before the table:
+Six recur often enough to be worth stating before the table:
 
 1. **An inline `style.transition` overrides the stylesheet's whole list**, not just the property
    you named. Setting one for a FLIP and leaving it disables everything else on that element.
 2. **A transition cannot interpolate from `auto`**, and `align-self` cannot interpolate at all.
-   Growth needs a concrete start value and a forced reflow.
+   Growth needs a concrete start value and a frame boundary — `void el.offsetHeight` inside one
+   task is not enough; `requestAnimationFrame` is.
+6. **A class used to seed a start value must also suppress the transition.** Otherwise applying it
+   animates *into* the start value, and removing it merely reverses a fade that never arrived.
 3. **A `position: fixed` clone has no stretching parent**, so it collapses to its content whatever
    the source measured.
 4. **`view-transition-name` makes an element a stacking context**, so a `z-index` set inside it
@@ -56,6 +59,8 @@ Five recur often enough to be worth stating before the table:
 | 18 | Columns flapped between N and N−1 with the pointer still | The swap moved the dragged slot's own rect under the pointer, satisfying the reverse test immediately | User | e2e: hold the pointer after a swap, dispatch N identical moves, assert one distinct order |
 | 19 | The lifted column's header lingered visibly before fading | The source's contents faded out over 120ms while the clone — sitting exactly on top — began to move, so the two separated mid-fade | User, on a video | e2e: the source's children are `opacity: 0` with `transition-property: none` on the frame the drag starts |
 | 20 | The dashed border lit and faded *after* the drop | The slot's box was transitioned, so its tint and dashes animated out once the gesture was already over | User | e2e: after the drop, the column's `border-style` and `min-height` are back at rest values within one frame |
+| 22 | The slot's fade-in never ran | The element carried `transition: opacity`, so **adding** the `.opening` class animated 1 → 0 too; removing it two frames later reversed a fade that had barely left 1. `.opening` needs `transition: none` | User, then filmstrip — **1 frame over 0ms** | Filmstrip: frames > 1 on the lift. Sampling the property also works: 0 → 0.23 → 0.47 → 0.71 → 0.95 → 1 |
+| 23 | The kebab blinked out the instant a column was lifted | The clone was stripped of `.ckb` as well as `.menu`, so the panel stopped being a picture of the column that was grabbed | User | e2e: the overlay contains a `.ckb` at opacity 1 and no `.menu` |
 | 21 | The slot growing into the lane was too much motion for the interaction | Growth is a second animation competing with the flight, on a gesture that repeats | User | Judgement, not assertion — the height change is real and correct either way (see below) |
 
 ## What is not mechanically catchable
