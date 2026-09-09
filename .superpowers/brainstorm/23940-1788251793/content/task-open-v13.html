@@ -1,0 +1,535 @@
+<h2>4e &middot; Opening a task &mdash; v13, panel view A morphs into panel view B
+  <span style="font:500 11px ui-monospace,monospace;color:#7a8296">each structural slot is named, so the boxes travel to their new positions while only their text changes &mdash; the reflow is the morph</span>
+</h2>
+
+<div class="tp-bar">
+  <button class="mock-button tp-opt" data-opt="modal">A &mdash; modal</button>
+  <button class="mock-button tp-opt is-on" data-opt="panel">B &mdash; panel</button>
+  <button class="mock-button tp-opt" data-opt="inline">C &mdash; in place</button>
+  <span class="tp-sp"></span>
+  <span class="tp-lbl2">Swap</span>
+  <button class="mock-button tp-sw" data-sw="instant">instant</button>
+  <button class="mock-button tp-sw" data-sw="fade">fade 70/110</button>
+  <button class="mock-button tp-sw" data-sw="dir">directional</button>
+  <button class="mock-button tp-sw is-on" data-sw="vt">view transition</button>
+  <span class="tp-lbl2">Dock</span>
+  <button class="mock-button tp-dock" data-dock="push">push</button>
+  <button class="mock-button tp-dock is-on" data-dock="over">overlay</button>
+  <span class="tp-sp"></span>
+  <button class="mock-button" id="tpDense">Board: 3 columns (demo)</button>
+  <button class="mock-button" id="tpCap">Measure: full bleed</button>
+  <button class="mock-button" id="tpSlow">Slow motion: off</button>
+  <button class="mock-button" id="tpClose">Close</button>
+</div>
+<p class="tp-note" id="tpNote"></p>
+
+<div class="tp-stage dock-over" id="tpStage">
+  <div class="tp-scroll" id="tpScroll">
+    <div class="tp-board" id="tpBoard"></div>
+  </div>
+  <div class="tp-scrim" id="tpScrim"></div>
+  <div class="tp-modal" id="tpModal"></div>
+  <aside class="tp-panel" id="tpPanel"><div class="tp-inner" id="tpInner"></div></aside>
+</div>
+
+<style>
+.tp-bar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:10px 0 8px; }
+.tp-opt.is-on, .tp-sw.is-on, .tp-dock.is-on { background:#635FC7; color:#fff; border-color:#635FC7; }
+.tp-lbl2 { font:600 10px/1 ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase;
+  color:#7a8296; margin:0 2px 0 6px; }
+.tp-sp { flex:1; }
+.tp-note { font:500 12px/1.6 ui-sans-serif,system-ui,sans-serif; color:#5b6274;
+  margin:0 0 12px; min-height:32px; max-width:98ch; }
+.tp-note b { color:#000112; }
+.tp-note code { font:11px ui-monospace,Menlo,monospace; background:#EDF0F8; padding:1px 5px; border-radius:3px; }
+
+.tp-stage { --d:.22s; --dc:.36s; --e:cubic-bezier(.2,0,0,1);
+  position:relative; display:flex; height:430px; background:#F4F7FD;
+  border:1px solid #E4EBFA; border-radius:8px; overflow:hidden; }
+.tp-stage.slow { --d:1.1s; --dc:1.7s; }
+
+/* the board scrolls; it is never clipped by the panel */
+.tp-scroll { flex:1; min-width:0; overflow-x:auto; overflow-y:hidden; scroll-behavior:smooth; }
+.tp-board { display:flex; gap:24px; padding:18px; height:100%; box-sizing:border-box; width:max-content; }
+/* Capped measure: left-aligned, never centred — centring would move the whole board sideways the
+   moment the panel opens, which is a layout shift the phase would reject outright. */
+.tp-scroll.capped .tp-board { max-width:1180px; }
+.tp-scroll.capped { border-right:1px dashed #D6DFEF; }
+.tp-col { width:280px; flex:none; }
+.tp-colh { display:flex; align-items:center; gap:8px; margin-bottom:12px;
+  font:700 12px/15px ui-sans-serif,system-ui,sans-serif; letter-spacing:2.4px;
+  text-transform:uppercase; color:#828FA3; }
+.tp-colh i { width:11px; height:11px; border-radius:50%; flex:none; }
+.tp-colh span { letter-spacing:0; }
+
+.tp-card { background:#fff; border:1px solid #E4EBFA; border-radius:8px; padding:14px;
+  margin-bottom:10px; cursor:pointer; transition:border-color .13s, background .13s; }
+.tp-card:hover { border-color:#D6DFEF; background:#FAFBFE; }
+.tp-card.is-open { border-color:#B9B4F0; background:#FAFBFE; }
+.tp-card b { display:block; font:700 15px/19px ui-sans-serif,system-ui,sans-serif; color:#000112; }
+.tp-p { display:flex; align-items:center; gap:9px; margin-top:7px; }
+.tp-p s { flex:1; height:3px; border-radius:2px; background:#E4EBFA; text-decoration:none; overflow:hidden; }
+.tp-p u { display:block; height:100%; background:#635FC7; border-radius:2px;
+  transition:width .2s var(--e); }
+.tp-p span { font:700 12px/15px ui-sans-serif,system-ui,sans-serif; color:#828FA3;
+  font-variant-numeric:tabular-nums; }
+
+/* ---- B: panel. width animates (layout), never transform — rule 4's mechanical form.
+        A fixed-width inner inside overflow:hidden keeps the contents from reflowing. ---- */
+.tp-panel { flex:none; width:0; overflow:hidden; background:#fff;
+  border-left:1px solid transparent; transition:width var(--d) var(--e), border-color var(--d); }
+/* Closing is deliberately slower than opening. Opening races the user's intent — they have already
+   decided. Closing is a dismissal, and a panel that vanishes reads as a glitch rather than a move. */
+.tp-stage:not(.is-panel) .tp-panel { transition:width var(--dc) var(--e), border-color var(--dc); }
+
+/* Overlay docking: the panel is taken out of flow, so no column is displaced. The board keeps its
+   own scroll position and geometry; only the panel moves. */
+.tp-stage.dock-over .tp-panel { position:absolute; top:0; right:0; height:100%; z-index:9;
+  box-shadow:-8px 0 24px rgba(16,18,32,.06); }
+.tp-stage.dock-over.is-panel .tp-scroll { padding-right:0; }
+.tp-stage.is-panel .tp-panel { width:400px; border-left-color:#E4EBFA; }
+.tp-inner { width:400px; height:100%; box-sizing:border-box; padding:22px; overflow-y:auto; }
+/* Sequenced, never overlapped: out finishes before in starts, so two strings are never inked in
+   the same place (rule 4). Same construction as the skeleton->content handoff, 70ms / 110ms. */
+.tp-inner.sw-out { opacity:0; transition:opacity 70ms linear; }
+.tp-inner.sw-in  { opacity:0; }
+.tp-inner.sw-in-run { opacity:1; transition:opacity 110ms var(--e); }
+/* Directional: the content moves by its own layout position inside the clip, never by transform —
+   the panel is 400px of text and rule 4's mechanical form forbids transforming it. */
+.tp-inner.dir { position:relative; }
+.tp-inner.dir-from-below { top:14px; opacity:0; }
+.tp-inner.dir-from-above { top:-14px; opacity:0; }
+.tp-inner.dir-run { top:0; opacity:1; transition:top 160ms var(--e), opacity 140ms var(--e); }
+
+/* ---- A: modal ---- */
+.tp-scrim { position:absolute; inset:0; background:rgba(0,1,18,.5); opacity:0;
+  pointer-events:none; transition:opacity var(--d); z-index:8; }
+.tp-stage.is-modal .tp-scrim { opacity:1; pointer-events:auto; }
+.tp-modal { position:absolute; top:50%; left:50%; width:448px; margin-left:-224px;
+  background:#fff; border-radius:8px; padding:24px; z-index:9; display:none;
+  box-shadow:0 10px 30px rgba(16,18,32,.2); max-height:82%; overflow-y:auto; }
+.tp-stage.is-modal .tp-modal { display:block; }
+
+/* ---- editable fields ----
+   contenteditable on the SAME element: nothing is swapped, so there is no layout shift by
+   construction. The focus ring is an `outline`, which paints outside the border box and cannot
+   move anything (rule 1's focus carve-out). Measured before this: swapping to an <input> grew the
+   box 2px and shoved the description -8px. ---- */
+.tp-ed { position:relative; border-radius:4px; cursor:text;
+  padding:3px 26px 3px 5px; margin-left:-5px;
+  transition:background .13s, outline-color .13s; outline:2px solid transparent; outline-offset:0; }
+.tp-ed:hover { background:#F4F7FD; }
+.tp-ed:focus { background:#fff; outline-color:#635FC7; }
+.tp-ed::after {                       /* the affordance: a pencil, only on hover */
+  content:"\270E"; position:absolute; right:6px; top:3px;
+  font:400 13px/1.4 ui-sans-serif,system-ui,sans-serif; color:#A9B0C0;
+  opacity:0; transition:opacity .13s; pointer-events:none; }
+.tp-ed:hover::after { opacity:1; }
+.tp-ed:focus::after { opacity:0; }
+.tp-t { font:700 18px/23px ui-sans-serif,system-ui,sans-serif; color:#000112; margin:0 0 10px; }
+/* Naming the parts turns the default root cross-fade into per-element morphs — the "low effort"
+   feel is the un-named version. Costs more dead time, not less: see the amendment's table. */
+/* One name per structural SLOT, not per task. A slot exists in both views, so its box has a
+   counterpart to travel to — which is the whole difference between a morph and a cross-fade.
+   Naming the subtask list as a single group (v9-v12) made it scale as one bitmap; naming each ROW
+   lets the rows that survive the swap glide to their new positions while the others enter or
+   leave. The reflow between two tasks IS the movement: different description lengths and subtask
+   counts put every element below at a different Y. */
+.tp-stage.vt-named .tp-t   { view-transition-name: tp-title; }
+.tp-stage.vt-named .tp-d   { view-transition-name: tp-desc; }
+.tp-stage.vt-named .tp-add { view-transition-name: tp-add; }
+.tp-stage.vt-named .tp-sel { view-transition-name: tp-sel; }
+
+/* 1. The box morph carries the phase's own curve. Only the duration was set before, so the
+      position/size animation ran on the UA default easing and matched nothing else. */
+::view-transition-group(*) {
+  animation-duration:420ms; animation-timing-function:cubic-bezier(.2,0,0,1);
+}
+
+
+/* 2. A view transition cross-fades old against new by default. Measured on the title: 13 of 20
+      frames had both strings inked — exactly the text crossfade rule 4 forbids, and the reason
+      this reads slightly blurred. Sequence them instead: out finishes before in begins. */
+@keyframes vt-out { to { opacity:0 } }
+@keyframes vt-in  { from { opacity:0 } }
+/* The BOX travels for the full 420ms; only the text inside it swaps, and quickly, so the eye
+   follows movement rather than a dissolve. Sequenced so no slot ever shows two strings at once. */
+/* LINEAR, deliberately. The phase's cubic-bezier(.2,0,0,1) is heavily front-loaded, so an opacity
+   fade on it reaches ~0 in the first third of its duration — which left a blank frame between the
+   old text vanishing and the new one arriving, and a flash reads worse than either. Linear keeps
+   the outgoing text present for its whole 150ms so the handover has no hole in it. The easing
+   still belongs on the group, where it animates the box; it just cannot drive an opacity fade. */
+::view-transition-old(*) { animation:vt-out 150ms linear both; }
+::view-transition-new(*) { animation:vt-in 210ms linear 150ms both; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration:420ms; }
+
+/* 3. The snapshots are bitmaps. When a group changes size — a task with four subtasks replacing
+      one with two — the default sizing stretches them to fit, distorting every glyph. Pin them to
+      natural size and clip instead. */
+::view-transition-old(*), ::view-transition-new(*) {
+  object-fit:none; object-position:top left; overflow:clip;
+}
+
+/* 4. v9 tried to suppress the root cross-fade with `animation:none; opacity:1`. That does not
+      disable it — it pins BOTH root snapshots fully opaque, so the new state is visible from frame
+      0 and every named group animates underneath an opaque cover. Measured: oldRoot and newRoot
+      both 1 for the whole transition, and the only visible event was the snapshots being removed
+      at the end, i.e. a hard cut. Root keeps its default cross-fade; the chrome it covers barely
+      changes, so that cross-fade is invisible anyway, and the named groups draw above it. */
+
+/* 5. The setting removes the animation; it cannot remove the API's own input block. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+    animation-duration:0s !important; animation-delay:0s !important;
+  }
+}
+.tp-d { font:500 13px/23px ui-sans-serif,system-ui,sans-serif; color:#828FA3; margin:0 0 18px; }
+.tp-lab { font:700 12px/15px ui-sans-serif,system-ui,sans-serif; color:#828FA3; margin-bottom:8px; }
+.tp-st { display:flex; align-items:center; gap:10px; background:#F4F7FD; border-radius:4px;
+  padding:9px 11px; margin-bottom:7px; cursor:pointer;
+  font:700 12px/15px ui-sans-serif,system-ui,sans-serif; color:#000112;
+  transition:background .13s; }
+.tp-st:hover { background:#EDF0F8; }
+.tp-st i { width:15px; height:15px; border-radius:3px; border:1px solid #E4EBFA; background:#fff;
+  flex:none; display:grid; place-items:center; transition:background .13s, border-color .13s; }
+/* the tick draws itself rather than appearing */
+.tp-st i svg { width:9px; height:9px; display:block; }
+.tp-st i path { stroke:#fff; stroke-width:2.4; fill:none; stroke-linecap:round;
+  stroke-linejoin:round; stroke-dasharray:14; stroke-dashoffset:14;
+  transition:stroke-dashoffset .22s cubic-bezier(.2,0,0,1); }
+.tp-st.on i { background:#635FC7; border-color:#635FC7; }
+.tp-st.on i path { stroke-dashoffset:0; }
+
+/* the strike-through is a line that draws across the letters, left to right.
+   text-decoration cannot be transitioned; a scaled pseudo-element can, and it scales the LINE,
+   never the text — so rule 4's no-transform-on-text constraint is untouched. */
+.tp-st span { position:relative; transition:color .22s; }
+.tp-st span::after { content:""; position:absolute; left:0; right:0; top:52%; height:1.5px;
+  background:currentColor; border-radius:1px; transform:scaleX(0); transform-origin:left center;
+  transition:transform .28s cubic-bezier(.2,0,0,1); }
+.tp-st.on span { color:#9AA3B2; }
+.tp-st.on span::after { transform:scaleX(1); }
+.tp-add { font:600 12px/1 ui-sans-serif,system-ui,sans-serif; color:#635FC7; cursor:pointer;
+  padding:8px 11px; display:inline-block; border-radius:4px; transition:background .13s; }
+.tp-add:hover { background:#F4F7FD; }
+.tp-sel { margin-top:6px; border:1px solid #E4EBFA; border-radius:4px; padding:9px 11px;
+  font:500 13px/1 ui-sans-serif,system-ui,sans-serif; color:#000112; cursor:pointer; }
+.tp-hint { margin-top:16px; padding-top:12px; border-top:1px solid #E4EBFA;
+  font:500 11px/1.6 ui-sans-serif,system-ui,sans-serif; color:#9AA3B2; }
+
+/* ---- C: the expansion animates. grid 0fr→1fr is the only way to transition to auto height,
+        and the cards below are genuinely displaced, so rule 2 permits the geometry. ---- */
+/* Distance sets the duration. This expands ~515px — eight times the card's collapsed height —
+   where the panel slides 400px sideways. Measured at var(--d)=220ms it interpolates correctly
+   (16 distinct heights) and still reads as a jump, because 515px in 220ms is ~2300px/s. */
+.tp-inl { --di:.42s;
+  display:grid; grid-template-rows:0fr; opacity:0;
+  transition:grid-template-rows var(--di) var(--e), opacity calc(var(--di)*.55) var(--e),
+             margin-top var(--di) var(--e), padding-top var(--di) var(--e);
+  margin-top:0; padding-top:0; border-top:1px solid transparent; }
+.tp-stage.slow .tp-inl { --di:1.6s; }
+.tp-inl > div { overflow:hidden; min-height:0; }
+.tp-card.inline-open .tp-inl { grid-template-rows:1fr; opacity:1;
+  margin-top:12px; padding-top:12px; border-top-color:#E4EBFA; }
+.tp-card.inline-open { cursor:default; }
+
+/* ---- panel close affordance: no scrim, so it needs a real control ---- */
+.tp-head { display:flex; align-items:flex-start; gap:10px; }
+.tp-head .tp-t { flex:1; }
+.tp-x { flex:none; width:28px; height:28px; border-radius:4px; border:1px solid #E4EBFA;
+  background:#fff; color:#828FA3; cursor:pointer; font:400 15px/1 ui-sans-serif,system-ui,sans-serif;
+  display:grid; place-items:center; transition:background .13s, border-color .13s, color .13s; }
+.tp-x:hover { background:#FAFBFE; border-color:#D6DFEF; color:#000112; }
+.tp-esc { font:500 11px/1 ui-monospace,Menlo,monospace; color:#9AA3B2; margin-left:8px; }
+.tp-warn { margin-top:12px; padding:9px 11px; border-radius:4px; background:#FDF3E7;
+  border:1px solid #E8CFA6; font:600 11px/1.5 ui-sans-serif,system-ui,sans-serif; color:#7A5B1E; }
+</style>
+
+<script>
+// Two datasets: the 3-column demo everything so far was judged on, and a board with the shape a
+// real one has. The question v5 exists to answer is whether the panel's emptiness is a property of
+// the design or of the toy data.
+const DEMO_COLS = [
+  ["TODO","#49C4E5",[0,1]], ["DOING","#8471F2",[2,3,4]], ["DONE","#67E2AE",[5,6]],
+];
+const FULL_COLS = [
+  ["BACKLOG","#828FA3",[7,8,9,10,11]],
+  ["TODO","#49C4E5",[0,1,12,13]],
+  ["IN PROGRESS","#8471F2",[2,3,4,14]],
+  ["IN REVIEW","#E8A33D",[15,16,17]],
+  ["BLOCKED","#C93F3C",[18,19]],
+  ["DONE","#67E2AE",[5,6,20,21,22]],
+];
+const T = [
+  { t:"Research pricing", d:"Compare the three vendor tiers and write up which one clears the compliance bar.", s:[["Pull tier sheets",1],["Check SOC2",0],["Write summary",0]] },
+  { t:"Audit empty states", d:"Every surface that can be empty needs a designed empty state, not a blank panel.", s:[["List surfaces",1],["Design each",0]] },
+  { t:"Build settings UI", d:"We know what buttons we need, but the styling of the settings screen is still undecided.", s:[["Sketch layout",1],["Pick controls",1],["Wire state",0]] },
+  { t:"Design settings and search", d:"Search has to work across boards, not just the open one.", s:[["Scope search",1],["Draft UI",0]] },
+  { t:"Vendor shortlist", d:"Narrow eleven vendors to three we would actually sign with.", s:[["Collect list",1],["Score them",0],["Cut to five",0],["Final three",0]] },
+  { t:"Add account auth", d:"Sign-in, sign-up and session handling against the real backend.", s:[["Sign in",1],["Sign up",1],["Sessions",1]] },
+  { t:"Billing page", d:"Show the current plan and let a user change it.", s:[["Plan display",1],["Change flow",1]] },
+  { t:"Rework the onboarding email sequence", d:"Five emails over ten days; the third has a 4% open rate.", s:[["Audit current",1],["Rewrite 3",0],["A/B subject lines",0]] },
+  { t:"Investigate slow board load", d:"P95 is 2.4s on boards with more than forty tasks.", s:[["Profile RSC",1],["Check query plan",0],["Add index",0]] },
+  { t:"Keyboard shortcuts", d:"At minimum: new task, search, close panel.", s:[["Pick bindings",0],["Conflict audit",0]] },
+  { t:"Export a board to CSV", d:"Asked for twice this month by the same customer.", s:[["Column mapping",0],["Escaping rules",0]] },
+  { t:"Dark mode contrast pass", d:"Three surfaces fail AA against the new hairline borders.", s:[["Audit tokens",1],["Fix muted text",0]] },
+  { t:"Archive completed tasks", d:"Done columns grow forever and nobody clears them.", s:[["Retention rule",0],["Undo window",0]] },
+  { t:"Bulk move tasks", d:"Select several cards and move them in one action.", s:[["Selection model",0],["Drag many",0]] },
+  { t:"Task due dates", d:"Date only, no times. Timezones are out of scope.", s:[["Picker",1],["Overdue styling",0],["Sort by due",0]] },
+  { t:"Rate limit the write path", d:"A script created 900 tasks in four seconds last Tuesday.", s:[["Pick limits",1],["Return 429",1],["Client backoff",0]] },
+  { t:"Column WIP limits", d:"Warn, never block, when a column exceeds its limit.", s:[["Limit UI",1],["Warning state",0]] },
+  { t:"Fix the drag ghost on Safari", d:"The overlay renders one frame behind the pointer.", s:[["Reproduce",1],["Root cause",1],["Patch",0]] },
+  { t:"Migrate to the new session store", d:"Blocked on the platform team finishing their rollout.", s:[["Await rollout",0],["Dual write",0],["Cut over",0]] },
+  { t:"Delete account flow", d:"Blocked pending a legal review of the retention window.", s:[["Legal review",0],["Cascade rules",0]] },
+  { t:"Sidebar collapse", d:"The panel closes like a door; the board flows into the space.", s:[["Animate width",1],["Fixed inner",1]] },
+  { t:"Toast accent stripe", d:"Inset pill inside the existing padding, no extra gutter.", s:[["Geometry",1],["Both themes",1]] },
+  { t:"Optimistic subtask toggle", d:"The card caption and the checklist can never disagree.", s:[["Shared cache key",1],["Rollback copy",1]] },
+];
+
+const NOTES = {
+  modal:`<b>A &mdash; centred modal.</b> The scrim hides the board, so the column the task belongs to stops being visible. This is the option that needs the 414px morph and therefore <code>startViewTransition()</code> &mdash; the phase's only rule-5 carve-out.`,
+  panel:`<b>B &mdash; editing in place.</b> Title and description are <code>contenteditable</code> on the <em>same</em> element &mdash; nothing is swapped, so there is <b>no layout shift by construction</b> (the old input swap grew the box 2px and shoved the description &minus;8px). The focus ring is an <code>outline</code>, which paints outside the border box and cannot move anything &mdash; rule 1's own carve-out. Hover shows a background and a <b>✎</b>. Ticking a subtask draws the tick and the strike-through rather than switching to them. Closes with the <b>✕</b>, <b>Esc</b>, or the same card again; With no scrim there is nothing to "click out of" &mdash; everything outside stays live, which is the whole point. So it closes like the sidebar, not like a dialog: the <b>✕</b>, <b>Esc</b>, or <b>clicking the same card again</b>. Clicking a <em>different</em> card swaps the contents and never closes. The board stays operable throughout, so closing is optional rather than something the UI demands of you.`,
+  inline:`<b>C &mdash; the duration now matches the distance.</b> It was always interpolating &mdash; 16 distinct heights, measured &mdash; but 515px of growth in 220ms is ~2300px/s and reads as a jump. At <code>420ms</code> the same transition reads as an expansion. The 280px-vs-448px constraint is unchanged.`,
+};
+
+const stage=document.getElementById("tpStage"), boardEl=document.getElementById("tpBoard"),
+      scrollEl=document.getElementById("tpScroll"), panelInner=document.getElementById("tpInner"),
+      modalEl=document.getElementById("tpModal"), note=document.getElementById("tpNote");
+let opt="panel", open=null;
+
+// ---------- board ----------
+let COLS = DEMO_COLS;
+function buildBoard(){
+boardEl.innerHTML = COLS.map(([n,c,ids]) => `
+  <div class="tp-col">
+    <div class="tp-colh"><i style="background:${c}"></i>${n} <span>(${ids.length})</span></div>
+    ${ids.map(i=>`<div class="tp-card" data-t="${i}">
+        <b>${T[i].t}</b>
+        <div class="tp-p"><s><u style="width:${pct(i)}%"></u></s><span>${done(i)}/${T[i].s.length}</span></div>
+      </div>`).join("")}
+  </div>`).join("");
+boardEl.querySelectorAll(".tp-card").forEach(c => c.onclick = e => {
+  if (e.target.closest(".tp-inl")) return;
+  const i = +c.dataset.t;
+  open = (open === i) ? null : i;
+  render();
+});
+}
+buildBoard();
+
+function done(i){ return T[i].s.filter(x=>x[1]).length; }
+function pct(i){ return Math.round(done(i)/T[i].s.length*100); }
+
+function syncCard(i){
+  const c = boardEl.querySelector(`.tp-card[data-t="${i}"]`);
+  c.querySelector("b").textContent = T[i].t;
+  c.querySelector("u").style.width = pct(i)+"%";
+  c.querySelector(".tp-p span").textContent = `${done(i)}/${T[i].s.length}`;
+}
+
+// ---------- detail body, with inline editing ----------
+const TICK = `<svg viewBox="0 0 12 12"><path d="M2.5 6.2 L5 8.6 L9.5 3.4"/></svg>`;
+
+// `mode` decides the header, rather than a caller string-stripping the title out of the result:
+// the previous version matched on `<div class="tp-t"`, which silently stopped matching the moment
+// the class list changed, and shipped the title twice in option C.
+function detail(i, mode){
+  const x = T[i];
+  const ed = (cls, key, v) =>
+    `<div class="tp-ed ${cls}" data-ed="${key}" contenteditable="plaintext-only"
+          spellcheck="false" role="textbox" tabindex="0">${v}</div>`;
+  return `${mode === "panel"
+      ? `<div class="tp-head">${ed("tp-t","t",x.t)}<button class="tp-x" id="tpX" title="Close (Esc)">&#10005;</button></div>`
+      : mode === "modal" ? ed("tp-t","t",x.t)
+      : ""}
+    ${ed("tp-d","d",x.d)}
+    <div class="tp-lab" id="tpLab" style="view-transition-name:tp-lab-subs">Subtasks (${done(i)} of ${x.s.length})</div>
+    <div id="tpSubs">${x.s.map((s,n)=>`<div class="tp-st ${s[1]?"on":""}" data-s="${n}" style="view-transition-name:tp-sub-${n}"><i>${TICK}</i><span>${s[0]}</span></div>`).join("")}</div>
+    <div class="tp-add">+ Add subtask</div>
+    <div class="tp-lab" style="margin-top:16px;view-transition-name:tp-lab-status">Current status</div>
+    <div class="tp-sel">Doing</div>
+    <div class="tp-hint">Title, description and subtasks are edited here &mdash; there is no second modal.
+      Each uses the optimistic hooks plans 04-18 and 04-19 already build.</div>`;
+}
+
+function wire(root, i){
+  // Nothing is re-rendered on commit: re-rendering rebuilds the node in its final state, which is
+  // exactly why the strike-through and the tick used to appear instantly. Mutate in place.
+  root.querySelectorAll("[data-ed]").forEach(el => {
+    const key = el.dataset.ed;
+    const commit = () => {
+      const v = el.textContent.trim();
+      if (v) T[i][key] = v; else el.textContent = T[i][key];
+      syncCard(i);
+    };
+    el.addEventListener("blur", commit);
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter" && key === "t") { e.preventDefault(); el.blur(); }
+      if (e.key === "Escape") { el.textContent = T[i][key]; el.blur(); }
+    });
+  });
+  root.querySelectorAll("[data-s]").forEach(el => el.onclick = () => {
+    const n = +el.dataset.s;
+    T[i].s[n][1] = T[i].s[n][1] ? 0 : 1;
+    el.classList.toggle("on", !!T[i].s[n][1]);          // class flip, so the CSS transitions run
+    const lab = root.querySelector("#tpLab");
+    if (lab) lab.textContent = `Subtasks (${done(i)} of ${T[i].s.length})`;
+    syncCard(i);
+  });
+  root.querySelector(".tp-add").onclick = () => {
+    T[i].s.push(["New subtask", 0]);
+    const row = document.createElement("div");
+    row.className = "tp-st"; row.dataset.s = T[i].s.length - 1;
+    row.innerHTML = `<i>${TICK}</i><span>New subtask</span>`;
+    root.querySelector("#tpSubs").appendChild(row);
+    wire(root, i); syncCard(i);
+  };
+}
+
+let swapMode = "vt";
+let lastOpen = null;
+
+function fillPanel(i){
+  panelInner.innerHTML = detail(i, "panel");
+  wire(panelInner, i);
+  panelInner.querySelector("#tpX").onclick = () => { open = null; lastOpen = null; render(); };
+}
+
+/* A swap only animates when the panel is ALREADY open and the task actually changed. Opening from
+   closed is the width transition's job, and re-rendering the same task must not re-run anything. */
+function paintPanel(i){
+  // Not read from the DOM: render() clears `is-panel` before this runs, so the class always says
+  // "closed" and every strategy silently fell through to instant. lastOpen is the real signal.
+  const isSwap = lastOpen !== null && lastOpen !== i;
+  lastOpen = i;
+  const cls = ["sw-out","sw-in","sw-in-run","dir","dir-from-below","dir-from-above","dir-run"];
+  panelInner.classList.remove(...cls);
+
+  if (!isSwap || swapMode === "instant") { fillPanel(i); return; }
+
+  if (swapMode === "vt") {
+    // Sanctioned in-document API, and the one option that reintroduces the pointer block the
+    // panel was chosen to avoid — kept so the cost can be felt rather than argued.
+    if (!document.startViewTransition) { fillPanel(i); return; }
+    stage.classList.add("vt-named");
+    const t = document.startViewTransition(() => fillPanel(i));
+    t.finished.finally(() => stage.classList.remove("vt-named"));
+    return;
+  }
+
+  if (swapMode === "fade") {
+    panelInner.classList.add("sw-out");
+    setTimeout(() => {
+      fillPanel(i);
+      panelInner.classList.remove("sw-out");
+      panelInner.classList.add("sw-in");
+      requestAnimationFrame(() => {
+        panelInner.classList.add("sw-in-run");
+        panelInner.classList.remove("sw-in");
+      });
+    }, 70);
+    return;
+  }
+
+  // Direction comes from the card's on-screen position, not its index — an index says nothing
+  // about where the user's eye just was. (The index version made every first swap identical.)
+  const prev = boardEl.querySelector(`.tp-card[data-t="${lastDir}"]`);
+  const next = boardEl.querySelector(`.tp-card[data-t="${i}"]`);
+  const from = (prev && next && next.getBoundingClientRect().top < prev.getBoundingClientRect().top)
+    ? "above" : "below";
+  lastDir = i;
+  fillPanel(i);
+  panelInner.classList.add("dir", "dir-from-" + from);
+  requestAnimationFrame(() => {
+    panelInner.classList.add("dir-run");
+    panelInner.classList.remove("dir-from-below","dir-from-above");
+  });
+}
+let lastDir = null;
+
+const panelEl = document.getElementById("tpPanel");
+let revealOnOpen = false;   // overlay is the default
+function revealAfterPanel(card){
+  // The card's content is now in the panel, larger. Scrolling the board to keep the card itself
+  // visible was an assumption, not a requirement — and it costs 737px of travel on a full board.
+  if (!revealOnOpen) return;
+  const go = () => card.scrollIntoView({ block:"nearest", inline:"nearest" });
+  panelEl.addEventListener("transitionend", function once(e){
+    if (e.propertyName !== "width") return;
+    panelEl.removeEventListener("transitionend", once);
+    go();
+  });
+  if (stage.classList.contains("is-panel") && panelEl.getBoundingClientRect().width === 400) go();
+}
+
+// ---------- render ----------
+function render(){
+  note.innerHTML = NOTES[opt];
+  boardEl.querySelectorAll(".tp-card").forEach(c=>{
+    c.classList.remove("is-open","inline-open");
+    c.querySelector(".tp-inl")?.remove();
+  });
+  stage.classList.remove("is-panel","is-modal");
+  if (open === null) { panelInner.innerHTML = ""; return; }
+
+  const card = boardEl.querySelector(`.tp-card[data-t="${open}"]`);
+  card.classList.add("is-open");
+
+  if (opt === "panel") {
+    stage.classList.add("is-panel");
+    paintPanel(open);
+    revealAfterPanel(card);
+  } else if (opt === "modal") {
+    modalEl.innerHTML = detail(open, "modal");
+    stage.classList.add("is-modal");
+    wire(modalEl, open);
+  } else {
+    const d = document.createElement("div");
+    d.className = "tp-inl";
+    // grid 0fr→1fr needs a single child to clip; the transition only runs if the element is in
+    // the DOM at 0fr for a frame before the class flips it to 1fr.
+    d.innerHTML = `<div>${detail(open, "inline")}
+      <div class="tp-warn">280px column vs 448px of content.</div></div>`;
+    card.appendChild(d);
+    requestAnimationFrame(() => card.classList.add("inline-open"));
+    wire(d, open);
+  }
+}
+
+addEventListener("keydown", e => {
+  if (e.key === "Escape" && open !== null && !e.target.isContentEditable) { open=null; lastOpen=null; render(); }
+});
+document.querySelectorAll(".tp-sw").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tp-sw").forEach(o=>o.classList.toggle("is-on", o===b));
+  swapMode = b.dataset.sw;
+});
+document.querySelectorAll(".tp-dock").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tp-dock").forEach(o=>o.classList.toggle("is-on", o===b));
+  // Overlay never scrolls: its entire argument is that nothing moves, so a reveal would contradict
+  // it. Push must scroll, or the card it displaced ends up behind the panel.
+  const d = b.dataset.dock;
+  stage.classList.toggle("dock-over", d === "over");
+  revealOnOpen = d === "push";
+});
+document.querySelectorAll(".tp-opt").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tp-opt").forEach(o=>o.classList.toggle("is-on", o===b));
+  opt = b.dataset.opt; render();
+});
+document.getElementById("tpClose").onclick = () => { open=null; lastOpen=null; render(); };
+document.getElementById("tpScrim").onclick = () => { open=null; render(); };
+document.getElementById("tpDense").onclick = e => {
+  const full = COLS === DEMO_COLS;
+  COLS = full ? FULL_COLS : DEMO_COLS;
+  e.target.textContent = "Board: " + (full ? "6 columns, real backlog" : "3 columns (demo)");
+  open = null; buildBoard(); render();
+};
+document.getElementById("tpCap").onclick = e => {
+  const on = scrollEl.classList.toggle("capped");
+  e.target.textContent = "Measure: " + (on ? "capped at 1180px" : "full bleed");
+};
+document.getElementById("tpSlow").onclick = e => {
+  const on = stage.classList.toggle("slow");
+  e.target.textContent = "Slow motion: " + (on?"on":"off");
+};
+render();
+</script>

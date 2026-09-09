@@ -1292,6 +1292,37 @@ carries `cubic-bezier(.2,0,0,1)`.
 cannot do: it removes the *animation*, never the API's input block, which is a property of
 `startViewTransition()` and not of its duration.
 
+### Panel view A into panel view B — `task-open-v13.html`
+
+v12 morphed the wrong pair. The ask was never card-into-panel (§4b already owns that); it was the
+**already-open panel showing task A becoming the panel showing task B**. v12 is superseded.
+
+The earlier claim in this section — that two unrelated tasks share no identity, so only a
+cross-fade is possible — **was wrong, and wrong in an instructive way.** The tasks share no
+identity, but the panel's *structural slots* do: the title box, the description box, each subtask
+row, the section labels, the status field all exist in both views. Their **boxes** have
+counterparts to travel to even though their **text** does not. And they genuinely move, because
+tasks differ in description length and subtask count, so everything below reflows to a new Y.
+
+So the name goes on the slot, never on the task: `tp-title`, `tp-desc`, `tp-sub-0…n`,
+`tp-lab-subs`, `tp-lab-status`, `tp-sel`, `tp-add`. **Ten groups now animate independently** where
+v9–v12 had three. Naming the subtask list as one group was the specific error — it scaled as a
+single bitmap, so rows could not move relative to each other.
+
+Two failures worth keeping, because both were invisible until measured:
+
+- **A duplicate name aborts the entire transition, silently.** `.tp-lab` matches two elements
+  ("Subtasks (n of m)" and "Current status"), so both received `tp-lab`, and Chrome threw
+  *"Transition was aborted because of invalid state"* with zero groups animating. A
+  `view-transition-name` must be unique **per document**, which makes any class-based rule a
+  latent hazard the moment a second element matches it. Assert uniqueness before transitioning
+  rather than trusting the selector.
+- **The phase's own easing cannot drive an opacity fade.** `cubic-bezier(.2,0,0,1)` is heavily
+  front-loaded, so the outgoing text reached ~0 opacity in the first third of its 130ms and left a
+  **blank frame** between old and new — a flash, which reads worse than either a fade or a cut.
+  The fades are `linear`; the easing stays on the group, where it animates the box. **Curve choice
+  is per-property, not per-phase.**
+
 ### Why every version up to v11 could only ever cross-fade
 
 Reported after v11 that it was still "a fade in, fade out situation we're trying to avoid". That
