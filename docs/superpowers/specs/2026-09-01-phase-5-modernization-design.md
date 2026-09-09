@@ -898,6 +898,28 @@ confirmation was being stated twice, once correctly and once loudly. v4 makes th
 Left as-is and worth a look during planning: `.ringy` is a fixed `190×56`, so it aligns only with
 the one card size the prototype uses.
 
+**§2 drop-settle ring → `drag-v3.html`, and the finding this turned into.** The same defect was
+then reported on §2, which prompted a sweep of the whole set. `border:2px solid var(--purple)`
+appears in **five** prototypes — `drag`, `drag-v2`, `optimistic`, `optimistic-v2`,
+`optimistic-v3` — with the same fixed-size absolutely-positioned overlay, the same opacity-pulse
+keyframes, and the same fill-token colour. It is one idiom authored once and copied, not two
+isolated slips.
+
+That matters more than either instance. **Rule 3 was stated in this document and then violated
+five times inside the artifacts the document itself points at**, which is the exact failure the
+amendment's "tokens are the contract" section exists to prevent: had `#B9B4F0` and its siblings
+been token references rather than retyped literals, the copy would have carried the correct value.
+Treat this as the first piece of evidence for that section rather than as a prototype bug.
+
+Fixed in the adopted revisions (`drag-v3`, `optimistic-v4`); the superseded revisions keep the
+2px purple deliberately, since rewriting them would falsify what was reviewed on 2026-09-01.
+
+**Also surfaced, and NOT resolved:** this document specifies the drop settle as *"scale and shadow
+release over ~160ms"* and never mentions a confirmation ring for §2 at all. The ring in the drag
+prototypes is an unbriefed addition. `drag-v3` keeps it, at hairline weight, so the question is
+visible rather than silently decided — but whether the drop settle carries a ring is an open
+question for planning, not something a prototype should settle by default.
+
 **§5 right panel → `auth-v4.html`.** Reported as the blue background cropping wrongly. The panel
 applied a right-edge `linear-gradient` *and* `mask-image: radial-gradient(ellipse 70% 60% at 50%
 45%, ...)`. A radial ellipse falls off toward **every** edge, so its left falloff landed mid-panel
@@ -967,6 +989,9 @@ from the origin.
     the codebase; 8 and 9 are real but less urgent.
 12. Decide which of G1–G8 enter Phase 5's scope and which are deferred. G1 is not optional if the
     "reduce, don't remove" policy is to mean anything.
-13. `.ringy`'s fixed `190×56` should derive from the card it confirms.
+13. `.ringy`'s fixed `190×56` (and `.ring`'s `200×56`) should derive from the card each confirms.
+15. Decide whether the drop settle carries a confirmation ring at all — this document specifies
+    only "scale and shadow release over ~160ms", and the ring in the drag prototypes was never
+    briefed.
 14. Landing copy remains undecided — unchanged from open item 1, restated because the v4 auth
     prototypes still carry placeholder strings.
