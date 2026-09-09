@@ -1579,6 +1579,32 @@ needs no separate affordance.
 Radius follows the control-geometry table's 4px, replacing `rounded-full`. The pill is the single
 loudest 2021 tell in the current UI and its removal is already specified above.
 
+### Amendment 2026-09-09 — `secondary` was three light-theme literals
+
+Reported by the user against a dark canvas, where the button read as a bright white pill. The
+adopted treatment hardcoded **`#dfe6f5`** (drop edge), **`#fafbfe`** (hover) and **`#f1f4fb`**
+(press) — all sampled in the light theme, which is exactly what rule 3 forbids. On a dark surface
+the drop edge therefore paints *lighter* than the button it sits under, turning a shadow into a
+highlight.
+
+The same report caught a second defect: **`secondary` had no perceptible hover.** White →
+`#fafbfe` is a **5/4/1** channel step, below `CHANNEL_THRESHOLD` (8) — the filmstrip's own noise
+floor. The state existed and could not be seen.
+
+Replaced with values derived from the theme, and with the hover doing its work through the
+**border** rather than the fill:
+
+```css
+--btn-quiet-hover: color-mix(in srgb, var(--text) 4%, var(--surface));
+--btn-quiet-press: color-mix(in srgb, var(--text) 8%, var(--surface));
+--btn-quiet-edge:  color-mix(in srgb, #000 14%, var(--surface));
+```
+
+Mixing toward `--text` moves the right way in both themes — darkening on light, lightening on
+dark. The drop edge mixes toward black instead, because it must stay a shadow in both. Hover also
+moves the border `--border → --border-hover`, which is where the visible change actually comes
+from. Shown side by side in `column-crud-v3.html`.
+
 ### Pending is opacity, and the contrast objection was wrong
 
 `opacity: .75`, chosen off a 50/65/75/85 ladder. 50% — today's value — is unreadable; 85% barely
@@ -1759,6 +1785,22 @@ is its own session.
 **Rollback stays rule 2's licensed exception.** The row returns to the position the hook already
 captures as `afterBoardId`, with a fading danger tint — something genuinely un-happened, and that
 is the one case where reversal is animated.
+
+## Backend asks — where an endpoint change would buy real UX
+
+Opened 2026-09-09 on the user's instruction to call these out rather than design around them.
+Each names what it unblocks and what the frontend does without it. None is required for Phase 5 to
+ship; all three were reached by designing into a wall.
+
+| Ask | Unblocks | Without it |
+|---|---|---|
+| **`taskCount` on the board list DTO** | A per-board figure in the sidebar, on the first frame | No count at all. Anything richer than the name needs `usePrefetchAllBoards`, which resolves *after* the list paints, so every value pops in raggedly board by board |
+| **`position` on `createColumn`** | Inserting a column *between* two others — a `+` in the gap | Append only. `createColumnInputSchema` takes `{ boardId, name, color }` and the optimistic write appends at `columns.length`, so insert-at-position is a create followed by a reorder: two round trips, a compound failure mode, and an intermediate state where the column is briefly in the wrong place |
+| **A task completion field** | A true done/total ratio anywhere — sidebar, board header, column | No ratio is expressible. `taskFullSchema` has no completion field; `isCompleted` exists only on `subtask`, and a task with no subtasks contributes nothing, so a subtask-derived ratio reads `0/0` on the common case |
+
+The first is the cheapest and the one with the widest reach — it is a single integer per board and
+it would also settle whether the sidebar row carries a number at all, which is currently decided
+*by the absence of the data* rather than on design grounds.
 
 ## Open items added by this session
 
