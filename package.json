@@ -48,7 +48,9 @@
         "setup:worktree": "bash scripts/setup-worktree.sh",
         "secrets:encrypt": "bash scripts/secrets.sh encrypt",
         "secrets:decrypt": "bash scripts/secrets.sh decrypt",
-        "secrets:verify": "bash scripts/secrets.sh verify"
+        "secrets:verify": "bash scripts/secrets.sh verify",
+        "browser:start": "bash scripts/browser-use-chrome.sh",
+        "browser:stop": "PIDS=$( (ss -ltnp) | grep ':9222' | grep -oE 'pid=[0-9]+' | cut -d= -f2 ); [ -n \"$PIDS\" ] && kill $PIDS || echo 'no browser on 9222'"
     },
     "dependencies": {
         "@base-ui/react": "1.7.0",
