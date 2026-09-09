@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Board rename and delete — inline vs modal, and three motions at once</title>
+        <style>
+            :root {
+                --purple: #635fc7;
+                --purple-hover: #5854be;
+                --purple-press: #4f4bab;
+                --purple-edge: #3f3c85;
+                --red: #c93f3c;
+                --red-hover: #b23632;
+                --red-edge: #862825;
+                --surface: #ffffff;
+                --app: #f4f7fd;
+                --border: #e4ebfa;
+                --text: #000112;
+                --muted: #66707f;
+                --slow: 1;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 26px 32px 90px;
+                background: var(--app);
+                color: var(--text);
+                font:
+                    13px/1.5 "Plus Jakarta Sans",
+                    system-ui,
+                    sans-serif;
+            }
+            h1 {
+                font-size: 19px;
+                margin: 0 0 4px;
+            }
+            h2 {
+                font-size: 15px;
+                margin: 0 0 4px;
+            }
+            .sub {
+                color: var(--muted);
+                margin: 0 0 18px;
+                max-width: 900px;
+            }
+            .controls {
+                position: sticky;
+                top: 0;
+                z-index: 9;
+                display: flex;
+                gap: 16px;
+                background: var(--app);
+                padding: 8px 0 14px;
+                font-size: 12px;
+            }
+            .controls label {
+                display: inline-flex;
+                gap: 6px;
+                align-items: center;
+                cursor: pointer;
+            }
+            section {
+                margin-bottom: 40px;
+            }
+            .two {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 22px;
+                align-items: start;
+            }
+            .pane {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 0 0 10px;
+                overflow: hidden;
+            }
+            .pane > h3 {
+                font-size: 13px;
+                margin: 0;
+                padding: 14px 16px 2px;
+            }
+            .pane > p {
+                font-size: 11px;
+                color: var(--muted);
+                margin: 0;
+                padding: 0 16px 12px;
+                min-height: 52px;
+            }
+
+            /* ── app chrome ──────────────────────────────────────────────────── */
+            .app {
+                display: grid;
+                grid-template-columns: 232px 1fr;
+                border-top: 1px solid var(--border);
+                min-height: 300px;
+            }
+            .side {
+                border-right: 1px solid var(--border);
+                padding: 10px 0;
+            }
+            .side ul {
+                list-style: none;
+                margin: 0;
+                padding: 0 8px;
+            }
+            li {
+                position: relative;
+            }
+            .row {
+                display: flex;
+                align-items: center;
+                gap: 7px;
+                height: 36px;
+                padding: 0 8px 0 11px;
+                border-radius: 4px;
+                font: 500 13px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+                color: var(--muted);
+                cursor: pointer;
+                transition:
+                    background-color calc(130ms * var(--slow)),
+                    color calc(130ms * var(--slow));
+            }
+            .row:hover {
+                background: var(--app);
+                color: var(--text);
+            }
+            li.on > .row {
+                background: var(--app);
+                color: var(--text);
+                font-weight: 700;
+            }
+            li.on > .row::before {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 7px;
+                height: 22px;
+                width: 2px;
+                border-radius: 1px;
+                background: var(--purple);
+            }
+            .mono {
+                flex: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 5px;
+                display: grid;
+                place-items: center;
+                font: 700 10px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+                color: var(--text);
+                background: color-mix(in srgb, var(--c) 20%, var(--surface));
+                box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 34%, var(--surface));
+            }
+            .nm {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                outline: none;
+            }
+            /*
+             * Inline rename: the SAME element gains `contenteditable`, so nothing is swapped and
+             * there is no layout change to absorb — the panel work arrived at this construction
+             * for the task title and it holds here for the same reason.
+             */
+            .nm[contenteditable="true"] {
+                background: var(--surface);
+                box-shadow: 0 0 0 2px var(--purple);
+                border-radius: 3px;
+                padding: 2px 5px;
+                margin: -2px -5px;
+                cursor: text;
+                flex: 1;
+            }
+            .board {
+                padding: 16px 18px;
+            }
+            .htitle {
+                font: 700 18px/23px "Plus Jakarta Sans", system-ui, sans-serif;
+                margin: 0 0 14px;
+                display: inline-block;
+            }
+            .cardsrow {
+                display: flex;
+                gap: 10px;
+            }
+            .colm {
+                flex: 1;
+            }
+            .colm b {
+                display: block;
+                font: 700 11px/15px "Plus Jakarta Sans", system-ui, sans-serif;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: var(--muted);
+                margin-bottom: 8px;
+            }
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px;
+                font: 700 12px/16px "Plus Jakarta Sans", system-ui, sans-serif;
+                margin-bottom: 8px;
+                box-shadow: 0 1px 2px rgb(16 18 32 / 0.04);
+            }
+
+            /* ── buttons ─────────────────────────────────────────────────────── */
+            .btn {
+                appearance: none;
+                border: none;
+                font: 700 12px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+                height: 32px;
+                padding: 0 14px;
+                border-radius: 4px;
+                cursor: pointer;
+                background: var(--purple);
+                color: #fff;
+                box-shadow:
+                    inset 0 1px 0 rgb(255 255 255 / 0.16),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.12),
+                    0 2px 0 var(--purple-edge);
+                transition:
+                    background-color calc(130ms * var(--slow)),
+                    box-shadow calc(90ms * var(--slow)),
+                    translate calc(90ms * var(--slow));
+            }
+            .btn:hover {
+                background: var(--purple-hover);
+            }
+            .btn:active {
+                translate: 0 2px;
+                background: var(--purple-press);
+                box-shadow:
+                    inset 0 1px 3px rgb(0 0 0 / 0.24),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.16),
+                    0 0 0 var(--purple-edge);
+            }
+            .btn.danger {
+                background: var(--red);
+                box-shadow:
+                    inset 0 1px 0 rgb(255 255 255 / 0.16),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.12),
+                    0 2px 0 var(--red-edge);
+            }
+            .btn.danger:hover {
+                background: var(--red-hover);
+            }
+            .btn.ghost {
+                background: var(--surface);
+                color: var(--text);
+                box-shadow:
+                    inset 0 0 0 1px var(--border),
+                    0 2px 0 #dfe6f5;
+            }
+            .bar {
+                display: flex;
+                gap: 8px;
+                padding: 10px 16px;
+                border-top: 1px solid var(--border);
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            .bar span {
+                font-size: 11px;
+                color: var(--muted);
+            }
+
+            /* ── modal ───────────────────────────────────────────────────────── */
+            .scrim {
+                position: absolute;
+                inset: 0;
+                display: grid;
+                place-items: center;
+                pointer-events: none;
+                z-index: 4;
+            }
+            .scrim::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: rgb(16 18 32 / 0.32);
+                opacity: 0;
+                transition: opacity calc(160ms * var(--slow)) linear;
+            }
+            .scrim.open {
+                pointer-events: auto;
+            }
+            .scrim.open::before {
+                opacity: 1;
+            }
+            .modal {
+                position: relative;
+                width: 300px;
+                background: var(--surface);
+                border-radius: 8px;
+                padding: 18px;
+                box-shadow: 0 12px 32px rgb(16 18 32 / 0.16);
+                opacity: 0;
+                translate: 0 8px;
+                scale: 0.985;
+                transition:
+                    opacity calc(120ms * var(--slow)) cubic-bezier(0, 0, 1, 1),
+                    translate calc(160ms * var(--slow)) cubic-bezier(0.2, 0, 0, 1),
+                    scale calc(160ms * var(--slow)) cubic-bezier(0.2, 0, 0, 1);
+            }
+            .scrim.open .modal {
+                opacity: 1;
+                translate: 0 0;
+                scale: 1;
+            }
+            .modal h4 {
+                margin: 0 0 12px;
+                font-size: 14px;
+            }
+            .modal h4.danger {
+                color: var(--red);
+            }
+            .modal p {
+                font-size: 12px;
+                color: var(--muted);
+                margin: 0 0 14px;
+            }
+            .fld {
+                width: 100%;
+                height: 34px;
+                padding: 0 10px;
+                border-radius: 4px;
+                border: 2px solid #dce3f2;
+                font: 500 13px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+                outline: none;
+                margin-bottom: 14px;
+                background: var(--surface);
+                color: var(--text);
+            }
+            .fld:focus {
+                border-color: var(--purple);
+            }
+            .wrap {
+                position: relative;
+            }
+
+            /* ── delete / rollback motion ────────────────────────────────────── */
+            /*
+             * The row's departure animates height and opacity — never a transform. A collapsing
+             * row is a real removal, which is rule 2's own licence; the rows beneath close up
+             * because the list is shorter, not because anything was translated.
+             */
+            li.leaving {
+                overflow: hidden;
+                animation: rowout calc(220ms * var(--slow)) cubic-bezier(0.2, 0, 0, 1) both;
+            }
+            @keyframes rowout {
+                from {
+                    height: 36px;
+                    opacity: 1;
+                }
+                to {
+                    height: 0;
+                    opacity: 0;
+                }
+            }
+            /* Rule 2's licensed exception: something genuinely UN-happened, so the reversal is shown. */
+            li.returning {
+                overflow: hidden;
+                animation: rowback calc(260ms * var(--slow)) cubic-bezier(0.2, 0, 0, 1) both;
+            }
+            @keyframes rowback {
+                from {
+                    height: 0;
+                    opacity: 0;
+                }
+                to {
+                    height: 36px;
+                    opacity: 1;
+                }
+            }
+            .flash {
+                animation: flash calc(900ms * var(--slow)) ease-out both;
+            }
+            @keyframes flash {
+                0% {
+                    background: #fbe6e5;
+                }
+                100% {
+                    background: transparent;
+                }
+            }
+            .swapping .board {
+                animation: swap calc(220ms * var(--slow)) cubic-bezier(0.2, 0, 0, 1) both;
+            }
+            @keyframes swap {
+                0% {
+                    opacity: 1;
+                }
+                45% {
+                    opacity: 0;
+                }
+                100% {
+                    opacity: 1;
+                }
+            }
+            .toast {
+                position: absolute;
+                left: 12px;
+                right: 12px;
+                bottom: 12px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-left: 3px solid var(--red);
+                border-radius: 6px;
+                padding: 9px 12px;
+                font-size: 12px;
+                box-shadow: 0 6px 18px rgb(16 18 32 / 0.1);
+                opacity: 0;
+                translate: 0 6px;
+                pointer-events: none;
+                transition:
+                    opacity calc(120ms * var(--slow)) linear,
+                    translate calc(160ms * var(--slow)) cubic-bezier(0.2, 0, 0, 1);
+                z-index: 6;
+            }
+            .toast.on {
+                opacity: 1;
+                translate: 0 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Board rename and delete</h1>
+        <p class="sub">
+            Two findings drove these sketches. <strong>`edit-board-modal` holds exactly one text field</strong> — a
+            whole modal to change one word. And delete is optimistic <em>and</em> moves the URL in the same commit,
+            so deleting the board you are looking at fires three motions simultaneously.
+        </p>
+
+        <div class="controls">
+            <label><input type="checkbox" id="slow" /> Slow motion (6&times;)</label>
+            <label><input type="checkbox" id="dark" /> Dark surface</label>
+            <label><input type="checkbox" id="fail" /> Make the next delete fail</label>
+        </div>
+
+        <section>
+            <h2>Rename</h2>
+            <div class="two">
+                <div class="pane wrap" id="pRenameModal">
+                    <h3>A &middot; Modal, as today</h3>
+                    <p>
+                        “Edit Board” opens over the thing it renames, holds one field, and hides the sidebar row and
+                        header title that are about to change.
+                    </p>
+                    <div class="app">
+                        <div class="side"><ul></ul></div>
+                        <div class="board">
+                            <h2 class="htitle"></h2>
+                            <div class="cardsrow"></div>
+                        </div>
+                    </div>
+                    <div class="bar">
+                        <button class="btn" data-act="open-rename">Rename the open board</button>
+                        <span>opens the modal</span>
+                    </div>
+                    <div class="scrim">
+                        <div class="modal">
+                            <h4>Edit Board</h4>
+                            <input class="fld" />
+                            <button class="btn" style="width: 100%" data-act="save-rename">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pane wrap" id="pRenameInline">
+                    <h3>B &middot; Inline, in the row</h3>
+                    <p>
+                        The row's own name becomes editable in place. Both surfaces stay visible, so the header title
+                        swap is watched rather than revealed. Enter commits, Esc cancels.
+                    </p>
+                    <div class="app">
+                        <div class="side"><ul></ul></div>
+                        <div class="board">
+                            <h2 class="htitle"></h2>
+                            <div class="cardsrow"></div>
+                        </div>
+                    </div>
+                    <div class="bar">
+                        <button class="btn" data-act="inline-rename">Rename the open board</button>
+                        <span>or double-click a row</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Delete — one action, two different motions</h2>
+            <p class="sub" style="margin-bottom: 16px">
+                Deleting a board you are <em>not</em> looking at removes a row. Deleting the <em>open</em> board also
+                moves the selection and swaps the whole board view, because the hook rewrites the URL in the same
+                commit as the cache write. Tick <strong>make the next delete fail</strong> to see the rollback.
+            </p>
+            <div class="two">
+                <div class="pane wrap" id="pDelBg">
+                    <h3>C &middot; A background board</h3>
+                    <p>Row collapses, the list closes up, nothing else moves. The selection is untouched.</p>
+                    <div class="app">
+                        <div class="side"><ul></ul></div>
+                        <div class="board">
+                            <h2 class="htitle"></h2>
+                            <div class="cardsrow"></div>
+                        </div>
+                    </div>
+                    <div class="bar">
+                        <button class="btn danger" data-act="del-bg">Delete “Marketing Plan”</button>
+                        <span>not the open board</span>
+                    </div>
+                    <div class="toast">Couldn't delete that board. <strong>Retry</strong></div>
+                </div>
+
+                <div class="pane wrap" id="pDelOpen">
+                    <h3>D &middot; The open board</h3>
+                    <p>
+                        Row collapses, the rail moves to the destination, and the board view swaps — all from one
+                        click. The question is whether these three read as one event or three.
+                    </p>
+                    <div class="app">
+                        <div class="side"><ul></ul></div>
+                        <div class="board">
+                            <h2 class="htitle"></h2>
+                            <div class="cardsrow"></div>
+                        </div>
+                    </div>
+                    <div class="bar">
+                        <button class="btn danger" data-act="open-del">Delete the open board</button>
+                        <span>opens the confirm first</span>
+                    </div>
+                    <div class="scrim">
+                        <div class="modal">
+                            <h4 class="danger">Delete this board?</h4>
+                            <p>
+                                Are you sure you want to delete the ‘<span data-slot="name"></span>’ board? This
+                                action will remove all columns and tasks and cannot be reversed.
+                            </p>
+                            <div style="display: flex; gap: 8px">
+                                <button class="btn danger" style="flex: 1" data-act="confirm-del">Delete</button>
+                                <button class="btn ghost" style="flex: 1" data-act="cancel-del">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="toast">Couldn't delete that board. <strong>Retry</strong></div>
+                </div>
+            </div>
+        </section>
+
+        <script>
+            const PALETTE = ["#49C4E5", "#8471F2", "#67E2AE", "#FD8C7B", "#F093FE", "#F2C50E"];
+            const hash = (s) => [...s].reduce((a, c) => (a * 33 + c.charCodeAt(0)) >>> 0, 5381);
+            const hueOf = (id) => PALETTE[hash(id) % PALETTE.length];
+
+            const SEED = [
+                { id: "b-platform", n: "Platform Launch", cards: ["Build settings UI", "QA the flow"] },
+                { id: "b-marketing", n: "Marketing Plan", cards: ["Launch email"] },
+                { id: "b-roadmap", n: "Roadmap", cards: ["Q4 themes", "Cut list"] },
+            ];
+
+            class Pane {
+                constructor(el) {
+                    this.el = el;
+                    this.boards = SEED.map((b) => ({ ...b }));
+                    this.sel = 0;
+                    this.render();
+                }
+                get side() {
+                    return this.el.querySelector(".side ul");
+                }
+                render() {
+                    this.side.innerHTML = this.boards
+                        .map(
+                            (b, i) =>
+                                `<li data-i="${i}" class="${i === this.sel ? "on" : ""}"><div class="row"><span class="mono" style="--c:${hueOf(b.id)}">${b.n[0]}</span><span class="nm">${b.n}</span></div></li>`,
+                        )
+                        .join("");
+                    this.side.querySelectorAll("li").forEach((li) => {
+                        li.querySelector(".row").onclick = () => {
+                            this.sel = +li.dataset.i;
+                            this.render();
+                        };
+                        li.querySelector(".row").ondblclick = () => this.editRow(+li.dataset.i);
+                    });
+                    this.paintBoard();
+                }
+                paintBoard() {
+                    const b = this.boards[this.sel];
+                    this.el.querySelector(".htitle").textContent = b?.n ?? "";
+                    this.el.querySelector(".cardsrow").innerHTML = b
+                        ? `<div class="colm"><b>Todo</b>${b.cards.map((c) => `<div class="card">${c}</div>`).join("")}</div><div class="colm"><b>Doing</b><div class="card">In progress</div></div>`
+                        : "";
+                }
+                /* Inline rename on the same element — nothing swapped, so no layout to absorb. */
+                editRow(i) {
+                    const nm = this.side.querySelector(`li[data-i="${i}"] .nm`);
+                    const before = nm.textContent;
+                    nm.contentEditable = "plaintext-only";
+                    nm.focus();
+                    getSelection().selectAllChildren(nm);
+                    const stop = (commit) => {
+                        nm.contentEditable = "false";
+                        this.boards[i].n = commit ? nm.textContent.trim() || before : before;
+                        this.render();
+                    };
+                    nm.onkeydown = (e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            stop(true);
+                        }
+                        if (e.key === "Escape") {
+                            e.preventDefault();
+                            stop(false);
+                        }
+                    };
+                    nm.onblur = () => stop(true);
+                }
+                removeAt(i, { alsoNavigate }) {
+                    const li = this.side.querySelector(`li[data-i="${i}"]`);
+                    const removed = this.boards[i];
+                    const afterIndex = i - 1;
+                    li.classList.add("leaving");
+                    if (alsoNavigate) {
+                        this.el.querySelector(".app").classList.add("swapping");
+                        setTimeout(() => this.el.querySelector(".app").classList.remove("swapping"), 240 * SLOW());
+                    }
+                    setTimeout(() => {
+                        this.boards.splice(i, 1);
+                        if (alsoNavigate) this.sel = Math.max(0, i - 1);
+                        else if (this.sel > i) this.sel -= 1;
+                        this.render();
+                        if (FAIL()) this.rollback(removed, afterIndex, alsoNavigate);
+                    }, 220 * SLOW());
+                }
+                rollback(board, afterIndex, wasOpen) {
+                    const at = afterIndex + 1;
+                    setTimeout(() => {
+                        this.boards.splice(at, 0, board);
+                        if (wasOpen) this.sel = at;
+                        this.render();
+                        const li = this.side.querySelector(`li[data-i="${at}"]`);
+                        li.classList.add("returning");
+                        li.querySelector(".row").classList.add("flash");
+                        const toast = this.el.querySelector(".toast");
+                        if (toast) {
+                            toast.classList.add("on");
+                            setTimeout(() => toast.classList.remove("on"), 2600 * SLOW());
+                        }
+                    }, 600 * SLOW());
+                }
+            }
+
+            const SLOW = () => Number(getComputedStyle(document.documentElement).getPropertyValue("--slow")) || 1;
+            const FAIL = () => document.getElementById("fail").checked;
+
+            const panes = {};
+            ["pRenameModal", "pRenameInline", "pDelBg", "pDelOpen"].forEach((id) => {
+                panes[id] = new Pane(document.getElementById(id));
+            });
+
+            const scrimOf = (id) => document.getElementById(id).querySelector(".scrim");
+
+            document.querySelectorAll("[data-act]").forEach((btn) => {
+                const act = btn.dataset.act;
+                btn.onclick = () => {
+                    if (act === "open-rename") {
+                        const p = panes.pRenameModal;
+                        const s = scrimOf("pRenameModal");
+                        s.querySelector(".fld").value = p.boards[p.sel].n;
+                        s.classList.add("open");
+                        setTimeout(() => s.querySelector(".fld").focus(), 60);
+                    }
+                    if (act === "save-rename") {
+                        const p = panes.pRenameModal;
+                        const s = scrimOf("pRenameModal");
+                        p.boards[p.sel].n = s.querySelector(".fld").value.trim() || p.boards[p.sel].n;
+                        s.classList.remove("open");
+                        p.render();
+                    }
+                    if (act === "inline-rename") panes.pRenameInline.editRow(panes.pRenameInline.sel);
+                    if (act === "del-bg") {
+                        const p = panes.pDelBg;
+                        const i = p.boards.findIndex((b) => b.id === "b-marketing");
+                        if (i >= 0) p.removeAt(i, { alsoNavigate: false });
+                    }
+                    if (act === "open-del") {
+                        const p = panes.pDelOpen;
+                        const s = scrimOf("pDelOpen");
+                        s.querySelector("[data-slot=name]").textContent = p.boards[p.sel].n;
+                        s.classList.add("open");
+                    }
+                    if (act === "cancel-del") scrimOf("pDelOpen").classList.remove("open");
+                    if (act === "confirm-del") {
+                        const p = panes.pDelOpen;
+                        scrimOf("pDelOpen").classList.remove("open");
+                        p.removeAt(p.sel, { alsoNavigate: true });
+                    }
+                };
+            });
+
+            const root = document.documentElement;
+            document.getElementById("slow").onchange = (e) =>
+                root.style.setProperty("--slow", e.target.checked ? "6" : "1");
+            document.getElementById("dark").onchange = (e) => {
+                const on = e.target.checked;
+                root.style.setProperty("--app", on ? "#20212c" : "#f4f7fd");
+                root.style.setProperty("--surface", on ? "#2b2c37" : "#ffffff");
+                root.style.setProperty("--border", on ? "#3e3f4e" : "#e4ebfa");
+                root.style.setProperty("--text", on ? "#ffffff" : "#000112");
+            };
+        </script>
+    </body>
+</html>
