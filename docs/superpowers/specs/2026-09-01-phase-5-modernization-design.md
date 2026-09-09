@@ -857,10 +857,16 @@ nor the mocks ever covered.
 | **G2** | Modal enter / exit | open |
 | **G3** | Toast enter / exit motion | open |
 | **G4** | Overflow affordance, columns and board list | open |
-| **G5** | Subtask check · task edit · subtask CRUD | open |
+| **G5** | Subtask check · task edit · subtask CRUD | **narrowed 2026-09-09** — rename and delete only |
 | **G6** | Task delete collapse | open |
 | **G7** | Theme switch, light ↔ dark | open |
 | **G8** | Inter's justifications, tested where they apply | **closed** — `type-board.html` |
+| **G9** | Every column mutation — create, rename, delete, reorder | **open — new 2026-09-09** |
+
+**Coverage is tracked per entity and operation in
+`2026-09-09-phase-5-crud-coverage-matrix.md`**, which is what produced G9 and narrowed G5. Read it
+before claiming a surface is covered: this list is organised by surface, and a gap falling between
+two surfaces is invisible in it.
 
 - **G1** is the one that voids the phase for part of its audience. The policy is "reduce, don't
   remove" and this document states every animation therefore carries two acceptance criteria — yet
@@ -875,6 +881,16 @@ nor the mocks ever covered.
 - **G4** — **`src/hooks/use-overflow-indicator.ts` already exists** and is consumed by
   `dropdown.tsx` alone. The mechanism is in-repo and unused by exactly the two scroll regions this
   document names as lacking an affordance. Cheapest gap here.
+- **G5 narrowed 2026-09-09.** Its claim — "no prototype shows the tick, the fill, or the caption
+  updating" — was true when written and is no longer. `task-open-v13` through `v17` show all
+  three: the tick is its own `view-transition-name` unit, `syncCard()` drives the card's 3px bar
+  through a `width` transition, and the panel caption updates via named digit spans rather than a
+  `textContent` write that would delete them. What remains of G5 is **subtask rename and subtask
+  delete** — the labels are plain `<span>`s, not `contenteditable`, and no row can be removed.
+- **G9 — every column mutation, found 2026-09-09.** Four hooks ship (`use-create-column`,
+  `use-rename-column`, `use-delete-column`, `use-reorder-columns`) and the Column row of the
+  coverage matrix is empty apart from Read. This gap was invisible for eight days because the
+  index is organised by surface and a column mutation falls between two of them.
 - **G7** — this document mentions the theme toggle **zero times**, yet
   `src/features/theme/components/theme-toggle/` ships. It is a user-caused whole-app colour change,
   squarely rule 2, and rule 3 gives all four border states separate light and dark values.
