@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Buttons — four options side by side</title>
+        <style>
+            /*
+             * Token values are copied from tokens/color.tokens.json rather than imported: this file
+             * is served as a bare static page with no build step, and the point of comparison is
+             * the treatment, not the palette.
+             */
+            :root {
+                --purple: #635fc7;
+                --purple-hover: #5854be;
+                --red: #c93f3c;
+                --red-hover: #b23632;
+                --surface: #ffffff;
+                --app: #f4f7fd;
+                --border: #e4ebfa;
+                --text: #000112;
+                --muted: #66707f;
+
+                --press: 90ms;
+                --slow: 1;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 32px 40px 80px;
+                background: var(--app);
+                color: var(--text);
+                font:
+                    13px/1.5 "Plus Jakarta Sans",
+                    system-ui,
+                    sans-serif;
+            }
+            h1 {
+                font-size: 19px;
+                margin: 0 0 4px;
+            }
+            .sub {
+                color: var(--muted);
+                margin: 0 0 28px;
+                max-width: 780px;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+                align-items: start;
+            }
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 20px;
+            }
+            .card h2 {
+                font-size: 14px;
+                margin: 0 0 2px;
+            }
+            .card .tag {
+                font-size: 11px;
+                color: var(--muted);
+                margin: 0 0 16px;
+                min-height: 46px;
+            }
+            .stack {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            .note {
+                font-size: 11px;
+                color: var(--muted);
+                margin-top: 16px;
+                padding-top: 12px;
+                border-top: 1px dashed var(--border);
+            }
+
+            /* ── Shared button shell ─────────────────────────────────────────── */
+            button {
+                appearance: none;
+                border: none;
+                font: inherit;
+                font-weight: 700;
+                height: 40px;
+                padding: 0 20px;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+
+            /* ── Column A — today ────────────────────────────────────────────── */
+            .a button {
+                border-radius: 999px;
+                transition: background-color calc(130ms * var(--slow));
+            }
+            .a .primary {
+                background: var(--purple);
+                color: #fff;
+            }
+            .a .primary:hover {
+                background: var(--purple-hover);
+            }
+            .a .secondary {
+                background: var(--surface);
+                color: var(--text);
+                border: 1px solid var(--border);
+            }
+            .a .secondary:hover {
+                background: var(--app);
+            }
+            .a .destructive {
+                background: var(--red);
+                color: #fff;
+            }
+            .a .destructive:hover {
+                background: var(--red-hover);
+            }
+
+            /* ── Column B — option 1: material + press, no geometry ──────────── */
+            .b button {
+                border-radius: 4px;
+                transition:
+                    background-color calc(130ms * var(--slow)),
+                    box-shadow calc(var(--press) * var(--slow));
+            }
+            .b .primary {
+                background: var(--purple);
+                color: #fff;
+                box-shadow:
+                    inset 0 1px 0 rgb(255 255 255 / 0.16),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.12),
+                    0 1px 2px rgb(16 18 32 / 0.12);
+            }
+            .b .primary:hover {
+                background: var(--purple-hover);
+            }
+            .b .primary:active {
+                background: #4f4bab;
+                box-shadow:
+                    inset 0 1px 3px rgb(0 0 0 / 0.28),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.16);
+            }
+            .b .secondary {
+                background: var(--surface);
+                color: var(--text);
+                box-shadow:
+                    inset 0 0 0 1px var(--border),
+                    0 1px 2px rgb(16 18 32 / 0.04);
+            }
+            .b .secondary:hover {
+                background: #fafbfe;
+                box-shadow:
+                    inset 0 0 0 1px #d6dfef,
+                    0 1px 2px rgb(16 18 32 / 0.04);
+            }
+            .b .secondary:active {
+                background: #f1f4fb;
+                box-shadow:
+                    inset 0 1px 3px rgb(16 18 32 / 0.1),
+                    inset 0 0 0 1px #d6dfef;
+            }
+            .b .destructive {
+                background: var(--red);
+                color: #fff;
+                box-shadow:
+                    inset 0 1px 0 rgb(255 255 255 / 0.16),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.12),
+                    0 1px 2px rgb(16 18 32 / 0.12);
+            }
+            .b .destructive:hover {
+                background: var(--red-hover);
+            }
+            .b .destructive:active {
+                background: #9c2f2b;
+                box-shadow:
+                    inset 0 1px 3px rgb(0 0 0 / 0.28),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.16);
+            }
+
+            /* ── Column C — option 2: option 1 plus a 1px depress ────────────── */
+            .c button {
+                border-radius: 4px;
+                transition:
+                    background-color calc(130ms * var(--slow)),
+                    box-shadow calc(var(--press) * var(--slow)),
+                    translate calc(var(--press) * var(--slow));
+            }
+            .c .primary {
+                background: var(--purple);
+                color: #fff;
+                box-shadow:
+                    inset 0 1px 0 rgb(255 255 255 / 0.16),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.12),
+                    0 2px 0 #3f3c85;
+            }
+            .c .primary:hover {
+                background: var(--purple-hover);
+            }
+            .c .primary:active {
+                background: #4f4bab;
+                translate: 0 2px;
+                box-shadow:
+                    inset 0 1px 3px rgb(0 0 0 / 0.24),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.16),
+                    0 0 0 #3f3c85;
+            }
+            .c .secondary {
+                background: var(--surface);
+                color: var(--text);
+                box-shadow:
+                    inset 0 0 0 1px var(--border),
+                    0 2px 0 #dfe6f5;
+            }
+            .c .secondary:hover {
+                background: #fafbfe;
+            }
+            .c .secondary:active {
+                translate: 0 2px;
+                background: #f1f4fb;
+                box-shadow:
+                    inset 0 0 0 1px #d6dfef,
+                    0 0 0 #dfe6f5;
+            }
+            .c .destructive {
+                background: var(--red);
+                color: #fff;
+                box-shadow:
+                    inset 0 1px 0 rgb(255 255 255 / 0.16),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.12),
+                    0 2px 0 #862825;
+            }
+            .c .destructive:hover {
+                background: var(--red-hover);
+            }
+            .c .destructive:active {
+                background: #9c2f2b;
+                translate: 0 2px;
+                box-shadow:
+                    inset 0 1px 3px rgb(0 0 0 / 0.24),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.16),
+                    0 0 0 #862825;
+            }
+
+            /* ── Column D — option 3: accent motion (the rejected one) ───────── */
+            .d button {
+                border-radius: 4px;
+                position: relative;
+                overflow: hidden;
+                transition: background-color calc(130ms * var(--slow));
+            }
+            .d .primary {
+                background: var(--purple);
+                color: #fff;
+            }
+            .d .primary:hover {
+                background: var(--purple-hover);
+            }
+            .d .secondary {
+                background: var(--surface);
+                color: var(--text);
+                box-shadow: inset 0 0 0 1px var(--border);
+            }
+            .d .destructive {
+                background: var(--red);
+                color: #fff;
+            }
+            .d button::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.45) 50%, transparent 80%);
+                translate: -100% 0;
+            }
+            .d button:active::after {
+                animation: sheen calc(600ms * var(--slow)) ease-out;
+            }
+            @keyframes sheen {
+                from {
+                    translate: -100% 0;
+                }
+                to {
+                    translate: 100% 0;
+                }
+            }
+
+            /* ── Pending row ─────────────────────────────────────────────────── */
+            .pending-section {
+                margin-top: 40px;
+            }
+            .pending-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 340px));
+                gap: 20px;
+            }
+            .spinner {
+                width: 14px;
+                height: 14px;
+                border: 2px solid rgb(255 255 255 / 0.35);
+                border-top-color: #fff;
+                border-radius: 50%;
+                animation: spin calc(700ms * var(--slow)) linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    rotate: 360deg;
+                }
+            }
+            .pending-now {
+                background: var(--purple);
+                color: #fff;
+                border-radius: 999px;
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            .pending-new {
+                background: var(--purple);
+                color: #fff;
+                border-radius: 4px;
+                cursor: progress;
+                box-shadow:
+                    inset 0 1px 0 rgb(255 255 255 / 0.16),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.12);
+                position: relative;
+                overflow: hidden;
+            }
+            .pending-new::after {
+                content: "";
+                position: absolute;
+                inset: auto 0 0 0;
+                height: 2px;
+                background: rgb(255 255 255 / 0.55);
+                animation: crawl calc(1100ms * var(--slow)) ease-in-out infinite;
+            }
+            @keyframes crawl {
+                0% {
+                    translate: -100% 0;
+                }
+                100% {
+                    translate: 100% 0;
+                }
+            }
+
+            /* ── Controls ────────────────────────────────────────────────────── */
+            .controls {
+                position: sticky;
+                top: 0;
+                z-index: 2;
+                display: flex;
+                gap: 16px;
+                align-items: center;
+                background: var(--app);
+                padding: 8px 0 20px;
+                font-size: 12px;
+            }
+            .controls label {
+                display: inline-flex;
+                gap: 6px;
+                align-items: center;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Buttons — the three options, plus what we ship today</h1>
+        <p class="sub">
+            Actually press them. The whole difference lives in the press, which lasts 90ms — tick
+            <em>slow motion</em> to stretch every transition 6&times; so you can see what your hand is feeling.
+        </p>
+
+        <div class="controls">
+            <label><input type="checkbox" id="slow" /> Slow motion (6&times;)</label>
+            <label><input type="checkbox" id="dark" /> Dark surface behind</label>
+        </div>
+
+        <div class="grid">
+            <div class="card a">
+                <h2>Today</h2>
+                <p class="tag">
+                    Pill, flat fill, colour-only hover. No press state exists at all — clicking changes nothing.
+                </p>
+                <div class="stack">
+                    <button class="primary">+ Add New Task</button>
+                    <button class="secondary">Cancel</button>
+                    <button class="destructive">Delete</button>
+                </div>
+                <p class="note">6 cva rows, one animated property.</p>
+            </div>
+
+            <div class="card b">
+                <h2>Option 1 — material + press</h2>
+                <p class="tag">
+                    4px radius, inset top highlight, hairline edge, 1px lift shadow. Press sinks the fill and inverts
+                    the highlight into an inner shadow. No geometry moves.
+                </p>
+                <div class="stack">
+                    <button class="primary">+ Add New Task</button>
+                    <button class="secondary">Cancel</button>
+                    <button class="destructive">Delete</button>
+                </div>
+                <p class="note">No rule change. Recommended.</p>
+            </div>
+
+            <div class="card c">
+                <h2>Option 2 — plus 1px depress</h2>
+                <p class="tag">
+                    Everything in option 1, plus a solid 2px bottom edge the button drops onto when pressed. The most
+                    tactile, and the most opinionated.
+                </p>
+                <div class="stack">
+                    <button class="primary">+ Add New Task</button>
+                    <button class="secondary">Cancel</button>
+                    <button class="destructive">Delete</button>
+                </div>
+                <p class="note">Needs rule 1 amended to allow press geometry.</p>
+            </div>
+
+            <div class="card d">
+                <h2>Option 3 — accent motion</h2>
+                <p class="tag">
+                    A sheen sweeps across on click. Included so you can see what I was rejecting, not as a real
+                    candidate.
+                </p>
+                <div class="stack">
+                    <button class="primary">+ Add New Task</button>
+                    <button class="secondary">Cancel</button>
+                    <button class="destructive">Delete</button>
+                </div>
+                <p class="note">Decorative, no causal grounding — same reasoning that killed the parallax.</p>
+            </div>
+        </div>
+
+        <div class="pending-section">
+            <h2 style="font-size: 15px; margin: 0 0 4px">Pending — the separate question</h2>
+            <p class="sub">Every primary button here fronts an optimistic action. This is what it looks like today.</p>
+            <div class="pending-grid">
+                <div class="card">
+                    <p class="tag">Today: <code>disabled:opacity-50</code>. Reads as broken, not busy.</p>
+                    <button class="pending-now" disabled>Creating…</button>
+                </div>
+                <div class="card">
+                    <p class="tag">Proposed: full contrast kept, an indeterminate 2px rail along the bottom edge.</p>
+                    <button class="pending-new">Creating…<span class="spinner"></span></button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const root = document.documentElement;
+            document.getElementById("slow").addEventListener("change", (e) => {
+                root.style.setProperty("--slow", e.target.checked ? "6" : "1");
+            });
+            document.getElementById("dark").addEventListener("change", (e) => {
+                root.style.setProperty("--app", e.target.checked ? "#20212c" : "#f4f7fd");
+                root.style.setProperty("--surface", e.target.checked ? "#2b2c37" : "#ffffff");
+                root.style.setProperty("--border", e.target.checked ? "#3e3f4e" : "#e4ebfa");
+                root.style.setProperty("--text", e.target.checked ? "#ffffff" : "#000112");
+            });
+        </script>
+    </body>
+</html>

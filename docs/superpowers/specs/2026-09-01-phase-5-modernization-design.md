@@ -60,6 +60,13 @@ box and cannot shift layout. This matches what the primitives already do
 (`focus-visible:ring-2 ring-ring-focus ring-offset-2`). The exception is written down rather than
 left as a rule the codebase visibly violates.
 
+**Carve-out: a button's own press, added 2026-09-09.** `:active` on a button may move it, and it
+does — 2px down onto a solid bottom edge. Hover stays colour-only; this licenses the *press*
+alone. The rule's evidence was a hover lift on a card in a stack, where the shifting gap read as
+the card swelling and shoving its neighbours; a button has no such stack, and a press is movement
+that genuinely happened, which is rule 2's own test. The carve-out is deliberately narrow: it is a
+button, it is `:active`, and it is 2px. See "Buttons — decided 2026-09-09".
+
 ### 2. Geometry is reserved for movement that actually happened
 
 Drag, reorder, insert, delete. Nothing else moves. This is what gives rule 1 its payoff: if
@@ -1528,6 +1535,58 @@ the board surfaces rather than the form controls §5c used. **Manrope.** The mig
 above is unchanged and applies identically — self-hosted woff2, rewritten `src/styles/fonts.css`,
 `fontFamily` in all eight `tokens/typography.tokens.json` entries, every visual baseline
 re-recorded.
+
+## Buttons — decided 2026-09-09
+
+Raised as "they still are kinda boring and basic". Prototyped as `buttons-v1.html` (four
+treatments side by side) through `buttons-v4.html` (the adopted one).
+
+**The diagnosis was not the resting look.** `rg ':active'` across `src` returns zero button hits:
+the entire vocabulary is six `cva` rows of `bg-X text-Y hover:bg-X-hover`, so the button
+acknowledges a pointer *approaching* and says nothing when pressed. `transition-colors` is the only
+animated property in either variants file.
+
+### The treatment
+
+| State | Fill | Geometry | Edge |
+|---|---|---|---|
+| Rest | token fill | — | inset top highlight, 1px inner hairline, solid 2px bottom edge |
+| Hover | `-hover` token | none | unchanged |
+| `:active` | one step darker than `-hover` | **`translate: 0 2px`** | bottom edge to `0`, top highlight inverts to an inner shadow |
+| Pending | unchanged, `opacity: .75` | held at `2px` down | bottom edge gone |
+| Disabled | unchanged, `opacity: .5` | held at `2px` down | bottom edge gone |
+
+Pending and disabled hold the pressed geometry rather than resetting it: the control is visibly
+already down, so there is nothing left to press. That falls out of the press treatment for free and
+needs no separate affordance.
+
+Radius follows the control-geometry table's 4px, replacing `rounded-full`. The pill is the single
+loudest 2021 tell in the current UI and its removal is already specified above.
+
+### Pending is opacity, and the contrast objection was wrong
+
+`opacity: .75`, chosen off a 50/65/75/85 ladder. 50% — today's value — is unreadable; 85% barely
+registers as a change.
+
+**I argued against opacity on contrast grounds and was mistaken.** WCAG 1.4.3 and 1.4.11 both
+exempt *inactive user interface components* from every contrast requirement, and a button that
+cannot be clicked is inactive. Today's `disabled:opacity-50` was never a violation. Recorded
+because the wrong version of this reasoning generated a whole discarded prototype (`buttons-v3`,
+four bespoke greys re-darkened to pass a bar that did not apply) — the failure was answering a
+compliance question nobody had asked.
+
+The one real cost stands: `opacity` on the button fades the spinner and progress rail with it, so
+the more clearly it reads "inactive" the less clearly it reads "working". Scoping the fade to an
+inner wrapper was prototyped and **rejected at 75%** — with the fill left at full strength the
+button barely reads as pending at all, which is the opposite of the point. At 50% the trade would
+go the other way; it does not arise at the adopted value.
+
+### Not yet measured
+
+The press is **90ms, chosen rather than measured**, and it is below what a screenshot can resolve —
+`pnpm filmstrip` is the instrument, and no filmstrip run has been made against it. No
+`duration.press` token exists until one has, per `tokens/motion.tokens.json`'s own rule that a
+duration nobody measured is drift wearing a token's costume.
 
 ## Open items added by this session
 
