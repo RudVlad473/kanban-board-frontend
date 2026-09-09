@@ -1034,6 +1034,34 @@ The cases are spamming the sidebar collapse, double board-switch, and rapid subt
 fire the trigger at frame *N*, assert no positional discontinuity beyond a threshold and no replay
 from the origin.
 
+## Typeface — Manrope, decided 2026-09-09
+
+Supersedes Inter, chosen on 2026-09-01. The decision came from reviewing `type-board.html`, and
+the measurement taken to check it invalidated half of Inter's original case.
+
+**This document gave Inter two justifications. Only one of them was ever a differentiator.**
+Measured across all five candidates at 700 12px — digit-width spread with `font-variant-numeric`
+proportional versus `tabular-nums`:
+
+| | proportional spread | tabular spread | real tabular figures |
+|---|---|---|---|
+| Plus Jakarta Sans | 40 | **0** | yes |
+| Inter | 30 | **0** | yes |
+| Geist | 30 | **0** | yes |
+| IBM Plex Sans | 0 | 0 | yes (tabular by default) |
+| **Manrope** | 30 | **0** | yes |
+
+Every candidate has real tabular figures, **including the incumbent**. So "real tabular figures,
+which carry the column counts and `2/3` captions" never selected Inter over anything — the
+`2/3` alignment argument was true of Plus Jakarta Sans the whole time and could not have
+justified a migration on its own.
+
+That leaves small-size legibility at 11–13px, which is a judgement and was made by eye against
+the board surfaces rather than the form controls §5c used. **Manrope.** The migration cost stated
+above is unchanged and applies identically — self-hosted woff2, rewritten `src/styles/fonts.css`,
+`fontFamily` in all eight `tokens/typography.tokens.json` entries, every visual baseline
+re-recorded.
+
 ## Open items added by this session
 
 11. Adopt or reject proposed rules 6–9. Rules 6 and 7 both have a named failure already present in

@@ -6,10 +6,10 @@ Every size, weight, line-height and letter-spacing below is read from <code>toke
 
 <div class="tb-bar">
   <span class="tb-lbl">Candidate</span>
-  <button class="mock-button tb-f is-on" data-font="Inter">Inter</button>
+  <button class="mock-button tb-f" data-font="Inter">Inter</button>
   <button class="mock-button tb-f" data-font="Geist">Geist</button>
   <button class="mock-button tb-f" data-font="IBM Plex Sans">IBM Plex Sans</button>
-  <button class="mock-button tb-f" data-font="Manrope">Manrope</button>
+  <button class="mock-button tb-f is-on" data-font="Manrope">Manrope</button>
   <button class="mock-button tb-f" data-font="Plus Jakarta Sans">Plus Jakarta Sans (control)</button>
   <span class="tb-sp"></span>
   <button class="mock-button" id="tbTheme">Light / dark</button>
@@ -122,7 +122,7 @@ const setFont = f => {
   B.style.fontFamily = `'${f}',sans-serif`;
   document.getElementById("tbBCap").innerHTML = f + " &mdash; candidate";
 };
-setFont("Inter");
+setFont("Manrope");
 
 document.querySelectorAll(".tb-f").forEach(btn => btn.onclick = () => {
   document.querySelectorAll(".tb-f").forEach(o => o.classList.toggle("is-on", o === btn));
