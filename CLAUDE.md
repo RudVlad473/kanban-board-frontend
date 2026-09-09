@@ -27,6 +27,15 @@ general MCP-vs-CLI reasoning):
 | "What does this animation do across its 420ms?" — timing, easing, a transition's shape | `pnpm filmstrip --url <url> --name <slug> --trigger '<js>'` (`docs/adr/tech/0037`)                      |
 | "Did this primitive's pixels change?" — static appearance                              | `pnpm build-storybook && CI=1 pnpm test:visual` (both halves required — see _CI green is the sign-off_) |
 
+**A one-off read of live DOM or layout state is `mcp__playwright__browser_evaluate`** — box
+geometry, computed styles, which of two CSS rules actually wins, the natural width some text would
+take. It needs no file and leaves nothing to clean up, and it is the lane the first row already
+names. Write a file only when the answer must survive the session, and then it is a `zz-` spec.
+Found 2026-09-09: four scratch `.mjs` probes were written and deleted in one session, every one of
+them a single `evaluate` call — and one of them nearly produced a wrong conclusion, because a
+`getComputedStyle` reading and a `getBoundingClientRect` reading disagreed and the file's output
+showed only one of them.
+
 **Motion is the case an assertion cannot settle.** A spec can confirm a class flipped and a box
 moved while the transition still reads as a cut — that is how thirteen revisions passed every green
 check on 2026-09-09 and were caught only by the user watching a recording. Reach for the filmstrip
