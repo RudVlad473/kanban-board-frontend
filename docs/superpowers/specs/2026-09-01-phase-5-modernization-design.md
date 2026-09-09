@@ -1257,6 +1257,41 @@ side. Fixed in v8 to read the cards' on-screen positions, but it is no longer a 
 being under-built is recorded so nobody re-reads "directional was rejected" as a verdict on the
 pattern — §4c still uses it for board-to-board, where it works.
 
+## Tuning the view transition — five fixes, `task-open-v9.html`
+
+Reported as "smoother, but there is still work to do". There was, and the largest item was a
+rule violation this document had already measured once in another form.
+
+**1. It was cross-fading text.** A view transition fades `::view-transition-old(x)` against
+`::view-transition-new(x)` by default. Measured on the panel title: **15 of 21 frames had both the
+old and the new string inked at once** — the identical defect that got the board-title crossfade
+rejected on 2026-09-01 at 9 frames. Doubled glyphs read as blur, which is most of what "not quite
+smooth" was. Fixed by sequencing them — out over 90ms, in over 140ms starting at 90ms — so one is
+always finished before the other begins. **Verified in both directions: 15 frames before, 0 after.**
+
+**2. The root group was cross-fading the whole panel underneath the named parts.** Every element
+that had not changed — the ✕, the "Current status" label, the hint — was being re-faded on top of
+the three groups actually carrying the change. `::view-transition-old(root)` and `new(root)` are
+now `animation:none`.
+
+**3. The snapshots were being stretched.** `::view-transition-old/new` are bitmaps, and when a
+group changes size — a four-subtask task replacing a two-subtask one — the default sizing scales
+them to fit the new box, distorting every glyph. Pinned to `object-fit:none` with
+`object-position:top left` and clipped, so content is never resampled.
+
+**4. The morph ran on the UA's default easing.** Only `animation-duration` had been set, so the
+position/size animation used the browser default and matched nothing else in the phase. Now
+carries `cubic-bezier(.2,0,0,1)`.
+
+**5. No reduced-motion guard.** Added, per this document's own CSS block. Note what it can and
+cannot do: it removes the *animation*, never the API's input block, which is a property of
+`startViewTransition()` and not of its duration.
+
+**The input cost is unchanged at 336ms** — identical before and after. Tuning bought fidelity, not
+latency, which is worth stating precisely because the earlier named-versus-unnamed measurement
+showed the opposite direction: adding *groups* costs time, adding *quality to existing groups* does
+not.
+
 ## Typeface — Manrope, decided 2026-09-09
 
 Supersedes Inter, chosen on 2026-09-01. The decision came from reviewing `type-board.html`, and
