@@ -68,6 +68,100 @@ be removed.
 (the card must survive until the server confirms), and `S2/waiting-task2.html` is a 313-byte
 abandoned stub. Recorded as `G6`.
 
+## Cell dossiers — every cell that is not ✅
+
+One entry per uncovered cell: what ships today, and which adopted Phase 5 work already answers
+most of it. The point of the third column is that **almost nothing here is a blank sheet** — the
+mechanisms exist and are measured; what is missing is the decision to point them at this surface.
+
+### Board
+
+**Create — ❌**
+Today: `add-board-modal` — a `Modal` with a name field and a repeating column-name row driven by
+`use-create-board-columns`, plus a second entry point in `boards-empty-state`.
+Carries over: G2's modal motion (unbuilt, blocks this); `buttons-v4` for submit and its pending
+state; `optimistic-v5`'s in-flight → settled for the board appearing in the sidebar;
+`empty.html` for the empty-list → first-board handoff. The repeating column rows are the one part
+with no analogue — a row being added to a growing form is not in the set.
+
+**Update (rename) — ◐**
+Today: `edit-board-modal`, opened from the header kebab.
+Carries over: `header.html` already designs the *result* — the title's one-frame swap, chosen over
+a slide because a rename has no direction — and `title-v2` the settle. What is missing is
+everything before that frame. **`task-open`'s inline-edit decision is the live question here:**
+Phase 5 already concluded a modal on top of a surface is two surfaces where one will do, and the
+board title is a `contenteditable` candidate for the same reason the task title was.
+
+**Delete — ◐**
+Today: `delete-board-confirm` — a `Modal` with `variant="destructive"` and a `secondary` cancel.
+Carries over: `menu-v2` for the kebab that opens it, `toast-v3` for the outcome,
+`buttons-v4`'s destructive press. Missing: the confirm modal's own motion (G2) and the board
+leaving the sidebar list. `sidebar.html`'s collapse is the nearest mechanism for the second.
+
+### Column — G9, the empty row
+
+**Create — ❌**
+Today: `add-column-placeholder` — PDF p3's ghost column, a real `<button>` spanning the column's
+full height — opening `add-column-modal`.
+Carries over: `load2-v2`/`handoff-v4` is a close fit and nobody has noticed — it already choreographs
+a column's contents arriving, which is exactly what a new column does on landing.
+`empty.html`'s drop zone is the same surface in a different state.
+
+**Update (rename) — ❌**
+Today: `rename-column-modal`, from `column-header`'s kebab (`Menu` + `IconButton`).
+Carries over: identical in shape to board rename — same kebab mechanism from `menu-v2`, same
+inline-vs-modal question from `task-open`. These two cells should be decided together or they will
+diverge.
+
+**Delete — ❌**
+Today: `delete-column-confirm`, same construction as the board one.
+Carries over: same as board delete, plus the harder half — a column leaving takes horizontal space
+with it and the board must reflow. `sidebar.html` is the only prototype in the set that animates a
+container's width; `drag-v3`'s source-slot collapse is the only one that shows a board making room.
+
+**Reorder — ❌**
+Today: `sortable-column` + `use-column-drag-sensors` + `use-reorder-columns`.
+Carries over: `drag-v3` is the whole choreography — lift, carry, source-slot collapse, drop
+settle — but it drags *cards*. Whether `scale(1.03)` and a 2px lift read the same on a 280px-wide
+full-height column is unknown and is the one question in G9 with no analogue anywhere in the set.
+
+### Task
+
+**Create — ◐**
+Today: `add-task-button` → `add-task-modal`, with subtask rows built from `subtask-editor-row`.
+Carries over: `header.html` covers the trigger's disabled→enabled snap; `optimistic-v5` covers the
+card arriving in its column before the server answers, which this flow already does. Missing: the
+modal itself (G2), and the same repeating-row problem as board create.
+
+**Delete — ❌**
+Today: `delete-task-confirm`.
+Carries over: least of any cell, by design. G6 records why: this is the one genuinely
+**non-optimistic** wait in the app — the card must stay until the server confirms, so the collapse
+covers real latency instead of adding it. Every other motion in the phase assumes the optimistic
+case. `S2/waiting-task2.html` is a 313-byte abandoned stub.
+
+### Subtask
+
+**Rename — ❌** and **Delete — ❌** (what remains of G5)
+Today: both live in `subtask-editor-row`, which is used only by `add-task-modal` and
+`edit-task-modal` — a text input plus a remove `IconButton`.
+Carries over: **the host component is scheduled for deletion.** Phase 5's adopted panel direction
+replaces `EditTaskModal` with inline editing, so designing these two against today's UI designs a
+surface that is being removed. The right target is the panel: `task-open-v17` already makes the
+title and description `contenteditable` and already adds a subtask row live — rename is the same
+treatment applied to a label that is currently a plain `<span>`, and delete is the row-removal
+counterpart of the add it already performs.
+
+### The pattern under all of it
+
+Nine of the eleven cells route through a `Modal`, and `modal.tsx` has zero motion classes. **G2 is
+not one gap among nine — it is the gap, and eight cells inherit their fix from it.** The two that
+do not are column reorder (drag) and task delete (a non-optimistic wait).
+
+Second, four rename/edit flows are modals, and Phase 5 has already decided once that a modal over
+a surface is the wrong shape. Board rename, column rename and subtask rename are the same decision
+three times; taking it once closes three cells.
+
 ## Keeping it true
 
 Two failure modes, and only the first is cheap to catch:
