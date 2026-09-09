@@ -1301,8 +1301,14 @@ The earlier claim in this section — that two unrelated tasks share no identity
 cross-fade is possible — **was wrong, and wrong in an instructive way.** The tasks share no
 identity, but the panel's *structural slots* do: the title box, the description box, each subtask
 row, the section labels, the status field all exist in both views. Their **boxes** have
-counterparts to travel to even though their **text** does not. And they genuinely move, because
-tasks differ in description length and subtask count, so everything below reflows to a new Y.
+counterparts to travel to even though their **text** does not.
+
+**The last sentence of this paragraph was itself wrong and is corrected below (v14-v17).** It
+claimed the slots "genuinely move, because tasks differ in description length and subtask count".
+Measured across all seven tasks on 2026-09-09: the title box is `318x29` every time and the
+description `356x52` in six of seven. The boxes are identical **by construction** — a full-width
+block's box cannot depend on its text — so naming the slots bought correct structure and no
+movement at all.
 
 So the name goes on the slot, never on the task: `tp-title`, `tp-desc`, `tp-sub-0…n`,
 `tp-lab-subs`, `tp-lab-status`, `tp-sel`, `tp-add`. **Ten groups now animate independently** where
@@ -1322,6 +1328,53 @@ Two failures worth keeping, because both were invisible until measured:
   **blank frame** between old and new — a flash, which reads worse than either a fade or a cut.
   The fades are `linear`; the easing stays on the group, where it animates the box. **Curve choice
   is per-property, not per-phase.**
+
+### Locked — `task-open-v17.html`, adopted 2026-09-09
+
+**The panel-to-panel swap is settled.** Four corrections got there, and each one was a different
+misunderstanding of the API rather than a tuning miss.
+
+**1. A view transition animates two things at once, and only one is conditional.**
+`::view-transition-group` interpolates the box; `::view-transition-old`/`new` cross-fade the
+contents as bitmaps. Both always run at every granularity. "It reads as a fade, not a morph"
+therefore means *the geometry delta was zero*, never that the wrong animation was chosen. It is a
+layout question wearing an animation costume.
+
+**2. So the layout has to offer a delta.** Every animated slot was a full-width block, which
+discards the difference it had: the title's natural text width ranges **121px to 277px** across
+the seven tasks while its box stayed `318x29`. `width: fit-content` restores it — 201px → 308px on
+one pair, and every subtask pill gets its own width. `.tp-head .tp-t { flex: 1 }` silently defeated
+this for two attempts: **the title is a flex item, so flex sizing wins and `width` is ignored.**
+This is a real design consequence, not a free win — subtask rows become content-width pills.
+
+**3. The UA's cross-fade is complementary; ours were not.** The default pairs old and new under
+`mix-blend-mode: plus-lighter`, so `old x (1-t) + new x t` sums back to the original wherever the
+snapshots agree — **an unchanged slot is invisible by construction**. Every custom opacity curve
+written between v9 and v15 broke that sum and made unchanged text blink. Measured on a label whose
+text and position never change: **8.74 max wash with our curves against 1.11 with the default.**
+The override is now injected at run time for only those slots whose content actually differs.
+
+**4. Granularity is capped by the DOM, not the CSS.** A named element is captured as one bitmap
+and the API cannot diff inside it, so anything sharing an element fades together. Splitting where
+parts change on *different occasions* took the panel from 9 named units to **17** — each subtask
+row into pill + tick + label, the counter into done + total, the select into box + value. The
+result is that **fewer** units animate: 8 of 17 on a swap, the other 9 held invisible by the
+default. Measured on a checkbox whose state is identical in both tasks but whose neighbouring
+label changed: **42.16 wash and 44.32% of pixels moved before the split, 0.81 and 0.00% after.**
+
+Two consequences for implementation:
+
+- **An ancestor's change-detection must exclude its named descendants**, which are lifted out of
+  its snapshot. Without that the pill and the select box are flagged as changed by their own
+  children and animate a bitmap that never changed.
+- **Anything that rewrites a container's `textContent` will delete named child spans inside it.**
+  The subtask toggle did exactly this to the counter and had to be rewritten to write into the
+  spans. Any element carrying a `view-transition-name` is a structural dependency of the code that
+  updates it.
+
+Splits that were considered and rejected: the title, description, add button and status label. A
+single string has no seam, and naming something that never changes adds a group whose default
+animation is already invisible.
 
 ### Why every version up to v11 could only ever cross-fade
 
