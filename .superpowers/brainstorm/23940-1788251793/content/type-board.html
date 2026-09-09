@@ -1,0 +1,137 @@
+<h2>5f &middot; Typeface, on the surfaces the decision is about
+  <span style="font:500 11px ui-monospace,monospace;color:#7a8296">closes G8 — §5c compared fonts on form controls; the stated reasons live on the board</span>
+</h2>
+<p class="mock-note">Left pane is always <strong>Plus Jakarta Sans</strong> (what ships today). Right pane is the candidate.
+Every size, weight, line-height and letter-spacing below is read from <code>tokens/typography.tokens.json</code> — not approximated.</p>
+
+<div class="tb-bar">
+  <span class="tb-lbl">Candidate</span>
+  <button class="mock-button tb-f is-on" data-font="Inter">Inter</button>
+  <button class="mock-button tb-f" data-font="Geist">Geist</button>
+  <button class="mock-button tb-f" data-font="IBM Plex Sans">IBM Plex Sans</button>
+  <button class="mock-button tb-f" data-font="Manrope">Manrope</button>
+  <button class="mock-button tb-f" data-font="Plus Jakarta Sans">Plus Jakarta Sans (control)</button>
+  <span class="tb-sp"></span>
+  <button class="mock-button" id="tbTheme">Light / dark</button>
+  <button class="mock-button" id="tbTab">Tabular figures: on</button>
+</div>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&family=Inter:wght@500;700&family=Geist:wght@500;700&family=IBM+Plex+Sans:wght@500;700&family=Manrope:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+.tb-bar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:10px 0 14px; }
+.tb-lbl { font:600 10px/1 ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; color:#7a8296; margin-right:2px; }
+.tb-f.is-on { background:#635FC7; color:#fff; border-color:#635FC7; }
+.tb-sp { flex:1; }
+
+.tb-wrap { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.tb-pane { --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA; --title:#000112; --mute:#828FA3; --purple:#635FC7;
+  background:var(--app); border:1px solid var(--line); border-radius:8px; padding:14px; }
+.tb-pane.dark { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --title:#FFFFFF; --mute:#828FA3; }
+.tb-cap { font:600 10px/1 ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--mute); margin-bottom:10px; display:block; }
+
+/* --- the six token roles, verbatim from tokens/typography.tokens.json --- */
+.tb-pane .h-xl { font-weight:700; font-size:24px; line-height:30px; color:var(--title); }
+.tb-pane .h-l  { font-weight:700; font-size:18px; line-height:23px; color:var(--title); }
+.tb-pane .h-m  { font-weight:700; font-size:15px; line-height:19px; color:var(--title); }
+.tb-pane .h-s  { font-weight:700; font-size:12px; line-height:15px; letter-spacing:2.4px;
+                 text-transform:uppercase; color:var(--mute); }
+.tb-pane .b-l  { font-weight:500; font-size:13px; line-height:23px; color:var(--mute); }
+.tb-pane .b-m  { font-weight:700; font-size:12px; line-height:15px; color:var(--mute); }
+
+/* --- board surfaces, in this phase's material (hairline, 8px, 14px padding, 10px gutter) --- */
+.tb-col { margin-top:12px; }
+.tb-colh { display:flex; align-items:center; gap:8px; margin-bottom:11px; }
+.tb-dot { width:11px; height:11px; border-radius:50%; background:#49C4E5; flex:none; }
+.tb-card { background:var(--surf); border:1px solid var(--line); border-radius:8px;
+  padding:14px; margin-bottom:10px; }
+.tb-card .h-m { margin-bottom:7px; }
+.tb-prog { display:flex; align-items:center; gap:9px; }
+.tb-track { flex:1; height:3px; border-radius:2px; background:var(--line); overflow:hidden; }
+.tb-fill { height:100%; background:var(--purple); border-radius:2px; }
+.tb-num { font-variant-numeric:tabular-nums; }
+.tb-pane.notab .tb-num { font-variant-numeric:normal; }
+
+/* --- the alignment test: a column of counts that must line up --- */
+.tb-align { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+.tb-align ul { list-style:none; margin:8px 0 0; padding:0; }
+.tb-align li { display:flex; justify-content:space-between; padding:2px 0; }
+.tb-align .tb-num { color:var(--title); }
+
+.tb-scale { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+.tb-scale > div { margin-bottom:6px; }
+.tb-scale small { font:500 9px/1 ui-monospace,monospace; color:var(--mute); margin-left:7px; }
+</style>
+
+<div class="tb-wrap">
+  <div class="tb-pane" id="tbA"><span class="tb-cap">Plus Jakarta Sans &mdash; ships today</span></div>
+  <div class="tb-pane" id="tbB"><span class="tb-cap" id="tbBCap">Inter &mdash; candidate</span></div>
+</div>
+
+<script>
+const TB_BODY = `
+  <div class="tb-col">
+    <div class="tb-colh"><i class="tb-dot"></i><span class="h-s">Doing <span class="tb-num">(4)</span></span></div>
+
+    <div class="tb-card">
+      <div class="h-m">Build settings UI</div>
+      <div class="tb-prog"><span class="tb-track"><span class="tb-fill" style="width:66%"></span></span>
+        <span class="b-m tb-num">2/3</span></div>
+    </div>
+    <div class="tb-card">
+      <div class="h-m">Design settings and search</div>
+      <div class="tb-prog"><span class="tb-track"><span class="tb-fill" style="width:50%"></span></span>
+        <span class="b-m tb-num">1/2</span></div>
+    </div>
+    <div class="tb-card">
+      <div class="h-m">Add account management endpoints</div>
+      <div class="tb-prog"><span class="tb-track"><span class="tb-fill" style="width:83%"></span></span>
+        <span class="b-m tb-num">10/12</span></div>
+    </div>
+  </div>
+
+  <div class="tb-align">
+    <span class="tb-cap">Tabular figures &mdash; these must align</span>
+    <ul>
+      <li><span class="b-l">Platform launch</span><span class="b-m tb-num">2/3</span></li>
+      <li><span class="b-l">Marketing plan</span><span class="b-m tb-num">10/12</span></li>
+      <li><span class="b-l">Roadmap Q3</span><span class="b-m tb-num">1/2</span></li>
+      <li><span class="b-l">Design system</span><span class="b-m tb-num">11/14</span></li>
+    </ul>
+  </div>
+
+  <div class="tb-scale">
+    <span class="tb-cap">The six roles at real size</span>
+    <div class="h-xl">Platform Launch<small>heading-xl 24/30</small></div>
+    <div class="h-l">Add New Task<small>heading-l 18/23</small></div>
+    <div class="h-m">Build settings UI<small>heading-m 15/19</small></div>
+    <div class="h-s">Todo (4)<small style="letter-spacing:0">heading-s 12/15 +2.4</small></div>
+    <div class="b-l">We know what buttons we need, but the styling is undecided.<small>body-l 13/23</small></div>
+    <div class="b-m">2 of 3 subtasks<small>body-m 12/15</small></div>
+  </div>`;
+
+const A = document.getElementById("tbA"), B = document.getElementById("tbB");
+A.insertAdjacentHTML("beforeend", TB_BODY);
+B.insertAdjacentHTML("beforeend", TB_BODY);
+A.style.fontFamily = "'Plus Jakarta Sans',sans-serif";
+
+const setFont = f => {
+  B.style.fontFamily = `'${f}',sans-serif`;
+  document.getElementById("tbBCap").innerHTML = f + " &mdash; candidate";
+};
+setFont("Inter");
+
+document.querySelectorAll(".tb-f").forEach(btn => btn.onclick = () => {
+  document.querySelectorAll(".tb-f").forEach(o => o.classList.toggle("is-on", o === btn));
+  setFont(btn.dataset.font);
+});
+document.getElementById("tbTheme").onclick = () =>
+  document.querySelectorAll(".tb-pane").forEach(e => e.classList.toggle("dark"));
+document.getElementById("tbTab").onclick = e => {
+  const off = A.classList.toggle("notab"); B.classList.toggle("notab", off);
+  e.target.textContent = "Tabular figures: " + (off ? "off" : "on");
+};
+</script>

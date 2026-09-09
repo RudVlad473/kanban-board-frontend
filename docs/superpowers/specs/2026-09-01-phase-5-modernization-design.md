@@ -853,7 +853,7 @@ nor the mocks ever covered.
 | **G5** | Subtask check · task edit · subtask CRUD | open |
 | **G6** | Task delete collapse | open |
 | **G7** | Theme switch, light ↔ dark | open |
-| **G8** | Inter's justifications, tested where they apply | open, re-scoped |
+| **G8** | Inter's justifications, tested where they apply | **closed** — `type-board.html` |
 
 - **G1** is the one that voids the phase for part of its audience. The policy is "reduce, don't
   remove" and this document states every animation therefore carries two acceptance criteria — yet
@@ -871,11 +871,20 @@ nor the mocks ever covered.
 - **G7** — this document mentions the theme toggle **zero times**, yet
   `src/features/theme/components/theme-toggle/` ships. It is a user-caused whole-app colour change,
   squarely rule 2, and rule 3 gives all four border states separate light and dark values.
-- **G8 re-scoped, correcting the first reading.** `controls-v3.html` (§5c) does contain a live
-  five-way font switcher — Plus Jakarta Sans, Inter, Geist, IBM Plex Sans, Manrope — so the
-  typeface *was* compared. It was compared **on form controls**, while the two justifications this
-  document gives (legibility at 11–13px, real tabular figures carrying the column counts and the
-  `2/3` caption) both live on the board, which the switcher never shows.
+- **G8 re-scoped, then closed.** `controls-v3.html` (§5c) does contain a live five-way font
+  switcher — Plus Jakarta Sans, Inter, Geist, IBM Plex Sans, Manrope — so the typeface *was*
+  compared. It was compared **on form controls**, while the two justifications this document gives
+  (legibility at 11–13px, real tabular figures carrying the column counts and the `2/3` caption)
+  both live on the board, which the switcher never shows.
+
+  Closed by **`type-board.html` (§5f)**: the same five faces on the board surfaces, rendered at the
+  six roles read verbatim from `tokens/typography.tokens.json` rather than approximated —
+  `heading-xl` 700 24/30, `heading-l` 700 18/23, `heading-m` 700 15/19, `heading-s` 700 12/15 at
+  +2.4px uppercase, `body-l` 500 13/23, `body-m` 700 12/15. This incidentally confirms the
+  document's "most of this app's text is 11–13px" claim: four of the six roles sit at 12–15px.
+  Plus Jakarta Sans is pinned in the left pane as the control, with a `font-variant-numeric` toggle
+  and a stack of counts (`2/3`, `10/12`, `1/2`, `11/14`) whose alignment is the tabular-figures
+  claim made checkable rather than asserted.
 
 ## Prototype defects found and fixed
 
@@ -894,6 +903,25 @@ rule is engaged. The actual defect is narrower: it drew `2px solid var(--purple)
 that was *already* doing the correct thing (`#B9B4F0` → `--line`, a 1px colour excursion). The
 confirmation was being stated twice, once correctly and once loudly. v4 makes the ring
 `1px solid #B9B4F0`, matching the excursion beneath it. Verified: `1px rgb(185, 180, 240)`.
+
+**Correction, same day — v4 was a half-fix; `optimistic-v5.html` is the real one.** Reported again
+after v4 as unchanged, which it visually almost was. Measured mid-settle:
+
+| | rect | border |
+|---|---|---|
+| card (`.moved`) | `874, 218.9, 190×56` | `1px rgb(185,180,240)` |
+| ring (`.ringy`) | `874, 218.9, **192×58**` | `1px rgb(185,180,240)` |
+
+Same origin, 2px larger in each dimension — `.ringy` has no `box-sizing:border-box`, so it drew a
+hairline **concentric and exactly 1px outside the card's own border, in the same colour.** Two
+1px lines separated by 1px read as a single 2px band, so halving each line's width changed the
+weight by almost nothing. The lesson generalises past this prototype: **a "ring" drawn as a second
+element inevitably restates an edge the element already has.**
+
+v5 removes the ring outright. `s-border` was always the correct statement of the confirmation, on
+the card's own edge, in the derived colour — which this amendment had already observed ("stated
+twice, once correctly and once loudly") without acting on it. Verified: `.ringy` computes
+`display:none`, the card retains a single 1px border.
 
 Left as-is and worth a look during planning: `.ringy` is a fixed `190×56`, so it aligns only with
 the one card size the prototype uses.
@@ -953,6 +981,29 @@ silently changes what every mock shows.
 This is the **second** time the reduced-motion policy has been discovered by a prototype appearing
 broken on the reviewer's own machine. It is the argument for G1 being ranked first.
 
+**And a design question the morph exposed, which this document never asked.** Reported as "it
+isn't opening the task in place, it opens as a separate modal". That is an accurate description of
+what was designed, not a prototype fault — §4b's destination is the existing centred
+`TaskDetailModal`, and this document's own reasoning for needing no baseline change is that the
+morph "ends at the identical rect the modal occupies today". Measured in the prototype:
+
+```
+card    26, 168.9   274 × 63
+modal  440, 220.0   442 × 229
+```
+
+So the morph travels **414px right and 51px down** while growing 1.6× in width and 3.6× in height.
+Under reduced motion the intermediate frames are absent entirely, so what remains is a card
+vanishing on the left and a panel appearing in the middle — which is exactly how it was described.
+
+The question is therefore **not** whether the morph is implemented correctly, but whether a 414px
+journey to a different region of the screen is the continuity the morph was adopted to provide, or
+whether the task detail should open *in place* — expanding within the column from the card's own
+position. That is a change of surface, not of animation, and it is materially larger than anything
+else in this phase: it would replace `TaskDetailModal`'s composition rather than transition into
+it, and it would invalidate the "needs no baseline change" claim above. Recorded as open item 16;
+**not** decided here.
+
 ## Four further rules — proposed 2026-09-09, NOT yet adopted
 
 Raised in response to "are there other rules like rule 5 worth hammering down". Recorded as
@@ -992,6 +1043,11 @@ from the origin.
 13. `.ringy`'s fixed `190×56` (and `.ring`'s `200×56`) should derive from the card each confirms.
 15. Decide whether the drop settle carries a confirmation ring at all — this document specifies
     only "scale and shadow release over ~160ms", and the ring in the drag prototypes was never
-    briefed.
+    briefed. Note §3 resolved the same question by **removing** its ring; §2 differs in that its
+    card carries no border excursion underneath, so removing the ring there leaves no confirmation.
+16. **Does the task detail open in place, or as the centred modal it opens as today?** Raised
+    2026-09-09 off §4b, measured at a 414px journey. A change of surface rather than of animation,
+    and the largest open question in the phase — it would replace `TaskDetailModal`'s composition
+    and invalidate this document's "the morph needs no baseline change" claim.
 14. Landing copy remains undecided — unchanged from open item 1, restated because the v4 auth
     prototypes still carry placeholder strings.
