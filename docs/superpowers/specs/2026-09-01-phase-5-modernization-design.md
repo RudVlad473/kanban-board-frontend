@@ -1049,5 +1049,29 @@ from the origin.
     2026-09-09 off §4b, measured at a 414px journey. A change of surface rather than of animation,
     and the largest open question in the phase — it would replace `TaskDetailModal`'s composition
     and invalidate this document's "the morph needs no baseline change" claim.
+
+    Prototyped as **§4e** (`task-open-v2.html`), all three options at real dimensions — columns
+    `280px` (`w-70`), modal `448px` (`w-[min(90vw,28rem)]`), panel `400px`. Three findings the
+    prototype produced rather than the argument:
+
+    - **The panel must animate `width`, not `transform`.** A panel is 400px of 13–18px text, and
+      rule 4's mechanical form says anything whose content is text animates opacity or layout
+      because a transform re-rasterises every glyph mid-flight. So the correct construction is the
+      one the sidebar collapse already arrived at independently: animate the width, with a
+      **fixed-width inner inside `overflow:hidden`** so the contents cannot reflow as it opens.
+      This is the third time that same construction has turned out to be the answer.
+    - **The board must scroll, not be clipped.** The first version narrowed the board and let the
+      panel cover the rightmost column, which sliced its cards mid-card and looked broken. The
+      board scrolls horizontally in the real app and must keep doing so here. Opening a task also
+      scrolls its own column into view — and that reveal has to wait for the panel's width
+      transition to finish, because scrolling while the container is still narrowing aims at a
+      target that is still moving (measured: card overran the panel by 45px before the fix, and
+      lands flush at 870/870 after).
+    - **Edit becomes inline, and `EditTaskModal` disappears.** A modal opened on top of a detail
+      panel is two stacked surfaces where one will do, and it covers the thing it came from. In
+      the prototype the title and description are edited in place and subtasks are added, ticked
+      and renamed in the panel itself. This needs no new server work: it is exactly the optimistic
+      hooks plans 04-18 and 04-19 already build. **Recorded as the recommended answer to "would
+      edit still be a modal", not yet adopted** — it deletes a component, so it is a decision.
 14. Landing copy remains undecided — unchanged from open item 1, restated because the v4 auth
     prototypes still carry placeholder strings.
