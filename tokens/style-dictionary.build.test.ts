@@ -115,7 +115,7 @@ describe("style dictionary token pipeline (D-12)", () => {
         expect(css).toContain("--text-heading-s--letter-spacing: 2.4px;");
     });
 
-    it("has every one of the six DTCG categories contribute at least one custom property to the generated stylesheet", async () => {
+    it("has every one of the seven DTCG categories contribute at least one custom property to the generated stylesheet", async () => {
         // Act
         const css = await buildFullCss();
 
@@ -126,6 +126,20 @@ describe("style dictionary token pipeline (D-12)", () => {
         expect(css).toMatch(/--radius-sm:\s*4px/); // radius
         expect(css).toMatch(/--shadow-sm:\s*0px/); // shadow
         expect(css).toMatch(/--breakpoint-sm:\s*375px/); // breakpoint
+        expect(css).toMatch(/--duration-swap:\s*420ms/); // motion
+    });
+
+    /*
+     * A DTCG cubicBezier value is a four-number array, so the generic path emits an unusable
+     * `0.2,0,0,1`. Asserted on the value rather than the token's presence: the wrong form still
+     * appears in the stylesheet and still looks like a token was emitted.
+     */
+    it("emits a cubicBezier token as a CSS cubic-bezier() function rather than a bare number list", async () => {
+        // Act
+        const css = await buildFullCss();
+
+        // Assert
+        expect(css).toContain("--ease-standard: cubic-bezier(0.2, 0, 0, 1);");
     });
 
     it("resolves color-bg-app to the light hex in the @theme block and the dark hex in the .dark block, under the same custom-property name", async () => {

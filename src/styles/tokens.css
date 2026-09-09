@@ -79,6 +79,14 @@
   --breakpoint-sm: 375px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 1440px;
+  --duration-color: 130ms;
+  --duration-strike: 220ms;
+  --duration-swap: 420ms;
+  --duration-text-out: 110ms;
+  --duration-text-in: 150ms;
+  --duration-text-in-delay: 50ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-fade: cubic-bezier(0, 0, 1, 1);
 }
 
 .dark {

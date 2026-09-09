@@ -69,6 +69,7 @@ const tokenDeclarations = (dictionary) => {
     const lines = [];
     for (const token of dictionary.allTokens) {
         const type = token.$type ?? token.type;
+        const value = token.$value ?? token.value;
         if (type === "typography") {
             lines.push(...typographyDeclarations(token));
             continue;
@@ -77,7 +78,14 @@ const tokenDeclarations = (dictionary) => {
             lines.push(breakpointDeclaration(token));
             continue;
         }
-        const value = token.$value ?? token.value;
+        /*
+         * A DTCG cubicBezier value is a four-number array; emitted raw it becomes an unusable
+         * `0.2,0,0,1`. `--ease-*` is a real Tailwind v4 namespace, so these also reach `ease-<name>`.
+         */
+        if (type === "cubicBezier") {
+            lines.push(`  --${token.name}: cubic-bezier(${value.join(", ")});`);
+            continue;
+        }
         lines.push(`  --${token.name}: ${value};`);
     }
     return lines;
@@ -112,6 +120,7 @@ const modeInvariantSources = [
     "tokens/radius.tokens.json",
     "tokens/shadow.tokens.json",
     "tokens/breakpoint.tokens.json",
+    "tokens/motion.tokens.json",
 ];
 
 /**

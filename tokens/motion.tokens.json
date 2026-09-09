@@ -1,0 +1,48 @@
+{
+    "duration": {
+        "$description": "Every value here was measured on a Phase 5 prototype rather than chosen, and the filmstrip run that produced it is named per token (`pnpm filmstrip`, docs/adr/tech/0037). Phase 5's design record is docs/superpowers/specs/2026-09-01-phase-5-modernization-design.md.\n\nThese are consumed as custom properties in authored CSS, not as Tailwind utilities: Tailwind v4 has no `--duration-*` theme namespace, and the surface these were derived for — `::view-transition-group/old/new` — is document-level and unreachable from a utility class in the first place.\n\nDeliberately small. A duration nobody measured is drift wearing a token's costume; add one when a prototype produces it, not in anticipation.",
+        "color": {
+            "$type": "duration",
+            "$value": "130ms",
+            "$description": "Hover and focus colour changes — rule 1's carve-out, the only property that may animate on hover. Taken from the panel prototype's edit affordance (.13s), the one place the value was tuned against a pointer rather than guessed."
+        },
+        "strike": {
+            "$type": "duration",
+            "$value": "220ms",
+            "$description": "The subtask strike-through drawing across the label, and the label's colour shift beneath it. Long enough to read as a line being drawn rather than a state flipping; measured on task-open-v13 onward as `.22s`."
+        },
+        "swap": {
+            "$type": "duration",
+            "$value": "420ms",
+            "$description": "The box interpolation when the panel swaps from one task to another — `::view-transition-group`. Raised from 250ms after a filmstrip showed the whole transition completing in ~250ms and still reading as a cut; at 420ms the box travel is legible. Note this animates the BOX, never the text: see `text-out`/`text-in`."
+        },
+        "text-out": {
+            "$type": "duration",
+            "$value": "110ms",
+            "$description": "A swapped slot's outgoing text fading away. Overlaps `text-in` by 60ms so the slot is never empty — butting them end to end left the panel blank from +105ms to +190ms, which reads as fade-out-hole-fade-in rather than a swap."
+        },
+        "text-in": {
+            "$type": "duration",
+            "$value": "150ms",
+            "$description": "A swapped slot's incoming text arriving, starting at `text-in-delay`. Only applied to slots whose content actually differs; an unchanged slot keeps the UA's own complementary cross-fade, which is invisible where the pixels agree (measured 8.74 max wash with a custom curve against 1.11 with the default)."
+        },
+        "text-in-delay": {
+            "$type": "duration",
+            "$value": "50ms",
+            "$description": "How long the incoming text waits before it begins, so old and new overlap by `text-out` minus this value. The overlap is what removes the blank frame; the offset in position is what keeps two different strings from double-inking while both are visible."
+        }
+    },
+    "ease": {
+        "$description": "Curve choice is per-property, not per-phase — the single most expensive lesson of the Phase 5 motion work. Applying the phase curve to an opacity fade produced a blank frame; applying `linear` to a box morph produced no sense of weight. Pick by what is being animated.",
+        "standard": {
+            "$type": "cubicBezier",
+            "$value": [0.2, 0, 0, 1],
+            "$description": "Position and size — the box morph, the panel slide, anything travelling. Heavily front-loaded, which is what gives motion its sense of arriving rather than drifting."
+        },
+        "fade": {
+            "$type": "cubicBezier",
+            "$value": [0, 0, 1, 1],
+            "$description": "Opacity, always, and `standard` never. `standard` is front-loaded enough that an opacity fade on it reaches ~0 in the first third of its duration, leaving a blank frame between the outgoing and incoming text — a flash, which reads worse than either a fade or a cut. Authored as the linear bezier rather than the `linear` keyword so it survives the DTCG `cubicBezier` type like its sibling."
+        }
+    }
+}

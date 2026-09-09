@@ -1329,6 +1329,50 @@ Two failures worth keeping, because both were invisible until measured:
   The fades are `linear`; the easing stays on the group, where it animates the box. **Curve choice
   is per-property, not per-phase.**
 
+### No animation library — decided 2026-09-09
+
+**Phase 5 animates with plain CSS and the View Transitions API. No animation library is added.**
+Before this the question had never been asked in this document, and the answer was accidental
+rather than chosen: nothing is installed today beyond `@dnd-kit` (which owns drag transforms) and
+Tailwind v4, and the whole app's animation surface is 10 x `transition-colors`, 6 x `animate-spin`,
+one `transition-transform`, and **zero authored `@keyframes`**.
+
+Three reasons, in the order they matter:
+
+1. **A locked rule already forbids the main thing a library would do for us.** Motion's `layout`
+   prop animates layout via **transform**, and rule 4 of this phase is *"animate layout, never
+   transform"* — because transforms distort text. That is not a theoretical objection: it is
+   exactly the v9-v12 defect, where the subtask list was named as one group and scaled as a single
+   bitmap instead of its rows moving.
+2. **We now depend on a browser behaviour no library reproduces.** The panel swap's correctness
+   rests on the UA's `::view-transition-old`/`new` pair being *complementary* under
+   `mix-blend-mode: plus-lighter`, so an unchanged slot is invisible by construction. That is
+   compositor behaviour, not something a JS tween can hand back.
+3. **`::view-transition-*` is document-level and unreachable from a utility class anyway**, so
+   "plain Tailwind" and "plain CSS" are the same answer. Tailwind's `transition-*`/`duration-*`/
+   `ease-*` utilities still cover the ordinary hover and colour cases.
+
+Where a library would earn its keep is interruptible, velocity-aware motion — drag follow-through
+— and `@dnd-kit` already owns that surface.
+
+**The gap this exposed, and closed: motion tokens.** `tokens/` had eight files and none for
+duration or easing, while the prototypes carried 420ms, 110ms, 150ms, a 50ms delay and
+`cubic-bezier(.2,0,0,1)` as loose literals. `tokens/motion.tokens.json` now emits eight custom
+properties through the same DTCG -> Style Dictionary -> `tokens.css` pipeline as the radii, each
+carrying the measurement that produced it. Two notes for whoever extends it:
+
+- **`--ease-fade` is authored as `cubic-bezier(0, 0, 1, 1)`, not the `linear` keyword**, so it
+  survives the DTCG `cubicBezier` type. Its description carries the rule it encodes: opacity never
+  uses `--ease-standard`, which is front-loaded enough to reach ~0 in the first third and leave a
+  blank frame.
+- **A `cubicBezier` value is a four-number array**, so the generic emitter produced an unusable
+  `0.2,0,0,1` until `style-dictionary.config.mjs` grew a case for it. The regression test asserts
+  the emitted *value*, not the token's presence — the broken form still looks like a token was
+  emitted.
+
+Keep the set small. A duration nobody measured is drift wearing a token's costume; add one when a
+prototype produces it.
+
 ### Locked — `task-open-v17.html`, adopted 2026-09-09
 
 **The panel-to-panel swap is settled.** Four corrections got there, and each one was a different
