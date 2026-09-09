@@ -1077,6 +1077,42 @@ changing it: Storybook's own `index.html` and `iframe.html` both declare `charse
 page served through the unmodified server already resolved to UTF-8 — so the header can only agree
 with what was already happening there. `serve-static.unit.test.mjs` stays green, 8/8.
 
+## Does the panel look wrong on a large screen?
+
+Asked 2026-09-09: a 400px full-height panel on a wide monitor is mostly empty, where a modal
+compresses to its content. Measured at 2560x1440 on the *shortest* task in the set — the panel's
+worst case:
+
+| | size | empty |
+|---|---|---|
+| panel | 400 x 1100 | **63.9%** |
+| modal | 496 x 405 | ~0% |
+
+The premise is correct and the conclusion does not follow, for two reasons.
+
+**The modal reads worse at that size, not better.** It is a small box adrift in a *dimmed* void,
+and the scrim makes every one of those wasted pixels dead — the board is greyed out and
+unusable. The panel's empty space at least sits beside a live board. The modal also lands nowhere
+near the card it came from.
+
+**Most of the emptiness was the dataset, not the design.** The 3-column demo everything had been
+judged on needs **924px of a 2560px viewport**. Rebuilt with a realistic board — six columns,
+23 tasks, a backlog and a blocked column — it occupies **1836px**, and the panel then reads as
+proportionate to the columns rather than as an oversized slab. Prototyped as `task-open-v5.html`,
+which toggles the two datasets and a capped measure so the comparison can be made rather than
+argued.
+
+Panel emptiness is **63.9% in all three configurations**, because it is a property of the *task*
+(a two-subtask task with one line of description) and not of the board or the viewport. The
+honest statement is therefore: a short task under-fills the panel at any width, a realistic task
+does not, and the modal trades that for a scrim over an equally empty board.
+
+**Capping the measure is a separate, real question and is not settled here.** A cap was
+prototyped at 1180px, left-aligned — never centred, since centring would slide the whole board
+sideways the moment the panel opened, which is precisely the layout shift this phase exists to
+remove. Whether a kanban board *should* be capped is genuinely arguable: more columns visible is
+useful, which is why Trello and Jira do not cap theirs.
+
 ## Typeface — Manrope, decided 2026-09-09
 
 Supersedes Inter, chosen on 2026-09-01. The decision came from reviewing `type-board.html`, and
