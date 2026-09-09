@@ -1113,6 +1113,52 @@ sideways the moment the panel opened, which is precisely the layout shift this p
 remove. Whether a kanban board *should* be capped is genuinely arguable: more columns visible is
 useful, which is why Trello and Jira do not cap theirs.
 
+## Swapping the panel between tasks
+
+With the panel adopted, clicking one task then another replaces its contents in a single frame.
+Proposed on review that view transitions would suit this. **Measured, and they are the one option
+that cannot be used here.**
+
+Four strategies, each sampled every 16ms across a swap, counting frames where a *different* card
+was not hit-testable — the same `elementFromPoint` harness §R5 established:
+
+| swap | dead frames | dead time |
+|---|---|---|
+| instant (one-frame) | 0 / 44 | 0ms |
+| sequenced fade, 70ms out / 110ms in | 0 / 44 | 0ms |
+| directional, entering from the new card's side | 0 / 44 | 0ms |
+| **`startViewTransition()`** | **20 / 44** | **320ms** |
+
+This confirms rather than contradicts §4b, where the same API measured 12 of 12 frames dead. And
+it is the worst possible surface to pay that cost on: clicking through tasks is a *repeated* action,
+so every swap blocks the next click for a third of a second. **Choosing the panel over the modal
+retired this phase's only rule-5 carve-out; using a view transition for the swap would reintroduce
+it, at a higher frequency than the carve-out it replaced.** Rejected.
+
+Both surviving options reuse mechanisms this document already adopted rather than inventing one:
+the sequenced fade is §7c's skeleton-to-content handoff (out finishes before in starts, so two
+strings are never inked in the same place — rule 4), and the directional variant is §4c's
+board-to-board entry, one level down. The directional version moves the content by its layout
+position inside the existing clip, never by `transform`, because the panel is 400px of text and
+rule 4's mechanical form forbids transforming it.
+
+**Not yet chosen between fade and directional.** Both are free under rule 5; the question is
+whether a direction derived from the card's position carries meaning or is decoration, which is
+the same argument that rejected the artificial stagger.
+
+### A measurement that reported success on a branch that never ran
+
+The first pass of this table returned **0 dead frames for all four strategies**, including view
+transitions. That was not a result, it was a broken harness: `render()` clears `is-panel` before
+the panel branch reads it, so the "was the panel already open" test was always false and every
+strategy silently fell through to `instant`. The tell was `startViewTransition` having been called
+**zero** times while the row still reported a clean pass.
+
+Worth recording because the failure is invisible by construction: a strategy that never executes
+and a strategy that executes perfectly produce the same zero. **Any harness asserting the absence
+of something needs a positive control** — here, counting the API calls — or it cannot distinguish
+"clean" from "never ran".
+
 ## Typeface — Manrope, decided 2026-09-09
 
 Supersedes Inter, chosen on 2026-09-01. The decision came from reviewing `type-board.html`, and
@@ -1152,7 +1198,7 @@ re-recorded.
     only "scale and shadow release over ~160ms", and the ring in the drag prototypes was never
     briefed. Note §3 resolved the same question by **removing** its ring; §2 differs in that its
     card carries no border excursion underneath, so removing the ring there leaves no confirmation.
-16. **Does the task detail open in place, or as the centred modal it opens as today?** Raised
+16. **RESOLVED 2026-09-09 — a right-side panel.** Adopted after reviewing §4e v1-v5. Raised
     2026-09-09 off §4b, measured at a 414px journey. A change of surface rather than of animation,
     and the largest open question in the phase — it would replace `TaskDetailModal`'s composition
     and invalidate this document's "the morph needs no baseline change" claim.
