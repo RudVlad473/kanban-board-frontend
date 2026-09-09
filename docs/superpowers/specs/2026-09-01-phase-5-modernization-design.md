@@ -1219,6 +1219,44 @@ Set to **360ms close against 220ms open** (was symmetric at 220). Opening races 
 user has already formed; closing is a dismissal, and a panel that vanishes at the same speed it
 arrived reads as a glitch rather than as a movement. Asymmetry here is the point, not an oversight.
 
+## The decided shape of the task panel — 2026-09-09
+
+`task-open-v8.html` is the resolution of open item 16. Three decisions, one of which overrides a
+recommendation made earlier in this same amendment.
+
+**Docking: overlay. The board never moves.** Verified from a mid-scroll position: board scrolled
+0px, maximum column travel 0px. Push is kept in the prototype for comparison only. The
+`scrollIntoView` reveal is **off** under overlay — an overlay whose argument is "nothing moves"
+cannot then scroll the thing behind it. (An "overlay, no scroll" variant was briefly offered
+alongside "overlay" and withdrawn: the two differ only when the opened card is partly covered
+*and* scroll room remains, which is too narrow to be a choice. Offering both was a mistake.)
+
+**Swap: `startViewTransition()`, adopted over this document's own measured objection.** The
+objection stands on the numbers — 320ms unnamed, 352ms with named parts, against 0ms for the fade
+and the directional entry. It was overridden on a product judgement: **a user does not click
+through tasks fast enough for a 320ms window to be reachable**, and the view transition is the
+only option that reads as a considered movement rather than a swap. Recorded as a decision with
+its cost stated, not as an oversight.
+
+Two consequences worth writing down rather than rediscovering:
+
+- **Rule 5 now has exactly two exceptions, and they are the same exception.** Both are
+  `startViewTransition()` — the card-to-panel case and this one. The API blocks pointer input for
+  its full duration by design, which no timing choice removes. The clean statement of rule 5 is
+  therefore: *animation never gates interaction, except where the View Transition API is used,
+  which does so by construction; it is used in two places and both are named here.*
+- **This decision does not survive keyboard navigation between tasks.** If arrowing from task to
+  task is ever added, each step pays the block, and the "nobody clicks that fast" premise no longer
+  holds — a held arrow key is exactly the fast repetition the measurement warns about. Revisit this
+  decision at that point rather than treating it as settled forever.
+
+**The directional swap is withdrawn, and was not fairly tested.** Reported as jumpy, correctly: it
+travelled 14px in 160ms, which is a twitch rather than a movement, and a bug derived its direction
+from the task's array index instead of its position, so the first swap always came from the same
+side. Fixed in v8 to read the cards' on-screen positions, but it is no longer a candidate. Its
+being under-built is recorded so nobody re-reads "directional was rejected" as a verdict on the
+pattern — §4c still uses it for board-to-board, where it works.
+
 ## Typeface — Manrope, decided 2026-09-09
 
 Supersedes Inter, chosen on 2026-09-01. The decision came from reviewing `type-board.html`, and
