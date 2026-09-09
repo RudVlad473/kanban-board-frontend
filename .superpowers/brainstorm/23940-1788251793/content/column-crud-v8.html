@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Column CRUD v8 — the lifted column is a lane, not a stack of cards</title>
+        <style>
+            :root {
+                --purple: #635fc7;
+                --purple-hover: #5854be;
+                --purple-edge: #3f3c85;
+                --red: #c93f3c;
+                --red-hover: #b23632;
+                --red-edge: #862825;
+                --surface: #ffffff;
+                --app: #f4f7fd;
+                --border: #e4ebfa;
+                --text: #000112;
+                --muted: #66707f;
+                --border-hover: #d6dfef;
+                --slow: 1;
+                --e: cubic-bezier(0.2, 0, 0, 1);
+                /* No scale on a lifted column: scale is proportional and column height ranges over
+                   an order of magnitude, so one value is a different gesture per column. The
+                   hairline and the shadow carry the lift instead. */
+                --lift: 1;
+                --ovpad: 10px;
+                /* Derived, never sampled — rule 3. Mixing toward --text moves correctly in both
+                   themes; the drop edge mixes toward black so it stays a shadow in both. */
+                --btn-quiet-hover: color-mix(in srgb, var(--text) 2.5%, var(--surface));
+                --btn-quiet-press: color-mix(in srgb, var(--text) 6%, var(--surface));
+                --btn-quiet-edge: color-mix(in srgb, #000 14%, var(--surface));
+            }
+            :root {
+                view-transition-name: none;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 26px 32px 90px;
+                background: var(--app);
+                color: var(--text);
+                font:
+                    13px/1.5 "Plus Jakarta Sans",
+                    system-ui,
+                    sans-serif;
+            }
+            h1 {
+                font-size: 19px;
+                margin: 0 0 4px;
+            }
+            h2 {
+                font-size: 15px;
+                margin: 0 0 4px;
+            }
+            .sub {
+                color: var(--muted);
+                margin: 0 0 18px;
+                max-width: 940px;
+            }
+            .controls {
+                position: sticky;
+                top: 0;
+                z-index: 30;
+                display: flex;
+                gap: 16px;
+                background: var(--app);
+                padding: 8px 0 14px;
+                font-size: 12px;
+                flex-wrap: wrap;
+            }
+            .controls label {
+                display: inline-flex;
+                gap: 6px;
+                align-items: center;
+                cursor: pointer;
+            }
+            section {
+                margin-bottom: 38px;
+            }
+
+            /* ── board surface ───────────────────────────────────────────────── */
+            .board {
+                position: relative;
+                background: var(--app);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 18px;
+                overflow-x: auto;
+            }
+            /*
+             * A column is a LANE. `sortable-column` ships as `flex flex-col` with a `flex-1
+             * overflow-y-auto` inner, so a real column already stretches to the board's height —
+             * this prototype was shrinking it to its content, which is why a one-card column
+             * lifted looking exactly like a dragged card.
+             */
+            .track {
+                display: flex;
+                gap: 12px;
+                align-items: stretch;
+                min-height: 420px;
+            }
+            .lane-content .track {
+                align-items: flex-start;
+            }
+            .colm {
+                width: 240px;
+                flex: none;
+                position: relative;
+            }
+            .chead {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                min-height: 34px;
+                padding-right: 28px;
+                font: 700 12px/15px "Plus Jakarta Sans", system-ui, sans-serif;
+                letter-spacing: 2.4px;
+                text-transform: uppercase;
+                color: var(--muted);
+                cursor: grab;
+                border-radius: 4px;
+            }
+            .cdot {
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                flex: none;
+            }
+            .cname {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                outline: none;
+            }
+            /*
+             * The caption row IS the drag handle in the shipping component, and `contenteditable`
+             * inside a `<button>` is not viable — so unlike the board row, the column name has to be
+             * SWAPPED for an editable node. Metrics are pinned to the handle's so the swap cannot
+             * shift the header: same font, same letter-spacing, same uppercase, same line box.
+             */
+            .cname[contenteditable="plaintext-only"] {
+                background: var(--surface);
+                box-shadow: 0 0 0 2px var(--purple);
+                border-radius: 3px;
+                padding: 2px 5px;
+                margin: -2px -5px;
+                cursor: text;
+                text-overflow: clip;
+                letter-spacing: 2.4px;
+                text-transform: uppercase;
+                font: 700 12px/15px "Plus Jakarta Sans", system-ui, sans-serif;
+            }
+            .ccount {
+                flex: none;
+            }
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 11px;
+                font: 700 12px/16px "Plus Jakarta Sans", system-ui, sans-serif;
+                margin-bottom: 8px;
+                box-shadow: 0 1px 2px rgb(16 18 32 / 0.04);
+            }
+            .ckb {
+                position: absolute;
+                top: 4px;
+                right: 0;
+                width: 26px;
+                height: 26px;
+                border: 0;
+                border-radius: 4px;
+                background: none;
+                color: var(--muted);
+                cursor: pointer;
+                display: grid;
+                place-items: center;
+                opacity: 0;
+                transition: opacity calc(130ms * var(--slow));
+            }
+            .colm:hover .ckb,
+            .colm:focus-within .ckb,
+            .colm.menu-open .ckb {
+                opacity: 1;
+            }
+            .ckb:hover {
+                background: var(--border);
+                color: var(--text);
+            }
+            .ckb svg {
+                width: 14px;
+                height: 14px;
+                fill: currentColor;
+            }
+            /* The row must be lifted, not the menu: a named element is its own stacking context. */
+            .colm.menu-open {
+                z-index: 20;
+            }
+            .menu {
+                position: absolute;
+                right: 0;
+                top: 30px;
+                z-index: 8;
+                min-width: 150px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                box-shadow: 0 8px 24px rgb(16 18 32 / 0.14);
+                padding: 4px;
+                opacity: 0;
+                scale: 0.98;
+                pointer-events: none;
+                transform-origin: top right;
+                transition:
+                    opacity 120ms linear,
+                    scale 120ms var(--e);
+            }
+            .colm.menu-open .menu {
+                opacity: 1;
+                scale: 1;
+                pointer-events: auto;
+                transition:
+                    opacity 70ms linear,
+                    scale 70ms var(--e);
+            }
+            .menu button {
+                display: block;
+                width: 100%;
+                text-align: left;
+                border: 0;
+                background: none;
+                font: 500 12px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+                padding: 8px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                color: var(--text);
+                letter-spacing: normal;
+                text-transform: none;
+            }
+            .menu button:hover {
+                background: var(--app);
+            }
+            .menu button.danger {
+                color: var(--red);
+            }
+
+            /*
+             * Rail B: a FIXED 34px footprint. v3 grew it to 150px on hover, which lengthened the
+             * track and moved the scroll end 116px further away — the target retreated as you
+             * reached for it. The label is an overlay, so layout never changes.
+             */
+            .railwrap {
+                position: relative;
+                flex: none;
+                align-self: stretch;
+                display: flex;
+            }
+            .rail {
+                width: 34px;
+                align-self: stretch;
+                border: 1px dashed var(--border);
+                border-radius: 6px;
+                background: transparent;
+                color: var(--muted);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font: 700 16px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+                transition:
+                    color calc(130ms * var(--slow)),
+                    border-color calc(130ms * var(--slow)),
+                    background-color calc(130ms * var(--slow));
+            }
+            .rail:hover,
+            .rail:focus-visible {
+                color: var(--purple);
+                border-color: color-mix(in srgb, var(--purple) 35%, var(--border));
+                background: color-mix(in srgb, var(--purple) 6%, transparent);
+                outline: none;
+            }
+            .raillabel {
+                position: absolute;
+                right: 38px;
+                top: 50%;
+                translate: 0 -50%;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                padding: 5px 9px;
+                font: 700 11px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+                color: var(--text);
+                white-space: nowrap;
+                opacity: 0;
+                pointer-events: none;
+                box-shadow: 0 4px 12px rgb(16 18 32 / 0.1);
+                transition: opacity calc(130ms * var(--slow));
+            }
+            .railwrap:hover .raillabel,
+            .rail:focus-visible + .raillabel {
+                opacity: 1;
+            }
+            /* Low-key: present only while the rail is hovered or focused. */
+            .railx {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                width: 20px;
+                height: 20px;
+                border: 0;
+                border-radius: 4px;
+                background: none;
+                color: var(--muted);
+                cursor: pointer;
+                font-size: 11px;
+                line-height: 1;
+                opacity: 0;
+                transition:
+                    opacity calc(130ms * var(--slow)),
+                    background-color calc(130ms * var(--slow));
+            }
+            .railwrap:hover .railx,
+            .railx:focus-visible {
+                opacity: 0.6;
+            }
+            .railx:hover {
+                opacity: 1;
+                background: var(--border);
+            }
+            .track.railhidden .railwrap {
+                display: none;
+            }
+
+            /* ── drag ────────────────────────────────────────────────────────── */
+            /*
+             * The header is a drag handle, so it is never selectable — except while it holds the
+             * rename editor, which needs a caret. The body-wide guard covers the columns the
+             * pointer crosses mid-drag, which is where the stray highlight came from.
+             */
+            .chead {
+                cursor: grab;
+                touch-action: none;
+                user-select: none;
+            }
+            .cname[contenteditable="plaintext-only"] {
+                user-select: text;
+            }
+            body.is-dragging {
+                user-select: none;
+                cursor: grabbing;
+            }
+            .chead:active {
+                cursor: grabbing;
+            }
+            .colm {
+                border: 1px solid transparent;
+                border-radius: 6px;
+                transition:
+                    background-color calc(200ms * var(--slow)) linear,
+                    border-color calc(200ms * var(--slow)) linear;
+            }
+            .colm > * {
+                transition: opacity calc(120ms * var(--slow)) linear;
+            }
+            .colm.source {
+                border: 1px dashed color-mix(in srgb, var(--purple) 45%, var(--border));
+                background: color-mix(in srgb, var(--purple) 4%, transparent);
+                transition: none;
+            }
+            .colm.source > * {
+                opacity: 0;
+                transition: none;
+            }
+            /*
+             * The overlay sheds its chrome DURING the flight, so by the time it lands it is the
+             * column's own pixels at the column's own position. v3 cross-faded a still-tinted,
+             * still-bordered panel against the slot underneath, and two stacked semi-transparent
+             * layers with different backgrounds do not sum to either — that composite is the flash.
+             */
+            .overlay {
+                position: fixed;
+                z-index: 100;
+                pointer-events: none;
+                border-radius: 8px;
+                background: color-mix(in srgb, var(--surface) 55%, var(--app));
+                border: 1px solid color-mix(in srgb, var(--purple) 22%, var(--border));
+                padding: var(--ovpad);
+                box-shadow:
+                    0 1px 2px rgb(16 18 32 / 0.06),
+                    0 10px 22px rgb(16 18 32 / 0.11);
+                will-change: translate;
+            }
+            .overlay .card:last-child {
+                margin-bottom: 0;
+            }
+            .overlay.settling {
+                transition:
+                    translate calc(180ms * var(--slow)) var(--e),
+                    background-color calc(180ms * var(--slow)) linear,
+                    border-color calc(180ms * var(--slow)) linear,
+                    box-shadow calc(180ms * var(--slow)) var(--e);
+                background: transparent;
+                border-color: transparent;
+                box-shadow:
+                    0 0 0 rgb(16 18 32 / 0),
+                    0 0 0 rgb(16 18 32 / 0);
+            }
+
+            /* ── board header ────────────────────────────────────────────────── */
+            .bhead {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 0 0 14px;
+            }
+            .btitle {
+                font: 700 16px/22px "Plus Jakarta Sans", system-ui, sans-serif;
+                margin-right: auto;
+            }
+
+            /* ── modal ───────────────────────────────────────────────────────── */
+            .scrim {
+                position: absolute;
+                inset: 0;
+                display: grid;
+                place-items: center;
+                pointer-events: none;
+                z-index: 25;
+            }
+            .scrim::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: rgb(16 18 32 / 0.32);
+                opacity: 0;
+                transition: opacity calc(160ms * var(--slow)) linear;
+            }
+            .scrim.open {
+                pointer-events: auto;
+            }
+            .scrim.open::before {
+                opacity: 1;
+            }
+            .modal {
+                position: relative;
+                width: 330px;
+                background: var(--surface);
+                border-radius: 8px;
+                padding: 18px;
+                box-shadow: 0 12px 32px rgb(16 18 32 / 0.16);
+                opacity: 0;
+                translate: 0 8px;
+                scale: 0.985;
+                transition:
+                    opacity calc(120ms * var(--slow)) linear,
+                    translate calc(160ms * var(--slow)) var(--e),
+                    scale calc(160ms * var(--slow)) var(--e);
+            }
+            .scrim.open .modal {
+                opacity: 1;
+                translate: 0 0;
+                scale: 1;
+            }
+            .modal h4 {
+                margin: 0 0 10px;
+                font-size: 14px;
+                color: var(--red);
+            }
+            .modal p {
+                font-size: 12px;
+                color: var(--muted);
+                margin: 0 0 14px;
+            }
+            .btn {
+                appearance: none;
+                border: none;
+                font: 700 12px/1 "Plus Jakarta Sans", system-ui, sans-serif;
+                height: 32px;
+                padding: 0 14px;
+                border-radius: 4px;
+                cursor: pointer;
+                background: var(--red);
+                color: #fff;
+                box-shadow:
+                    inset 0 1px 0 rgb(255 255 255 / 0.16),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.12),
+                    0 2px 0 var(--red-edge);
+                transition:
+                    background-color calc(130ms * var(--slow)),
+                    box-shadow calc(90ms * var(--slow)),
+                    translate calc(90ms * var(--slow));
+            }
+            .btn:hover {
+                background: var(--red-hover);
+            }
+            .btn:active {
+                translate: 0 2px;
+                box-shadow:
+                    inset 0 1px 3px rgb(0 0 0 / 0.24),
+                    inset 0 0 0 1px rgb(0 0 0 / 0.16),
+                    0 0 0 var(--red-edge);
+            }
+            .btn.ghostbtn {
+                background: var(--surface);
+                color: var(--text);
+                box-shadow:
+                    inset 0 0 0 1px var(--border),
+                    0 2px 0 var(--btn-quiet-edge);
+            }
+            /* The border carries the hover; the fill only stops it feeling inert. */
+            .btn.ghostbtn:hover {
+                background: var(--btn-quiet-hover);
+                box-shadow:
+                    inset 0 0 0 1px var(--border-hover),
+                    0 2px 0 var(--btn-quiet-edge);
+            }
+            .btn.ghostbtn:active {
+                background: var(--btn-quiet-press);
+                translate: 0 2px;
+                box-shadow:
+                    inset 0 0 0 1px var(--border-hover),
+                    0 0 0 var(--btn-quiet-edge);
+            }
+
+            ::view-transition-group(*) {
+                animation-duration: calc(260ms * var(--slow));
+                animation-timing-function: var(--e);
+            }
+            ::view-transition-old(*),
+            ::view-transition-new(*) {
+                animation-duration: calc(180ms * var(--slow));
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Column create, rename, delete, reorder — G9</h1>
+        <p class="sub">
+            The lifted column is now a <strong>lane</strong>, not a stack of cards — matching what
+            <code>sortable-column</code> already does in the app, where the column is a flex column with a scrolling
+            inner. Untick <em>lift the whole lane</em> to see the content-height version and compare a one-card
+            column in each. The ghost column is replaced by a 34px rail plus
+            <strong>+ Column</strong> in the header, reachable at any scroll position.
+        </p>
+
+        <div class="controls">
+            <label><input type="checkbox" id="laneToggle" checked /> Lift the whole lane</label>
+            <label><input type="checkbox" id="vt" checked /> Use <code>startViewTransition</code></label>
+            <label><input type="checkbox" id="slow" /> Slow motion (6&times;)</label>
+            <label><input type="checkbox" id="dark" /> Dark surface</label>
+        </div>
+
+        <section>
+            <h2>Create, rename, delete — one surface</h2>
+            <p class="sub" style="margin-bottom: 14px">
+                The rail and <strong>+ Column</strong> both create the column immediately and drops its header straight into edit
+                mode — no modal, matching the board rename decision. Enter commits, Esc removes an unnamed column.
+                <strong>Rename</strong> does the same to an existing header. <strong>Delete</strong> confirms first,
+                then the board closes up.
+            </p>
+            <div class="board" id="board">
+                <div class="bhead">
+                    <span class="btitle">Platform Launch</span>
+                    <button class="btn ghostbtn" id="restoreRail" hidden>Show column rail</button>
+                    <button class="btn ghostbtn" id="headerAdd">+ Column</button>
+                    <button class="btn ghostbtn" style="background: var(--purple); color: #fff; box-shadow: inset 0 1px 0 rgb(255 255 255/.16), inset 0 0 0 1px rgb(0 0 0/.12), 0 2px 0 var(--purple-edge)">+ Add New Task</button>
+                </div>
+                <div class="track" id="track"></div>
+                <div class="scrim" id="scrim">
+                    <div class="modal">
+                        <h4>Delete this column?</h4>
+                        <p>
+                            Deleting ‘<span id="delName"></span>’ removes its <span id="delCount"></span> and cannot
+                            be reversed.
+                        </p>
+                        <div style="display: flex; gap: 8px">
+                            <button class="btn" style="flex: 1" id="confirmDel">Delete</button>
+                            <button class="btn ghostbtn" style="flex: 1" id="cancelDel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <script>
+            const PALETTE = ["#49C4E5", "#8471F2", "#67E2AE", "#FD8C7B", "#F093FE", "#F2C50E"];
+            const hash = (s) => [...s].reduce((a, c) => (a * 33 + c.charCodeAt(0)) >>> 0, 5381);
+            const hueOf = (id) => PALETTE[hash(id) % PALETTE.length];
+            const KEBAB = `<svg viewBox="0 0 16 16"><circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>`;
+
+            let cols = [
+                { id: "c-todo", n: "Todo", cards: ["Build settings UI", "QA the flow"] },
+                { id: "c-doing", n: "Doing", cards: ["Research pricing"] },
+                { id: "c-done", n: "Done", cards: ["Ship the landing page", "Fix the toast"] },
+            ];
+            let pendingDelete = null;
+            let seq = 0;
+
+            const track = document.getElementById("track");
+            const scrim = document.getElementById("scrim");
+            const SLOW = () => Number(getComputedStyle(document.documentElement).getPropertyValue("--slow")) || 1;
+            const useVT = () => document.getElementById("vt").checked && !!document.startViewTransition;
+            const run = (fn) => (useVT() ? document.startViewTransition(fn) : fn());
+
+            function colHTML(c) {
+                const count = c.cards.length;
+                return `<div class="colm" data-id="${c.id}" style="view-transition-name:vt-col-${c.id}">
+                    <div class="chead">
+                      <span class="cdot" style="background:${hueOf(c.id)}"></span>
+                      <span class="cname">${c.n}</span>
+                      <span class="ccount">(${count})</span>
+                    </div>
+                    <button class="ckb" aria-label="Column actions for ${c.n}">${KEBAB}</button>
+                    <div class="menu">
+                      <button data-menu="rename">Rename column</button>
+                      <button data-menu="delete" class="danger">Delete column</button>
+                    </div>
+                    <div class="cards">${c.cards.map((t) => `<div class="card">${t}</div>`).join("")}</div>
+                  </div>`;
+            }
+
+            function render() {
+                track.innerHTML =
+                    cols.map(colHTML).join("") +
+                    `<div class="railwrap" style="view-transition-name:vt-rail">
+                       <button class="rail" id="ghost" aria-label="Add a column">+</button>
+                       <span class="raillabel">New column</span>
+                       <button class="railx" id="railx" aria-label="Hide the column rail">&#10005;</button>
+                     </div>`;
+                track.querySelectorAll(".colm").forEach((el) => {
+                    const id = el.dataset.id;
+                    el.querySelector(".ckb").onclick = (e) => {
+                        e.stopPropagation();
+                        const open = el.classList.contains("menu-open");
+                        closeMenus();
+                        if (!open) el.classList.add("menu-open");
+                    };
+                    el.querySelectorAll("[data-menu]").forEach((btn) => {
+                        btn.onclick = (e) => {
+                            e.stopPropagation();
+                            closeMenus();
+                            if (btn.dataset.menu === "rename") startRename(id);
+                            else openDelete(id);
+                        };
+                    });
+                    el.querySelector(".chead").ondblclick = () => startRename(id);
+                    el.querySelector(".chead").addEventListener("pointerdown", (e) => {
+                        if (e.target.closest(".cname[contenteditable='plaintext-only']")) return;
+                        armDrag(e, id);
+                    });
+                });
+                document.getElementById("ghost").onclick = createColumn;
+                document.getElementById("railx").onclick = (e) => {
+                    e.stopPropagation();
+                    track.classList.add("railhidden");
+                    document.getElementById("restoreRail").hidden = false;
+                };
+            }
+            /* ── reorder ─────────────────────────────────────────────────────── */
+            const REORDER_MS = 160;
+            /* dnd-kit's activation distance, in spirit: a click that renames must not become a drag. */
+            const DRAG_THRESHOLD_PX = 4;
+            let drag = null;
+
+            const slotPositions = () => {
+                const map = new Map();
+                track.querySelectorAll(".colm").forEach((el) => map.set(el.dataset.id, el.getBoundingClientRect().left));
+                return map;
+            };
+
+            function flip(before) {
+                const after = slotPositions();
+                track.querySelectorAll(".colm").forEach((el) => {
+                    const was = before.get(el.dataset.id);
+                    if (was === undefined) return;
+                    const delta = was - after.get(el.dataset.id);
+                    if (!delta) return;
+                    el.style.transition = "none";
+                    el.style.translate = `${delta}px`;
+                });
+                requestAnimationFrame(() => {
+                    track.querySelectorAll(".colm").forEach((el) => {
+                        el.style.transition = `translate ${REORDER_MS * SLOW()}ms var(--e)`;
+                        el.style.translate = "0px";
+                    });
+                });
+            }
+
+            function armDrag(event, id) {
+                if (drag || event.button !== 0) return;
+                const origin = { x: event.clientX, y: event.clientY };
+                const onArmMove = (moveEvent) => {
+                    if (Math.hypot(moveEvent.clientX - origin.x, moveEvent.clientY - origin.y) < DRAG_THRESHOLD_PX) return;
+                    cleanup();
+                    beginDrag(moveEvent, id, origin);
+                };
+                const cleanup = () => {
+                    window.removeEventListener("pointermove", onArmMove);
+                    window.removeEventListener("pointerup", cleanup);
+                };
+                window.addEventListener("pointermove", onArmMove);
+                window.addEventListener("pointerup", cleanup, { once: true });
+            }
+
+            function beginDrag(event, id, origin) {
+                const el = track.querySelector(`.colm[data-id="${id}"]`);
+                if (!el) return;
+                const rect = el.getBoundingClientRect();
+                const pad = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ovpad"));
+                const overlay = el.cloneNode(true);
+                overlay.classList.add("overlay");
+                overlay.classList.remove("colm", "menu-open");
+                overlay.querySelectorAll(".ckb, .menu").forEach((n) => n.remove());
+                overlay.style.width = `${rect.width + pad * 2}px`;
+                /*
+                 * A fixed-position clone has no stretching parent, so it collapses to its content
+                 * regardless of how tall the lane was. The height has to be carried over
+                 * explicitly, or a full-height column lifts as a stack of cards.
+                 */
+                overlay.style.height = `${rect.height + pad * 2}px`;
+                overlay.style.left = "0px";
+                overlay.style.top = "0px";
+                overlay.style.translate = `${rect.left - pad}px ${rect.top - pad}px`;
+                document.body.appendChild(overlay);
+                el.classList.add("source");
+                document.body.classList.add("is-dragging");
+                /* A selection begun before the threshold was crossed survives the guard. */
+                getSelection()?.removeAllRanges();
+                drag = { id, overlay, grabX: origin.x - rect.left + pad, grabY: origin.y - rect.top + pad };
+                window.addEventListener("pointermove", onDragMove);
+                window.addEventListener("pointerup", onDragUp, { once: true });
+                onDragMove(event);
+            }
+
+            function onDragMove(event) {
+                if (!drag) return;
+                drag.overlay.style.translate = `${event.clientX - drag.grabX}px ${event.clientY - drag.grabY}px`;
+                const slots = [...track.querySelectorAll(".colm")];
+                const overIndex = slots.findIndex((slot) => {
+                    const r = slot.getBoundingClientRect();
+                    return event.clientX >= r.left && event.clientX <= r.right;
+                });
+                if (overIndex === -1) return;
+                const from = cols.findIndex((c) => c.id === drag.id);
+                if (overIndex === from) return;
+                const before = slotPositions();
+                const [moved] = cols.splice(from, 1);
+                cols.splice(overIndex, 0, moved);
+                render();
+                track.querySelector(`.colm[data-id="${drag.id}"]`).classList.add("source");
+                flip(before);
+            }
+
+            function onDragUp() {
+                if (!drag) return;
+                window.removeEventListener("pointermove", onDragMove);
+                const { overlay, id } = drag;
+                drag = null;
+                const el = track.querySelector(`.colm[data-id="${id}"]`);
+                const pad = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ovpad"));
+                const rect = el.getBoundingClientRect();
+                document.body.classList.remove("is-dragging");
+                overlay.classList.add("settling");
+                overlay.style.translate = `${rect.left - pad}px ${rect.top - pad}px`;
+                /*
+                 * The slot fades back in UNDER an overlay that has already shed its chrome, so the
+                 * two are identical pixels in the same place; the overlay's removal at the end is
+                 * then a swap of like for like with nothing to see.
+                 */
+                setTimeout(() => el.classList.remove("source"), 120 * SLOW());
+                setTimeout(() => overlay.remove(), 280 * SLOW());
+            }
+
+            const closeMenus = () => track.querySelectorAll(".colm").forEach((o) => o.classList.remove("menu-open"));
+            document.addEventListener("click", closeMenus);
+
+            /*
+             * Create is inline, not a modal: the column exists the moment it is asked for and its
+             * header opens in edit mode. Escaping before naming it removes it again, so an unnamed
+             * column can never be left behind — the modal's cancel, without the modal.
+             */
+            function createColumn() {
+                const id = `c-new-${++seq}`;
+                cols.push({ id, n: "New Column", cards: [] });
+                run(() => render()).ready?.then?.(() => startRename(id, { isNew: true }));
+                if (!useVT()) startRename(id, { isNew: true });
+                else setTimeout(() => startRename(id, { isNew: true }), 40 * SLOW());
+            }
+
+            function startRename(id, { isNew = false } = {}) {
+                const el = track.querySelector(`.colm[data-id="${id}"] .cname`);
+                if (!el) return;
+                const col = cols.find((c) => c.id === id);
+                const before = col.n;
+                el.contentEditable = "plaintext-only";
+                el.spellcheck = false;
+                el.focus();
+                getSelection().selectAllChildren(el);
+                let done = false;
+                const stop = (commit) => {
+                    if (done) return;
+                    done = true;
+                    el.contentEditable = "false";
+                    const value = el.textContent.trim();
+                    if (!commit && isNew) {
+                        cols = cols.filter((c) => c.id !== id);
+                        run(() => render());
+                        return;
+                    }
+                    col.n = commit ? value || before : before;
+                    render();
+                };
+                el.onkeydown = (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        stop(true);
+                    }
+                    if (e.key === "Escape") {
+                        e.preventDefault();
+                        stop(false);
+                    }
+                };
+                el.onblur = () => stop(true);
+            }
+
+            function openDelete(id) {
+                const col = cols.find((c) => c.id === id);
+                pendingDelete = id;
+                document.getElementById("delName").textContent = col.n;
+                document.getElementById("delCount").textContent =
+                    col.cards.length === 1 ? "1 task" : `${col.cards.length} tasks`;
+                scrim.classList.add("open");
+            }
+            document.getElementById("cancelDel").onclick = () => {
+                scrim.classList.remove("open");
+                pendingDelete = null;
+            };
+            document.getElementById("confirmDel").onclick = () => {
+                const id = pendingDelete;
+                pendingDelete = null;
+                scrim.classList.remove("open");
+                /* Let the scrim finish first — a transition under a dissolving overlay is measured
+                   through the overlay rather than through itself. */
+                setTimeout(() => {
+                    cols = cols.filter((c) => c.id !== id);
+                    run(() => render());
+                }, 170 * SLOW());
+            };
+
+            document.getElementById("headerAdd").onclick = createColumn;
+            document.getElementById("restoreRail").onclick = () => {
+                track.classList.remove("railhidden");
+                document.getElementById("restoreRail").hidden = true;
+            };
+
+            render();
+
+
+            document.getElementById("laneToggle").onchange = (e) => {
+                document.body.classList.toggle("lane-content", !e.target.checked);
+            };
+
+            const root = document.documentElement;
+            document.getElementById("slow").onchange = (e) =>
+                root.style.setProperty("--slow", e.target.checked ? "6" : "1");
+            document.getElementById("dark").onchange = (e) => {
+                const on = e.target.checked;
+                root.style.setProperty("--app", on ? "#20212c" : "#f4f7fd");
+                root.style.setProperty("--surface", on ? "#2b2c37" : "#ffffff");
+                root.style.setProperty("--border", on ? "#3e3f4e" : "#e4ebfa");
+                root.style.setProperty("--border-hover", on ? "#4d4e60" : "#d6dfef");
+                root.style.setProperty("--muted", on ? "#98a1b0" : "#66707f");
+                root.style.setProperty("--text", on ? "#ffffff" : "#000112");
+            };
+        </script>
+    </body>
+</html>
