@@ -1292,6 +1292,38 @@ carries `cubic-bezier(.2,0,0,1)`.
 cannot do: it removes the *animation*, never the API's input block, which is a property of
 `startViewTransition()` and not of its duration.
 
+### Why every version up to v11 could only ever cross-fade
+
+Reported after v11 that it was still "a fade in, fade out situation we're trying to avoid". That
+is not a tuning complaint, it is a structural one, and it is correct.
+
+**A view transition morphs elements that share an identity. Two unrelated tasks share none.** Task
+A's title and task B's title are not the same object — they are different strings occupying the
+same box. With no counterpart to morph *to*, `::view-transition-group()` has no geometry to
+animate, so everything the API can do collapses to a cross-fade. Sequencing that cross-fade
+(v9-v11) made it slower and rule-4-clean, but it could not make it a morph, because there was
+nothing to morph.
+
+**The thing that genuinely is one entity is the clicked card and the panel it becomes.** So
+`tp-morph` is set on the *card* in the old state and on the *panel body* in the new one. The
+browser then animates one rect into the other: the card leaves the board, travels, and grows into
+the panel. Filmstripped at 50ms, the card is visibly in flight between its column and the panel.
+That is real movement, and it is the same shared-element idea as §4b's card-to-modal morph — which
+this document adopted on 2026-09-01 and which the panel decision then made homeless.
+
+**One artifact is inherent and cannot be fully removed.** The card is 280x63 and the panel is
+400x~1000; the aspect ratios do not match, so whichever snapshot is on screen mid-flight is being
+stretched. Neither can be shown while it distorts. The resolution used here is to let the *group*
+carry the visible movement — the box travels and grows on the phase's curve — while the outgoing
+snapshot is dropped in 70ms and the incoming one resolves only at 260ms, once the box has arrived
+at its destination size. What remains is a brief scale during flight, which reads as the card
+growing rather than as distortion because it is in transit rather than stationary.
+
+**How this was found is the point.** Three rounds of numeric verification passed while the screen
+showed a cross-fade. The structural error was only visible once the transition was rendered as a
+filmstrip over the *whole stage* rather than the panel alone — the travel happens across the board,
+so a clip around the panel could not have shown it at any sampling rate.
+
 ### What was actually wrong: the duration, again
 
 v10 was reported as no better than v9 — still snapping. It was, and every measurement in this
