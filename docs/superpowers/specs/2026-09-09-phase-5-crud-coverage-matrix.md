@@ -39,7 +39,7 @@ Paths are relative to `.superpowers/brainstorm/`; `S1` is `23940-1788251793/cont
 |---|---|---|---|---|---|
 | **Board** | ✅ `S1/sidebar-boards-v1` | ✅ `S1/board-switch-v3`, `S1/sidebar-boards-v4` | ✅ `S1/board-edit-v2` | ✅ `S1/board-edit-v2` | — |
 | **Column** | ✅ `S1/column-crud-v17` | ✅ `S1/load2-v2`, `S1/handoff-v4` | ✅ `S1/column-crud-v17` | ✅ `S1/column-crud-v17` | ✅ `S1/column-crud-v17` |
-| **Task** | ✅ `S1/task-create-v4` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ❌ | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
+| **Task** | ✅ `S1/task-create-v4` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ✅ `S1/task-delete-v1` | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
 | **Subtask** | ✅ `S1/subtask-crud-v2` | ✅ `S1/task-open-v17` | ✅ `S1/subtask-crud-v2` | ✅ `S1/subtask-crud-v2` | — |
 | **Account** | ✅ `S1/auth-v4` | ✅ `S1/auth-v4` | — | — | — |
 
@@ -176,7 +176,7 @@ The button took four passes and its own three defect rows (#70–#72); the short
 and **nothing hard-edged may animate on hover** (a 1px band crawling through fractional positions
 is the "jerk").
 
-**Delete — prototyped 2026-09-10**, `task-delete-v1.html`.
+**Delete — ✅ SIGNED OFF 2026-09-10**, `task-delete-v1.html`.
 Today: `delete-task-confirm`.
 **The `❌` note here was wrong about the mechanism.** It said this was the one genuinely
 non-optimistic wait in the app. `use-delete-task.ts` writes the cache in `onMutate`, snapshots the
@@ -254,13 +254,18 @@ the user rather than by a check. Check 13 — the scale pass — is deliberately
 main bulk of the surfaces exist; run it then, over every unbounded collection at once. Running them is what makes the next surface cheaper than this one was.
 
 **Subtask CRUD and task create are closed** — `subtask-crud-v2.html` and `task-create-v4.html`,
-both signed off 2026-09-10, and **task delete is prototyped** (`task-delete-v1.html`). No `◐` cells
-remain and the last `❌` has a prototype awaiting sign-off.
+both signed off 2026-09-10, and so is **task delete** (`task-delete-v1.html`). **Every cell in the
+matrix is now `✅`** — no `◐`, no `❌`. What remains is not coverage but the gap list: G1, G3, G4, G7,
+row 58, and §4c.
 
 Open, in the order they are likely to matter:
 
 1. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
    zero calls to the real View Transitions API.
+2. **Row 58** — the grid-centring wrapper G2 requires lets Tab escape Base UI's focus trap. It
+   cannot be settled in a prototype; it needs real JSX and a Tab-containment assertion.
+3. **G1** (reduced-motion variants), **G3** (toast enter/exit), **G4** (overflow affordance) and
+   **G7** (theme switch) are the surfaces the matrix never covered because they are not CRUD.
 
 **Do not re-derive:** the defect log's **nine recurring causes** explain most of what went wrong
 here, and every one of the 40 entries names the assertion that would catch it. Read that file
