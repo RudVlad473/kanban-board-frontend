@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<title>Task create — v3</title>
+<style>
+/* ============================================================================
+   TASK CREATE — the last `◐` in the matrix.
+
+   What was already covered, and what actually remained
+   ----------------------------------------------------
+   The matrix records this cell as "the modal itself (G2), and the same
+   repeating-row problem as board create". G2 closed on 2026-09-10, so the modal
+   is settled and its vocabulary is used here verbatim rather than re-derived.
+
+   Two things turned out NOT to be covered, despite the note:
+
+   - `optimistic-v5` is about a MOVE and its rollback. It has a pending ring and
+     border animations for a card that already exists and changes column. There
+     is no designed entrance for a card that did not exist a moment ago, which
+     is the whole of what a create produces.
+   - The repeating rows here are not the panel's rows. `subtask-crud-v2` settled
+     a row that is a tinted pill containing a checkbox and an editable label.
+     Mock p38's create-form row is an empty text INPUT with the ✕ OUTSIDE it,
+     and it is being filled rather than read. The motion transfers; the material
+     does not.
+
+   The one genuinely new decision
+   ------------------------------
+   Submitting does two things at once: the modal leaves, and a card arrives in a
+   column behind it. Every instinct from the earlier surfaces says sequence them
+   — acknowledge, then show the result — and every measurement from those same
+   surfaces says that is wrong. #40 and #51 are both "two true things about one
+   event, put on two clocks, read as two gestures", and the subtask sink was
+   explicitly changed from sequenced to concurrent for exactly this reason.
+
+   So they start on the same frame. The modal's opacity is at 0 by 90ms and the
+   card's box is still opening at 200ms, so the arrival is mostly watched
+   through nothing rather than through a fading panel.
+
+   What is pinned, and where this differs from G2's long form
+   ---------------------------------------------------------
+   G2's create-board form pinned the board name field as well as the title,
+   because its head was two short lines and the repeating part was everything
+   below. This form cannot do that: `Description` is a textarea, and pinning it
+   spends most of a 448px modal on a field nobody is looking at while they add
+   subtasks.
+
+   So the rule here is the narrower one — **pin what identifies the surface and
+   what acts on it, and let the fields scroll.** Title, Description, the subtask
+   rows and Status all scroll; "Add New Task" and "Create Task" do not. Said
+   plainly because it is a divergence, not an oversight.
+   ============================================================================ */
+
+:root {
+  --e: cubic-bezier(.2,0,0,1);
+  /* an arrival's long decelerating tail; a dismissal's acceleration away */
+  --enter: cubic-bezier(.16,1,.3,1);
+  --exit: cubic-bezier(.5,0,.9,.4);
+  --slow: 1;
+  --purple: #635FC7;
+  --purple-hover: #5854be;
+  --purple-press: #4f4bab;
+  --purple-edge: #3f3c85;
+  --btn-quiet-hover: color-mix(in srgb, var(--ink) 4%, #fff);
+  --btn-quiet-press: color-mix(in srgb, var(--ink) 8%, #fff);
+  --btn-quiet-edge: color-mix(in srgb, #000 14%, #fff);
+  --border-hover: #d6dfef;
+  --border-rest: #dce3f2;
+  --press: 90ms;
+  --red: #EA5555;
+  --ink: #000112;
+  --muted: #828FA3;
+  --line: #E4EBFA;
+  --tint: #F4F7FD;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--tint); color: var(--ink);
+  font: 500 13px/1.5 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+
+/* ------------------------------------------------------------- the board */
+.top { display: flex; align-items: center; justify-content: space-between;
+  background: #fff; padding: 16px 24px; border-bottom: 1px solid var(--line); }
+.top h1 { font: 700 20px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0; }
+.page { display: flex; gap: 28px; align-items: flex-start; padding: 24px; }
+.board { display: flex; gap: 24px; }
+.col { width: 200px; }
+.colh { font: 700 11px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+/*
+ * The card wrapper is what animates, for the reason `subtask-crud-v2` records:
+ * `height` cannot interpolate from `auto`, and animating the card itself makes
+ * its own text re-wrap on the way in. A wrapper with `overflow: hidden` lets
+ * the card keep its natural box while the window over it opens.
+ */
+.cardw { overflow: hidden; margin-bottom: 12px; }
+.card { background: #fff; border-radius: 6px; padding: 14px 12px;
+  box-shadow: 0 2px 4px rgba(54,78,126,.08);
+  font: 700 13px/17px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+.card small { display: block; margin-top: 6px; color: var(--muted);
+  font: 700 11px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+
+/*
+ * A CARD ARRIVING IS THE SAME SHAPE AS A SUBTASK ROW ARRIVING, one scale up —
+ * signed off 2026-09-10 and reused rather than re-derived.
+ *
+ * What that shape actually is, corrected after measurement: the opacity is on
+ * the WRAPPER, and the wrapper contains the card's own white surface. So there
+ * is no visible box opening ahead of its contents — the SPACE opens while
+ * nothing is drawn in it, and the card materialises into the space it made.
+ * Measured: at 90ms the wrapper is 50.6px of its final 62px and opacity is
+ * still 0; it reaches 0.85 at 190ms and 1 at 207ms.
+ *
+ * That is a defensible reading — a list insertion opening a gap and then
+ * filling it — but it is NOT "box first, contents last", which is what this
+ * comment claimed and what a reader would have carried forward. The claim was
+ * wrong; the shape is the one the subtask row was approved with, so it stays
+ * and the description is fixed instead.
+ */
+.cardw.entering { transition:
+    height calc(200ms * var(--slow)) var(--e),
+    margin-bottom calc(200ms * var(--slow)) var(--e),
+    opacity calc(110ms * var(--slow)) linear calc(90ms * var(--slow)); }
+
+/*
+ * The pending ring. `optimistic-v5` established that an optimistic row says so
+ * rather than pretending; this is that idea at rest — a hairline in the accent,
+ * not a spinner, and it retires by fading rather than by being removed.
+ */
+.card.pending { box-shadow: 0 2px 4px rgba(54,78,126,.08), inset 0 0 0 1px var(--purple); }
+.card { transition: box-shadow calc(200ms * var(--slow)) linear; }
+
+/* ------------------------------------------------------------- the modal */
+/*
+ * THE MOTION, RE-DERIVED — reported as "kinda basic", and it was: opacity +
+ * 8px + scale .985, one 160ms budget, symmetric both ways. That is the default
+ * recipe, and three specific things made it read as one.
+ *
+ *   1. OPACITY AND TRAVEL SHARED A CLOCK. A box that finishes fading exactly
+ *      when it finishes moving is translucent for the whole of its travel, so
+ *      the eye reads a fade and never an arriving object. Opacity now finishes
+ *      at 90ms while translate and scale run to 300ms, and the split was tuned
+ *      against the curve rather than picked: `--enter` front-loads so hard that
+ *      a 150ms fade left **0.15px** of travel outstanding — measured, by
+ *      scrubbing the running transition rather than sampling a wall clock.
+ *      That is the same fade-and-arrive-together defect with larger numbers on
+ *      it. At 90ms over 18px the popup is fully opaque with **2.2px** still to
+ *      go, and those 2.2px take the remaining 210ms — a solid panel settling,
+ *      which is the whole difference from a ghost drifting.
+ *   2. THE CURVE HAD NO TAIL. `--e` is the phase's general-purpose curve. An
+ *      arrival wants `--enter`, an expo-out: nearly all the distance covered
+ *      at once, then a long decelerating settle. Same budget, different
+ *      character.
+ *   3. THE SCRIM WAS A FLAT WASH. It now blurs 0 → 1.5px as well, so the board
+ *      behind actually recedes — depth from defocus rather than from a grey
+ *      sheet laid over everything.
+ *
+ * The popup's SHADOW animates with it, starting tight and flat and ending on
+ * the full lift, so it reads as rising toward the viewer — the one depth cue a
+ * translate alone cannot give.
+ *
+ * EXIT IS A RELEASE, NOT THE ENTRANCE REVERSED. `--exit` accelerates away over
+ * 130ms, taking 4px DOWN with the scale. That is a dismissal, and it is not the
+ * 160ms float-back-down the earlier note rightly rejected. Both elements keep
+ * ONE clock, 130ms each, because splitting them is #57 — the empty grey frame,
+ * now found three times.
+ */
+.backdrop { position: fixed; inset: 0; z-index: 50; background: rgb(16 18 32 / .32);
+  backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px);
+  transition:
+    opacity calc(220ms * var(--slow)) linear,
+    backdrop-filter calc(260ms * var(--slow)) var(--enter),
+    -webkit-backdrop-filter calc(260ms * var(--slow)) var(--enter); }
+.backdrop[data-starting-style], .backdrop[data-ending-style] { opacity: 0;
+  backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+.backdrop[data-closed] { transition:
+    opacity calc(130ms * var(--slow)) linear,
+    backdrop-filter calc(130ms * var(--slow)) linear,
+    -webkit-backdrop-filter calc(130ms * var(--slow)) linear; }
+
+/* G2's wrapper: centring lives here so the popup's `translate` stays free. */
+.centre { position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center; pointer-events: none; }
+
+/*
+ * THE MODAL'S MATERIAL, which had never been designed.
+ *
+ * Reported as "modals look too basic … very default and generic", and the
+ * cause is sourced rather than guessed: **every modal in this phase —
+ * `column-crud-v17`, `board-edit-v2` and this file — carried
+ * `0 12px 32px rgb(16 18 32 / .16)` and no border at all.** That is the
+ * pre-phase vocabulary. The Material section explicitly demoted it: *"hairline
+ * border replaces shadow as the primary edge … shadow demoted to
+ * `0 1px 2px rgba(16,18,32,.04)`"*, and the Direction section is *"restrained
+ * precision — hairline borders rather than shadows"*.
+ *
+ * So the modal was the one surface still speaking the old language, which is
+ * exactly what "generic" describes: a single soft blob under a borderless white
+ * rectangle is the default every framework ships.
+ *
+ * Three things, all of them already specified and none of them applied here:
+ *
+ *   radius   **12px**, from the control-geometry table. Every modal in the
+ *            phase used 6px. NOTE: that table marks this row *"proposed, never
+ *            reviewed"* — so 12px is the written intent, not a settled fact.
+ *   edge     a 1px hairline, the phase's primary edge device
+ *   shadow   the demoted whisper, plus a lift
+ *
+ * The lift — `0 24px 48px -16px` — is MINE and is the one unbriefed value.
+ * A card sits on a board and needs no lift; a modal sits over a scrim and a
+ * whisper alone reads as a flat cut-out. The negative spread keeps it tight
+ * under the box rather than a halo around it, which is what the old blob was.
+ */
+.popup { pointer-events: auto; position: relative;
+  width: min(90vw, 28rem); max-height: calc(100vh - 6rem);
+  background: #fff; border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column;
+  border: 1px solid var(--line);
+  box-shadow:
+    0 1px 2px rgb(16 18 32 / .04),
+    0 24px 48px -16px rgb(16 18 32 / .20);
+  transition:
+    opacity calc(90ms * var(--slow)) linear,
+    translate calc(300ms * var(--slow)) var(--enter),
+    scale calc(300ms * var(--slow)) var(--enter),
+    box-shadow calc(300ms * var(--slow)) var(--enter); }
+.popup[data-starting-style] { opacity: 0; translate: 0 18px; scale: .96;
+  box-shadow:
+    0 1px 2px rgb(16 18 32 / .04),
+    0 4px 10px -6px rgb(16 18 32 / .10); }
+/*
+ * ONE DURATION ACROSS THE POPUP AND THE SCRIM on exit. Running the popup's
+ * opacity at 90ms and the scrim's at 120ms left the last beat of every close as
+ * an empty grey screen — measured on G2 at +161ms, popup 0 while the backdrop
+ * was still 0.167. Two fades retiring one gesture share a clock (#40, #51, and
+ * this, which is the third time).
+ */
+.popup[data-closed] { transition:
+    opacity calc(130ms * var(--slow)) var(--exit),
+    translate calc(130ms * var(--slow)) var(--exit),
+    scale calc(130ms * var(--slow)) var(--exit); }
+.popup[data-ending-style] { opacity: 0; translate: 0 4px; scale: .98; }
+
+/*
+ * WHAT IS PINNED, corrected after being watched.
+ *
+ * The first version pinned only the modal title and the submit, on the argument
+ * that a form's fields ARE its content and pinning a textarea spends most of a
+ * 448px modal. Driven, that is the same incoherence the task panel had: the
+ * task's Title and Description are what say WHICH task these subtasks belong
+ * to, and letting them slide away above a pinned "Subtasks" label reads as the
+ * header coming apart.
+ *
+ * So it matches the panel exactly now — identity pinned at the top, the
+ * repeating collection scrolling, the action pinned at the bottom. `Status`
+ * joins the footer for the same reason it did on the panel: it acts on the
+ * thing rather than describing it.
+ *
+ * The cost is stated rather than hidden: the head is a fixed ~250px, so the
+ * subtask list gets whatever is left. The description is a fixed-height
+ * textarea, so unlike the panel's clamped paragraph this cost cannot grow.
+ */
+.mhead { flex: none; padding: 24px 24px 4px; }
+.mscroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 24px; }
+/*
+ * The divider is a consequence of scrolling, not decoration. Mock p38 has no
+ * rule above `Create Task`, and drawing one on a form that fits invents a
+ * boundary where nothing is being cut off. It appears only when the region
+ * between the pinned parts actually overflows — which is exactly when a rule is
+ * doing work, because content is passing under it.
+ */
+.mfootbar { flex: none; padding: 16px 24px 24px; background: #fff;
+  border-top: 1px solid transparent; transition: border-color .13s; }
+.mfootbar .fgroup { margin-bottom: 16px; }
+.popup.overflowing .mfootbar { border-top-color: var(--line); }
+.mtitle { font: 700 18px/23px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 16px; }
+
+.flab { display: block; font: 700 12px/15px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  color: var(--muted); margin: 0 0 8px; }
+/*
+ * THE SPECIFIED FOCUS TREATMENT: a single 2px border that exists AT REST, and
+ * only its colour changes.
+ *
+ * This file had 1px going to purple on focus, which moves the box by a pixel
+ * every time the caret lands — the layout-shift-on-focus the phase wrote this
+ * rule to avoid. The resting colour is `#DCE3F2`, deliberately lighter than the
+ * card's `#E4EBFA` to offset the extra weight of the second pixel. No ring and
+ * no halo, so there is nothing to double.
+ *
+ * Radius is 6px, from the control-geometry table's inputs row — buttons are
+ * 4px, which the table itself flags as the one place the scale disagrees.
+ */
+.fin { width: 100%; border: 2px solid var(--border-rest); border-radius: 6px;
+  padding: 8px 10px; font: 500 13px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink); background: #fff; transition: border-color .13s; }
+.fin:hover { border-color: var(--border-hover); }
+.fin:focus { outline: none; border-color: var(--purple); }
+.fin::placeholder { color: color-mix(in srgb, var(--muted) 60%, transparent); }
+textarea.fin { resize: none; height: 88px; line-height: 23px; }
+.fgroup { margin-bottom: 18px; }
+
+/*
+ * MOCK p38's SUBTASK ROW: an input, and a ✕ to its RIGHT, outside the field.
+ * Not the panel's tinted pill — that surface reads subtasks, this one fills
+ * them in, and the affordance the mock gives each is different.
+ */
+.srow { display: flex; align-items: center; gap: 16px; }
+.srow .fin { flex: 1 1 auto; min-width: 0; }
+.sx { flex: none; width: 20px; height: 20px; padding: 0; border: 0; background: none;
+  color: var(--muted); cursor: pointer; border-radius: 3px;
+  font: 400 16px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  transition: color .13s, background .13s; }
+.sx:hover { color: var(--red); background: rgb(234 85 85 / .1); }
+.sx:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
+
+/*
+ * The row wrapper and its motion are `subtask-crud-v2`'s, unchanged — including
+ * the two directions being sequenced in OPPOSITE orders, which is the part that
+ * took three revisions to get right there and should not be re-derived here.
+ */
+.sroww { overflow: hidden; margin-bottom: 12px; }
+.sroww.animating { transition:
+    height calc(200ms * var(--slow)) var(--e),
+    margin-bottom calc(200ms * var(--slow)) var(--e),
+    opacity calc(90ms * var(--slow)) linear; }
+.sroww.animating.entering { transition:
+    height calc(200ms * var(--slow)) var(--e),
+    margin-bottom calc(200ms * var(--slow)) var(--e),
+    opacity calc(110ms * var(--slow)) linear calc(90ms * var(--slow)); }
+.sroww.leaving { pointer-events: none; }
+
+/*
+ * THE APP'S OWN BUTTON, not an approximation of it.
+ *
+ * These values are read off `src/components/ui/button/button-variants.ts` and
+ * `src/styles/tokens.css` rather than eyeballed: `rounded-full`, `h-8 / h-10`,
+ * `px-4`, and `text-body-m` — which is **12px/15px weight 700**, not the 13px a
+ * prototype naturally reaches for. A prototype whose controls are a near-miss
+ * of the real ones is worse than one that is obviously schematic, because the
+ * near-miss is what gets copied.
+ *
+ * THE ONE PLACE THE MOCK AND THE SHIPPED CODE DISAGREE, surfaced rather than
+ * silently resolved: mock p38 and p42 draw the secondary button as a LAVENDER
+ * FILL with purple text (`+ Add New Subtask`, `Cancel`), while
+ * `buttonVariants.secondary` ships as white with a border
+ * (`border-border-default bg-bg-surface`). This file follows the MOCK, because
+ * the mock is the design source of truth — and that makes the shipped variant a
+ * defect to raise, not a style to copy.
+ */
+/*
+ * THE ADOPTED BUTTON — `buttons-v4.html`, decided 2026-09-09, not
+ * `button-variants.ts`.
+ *
+ * This file first copied the SHIPPED tokens: `rounded-full`, `h-10`, and
+ * `bg-bg-primary-hover` (#A8A4FF, a LIGHTER hover). All three are exactly what
+ * the phase decided to replace — "the pill is the single loudest 2021 tell" —
+ * so matching shipping code reproduced the look the work exists to remove.
+ *
+ * The prototypes are ahead of `src/`. Read the DECISION, not the code it has
+ * not reached yet.
+ *
+ *   radius   4px, replacing `rounded-full`
+ *   rest     inset top highlight, 1px inner hairline, solid 2px bottom edge
+ *   hover    one step DARKER (#5854be), not lighter
+ *   press    darker again, `translate: 0 2px`, bottom edge to 0, highlight
+ *            inverts to an inner shadow — the whole point of the redesign was
+ *            that nothing in the app acknowledged being pressed
+ *   pending  holds the pressed geometry, `opacity: .75`
+ *
+ * `.ghost` is the `quiet` treatment from `column-crud-v3`, whose hover does its
+ * work through the BORDER: white → #FAFBFE is a 5/4/1 channel step, under the
+ * filmstrip's own noise floor of 8, so the fill-only hover could not be seen.
+ * It DELIBERATELY diverges from mock p38's lavender fill — the amendment of
+ * 2026-09-09 made that call after the user reported the lavender reading as a
+ * bright pill on a dark canvas.
+ */
+/*
+ * THE BUTTON, THIRD PASS — the same idea with two thirds of it deleted.
+ *
+ * v2 got the RULE right and the amount wrong. Reported as "doing too much",
+ * "jerky and unsmooth", and "shadow is a bit too much" — three descriptions of
+ * one over-built hover, and the jerk had a mechanical cause rather than a
+ * matter-of-taste one:
+ *
+ *   - The ambient was a 16px-BLUR shadow being animated. A blurred box-shadow
+ *     is not compositable: every frame is a fresh rasterisation of the blur,
+ *     which is about the most expensive thing you can put on a hover. It was
+ *     also, straightforwardly, the "too much shadow".
+ *   - The release curve overshot by ~10%. On a 4px travel that is 0.4px of
+ *     backtrack — too small to read as a spring, exactly the right size to
+ *     read as a stutter.
+ *   - Three properties changed at once on hover (plinth, highlight, ambient)
+ *     on THREE clocks (140ms, 180ms, 200ms), so the hover had no single moment
+ *     of arrival.
+ *
+ * What survives is the part that was right: **hover may never change the top
+ * face's geometry**, because a hover that moves the box un-hovers itself — the
+ * pointer is left behind, `:hover` stops matching, the box returns, and it
+ * oscillates. So hover still happens entirely UNDER the face: the solid bottom
+ * edge (the plinth) grows 2px → 3px and the inner top highlight brightens .16
+ * → .24. Two properties, one 120ms clock, no blur anywhere.
+ *
+ * PRESS is the only state allowed to move, and it is safe because a press is
+ * held: `:active` survives wherever the cursor goes. It sinks by exactly the
+ * plinth's current height — `translate: 0 var(--lift)` — with the plinth to 0,
+ * so the face lands flush ON the page rather than above a stub. Fill darkens
+ * here and only here; the highlight inverts to a shallow inset. 80ms, plain
+ * decel, no overshoot.
+ *
+ * `--lift` couples the three states without repeating a number: hover writes
+ * 3px, `:active` reads whichever rule won, so a press from hover bottoms out
+ * from 3px and a keyboard or touch press bottoms out from 2px. Both land flush.
+ *
+ * Every shadow list is THREE shadows in every state. `box-shadow` interpolates
+ * only between lists of equal length; a state that drops one cuts instead of
+ * transitioning.
+ */
+.btn { appearance: none; border: none; font: inherit; font-weight: 700;
+  --lift: 2px;
+  height: 40px; padding: 0 20px; border-radius: 4px; cursor: pointer; width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--purple); color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .16),
+    inset 0 0 0 1px rgb(0 0 0 / .12),
+    0 var(--lift) 0 var(--purple-edge);
+  transition:
+    background-color calc(120ms * var(--slow)) var(--e),
+    opacity calc(120ms * var(--slow)),
+    box-shadow calc(120ms * var(--slow)) var(--e),
+    translate calc(120ms * var(--slow)) var(--e); }
+.btn:hover { --lift: 3px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .24),
+    inset 0 0 0 1px rgb(0 0 0 / .12),
+    0 var(--lift) 0 var(--purple-edge); }
+.btn:active { background: var(--purple-press); translate: 0 var(--lift);
+  box-shadow:
+    inset 0 2px 3px rgb(0 0 0 / .24),
+    inset 0 0 0 1px rgb(0 0 0 / .18),
+    0 0 0 var(--purple-edge);
+  transition-duration: calc(80ms * var(--slow)); }
+.btn:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* The quiet fill cannot lighten, so its hover is carried by the ring and the
+   plinth — the same two-property treatment, not an exception to it. */
+.btn.ghost { background: #fff; color: var(--ink);
+  box-shadow:
+    inset 0 2px 3px rgb(16 18 32 / 0),
+    inset 0 0 0 1px var(--line),
+    0 var(--lift) 0 var(--btn-quiet-edge); }
+.btn.ghost:hover { --lift: 3px;
+  box-shadow:
+    inset 0 2px 3px rgb(16 18 32 / 0),
+    inset 0 0 0 1px var(--border-hover),
+    0 var(--lift) 0 var(--btn-quiet-edge); }
+.btn.ghost:active { background: var(--btn-quiet-press); translate: 0 var(--lift);
+  box-shadow:
+    inset 0 2px 3px rgb(16 18 32 / .14),
+    inset 0 0 0 1px var(--border-hover),
+    0 0 0 var(--btn-quiet-edge); }
+
+.btn.small { width: auto; height: 32px; padding: 0 16px; }
+.addsub { margin-bottom: 18px; }
+
+/*
+ * REDUCE, DO NOT REMOVE — G2's variant, extended to the two list motions here.
+ * Opacity survives everywhere; every spatial property goes. The modal's
+ * transition must NOT become `none` or Base UI unmounts in ~18ms and the popup
+ * vanishes mid-scrim; the same reasoning keeps a short fade on the rows.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .popup { transition: opacity calc(100ms * var(--slow)) linear; }
+  .popup[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
+  .popup[data-starting-style], .popup[data-ending-style] { opacity: 0; translate: none; scale: none; }
+  .backdrop, .backdrop[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
+  .sroww.animating, .sroww.animating.entering, .cardw.entering {
+    transition: height 1ms linear, margin-bottom 1ms linear, opacity calc(90ms * var(--slow)) linear; }
+}
+body.force-reduced .popup { transition: opacity calc(100ms * var(--slow)) linear; }
+body.force-reduced .popup[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
+body.force-reduced .popup[data-starting-style],
+body.force-reduced .popup[data-ending-style] { opacity: 0; translate: none; scale: none; }
+body.force-reduced .backdrop,
+body.force-reduced .backdrop[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
+
+/* Reduced motion: the scrim is a plain wash again — a blur that cannot
+   transition would snap on, which is a cut, and cuts are what this policy
+   exists to avoid. */
+@media (prefers-reduced-motion: reduce) {
+  .backdrop, .backdrop[data-starting-style], .backdrop[data-ending-style],
+  .backdrop[data-closed] { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+body.force-reduced .backdrop,
+body.force-reduced .backdrop[data-starting-style],
+body.force-reduced .backdrop[data-ending-style],
+body.force-reduced .backdrop[data-closed] { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.force-reduced .sroww.animating,
+body.force-reduced .sroww.animating.entering,
+body.force-reduced .cardw.entering {
+  transition: height 1ms linear, margin-bottom 1ms linear, opacity calc(90ms * var(--slow)) linear; }
+
+/* ------------------------------------------------------------------- rig */
+.rig { font: 500 12px/1.8 ui-monospace, monospace; color: #4a5568; min-width: 250px; }
+.rig h3 { font: 700 12px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
+.rig label { display: block; }
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Platform Launch</h1>
+  <button class="btn small" id="openBtn">+ Add New Task</button>
+</div>
+
+<div class="page">
+  <div class="board" id="board"></div>
+  <div class="rig">
+    <h3>Rig</h3>
+    <label><input type="checkbox" id="slow"> slow motion (6&times;)</label>
+    <label><input type="checkbox" id="reduced"> force reduced motion</label>
+    <label>subtask rows on open: <input type="number" id="rows" value="2" min="0" max="40" style="width:56px"></label>
+    <p id="state">idle</p>
+  </div>
+</div>
+
+<script>
+const SLOW = () => Number(getComputedStyle(document.documentElement).getPropertyValue("--slow")) || 1;
+document.getElementById("slow").onchange = (e) =>
+    document.documentElement.style.setProperty("--slow", e.target.checked ? 6 : 1);
+document.getElementById("reduced").onchange = (e) =>
+    document.body.classList.toggle("force-reduced", e.target.checked);
+const state = document.getElementById("state");
+
+const COLUMNS = [
+  { id: "todo", name: "Todo", cards: [["Build UI for onboarding flow", "0 of 3 subtasks"],
+                                      ["Build UI for search", "0 of 1 subtasks"]] },
+  { id: "doing", name: "Doing", cards: [["Design settings and search pages", "1 of 3 subtasks"]] },
+  { id: "done", name: "Done", cards: [["Conduct 5 wireframe tests", "1 of 1 subtasks"]] },
+];
+
+const board = document.getElementById("board");
+function renderBoard() {
+  board.innerHTML = COLUMNS.map((c) => `
+    <div class="col" data-col="${c.id}">
+      <div class="colh">${c.name} (<span data-count>${c.cards.length}</span>)</div>
+      <div class="cards">${c.cards.map(([t, s]) =>
+        `<div class="cardw"><div class="card">${t}<small>${s}</small></div></div>`).join("")}</div>
+    </div>`).join("");
+}
+renderBoard();
+
+/* ---------------------------------------------------------- shared motion */
+/*
+ * One function, read in two directions, and the SAME one both surfaces already
+ * use. Ask the animation rather than listening for it (#42): `.animating`
+ * transitions three properties at different durations, so which reports first
+ * is arbitrary, and a listener cannot tell a late event from one that never
+ * fired because the transition never started. The `else` branch is the
+ * reduced-motion path, not a fallback.
+ */
+function grow(wrap, dir, cls, after) {
+  const shut = { height: "0px", marginBottom: "0px", opacity: "0" };
+  const open = { height: `${wrap.scrollHeight}px`, marginBottom: getComputedStyle(wrap).marginBottom, opacity: "1" };
+  const [from, to] = dir === "in" ? [shut, open] : [open, shut];
+  Object.assign(wrap.style, from);
+  void wrap.offsetHeight;
+  wrap.classList.add(cls);
+  if (dir === "in") wrap.classList.add("entering");
+  Object.assign(wrap.style, to);
+  void wrap.offsetWidth;
+  const anim = wrap.getAnimations().find((a) => a.transitionProperty === "height");
+  const settle = () => {
+    wrap.classList.remove(cls, "entering");
+    if (dir === "in") {
+      wrap.style.removeProperty("height");
+      wrap.style.removeProperty("margin-bottom");
+      wrap.style.removeProperty("opacity");
+    }
+    after && after();
+  };
+  if (anim) anim.finished.then(settle, settle); else settle();
+}
+
+/* ----------------------------------------------------------- the modal */
+let mounted = null;
+
+/* Mock p38 varies the two seeded placeholders; a repeated one reads as a bug. */
+const PLACEHOLDERS = ["e.g. Make coffee", "e.g. Drink coffee & smile"];
+let rowSeq = 0;
+const subtaskRow = () => {
+  const w = document.createElement("div");
+  w.className = "sroww";
+  w.innerHTML = `<div class="srow">` +
+    `<input class="fin" placeholder="${PLACEHOLDERS[rowSeq++ % PLACEHOLDERS.length]}">` +
+    `<button class="sx" aria-label="Remove subtask">&#10005;</button></div>`;
+  w.querySelector(".sx").addEventListener("click", () => {
+    if (w.classList.contains("leaving")) return;
+    w.classList.add("leaving");
+    grow(w, "out", "animating", () => { w.remove(); w.ownerDocument.querySelector(".popup")?.dispatchEvent(new Event("subs:change")); });
+  });
+  return w;
+};
+
+function openModal() {
+  if (mounted) return;
+  const backdrop = document.createElement("div");
+  backdrop.className = "backdrop";
+  backdrop.setAttribute("data-open", ""); backdrop.setAttribute("data-starting-style", "");
+
+  const centre = document.createElement("div");
+  centre.className = "centre";
+  const popup = document.createElement("div");
+  popup.className = "popup";
+  popup.setAttribute("role", "dialog"); popup.setAttribute("aria-modal", "true");
+  /*
+   * An accessible NAME. `role="dialog"` with no label announces as "dialog" and
+   * nothing else. Base UI wires this from `Modal.Title` in the real component;
+   * a hand-rolled prototype has to say it, or the prototype quietly models a
+   * dialog that would fail its own test.
+   *
+   * FOCUS CONTAINMENT is deliberately NOT reproduced here — it is Base UI's
+   * job, and faking it would make this file useless for the one question that
+   * is currently open about it (row 58, whether a centring wrapper breaks the
+   * real trap). Tab does leave this prototype; that is a fidelity gap, stated,
+   * not a design decision.
+   */
+  popup.setAttribute("aria-labelledby", "tcTitle");
+  popup.setAttribute("data-open", ""); popup.setAttribute("data-starting-style", "");
+  popup.innerHTML = `
+    <div class="mhead">
+      <h2 class="mtitle" id="tcTitle">Add New Task</h2>
+      <div class="fgroup"><label class="flab" for="tTitle">Title</label>
+        <input class="fin" id="tTitle" placeholder="e.g. Take coffee break"></div>
+      <div class="fgroup"><label class="flab" for="tDesc">Description</label>
+        <textarea class="fin" id="tDesc" placeholder="e.g. It's always good to take a break."></textarea></div>
+      <span class="flab">Subtasks</span>
+    </div>
+    <div class="mscroll">
+      <div id="subs"></div>
+      <button class="btn ghost addsub" id="addSub">+ Add New Subtask</button>
+    </div>
+    <div class="mfootbar">
+      <div class="fgroup"><label class="flab" for="tStatus">Status</label>
+        <select class="fin" id="tStatus">${COLUMNS.map((c) => `<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
+      <button class="btn" id="createBtn">Create Task</button>
+    </div>`;
+  centre.appendChild(popup);
+  document.body.append(backdrop, centre);
+  mounted = { backdrop, centre, popup };
+  state.textContent = "modal open";
+
+  /*
+   * Recomputed rather than decided once: the region overflows or stops
+   * overflowing as rows are added and removed and as the window resizes, and a
+   * divider that was correct at open is wrong one row later.
+   */
+  const sc = popup.querySelector(".mscroll");
+  const syncOverflow = () => popup.classList.toggle("overflowing", sc.scrollHeight > sc.clientHeight);
+  new ResizeObserver(syncOverflow).observe(sc);
+
+  const subs = popup.querySelector("#subs");
+  rowSeq = 0;
+  const seed = Math.max(0, Number(document.getElementById("rows").value) || 0);
+  for (let i = 0; i < seed; i++) subs.appendChild(subtaskRow());
+  syncOverflow();
+
+  /*
+   * A row added at the bottom of a scrolled form is added out of sight, with
+   * the caret in it — the same defect the task panel had. The scroll is issued
+   * on the SAME frame as the entrance, aimed at the finished position, so the
+   * list arriving and the view following it are one beat.
+   */
+  popup.querySelector("#addSub").addEventListener("click", () => {
+    const row = subtaskRow();
+    subs.appendChild(row);
+    grow(row, "in", "animating", () => { row.querySelector(".fin").focus({ preventScroll: true }); syncOverflow(); });
+    const over = sc.scrollHeight - sc.clientHeight;
+    if (over > 0) sc.scrollTo({ top: over, behavior: "smooth" });
+  });
+
+  popup.addEventListener("subs:change", syncOverflow);
+  popup.querySelector("#createBtn").addEventListener("click", submit);
+  backdrop.addEventListener("click", () => closeModal());
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    backdrop.removeAttribute("data-starting-style");
+    popup.removeAttribute("data-starting-style");
+  }));
+  popup.querySelector("#tTitle").focus({ preventScroll: true });
+}
+
+function closeModal() {
+  if (!mounted) return;
+  const { backdrop, centre, popup } = mounted;
+  mounted = null;
+  backdrop.removeAttribute("data-open"); popup.removeAttribute("data-open");
+  backdrop.setAttribute("data-closed", ""); popup.setAttribute("data-closed", "");
+  void popup.offsetWidth;
+  backdrop.setAttribute("data-ending-style", ""); popup.setAttribute("data-ending-style", "");
+  void popup.offsetWidth;
+  const running = [...popup.getAnimations(), ...backdrop.getAnimations()];
+  const drop = () => { backdrop.remove(); centre.remove(); if (state.textContent === "modal open") state.textContent = "idle"; };
+  if (!running.length) return drop();
+  Promise.allSettled(running.map((a) => a.finished)).then(drop);
+}
+
+/*
+ * SUBMIT IS ONE GESTURE WITH TWO HALVES, STARTED ON ONE FRAME.
+ *
+ * The modal leaving and the card arriving are two true things about the same
+ * event, not a cause and its consequence — and this project has now measured
+ * twice (#40, #51) that putting two such things on two clocks reads as two
+ * gestures. The subtask sink was changed from sequenced to concurrent for the
+ * same reason after being watched.
+ *
+ * The timing works out without needing a delay: the modal's opacity reaches 0
+ * at ~90ms while the card's box is still opening through 200ms, so most of the
+ * arrival is watched through nothing rather than through a fading panel.
+ */
+function submit() {
+  if (!mounted) return;
+  const popup = mounted.popup;
+  const title = popup.querySelector("#tTitle").value.trim() || "Untitled task";
+  const colId = popup.querySelector("#tStatus").value;
+  const subCount = popup.querySelectorAll("#subs .sroww:not(.leaving)").length;
+
+  closeModal();
+
+  const col = document.querySelector(`.col[data-col="${colId}"]`);
+  const list = col.querySelector(".cards");
+  /*
+   * `textContent`, not `innerHTML`. The title is user text and a template
+   * literal makes it markup: a title of `<img src=x onerror=...>` executed.
+   * React escapes this for free, which is exactly why a prototype that does not
+   * is worth fixing — the prototype is what gets read as the reference, and the
+   * habit is what travels, not the framework's protection.
+   */
+  const wrap = document.createElement("div");
+  wrap.className = "cardw";
+  const card = document.createElement("div");
+  card.className = "card pending";
+  card.append(title);
+  const cap = document.createElement("small");
+  cap.textContent = `0 of ${subCount} subtask${subCount === 1 ? "" : "s"}`;
+  card.append(cap);
+  wrap.append(card);
+  list.appendChild(wrap);
+  const count = col.querySelector("[data-count]");
+  count.textContent = String(list.children.length);
+  state.textContent = `created in ${colId} — pending`;
+
+  grow(wrap, "in", "entering", () => {
+    /*
+     * The ring retires on its own clock because it is not part of the gesture —
+     * it is the server answering, which happens whenever it happens. Faking a
+     * confirmation at a fixed delay is the one thing this prototype cannot
+     * measure, so it is a `setTimeout` and labelled as a stand-in.
+     */
+    setTimeout(() => {
+      wrap.querySelector(".card").classList.remove("pending");
+      state.textContent = "confirmed";
+    }, 600 * SLOW());
+  });
+}
+
+document.getElementById("openBtn").addEventListener("click", openModal);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+</script>
+</body>
+</html>
