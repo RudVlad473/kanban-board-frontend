@@ -19,7 +19,7 @@ and pretending otherwise is how a defect ships under a green suite (`docs/adr/te
 
 ## The rules the defects keep breaking
 
-Seven recur often enough to be worth stating before the table:
+Eight recur often enough to be worth stating before the table:
 
 1. **An inline `style.transition` overrides the stylesheet's whole list**, not just the property
    you named. Setting one for a FLIP and leaving it disables everything else on that element.
@@ -37,6 +37,10 @@ Seven recur often enough to be worth stating before the table:
    cannot escape it.
 5. **Two stacked semi-transparent layers with different backgrounds do not sum to either.** A
    cross-fade is only invisible when both halves are the same pixels.
+8. **A handoff between two elements needs its two windows to overlap, not abut.** Fixing a
+   double by making the first leave earlier buys a gap instead; the fix is to make the
+   pair *interchangeable* — same position, same opacity — and swap them on one frame.
+   `display` cannot be transitioned, so an element hidden that way always arrives as a snap.
 
 ## The log
 
@@ -68,6 +72,12 @@ Seven recur often enough to be worth stating before the table:
 | 25 | The dashed slot painted over the column it crossed, intermittently | Every column is positioned, so paint order is DOM order; during the FLIP the slot and its neighbour genuinely overlap, and whichever came later in the list won | User, in slow motion; quantified with `elementFromPoint` | e2e: sample a neighbour's card centre across the FLIP; it is topmost on every frame. Was occluded on **12 of 57** |
 | 26 | Dropping a column far from where it lands showed it in two places | Two faults compounding: the slot repopulated on a fixed 120ms while the 180ms flight was still running, and the panel was aimed at a rect that included the FLIP's in-flight `translate`, so on a long throw it never arrived at all | User, on a video | e2e: after a long drop, no frame has the panel >40px from the slot *while* the slot's header is visible. Was **5 frames**; the panel's final gap was also never 0 |
 | 21 | The slot growing into the lane was too much motion for the interaction | Growth is a second animation competing with the flight, on a gesture that repeats | User | Judgement, not assertion — the height change is real and correct either way (see below) |
+| 27 | No kebab on screen at all for ~90ms after a drop, then one popped in 10px lower | #24's fix overcorrected. The panel's kebab fades out over 120ms while the slot's stays `display: none` until `land()` fires on the flight's `transitionend` at ~180ms — so the two windows do not touch. `display` cannot be transitioned, so the arrival is a snap, and the panel's `.ckb` is positioned against the overlay's padded box, putting it `--ovpad` above the column's own | Orchestrator, sampling the settle at 30ms | e2e: sample the visible kebab count every frame across the settle; it is never 0 **and** never 2. #24 asserted only the upper bound |
+| 28 | A neighbour column's kebab lit up while another column was being carried over it | `.colm:hover .ckb` has nothing to say about a drag in progress, so the pointer crossing a column arms its kebab exactly as a rest hover would | Orchestrator, sampling opacity mid-flight — caught at 0.139, mid-fade | e2e: during a drag, every `.ckb` outside `.overlay` is at opacity 0 |
+| 29 | The delete confirm dimmed only the board card; the page header stayed lit and the dialog centred on the panel rather than the viewport | `.scrim` is `position: absolute` inside `.board`, so `inset: 0` resolves to the board's padding box — 1374×502 of a 1440×900 viewport | Orchestrator, computed style + rect | e2e: the scrim's rect equals the viewport's, and the modal's centre is the viewport's centre |
+| 30 | Deleting an empty column read "removes its **0 tasks** and cannot be reversed" | The count clause has a singular and a plural branch and no zero branch, and the sentence is built to assume the column has tasks at all | Orchestrator, on a screenshot | Unit: the confirm sentence for a 0-task column contains neither `0 task` nor `0 tasks` |
+| 31 | The create rail's `+` sat 78px below the bottom of every column, in a dashed strip reaching 288px past the content | `.railwrap`/`.rail` are `align-self: stretch` against a track with `min-height: 420px` — the lane height that exists for the *drag slot*. Columns are content-height by decision, so the rail was the only thing claiming the lane at rest | Orchestrator, rects: rail 34×420, columns 240×132 and 240×84 | e2e: at rest the rail's height equals the tallest column's, and its bottom is not below theirs |
+| 32 | A newly created column was a caption with nothing under it — no body, no boundary, nowhere to drop | `colHTML` emits `<div class="cards">` unconditionally and an empty one has no height and no material, so a 0-task column renders as floating text | Orchestrator, on a screenshot after create | e2e: an empty column's `.cards` has a non-zero height and a visible border |
 
 ## What is not mechanically catchable
 

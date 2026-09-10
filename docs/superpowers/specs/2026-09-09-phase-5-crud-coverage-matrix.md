@@ -96,6 +96,16 @@ Thirteen defects were found and fixed against it in a single sitting (log entrie
 verdict at close: *"what we have now feels better, but still needs a bit of refining"* — so the row
 is `◑`, not `✅`, and G9 stays open.
 
+**2026-09-10 — the refinement pass that verdict asked for.** Driving all four operations turned up
+six more (log entries 27–32), each falsified against the pre-fix file in the same run: the kebab
+handoff left ~90ms with no kebab on screen and then popped one in 10px lower (27); a neighbour's
+kebab lit while a column was being carried over it (28); the delete confirm dimmed only the board
+card and centred on it rather than the viewport (29); an empty column's confirm read "removes its
+**0 tasks**" (30); the create rail claimed the 420px lane while columns are content-height, putting
+its `+` 78px below everything (31); and a newly created column had no body at all (32). All six are
+fixed. **The row stays `◑`** — the fixes are measured, but nobody has watched the result yet, and
+this file's own history says a look is what closes a cell, not a green number.
+
 **Create — ◑ decided in shape.** The ghost column is replaced by a **34px rail** at the board's end
 (fixed footprint, label as an overlay) **plus `+ Column` in the board header**, reachable at any
 scroll position; the rail carries a low-key dismiss, safe only because the header button survives
@@ -157,15 +167,17 @@ Second, four rename/edit flows are modals, and Phase 5 has already decided once 
 a surface is the wrong shape. Board rename, column rename and subtask rename are the same decision
 three times; taking it once closes three cells.
 
-## Resume here — 2026-09-09
+## Resume here — 2026-09-10
 
 **Where to pick up:** `column-crud-v17.html`, served by
 `node scripts/serve-static.mjs .superpowers/brainstorm 6110`.
 
 Open, in the order they are likely to matter:
 
-1. **G9 sign-off.** Everything works; the refinement is not finished. Drive the four operations and
-   list what still reads wrong before touching anything else.
+1. **G9 sign-off — now a look, not an audit.** Step 1 of the 2026-09-09 note (drive the four
+   operations, list what reads wrong) is done: six defects found, logged as 27–32, all fixed and
+   falsified both ways. What is left is the half a measurement cannot do — watch a drag and a
+   delete at full speed and say whether they read right. Only then does the row go `✅`.
 2. **The remaining `◐` cells** — task create, subtask rename, subtask delete — plus task delete,
    which is still `❌` and is the one non-optimistic wait in the app.
 3. **G2**, which eight cells inherit and which the board-create and column-delete prototypes have
@@ -173,8 +185,8 @@ Open, in the order they are likely to matter:
 4. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
    zero calls to the real View Transitions API.
 
-**Do not re-derive:** the defect log's **seven recurring causes** explain most of what went wrong
-today, and every one of the 26 entries names the assertion that would catch it. Read that file
+**Do not re-derive:** the defect log's **eight recurring causes** explain most of what went wrong
+here, and every one of the 32 entries names the assertion that would catch it. Read that file
 before writing new motion code, not after.
 
 ## Keeping it true

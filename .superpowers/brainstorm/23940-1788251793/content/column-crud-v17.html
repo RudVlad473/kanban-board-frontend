@@ -173,6 +173,17 @@
             .ccount {
                 flex: none;
             }
+            /*
+             * A column with no tasks was a caption and nothing else — no body, no boundary, nowhere
+             * to aim a drop. A recessed well, NOT a dashed outline: dashes are already spoken for by
+             * the drag slot and the create rail, and an empty column sitting next to the dashed rail
+             * in the same vocabulary read as a second, wider affordance rather than as a column.
+             */
+            .cards:empty {
+                min-height: 96px;
+                background: color-mix(in srgb, var(--text) 3.5%, transparent);
+                border-radius: 6px;
+            }
             .card {
                 background: var(--surface);
                 border: 1px solid var(--border);
@@ -269,10 +280,17 @@
              * track and moved the scroll end 116px further away — the target retreated as you
              * reached for it. The label is an overlay, so layout never changes.
              */
+            /*
+             * Height comes from JS, not from `align-self: stretch`. Stretching resolved against the
+             * track's `min-height: 420px` — the LANE height, which exists for the drag slot — while
+             * columns are content-height by decision, so the rail's `+` sat 78px below the bottom of
+             * every column in a strip reaching 288px past the content. It now matches the tallest
+             * column, so the affordance lives in the same band as the thing it adds to.
+             */
             .railwrap {
                 position: relative;
                 flex: none;
-                align-self: stretch;
+                align-self: flex-start;
                 display: flex;
             }
             .rail {
@@ -421,12 +439,26 @@
             }
             /*
              * `.colm:hover .ckb` is (0,3,0) and `.colm.source > *` is (0,2,0), so the hover rule
-             * won and the kebab stayed lit on the slot the pointer was still over. `display: none`
-             * settles it outright and takes the hit area with it.
+             * won and the kebab stayed lit on the slot the pointer was still over. Matching its
+             * specificity and coming later settles it; `visibility` takes the hit area with it the
+             * way `display: none` did, but leaves the element transitionable — v17 could only snap
+             * the slot's kebab back on, because `display` does not interpolate.
              */
-            .colm.source .ckb,
+            .colm.source .ckb {
+                opacity: 0;
+                visibility: hidden;
+            }
             .colm.source .menu {
                 display: none;
+            }
+            /*
+             * A column the pointer merely crosses mid-drag is not being hovered in any sense the
+             * user means — it is under the thing they are carrying. Without this, `.colm:hover .ckb`
+             * armed every column the panel passed over.
+             */
+            body.is-dragging .colm .ckb {
+                opacity: 0;
+                visibility: hidden;
             }
             /*
              * The overlay sheds its chrome DURING the flight, so by the time it lands it is the
@@ -458,15 +490,35 @@
             /* Held at the strength it had under the pointer, so nothing blinks out at pickup. */
             .overlay .ckb {
                 opacity: 1;
-                transition: opacity calc(120ms * var(--slow)) linear;
+                visibility: visible;
+                /*
+                 * `.ckb` is absolute against the overlay's own padded box, so at rest it sat
+                 * `--ovpad` above and right of where the column's own kebab will be. Offsetting it
+                 * by the padding makes the two interchangeable, which is what lets the handoff be a
+                 * swap on one frame instead of a fade with a hole in it.
+                 */
+                top: calc(4px + var(--ovpad));
+                right: var(--ovpad);
             }
             /*
-             * ...and shed with the rest of the chrome on the way down. The slot's own kebab
-             * reappears 120ms after the drop, so a panel that kept its own would put two on screen
-             * — offset by the overlay's 10px padding, which is exactly how it read.
+             * The panel keeps its kebab all the way down and gives it up ON LANDING, not before.
+             * v17 faded it out over 120ms against a slot whose own kebab could not appear until
+             * `land()` at ~180ms, so there was no kebab at all in between and the replacement
+             * arrived as a pop 10px lower. Rule 8: overlap the windows, do not abut them.
              */
-            .overlay.settling .ckb {
+            .overlay.handed .ckb {
                 opacity: 0;
+                /*
+                 * Instant, not `.ckb`'s inherited 130ms fade — the column's own kebab is already at
+                 * full strength on this frame, so fading this one out leaves both on screen for the
+                 * whole 130ms. Measured as a double on three consecutive samples. They are
+                 * pixel-aligned, so there is nothing for an instant swap to show.
+                 */
+                transition: none;
+            }
+            /* One frame of `none` so the column's kebab takes over at full strength, not via a fade. */
+            .colm.handoff .ckb {
+                transition: none;
             }
             .overlay .cards {
                 flex: 0 0 auto;
@@ -497,13 +549,20 @@
             }
 
             /* ── modal ───────────────────────────────────────────────────────── */
+            /*
+             * `fixed`, not `absolute`. Nested in `.board` — which is `position: relative` and
+             * `overflow-x: auto` — an absolute scrim resolved `inset: 0` to the board's padding box:
+             * 1374×502 of a 1440×900 viewport, so the page header stayed lit and the dialog centred
+             * on the panel. A confirm is page-modal or it is not modal.
+             */
             .scrim {
-                position: absolute;
+                position: fixed;
                 inset: 0;
                 display: grid;
                 place-items: center;
                 pointer-events: none;
-                z-index: 25;
+                /* Above this page's sticky `.controls` (30), which an absolute scrim never reached. */
+                z-index: 40;
             }
             .scrim::before {
                 content: "";
@@ -647,10 +706,7 @@
                 <div class="scrim" id="scrim">
                     <div class="modal">
                         <h4>Delete this column?</h4>
-                        <p>
-                            Deleting ‘<span id="delName"></span>’ removes its <span id="delCount"></span> and cannot
-                            be reversed.
-                        </p>
+                        <p>Deleting ‘<span id="delName"></span>’ <span id="delTail"></span></p>
                         <div style="display: flex; gap: 8px">
                             <button class="btn" style="flex: 1" id="confirmDel">Delete</button>
                             <button class="btn ghostbtn" style="flex: 1" id="cancelDel">Cancel</button>
@@ -727,6 +783,7 @@
                         armDrag(e, id);
                     });
                 });
+                sizeRail();
                 document.getElementById("ghost").onclick = createColumn;
                 document.getElementById("railx").onclick = (e) => {
                     e.stopPropagation();
@@ -734,6 +791,20 @@
                     document.getElementById("restoreRail").hidden = false;
                 };
             }
+            /*
+             * The rail tracks the tallest column. The dragged slot is excluded because it is
+             * lane-tall on purpose — measuring it would hand the rail the very 420px the stretch
+             * was giving it, mid-drag, which is the defect wearing a different hat.
+             */
+            const RAIL_MIN_H = 120;
+            function sizeRail() {
+                const heights = [...track.querySelectorAll(".colm")]
+                    .filter((el) => !el.classList.contains("source"))
+                    .map((el) => el.offsetHeight);
+                const wrap = track.querySelector(".railwrap");
+                if (wrap) wrap.style.height = `${Math.max(RAIL_MIN_H, ...heights)}px`;
+            }
+
             /* ── reorder ─────────────────────────────────────────────────────── */
             const REORDER_MS = 160;
             /* dnd-kit's activation distance, in spirit: a click that renames must not become a drag. */
@@ -900,8 +971,16 @@
                 const land = () => {
                     if (landed) return;
                     landed = true;
+                    /*
+                     * All three on the same frame: the slot stops being a slot, its kebab is told
+                     * not to fade, and the panel's kebab goes. The two sit at the same coordinates
+                     * by now, so the swap has nothing to see.
+                     */
+                    el.classList.add("handoff");
+                    overlay.classList.add("handed");
                     el.classList.remove("source");
                     el.style.removeProperty("min-height");
+                    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("handoff")));
                     /* The panel is chrome-less and exactly on the slot by now, so it is the same
                        pixels twice; it can linger until the contents have faded in. */
                     setTimeout(() => overlay.remove(), 140 * SLOW());
@@ -968,8 +1047,16 @@
                 const col = cols.find((c) => c.id === id);
                 pendingDelete = id;
                 document.getElementById("delName").textContent = col.n;
-                document.getElementById("delCount").textContent =
-                    col.cards.length === 1 ? "1 task" : `${col.cards.length} tasks`;
+                /*
+                 * Three branches, not two. An empty column has no tasks to warn about, and the
+                 * pluralised clause said "removes its 0 tasks" — a sentence that only exists
+                 * because the count was templated into prose written for the non-zero case.
+                 */
+                const n = col.cards.length;
+                document.getElementById("delTail").textContent =
+                    n === 0
+                        ? "cannot be reversed."
+                        : `removes its ${n === 1 ? "1 task" : `${n} tasks`} and cannot be reversed.`;
                 scrim.classList.add("open");
             }
             document.getElementById("cancelDel").onclick = () => {
