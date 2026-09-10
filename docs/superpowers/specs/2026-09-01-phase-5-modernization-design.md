@@ -855,7 +855,7 @@ nor the mocks ever covered.
 |---|---|---|
 | **G1** | Reduced-motion variants, every animation | **open — largest** |
 | **G2** | Modal enter / exit | **closed 2026-09-10** — `modal-motion-v1.html`; one requirement (the centring wrapper) is **open**, row 58 |
-| **G3** | Toast enter / exit motion | **closed 2026-09-10** — `toast-motion-v1.html`. Two things it deliberately does **not** close: Base UI's swipe-to-dismiss (installed on `Toast.Root` regardless of pile styling, `swipeDirection` defaulting to `["down","right"]`) and the roles — `Toast.Root` renders `role="dialog"` and `toast.tsx` overrides it nowhere, so `alert`/`status` is the design and not yet the behaviour |
+| **G3** | Toast enter / exit motion | **signed off 2026-09-10** — `toast-motion-v1.html`, including the queue window (defect log #86): a `limit` of 3 holds the rest mounted and promotes newest-first as each visible toast leaves, and the pile itself stays **silent** about the queue — no "+N waiting" row, which is what Base UI ships and what was approved. Two things it deliberately does **not** close: Base UI's swipe-to-dismiss (installed on `Toast.Root` regardless of pile styling, `swipeDirection` defaulting to `["down","right"]`) and the roles — `Toast.Root` renders `role="dialog"` and `toast.tsx` overrides it nowhere, so `alert`/`status` is the design and not yet the behaviour |
 | **G4** | Overflow affordance, columns and board list | open |
 | **G5** | Subtask check · task edit · subtask CRUD | **narrowed 2026-09-09** — rename and delete only |
 | **G6** | Task delete collapse **and restore** | **closed 2026-09-10** — `task-delete-v1.html`. Its original framing (*"non-optimistic"*) was wrong; see defect log #78 |
