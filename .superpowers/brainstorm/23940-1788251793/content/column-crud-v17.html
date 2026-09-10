@@ -174,15 +174,24 @@
                 flex: none;
             }
             /*
-             * A column with no tasks was a caption and nothing else — no body, no boundary, nowhere
-             * to aim a drop. A recessed well, NOT a dashed outline: dashes are already spoken for by
-             * the drag slot and the create rail, and an empty column sitting next to the dashed rail
-             * in the same vocabulary read as a second, wider affordance rather than as a column.
+             * #32 was that a column with no tasks was a caption floating over nothing. #37 was the
+             * first answer to it — a recessed well — which read as a grey slab nobody asked for.
+             * The mock has no empty-column state to copy: it only shows the full-width `+ New
+             * Column` ghost that #6 rejected, so this is a decision, not a lookup.
+             *
+             * Type, no box. It says the same thing (this column exists and is empty) and adds no
+             * material to a board whose whole vocabulary is "surface only where there is content".
+             * The DROP TARGET is a separate question — an empty column needs a visible boundary
+             * only while a task is in flight, and task drag is not in this prototype.
              */
-            .cards:empty {
-                min-height: 96px;
-                background: color-mix(in srgb, var(--text) 3.5%, transparent);
-                border-radius: 6px;
+            .cards:empty::before {
+                content: "No tasks";
+                display: block;
+                padding: 6px 2px;
+                font: 500 12px/16px "Plus Jakarta Sans", system-ui, sans-serif;
+                color: color-mix(in srgb, var(--muted) 65%, transparent);
+                letter-spacing: normal;
+                text-transform: none;
             }
             .card {
                 background: var(--surface);
@@ -943,15 +952,23 @@
                  * report the SETTLED layout position and ignore transforms entirely.
                  */
                 /*
-                 * `offsetLeft`/`offsetTop` are measured from the offsetParent's PADDING edge, but
-                 * `getBoundingClientRect()` returns its BORDER-box edge. `.board` has a 1px border,
-                 * so without `clientLeft`/`clientTop` the panel lands 1px off — invisible on its
-                 * own, and the reason the two copies of the column's text did not coincide.
+                 * Three terms, and every one of them was a bug at some point. `offsetLeft` is a
+                 * position in the offsetParent's UNSCROLLED CONTENT box; the panel is `fixed`, so it
+                 * needs a viewport position. Converting between them means all three:
+                 *
+                 *   parentRect.left   the container's viewport position       (border-box edge)
+                 * + parent.clientLeft its border width — because offsetLeft   (#35, 1px, the smear)
+                 *                     starts at the PADDING edge
+                 * - parent.scrollLeft how far the content has been scrolled   (#36, up to scrollWidth)
+                 *
+                 * Dropping the scroll term is the loud one: `.board` is `overflow-x: auto`, so the
+                 * moment there are enough columns to scroll, the panel flies to a point exactly
+                 * `scrollLeft` away from the slot and never arrives. Measured at 300/300.
                  */
                 const parent = el.offsetParent;
                 const parentRect = parent.getBoundingClientRect();
-                const targetLeft = parentRect.left + parent.clientLeft + el.offsetLeft;
-                const targetTop = parentRect.top + parent.clientTop + el.offsetTop;
+                const targetLeft = parentRect.left + parent.clientLeft + el.offsetLeft - parent.scrollLeft;
+                const targetTop = parentRect.top + parent.clientTop + el.offsetTop - parent.scrollTop;
                 document.body.classList.remove("is-dragging");
                 overlay.classList.add("settling");
                 overlay.style.translate = `${targetLeft - pad}px ${targetTop - pad}px`;
