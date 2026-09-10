@@ -59,7 +59,14 @@
   --e: cubic-bezier(.2,0,0,1);
   --slow: 1;
   --purple: #635FC7;
-  --purple-hover: #A8A4FF;
+  --purple-hover: #5854be;
+  --purple-press: #4f4bab;
+  --purple-edge: #3f3c85;
+  --btn-quiet-hover: color-mix(in srgb, var(--ink) 4%, #fff);
+  --btn-quiet-press: color-mix(in srgb, var(--ink) 8%, #fff);
+  --btn-quiet-edge: color-mix(in srgb, #000 14%, #fff);
+  --border-hover: color-mix(in srgb, var(--ink) 18%, var(--line));
+  --press: 90ms;
   --red: #EA5555;
   --ink: #000112;
   --muted: #828FA3;
@@ -247,15 +254,61 @@ textarea.fin { resize: none; height: 88px; line-height: 23px; }
  * the mock is the design source of truth — and that makes the shipped variant a
  * defect to raise, not a style to copy.
  */
-.btn { appearance: none; border: 0; border-radius: 9999px; cursor: pointer; width: 100%;
+/*
+ * THE ADOPTED BUTTON — `buttons-v4.html`, decided 2026-09-09, not
+ * `button-variants.ts`.
+ *
+ * This file first copied the SHIPPED tokens: `rounded-full`, `h-10`, and
+ * `bg-bg-primary-hover` (#A8A4FF, a LIGHTER hover). All three are exactly what
+ * the phase decided to replace — "the pill is the single loudest 2021 tell" —
+ * so matching shipping code reproduced the look the work exists to remove.
+ *
+ * The prototypes are ahead of `src/`. Read the DECISION, not the code it has
+ * not reached yet.
+ *
+ *   radius   4px, replacing `rounded-full`
+ *   rest     inset top highlight, 1px inner hairline, solid 2px bottom edge
+ *   hover    one step DARKER (#5854be), not lighter
+ *   press    darker again, `translate: 0 2px`, bottom edge to 0, highlight
+ *            inverts to an inner shadow — the whole point of the redesign was
+ *            that nothing in the app acknowledged being pressed
+ *   pending  holds the pressed geometry, `opacity: .75`
+ *
+ * `.ghost` is the `quiet` treatment from `column-crud-v3`, whose hover does its
+ * work through the BORDER: white → #FAFBFE is a 5/4/1 channel step, under the
+ * filmstrip's own noise floor of 8, so the fill-only hover could not be seen.
+ * It DELIBERATELY diverges from mock p38's lavender fill — the amendment of
+ * 2026-09-09 made that call after the user reported the lavender reading as a
+ * bright pill on a dark canvas.
+ */
+.btn { appearance: none; border: none; font: inherit; font-weight: 700;
+  height: 40px; padding: 0 20px; border-radius: 4px; cursor: pointer; width: 100%;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  font: 700 12px/15px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  height: 40px; padding: 0 16px;
-  background: var(--purple); color: #fff; transition: background .13s; }
+  background: var(--purple); color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .16),
+    inset 0 0 0 1px rgb(0 0 0 / .12),
+    0 2px 0 var(--purple-edge);
+  transition:
+    background-color calc(130ms * var(--slow)),
+    opacity calc(130ms * var(--slow)),
+    box-shadow calc(var(--press) * var(--slow)),
+    translate calc(var(--press) * var(--slow)); }
 .btn:hover { background: var(--purple-hover); }
-.btn.ghost { background: color-mix(in srgb, var(--purple) 10%, transparent); color: var(--purple); }
-.btn.ghost:hover { background: color-mix(in srgb, var(--purple) 25%, transparent); }
-.btn.small { width: auto; height: 32px; }
+.btn:active { background: var(--purple-press); translate: 0 2px;
+  box-shadow:
+    inset 0 1px 3px rgb(0 0 0 / .24),
+    inset 0 0 0 1px rgb(0 0 0 / .16),
+    0 0 0 var(--purple-edge); }
+.btn:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+.btn.ghost { background: #fff; color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line), 0 2px 0 var(--btn-quiet-edge); }
+.btn.ghost:hover { background: var(--btn-quiet-hover);
+  box-shadow: inset 0 0 0 1px var(--border-hover), 0 2px 0 var(--btn-quiet-edge); }
+.btn.ghost:active { background: var(--btn-quiet-press); translate: 0 2px;
+  box-shadow: inset 0 0 0 1px var(--border-hover), 0 0 0 var(--btn-quiet-edge); }
+.btn.small { width: auto; height: 32px; padding: 0 16px; }
 .addsub { margin-bottom: 18px; }
 
 /*
