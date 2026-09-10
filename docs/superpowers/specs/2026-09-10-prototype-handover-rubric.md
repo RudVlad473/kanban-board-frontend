@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 43 entries, **32 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 46 entries, **32 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
@@ -18,7 +18,7 @@ finding a column that flies 300px past its slot.
 The bar is not "I tested it". Every defect below was found on a surface someone had just finished
 testing. The bar is: **each check below has been run in the state where it can actually fail.**
 
-## The ten checks
+## The eleven checks
 
 ### 1. Drive it in a non-default state — this is the big one
 
@@ -39,6 +39,7 @@ after-life — **again while the previous one is still finishing**.
 | long throw | #26 — the column visibly in two places at once |
 | second gesture *during* the first's settle | #41 — two panels and two kebabs at once; the cleanup retired the last drop's ghost but not its still-airborne clone |
 | gesture *released inside* an entry animation | #43 — the slot never finished fading in, so the panel flew home over a hole. A held drag can never reach this |
+| a *different* gesture during the first's animation | #44 — two uncaught TypeErrors. Capture `pageerror`, not just end state: both left the counts correct |
 
 ### 2. Enumerate every term of a coordinate conversion, and prove each one non-zero
 
@@ -154,6 +155,25 @@ the captured window. A run whose totals look settled may simply have stopped ear
 
 Cost: #38's discovery — a dissolve capture was quoted as evidence the landing step was gone, when
 it had ended before the fade even started, and still contained a one-frame `+0.550` step.
+
+### 11. A control you hid is still a control — press Tab ten times
+
+Hiding an affordance until hover is normal. The three ways to do it are not
+interchangeable, and the two obvious ones are each half wrong:
+
+| | hit area gone | still tabbable |
+|---|---|---|
+| `visibility: hidden` | yes | **no** — it leaves the tab order |
+| `opacity: 0` | **no** — an invisible button still eats the click | yes |
+| `opacity: 0` + `pointer-events: none` | yes | yes |
+
+Only the third is both. And a handler on a `<div>` is not reachable at all, however
+it is styled.
+
+Check it by pressing **Tab ten times and recording `document.activeElement` each
+time**, then operating the control from the keyboard alone — a hidden control that
+focus can never reach is a picture of a control. Cost: #45, where the only way to
+delete a subtask was with a mouse.
 
 ## And two rules about your own claims
 

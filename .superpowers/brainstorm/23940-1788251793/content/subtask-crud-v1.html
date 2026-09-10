@@ -201,14 +201,46 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  * own hit area with it when hidden — `opacity: 0` alone leaves an invisible
  * button swallowing clicks meant for the row's toggle.
  */
+/*
+ * `pointer-events`, NOT `visibility`, is what hides this.
+ *
+ * `visibility: hidden` does take the hit area away — but it also takes the
+ * element out of the TAB ORDER, and a `<button>` that cannot be tabbed to is
+ * not a control, it is a picture of one. Measured: ten real Tab presses reached
+ * all three labels, the add button, the rig and the body, and never once
+ * reached a ✕. So the only way to delete a subtask was with a mouse.
+ *
+ * `opacity: 0` alone is the other half of the trap — it leaves an invisible
+ * 18px button sitting inside the row swallowing clicks meant for the toggle.
+ * Taking `pointer-events` away removes the hit area without removing the
+ * element, which is the combination that satisfies both: invisible and inert to
+ * the mouse at rest, still reachable and operable from the keyboard.
+ */
 .stx { flex: none; width: 18px; height: 18px; margin: -4px -4px -4px 0; padding: 0;
   border: 0; background: none; border-radius: 3px; cursor: pointer; color: #A9B0C0;
   font: 400 13px/1 ui-sans-serif, system-ui, sans-serif;
-  opacity: 0; visibility: hidden;
+  opacity: 0; pointer-events: none;
   transition: opacity .13s, color .13s, background .13s; }
-.st:hover .stx { opacity: 1; visibility: visible; }
+.st:hover .stx, .st:focus-within .stx { opacity: 1; pointer-events: auto; }
 .stx:hover { color: var(--red); background: rgba(234,85,85,.10); }
-.stx:focus-visible { opacity: 1; visibility: visible; outline: 2px solid var(--purple); }
+.stx:focus-visible { opacity: 1; pointer-events: auto;
+  outline: 2px solid var(--purple); outline-offset: 1px; }
+
+/*
+ * The tick is a real button too, for the same reason: the row's click handler
+ * lives on a `<div>`, which no amount of styling makes focusable. Mouse users
+ * keep the whole row as the target; keyboard users get this.
+ */
+.st i { cursor: pointer; }
+.st i:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/*
+ * A row that is collapsing is already out of the model. Leaving it clickable
+ * means a click resolves to index -1 and dereferences `S[-1]` — an uncaught
+ * TypeError, not a cosmetic slip. Guarded in the handlers as well; this stops
+ * the gesture from being offered at all, which is the honest half of the fix.
+ */
+.strow.leaving { pointer-events: none; }
 
 /* ----------------------------------------------------------- add / empty */
 .add { font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; color: var(--purple);
@@ -298,7 +330,8 @@ function rowNode(text, on) {
   wrap.className = "strow";
   wrap.innerHTML =
     `<div class="st${on ? " on" : ""}">` +
-      `<i class="${on ? "on" : ""}">${TICK}</i>` +
+      `<i class="${on ? "on" : ""}" role="checkbox" tabindex="0"` +
+      ` aria-checked="${on ? "true" : "false"}">${TICK}</i>` +
       `<span class="stlab" contenteditable="plaintext-only" spellcheck="false"` +
       ` role="textbox" tabindex="0"></span>` +
       `<button class="stx" title="Delete subtask">&#10005;</button>` +
@@ -331,27 +364,58 @@ function wire(wrap) {
   const label = wrap.querySelector(".stlab");
   const x = wrap.querySelector(".stx");
 
+  const tick = wrap.querySelector("i");
+  const toggle = () => {
+    /*
+     * EVERY handler that resolves an index has to survive `-1`. A row that is
+     * collapsing has already left the model, and `.leaving` correctly returns
+     * -1 for it — but `S[-1][1]` is a TypeError, not a no-op, and the row stays
+     * clickable for the whole 200ms it is on screen. Measured: clicking a row
+     * 30ms into its collapse (still 18.8px tall, 0.44 opaque) threw
+     * "Cannot read properties of undefined (reading '1')".
+     *
+     * The CSS makes the gesture unofferable; this makes it unreachable. Both,
+     * because pointer-events does not stop a programmatic or keyboard path.
+     */
+    const i = rowIndex(wrap);
+    if (i < 0) return;
+    S[i][1] = S[i][1] ? 0 : 1;
+    row.classList.toggle("on", !!S[i][1]);
+    tick.classList.toggle("on", !!S[i][1]);
+    tick.setAttribute("aria-checked", S[i][1] ? "true" : "false");
+    counts();
+  };
+
   row.addEventListener("click", (e) => {
     /* The label and the ✕ own their own clicks; the rest of the row toggles. */
     if (e.target === label || label.contains(e.target) || e.target === x) return;
-    const i = rowIndex(wrap);
-    S[i][1] = S[i][1] ? 0 : 1;
-    row.classList.toggle("on", !!S[i][1]);
-    row.querySelector("i").classList.toggle("on", !!S[i][1]);
-    counts();
+    toggle();
+  });
+  tick.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggle(); }
   });
 
   label.addEventListener("focus", () => row.classList.add("editing"));
   label.addEventListener("blur", () => {
     row.classList.remove("editing");
+    /*
+     * The row can be GONE by the time this fires. A new row focuses its label
+     * when it lands; deleting it while it is still entering cancels the entry,
+     * removes the node, and the removal itself blurs the label — at which point
+     * the index is -1 and `S[-1][0] = v` throws
+     * "Cannot set properties of undefined (setting '0')".
+     */
     const i = rowIndex(wrap);
+    if (i < 0) return;
     const v = label.textContent.trim();
     if (v) S[i][0] = v; else label.textContent = S[i][0];
     counts();
   });
   label.addEventListener("keydown", (e) => {
+    const i = rowIndex(wrap);
+    if (i < 0) return;
     if (e.key === "Enter") { e.preventDefault(); label.blur(); }
-    if (e.key === "Escape") { label.textContent = S[rowIndex(wrap)][0]; label.blur(); }
+    if (e.key === "Escape") { label.textContent = S[i][0]; label.blur(); }
   });
 
   x.addEventListener("click", (e) => { e.stopPropagation(); remove(wrap); });
@@ -400,11 +464,25 @@ function add() {
   subs.appendChild(wrap);
   wire(wrap);
   counts();                                  /* the count commits with the gesture, not after it */
-  animateHeight(wrap, "in", () => {
-    const label = wrap.querySelector(".stlab");
-    label.focus();
-    getSelection().selectAllChildren(label); /* a new row exists to be named */
-  });
+  /*
+   * FOCUS FIRST, not on landing.
+   *
+   * Focusing when the entry finished put the caret, the selection and the
+   * purple focus outline AFTER the row had arrived, and the outline has its own
+   * 130ms transition — so the gesture ran box (0-200ms), then selection
+   * (225ms), then outline (240 -> 357ms). Measured as a third beat reaching
+   * solid at 357.2ms on a 200ms gesture, which is #40's defect in a new body:
+   * two things retiring on two clocks read as two gestures.
+   *
+   * Focusing now lets the outline resolve INSIDE the box's own 200ms, clipped
+   * by the wrapper until there is room for it. `preventScroll` because the row
+   * is zero-height at this instant and focusing it would otherwise scroll the
+   * panel to a box that is not there yet.
+   */
+  const label = wrap.querySelector(".stlab");
+  label.focus({ preventScroll: true });
+  getSelection().selectAllChildren(label);   /* a new row exists to be named */
+  animateHeight(wrap, "in");
 }
 
 function remove(wrap) {
