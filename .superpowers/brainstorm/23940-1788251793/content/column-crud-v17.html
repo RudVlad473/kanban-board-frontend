@@ -896,7 +896,19 @@
             function beginDrag(event, id, origin) {
                 const el = track.querySelector(`.colm[data-id="${id}"]`);
                 if (!el) return;
-                /* A ghost still shedding from the last drop would otherwise be stranded. */
+                /*
+                 * Retire the LAST drop before staging this one. Both halves are needed: a ghost
+                 * still shedding would be stranded, and a panel still in flight would keep
+                 * painting — two overlays and two lit kebabs at once, which is the "never 2"
+                 * half of #24/#27 reappearing through a gesture rather than through a fade.
+                 *
+                 * Reachable with a real mouse: grabbing a second column ~40ms after releasing the
+                 * first held two overlays for 94ms (7 frames). The in-flight `land()` still runs
+                 * against an element already reset here, which is why this is a removal and not a
+                 * cancellation — every step of `land()` is idempotent.
+                 */
+                document.querySelectorAll(".overlay").forEach((o) => o.remove());
+                document.body.classList.remove("is-settling");
                 track.querySelectorAll(".colm.shedding").forEach((c) => {
                     c.classList.remove("source", "shedding");
                     c.style.removeProperty("min-height");

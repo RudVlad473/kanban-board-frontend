@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 40 entries, **32 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 41 entries, **32 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
@@ -27,7 +27,8 @@ second gesture, one theme. Bugs live where those are non-zero, and a default-sta
 them by construction.
 
 Run each interaction at least once with the container **scrolled**, with a collection **empty**,
-with **many** items, in the **other theme**, and **twice in a row**.
+with **many** items, in the **other theme**, **twice in a row**, and — where a gesture has an
+after-life — **again while the previous one is still finishing**.
 
 | Skipped it | Cost |
 |---|---|
@@ -36,6 +37,7 @@ with **many** items, in the **other theme**, and **twice in a row**.
 | twice | #17 — the slot animated on the first drag only. A single-drag test passes straight through it |
 | other theme | #4 — a button that read as a bright pill in dark mode |
 | long throw | #26 — the column visibly in two places at once |
+| second gesture *during* the first's settle | #41 — two panels and two kebabs at once; the cleanup retired the last drop's ghost but not its still-airborne clone |
 
 ### 2. Enumerate every term of a coordinate conversion, and prove each one non-zero
 
