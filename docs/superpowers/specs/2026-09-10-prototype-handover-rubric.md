@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 41 entries, **32 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 43 entries, **32 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
@@ -38,6 +38,7 @@ after-life — **again while the previous one is still finishing**.
 | other theme | #4 — a button that read as a bright pill in dark mode |
 | long throw | #26 — the column visibly in two places at once |
 | second gesture *during* the first's settle | #41 — two panels and two kebabs at once; the cleanup retired the last drop's ghost but not its still-airborne clone |
+| gesture *released inside* an entry animation | #43 — the slot never finished fading in, so the panel flew home over a hole. A held drag can never reach this |
 
 ### 2. Enumerate every term of a coordinate conversion, and prove each one non-zero
 
@@ -122,8 +123,14 @@ built for silently never runs.
 That is the trap: it degrades to the thing you were trying to replace, and a timing assertion
 passes straight through it because the fallback lands in about the right time.
 
-Check it by **asserting which event caused the effect**, not that the effect happened by some
-deadline. Cost: #38 — `.overlay.settling` transitions five properties at the same duration,
+Better still, **do not listen — ask.** `getAnimations()` after a forced flush answers both halves of
+the question a listener only infers: is there an animation at all, and when does it finish. A
+listener cannot tell "late" from "never", and a fallback timer set near the duration makes the two
+look identical. Measured (#42): four of eight real drops fell back at 200.4ms, and in those the
+overlay fired **no** `transitionend` — the transition had never started.
+
+Check it by **asserting which event caused the effect** over **several runs**, not that the effect
+happened by some deadline in one. Cost: #38 — `.overlay.settling` transitions five properties at the same duration,
 `background-color` won at 175ms, and landing fell back to the 200ms timer, silently undoing #26's
 whole reason for existing.
 

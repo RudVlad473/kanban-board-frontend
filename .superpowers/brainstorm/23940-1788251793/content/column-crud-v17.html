@@ -479,6 +479,25 @@
                 transition: opacity calc(180ms * var(--slow)) linear;
             }
             /*
+             * The flick case. `.opening` seeds the slot at 0 and comes off on the next rAF, after
+             * which the dashes fade in over 140ms — so a drag RELEASED inside that window sheds
+             * from wherever the fade-in had got to, which on a genuine flick is 0.000. The panel
+             * then flew home fading over a column whose own contents are hidden by
+             * `.colm.source > *`: a hole, for the whole flight.
+             *
+             * Measured with a real mouse (down, two moves, up): ghost 0.000 against panel alpha
+             * 1 → 0.907 → 0.815 → 0.723 for all 12 settling frames.
+             *
+             * Lighting it instantly is the right trade. The slot appearing abruptly at the moment
+             * of release is legible — it is the reservation the panel is claiming — where the hole
+             * reads as the column having been deleted. Applied only when the fade-in is unfinished,
+             * so an ordinary drag never touches this rule.
+             */
+            .colm.source.ghostlit::after {
+                opacity: 1;
+                transition: none;
+            }
+            /*
              * Instant, not faded. The clone sits exactly on top at pickup, so fading the original
              * out is what makes the header visibly linger once the clone starts moving.
              */
@@ -1024,6 +1043,17 @@
                 /* `grabbing` ends with the pointer; the kebab guard has to outlast it — see CSS. */
                 document.body.classList.remove("is-dragging");
                 document.body.classList.add("is-settling");
+                /*
+                 * A drop inside the slot's own 140ms fade-in would otherwise shed from 0 — see
+                 * `.colm.source.ghostlit::after`. Commit opacity 1 with the transition suppressed,
+                 * then drop the class, so `.shedding` has a real value to interpolate away from.
+                 */
+                if (+getComputedStyle(el, "::after").opacity < 1) {
+                    el.classList.remove("opening");
+                    el.classList.add("ghostlit");
+                    void el.offsetWidth;
+                    el.classList.remove("ghostlit");
+                }
                 /* Same frame as `.settling`: the two fades are one beat, not two. */
                 el.classList.add("shedding");
                 overlay.classList.add("settling");
@@ -1080,13 +1110,26 @@
                  * the listener by hand inside the guard is the only version that does what the
                  * comment below claims.
                  */
-                const onFlightEnd = (e) => {
-                    if (e.propertyName !== "translate") return;
-                    overlay.removeEventListener("transitionend", onFlightEnd);
-                    land();
-                };
-                overlay.addEventListener("transitionend", onFlightEnd);
-                setTimeout(land, 200 * SLOW());
+                /*
+                 * ASK THE FLIGHT, do not listen for it. Removing `{ once: true }` fixed the
+                 * wrong-event consumption and left the real race untouched: the transition runs
+                 * 180ms and the fallback fires at 200ms, so a `transitionend` delayed by more
+                 * than one frame loses. Measured over 8 real-mouse drops: **4 landed on the
+                 * fallback at 200.4ms**, and in those runs the overlay reported NO transitionend
+                 * at all — the transition had not started, so no listener could ever have fired.
+                 *
+                 * `getAnimations()` after a forced flush answers the question the listener was
+                 * only inferring: is there a flight, and when does it finish. `finished` resolves
+                 * on arrival and rejects if the animation is cancelled — `land` handles both, and
+                 * is idempotent. A drop with no travel starts no animation and lands at once,
+                 * which is what the 200ms floor was for. The timer survives only as a backstop
+                 * against a frame the tab never painted, and is now clear of the flight.
+                 */
+                void overlay.offsetWidth;
+                const flight = overlay.getAnimations().find((a) => a.transitionProperty === "translate");
+                if (flight) flight.finished.then(land, land);
+                else land();
+                setTimeout(land, 180 * SLOW() + 250);
             }
 
             const closeMenus = () => track.querySelectorAll(".colm").forEach((o) => o.classList.remove("menu-open"));
