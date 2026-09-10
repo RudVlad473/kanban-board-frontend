@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 <title>Modal enter / exit — G2 v1</title>
 <style>
 /* ============================================================================
@@ -71,16 +74,16 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--tint); color: var(--ink);
-  font: 500 13px/1.5 ui-sans-serif, system-ui, sans-serif; }
+  font: 500 13px/1.5 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
 
 /* page behind the modal, so "nothing else moved" is a thing that can be seen */
 .page { padding: 28px; display: flex; gap: 28px; align-items: flex-start; }
 .board { display: flex; gap: 16px; }
 .col { width: 180px; }
-.colh { font: 700 11px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .12em;
+.colh { font: 700 11px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; letter-spacing: .12em;
   text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 .card { background: #fff; border-radius: 6px; padding: 12px; margin-bottom: 10px;
-  box-shadow: 0 2px 4px rgba(54,78,126,.08); font: 700 12px/17px ui-sans-serif, system-ui, sans-serif; }
+  box-shadow: 0 2px 4px rgba(54,78,126,.08); font: 700 12px/17px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
 
 /* ---------------------------------------------------------------- the modal */
 /*
@@ -134,7 +137,7 @@ body { margin: 0; background: var(--tint); color: var(--ink);
 .mfootbar { flex: none; padding: 16px 24px 24px; background: #fff;
   border-top: 1px solid var(--line); }
 .mfootbar .btn { width: 100%; }
-.sublab { display: block; font: 700 12px/15px ui-sans-serif, system-ui, sans-serif;
+.sublab { display: block; font: 700 12px/15px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   color: var(--muted); margin: 0 0 8px; }
 
 /* ------------------------------------------------------------- the motion */
@@ -219,14 +222,14 @@ body.force-reduced .backdrop { transition: opacity calc(100ms * var(--slow)) lin
 body.force-reduced .backdrop[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
 
 /* ------------------------------------------------------------- the content */
-.mtitle { font: 700 18px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 10px; }
+.mtitle { font: 700 18px/23px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 10px; }
 .mtitle.danger { color: var(--red); }
-.mdesc { color: var(--muted); font: 500 13px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 18px; }
+.mdesc { color: var(--muted); font: 500 13px/23px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 18px; }
 .field { display: block; margin-bottom: 14px; }
-.field span { display: block; font: 700 12px/15px ui-sans-serif, system-ui, sans-serif;
+.field span { display: block; font: 700 12px/15px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   color: var(--muted); margin-bottom: 8px; }
 .field input { width: 100%; border: 1px solid var(--line); border-radius: 4px;
-  padding: 9px 11px; font: 500 13px/1 ui-sans-serif, system-ui, sans-serif; }
+  padding: 9px 11px; font: 500 13px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
 /*
  * Right-aligned for a FORM, two equal columns for a CONFIRM — mock p42 puts
  * Delete and Cancel side by side filling the width, and p39 puts a single
@@ -238,7 +241,7 @@ body.force-reduced .backdrop[data-closed] { transition: opacity calc(90ms * var(
 .mfoot.split .btn { width: 100%; }
 .mfoot.wide .btn { width: 100%; }
 .btn { appearance: none; border: 0; border-radius: 20px; cursor: pointer;
-  font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; height: 40px; padding: 0 18px;
+  font: 700 13px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; height: 40px; padding: 0 18px;
   background: var(--purple); color: #fff; }
 .btn.ghost { background: color-mix(in srgb, var(--purple) 10%, transparent); color: var(--purple); }
 .btn.danger { background: var(--red); }
@@ -248,9 +251,9 @@ body.force-reduced .backdrop[data-closed] { transition: opacity calc(90ms * var(
 
 /* ------------------------------------------------------------------- rig */
 .rig { font: 500 12px/1.8 ui-monospace, monospace; color: #4a5568; min-width: 260px; }
-.rig h3 { font: 700 12px/1.4 ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
+.rig h3 { font: 700 12px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
 .rig label { display: block; }
-.rig button { font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; color: var(--purple);
+.rig button { font: 600 12px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; color: var(--purple);
   background: none; border: 0; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 .rig button:hover { background: #fff; }
 </style>

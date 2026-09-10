@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 <title>Subtask CRUD — v2</title>
 <style>
 /* ============================================================================
@@ -71,7 +74,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: #F4F7FD; color: var(--ink);
-  font: 500 13px/1.5 ui-sans-serif, system-ui, sans-serif; }
+  font: 500 13px/1.5 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
 
 .wrap { display: flex; gap: 28px; align-items: flex-start; padding: 28px; }
 /*
@@ -126,14 +129,14 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  */
 .desc.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4;
   overflow: hidden; }
-.ttl { font: 700 18px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 10px; }
-.desc { color: var(--muted); font: 500 13px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 16px; }
-.lab { font: 700 12px/15px ui-sans-serif, system-ui, sans-serif; color: var(--muted); margin-bottom: 10px; }
+.ttl { font: 700 18px/23px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 10px; }
+.desc { color: var(--muted); font: 500 13px/23px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 16px; }
+.lab { font: 700 12px/15px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; color: var(--muted); margin-bottom: 10px; }
 
 /* ---------------------------------------------------------------- the row */
 .st { display: flex; align-items: center; gap: 10px; background: var(--tint);
   border-radius: 4px; padding: 9px 11px; cursor: pointer;
-  font: 700 12px/15px ui-sans-serif, system-ui, sans-serif; color: var(--ink);
+  font: 700 12px/15px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; color: var(--ink);
   transition: background .13s; }
 .st:hover { background: #EDF0F8; }
 
@@ -428,7 +431,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  */
 .stx { flex: none; width: 18px; height: 18px; margin: -4px -4px -4px 0; padding: 0;
   border: 0; background: none; border-radius: 3px; cursor: pointer; color: #A9B0C0;
-  font: 400 13px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 400 13px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   opacity: 0; pointer-events: none;
   transition: opacity .13s, color .13s, background .13s; }
 .st:hover .stx, .st:focus-within .stx { opacity: 1; pointer-events: auto; }
@@ -453,7 +456,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
 .strow.leaving { pointer-events: none; }
 
 /* ----------------------------------------------------------- add / empty */
-.add { font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; color: var(--purple);
+.add { font: 600 12px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; color: var(--purple);
   cursor: pointer; padding: 8px 11px; display: inline-block; border-radius: 4px;
   transition: background .13s; border: 0; background: none; }
 .add:hover { background: var(--tint); }
@@ -467,16 +470,16 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  */
 .subs:empty + .none { display: block; }
 .none { display: none; color: #A9B0C0;
-  font: 500 12px/16px ui-sans-serif, system-ui, sans-serif; padding: 2px 2px 6px; }
+  font: 500 12px/16px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; padding: 2px 2px 6px; }
 
 .sel { margin-top: 0; border: 1px solid var(--line); border-radius: 4px;
-  padding: 9px 11px; font: 500 13px/1 ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
-.sellab { font: 700 12px/15px ui-sans-serif, system-ui, sans-serif; color: var(--muted);
+  padding: 9px 11px; font: 500 13px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+.sellab { font: 700 12px/15px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; color: var(--muted);
   margin: 0 0 8px; }
 
 /* ------------------------------------------------------------------ rig */
 .rig { font: 500 12px/1.7 ui-monospace, monospace; color: #4a5568; min-width: 250px; }
-.rig h3 { font: 700 12px/1.4 ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
+.rig h3 { font: 700 12px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
 .rig label { display: block; }
 </style>
 </head>
