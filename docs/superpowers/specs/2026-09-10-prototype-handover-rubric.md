@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 52 entries, **38 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 54 entries, **38 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
@@ -18,7 +18,7 @@ finding a column that flies 300px past its slot.
 The bar is not "I tested it". Every defect below was found on a surface someone had just finished
 testing. The bar is: **each check below has been run in the state where it can actually fail.**
 
-## The twelve checks
+## The thirteen checks
 
 ### 1. Drive it in a non-default state — this is the big one
 
@@ -208,6 +208,34 @@ full speed. **The state to render is the one with the most boxes in it** (the
 longest label, the fullest list), and a motion over several boxes has to be
 sampled mid-flight in slow motion: at full speed a fill that runs across three
 lines at once is indistinguishable from one that runs across them in turn.
+
+### 13. Enumerate the scale dimensions and say what happens at each — do not wait to be asked
+
+Deferred as a pass of its own: run it once the main bulk of Phase 5's surfaces exist,
+then keep it as a gate. Recorded now because every surface so far has hit it and none
+of them looked for it.
+
+Check 1 says drive it in a non-default state. This is the same instinct pointed at the
+data rather than the interaction: **every collection in this app is unbounded, and each
+one has a number past which the layout stops being the layout.** The question is never
+"does it break" — it usually does not — it is "what does it do, and is that what we
+want". Write the answer down per dimension, with the number.
+
+| Dimension | The question |
+|---|---|
+| tasks in a column | does the column scroll, or the board? at what count does the column header leave? |
+| columns on a board | horizontal scroll — does the rail stay reachable? does a drag still land? (#36 was this) |
+| boards in the sidebar | does `+ Create New Board` stay on screen? |
+| subtasks on a task | which parts of the panel are pinned and which scroll (settled 2026-09-10: title, description and count pinned, list scrolls, status pinned) |
+| length of any one string | a title, a column name, a subtask label — where does it wrap, clamp, or overflow |
+| zero of anything | already check 6, listed here so the sweep is complete |
+
+Two traps this catches that nothing above does. **Whether it grows the page or caps
+itself is the boring half** — every surface here already capped, and asking only that
+question returns a clean answer while the real defect sits next to it. And **a scale
+answer given for one surface is not an answer for its neighbours**: `modal.tsx` had
+settled the pinned-control question with a test, and both panel prototypes contradicted
+it without anyone noticing there was a precedent.
 
 ## And two rules about your own claims
 

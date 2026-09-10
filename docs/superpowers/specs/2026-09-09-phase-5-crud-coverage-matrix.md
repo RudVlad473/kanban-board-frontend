@@ -40,7 +40,7 @@ Paths are relative to `.superpowers/brainstorm/`; `S1` is `23940-1788251793/cont
 | **Board** | ✅ `S1/sidebar-boards-v1` | ✅ `S1/board-switch-v3`, `S1/sidebar-boards-v4` | ✅ `S1/board-edit-v2` | ✅ `S1/board-edit-v2` | — |
 | **Column** | ✅ `S1/column-crud-v17` | ✅ `S1/load2-v2`, `S1/handoff-v4` | ✅ `S1/column-crud-v17` | ✅ `S1/column-crud-v17` | ✅ `S1/column-crud-v17` |
 | **Task** | ◐ `S2/header` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ❌ | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
-| **Subtask** | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ❌ | — |
+| **Subtask** | ✅ `S1/subtask-crud-v2` | ✅ `S1/task-open-v17` | ✅ `S1/subtask-crud-v2` | ✅ `S1/subtask-crud-v2` | — |
 | **Account** | ✅ `S1/auth-v4` | ✅ `S1/auth-v4` | — | — | — |
 
 ### What each `◐` is actually missing
@@ -164,17 +164,40 @@ Carries over: least of any cell, by design. G6 records why: this is the one genu
 covers real latency instead of adding it. Every other motion in the phase assumes the optimistic
 case. `S2/waiting-task2.html` is a 313-byte abandoned stub.
 
-### Subtask
+### Subtask — ✅ SIGNED OFF 2026-09-10
 
-**Rename — ❌** and **Delete — ❌** (what remains of G5)
-Today: both live in `subtask-editor-row`, which is used only by `add-task-modal` and
-`edit-task-modal` — a text input plus a remove `IconButton`.
-Carries over: **the host component is scheduled for deletion.** Phase 5's adopted panel direction
-replaces `EditTaskModal` with inline editing, so designing these two against today's UI designs a
-surface that is being removed. The right target is the panel: `task-open-v17` already makes the
-title and description `contenteditable` and already adds a subtask row live — rename is the same
-treatment applied to a label that is currently a plain `<span>`, and delete is the row-removal
-counterpart of the add it already performs.
+**Create, rename and delete are `subtask-crud-v2.html`**, signed off after the user drove them and
+closed the last report with *"ok, perfect, approved"*. `task-open-v17` remains the reference for
+read and for the completion toggle; it never had a rename affordance, any removal at all, or a
+single frame of motion on its add.
+
+The target was the panel rather than `subtask-editor-row`, and the reason is worth keeping: that
+component is used only by `add-task-modal` and `edit-task-modal`, and **Phase 5's adopted panel
+direction deletes `EditTaskModal`** — designing there would have designed a surface being removed.
+
+Checked against the mock rather than assumed: p37 (view task) has **no rename and no delete
+affordance at all**, p39 (edit task) has the ✕ to the right of each field — in the modal being
+deleted. So only the ✕ and the panel's own `contenteditable` treatment are carried over, and the
+file says so rather than filling the gap with invention.
+
+What it settles beyond the two cells:
+
+- **The row is a field, not a paragraph.** Everything the field draws — background, ring, outline,
+  cursor, clicks — is on a block wrapper; only the strike-through is on the inline label, one box
+  per line. This produced #50, #52 and #53 before it was stated as a rule, and it is now the defect
+  log's recurring cause 10.
+- **Which parts of the panel are pinned.** Title, description and count pinned; the list scrolls;
+  `Current status` pinned. The description is clamped to four lines so the worst case costs the
+  list 23px rather than an unbounded amount. **`task-open-v17` and `modal.tsx` disagree about this**
+  — the modal already keeps its close control outside the scroll region and has a test for it, and
+  the panel prototypes contradicted that without noticing the precedent. Carry this shape into G3.
+- **Done subtasks sink, and the sink is a FLIP driven by flex `order`.** Reordering with
+  `appendChild` re-inserts the node, which cancels its running transitions — so the strike died on
+  frame 1 the moment the sink stopped being sequenced after it. Visual order and DOM order are now
+  deliberately different objects; `S` stays indexed by DOM order and only the visual one moves.
+  Every comparison has to name which ordering it means (#54).
+
+Cost: 13 defects, rows 41–54, ten of them caught by the user.
 
 ### The pattern under all of it
 
@@ -192,16 +215,22 @@ three times; taking it once closes three cells.
 create, rename, delete and reorder. Serve it with
 `node scripts/serve-static.mjs .superpowers/brainstorm 6110`.
 
-**Before opening any of the below, read `2026-09-10-prototype-handover-rubric.md`.** Ten checks,
-derived from the fact that 32 of this project's 40 recorded design defects were caught by the user
-rather than by a check. Running them is what makes the next surface cheaper than this one was.
+**Before opening any of the below, read `2026-09-10-prototype-handover-rubric.md`.** Thirteen
+checks, derived from the fact that 38 of this project's 54 recorded design defects were caught by
+the user rather than by a check. Check 13 — the scale pass — is deliberately deferred until the
+main bulk of the surfaces exist; run it then, over every unbounded collection at once. Running them is what makes the next surface cheaper than this one was.
+
+**Subtask create, rename and delete are closed** — `subtask-crud-v2.html`, signed off 2026-09-10.
+Everything remaining in what used to be item 1 is blocked on G2.
 
 Open, in the order they are likely to matter:
 
-1. **The remaining `◐` cells** — task create, subtask rename, subtask delete — plus task delete,
-   which is still `❌` and is the one non-optimistic wait in the app.
-2. **G2**, which eight cells inherit and which the board-create and column-delete prototypes have
-   now given a first treatment twice over.
+1. **G2**, which eight cells inherit. Both remaining `◐`/`❌` cells — task create and task delete —
+   dead-end at it, so nothing in the Task row moves until it does. Carry the panel's pinned
+   head/body/foot split into it: `modal.tsx` has already settled the "a pinned control is not
+   inside the scroll region" question and has a test for it.
+2. **Task delete** — the one genuinely non-optimistic wait in the app, and the only cell whose
+   motion cannot assume the optimistic case. Needs G2's confirm modal first.
 3. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
    zero calls to the real View Transitions API.
 

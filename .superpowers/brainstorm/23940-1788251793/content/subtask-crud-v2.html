@@ -75,24 +75,60 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
 
 .wrap { display: flex; gap: 28px; align-items: flex-start; padding: 28px; }
 /*
- * THE PANEL SCROLLS, THE LIST DOES NOT.
+ * A LONG SUBTASK LIST NEVER GROWS THE PAGE, AND NEVER TAKES THE TITLE WITH IT.
  *
- * Asked what 10+ subtasks look like, there are two answers and only one of them
- * belongs here. Giving `.subs` its own `max-height` would keep `+ Add subtask`
- * and `Current status` pinned in view — attractive, and wrong: it puts a second
- * scrollbar inside a panel that already has one, and it caps a list whose length
- * is the user's business, not the layout's. The mock's modal simply grows.
+ * Two separate questions, and only the second one was open.
  *
- * So the panel is the scroller, the list is in normal flow, and everything below
- * it is pushed down as it grows. The cost is real and is the thing to look at:
- * past about nine rows the status selector goes below the fold.
+ * The page growing is not the risk: the panel is capped at the viewport in every
+ * version of this, and so is the app's real `Modal`
+ * (`max-h-[calc(100vh-6rem)]`). Measured here with 12 subtasks in a 700px
+ * viewport: `scrollHeight 832 > clientHeight 644`, and the document itself did
+ * not grow at all.
+ *
+ * What WAS wrong is what scrolls. Making the whole panel the scroller sends the
+ * task's TITLE off the top — measured, the title was fully out of view once the
+ * list was scrolled to the end — so on a long list you are editing subtasks with
+ * nothing on screen saying which task they belong to. `task-open-v17` has the
+ * same shape, and both contradict a decision the app has already taken and
+ * pinned with a test: `modal.tsx` keeps its close control as a SIBLING of the
+ * scroll region precisely so it cannot scroll away.
+ *
+ * So the panel is a three-part column — a head that does not move, a body that
+ * scrolls, and a foot that does not move. No second scrollbar anywhere.
+ *
+ * EVERYTHING THAT IS NOT THE LIST IS PINNED. The first attempt pinned the count
+ * with `position: sticky` and left the description scrolling underneath it, on
+ * the reasoning that a pinned description costs the list height. Watched, that
+ * is just incoherent: the description belongs to the same block of identity as
+ * the title, and having it slide away under a pinned count reads as the header
+ * coming apart. If the count is pinned the description above it has to be too —
+ * at which point sticky is unnecessary and the count simply lives in the head.
+ *
+ * The cost is real and is not hidden: a long description takes its height out
+ * of the list. `.phead` is therefore capped, and the DESCRIPTION is what gives
+ * way — clamped to four lines, because the list is the working surface and the
+ * description is reference. Nothing scrolls but the list.
  */
-.panel { width: 400px; background: #fff; border-radius: 6px; padding: 24px;
+.panel { width: 400px; background: #fff; border-radius: 6px;
   box-shadow: 0 4px 6px rgba(54,78,126,.10);
-  max-height: calc(100vh - 56px); overflow-y: auto; overscroll-behavior: contain; }
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 56px); overflow: hidden; }
+.phead { flex: none; padding: 24px 24px 0; }
+.pbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 0 24px 6px; }
+.pfoot { flex: none; padding: 14px 24px 22px; border-top: 1px solid var(--line);
+  background: #fff; }
+/*
+ * Four lines, then an ellipsis. A cap that hid the overflow with no marker would
+ * silently truncate; `line-clamp` at least says there is more. The alternative —
+ * letting the head grow — starves the list on exactly the tasks that have the
+ * most subtasks, which is the wrong way round.
+ */
+.desc.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4;
+  overflow: hidden; }
 .ttl { font: 700 18px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 10px; }
-.desc { color: var(--muted); font: 500 13px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 18px; }
-.lab { font: 700 12px/15px ui-sans-serif, system-ui, sans-serif; color: var(--muted); margin-bottom: 8px; }
+.desc { color: var(--muted); font: 500 13px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 16px; }
+.lab { font: 700 12px/15px ui-sans-serif, system-ui, sans-serif; color: var(--muted); margin-bottom: 10px; }
 
 /* ---------------------------------------------------------------- the row */
 .st { display: flex; align-items: center; gap: 10px; background: var(--tint);
@@ -115,6 +151,22 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  * margin does not collapse with it leaves a 7px gap behind that snaps shut a
  * frame later, and two closings in sequence is #40 again in a different body.
  */
+/*
+ * THE LIST IS A FLEX COLUMN so that reordering is a PROPERTY, not a DOM move.
+ *
+ * The first concurrent version reordered with `appendChild`, which on an
+ * already-attached node is a remove-and-re-insert — and removal from the
+ * document CANCELS every running CSS transition on that node. Sequencing the
+ * sink after the strike had hidden it perfectly: the strike was already
+ * finished, so there was nothing left to cancel. Running them together killed
+ * the strike on frame 1, measured at `background-size: 100%` at t=4ms.
+ *
+ * `order` changes where a flex item is laid out without touching the tree, so
+ * the strike keeps running while the row travels. It also keeps DOM order fixed,
+ * which is what `S` is indexed by — visual order and model order are now
+ * different things, deliberately, and only the visual one moves.
+ */
+.subs { display: flex; flex-direction: column; }
 .strow { overflow: hidden; margin-bottom: 7px; }
 /*
  * The reorder is a FLIP, and the transition is a CLASS rather than an inline
@@ -417,10 +469,10 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
 .none { display: none; color: #A9B0C0;
   font: 500 12px/16px ui-sans-serif, system-ui, sans-serif; padding: 2px 2px 6px; }
 
-.sel { margin-top: 16px; border: 1px solid var(--line); border-radius: 4px;
+.sel { margin-top: 0; border: 1px solid var(--line); border-radius: 4px;
   padding: 9px 11px; font: 500 13px/1 ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
 .sellab { font: 700 12px/15px ui-sans-serif, system-ui, sans-serif; color: var(--muted);
-  margin: 16px 0 8px; }
+  margin: 0 0 8px; }
 
 /* ------------------------------------------------------------------ rig */
 .rig { font: 500 12px/1.7 ui-monospace, monospace; color: #4a5568; min-width: 250px; }
@@ -431,17 +483,22 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
 <body>
 <div class="wrap">
   <div class="panel" id="panel">
-    <h2 class="ttl">Research pricing points of various competitors</h2>
-    <p class="desc">We know what we're planning to build for version one. Now we need to finalise
-      the first pricing model we'll use.</p>
-
-    <div class="lab">Subtasks (<span id="done">0</span> of <span id="total">0</span>)</div>
+    <div class="phead">
+      <h2 class="ttl">Research pricing points of various competitors</h2>
+      <p class="desc clamp" id="desc">We know what we're planning to build for version one. Now we need to finalise
+        the first pricing model we'll use.</p>
+      <div class="lab">Subtasks (<span id="done">0</span> of <span id="total">0</span>)</div>
+    </div>
+    <div class="pbody" id="pbody">
     <div class="subs" id="subs"></div>
     <div class="none">No subtasks yet.</div>
     <button class="add" id="add">+ Add subtask</button>
 
-    <div class="sellab">Current status</div>
-    <div class="sel">Doing</div>
+    </div>
+    <div class="pfoot">
+      <div class="sellab">Current status</div>
+      <div class="sel">Doing</div>
+    </div>
   </div>
 
   <div class="rig">
@@ -449,7 +506,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
     <label><input type="checkbox" id="slow"> slow motion (6&times;)</label>
     <label><button class="add" id="reset" style="padding:4px 8px">reset</button></label>
     <label><button class="add" id="many" style="padding:4px 8px">12 subtasks</button></label>
-    <label><input type="checkbox" id="sinknow"> sink immediately (with the strike, not after)</label>
+    <label><button class="add" id="longdesc" style="padding:4px 8px">long description</button></label>
     <label><input type="checkbox" id="fade"> strike: fade instead of draw &mdash; rejected, cannot sequence lines</label>
     <p id="state"></p>
   </div>
@@ -466,6 +523,7 @@ let S = SEED.map((s) => s.slice());
 
 const subs = document.getElementById("subs");
 const panel = document.getElementById("panel");
+const pbody = document.getElementById("pbody");
 const doneEl = document.getElementById("done");
 const totalEl = document.getElementById("total");
 const SLOW = () => Number(getComputedStyle(document.documentElement).getPropertyValue("--slow")) || 1;
@@ -546,7 +604,7 @@ function wire(wrap) {
     tick.classList.toggle("on", !!S[i][1]);
     tick.setAttribute("aria-checked", S[i][1] ? "true" : "false");
     counts();
-    resort();
+    resort(wrap);
   };
 
   /*
@@ -657,37 +715,67 @@ function animateHeight(wrap, dir, after) {
  * identity and move, which is what First-Last-Invert-Play does — measure, mutate
  * the DOM, put every row back where it visually was, then release them.
  *
- * SEQUENCED AFTER THE STRIKE, not with it. The strike is the acknowledgement of
- * what you did and the sink is the consequence of it, and they are on the same
- * element: starting both together means the row is drawing its own line while
- * sliding out from under the cursor, and neither reads. Waiting for the strike
- * costs 280ms of latency before anything moves, which is the trade — the rig
- * has a toggle so the two can be watched back to back rather than argued about.
+ * CONCURRENT WITH THE STRIKE. The first version waited 280ms for the strike to
+ * finish, reasoning that the strike acknowledges what you did and the sink is
+ * its consequence. Watched rather than argued about, that is simply latency:
+ * the two are not causally ordered, they are two true things about the same
+ * event, and making one wait for the other means nothing moves for the first
+ * quarter-second of every tick. They now start on the same frame and run to
+ * their own durations — 280ms and 240ms — which is one beat, not two.
  *
- * The sort is STABLE: a row that is neither newly done nor newly undone must not
- * change places with its neighbours, or ticking one subtask visibly reshuffles
- * ones the user never touched.
+ * The sort is STABLE, so a row that is neither newly done nor newly undone
+ * never changes places with its neighbours. The one exception is the row you
+ * just touched, and it is symmetric: **it goes to the FRONT of the group it
+ * just joined.** Ticked, that is the top of the done block — the shortest
+ * distance it can travel. Un-ticked, that is the top of the list, which is
+ * where it is looked for. Falling back to stable order there instead put an
+ * un-ticked row at the BOTTOM of the not-done group, measured as a 120px move
+ * that read as not having sorted at all.
  */
 let resortTimer = null;
-function resort() {
+let touched = null;
+function resort(node) {
+    touched = node || null;
     clearTimeout(resortTimer);
-    const wait = panel.classList.contains("sink-now") ? 0 : 280 * SLOW();
-    resortTimer = setTimeout(runResort, wait);
+    resortTimer = setTimeout(runResort, 0);       /* batches a burst of ticks into one move */
+}
+
+/*
+ * Visual order, computed from the model. DOM order never changes — which is
+ * exactly the trap this function fell into.
+ *
+ * The stable tiebreak was the row's DOM index, and DOM order stopped being
+ * visual order the moment the first row moved. So every untouched row was
+ * ranked by where it USED to be, and any row that had been moved once snapped
+ * back to its DOM position on the next unrelated toggle. Reproduced: un-ticking
+ * `#10` put it at the top, then ticking the unrelated `#8` threw `#10` from
+ * position 0 to position 7 — a row the user had not touched, moving the length
+ * of the list, because of a toggle somewhere else.
+ *
+ * The tiebreak has to be where the row IS, not where it was created. Ranking by
+ * the current `order` makes the sort stable against what is on screen, which is
+ * the only frame of reference the user has.
+ */
+function computeOrder() {
+    const seq = live().map((w, i) => ({ w, i }));
+    const rank = (o) => (o.w === touched ? -1 : (o.w.style.order === "" ? o.i : +o.w.style.order));
+    return seq.sort((a, b) => (S[a.i][1] - S[b.i][1]) || (rank(a) - rank(b)));
+}
+
+function applyOrder(seq) {
+    seq.forEach((o, n) => { o.w.style.order = String(n); });
+    /* A row still collapsing is not in the model but is on screen; it sits last. */
+    [...subs.children].filter((w) => w.classList.contains("leaving"))
+        .forEach((w) => { w.style.order = "999"; });
 }
 
 function runResort() {
     const nodes = [...subs.children];
-    const rows = live();
-    const order = rows.map((w, i) => ({ w, i }));
-    order.sort((a, b) => (S[a.i][1] - S[b.i][1]) || (a.i - b.i));
-    if (order.every((o, n) => o.i === n)) return;      /* nothing to do, so no motion */
+    const seq = computeOrder();
+    if (seq.every((o, n) => String(n) === o.w.style.order)) return;   /* no move, so no motion */
 
     const first = new Map(nodes.map((w) => [w, w.getBoundingClientRect().top]));
-    S = order.map((o) => S[o.i]);
-    /* A row still collapsing is not in the model but is on screen; it travels too. */
-    const leaving = nodes.filter((w) => w.classList.contains("leaving"));
-    order.forEach((o) => subs.appendChild(o.w));
-    leaving.forEach((w) => subs.appendChild(w));
+    applyOrder(seq);
 
     nodes.forEach((w) => {
         const d = first.get(w) - w.getBoundingClientRect().top;
@@ -707,17 +795,17 @@ function runResort() {
 
 function add() {
   /*
-   * Inserted at the END OF THE NOT-DONE GROUP, not at the end of the list.
-   * Appending and then letting the sort pull it back up would be two motions
-   * for one gesture; the list already knows where an undone row belongs.
+   * Appended to the model and the tree, then PLACED — a new undone row belongs
+   * at the end of the not-done group, and `applyOrder` puts it there with no
+   * second motion, because visual position is a property rather than a slot.
    */
-  const at = S.findIndex((r) => r[1]);
-  const idx = at === -1 ? S.length : at;
-  S.splice(idx, 0, ["New subtask", 0]);
+  S.push(["New subtask", 0]);
   const wrap = rowNode("New subtask", 0);
-  subs.insertBefore(wrap, live()[idx] || null);
+  subs.appendChild(wrap);
   wire(wrap);
   counts();                                  /* the count commits with the gesture, not after it */
+  touched = null;
+  applyOrder(computeOrder());
   /*
    * FOCUS FIRST, not on landing.
    *
@@ -750,8 +838,8 @@ function add() {
    * not, so the target is computed from the row's own measured height instead.
    * Concurrent, so the list arriving and the view following it are one beat.
    */
-  const over = panel.scrollHeight - panel.clientHeight;
-  if (over > 0) panel.scrollTo({ top: over, behavior: "smooth" });
+  const over = pbody.scrollHeight - pbody.clientHeight;
+  if (over > 0) pbody.scrollTo({ top: over, behavior: "smooth" });
 }
 
 function remove(wrap) {
@@ -767,15 +855,23 @@ function render() {
   S = S.filter((r) => r[1] === 0).concat(S.filter((r) => r[1] === 1));
   subs.textContent = "";
   S.forEach(([t, on]) => { const w = rowNode(t, on); subs.appendChild(w); wire(w); });
+  touched = null;
+  applyOrder(computeOrder());
   counts();
 }
 
 document.getElementById("add").onclick = add;
 document.getElementById("reset").onclick = () => { S = SEED.map((s) => s.slice()); render(); };
-document.getElementById("sinknow").onchange = (e) =>
-    panel.classList.toggle("sink-now", e.target.checked);
 document.getElementById("fade").onchange = (e) =>
     panel.classList.toggle("strike-fade", e.target.checked);
+document.getElementById("longdesc").onclick = () => {
+    document.getElementById("desc").textContent =
+        "We know what we're planning to build for version one. Now we need to finalise the first "
+        + "pricing model we'll use, keep iterating the subtasks until we have a coherent proposition, "
+        + "and check every number against what the three closest competitors actually charge today. "
+        + "This paragraph is deliberately long: it is here to show what a pinned description costs "
+        + "the list underneath it, which is the trade this layout makes.";
+};
 document.getElementById("many").onclick = () => {
     S = Array.from({ length: 12 }, (_, n) => [
         n === 4 ? "Talk to potential customers about our proposed solution and ask for fair price expectancy"
