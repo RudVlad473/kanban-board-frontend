@@ -117,6 +117,13 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  */
 .strow { overflow: hidden; margin-bottom: 7px; }
 /*
+ * The reorder is a FLIP, and the transition is a CLASS rather than an inline
+ * `style.transition` — defect-log rule 1: an inline transition replaces the
+ * stylesheet's whole list, so a row that was mid-collapse would lose its height
+ * and opacity transitions the moment it was also asked to move.
+ */
+.strow.moving { transition: translate calc(240ms * var(--slow)) var(--e); }
+/*
  * THE BOX AND ITS CONTENTS ARE NOT ON THE SAME CLOCK, deliberately — and the
  * first version's mistake was giving them the same one.
  *
@@ -230,6 +237,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  */
 .stlabwrap { flex: 1 1 auto; min-width: 0;
   border-radius: 3px; padding: 2px 4px; margin: -2px -4px;
+  cursor: text;
   transition: background-color .13s, box-shadow .13s; }
 .st:hover .stlabwrap { background-color: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .st.editing .stlabwrap { background-color: #fff; box-shadow: none; }
@@ -428,6 +436,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
     <label><input type="checkbox" id="slow"> slow motion (6&times;)</label>
     <label><button class="add" id="reset" style="padding:4px 8px">reset</button></label>
     <label><button class="add" id="many" style="padding:4px 8px">12 subtasks</button></label>
+    <label><input type="checkbox" id="sinknow"> sink immediately (with the strike, not after)</label>
     <label><input type="checkbox" id="fade"> strike: fade instead of draw &mdash; rejected, cannot sequence lines</label>
     <p id="state"></p>
   </div>
@@ -524,11 +533,39 @@ function wire(wrap) {
     tick.classList.toggle("on", !!S[i][1]);
     tick.setAttribute("aria-checked", S[i][1] ? "true" : "false");
     counts();
+    resort();
   };
 
+  /*
+   * THE EDITING TARGET IS A RECTANGLE, because that is what it looks like.
+   *
+   * The label is `display: inline`, so its own hit area is its LINE FRAGMENTS —
+   * a jagged shape that stops at the last glyph of the last line. Clicking the
+   * empty space to the right of a short final line therefore missed the label,
+   * fell through to the row, and TOGGLED the subtask: a click inside the white
+   * field you are hovering did the opposite of what the field advertises.
+   *
+   * The field is drawn on the wrapper (a rectangle), so the wrapper is what has
+   * to accept the click. `caretRangeFromPoint` puts the caret where the user
+   * actually aimed rather than jumping to the end; past the last glyph there is
+   * no range, and the end is the right answer anyway.
+   */
+  const wrapEl = wrap.querySelector(".stlabwrap");
+  wrapEl.addEventListener("mousedown", (e) => {
+    if (e.target === label || label.contains(e.target)) return;
+    e.preventDefault();
+    label.focus();
+    const r = document.caretRangeFromPoint
+      ? document.caretRangeFromPoint(e.clientX, e.clientY) : null;
+    const sel = getSelection();
+    sel.removeAllRanges();
+    if (r && label.contains(r.startContainer)) sel.addRange(r);
+    else { const end = document.createRange(); end.selectNodeContents(label); end.collapse(false); sel.addRange(end); }
+  });
+
   row.addEventListener("click", (e) => {
-    /* The label and the ✕ own their own clicks; the rest of the row toggles. */
-    if (e.target === label || label.contains(e.target) || e.target === x) return;
+    /* The field and the ✕ own their own clicks; the rest of the row toggles. */
+    if (e.target === x || wrapEl.contains(e.target) || e.target === wrapEl) return;
     toggle();
   });
   tick.addEventListener("keydown", (e) => {
@@ -598,10 +635,74 @@ function animateHeight(wrap, dir, after) {
   else settle();
 }
 
+/*
+ * DONE SUBTASKS SINK, and the sink is a FLIP rather than a re-render.
+ *
+ * Re-rendering the list in its new order is the version that reads as a cut:
+ * every row is rebuilt in its final position, so nothing travels and the row
+ * you just ticked simply is somewhere else. The rows have to keep their
+ * identity and move, which is what First-Last-Invert-Play does — measure, mutate
+ * the DOM, put every row back where it visually was, then release them.
+ *
+ * SEQUENCED AFTER THE STRIKE, not with it. The strike is the acknowledgement of
+ * what you did and the sink is the consequence of it, and they are on the same
+ * element: starting both together means the row is drawing its own line while
+ * sliding out from under the cursor, and neither reads. Waiting for the strike
+ * costs 280ms of latency before anything moves, which is the trade — the rig
+ * has a toggle so the two can be watched back to back rather than argued about.
+ *
+ * The sort is STABLE: a row that is neither newly done nor newly undone must not
+ * change places with its neighbours, or ticking one subtask visibly reshuffles
+ * ones the user never touched.
+ */
+let resortTimer = null;
+function resort() {
+    clearTimeout(resortTimer);
+    const wait = panel.classList.contains("sink-now") ? 0 : 280 * SLOW();
+    resortTimer = setTimeout(runResort, wait);
+}
+
+function runResort() {
+    const nodes = [...subs.children];
+    const rows = live();
+    const order = rows.map((w, i) => ({ w, i }));
+    order.sort((a, b) => (S[a.i][1] - S[b.i][1]) || (a.i - b.i));
+    if (order.every((o, n) => o.i === n)) return;      /* nothing to do, so no motion */
+
+    const first = new Map(nodes.map((w) => [w, w.getBoundingClientRect().top]));
+    S = order.map((o) => S[o.i]);
+    /* A row still collapsing is not in the model but is on screen; it travels too. */
+    const leaving = nodes.filter((w) => w.classList.contains("leaving"));
+    order.forEach((o) => subs.appendChild(o.w));
+    leaving.forEach((w) => subs.appendChild(w));
+
+    nodes.forEach((w) => {
+        const d = first.get(w) - w.getBoundingClientRect().top;
+        if (!d) return;
+        w.style.translate = `0 ${d}px`;               /* INVERT, with no transition yet */
+    });
+    void subs.offsetHeight;
+    nodes.forEach((w) => {
+        if (!w.style.translate) return;
+        w.classList.add("moving");
+        w.style.translate = "0px";
+        const a = w.getAnimations().find((x) => x.transitionProperty === "translate");
+        const done = () => { w.classList.remove("moving"); w.style.removeProperty("translate"); };
+        if (a) a.finished.then(done, done); else done();
+    });
+}
+
 function add() {
-  S.push(["New subtask", 0]);
+  /*
+   * Inserted at the END OF THE NOT-DONE GROUP, not at the end of the list.
+   * Appending and then letting the sort pull it back up would be two motions
+   * for one gesture; the list already knows where an undone row belongs.
+   */
+  const at = S.findIndex((r) => r[1]);
+  const idx = at === -1 ? S.length : at;
+  S.splice(idx, 0, ["New subtask", 0]);
   const wrap = rowNode("New subtask", 0);
-  subs.appendChild(wrap);
+  subs.insertBefore(wrap, live()[idx] || null);
   wire(wrap);
   counts();                                  /* the count commits with the gesture, not after it */
   /*
@@ -650,6 +751,7 @@ function remove(wrap) {
 }
 
 function render() {
+  S = S.filter((r) => r[1] === 0).concat(S.filter((r) => r[1] === 1));
   subs.textContent = "";
   S.forEach(([t, on]) => { const w = rowNode(t, on); subs.appendChild(w); wire(w); });
   counts();
@@ -657,6 +759,8 @@ function render() {
 
 document.getElementById("add").onclick = add;
 document.getElementById("reset").onclick = () => { S = SEED.map((s) => s.slice()); render(); };
+document.getElementById("sinknow").onchange = (e) =>
+    panel.classList.toggle("sink-now", e.target.checked);
 document.getElementById("fade").onchange = (e) =>
     panel.classList.toggle("strike-fade", e.target.checked);
 document.getElementById("many").onclick = () => {

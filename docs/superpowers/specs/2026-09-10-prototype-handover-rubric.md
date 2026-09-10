@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 51 entries, **37 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 52 entries, **38 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
