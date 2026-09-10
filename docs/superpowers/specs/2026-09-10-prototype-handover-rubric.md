@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 46 entries, **32 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 49 entries, **35 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
@@ -18,7 +18,7 @@ finding a column that flies 300px past its slot.
 The bar is not "I tested it". Every defect below was found on a surface someone had just finished
 testing. The bar is: **each check below has been run in the state where it can actually fail.**
 
-## The eleven checks
+## The twelve checks
 
 ### 1. Drive it in a non-default state — this is the big one
 
@@ -174,6 +174,35 @@ Check it by pressing **Tab ten times and recording `document.activeElement` each
 time**, then operating the control from the keyboard alone — a hidden control that
 focus can never reach is a picture of a control. Cost: #45, where the only way to
 delete a subtask was with a mouse.
+
+### 12. Render it at the size a person will see it, and ask geometry questions
+
+The check that caught nothing on 2026-09-10. A filmstrip ran, Codex ran, and the
+user then reported three defects in one screenshot — a strike-through ruled
+across the gap between two wrapped lines, a ✎ and a ✕ drawn on top of each other,
+and a list nobody had ever drawn with more than three rows.
+
+None of them was subtle. All three were invisible to what was actually run:
+
+- **The filmstrip captured a 400px panel in a 1440×900 viewport**, so each row
+  was about two millimetres tall on the contact sheet. A 1.5px line cannot be
+  judged there. A capture too small to resolve its subject proves as little as
+  check 10's capture that ends too early — same failure, other axis.
+- **The audit brief asked existence questions.** "Prove the `::after` and
+  `::before` split is real and neither replaces the other" was answered
+  correctly — both computed non-empty — and *both being present is exactly the
+  bug*. Asking whether two things exist can never reveal that they overlap.
+- **"Many rows" was asked as a robustness question.** The answer, "15 rows
+  completed cleanly", was true: no errors, no leftovers. Nobody looked at it.
+
+So: screenshot the surface at its real size and read the image, in every state
+that changes its shape — wrapped text, the longest label, the fullest list. Then
+phrase at least one check as **geometry** — do these two boxes overlap, does this
+line land on the glyphs, is this control still on screen — because a mechanism
+check cannot answer a question about where things are.
+
+Cost: #47, #48, #49, all three reported by the user in a single image after two
+verification passes had cleared the surface.
 
 ## And two rules about your own claims
 
