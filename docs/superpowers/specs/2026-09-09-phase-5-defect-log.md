@@ -21,7 +21,7 @@ and pretending otherwise is how a defect ships under a green suite (`docs/adr/te
 
 ## The rules the defects keep breaking
 
-Eight recur often enough to be worth stating before the table:
+Nine recur often enough to be worth stating before the table:
 
 1. **An inline `style.transition` overrides the stylesheet's whole list**, not just the property
    you named. Setting one for a FLIP and leaving it disables everything else on that element.
@@ -39,6 +39,12 @@ Eight recur often enough to be worth stating before the table:
    cannot escape it.
 5. **Two stacked semi-transparent layers with different backgrounds do not sum to either.** A
    cross-fade is only invisible when both halves are the same pixels.
+9. **One element, one property, two states that can be true at once — they belong in ONE
+   attribute, not two.** Rows 5, 15 and 28 are all this shape (`opacity` on `.ckb`: hover vs
+   slot, hover vs being-crossed-mid-drag) and all were settled by arranging specificity, which
+   is invisible at the call site. On the way into the app this becomes worse, not better:
+   Tailwind variants are all single-class, so overlapping states resolve by **sheet order**
+   rather than intent. `docs/adr/tech/0038` makes the exclusivity structural instead.
 8. **A handoff between two elements needs its two windows to overlap, not abut.** Fixing a
    double by making the first leave earlier buys a gap instead; the fix is to make the
    pair *interchangeable* — same position, same opacity — and swap them on one frame.

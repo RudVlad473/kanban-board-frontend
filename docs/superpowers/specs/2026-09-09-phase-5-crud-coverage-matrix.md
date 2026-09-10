@@ -194,7 +194,7 @@ Open, in the order they are likely to matter:
 4. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
    zero calls to the real View Transitions API.
 
-**Do not re-derive:** the defect log's **eight recurring causes** explain most of what went wrong
+**Do not re-derive:** the defect log's **nine recurring causes** explain most of what went wrong
 here, and every one of the 35 entries names the assertion that would catch it. Read that file
 before writing new motion code, not after.
 
