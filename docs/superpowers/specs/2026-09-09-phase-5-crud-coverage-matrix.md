@@ -39,11 +39,15 @@ Paths are relative to `.superpowers/brainstorm/`; `S1` is `23940-1788251793/cont
 |---|---|---|---|---|---|
 | **Board** | ✅ `S1/sidebar-boards-v1` | ✅ `S1/board-switch-v3`, `S1/sidebar-boards-v4` | ✅ `S1/board-edit-v2` | ✅ `S1/board-edit-v2` | — |
 | **Column** | ✅ `S1/column-crud-v17` | ✅ `S1/load2-v2`, `S1/handoff-v4` | ✅ `S1/column-crud-v17` | ✅ `S1/column-crud-v17` | ✅ `S1/column-crud-v17` |
-| **Task** | ◐ `S2/header` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ❌ | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
+| **Task** | ✅ `S1/task-create-v4` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ❌ | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
 | **Subtask** | ✅ `S1/subtask-crud-v2` | ✅ `S1/task-open-v17` | ✅ `S1/subtask-crud-v2` | ✅ `S1/subtask-crud-v2` | — |
 | **Account** | ✅ `S1/auth-v4` | ✅ `S1/auth-v4` | — | — | — |
 
-### What each `◐` is actually missing
+### What each `◐` was missing, as the audit found it
+
+**All three are now closed** — board update and delete by `board-edit-v2`, task create by
+`task-create-v4`. Kept because it records what the audit was reacting to, and because the pattern
+repeated: in every case an index organised by surface reported the cell as covered.
 
 - **Board update.** `header.html` designs the board *title's* one-frame swap on rename and
   recommends it over a slide, because a rename has no direction. The rename input itself — where
@@ -53,9 +57,10 @@ Paths are relative to `.superpowers/brainstorm/`; `S1` is `23940-1788251793/cont
 - **Task create.** `header.html` covers `+ Add New Task`'s disabled→enabled snap. Nothing behind
   the click.
 
-All three dead-end at **G2** — `modal.tsx` carries zero motion classes — which is what actually
-holds create-board, rename, delete-confirm and create-task. G2 is therefore not one gap among
-several; it is the single blocker behind four `◐`/`❌` cells.
+All three dead-ended at **G2** — `modal.tsx` carries zero motion classes — which is what actually
+held create-board, rename, delete-confirm and create-task. G2 was therefore not one gap among
+several but the single blocker behind four `◐`/`❌` cells; it closed 2026-09-10, and the three
+`◐` cells closed behind it. **One `❌` is left: task delete.**
 
 ## Corrections this matrix forced
 
@@ -151,11 +156,21 @@ flight so its removal is a swap of like for like.
 
 ### Task
 
-**Create — ◐**
-Today: `add-task-button` → `add-task-modal`, with subtask rows built from `subtask-editor-row`.
-Carries over: `header.html` covers the trigger's disabled→enabled snap; `optimistic-v5` covers the
-card arriving in its column before the server answers, which this flow already does. Missing: the
-modal itself (G2), and the same repeating-row problem as board create.
+**Create — ✅ SIGNED OFF 2026-09-10**, `task-create-v4.html`.
+Two things the `◐` note got wrong, found by building it. `optimistic-v5` is about a **move** and
+its rollback — it has no designed entrance for a card that did not exist a moment ago, which is the
+whole of what a create produces. And the repeating rows are not the panel's rows: `subtask-crud-v2`
+settled a tinted pill being *read*, while mock p38's create-form row is an empty text input with the
+✕ outside it, being *filled*. The motion transferred; the material did not.
+
+The modal is G2's, verbatim. The one genuinely new decision is that the modal's exit and the card's
+arrival start on the **same frame** rather than being sequenced — the same finding as #40 and #51,
+and the same call the subtask sink was changed to make.
+
+The button took four passes and its own three defect rows (#70–#72); the short version is that
+**hover may never change the top face's geometry** (a hover that moves the box un-hovers itself)
+and **nothing hard-edged may animate on hover** (a 1px band crawling through fractional positions
+is the "jerk").
 
 **Delete — ❌**
 Today: `delete-task-confirm`.
@@ -225,17 +240,14 @@ checks, derived from the fact that 38 of this project's 54 recorded design defec
 the user rather than by a check. Check 13 — the scale pass — is deliberately deferred until the
 main bulk of the surfaces exist; run it then, over every unbounded collection at once. Running them is what makes the next surface cheaper than this one was.
 
-**Subtask create, rename and delete are closed** — `subtask-crud-v2.html`, signed off 2026-09-10.
-Everything remaining in what used to be item 1 is blocked on G2.
+**Subtask CRUD and task create are closed** — `subtask-crud-v2.html` and `task-create-v4.html`,
+both signed off 2026-09-10. **There are no `◐` cells left**; the matrix's only gap is one `❌`.
 
 Open, in the order they are likely to matter:
 
-1. **Task create** — the last `◐`. G2 is closed (`modal-motion-v1.html`, signed off 2026-09-10),
-   so the modal it dead-ended at now exists; what remains is the repeating-row problem it shares
-   with board create.
-2. **Task delete** — the one genuinely non-optimistic wait in the app, and the only cell whose
+1. **Task delete** — the one genuinely non-optimistic wait in the app, and the only cell whose
    motion cannot assume the optimistic case. G2's confirm is designed now, so this is unblocked.
-3. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
+2. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
    zero calls to the real View Transitions API.
 
 **Do not re-derive:** the defect log's **nine recurring causes** explain most of what went wrong
