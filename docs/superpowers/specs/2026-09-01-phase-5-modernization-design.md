@@ -855,7 +855,7 @@ nor the mocks ever covered.
 |---|---|---|
 | **G1** | Reduced-motion variants, every animation | **open — largest** |
 | **G2** | Modal enter / exit | **closed 2026-09-10** — `modal-motion-v1.html`; one requirement (the centring wrapper) is **open**, row 58 |
-| **G3** | Toast enter / exit motion | open |
+| **G3** | Toast enter / exit motion | **closed 2026-09-10** — `toast-motion-v1.html`. Two things it deliberately does **not** close: Base UI's swipe-to-dismiss (installed on `Toast.Root` regardless of pile styling, `swipeDirection` defaulting to `["down","right"]`) and the roles — `Toast.Root` renders `role="dialog"` and `toast.tsx` overrides it nowhere, so `alert`/`status` is the design and not yet the behaviour |
 | **G4** | Overflow affordance, columns and board list | open |
 | **G5** | Subtask check · task edit · subtask CRUD | **narrowed 2026-09-09** — rename and delete only |
 | **G6** | Task delete collapse **and restore** | **closed 2026-09-10** — `task-delete-v1.html`. Its original framing (*"non-optimistic"*) was wrong; see defect log #78 |
@@ -909,7 +909,13 @@ two surfaces is invisible in it.
   "Dropdown and Menu received a fully measured treatment" refers to their prototypes — the shipped
   components have state styling (`data-[highlighted]`, `data-[disabled]`) and no motion at all.
 - **G3** verified: one `transition-colors`, on the close button. §5e designed the stripe geometry,
-  never the toast's own motion.
+  never the toast's own motion. **Closed 2026-09-10** by `toast-motion-v1.html`, which also found
+  that Base UI publishes a whole stacking system — `data-expanded` on Root *and* Viewport,
+  `data-limited`, `data-swiping`, `--toast-index`, `--toast-offset-y`, `--toast-height`,
+  `--toast-frontmost-height` — and `rg` across `src` returns **zero** references to any of it. The
+  pile is declined on purpose (it is a high-frequency-notification pattern and this app raises
+  toasts from mutation failures), but `data-limited` still needs drawing: the limit is already 3
+  and nothing shows it.
 - **G4** — **`src/hooks/use-overflow-indicator.ts` already exists** and is consumed by
   `dropdown.tsx` alone. The mechanism is in-repo and unused by exactly the two scroll regions this
   document names as lacking an affordance. Cheapest gap here.

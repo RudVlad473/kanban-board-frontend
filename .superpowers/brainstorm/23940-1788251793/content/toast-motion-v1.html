@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<title>Toast motion — v1</title>
+<style>
+/* ============================================================================
+   G3 — TOAST ENTER AND EXIT.
+
+   WHAT SHIPS TODAY, READ RATHER THAN ASSUMED
+   ------------------------------------------
+   `toast.tsx` has exactly one transition in it, `transition-colors` on the
+   close button. Everything else — arrival, dismissal, and what the other
+   toasts do when one leaves — is a cut.
+
+   The more interesting finding is what is available and unused. `Toast.Root`
+   in Base UI 1.7.0 publishes a whole stacking system:
+
+     data-expanded      on the Root AND the Viewport
+     data-limited       the toast was dropped because `limit` was exceeded
+     data-swiping / data-swipe-direction
+     --toast-index      its place in the pile
+     --toast-offset-y   where it sits when the pile is expanded
+     --toast-height     its own measured height
+     --toast-frontmost-height  on the Viewport
+
+   `rg` across `src` returns **zero** references to any of them. The Viewport is
+   `flex flex-col gap-2`, so the toasts are a plain list and the pile is simply
+   not built. That is a legitimate choice and it has never been made — which is
+   the distinction this file exists to close.
+
+   THE CHOICE, AND WHY THE LIST WINS
+   ---------------------------------
+   A collapsed pile that expands on hover is a pattern for HIGH-FREQUENCY
+   notification: it exists so twenty arrivals do not own the screen. This app
+   raises toasts from mutation failures. Three at once is already an unusual
+   session and twenty never happens, so the pile would spend its whole life
+   showing one card while costing a hover state, a swipe gesture and four CSS
+   variables of machinery. The list stays.
+
+   What the list does owe, and does not currently have, is a designed answer to
+   the same three questions:
+
+     ARRIVAL      a toast appears where there was nothing
+     DISMISSAL    and there are TWO of them, which is the finding below
+     THE OTHERS   one leaves from the middle and the rest close the gap
+
+   TWO DISMISSALS, NOT ONE
+   -----------------------
+   A toast that times out and a toast the user clicked away are not the same
+   event, and giving them one exit makes the click feel unacknowledged. The
+   timeout is the toast RECEDING — it has finished saying what it had to say, so
+   it fades where it stands over 200ms with no travel. The click is the toast
+   being DISMISSED — the user acted, so it leaves in the direction it came from
+   and does it fast, 130ms on the accelerating curve. Same rule as the modal:
+   an enter and a leave are different events, and here so are two leaves.
+
+   THE OTHERS CLOSE THE GAP THE SAME WAY A CARD DOES
+   -------------------------------------------------
+   Removal from the middle of the stack is the problem `task-delete-v1` just
+   settled: a FLIP leaves the departing element painted while the others travel
+   through it, and two of them overlap. So the toast's WRAPPER collapses its
+   height and margin and the rest are carried by layout — one removal idiom in
+   the app rather than two, which matters more here than the compositor cost,
+   because a toast list is never more than a handful of elements.
+
+   THE LIMIT IS ALREADY THREE, AND NOTHING DRAWS IT
+   ------------------------------------------------
+   My first reading of this was wrong and worth recording because the wrong
+   version sounded more plausible. I wrote that `limit` is unset so the count is
+   unbounded. `ToastProvider` in Base UI 1.7.0 defaults to **`limit = 3`** — the
+   count is already bounded and the app already gets it.
+
+   What the app does NOT get is any drawing of it. Over the limit, Base UI keeps
+   the extra toast mounted and marks it `data-limited`, expecting CSS to take it
+   out of the flow. Nothing in `src` styles that attribute, so the limit exists
+   in the state and not on the screen, and a fourth toast simply stacks. Setting
+   `limit={3}` explicitly would change nothing at all.
+
+   So a fourth arrival DISPLACES the oldest here, and the displaced one leaves by
+   the timeout exit rather than the dismissal one: the user did not act on it, so
+   it recedes rather than being acknowledged. Two exits still, not three.
+
+   WHAT THIS FILE DOES NOT CLOSE
+   -----------------------------
+   Base UI installs swipe-to-dismiss on `Toast.Root` independently of any pile
+   styling — `swipeDirection` defaults to `["down", "right"]`. Declining the pile
+   does not decline the swipe, and the swipe is not designed here.
+
+   The app's roles are also wrong at the source, not in this file. `Toast.Root`
+   renders `role="dialog"`, or `alertdialog` only when the toast is high
+   priority; `toast.tsx` overrides neither. The roles below are the DESIGN — an
+   `alert` interrupts, a `status` waits its turn — and reaching them needs a prop
+   on the shipped component, which is outside a prototype.
+   ============================================================================ */
+
+:root {
+  --e: cubic-bezier(.2,0,0,1);
+  /* an arrival's long decelerating tail; a dismissal's acceleration away */
+  --enter: cubic-bezier(.16,1,.3,1);
+  --exit: cubic-bezier(.5,0,.9,.4);
+  --slow: 1;
+  --purple: #635FC7;
+  --purple-hover: #5854be;
+  --purple-press: #4f4bab;
+  --purple-edge: #3f3c85;
+  --btn-quiet-hover: color-mix(in srgb, var(--ink) 4%, #fff);
+  --btn-quiet-press: color-mix(in srgb, var(--ink) 8%, #fff);
+  --btn-quiet-edge: color-mix(in srgb, #000 14%, #fff);
+  --border-hover: #d6dfef;
+  --border-rest: #dce3f2;
+  --press: 90ms;
+  --red: #EA5555;
+  --ink: #000112;
+  --muted: #828FA3;
+  --line: #E4EBFA;
+  --tint: #F4F7FD;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--tint); color: var(--ink);
+  font: 500 13px/1.5 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+.page { display: flex; gap: 24px; padding: 24px; align-items: flex-start; min-height: 100vh; }
+.stage { flex: 1 1 auto; }
+.stage h1 { font: 800 20px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 16px; }
+.stage p { max-width: 52ch; color: var(--muted); }
+.acts { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+.acts .btn { width: auto; }
+
+/*
+ * THE VIEWPORT, matching what ships: `fixed inset-x-4 bottom-4` at mobile width
+ * and `right-6 bottom-6 w-96` from `md` up. The gap moves onto the wrapper for
+ * the same reason it did on the card list — `gap` is a container property and
+ * cannot be animated for one item, so a collapsing toast whose gap stays open
+ * leaves a hole that snaps shut a frame later (#77).
+ */
+.viewport { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 60;
+  display: flex; flex-direction: column; pointer-events: none; }
+@media (min-width: 768px) {
+  .viewport { left: auto; right: 24px; bottom: 24px; width: 384px; }
+}
+.trow { overflow: hidden; margin-top: 8px; pointer-events: auto; }
+.trow:first-child { margin-top: 0; }
+/*
+ * The collapse and the entrance are the card's two rules, unchanged: leaving,
+ * the contents go first and the box shuts after; entering, the box opens first
+ * and the contents arrive at the end.
+ */
+.trow.animating { transition:
+    height calc(200ms * var(--slow)) var(--e),
+    margin-top calc(200ms * var(--slow)) var(--e),
+    opacity calc(90ms * var(--slow)) linear; }
+
+/*
+ * THE TOAST, `toast-v3`'s option 3 — NOT what ships.
+ *
+ * Shipping is `rounded-sm` (4px) with `border-l-4` and `shadow-lg`.
+ * `toast-v3` decided against all three on 2026-09-09: 6px because this phase
+ * moves the inputs to 6px and `toast-variants.ts`'s own comment pins the toast
+ * to TextField's radius, so staying at 4px would silently break the rule that
+ * comment exists to protect; a real 1px border because `shadow-lg` is nearly
+ * invisible in dark mode and this phase is border-led; and symmetric 16px
+ * because `border-l-transparent` still reserves its 4px, so even a neutral
+ * toast was 20px on one side and 16px on the other.
+ */
+.toast { position: relative; background: #fff; border-radius: 6px;
+  border: 1px solid var(--line); padding: 16px; display: flex; gap: 11px;
+  box-shadow: 0 1px 2px rgb(16 18 32 / .04), 0 12px 24px -12px rgb(16 18 32 / .18);
+  cursor: pointer; }
+.toast.danger { border-color: color-mix(in srgb, var(--red) 34%, #fff); }
+.toast .ico { flex: none; width: 17px; height: 17px; color: var(--muted); }
+.toast.danger .ico { color: var(--red); }
+.toast .ico svg { width: 17px; height: 17px; display: block; }
+/*
+ * The clamps are the SHIPPED component's — title 2 lines, description 3 — and
+ * they are here because without them the prototype cannot show the worst case
+ * it is supposed to be judged on. Measured at 375px with long copy: unclamped
+ * it grows to a 210px card, which is not the geometry that ships.
+ */
+.ttitle { font-size: 12px; font-weight: 700; line-height: 16px; padding-right: 24px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.tdesc { font-size: 13px; font-weight: 500; line-height: 20px; color: var(--muted); margin-top: 8px;
+  padding-right: 24px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.tx { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
+  border: 0; background: none; color: var(--muted); border-radius: 4px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background-color .13s, color .13s; }
+.tx:hover { background: var(--tint); color: var(--ink); }
+.tx:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
+.tx svg { width: 14px; height: 14px; }
+
+/*
+ * ARRIVAL. It comes from the edge it lives on, which on this viewport is the
+ * bottom — so it rises. `--enter`'s long tail is the same arrival curve the
+ * modal uses, and the opacity finishes first so what you watch is a solid card
+ * settling rather than a translucent one drifting (#67).
+ */
+.toast { transition:
+    opacity calc(90ms * var(--slow)) linear,
+    translate calc(300ms * var(--slow)) var(--enter),
+    scale calc(300ms * var(--slow)) var(--enter); }
+.tin .toast { opacity: 0; translate: 0 16px; scale: .97; }
+
+/*
+ * TWO DISMISSALS.
+ *
+ *   timeout — it has finished speaking, so it recedes where it stands. No
+ *             travel at all: a toast that slides away on its own reads as
+ *             something happening, and nothing is happening.
+ *   click   — the user acted, so it leaves the way it came, fast, on the
+ *             accelerating curve. The travel IS the acknowledgement.
+ */
+.tout .toast { opacity: 0;
+  transition: opacity calc(200ms * var(--slow)) linear; }
+.tdismiss .toast { opacity: 0; translate: 0 10px; scale: .98;
+  transition:
+    opacity calc(130ms * var(--slow)) var(--exit),
+    translate calc(130ms * var(--slow)) var(--exit),
+    scale calc(130ms * var(--slow)) var(--exit); }
+
+/*
+ * REDUCE, DO NOT REMOVE. The fades survive because they are what says a surface
+ * arrived or left; the travel and the scale go. The two dismissals stay
+ * DISTINCT — 200ms receding versus 130ms acknowledged — because the difference
+ * between them was never carried by the movement.
+ *
+ * `.tin .toast` etc. are two classes deep, so the override has to match that
+ * depth or it silently loses (#80).
+ */
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: opacity calc(100ms * var(--slow)) linear; }
+  .tin .toast, .tout .toast, .tdismiss .toast { translate: none; scale: none; }
+  .tout .toast { transition: opacity calc(160ms * var(--slow)) linear; }
+  .tdismiss .toast { transition: opacity calc(100ms * var(--slow)) linear; }
+  .trow.animating { transition:
+      height calc(120ms * var(--slow)) linear,
+      margin-top calc(120ms * var(--slow)) linear,
+      opacity calc(90ms * var(--slow)) linear; }
+}
+body.force-reduced .toast { transition: opacity calc(100ms * var(--slow)) linear; }
+body.force-reduced .tin .toast,
+body.force-reduced .tout .toast,
+body.force-reduced .tdismiss .toast { translate: none; scale: none; }
+body.force-reduced .tout .toast { transition: opacity calc(160ms * var(--slow)) linear; }
+body.force-reduced .tdismiss .toast { transition: opacity calc(100ms * var(--slow)) linear; }
+body.force-reduced .trow.animating { transition:
+    height calc(120ms * var(--slow)) linear,
+    margin-top calc(120ms * var(--slow)) linear,
+    opacity calc(90ms * var(--slow)) linear; }
+
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+.rig { font: 500 12px/1.9 ui-monospace, monospace; color: #4a5568; width: 250px; flex: none; }
+.rig h3 { font: 700 12px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
+.rig label { display: block; }
+.rig p { margin: 10px 0 0; }
+
+/*
+ * THE BUTTON, FOURTH PASS — the jerk was the animated hard edge itself, so
+ * nothing hard-edged animates on hover any more.
+ *
+ * v3 trimmed the hover to one property and one clock and it was STILL reported
+ * as jerky. That is the signal that the amount was never the problem. What was
+ * left animating was the plinth — a **solid, 0-blur bottom edge growing 2px →
+ * 3px** — and a hard edge travelling through fractional positions is
+ * antialiased into a soft band at every intermediate frame and then snaps crisp
+ * at the end. A 1px shimmer that resolves with a click is exactly what "jerky"
+ * describes, and no amount of further trimming reaches it, because the thing
+ * being trimmed IS the artifact.
+ *
+ * So the plinth is now STATIC. It is 2px at rest and 2px on hover, and it moves
+ * only on press, where the movement is the point.
+ *
+ * WHAT HOVER DOES INSTEAD: it changes the OPACITY of a sheen, and nothing else.
+ * Opacity is the one property the compositor can animate without repainting or
+ * re-rasterising anything, so a hover built on it cannot stutter — not "should
+ * not", cannot. The sheen is a top-lit gradient on `::after`; raising it reads
+ * as the light source coming closer to the face, which is what a hover has
+ * always been trying to say and what darkening the fill said backwards.
+ *
+ * The overlay sits ABOVE the label, because an absolutely-positioned pseudo
+ * always does. That is harmless here and deliberately so: each variant's sheen
+ * is the same hue as its own text — white over white on the filled buttons,
+ * ink over ink on the quiet one — so it is invisible exactly where it lands on
+ * a glyph.
+ *
+ * WHAT SURVIVES from v2 and v3: hover may never change the top face's geometry,
+ * because a hover that moves the box un-hovers itself — the pointer is left
+ * behind, `:hover` stops matching, the box returns, and it oscillates. Press is
+ * still the only state that moves, and it is safe because a press is held.
+ *
+ * On press the face goes down 2px WHILE the plinth goes to 0, so the two
+ * cancel: the bottom edge of the whole control is stationary through the press
+ * and only the top face travels. Nothing crawls there either.
+ *
+ * "Not a basic button" is carried by material rather than by motion — a flat
+ * wash that lifts the whole face, a hairline inner ring, and a crisp 2px edge
+ * below. Flat fill plus a colour swap is the basic button; this is the same
+ * restraint with a light source. NOT a gradient: the first draft used one and
+ * at 3x it was unmistakably a 2008 gloss, which is a different flavour of the
+ * same complaint.
+ */
+.btn { appearance: none; border: none; font: inherit; font-weight: 700;
+  position: relative; isolation: isolate;
+  height: 40px; padding: 0 20px; border-radius: 4px; cursor: pointer; width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--purple); color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .14),
+    inset 0 0 0 1px rgb(0 0 0 / .12),
+    0 2px 0 var(--purple-edge);
+  transition:
+    background-color calc(120ms * var(--slow)) var(--e),
+    opacity calc(120ms * var(--slow)),
+    box-shadow calc(80ms * var(--slow)) var(--e),
+    translate calc(80ms * var(--slow)) var(--e); }
+/*
+ * The sheen — a FLAT wash, not a gradient, and its opacity is the only thing
+ * hover touches.
+ *
+ * The first version of this was a top-to-bottom white gradient, and at 3x it
+ * was unmistakably a 2008 gloss button: bright cap, dark base, the exact
+ * "basic" this pass exists to get away from. A gradient is a light SOURCE
+ * being drawn; a flat wash is the surface being lit. The bevel that gives the
+ * face its edge is already there as a static 1px inset highlight and does not
+ * need help.
+ *
+ * .07 is not a taste value: white text on the washed fill has to stay at 4.5:1,
+ * and .10 does not.
+ */
+.btn::after { content: ""; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none; opacity: 0;
+  background: rgb(255 255 255 / .07);
+  transition: opacity calc(140ms * var(--slow)) var(--e); }
+.btn:hover::after { opacity: 1; }
+.btn:active { background: var(--purple-press); translate: 0 2px;
+  box-shadow:
+    inset 0 2px 3px rgb(0 0 0 / .24),
+    inset 0 0 0 1px rgb(0 0 0 / .18),
+    0 0 0 var(--purple-edge); }
+.btn:active::after { opacity: 0; }
+.btn:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* The quiet variant cannot be lit, so its sheen is an ink wash rather than a
+   white one — the same mechanism, the same clock, the opposite direction. */
+.btn.ghost { background: #fff; color: var(--ink);
+  box-shadow:
+    inset 0 2px 3px rgb(16 18 32 / 0),
+    inset 0 0 0 1px var(--line),
+    0 2px 0 var(--btn-quiet-edge); }
+.btn.ghost::after { opacity: 0; background: rgb(16 18 32 / .045); }
+.btn.ghost:hover::after { opacity: 1; }
+/* The quiet press has to be darker than the quiet hover or the press reads as
+   nothing happening — the two states were identical in the first draft. */
+.btn.ghost:active::after { opacity: 1; background: rgb(16 18 32 / .10); }
+.btn.ghost:active { background: #fff; translate: 0 2px;
+  box-shadow:
+    inset 0 2px 3px rgb(16 18 32 / .14),
+    inset 0 0 0 1px var(--border-hover),
+    0 0 0 var(--btn-quiet-edge); }
+
+
+.btn.small { width: auto; height: 32px; padding: 0 16px; }
+
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="stage">
+    <h1>Toast enter and exit — G3</h1>
+    <p>Everything <code>toast.tsx</code> ships today is a cut: one
+      <code>transition-colors</code> on the close button and nothing else. Base UI publishes a
+      whole stacking system (<code>--toast-index</code>, <code>--toast-offset-y</code>,
+      <code>data-expanded</code>) that <code>src</code> references nowhere.</p>
+    <div class="acts">
+      <button class="btn danger" id="one">Raise a failure</button>
+      <button class="btn ghost" id="neutral">Raise a neutral toast</button>
+      <button class="btn ghost" id="three">Raise three at once</button>
+      <button class="btn ghost" id="many">Raise eight — the limit case</button>
+    </div>
+    <p style="font-size:12px">Click a toast's body to dismiss it, or leave it for the 5s
+      timeout — the two exits are deliberately different. Dismiss the <em>middle</em> one of
+      three to see the others close the gap.</p>
+  </div>
+  <div class="rig">
+    <h3>rig</h3>
+    <label><input type="checkbox" id="slow"> slow motion (6&times;)</label>
+    <label><input type="checkbox" id="reduced"> force reduced motion</label>
+    <label><input type="checkbox" id="notimeout"> disable auto-dismiss</label>
+    <p id="state">idle</p>
+    <p style="font-size:11px;line-height:1.6">5000ms and a limit of 3 are both Base UI
+      1.7.0's own defaults. The limit already applies in the app and nothing draws it —
+      <code>data-limited</code> is emitted and styled nowhere.</p>
+    <p style="font-size:11px;line-height:1.6">The timer pauses while you hover or focus a
+      toast, and resumes with the time it had left.</p>
+  </div>
+</div>
+<div class="viewport" id="viewport"></div>
+<script>
+const SLOW = () => (document.getElementById("slow").checked ? 6 : 1);
+const TIMEOUT = () => 5000 * SLOW();
+/* Base UI 1.7.0's own defaults, both of them: `timeout = 5000, limit = 3`. */
+const LIMIT = 3;
+const say = (s) => { document.getElementById("state").textContent = s; };
+
+const COPY = [
+  { danger: true, title: "Couldn't delete task.", description: "Try again." },
+  { danger: true, title: "That task is no longer available.", description: "Refresh to see this board's current tasks." },
+  { danger: true, title: "Your session has expired.", description: "Sign in again to delete this task." },
+  { danger: false, title: "Rollback complete", description: "The board name was restored." },
+];
+
+const ICON_DANGER = '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/>';
+const ICON_INFO = '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 7.5v.01"/>';
+
+let n = 0;
+
+function raise({ danger, title, description }) {
+  const viewport = document.getElementById("viewport");
+  const row = document.createElement("div");
+  row.className = "trow tin";
+
+  const el = document.createElement("div");
+  el.className = "toast" + (danger ? " danger" : "");
+  /*
+   * `role="alert"` on a failure and `role="status"` on a neutral one. An alert
+   * interrupts whatever the screen reader is saying; a rollback confirmation
+   * has not earned that and should wait its turn.
+   */
+  el.setAttribute("role", danger ? "alert" : "status");
+
+  const ico = document.createElement("span");
+  ico.className = "ico";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "2");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.innerHTML = danger ? ICON_DANGER : ICON_INFO;
+  ico.append(svg);
+
+  const body = document.createElement("div");
+  const h = document.createElement("div");
+  h.className = "ttitle";
+  h.textContent = title;
+  const d = document.createElement("div");
+  d.className = "tdesc";
+  d.textContent = description;
+  body.append(h, d);
+
+  const x = document.createElement("button");
+  x.className = "tx";
+  x.type = "button";
+  x.setAttribute("aria-label", "Dismiss notification");
+  const xs = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  xs.setAttribute("viewBox", "0 0 24 24");
+  xs.setAttribute("fill", "none");
+  xs.setAttribute("stroke", "currentColor");
+  xs.setAttribute("stroke-width", "2");
+  xs.innerHTML = '<path d="M18 6 6 18M6 6l12 12"/>';
+  x.append(xs);
+
+  el.append(ico, body, x);
+  row.append(el);
+  viewport.append(row);
+  row.dataset.id = String(++n);
+
+  /*
+   * The row is measured while it is still at its natural height, THEN clamped
+   * to zero, then opened — the card's rule, and the reason is the same: `height`
+   * cannot interpolate from `auto`, and seeding the start value inline commits
+   * you to setting the end value inline too or the class silently loses (#73's
+   * sibling in `subtask-crud-v2`).
+   */
+  const full = row.getBoundingClientRect().height;
+  row.style.height = "0px";
+  row.style.marginTop = "0px";
+  void row.offsetWidth;
+  row.classList.add("animating");
+
+  requestAnimationFrame(() => {
+    row.style.height = `${full}px`;
+    row.style.marginTop = viewport.firstElementChild === row ? "0px" : "8px";
+    row.classList.remove("tin");
+    const anims = row.getAnimations({ subtree: true });
+    /*
+     * If the toast was dismissed while it was still arriving, its exit has
+     * already set `.tdismiss`, a height and a margin — and this callback would
+     * clear all three, leaving the card in an exit class with no transition
+     * behind it. The entry's cleanup has to check whether it still owns the row.
+     */
+    const settle = () => {
+      if (row.dataset.retiring) return;
+      row.classList.remove("animating");
+      row.style.height = "";
+      row.style.marginTop = "";
+    };
+    if (anims.length) Promise.allSettled(anims.map((a) => a.finished)).then(settle);
+    else settle();
+    setTimeout(settle, 340 * SLOW() + 250);
+  });
+
+  /* The whole card dismisses, matching `toast.tsx` — but not its own buttons. */
+  el.addEventListener("click", (e) => {
+    if (e.target instanceof Element && e.target.closest("button")) return;
+    retire(row, "dismiss");
+  });
+  x.addEventListener("click", () => retire(row, "dismiss"));
+
+  /*
+   * THE TIMER PAUSES ON HOVER AND ON FOCUS, because Base UI's does and because
+   * the alternative is a notification that expires while it is being read. The
+   * remaining time is carried across the pause rather than restarted — a timer
+   * that resets on every hover is one a mouse resting nearby can keep alive
+   * forever.
+   */
+  row.remaining = TIMEOUT();
+  row.startTimer = () => {
+    if (document.getElementById("notimeout").checked) return;
+    row.startedAt = performance.now();
+    row.timer = setTimeout(() => retire(row, "timeout"), row.remaining);
+  };
+  row.pauseTimer = () => {
+    if (!row.timer) return;
+    clearTimeout(row.timer);
+  row.timer = null;
+    row.timer = null;
+    row.remaining = Math.max(0, row.remaining - (performance.now() - row.startedAt));
+  };
+  el.addEventListener("pointerenter", row.pauseTimer);
+  el.addEventListener("pointerleave", () => row.startTimer());
+  el.addEventListener("focusin", row.pauseTimer);
+  el.addEventListener("focusout", (e) => {
+    if (!el.contains(e.relatedTarget)) row.startTimer();
+  });
+  row.startTimer();
+  /*
+   * `limit = 3` is Base UI's own default, so the fourth arrival displaces the
+   * oldest. It leaves by the TIMEOUT exit: the user did not act on it, so it
+   * recedes rather than being acknowledged, and the two exits stay two.
+   */
+  const live = [...viewport.children].filter((r) => !r.dataset.retiring);
+  if (live.length > LIMIT) {
+    live.slice(0, live.length - LIMIT).forEach((old) => retire(old, "timeout"));
+  }
+
+  say(`raised #${row.dataset.id}`);
+  return row;
+}
+
+/*
+ * ONE REMOVAL IDIOM. The row's box collapses and the toasts below are carried
+ * by layout — the mechanism `task-delete-v1` arrived at after a FLIP left two
+ * cards painted in the same place (#77). A toast list is a handful of elements,
+ * so the layout cost is not worth a second idiom to avoid.
+ *
+ * The two exits differ only in the class, which is the whole point: the box
+ * closes identically either way, and what changes is how the card itself goes.
+ */
+function retire(row, how) {
+  if (row.dataset.retiring) return;
+  row.dataset.retiring = "1";
+  clearTimeout(row.timer);
+
+  row.style.height = `${row.getBoundingClientRect().height}px`;
+  row.style.marginTop = getComputedStyle(row).marginTop;
+  void row.offsetWidth;
+  row.classList.add("animating", how === "timeout" ? "tout" : "tdismiss");
+
+  let settled = false;
+  const done = () => {
+    if (settled) return;
+    settled = true;
+    row.remove();
+    /* The first row owns no top margin; after a removal that may be a new row. */
+    const first = document.getElementById("viewport").firstElementChild;
+    if (first) first.style.marginTop = "";
+    say(`retired by ${how}`);
+  };
+
+  requestAnimationFrame(() => {
+    row.style.height = "0px";
+    row.style.marginTop = "0px";
+    const anims = row.getAnimations({ subtree: true });
+    if (anims.length) Promise.allSettled(anims.map((a) => a.finished)).then(done);
+    else done();
+  });
+  setTimeout(done, 340 * SLOW() + 250);
+}
+
+document.getElementById("one").addEventListener("click", () => raise(COPY[0]));
+document.getElementById("neutral").addEventListener("click", () => raise(COPY[3]));
+document.getElementById("three").addEventListener("click", () => {
+  COPY.slice(0, 3).forEach((c, i) => setTimeout(() => raise(c), i * 90 * SLOW()));
+});
+document.getElementById("many").addEventListener("click", () => {
+  for (let i = 0; i < 8; i++) setTimeout(() => raise(COPY[i % COPY.length]), i * 70 * SLOW());
+});
+document.getElementById("reduced").addEventListener("change", (e) => {
+  document.body.classList.toggle("force-reduced", e.target.checked);
+});
+document.getElementById("slow").addEventListener("change", () => {
+  document.documentElement.style.setProperty("--slow", String(SLOW()));
+});
+</script>
+</body>
+</html>
