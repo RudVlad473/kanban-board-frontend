@@ -11,8 +11,9 @@ Phase 5's prototypes were organised by *surface* — material, transitions, over
 ordering makes a gap invisible when it falls between two surfaces, and one did: **every column
 mutation**. `use-create-column`, `use-rename-column`, `use-delete-column` and
 `use-reorder-columns` all ship today and none appeared in `G1`–`G8`. Re-indexing the same
-prototypes by *entity × operation* surfaced it in one pass. **All four have been prototyped since
-(`column-crud-v17`) and none is signed off** — the row reads `◑`.
+prototypes by *entity × operation* surfaced it in one pass. **All four were then prototyped in
+`column-crud-v17` and signed off on 2026-09-10** — the row reads `✅`, at a cost of 26 logged
+defects.
 
 The operation list is not invented here. It is the 21 mutation hooks under
 `src/features/*/hooks/`, so a row cannot quietly omit something the app can already do.
@@ -37,7 +38,7 @@ Paths are relative to `.superpowers/brainstorm/`; `S1` is `23940-1788251793/cont
 | Entity | Create | Read | Update | Delete | Move / reorder |
 |---|---|---|---|---|---|
 | **Board** | ✅ `S1/sidebar-boards-v1` | ✅ `S1/board-switch-v3`, `S1/sidebar-boards-v4` | ✅ `S1/board-edit-v2` | ✅ `S1/board-edit-v2` | — |
-| **Column** | ◑ `S1/column-crud-v17` | ✅ `S1/load2-v2`, `S1/handoff-v4` | ◑ `S1/column-crud-v17` | ◑ `S1/column-crud-v17` | ◑ `S1/column-crud-v17` |
+| **Column** | ✅ `S1/column-crud-v17` | ✅ `S1/load2-v2`, `S1/handoff-v4` | ✅ `S1/column-crud-v17` | ✅ `S1/column-crud-v17` | ✅ `S1/column-crud-v17` |
 | **Task** | ◐ `S2/header` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17`, `S1/optimistic-v5` | ❌ | ✅ `S1/drag-v3`, `S1/optimistic-v5` |
 | **Subtask** | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ✅ `S1/task-open-v17` | ❌ | — |
 | **Account** | ✅ `S1/auth-v4` | ✅ `S1/auth-v4` | — | — | — |
@@ -89,7 +90,16 @@ existing kebab; `EditBoardModal` is deleted by it. The board title slides inside
 `document.startViewTransition` covering the row's departure, the rail's move and the board swap.
 Reconciling it with §4c's directional board switch is deferred to its own session.
 
-### Column — G9, all four prototyped, none signed off
+### Column — G9, ✅ SIGNED OFF 2026-09-10
+
+**All four operations closed** by `column-crud-v17.html`, after the user drove them and closed the
+last report with *"ok good we can move on"*. G9 is done; the dossier below is the decision record.
+
+The cost of getting here, because it is the argument for the handover rubric: **26 defects** on this
+one surface (log rows 15–40), of which the user personally caught 21. Six of those were found only
+after a fix for an earlier one shipped — #34 and #37 are defects introduced by fixes, and #38 was a
+mechanism that had silently reverted to the thing it replaced. `2026-09-10-prototype-handover-rubric.md`
+exists so the next surface costs fewer.
 
 **State on 2026-09-09: `column-crud-v17.html` is one working surface covering all four operations.**
 Thirteen defects were found and fixed against it in a single sitting (log entries 15–26). The user's
@@ -115,23 +125,23 @@ same pixels twice" — a claim that was 1px wrong and cross-fading besides. Ever
 looking. **34 is the row to reread before touching this surface:** it is a defect introduced by a
 fix for another defect, because the fix satisfied the assertion instead of the intent.
 
-**Create — ◑ decided in shape.** The ghost column is replaced by a **34px rail** at the board's end
+**Create — ✅ closed 2026-09-10.** The ghost column is replaced by a **34px rail** at the board's end
 (fixed footprint, label as an overlay) **plus `+ Column` in the board header**, reachable at any
 scroll position; the rail carries a low-key dismiss, safe only because the header button survives
 it. Creation is **inline** — the column exists immediately and its header opens in edit mode — so
 `add-column-modal` goes the way of `EditBoardModal`. Measured: the ghost was 210px / **15.3%** of a
 1374px canvas; the rail is **2.5%**.
 
-**Update (rename) — ◑ decided in shape.** Inline in the header, from the kebab that already ships.
+**Update (rename) — ✅ closed 2026-09-10.** Inline in the header, from the kebab that already ships.
 **One complication that does not apply to the board:** the column caption *is* the drag handle, a
 `<button>`, and `contenteditable` inside a button is not viable — so the name must be **swapped**
 for an editable node with font, letter-spacing, uppercase and line box pinned to the handle's.
 
-**Delete — ◑ decided in shape.** Kebab → confirm → the board closes up through
+**Delete — ✅ closed 2026-09-10.** Kebab → confirm → the board closes up through
 `startViewTransition`. Measured: 28 frames over 492ms with it, 12 over 148ms without — and that
 148ms is the scrim fade alone, with the columns simply jumping.
 
-**Reorder — ◑ the least settled, and the source of most of the defect log.** §2's vocabulary at
+**Reorder — ✅ closed 2026-09-10, and the source of most of the defect log.** §2's vocabulary at
 column scale: a DragOverlay carries the motion, the source slot collapses to a dashed ghost, the
 board FLIPs at **160ms** (deliberately shorter than the 180ms settle, because a reorder is direct
 manipulation). Decided along the way: **no scale** — scale is proportional and column height ranges
@@ -178,20 +188,21 @@ three times; taking it once closes three cells.
 
 ## Resume here — 2026-09-10
 
-**Where to pick up:** `column-crud-v17.html`, served by
+**G9 is closed.** The Column row is `✅`; `column-crud-v17.html` is the reference for column
+create, rename, delete and reorder. Serve it with
 `node scripts/serve-static.mjs .superpowers/brainstorm 6110`.
+
+**Before opening any of the below, read `2026-09-10-prototype-handover-rubric.md`.** Ten checks,
+derived from the fact that 32 of this project's 40 recorded design defects were caught by the user
+rather than by a check. Running them is what makes the next surface cheaper than this one was.
 
 Open, in the order they are likely to matter:
 
-1. **G9 sign-off — now a look, not an audit.** Step 1 of the 2026-09-09 note (drive the four
-   operations, list what reads wrong) is done: six defects found, logged as 27–32, all fixed and
-   falsified both ways. What is left is the half a measurement cannot do — watch a drag and a
-   delete at full speed and say whether they read right. Only then does the row go `✅`.
-2. **The remaining `◐` cells** — task create, subtask rename, subtask delete — plus task delete,
+1. **The remaining `◐` cells** — task create, subtask rename, subtask delete — plus task delete,
    which is still `❌` and is the one non-optimistic wait in the app.
-3. **G2**, which eight cells inherit and which the board-create and column-delete prototypes have
+2. **G2**, which eight cells inherit and which the board-create and column-delete prototypes have
    now given a first treatment twice over.
-4. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
+3. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
    zero calls to the real View Transitions API.
 
 **Do not re-derive:** the defect log's **nine recurring causes** explain most of what went wrong
