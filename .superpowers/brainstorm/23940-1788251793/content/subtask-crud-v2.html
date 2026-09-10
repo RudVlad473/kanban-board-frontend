@@ -240,6 +240,22 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
   cursor: text;
   transition: background-color .13s, box-shadow .13s; }
 .st:hover .stlabwrap { background-color: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+/*
+ * THE FOCUS RING IS ON THE WRAPPER TOO — and leaving it on the label was #50
+ * happening a second time, one property later.
+ *
+ * Every box the FIELD draws has to be on the wrapper, because the wrapper is
+ * the rectangle. An `outline` on an inline label is painted around each of its
+ * LINE FRAGMENTS, so focusing a wrapped label drew two purple boxes crossing
+ * each other exactly the way the hover ring had. Moving the background and the
+ * ring but not the outline fixed the symptom that had been reported and left
+ * the other half of the same defect in place.
+ *
+ * The test that separates them: does this property describe the FIELD (one
+ * rectangle — background, ring, outline, cursor) or the TEXT (one box per line —
+ * the strike, and nothing else)? Only the strike belongs on the label.
+ */
+.stlabwrap:focus-within { outline: 2px solid var(--purple); outline-offset: 0; }
 .st.editing .stlabwrap { background-color: #fff; box-shadow: none; }
 /*
  * `slice`, NOT `clone` — and this is what makes the draw sequential.
@@ -273,8 +289,8 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
   background-repeat: no-repeat;
   background-size: 0% 1.5px;
   background-position: 0 58%;
-  transition: color .22s, background-size calc(280ms * var(--slow)) var(--e), box-shadow .13s, outline-color .13s;
-  outline: 2px solid transparent; outline-offset: 1px; }
+  transition: color .22s, background-size calc(280ms * var(--slow)) var(--e);
+  outline: none; }
 .st.on .stlab { color: #9AA3B2; }
 .st.on .stlab { background-size: 100% 1.5px; }
 
@@ -306,11 +322,9 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
   text-decoration-line: line-through;
   text-decoration-thickness: 1.5px;
   text-decoration-color: transparent;
-  transition: color .22s, text-decoration-color calc(280ms * var(--slow)) var(--e),
-              box-shadow .13s, outline-color .13s; }
+  transition: color .22s, text-decoration-color calc(280ms * var(--slow)) var(--e); }
 .strike-fade .st.on .stlab { text-decoration-color: currentColor; }
-.strike-fade .st.editing .stlab {
-  transition: color .22s, box-shadow .13s, outline-color .13s; }
+.strike-fade .st.editing .stlab { transition: color .22s; }
 
 /*
  * NO PENCIL. It collided with the ✕ — both were pinned to the row's right edge
@@ -321,7 +335,6 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  * this panel's title and description already say "you can type here". One
  * hover, one meaning; the row's right edge belongs to the ✕ alone.
  */
-.stlab:focus { outline-color: var(--purple); cursor: text; }
 
 /*
  * Editing suppresses the strike-through's own transition rather than the line.
@@ -334,7 +347,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  * not re-draw itself across 280ms every time the caret lands. Dropping `background-size` from
  * the transition list is what freezes it; the colour and the ring still move.
  */
-.st.editing .stlab { transition: color .22s, box-shadow .13s, outline-color .13s; }
+.st.editing .stlab { transition: color .22s; }
 
 /* ------------------------------------------------------------------ the ✕ */
 /*
