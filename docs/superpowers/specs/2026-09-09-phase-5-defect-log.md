@@ -85,6 +85,8 @@ Nine recur often enough to be worth stating before the table:
 | 29 | The delete confirm dimmed only the board card; the page header stayed lit and the dialog centred on the panel rather than the viewport | `.scrim` is `position: absolute` inside `.board`, so `inset: 0` resolves to the board's padding box — 1374×502 of a 1440×900 viewport | Orchestrator, computed style + rect | e2e: the scrim's rect equals the viewport's, and the modal's centre is the viewport's centre |
 | 30 | Deleting an empty column read "removes its **0 tasks** and cannot be reversed" | The count clause has a singular and a plural branch and no zero branch, and the sentence is built to assume the column has tasks at all | Orchestrator, on a screenshot | Unit: the confirm sentence for a 0-task column contains neither `0 task` nor `0 tasks` |
 | 31 | The create rail's `+` sat 78px below the bottom of every column, in a dashed strip reaching 288px past the content | `.railwrap`/`.rail` are `align-self: stretch` against a track with `min-height: 420px` — the lane height that exists for the *drag slot*. Columns are content-height by decision, so the rail was the only thing claiming the lane at rest | Orchestrator, rects: rail 34×420, columns 240×132 and 240×84 | e2e: at rest the rail's height equals the tallest column's, and its bottom is not below theirs |
+| 38 | The drop landed on a **timer**, not on arrival — silently reverting #26's whole fix | `overlay.addEventListener("transitionend", …, { once: true })` with a `propertyName === "translate"` guard *inside* it. `.overlay.settling` transitions five properties at the same 180ms — translate, background-color, four border-colors, box-shadow — so which reports first is arbitrary. `background-color` usually won, consumed the `once` listener, and the guard never ran; `land()` then fell through to the 200ms fallback | Codex, auditing a filmstrip run already judged fine | e2e: assert `land` happens within one frame of the **translate** `transitionend`, not merely "within 200ms" — the fallback makes a timing assertion pass through this defect. Measured: `background-color@175ms` fires first; landing now tracks `translateEnd` at 175→176ms, and did not fire from it at all before |
+| 39 | Hovering a neighbour *after* releasing a drag lit its kebab while the panel still carried one | `body.is-dragging` is removed at pointer-up, but the panel is airborne for another ~180ms. #28's guard covered the drag and not the flight — the one part of the gesture with no rule | Codex | e2e: sample the visible kebab count across the **settle**, moving the pointer onto a neighbour. Measured **8 frames with two kebabs → 0** |
 | 36 | Dragging a column on a board wide enough to scroll sent the panel to a point it never arrived at | The landing target is built from `offsetLeft`, a position in the offsetParent's **unscrolled content box**, but `.board` is `overflow-x: auto`. Without `- parent.scrollLeft` the panel misses by exactly the scroll offset | User, on a video | e2e: drag with `board.scrollLeft > 0` and assert the final panel/slot gap is 0. **Measured 300px off at `scrollLeft` 300; 0 after.** Every earlier drag test ran at `scrollLeft` 0, where the missing term is invisible |
 | 37 | Empty columns grew a grey slab nobody asked for | **A regression introduced by #32's fix.** "A column with no tasks has no body" was answered by inventing a recessed well, when the mock has no empty-column state to copy at all — a decision presented as a lookup | User, on a screenshot | Judgement. The guard is procedural: when the mock has no answer, say so and take the smallest rung of type → spacing → outline → fill |
 | 33 | The rail's hover label painted *underneath* the last column's card, so the one affordance that names the rail was invisible | The label overhangs the column to its left by design (`right: 38px`), but `.railwrap` had no `z-index` while every `.colm` has `z-index: 1` | User, on a screenshot | e2e: `elementsFromPoint` at the label's centre has the label first. **`elementFromPoint` cannot see it** — the label is `pointer-events: none`, so a hit test returns whatever is behind it in both the broken and the fixed build, which is how this passed a check written the obvious way |
@@ -98,11 +100,20 @@ Found 2026-09-10, when a Codex pass was run over two filmstrip runs that had alr
 acceptable. None is a page defect; all three are defects in **the row's own assertion**, which is
 worse, because a check that cannot pass gets quietly ignored rather than fixed.
 
-- **Row 10 ("no single-frame step at the end of the settle") permanently fails, by decision.**
-  The drop's wash steps `1.62 → 2.34` in one sample at landing. That step is row **20** — the
-  slot's tint and dashes are removed with no transition, on purpose, because a border fading out
-  after the drop is motion arriving once the gesture is over. Rows 10 and 20 cannot both hold.
-  **20 wins**; row 10's assertion is narrowed to *the panel* not stepping, not the whole viewport.
+- **Row 20 is SUPERSEDED as of 2026-09-10, by the user.** It said the slot's tint, dashes and
+  height are removed with no transition, because a border fading out after the drop is motion
+  arriving once the gesture is finished. Watching it, the user's call was the opposite: *"the
+  dashed slot disappears too quickly when a column is dropped, it should dissolve through
+  opacity."* Row 20 was right about the **cause** — motion that lands after the gesture is over —
+  and wrong about the **cure**: the answer is to dissolve the ghost, not to delete it. The slot's
+  material now lives on its own `::after` so the column's contents can return instantly (#35)
+  while the dashes fade over 140ms. Any check still asserting "rest values within one frame" is
+  asserting the superseded contract.
+- **Row 10 ("no single-frame step at the end of the settle") still fails, now by less.** Before
+  the dissolve: one frame of `+0.726`. After: a walk over 9 frames and 128ms whose largest single
+  increment is `+0.261`. Better by 2.8×, not gone — the screencast samples the fade at ~17ms, so
+  the wash climbs in visible chunks. **State the number rather than the verdict**: "the step is
+  gone" was claimed once off an artifact that had not even filmed the fade (see below).
 - **Row 11 ("wash after the flight is monotonic") has no tolerance, so noise fails it.** Measured
   falls of `0.004` at +124ms and +337ms — four thousandths, against a defect that was originally a
   dip of `0.59`. State a threshold or the row is unusable.
@@ -110,6 +121,15 @@ worse, because a check that cannot pass gets quietly ignored rather than fixed.
   confirm dims the whole viewport, so once it lifts, outside wash saturates at ~72 and stays there.
   The board's own closing motion is then unmeasurable in that series: every frame differs from
   frame 0 by the scrim, not by the board. Capture the two halves separately or not at all.
+
+**A run can end before the thing you are claiming about happens — and the totals will not say so.**
+The first dissolve capture was cited as evidence the landing step was gone. It was not evidence of
+anything: because of #38 the drop landed on the 200ms fallback rather than on arrival, so the
+capture's last frame at +637ms fell *before* the fade, and the artifact still contained a
+one-frame `+0.550` step. The conclusion happened to be true — a separate rAF measurement showed
+the fade — but the artifact cited for it did not support it. **Check that the series' last frames
+are flat AND that the event you are describing is inside the captured window**, before quoting a
+run as proof.
 
 **And one thing the instrument cannot do, which reading it as if it could produced a wrong number.**
 Both metrics compare each frame to **frame 0**, and the screencast's sampling is irregular — so a

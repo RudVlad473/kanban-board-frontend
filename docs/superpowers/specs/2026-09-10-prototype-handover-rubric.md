@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 37 entries, **31 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 39 entries, **31 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
@@ -18,7 +18,7 @@ finding a column that flies 300px past its slot.
 The bar is not "I tested it". Every defect below was found on a surface someone had just finished
 testing. The bar is: **each check below has been run in the state where it can actually fail.**
 
-## The seven checks
+## The nine checks
 
 ### 1. Drive it in a non-default state — this is the big one
 
@@ -108,6 +108,30 @@ thing it was measuring.
 Cost: #34 — #31 was *"a tall rail centres its glyph 78px below the columns"*. The fix made the rail
 short. The assertion passed; the large target for a rare action was gone, and the user had to
 report the same rail twice.
+
+### 8. A `{ once: true }` listener with a guard inside it fires once on the WRONG event
+
+`addEventListener("transitionend", e => { if (e.propertyName === "x") …}, { once: true })` removes
+itself on the **first** event, whether or not the guard passed. Any element transitioning more than
+one property therefore has an arbitrary chance of consuming the listener on a property you did not
+care about — and if there is a fallback timer, the code keeps working while the mechanism it was
+built for silently never runs.
+
+That is the trap: it degrades to the thing you were trying to replace, and a timing assertion
+passes straight through it because the fallback lands in about the right time.
+
+Check it by **asserting which event caused the effect**, not that the effect happened by some
+deadline. Cost: #38 — `.overlay.settling` transitions five properties at the same duration,
+`background-color` won at 175ms, and landing fell back to the 200ms timer, silently undoing #26's
+whole reason for existing.
+
+### 9. A capture that ends before the thing you are describing proves nothing
+
+Check the last frames of a series are flat **and** that the event you are claiming about is inside
+the captured window. A run whose totals look settled may simply have stopped early.
+
+Cost: #38's discovery — a dissolve capture was quoted as evidence the landing step was gone, when
+it had ended before the fade even started, and still contained a one-frame `+0.550` step.
 
 ## And two rules about your own claims
 

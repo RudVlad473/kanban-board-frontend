@@ -431,13 +431,23 @@
                 transition: opacity calc(120ms * var(--slow)) linear;
             }
             /*
-             * The ghost eases in rather than snapping: 200ms for the height it grows into, 140ms
-             * for the tint and the dashes, so the outline is legible before the box has finished
-             * opening.
+             * The slot's material lives on its OWN layer, not on the column's box.
+             *
+             * It used to be the column's `opacity`, which works only while the contents are hidden
+             * underneath it. The drop needs both at once: the column's contents back at full
+             * strength on the frame the panel lands (#35), and the dashes and tint taking another
+             * beat to dissolve (#38). One opacity cannot serve both, so the chrome moves to
+             * `::after` and the box keeps its own.
              */
-            .colm.source {
+            .colm.source::after,
+            .colm.dissolving::after {
+                content: "";
+                position: absolute;
+                inset: 0;
                 border: 1px dashed color-mix(in srgb, var(--purple) 45%, var(--border));
                 background: color-mix(in srgb, var(--purple) 4%, transparent);
+                border-radius: 6px;
+                pointer-events: none;
                 opacity: 1;
                 transition: opacity calc(140ms * var(--slow)) linear;
             }
@@ -446,9 +456,19 @@
              * 1 → 0 over the same 140ms, and removing the class two frames later just reverses a
              * fade that had barely left 1 — the slot never went dark, so it never faded in.
              */
-            .colm.source.opening {
+            .colm.source.opening::after {
                 opacity: 0;
                 transition: none;
+            }
+            /*
+             * The drop. #20 removed the slot's chrome in one frame, on the reasoning that a border
+             * fading out AFTER the drop is motion arriving once the gesture is over. That was right
+             * about the CAUSE and wrong about the cure: the answer is not to delete it instantly,
+             * it is to dissolve it — the box's dashes and tint are the last thing still saying "a
+             * column belongs here", and they should stop saying it gradually.
+             */
+            .colm.dissolving::after {
+                opacity: 0;
             }
             /*
              * Instant, not faded. The clone sits exactly on top at pickup, so fading the original
@@ -477,7 +497,14 @@
              * user means — it is under the thing they are carrying. Without this, `.colm:hover .ckb`
              * armed every column the panel passed over.
              */
-            body.is-dragging .colm .ckb {
+            /*
+             * `is-settling` as well as `is-dragging`: the pointer is up but the panel is still in
+             * the air, and `is-dragging` came off at pointer-up — so hovering a neighbour during
+             * the ~180ms flight lit its kebab while the panel still carried its own. Two kebabs, the
+             * exact shape of #24, on the one part of the gesture that had no guard.
+             */
+            body.is-dragging .colm .ckb,
+            body.is-settling .colm .ckb {
                 opacity: 0;
                 visibility: hidden;
             }
@@ -810,6 +837,8 @@
             /* dnd-kit's activation distance, in spirit: a click that renames must not become a drag. */
             const DRAG_THRESHOLD_PX = 4;
             let drag = null;
+            /* Grabbing a column again mid-dissolve must not leave the previous ghost behind. */
+            let dissolveTimer = null;
 
             const slotPositions = () => {
                 const map = new Map();
@@ -861,6 +890,15 @@
             function beginDrag(event, id, origin) {
                 const el = track.querySelector(`.colm[data-id="${id}"]`);
                 if (!el) return;
+                /* A dissolve still running from the last drop would otherwise strand its ghost. */
+                if (dissolveTimer) {
+                    clearTimeout(dissolveTimer);
+                    dissolveTimer = null;
+                    track.querySelectorAll(".colm.dissolving").forEach((c) => {
+                        c.classList.remove("dissolving");
+                        c.style.removeProperty("min-height");
+                    });
+                }
                 const rect = el.getBoundingClientRect();
                 const pad = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ovpad"));
                 const overlay = el.cloneNode(true);
@@ -969,7 +1007,9 @@
                 const parentRect = parent.getBoundingClientRect();
                 const targetLeft = parentRect.left + parent.clientLeft + el.offsetLeft - parent.scrollLeft;
                 const targetTop = parentRect.top + parent.clientTop + el.offsetTop - parent.scrollTop;
+                /* `grabbing` ends with the pointer; the kebab guard has to outlast it — see CSS. */
                 document.body.classList.remove("is-dragging");
+                document.body.classList.add("is-settling");
                 overlay.classList.add("settling");
                 overlay.style.translate = `${targetLeft - pad}px ${targetTop - pad}px`;
                 /*
@@ -999,15 +1039,46 @@
                 const land = () => {
                     if (landed) return;
                     landed = true;
+                    document.body.classList.remove("is-settling");
                     el.classList.add("handoff");
+                    /*
+                     * `source` → `dissolving` on one frame. Both selectors generate the same
+                     * `::after`, so it is never torn down and rebuilt — the opacity has something
+                     * to interpolate FROM, which is the whole reason this is a class swap and not
+                     * a fresh element.
+                     *
+                     * `min-height` stays for the length of the fade: the layer is `inset: 0`, so
+                     * collapsing the box would shrink the ghost while it dissolves instead of
+                     * leaving it where the column was. Nothing else measures this column, and the
+                     * track holds the lane open anyway, so holding it costs no layout.
+                     */
                     el.classList.remove("source");
-                    el.style.removeProperty("min-height");
+                    el.classList.add("dissolving");
                     overlay.remove();
                     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("handoff")));
+                    dissolveTimer = setTimeout(() => {
+                        el.classList.remove("dissolving");
+                        el.style.removeProperty("min-height");
+                    }, 160 * SLOW());
                 };
-                overlay.addEventListener("transitionend", (e) => {
-                    if (e.propertyName === "translate") land();
-                }, { once: true });
+                /*
+                 * NOT `{ once: true }`. `.overlay.settling` transitions FIVE properties — translate,
+                 * background-color, four border-colors and box-shadow — all at the same 180ms, so
+                 * which one reports first is effectively arbitrary. With `once`, whichever fired
+                 * first consumed the listener, the `translate` guard then never ran, and `land()`
+                 * fell through to the 200ms timer.
+                 *
+                 * That silently defeated #26's entire fix: landing was supposed to be tied to the
+                 * flight ARRIVING rather than to a number, and it was back on a number. Removing
+                 * the listener by hand inside the guard is the only version that does what the
+                 * comment below claims.
+                 */
+                const onFlightEnd = (e) => {
+                    if (e.propertyName !== "translate") return;
+                    overlay.removeEventListener("transitionend", onFlightEnd);
+                    land();
+                };
+                overlay.addEventListener("transitionend", onFlightEnd);
                 setTimeout(land, 200 * SLOW());
             }
 
