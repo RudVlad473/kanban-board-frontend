@@ -16,6 +16,9 @@ const COLUMN_FAN_OUT_HOLD_MS = 6000;
  */
 const NAVIGATE_TIMEOUT_MS = 4000;
 
+/** The zero-boards screen's own body copy — the thing that must not be on screen beside a board. */
+const ZERO_BOARDS_COPY = "Create a new board to get started.";
+
 /*
  * BOARD-02 against the real deployed nonprod backend: a board created from the sidebar, with the
  * columns typed, appears immediately without a reload — structural, business-level assertions only,
@@ -507,5 +510,46 @@ test.describe("BOARD-02: create a board — a refused create", () => {
         await page.waitForTimeout(2000);
         expect(new URL(page.url()).pathname).toBe(buildBoardDetailPath(destination.id));
         await expect(page.getByRole("heading", { level: 1 })).toHaveText(destination.name);
+    });
+});
+
+// comment-length-exempt: records the mechanism that put two screens on at once and why the assertion may not be a retrying one, neither of which is readable from the two lines it holds
+/*
+ * The FIRST board, created from the zero-boards screen — reported in production 2026-09-10 as the
+ * new board and "Create a new board to get started." on screen together for over a second.
+ *
+ * The create moves the URL with `history.pushState`, which repaints the layout's `BoardScreen` out
+ * of the optimistic entry but re-renders no server segment, so the index route's markup stays
+ * mounted until the action's `refresh()` lands. The count below is deliberately NOT a retrying
+ * `expect().toHaveCount(0)`: that would pass on the defect by simply waiting out the refresh. It
+ * is read once, at the instant the URL says a board is open.
+ */
+test.describe("BOARD-02: create the first board", () => {
+    test("retires the zero-boards screen in the same commit the board opens", async ({ page }) => {
+        // Arrange — an account with nothing, which lands on the zero-boards screen.
+        const account = seedAccount();
+        const boardName = `E2E First ${randomUUID().slice(0, 8)}`;
+
+        await page.goto(ROUTE.SIGN_IN);
+        await page.getByLabel("Email", { exact: true }).fill(account.email);
+        await page.getByLabel("Password", { exact: true }).fill(account.password);
+        await page.getByRole("button", { name: "Sign In" }).click();
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}$`));
+        await expect(page.getByText(ZERO_BOARDS_COPY)).toBeVisible();
+
+        // Act — the screen's own call to action, not the sidebar's.
+        await page.getByRole("button", { name: "Create your first board" }).click();
+        await page.getByLabel("Board Name", { exact: true }).fill(boardName);
+        await page.getByRole("button", { name: "+ Add New Column" }).click();
+        await page.getByLabel("Column 1", { exact: true }).fill("Todo");
+        await page.getByRole("button", { name: "Create New Board", exact: true }).click();
+
+        // Assert — read once, the moment the URL names the new board.
+        await expect(page).toHaveURL(new RegExp(`${ROUTE.BOARDS}/[^/]+$`));
+        expect(await page.getByText(ZERO_BOARDS_COPY).count()).toBe(0);
+
+        // Assert — and the board itself is what is on screen, not an empty frame.
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(boardName);
+        await expect(page.getByText(ZERO_BOARDS_COPY)).toHaveCount(0);
     });
 });

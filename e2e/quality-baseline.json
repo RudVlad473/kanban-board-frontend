@@ -1,5 +1,5 @@
 {
-    "recordedAt": "2026-09-08T15:24:30.267Z",
+    "recordedAt": "2026-09-10T18:41:02.936Z",
     "note": "Committed accessibility/layout-shift baseline for e2e/quality-fixtures.ts (04-23). Record with `pnpm e2e:baseline <spec>`.",
     "tests": {
         "e2e/quality-fixtures.e2e.spec.ts :: ../e2e/quality-fixtures.e2e.spec.ts > quality-fixtures: the harness's own standing self-test > qualityGates runs passively at teardown, and the axe factory scans the settled board": {
@@ -582,19 +582,25 @@
             "axeRuleCounts": {},
             "flakyRuleIds": [],
             "evaluatedRuleFloor": 90,
-            "layoutShiftScore": 0.003049696180555556
+            "layoutShiftScore": 0.00026652018229166664
         },
         "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create a board — a refused create > rolls the URL back to the path submitted from, with one toast and no column toast beside it": {
             "axeRuleCounts": {},
             "flakyRuleIds": [],
             "evaluatedRuleFloor": 90,
-            "layoutShiftScore": 0.0017397867838541666
+            "layoutShiftScore": 0.0028500417073567706
         },
         "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create a board — a refused create > leaves a user who navigated away mid-flight where they chose to be": {
             "axeRuleCounts": {},
             "flakyRuleIds": [],
             "evaluatedRuleFloor": 90,
-            "layoutShiftScore": 0.002319715711805556
+            "layoutShiftScore": 0.0025862358940972226
+        },
+        "e2e/boards-create.e2e.spec.ts :: ../e2e/boards-create.e2e.spec.ts > BOARD-02: create the first board > retires the zero-boards screen in the same commit the board opens": {
+            "axeRuleCounts": {},
+            "flakyRuleIds": [],
+            "evaluatedRuleFloor": 91,
+            "layoutShiftScore": 0.000018374125162760416
         }
     }
 }

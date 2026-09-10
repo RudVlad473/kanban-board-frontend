@@ -5,13 +5,13 @@
  */
 import { composeStories } from "@storybook/react";
 import { screen } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
 import { createBoardAction } from "@/features/boards/actions/create-board-action";
 import { RESULT_STATUS } from "@/lib/core/api-contract/result-status";
-import { ROUTE } from "@/lib/core/routing/routes";
+import { buildBoardDetailPath, ROUTE } from "@/lib/core/routing/routes";
 import { actionStub } from "@/test-utils/action-stub-registry";
 import { describeForEachDevice } from "@/test-utils/describe-for-each-device";
 import { createNextLinkShim, createNextNavigationShim } from "@/test-utils/next-router-shims";
@@ -22,11 +22,17 @@ import * as stories from "./boards-empty-state.stories";
 /* `next/link`/`next/navigation` are the D-19 environment-shim exception — nothing else is stubbed. */
 const mockRefresh = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
+/* A getter, not a constant: one test drives the path a `pushState` create moves to. */
+const mockPathname = vi.hoisted(() => ({ current: "/boards" }));
 
 // eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
 vi.mock("next/navigation", () =>
-    createNextNavigationShim({ pathname: ROUTE.BOARDS, refresh: mockRefresh, push: mockPush }),
+    createNextNavigationShim({ pathname: () => mockPathname.current, refresh: mockRefresh, push: mockPush }),
 );
+
+beforeEach(() => {
+    mockPathname.current = ROUTE.BOARDS;
+});
 
 // eslint-disable-next-line no-restricted-properties -- next/link reads process.env, undefined in Vitest Browser Mode (see comment above)
 vi.mock("next/link", () => createNextLinkShim());
@@ -65,6 +71,22 @@ describeForEachDevice({
             // Assert
             expect(screen.getByText("Create a new board to get started.")).toBeInTheDocument();
             expect(screen.getByRole("button", { name: "Create your first board" })).toBeInTheDocument();
+        });
+
+        /*
+         * A created board's `pushState` re-renders no server segment, so the copy has to retire on
+         * the path alone or both screens are on at once (reported in production 2026-09-10).
+         */
+        it("renders no zero-boards copy once the URL names a board", async () => {
+            // Arrange — the path a created board's `pushState` lands on.
+            mockPathname.current = buildBoardDetailPath("board-1");
+
+            // Act
+            await render(<Default />);
+
+            // Assert
+            expect(screen.queryByText("Create a new board to get started.")).not.toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: "Create your first board" })).not.toBeInTheDocument();
         });
 
         /* D-10 states plainly that the modal does not auto-open, so nothing may open it on mount. */
