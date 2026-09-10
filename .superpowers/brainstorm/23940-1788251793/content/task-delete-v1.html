@@ -61,14 +61,28 @@
    is at 0 by 130ms and the collapse runs to 260ms, so most of the removal is
    watched through nothing rather than through a fading panel.
 
-   THE COLLAPSE IS A FLIP, NOT A HEIGHT ANIMATION
-   ----------------------------------------------
-   Animating the leaving card's `height` animates layout: every frame relays out
-   the column and repaints every card in it. Instead the card leaves flow at
-   once, the cards below are given the inverse translate they would need to
-   still look unmoved, and that translate is animated to zero — so the movers
-   only ever run `translate`, which the compositor does without touching layout.
-   Same reasoning as #70: what animates decides whether it can stutter.
+   THE COLLAPSE IS THE SUBTASK ROW'S, AND A FLIP WAS THE WRONG ANSWER
+   ------------------------------------------------------------------
+   The first build FLIPped: the card left flow and the cards below were slid
+   past it on `translate`, which is compositor-cheap and looked like the right
+   trade. It has a defect that the cheapness cannot pay for — the leaving card
+   is still being painted while the others travel through the strip it occupies,
+   so for the length of its fade **two cards overlap**. Reported as *"one task
+   can live on top of another for a split second"*, and it is not tunable: the
+   fade and the travel are different lengths by design, and the travel is the
+   longer one.
+
+   `subtask-crud-v2` had already settled this and been signed off on it. The
+   card's WRAPPER collapses its height and margin to zero and the cards below
+   are carried by layout, so nothing ever travels past anything. The two halves
+   are sequenced — contents out over 90ms linear, then the box shuts over 200ms
+   on the phase curve — because on one clock the front-loaded curve has the box
+   at 9px while the opacity is still 0.58, which reads as the card being
+   guillotined rather than leaving.
+
+   The honest trade: this animates layout where the FLIP animated only the
+   compositor. That is the price of not having two cards in one place, and it is
+   one element's height in one column, not the whole board.
    ============================================================================ */
 
 :root {
@@ -101,7 +115,13 @@ body { margin: 0; background: var(--tint); color: var(--ink);
 .col { width: 280px; flex: none; }
 .colhd { font: 700 12px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   letter-spacing: 2.4px; text-transform: uppercase; color: var(--muted); margin: 0 0 24px; }
-.cards { display: flex; flex-direction: column; gap: 20px; }
+/*
+ * NO `gap`. The spacing is a margin on a per-card WRAPPER, because `gap` is a
+ * property of the container and cannot be animated for one item — a card whose
+ * height collapses while its gap does not leaves a 20px hole that snaps shut a
+ * frame later, and two closings in sequence is #40 in a different body.
+ */
+.cards { display: flex; flex-direction: column; }
 
 /* ------------------------------------------------------------- the card */
 .card { position: relative; background: #fff; border-radius: 8px; padding: 23px 16px;
@@ -125,17 +145,44 @@ body { margin: 0; background: var(--tint); color: var(--ink);
 .kebab:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
 
 /*
- * THE LEAVING CARD. Out of flow the moment the server agrees, so the cards
- * below can be FLIPped past it, and fading with a small scale on the phase's
- * exit curve — the same release the modal uses, for the same reason.
+ * THE REMOVAL IS THE SUBTASK ROW'S, NOT A FLIP — and the reason is a defect the
+ * FLIP version actually had.
+ *
+ * A FLIP takes the leaving card OUT OF FLOW and slides the cards below past it.
+ * The leaving card is still painted while that happens, so for the length of
+ * its fade there are two cards occupying the same strip of column — one rising
+ * through the other. Reported: *"one task can live on top of another for a
+ * split second because the opacity isn't 0 when it moves up."* No amount of
+ * tuning the fade fixes it; the two are simply on different clocks and the
+ * slower one is the travel.
+ *
+ * `subtask-crud-v2` already solved this and was signed off on it. Nothing
+ * travels: the wrapper's height closes and the cards below are carried by
+ * layout, so there is never a moment when two of them overlap.
+ *
+ * The two halves are SEQUENCED, and this is the part that is easy to get wrong:
+ *
+ *   contents first  opacity to 0 over 90ms linear
+ *   box second      height and margin to 0 over 200ms on the phase curve
+ *
+ * Both on one clock looked right and is not: `cubic-bezier(.2,0,0,1)` is so
+ * front-loaded that at 85ms the box is 9px tall while a linear opacity is still
+ * 0.58 — the card is being guillotined by a closing window rather than leaving.
+ * Matching the curves inverts the fault instead of removing it: the row empties
+ * in the first third and what remains is an empty box shrinking, which is #43's
+ * hole. So the card goes, and then its space goes, and the tail of the gesture
+ * is the space being reclaimed — which is the thing worth watching.
+ *
+ * The wrapper is what collapses, not the card: `height` cannot interpolate from
+ * `auto`, and a height on the card itself would fight its own padding on the
+ * way down and re-wrap the title mid-flight.
  */
-.card.leaving { position: absolute; pointer-events: none; z-index: 1;
-  transition:
-    opacity calc(150ms * var(--slow)) var(--exit),
-    scale calc(260ms * var(--slow)) var(--exit); }
-.card.leaving.gone { opacity: 0; scale: .96; }
-/* The movers run translate and nothing else. */
-.card.riding { transition: translate calc(260ms * var(--slow)) var(--e); }
+.cardrow { overflow: hidden; margin-bottom: 20px; }
+.cardrow:last-child { margin-bottom: 0; }
+.cardrow.animating { transition:
+    height calc(200ms * var(--slow)) var(--e),
+    margin-bottom calc(200ms * var(--slow)) var(--e),
+    opacity calc(90ms * var(--slow)) linear; }
 
 /* ------------------------------------------------------- the wait itself */
 /*
@@ -483,21 +530,22 @@ body.force-reduced .cardw.entering {
  * not to see. What replaces it is a slow opacity pulse of the FULL bar — still
  * unmistakably indeterminate, still alive, and nothing travels.
  *
- * The collapse keeps its fade and loses its scale; the cards below stop riding
- * and take their new positions directly. What survives is the part that says
- * "this row is gone", which is the information; what goes is the part that says
- * where it went.
+ * The collapse keeps both halves and drops the phase curve for a
+ * linear one at 120ms — the space still closes, because a row vanishing and its
+ * gap staying open is not a reduced variant, it is a broken one.
  */
 @media (prefers-reduced-motion: reduce) {
   .patience::before { width: 100%; animation: breathe calc(1800ms * var(--slow)) ease-in-out infinite; }
-  .card.leaving { transition: opacity calc(120ms * var(--slow)) linear; }
-  .card.leaving.gone { scale: none; }
-  .card.riding { transition: none; }
+  .cardrow.animating { transition:
+      height calc(120ms * var(--slow)) linear,
+      margin-bottom calc(120ms * var(--slow)) linear,
+      opacity calc(90ms * var(--slow)) linear; }
 }
 body.force-reduced .patience::before { width: 100%; animation: breathe calc(1800ms * var(--slow)) ease-in-out infinite; }
-body.force-reduced .card.leaving { transition: opacity calc(120ms * var(--slow)) linear; }
-body.force-reduced .card.leaving.gone { scale: none; }
-body.force-reduced .card.riding { transition: none; }
+body.force-reduced .cardrow.animating { transition:
+    height calc(120ms * var(--slow)) linear,
+    margin-bottom calc(120ms * var(--slow)) linear,
+    opacity calc(90ms * var(--slow)) linear; }
 @keyframes breathe { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 
 </style>
@@ -569,7 +617,12 @@ function render() {
     const list = document.createElement("div");
     list.className = "cards";
     list.dataset.col = String(ci);
-    col.tasks.forEach((task, ti) => list.append(cardEl(task, ci, ti)));
+    col.tasks.forEach((task, ti) => {
+      const row = document.createElement("div");
+      row.className = "cardrow";
+      row.append(cardEl(task, ci, ti));
+      list.append(row);
+    });
     c.append(h, list);
     board.append(c);
   });
@@ -768,7 +821,8 @@ function submit(task) {
       const owed = shownAt ? Math.max(0, MIN_SHOWN() - (performance.now() - shownAt)) : 0;
       setTimeout(() => {
         /* One frame for both: the modal leaves and the card collapses together. */
-        const next = m.cardEl.nextElementSibling ?? m.cardEl.previousElementSibling;
+        const row = m.cardEl.closest(".cardrow");
+        const next = row?.nextElementSibling ?? row?.previousElementSibling;
         closeModal(() => collapse(m.cardEl));
         say("deleted");
         /*
@@ -803,73 +857,50 @@ function submit(task) {
   );
 }
 
-/* --------------------------------------------------------------- the FLIP */
+/* ---------------------------------------------------------- the collapse */
 /*
- * THE ORDER OF THESE READS IS THE WHOLE MECHANISM, and the first version got it
- * wrong in a way every test I wrote still passed.
+ * BOTH ENDS THROUGH THE SAME CHANNEL. `height` cannot interpolate from `auto`,
+ * so the start value has to be seeded inline — and an inline declaration beats
+ * any class, so the END value must be set inline too. The first version of the
+ * subtask row seeded inline and targeted a `.collapsed { height: 0 }` class;
+ * the height never moved, no transition started, `getAnimations()` came back
+ * empty, and the row vanished in one frame. The class here carries the
+ * TRANSITION LIST and nothing else.
  *
- * `getAnimations()` was called SYNCHRONOUSLY, before the rAF that adds `.gone`
- * and `.riding`. At that instant nothing is transitioning — the followers carry
- * their inverse translate with no transition on it yet — so the list came back
- * empty, `done()` ran immediately, and the rAF then re-applied `.riding` to
- * cards already sitting in their final position. The collapse never animated,
- * and followers were left stranded carrying a class.
- *
- * My own probe asserted that a `.riding` card was running a `translate`
- * transition and it PASSED, because the stranded rAF really did start a
- * transition — from nothing to nothing. That is the third vacuous assertion in
- * this phase (#68's shadow parse, #62's stale token). The discriminator that
- * would have caught it is a state assertion, not a property one: after the
- * collapse settles, `.riding` and `.leaving` must both be zero.
- *
- * So the animations are read INSIDE the rAF, after the classes are on, and
- * `done()` is guarded — the fallback timer and the promise both call it.
+ * The animations are read INSIDE the rAF, after the end values are set — read
+ * synchronously they come back empty and the cleanup runs immediately, which is
+ * #73. `done()` is guarded because the fallback timer and the promise both
+ * call it.
  */
 function collapse(card) {
-  const list = card.parentElement;
-  if (!list) return;
-  const followers = [...list.children].filter(
-    (el) => el !== card && el.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_PRECEDING,
-  );
-  const first = followers.map((el) => el.getBoundingClientRect().top);
+  const row = card.closest(".cardrow");
+  if (!row) return;
+  const list = row.parentElement;
 
-  /*
-   * `position: relative` FIRST, then `offsetTop`/`offsetLeft`. Converting a
-   * viewport rect by subtracting the list's rect looks equivalent and is not:
-   * it ignores the container's own border and breaks entirely once the list
-   * scrolls. `offsetTop` is measured against the offset parent's padding box,
-   * which is exactly what an absolutely positioned child resolves against.
-   */
-  list.style.position = "relative";
-  const w = card.getBoundingClientRect().width;
-  card.style.width = `${w}px`;
-  card.style.top = `${card.offsetTop}px`;
-  card.style.left = `${card.offsetLeft}px`;
-  card.classList.add("leaving");
-
-  const last = followers.map((el) => el.getBoundingClientRect().top);
-  followers.forEach((el, i) => { el.style.translate = `0 ${first[i] - last[i]}px`; });
-  void list.offsetWidth;
+  row.style.height = `${row.getBoundingClientRect().height}px`;
+  row.style.marginBottom = getComputedStyle(row).marginBottom;
+  void row.offsetWidth;
+  row.classList.add("animating");
 
   let settled = false;
   const done = () => {
     if (settled) return;
     settled = true;
-    card.remove();
-    followers.forEach((el) => { el.classList.remove("riding"); el.style.translate = ""; });
-    list.style.position = "";
+    row.remove();
     recount();
   };
 
   requestAnimationFrame(() => {
-    card.classList.add("gone");
-    followers.forEach((el) => { el.classList.add("riding"); el.style.translate = "0px"; });
-    const anims = [...card.getAnimations(), ...followers.flatMap((el) => el.getAnimations())];
+    row.style.opacity = "0";
+    row.style.height = "0px";
+    row.style.marginBottom = "0px";
+    const anims = row.getAnimations();
     if (anims.length) Promise.allSettled(anims.map((a) => a.finished)).then(done);
     else done();
   });
   /* Covers a backgrounded tab, where the rAF above never fires at all. */
-  setTimeout(done, 300 * SLOW() + 250);
+  setTimeout(done, 240 * SLOW() + 250);
+  void list;
 }
 
 function recount() {
