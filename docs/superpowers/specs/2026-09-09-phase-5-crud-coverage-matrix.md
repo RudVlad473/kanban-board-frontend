@@ -5,6 +5,9 @@
 **Companion to:** `2026-09-01-phase-5-modernization-design.md`, which holds the decisions; this
 file holds only what is and is not covered.
 
+**Building from this?** `2026-09-10-phase-5-handover-ledger.md` names the adopted prototype and its
+decisions per surface; this file only says whether a cell is covered.
+
 ## Why this exists
 
 Phase 5's prototypes were organised by *surface* — material, transitions, overlays, landing. That

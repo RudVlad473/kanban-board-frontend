@@ -7,6 +7,8 @@ implements the surface.
 `2026-09-09-phase-5-crud-coverage-matrix.md` (coverage), and
 **`2026-09-10-prototype-handover-rubric.md` — the checks to run BEFORE a human sees it, derived
 from this table's "Caught by" column. Read that one first; this one is the evidence behind it.**
+`2026-09-10-phase-5-handover-ledger.md` folds the rows that are implementation constraints into
+its decision ledger, so a builder does not have to read 88 incident narratives to find them.
 
 ## Why this exists
 

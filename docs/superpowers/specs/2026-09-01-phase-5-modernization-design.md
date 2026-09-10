@@ -5,6 +5,10 @@
 **Supersedes for the surfaces it touches:** the mock's material, typography and control geometry
 (see "The source-of-truth problem")
 
+**Implementing this?** Read `2026-09-10-phase-5-handover-ledger.md` first — it is the ordered
+list of the 26 adopted prototypes, what each one has already decided, and what has been measured
+to break. This document holds the reasoning; the ledger holds what to build.
+
 ## Problem
 
 The app looks dated. It is a faithful port of a 2021-era Frontend Mentor mock, and the port is the
@@ -232,6 +236,10 @@ border is `#DCE3F2` (slightly lighter than the card's `#E4EBFA`) to offset the e
 2px.
 
 ## Typography
+
+> **Superseded 2026-09-09 — the face is Manrope, not Inter.** See "Typeface — Manrope"
+> below, and row B7 of `2026-09-10-phase-5-handover-ledger.md`. The migration cost stated here is
+> unchanged and still applies.
 
 **Inter**, replacing Plus Jakarta Sans. Chosen for small-size legibility — most of this app's text
 is 11–13px — and for real tabular figures, which carry the column counts and `2/3` captions.
@@ -651,6 +659,10 @@ the user caused it.
 | Task delete | plan `04-20` | **Not optimistic — see correction below** |
 | Subtask add / rename / delete | plan `04-19` | |
 | Task edit save | plan `04-18` | |
+
+> **Superseded 2026-09-10 — the delete IS optimistic.** `use-delete-task.ts` writes the cache in
+> `onMutate` and restores in `onError`; the paragraph below is downstream of a decision that was
+> reversed on 2026-09-02. See defect log #78 and row C40 of the handover ledger.
 
 **Correction: the task delete collapse cannot be an optimistic disappearance.** Plan 04-20 is explicit
 and deliberate — *"the delete is NEVER optimistic… the cascade is irreversible, so there is nothing to
