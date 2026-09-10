@@ -461,14 +461,22 @@
                 transition: none;
             }
             /*
-             * The drop. #20 removed the slot's chrome in one frame, on the reasoning that a border
-             * fading out AFTER the drop is motion arriving once the gesture is over. That was right
-             * about the CAUSE and wrong about the cure: the answer is not to delete it instantly,
-             * it is to dissolve it — the box's dashes and tint are the last thing still saying "a
-             * column belongs here", and they should stop saying it gradually.
+             * The drop, and it starts with the flight — not after it.
+             *
+             * #20 removed the slot's chrome in one frame, reasoning that a border fading out AFTER
+             * the drop is motion arriving once the gesture is over. Right about the cause, wrong
+             * about the cure: dissolve it instead of deleting it. But the first version of that
+             * dissolve began at LANDING, which put it after the panel had already spent 180ms
+             * shedding its own background, border and shadow — so the lifted container faded out,
+             * and then the dashed slot faded out behind it. Two sequential fades where the gesture
+             * has one beat.
+             *
+             * Same start, same 180ms, same `linear` as the overlay's chrome, so the panel arriving
+             * and the reservation it is claiming stop existing together.
              */
-            .colm.dissolving::after {
+            .colm.source.shedding::after {
                 opacity: 0;
+                transition: opacity calc(180ms * var(--slow)) linear;
             }
             /*
              * Instant, not faded. The clone sits exactly on top at pickup, so fading the original
@@ -837,8 +845,6 @@
             /* dnd-kit's activation distance, in spirit: a click that renames must not become a drag. */
             const DRAG_THRESHOLD_PX = 4;
             let drag = null;
-            /* Grabbing a column again mid-dissolve must not leave the previous ghost behind. */
-            let dissolveTimer = null;
 
             const slotPositions = () => {
                 const map = new Map();
@@ -890,15 +896,11 @@
             function beginDrag(event, id, origin) {
                 const el = track.querySelector(`.colm[data-id="${id}"]`);
                 if (!el) return;
-                /* A dissolve still running from the last drop would otherwise strand its ghost. */
-                if (dissolveTimer) {
-                    clearTimeout(dissolveTimer);
-                    dissolveTimer = null;
-                    track.querySelectorAll(".colm.dissolving").forEach((c) => {
-                        c.classList.remove("dissolving");
-                        c.style.removeProperty("min-height");
-                    });
-                }
+                /* A ghost still shedding from the last drop would otherwise be stranded. */
+                track.querySelectorAll(".colm.shedding").forEach((c) => {
+                    c.classList.remove("source", "shedding");
+                    c.style.removeProperty("min-height");
+                });
                 const rect = el.getBoundingClientRect();
                 const pad = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ovpad"));
                 const overlay = el.cloneNode(true);
@@ -1010,6 +1012,8 @@
                 /* `grabbing` ends with the pointer; the kebab guard has to outlast it — see CSS. */
                 document.body.classList.remove("is-dragging");
                 document.body.classList.add("is-settling");
+                /* Same frame as `.settling`: the two fades are one beat, not two. */
+                el.classList.add("shedding");
                 overlay.classList.add("settling");
                 overlay.style.translate = `${targetLeft - pad}px ${targetTop - pad}px`;
                 /*
@@ -1042,24 +1046,15 @@
                     document.body.classList.remove("is-settling");
                     el.classList.add("handoff");
                     /*
-                     * `source` → `dissolving` on one frame. Both selectors generate the same
-                     * `::after`, so it is never torn down and rebuilt — the opacity has something
-                     * to interpolate FROM, which is the whole reason this is a class swap and not
-                     * a fresh element.
-                     *
-                     * `min-height` stays for the length of the fade: the layer is `inset: 0`, so
-                     * collapsing the box would shrink the ghost while it dissolves instead of
-                     * leaving it where the column was. Nothing else measures this column, and the
-                     * track holds the lane open anyway, so holding it costs no layout.
+                     * The ghost has already finished fading by now — it ran WITH the flight, not
+                     * after it — so there is nothing left to tear down gradually and `min-height`
+                     * can go on the same frame. Everything the panel was standing in for comes
+                     * back at once, and the panel is deleted.
                      */
-                    el.classList.remove("source");
-                    el.classList.add("dissolving");
+                    el.classList.remove("source", "shedding");
+                    el.style.removeProperty("min-height");
                     overlay.remove();
                     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("handoff")));
-                    dissolveTimer = setTimeout(() => {
-                        el.classList.remove("dissolving");
-                        el.style.removeProperty("min-height");
-                    }, 160 * SLOW());
                 };
                 /*
                  * NOT `{ once: true }`. `.overlay.settling` transitions FIVE properties — translate,

@@ -195,7 +195,7 @@ Open, in the order they are likely to matter:
    zero calls to the real View Transitions API.
 
 **Do not re-derive:** the defect log's **nine recurring causes** explain most of what went wrong
-here, and every one of the 39 entries names the assertion that would catch it. Read that file
+here, and every one of the 40 entries names the assertion that would catch it. Read that file
 before writing new motion code, not after.
 
 ## Keeping it true

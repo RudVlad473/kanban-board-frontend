@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 39 entries, **31 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 40 entries, **32 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
@@ -18,7 +18,7 @@ finding a column that flies 300px past its slot.
 The bar is not "I tested it". Every defect below was found on a surface someone had just finished
 testing. The bar is: **each check below has been run in the state where it can actually fail.**
 
-## The nine checks
+## The ten checks
 
 ### 1. Drive it in a non-default state — this is the big one
 
@@ -125,7 +125,20 @@ deadline. Cost: #38 — `.overlay.settling` transitions five properties at the s
 `background-color` won at 175ms, and landing fell back to the 200ms timer, silently undoing #26's
 whole reason for existing.
 
-### 9. A capture that ends before the thing you are describing proves nothing
+### 9. Two fades in one gesture share a clock, or they read as two gestures
+
+When a gesture retires more than one thing — a clone and the placeholder it stood in for, a scrim
+and the layout behind it — each fade can be individually correct and the pair still read as
+sequential. Sequencing is a *choice*, and the default should be simultaneous: same start frame,
+same duration, same easing.
+
+Check it by sampling both on **one rAF clock** and comparing values frame by frame, not by checking
+each in isolation. Equal at every sample is the pass.
+
+Cost: #40 — the panel shed its chrome across the 180ms flight, then the slot's fade started at
+landing; the user saw the container dissolve and then the dashes follow.
+
+### 10. A capture that ends before the thing you are describing proves nothing
 
 Check the last frames of a series are flat **and** that the event you are claiming about is inside
 the captured window. A run whose totals look settled may simply have stopped early.

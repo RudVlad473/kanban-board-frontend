@@ -46,7 +46,7 @@ missing. Phase 5's prototypes need a server first — `node scripts/serve-static
 .superpowers/brainstorm 6110` — and `.motion/` prunes itself to five runs, so it needs no cleanup.
 
 **Run `docs/superpowers/specs/2026-09-10-prototype-handover-rubric.md` before a human sees a
-prototype.** Seven checks derived from the fact that 31 of the defect log's 37 rows say "Caught by:
+prototype.** Ten checks derived from the fact that 32 of the defect log's 40 rows say "Caught by:
 User" — several of them the same surface reported twice. The one that catches most: drive every
 interaction in a **non-default state** (container scrolled, collection empty, many items, other
 theme, gesture repeated), because a fresh page holds every dangerous quantity at zero.
