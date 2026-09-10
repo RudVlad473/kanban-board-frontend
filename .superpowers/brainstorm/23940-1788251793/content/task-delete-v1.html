@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<title>Task delete — v1</title>
+<style>
+/* ============================================================================
+   TASK DELETE — the last `❌` in the matrix, and the only cell whose motion
+   cannot assume the optimistic case.
+
+   WHY THIS ONE IS DIFFERENT
+   -------------------------
+   Every other motion in this phase is optimistic: the UI acts, the server
+   catches up, and the animation's job is to make an instant change legible.
+   A delete cannot work that way — the card must survive until the server
+   confirms, or a refusal leaves us re-inserting a row the user watched leave.
+   So here the motion has to COVER real latency rather than add to it, and the
+   latency is unknown: 80ms on a warm connection, seconds on a cold one.
+
+   You cannot design a fixed-duration collapse for an unknown wait. So the
+   gesture is two phases with different jobs, not one animation:
+
+     WAITING   indefinite, must stay honest that nothing has happened yet
+     SETTLED   fixed, and only now is the removal a designed one-shot
+
+   THE DECISION THIS SURFACE EXISTS TO MAKE: WHEN TO ADMIT YOU ARE WAITING
+   ----------------------------------------------------------------------
+   The naive build shows a spinner the moment Delete is pressed. On a fast
+   connection that is a spinner that appears and disappears inside 150ms — a
+   flash of anxiety for a request that already succeeded, and the single most
+   common way a "loading state" makes an app feel slower than having none.
+
+   So nothing loading-shaped appears for the first `--patience` (400ms). Under
+   it, the whole wait is the button holding its pressed geometry at `opacity:
+   .75` — the `pending` treatment `buttons-v4` already specifies, which says
+   "your press landed" without claiming a duration. Over it, a 2px indeterminate
+   bar fades in at the modal's top edge, because at that point the honest
+   message has changed from "pressed" to "still waiting".
+
+   400ms is not arbitrary: it is roughly where a wait stops reading as the
+   interface being responsive and starts reading as the interface being stuck,
+   and it is comfortably above the p50 of a warm request. The rig lets you drive
+   both sides of it.
+
+   FAILURE IS AN INLINE ERROR, NOT A TOAST
+   ---------------------------------------
+   The user is looking at a modal over a scrim. A toast fires into the region
+   they are not looking at, behind the thing they are looking at. So a refusal
+   keeps the modal up, releases the button from pending, and writes the reason
+   into the modal itself. The toast is right for a delete that already left the
+   screen; it is wrong for one that never started.
+
+   ORDERING, ONCE THE SERVER AGREES
+   --------------------------------
+   The modal's exit and the card's collapse start on the SAME FRAME. Every
+   instinct says acknowledge first and show the result after, and #40, #51 and
+   the subtask sink all say that reads as two gestures for one event. The scrim
+   is at 0 by 130ms and the collapse runs to 260ms, so most of the removal is
+   watched through nothing rather than through a fading panel.
+
+   THE COLLAPSE IS A FLIP, NOT A HEIGHT ANIMATION
+   ----------------------------------------------
+   Animating the leaving card's `height` animates layout: every frame relays out
+   the column and repaints every card in it. Instead the card leaves flow at
+   once, the cards below are given the inverse translate they would need to
+   still look unmoved, and that translate is animated to zero — so the movers
+   only ever run `translate`, which the compositor does without touching layout.
+   Same reasoning as #70: what animates decides whether it can stutter.
+   ============================================================================ */
+
+:root {
+  --e: cubic-bezier(.2,0,0,1);
+  /* an arrival's long decelerating tail; a dismissal's acceleration away */
+  --enter: cubic-bezier(.16,1,.3,1);
+  --exit: cubic-bezier(.5,0,.9,.4);
+  --slow: 1;
+  --purple: #635FC7;
+  --purple-hover: #5854be;
+  --purple-press: #4f4bab;
+  --purple-edge: #3f3c85;
+  --btn-quiet-hover: color-mix(in srgb, var(--ink) 4%, #fff);
+  --btn-quiet-press: color-mix(in srgb, var(--ink) 8%, #fff);
+  --btn-quiet-edge: color-mix(in srgb, #000 14%, #fff);
+  --border-hover: #d6dfef;
+  --border-rest: #dce3f2;
+  --press: 90ms;
+  --red: #EA5555;
+  --ink: #000112;
+  --muted: #828FA3;
+  --line: #E4EBFA;
+  --tint: #F4F7FD;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--tint); color: var(--ink);
+  font: 500 13px/1.5 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+.page { display: flex; gap: 24px; padding: 24px; align-items: flex-start; }
+.board { display: flex; gap: 24px; flex: 1 1 auto; }
+.col { width: 280px; flex: none; }
+.colhd { font: 700 12px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 2.4px; text-transform: uppercase; color: var(--muted); margin: 0 0 24px; }
+.cards { display: flex; flex-direction: column; gap: 20px; }
+
+/* ------------------------------------------------------------- the card */
+.card { position: relative; background: #fff; border-radius: 8px; padding: 23px 16px;
+  border: 1px solid var(--line); box-shadow: 0 1px 2px rgb(16 18 32 / .04);
+  cursor: pointer; transition: box-shadow .13s, opacity calc(160ms * var(--slow)) var(--e); }
+.card:hover { box-shadow: 0 2px 6px rgb(16 18 32 / .07); }
+.ctitle { font: 700 15px/1.25 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  margin: 0 0 8px; padding-right: 28px; }
+.csub { font: 700 12px/1 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; color: var(--muted); }
+/*
+ * The kebab is `opacity: 0` and NOT `visibility: hidden` — #45: a hidden
+ * control is still a control, and `visibility: hidden` took the subtask ✕ out
+ * of the tab order, making delete mouse-only. `pointer-events: none` is what
+ * stops it eating clicks; opacity alone would leave an invisible hit area.
+ */
+.kebab { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px;
+  border: 0; background: none; color: var(--muted); border-radius: 4px; cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity .13s, background-color .13s; }
+.card:hover .kebab, .kebab:focus-visible { opacity: 1; pointer-events: auto; }
+.kebab:hover { background: var(--tint); color: var(--ink); }
+.kebab:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
+
+/*
+ * THE LEAVING CARD. Out of flow the moment the server agrees, so the cards
+ * below can be FLIPped past it, and fading with a small scale on the phase's
+ * exit curve — the same release the modal uses, for the same reason.
+ */
+.card.leaving { position: absolute; pointer-events: none; z-index: 1;
+  transition:
+    opacity calc(150ms * var(--slow)) var(--exit),
+    scale calc(260ms * var(--slow)) var(--exit); }
+.card.leaving.gone { opacity: 0; scale: .96; }
+/* The movers run translate and nothing else. */
+.card.riding { transition: translate calc(260ms * var(--slow)) var(--e); }
+
+/* ------------------------------------------------------- the wait itself */
+/*
+ * `pending` is `buttons-v4`'s own specified treatment: HOLD the pressed
+ * geometry and drop to .75. It is not a new state to design — a button that
+ * springs back up while its request is still in flight has un-said the thing
+ * the press said.
+ */
+.btn.pending { opacity: .75; translate: 0 2px; cursor: default;
+  box-shadow:
+    inset 0 2px 3px rgb(0 0 0 / .24),
+    inset 0 0 0 1px rgb(0 0 0 / .18),
+    0 0 0 #862825; }
+.btn.pending::after { opacity: 1; }
+.btn[disabled] { cursor: default; }
+.btn.ghost[disabled] { opacity: .5; }
+
+/*
+ * THE PATIENCE BAR. Nothing loading-shaped exists in the DOM until the wait
+ * crosses `--patience`; this is the reveal, not the whole indicator, so a fast
+ * request never renders it at all rather than rendering it invisibly.
+ *
+ * Indeterminate, because we do not know the duration — a determinate bar that
+ * guesses is a lie the user can watch being told.
+ */
+.patience { position: absolute; inset: 0 0 auto; height: 2px; overflow: hidden;
+  background: color-mix(in srgb, var(--red) 16%, #fff);
+  opacity: 0; transition: opacity calc(160ms * var(--slow)) var(--e); }
+.patience.on { opacity: 1; }
+.patience::before { content: ""; position: absolute; inset: 0; width: 40%;
+  background: var(--red); border-radius: 2px;
+  animation: sweep calc(1100ms * var(--slow)) var(--e) infinite; }
+@keyframes sweep {
+  0%   { translate: -100% 0; }
+  100% { translate: 250% 0; }
+}
+
+/* The refusal, written where the user is already looking. */
+.oops { display: none; margin: 0 0 16px; padding: 10px 12px; border-radius: 6px;
+  background: color-mix(in srgb, var(--red) 8%, #fff);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, #fff);
+  color: color-mix(in srgb, var(--red) 70%, var(--ink)); font-size: 12px; }
+.oops.on { display: block; }
+
+.mtitle { font: 700 18px/23px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  margin: 0 0 24px; color: var(--red); }
+.mbody { font-size: 13px; line-height: 23px; color: var(--muted); margin: 0 0 24px; }
+.mfoot { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pbody { padding: 24px; position: relative; }
+
+/* Visible to a screen reader, to nothing else. Not `display: none`, which is
+   not announced at all. */
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* ------------------------------------------------------------------- rig */
+.rig { font: 500 12px/1.9 ui-monospace, monospace; color: #4a5568; width: 250px; flex: none; }
+.rig h3 { font: 700 12px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
+.rig label { display: block; }
+.rig p { margin: 10px 0 0; }
+
+/* ------------------------------------------------------------- the modal */
+/*
+ * THE MOTION, RE-DERIVED — reported as "kinda basic", and it was: opacity +
+ * 8px + scale .985, one 160ms budget, symmetric both ways. That is the default
+ * recipe, and three specific things made it read as one.
+ *
+ *   1. OPACITY AND TRAVEL SHARED A CLOCK. A box that finishes fading exactly
+ *      when it finishes moving is translucent for the whole of its travel, so
+ *      the eye reads a fade and never an arriving object. Opacity now finishes
+ *      at 90ms while translate and scale run to 300ms, and the split was tuned
+ *      against the curve rather than picked: `--enter` front-loads so hard that
+ *      a 150ms fade left **0.15px** of travel outstanding — measured, by
+ *      scrubbing the running transition rather than sampling a wall clock.
+ *      That is the same fade-and-arrive-together defect with larger numbers on
+ *      it. At 90ms over 18px the popup is fully opaque with **2.2px** still to
+ *      go, and those 2.2px take the remaining 210ms — a solid panel settling,
+ *      which is the whole difference from a ghost drifting.
+ *   2. THE CURVE HAD NO TAIL. `--e` is the phase's general-purpose curve. An
+ *      arrival wants `--enter`, an expo-out: nearly all the distance covered
+ *      at once, then a long decelerating settle. Same budget, different
+ *      character.
+ *   3. THE SCRIM WAS A FLAT WASH. It now blurs 0 → 1.5px as well, so the board
+ *      behind actually recedes — depth from defocus rather than from a grey
+ *      sheet laid over everything.
+ *
+ * The popup's SHADOW animates with it, starting tight and flat and ending on
+ * the full lift, so it reads as rising toward the viewer — the one depth cue a
+ * translate alone cannot give.
+ *
+ * EXIT IS A RELEASE, NOT THE ENTRANCE REVERSED. `--exit` accelerates away over
+ * 130ms, taking 4px DOWN with the scale. That is a dismissal, and it is not the
+ * 160ms float-back-down the earlier note rightly rejected. Both elements keep
+ * ONE clock, 130ms each, because splitting them is #57 — the empty grey frame,
+ * now found three times.
+ */
+.backdrop { position: fixed; inset: 0; z-index: 50; background: rgb(16 18 32 / .32);
+  backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px);
+  transition:
+    opacity calc(220ms * var(--slow)) linear,
+    backdrop-filter calc(260ms * var(--slow)) var(--enter),
+    -webkit-backdrop-filter calc(260ms * var(--slow)) var(--enter); }
+.backdrop[data-starting-style], .backdrop[data-ending-style] { opacity: 0;
+  backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+.backdrop[data-closed] { transition:
+    opacity calc(130ms * var(--slow)) linear,
+    backdrop-filter calc(130ms * var(--slow)) linear,
+    -webkit-backdrop-filter calc(130ms * var(--slow)) linear; }
+
+/* G2's wrapper: centring lives here so the popup's `translate` stays free. */
+.centre { position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center; pointer-events: none; }
+
+/*
+ * THE MODAL'S MATERIAL, which had never been designed.
+ *
+ * Reported as "modals look too basic … very default and generic", and the
+ * cause is sourced rather than guessed: **every modal in this phase —
+ * `column-crud-v17`, `board-edit-v2` and this file — carried
+ * `0 12px 32px rgb(16 18 32 / .16)` and no border at all.** That is the
+ * pre-phase vocabulary. The Material section explicitly demoted it: *"hairline
+ * border replaces shadow as the primary edge … shadow demoted to
+ * `0 1px 2px rgba(16,18,32,.04)`"*, and the Direction section is *"restrained
+ * precision — hairline borders rather than shadows"*.
+ *
+ * So the modal was the one surface still speaking the old language, which is
+ * exactly what "generic" describes: a single soft blob under a borderless white
+ * rectangle is the default every framework ships.
+ *
+ * Three things, all of them already specified and none of them applied here:
+ *
+ *   radius   **12px**, from the control-geometry table. Every modal in the
+ *            phase used 6px. NOTE: that table marks this row *"proposed, never
+ *            reviewed"* — so 12px is the written intent, not a settled fact.
+ *   edge     a 1px hairline, the phase's primary edge device
+ *   shadow   the demoted whisper, plus a lift
+ *
+ * The lift — `0 24px 48px -16px` — is MINE and is the one unbriefed value.
+ * A card sits on a board and needs no lift; a modal sits over a scrim and a
+ * whisper alone reads as a flat cut-out. The negative spread keeps it tight
+ * under the box rather than a halo around it, which is what the old blob was.
+ */
+.popup { pointer-events: auto; position: relative;
+  width: min(90vw, 28rem); max-height: calc(100vh - 6rem);
+  background: #fff; border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column;
+  border: 1px solid var(--line);
+  box-shadow:
+    0 1px 2px rgb(16 18 32 / .04),
+    0 24px 48px -16px rgb(16 18 32 / .20);
+  transition:
+    opacity calc(90ms * var(--slow)) linear,
+    translate calc(300ms * var(--slow)) var(--enter),
+    scale calc(300ms * var(--slow)) var(--enter),
+    box-shadow calc(300ms * var(--slow)) var(--enter); }
+.popup[data-starting-style] { opacity: 0; translate: 0 18px; scale: .96;
+  box-shadow:
+    0 1px 2px rgb(16 18 32 / .04),
+    0 4px 10px -6px rgb(16 18 32 / .10); }
+/*
+ * ONE DURATION ACROSS THE POPUP AND THE SCRIM on exit. Running the popup's
+ * opacity at 90ms and the scrim's at 120ms left the last beat of every close as
+ * an empty grey screen — measured on G2 at +161ms, popup 0 while the backdrop
+ * was still 0.167. Two fades retiring one gesture share a clock (#40, #51, and
+ * this, which is the third time).
+ */
+.popup[data-closed] { transition:
+    opacity calc(130ms * var(--slow)) var(--exit),
+    translate calc(130ms * var(--slow)) var(--exit),
+    scale calc(130ms * var(--slow)) var(--exit); }
+.popup[data-ending-style] { opacity: 0; translate: 0 4px; scale: .98; }
+
+/*
+ * THE BUTTON, FOURTH PASS — the jerk was the animated hard edge itself, so
+ * nothing hard-edged animates on hover any more.
+ *
+ * v3 trimmed the hover to one property and one clock and it was STILL reported
+ * as jerky. That is the signal that the amount was never the problem. What was
+ * left animating was the plinth — a **solid, 0-blur bottom edge growing 2px →
+ * 3px** — and a hard edge travelling through fractional positions is
+ * antialiased into a soft band at every intermediate frame and then snaps crisp
+ * at the end. A 1px shimmer that resolves with a click is exactly what "jerky"
+ * describes, and no amount of further trimming reaches it, because the thing
+ * being trimmed IS the artifact.
+ *
+ * So the plinth is now STATIC. It is 2px at rest and 2px on hover, and it moves
+ * only on press, where the movement is the point.
+ *
+ * WHAT HOVER DOES INSTEAD: it changes the OPACITY of a sheen, and nothing else.
+ * Opacity is the one property the compositor can animate without repainting or
+ * re-rasterising anything, so a hover built on it cannot stutter — not "should
+ * not", cannot. The sheen is a top-lit gradient on `::after`; raising it reads
+ * as the light source coming closer to the face, which is what a hover has
+ * always been trying to say and what darkening the fill said backwards.
+ *
+ * The overlay sits ABOVE the label, because an absolutely-positioned pseudo
+ * always does. That is harmless here and deliberately so: each variant's sheen
+ * is the same hue as its own text — white over white on the filled buttons,
+ * ink over ink on the quiet one — so it is invisible exactly where it lands on
+ * a glyph.
+ *
+ * WHAT SURVIVES from v2 and v3: hover may never change the top face's geometry,
+ * because a hover that moves the box un-hovers itself — the pointer is left
+ * behind, `:hover` stops matching, the box returns, and it oscillates. Press is
+ * still the only state that moves, and it is safe because a press is held.
+ *
+ * On press the face goes down 2px WHILE the plinth goes to 0, so the two
+ * cancel: the bottom edge of the whole control is stationary through the press
+ * and only the top face travels. Nothing crawls there either.
+ *
+ * "Not a basic button" is carried by material rather than by motion — a flat
+ * wash that lifts the whole face, a hairline inner ring, and a crisp 2px edge
+ * below. Flat fill plus a colour swap is the basic button; this is the same
+ * restraint with a light source. NOT a gradient: the first draft used one and
+ * at 3x it was unmistakably a 2008 gloss, which is a different flavour of the
+ * same complaint.
+ */
+.btn { appearance: none; border: none; font: inherit; font-weight: 700;
+  position: relative; isolation: isolate;
+  height: 40px; padding: 0 20px; border-radius: 4px; cursor: pointer; width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--purple); color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .14),
+    inset 0 0 0 1px rgb(0 0 0 / .12),
+    0 2px 0 var(--purple-edge);
+  transition:
+    background-color calc(120ms * var(--slow)) var(--e),
+    opacity calc(120ms * var(--slow)),
+    box-shadow calc(80ms * var(--slow)) var(--e),
+    translate calc(80ms * var(--slow)) var(--e); }
+/*
+ * The sheen — a FLAT wash, not a gradient, and its opacity is the only thing
+ * hover touches.
+ *
+ * The first version of this was a top-to-bottom white gradient, and at 3x it
+ * was unmistakably a 2008 gloss button: bright cap, dark base, the exact
+ * "basic" this pass exists to get away from. A gradient is a light SOURCE
+ * being drawn; a flat wash is the surface being lit. The bevel that gives the
+ * face its edge is already there as a static 1px inset highlight and does not
+ * need help.
+ *
+ * .07 is not a taste value: white text on the washed fill has to stay at 4.5:1,
+ * and .10 does not.
+ */
+.btn::after { content: ""; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none; opacity: 0;
+  background: rgb(255 255 255 / .07);
+  transition: opacity calc(140ms * var(--slow)) var(--e); }
+.btn:hover::after { opacity: 1; }
+.btn:active { background: var(--purple-press); translate: 0 2px;
+  box-shadow:
+    inset 0 2px 3px rgb(0 0 0 / .24),
+    inset 0 0 0 1px rgb(0 0 0 / .18),
+    0 0 0 var(--purple-edge); }
+.btn:active::after { opacity: 0; }
+.btn:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* The quiet variant cannot be lit, so its sheen is an ink wash rather than a
+   white one — the same mechanism, the same clock, the opposite direction. */
+.btn.ghost { background: #fff; color: var(--ink);
+  box-shadow:
+    inset 0 2px 3px rgb(16 18 32 / 0),
+    inset 0 0 0 1px var(--line),
+    0 2px 0 var(--btn-quiet-edge); }
+.btn.ghost::after { opacity: 0; background: rgb(16 18 32 / .045); }
+.btn.ghost:hover::after { opacity: 1; }
+/* The quiet press has to be darker than the quiet hover or the press reads as
+   nothing happening — the two states were identical in the first draft. */
+.btn.ghost:active::after { opacity: 1; background: rgb(16 18 32 / .10); }
+.btn.ghost:active { background: #fff; translate: 0 2px;
+  box-shadow:
+    inset 0 2px 3px rgb(16 18 32 / .14),
+    inset 0 0 0 1px var(--border-hover),
+    0 0 0 var(--btn-quiet-edge); }
+
+
+.btn.small { width: auto; height: 32px; padding: 0 16px; }
+.btn.danger { background: var(--red);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .14),
+    inset 0 0 0 1px rgb(0 0 0 / .12),
+    0 2px 0 #862825; }
+.btn.danger:active { background: #c03f3c; translate: 0 2px;
+  box-shadow:
+    inset 0 2px 3px rgb(0 0 0 / .24),
+    inset 0 0 0 1px rgb(0 0 0 / .18),
+    0 0 0 #862825; }
+/*
+ * DESTRUCTIVE IS THE ONE FILL THAT CANNOT BE LIT.
+ *
+ * White on `--red` (#EA5555) is **3.54:1** at rest — already under AA, and
+ * inherited from the mock's own token rather than introduced here. A white wash
+ * on top makes it worse, measured: 3.27:1 hovered. So danger inverts the
+ * mechanism and washes with ink instead, which moves hover the other way
+ * (3.96:1) rather than deepening a failure.
+ *
+ * The rule survives as "hover is the surface responding to the pointer"; only
+ * the direction is fill-dependent. The rest state's 3.54:1 is NOT fixed here —
+ * it needs `--red` itself to change, which is a token decision above this file.
+ */
+.btn.danger::after { background: rgb(16 18 32 / .06); }
+
+@media (prefers-reduced-motion: reduce) {
+  .popup { transition: opacity calc(100ms * var(--slow)) linear; }
+  .popup[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
+  .popup[data-starting-style], .popup[data-ending-style] { opacity: 0; translate: none; scale: none; }
+  .backdrop, .backdrop[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
+  .sroww.animating, .sroww.animating.entering, .cardw.entering {
+    transition: height 1ms linear, margin-bottom 1ms linear, opacity calc(90ms * var(--slow)) linear; }
+}
+body.force-reduced .popup { transition: opacity calc(100ms * var(--slow)) linear; }
+body.force-reduced .popup[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
+body.force-reduced .popup[data-starting-style],
+body.force-reduced .popup[data-ending-style] { opacity: 0; translate: none; scale: none; }
+body.force-reduced .backdrop,
+body.force-reduced .backdrop[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
+
+/* Reduced motion: the scrim is a plain wash again — a blur that cannot
+   transition would snap on, which is a cut, and cuts are what this policy
+   exists to avoid. */
+@media (prefers-reduced-motion: reduce) {
+  .backdrop, .backdrop[data-starting-style], .backdrop[data-ending-style],
+  .backdrop[data-closed] { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+body.force-reduced .backdrop,
+body.force-reduced .backdrop[data-starting-style],
+body.force-reduced .backdrop[data-ending-style],
+body.force-reduced .backdrop[data-closed] { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.force-reduced .sroww.animating,
+body.force-reduced .sroww.animating.entering,
+body.force-reduced .cardw.entering {
+  transition: height 1ms linear, margin-bottom 1ms linear, opacity calc(90ms * var(--slow)) linear; }
+
+/* ------------------------------------------------------------------- rig */
+.rig { font: 500 12px/1.8 ui-monospace, monospace; color: #4a5568; min-width: 250px; }
+.rig h3 { font: 700 12px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
+.rig label { display: block; }
+
+/*
+ * REDUCE, DO NOT REMOVE, for the two things this file adds.
+ *
+ * The patience bar's sweep is the clearest case in the phase for the policy: an
+ * indefinite sliding element is exactly what a reduced-motion setting is asking
+ * not to see. What replaces it is a slow opacity pulse of the FULL bar — still
+ * unmistakably indeterminate, still alive, and nothing travels.
+ *
+ * The collapse keeps its fade and loses its scale; the cards below stop riding
+ * and take their new positions directly. What survives is the part that says
+ * "this row is gone", which is the information; what goes is the part that says
+ * where it went.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .patience::before { width: 100%; animation: breathe calc(1800ms * var(--slow)) ease-in-out infinite; }
+  .card.leaving { transition: opacity calc(120ms * var(--slow)) linear; }
+  .card.leaving.gone { scale: none; }
+  .card.riding { transition: none; }
+}
+body.force-reduced .patience::before { width: 100%; animation: breathe calc(1800ms * var(--slow)) ease-in-out infinite; }
+body.force-reduced .card.leaving { transition: opacity calc(120ms * var(--slow)) linear; }
+body.force-reduced .card.leaving.gone { scale: none; }
+body.force-reduced .card.riding { transition: none; }
+@keyframes breathe { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="board" id="board"></div>
+  <div class="rig">
+    <h3>rig</h3>
+    <label><input type="checkbox" id="slow"> slow motion (6&times;)</label>
+    <label><input type="checkbox" id="reduced"> force reduced motion</label>
+    <label>server: <select id="lat">
+      <option value="120">fast — 120ms</option>
+      <option value="2500">slow — 2500ms</option>
+      <option value="fail">refuses</option>
+    </select></label>
+    <p id="state">idle</p>
+    <p style="font-size:11px;line-height:1.6">The fast case must never render the
+      patience bar. The slow case must, and only after 400ms.</p>
+  </div>
+</div>
+<script>
+const COLUMNS = [
+  { name: "Todo", tasks: [
+    { t: "Build UI for onboarding flow", s: "0 of 3 subtasks" },
+    { t: "Build UI for search", s: "0 of 1 subtasks" },
+    { t: "Build settings UI", s: "0 of 2 subtasks" },
+    { t: "QA and test all major user journeys", s: "0 of 2 subtasks" },
+  ]},
+  { name: "Doing", tasks: [
+    { t: "Design settings and search pages", s: "0 of 3 subtasks" },
+    { t: "Add account management endpoints", s: "0 of 3 subtasks" },
+  ]},
+  { name: "Done", tasks: [
+    { t: "Conduct 5 wireframe tests", s: "1 of 1 subtasks" },
+  ]},
+];
+
+const SLOW = () => (document.getElementById("slow").checked ? 6 : 1);
+/*
+ * The threshold this file exists to test. Scaled by the slow-motion multiplier
+ * like every other duration, or the rig would let you watch a 400ms wait that
+ * the bar's own 160ms fade has already scaled past.
+ */
+const PATIENCE = () => 400 * SLOW();
+/*
+ * A threshold alone does not stop a flash, it moves it: at a server time of
+ * exactly 400ms the bar reveals and the response lands in the same handful of
+ * frames. Measured at the boundary — 399ms shows nothing, 400ms shows three
+ * frames peaking at opacity 0.94. The delay and the floor are a pair, and only
+ * having half of them is what makes "we defer the spinner" untrue in practice.
+ *
+ * So once the bar IS shown it stays for at least this long. The cost is up to
+ * 260ms added to a delete in the 400-660ms band, and it buys the guarantee the
+ * threshold was for: the bar is never a flicker.
+ */
+const MIN_SHOWN = () => 260 * SLOW();
+const say = (s) => { document.getElementById("state").textContent = s; };
+
+function render() {
+  const board = document.getElementById("board");
+  board.textContent = "";
+  COLUMNS.forEach((col, ci) => {
+    const c = document.createElement("div");
+    c.className = "col";
+    const h = document.createElement("h2");
+    h.className = "colhd";
+    h.textContent = `${col.name} (${col.tasks.length})`;
+    const list = document.createElement("div");
+    list.className = "cards";
+    list.dataset.col = String(ci);
+    col.tasks.forEach((task, ti) => list.append(cardEl(task, ci, ti)));
+    c.append(h, list);
+    board.append(c);
+  });
+}
+
+/* textContent throughout — #61: a template literal made a task title into markup. */
+function cardEl(task, ci, ti) {
+  const el = document.createElement("div");
+  el.className = "card";
+  el.dataset.col = String(ci);
+  el.dataset.idx = String(ti);
+  const t = document.createElement("h3");
+  t.className = "ctitle";
+  t.textContent = task.t;
+  const s = document.createElement("p");
+  s.className = "csub";
+  s.textContent = task.s;
+  const k = document.createElement("button");
+  k.className = "kebab";
+  k.type = "button";
+  k.setAttribute("aria-label", `Delete ${task.t}`);
+  k.textContent = "⋯";
+  k.addEventListener("click", (e) => { e.stopPropagation(); openConfirm(el, task); });
+  el.append(t, s, k);
+  return el;
+}
+
+/* --------------------------------------------------------------- the modal */
+/* G2's lifecycle verbatim: Base UI's own data attributes, driven by hand so the
+   prototype cannot drift from what the library will actually do. */
+let mounted = null;
+
+/*
+ * `mounted` is cleared at the START of the exit so the closing modal stops
+ * taking input — but the DOM survives until the transition finishes, so a
+ * second open in that window produced TWO popups and two backdrops. The guard
+ * has to be the DOM, not the variable.
+ */
+function openConfirm(cardEl, task) {
+  if (mounted || document.querySelector(".popup")) return;
+  const backdrop = document.createElement("div");
+  backdrop.className = "backdrop";
+  backdrop.setAttribute("data-open", "");
+  backdrop.setAttribute("data-starting-style", "");
+
+  const centre = document.createElement("div");
+  centre.className = "centre";
+  const popup = document.createElement("div");
+  popup.className = "popup";
+  popup.setAttribute("role", "alertdialog");
+  popup.setAttribute("aria-modal", "true");
+  /* An alertdialog with no accessible name announces as "dialog" and nothing else. */
+  popup.setAttribute("aria-labelledby", "delTitle");
+  popup.setAttribute("data-open", "");
+  popup.setAttribute("data-starting-style", "");
+
+  const body = document.createElement("div");
+  body.className = "pbody";
+
+  const bar = document.createElement("div");
+  bar.className = "patience";
+
+  const h = document.createElement("h2");
+  h.className = "mtitle";
+  h.id = "delTitle";
+  h.textContent = "Delete this task?";
+
+  const oops = document.createElement("p");
+  oops.className = "oops";
+  oops.setAttribute("role", "alert");
+
+  /*
+   * A disabled button and a moving bar are both silent. The wait needs a text
+   * channel of its own, and it must exist BEFORE the wait starts or the first
+   * message is not announced.
+   */
+  const status = document.createElement("p");
+  status.className = "sr";
+  status.setAttribute("role", "status");
+
+  const p = document.createElement("p");
+  p.className = "mbody";
+  p.append(
+    document.createTextNode("Are you sure you want to delete the ‘"),
+    Object.assign(document.createElement("strong"), { textContent: task.t }),
+    document.createTextNode("’ task and its subtasks? This action cannot be reversed."),
+  );
+
+  const foot = document.createElement("div");
+  foot.className = "mfoot";
+  const del = document.createElement("button");
+  del.className = "btn danger";
+  del.type = "button";
+  del.textContent = "Delete";
+  const cancel = document.createElement("button");
+  cancel.className = "btn ghost";
+  cancel.type = "button";
+  cancel.textContent = "Cancel";
+  foot.append(del, cancel);
+
+  body.append(bar, h, status, oops, p, foot);
+  popup.append(body);
+  centre.append(popup);
+  document.body.append(backdrop, centre);
+  mounted = { backdrop, centre, popup, bar, oops, status, del, cancel, cardEl };
+
+  del.addEventListener("click", () => submit(task));
+  cancel.addEventListener("click", () => closeModal());
+  backdrop.addEventListener("click", () => { if (!mounted.busy) closeModal(); });
+  document.addEventListener("keydown", onKey);
+
+  /*
+   * TWO frames, not one. Releasing `data-starting-style` on the next rAF is not
+   * reliably enough: the style has to have been recomputed once before the
+   * released value can be transitioned FROM. One frame and the transition
+   * silently never starts — the failure `getAnimations()` was brought in to
+   * catch on the column drop.
+   */
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    backdrop.removeAttribute("data-starting-style");
+    popup.removeAttribute("data-starting-style");
+    del.focus({ preventScroll: true });
+  }));
+  say("confirm open");
+}
+
+function onKey(e) {
+  if (e.key === "Escape" && mounted && !mounted.busy) closeModal();
+}
+
+function closeModal(after) {
+  if (!mounted) return;
+  const { backdrop, centre, popup } = mounted;
+  document.removeEventListener("keydown", onKey);
+  mounted = null;
+
+  backdrop.removeAttribute("data-open");
+  popup.removeAttribute("data-open");
+  backdrop.setAttribute("data-closed", "");
+  popup.setAttribute("data-closed", "");
+  void popup.offsetWidth;
+  backdrop.setAttribute("data-ending-style", "");
+  popup.setAttribute("data-ending-style", "");
+
+  if (after) after();
+
+  /*
+   * #42 again: ask the animations, do not listen for an event. A listener
+   * cannot tell a late `transitionend` from one that never fires because the
+   * transition never started, and this popup transitions three properties at
+   * three durations so which reports first is arbitrary.
+   */
+  const running = [...popup.getAnimations(), ...backdrop.getAnimations()];
+  const land = () => { backdrop.remove(); centre.remove(); };
+  if (running.length) Promise.allSettled(running.map((a) => a.finished)).then(land);
+  else land();
+  setTimeout(land, 200 * SLOW() + 250);
+}
+
+/* ------------------------------------------------------------- the request */
+function server() {
+  const v = document.getElementById("lat").value;
+  const ms = v === "fail" ? 900 : +v;
+  return new Promise((res, rej) => setTimeout(() => (v === "fail" ? rej(new Error("The task could not be deleted. It may already be gone.")) : res()), ms * SLOW()));
+}
+
+function submit(task) {
+  if (!mounted || mounted.busy) return;
+  const m = mounted;
+  m.busy = true;
+  m.oops.classList.remove("on");
+  m.del.classList.add("pending");
+  m.del.disabled = true;
+  m.cancel.disabled = true;
+  m.popup.setAttribute("aria-busy", "true");
+  m.status.textContent = "Deleting the task…";
+  say("waiting on the server");
+
+  /*
+   * The patience threshold. The timer is what makes a fast request render no
+   * loading chrome AT ALL, rather than rendering it for one frame — a spinner
+   * that flashes is worse than no spinner, which is the entire point of this
+   * surface.
+   */
+  let shownAt = 0;
+  const reveal = setTimeout(() => {
+    shownAt = performance.now();
+    m.bar.classList.add("on");
+    m.status.textContent = "Still deleting…";
+    say("waiting — patience bar shown");
+  }, PATIENCE());
+
+  server().then(
+    () => {
+      clearTimeout(reveal);
+      const owed = shownAt ? Math.max(0, MIN_SHOWN() - (performance.now() - shownAt)) : 0;
+      setTimeout(() => {
+        /* One frame for both: the modal leaves and the card collapses together. */
+        const next = m.cardEl.nextElementSibling ?? m.cardEl.previousElementSibling;
+        closeModal(() => collapse(m.cardEl));
+        say("deleted");
+        /*
+         * Focus was landing on `body`, which is where a keyboard user loses the
+         * board entirely. It goes to the neighbouring card's own control — the
+         * nearest thing to where the deleted row was.
+         */
+        const target = next?.querySelector?.(".kebab");
+        if (target) target.focus({ preventScroll: true });
+      }, owed);
+    },
+    (err) => {
+      clearTimeout(reveal);
+      /*
+       * The button was visually released and `busy` was not, so pressing Delete
+       * again did nothing at all and the modal became a dead end. Everything a
+       * refusal re-enables has to be re-enabled — including the flag nobody can
+       * see.
+       */
+      m.busy = false;
+      m.popup.removeAttribute("aria-busy");
+      m.status.textContent = "";
+      m.bar.classList.remove("on");
+      m.del.classList.remove("pending");
+      m.del.disabled = false;
+      m.cancel.disabled = false;
+      m.oops.textContent = err.message;
+      m.oops.classList.add("on");
+      m.del.focus({ preventScroll: true });
+      say("refused — modal stays, error inline");
+    },
+  );
+}
+
+/* --------------------------------------------------------------- the FLIP */
+/*
+ * THE ORDER OF THESE READS IS THE WHOLE MECHANISM, and the first version got it
+ * wrong in a way every test I wrote still passed.
+ *
+ * `getAnimations()` was called SYNCHRONOUSLY, before the rAF that adds `.gone`
+ * and `.riding`. At that instant nothing is transitioning — the followers carry
+ * their inverse translate with no transition on it yet — so the list came back
+ * empty, `done()` ran immediately, and the rAF then re-applied `.riding` to
+ * cards already sitting in their final position. The collapse never animated,
+ * and followers were left stranded carrying a class.
+ *
+ * My own probe asserted that a `.riding` card was running a `translate`
+ * transition and it PASSED, because the stranded rAF really did start a
+ * transition — from nothing to nothing. That is the third vacuous assertion in
+ * this phase (#68's shadow parse, #62's stale token). The discriminator that
+ * would have caught it is a state assertion, not a property one: after the
+ * collapse settles, `.riding` and `.leaving` must both be zero.
+ *
+ * So the animations are read INSIDE the rAF, after the classes are on, and
+ * `done()` is guarded — the fallback timer and the promise both call it.
+ */
+function collapse(card) {
+  const list = card.parentElement;
+  if (!list) return;
+  const followers = [...list.children].filter(
+    (el) => el !== card && el.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_PRECEDING,
+  );
+  const first = followers.map((el) => el.getBoundingClientRect().top);
+
+  /*
+   * `position: relative` FIRST, then `offsetTop`/`offsetLeft`. Converting a
+   * viewport rect by subtracting the list's rect looks equivalent and is not:
+   * it ignores the container's own border and breaks entirely once the list
+   * scrolls. `offsetTop` is measured against the offset parent's padding box,
+   * which is exactly what an absolutely positioned child resolves against.
+   */
+  list.style.position = "relative";
+  const w = card.getBoundingClientRect().width;
+  card.style.width = `${w}px`;
+  card.style.top = `${card.offsetTop}px`;
+  card.style.left = `${card.offsetLeft}px`;
+  card.classList.add("leaving");
+
+  const last = followers.map((el) => el.getBoundingClientRect().top);
+  followers.forEach((el, i) => { el.style.translate = `0 ${first[i] - last[i]}px`; });
+  void list.offsetWidth;
+
+  let settled = false;
+  const done = () => {
+    if (settled) return;
+    settled = true;
+    card.remove();
+    followers.forEach((el) => { el.classList.remove("riding"); el.style.translate = ""; });
+    list.style.position = "";
+    recount();
+  };
+
+  requestAnimationFrame(() => {
+    card.classList.add("gone");
+    followers.forEach((el) => { el.classList.add("riding"); el.style.translate = "0px"; });
+    const anims = [...card.getAnimations(), ...followers.flatMap((el) => el.getAnimations())];
+    if (anims.length) Promise.allSettled(anims.map((a) => a.finished)).then(done);
+    else done();
+  });
+  /* Covers a backgrounded tab, where the rAF above never fires at all. */
+  setTimeout(done, 300 * SLOW() + 250);
+}
+
+function recount() {
+  document.querySelectorAll(".col").forEach((c) => {
+    const n = c.querySelectorAll(".card").length;
+    c.querySelector(".colhd").textContent = `${COLUMNS[[...document.querySelectorAll(".col")].indexOf(c)].name} (${n})`;
+  });
+}
+
+document.getElementById("reduced").addEventListener("change", (e) => {
+  document.body.classList.toggle("force-reduced", e.target.checked);
+});
+document.getElementById("slow").addEventListener("change", () => {
+  document.documentElement.style.setProperty("--slow", String(SLOW()));
+});
+render();
+</script>
+</body>
+</html>

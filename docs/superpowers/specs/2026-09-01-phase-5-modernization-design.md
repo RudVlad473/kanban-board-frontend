@@ -858,10 +858,10 @@ nor the mocks ever covered.
 | **G3** | Toast enter / exit motion | open |
 | **G4** | Overflow affordance, columns and board list | open |
 | **G5** | Subtask check · task edit · subtask CRUD | **narrowed 2026-09-09** — rename and delete only |
-| **G6** | Task delete collapse | open |
+| **G6** | Task delete collapse | **prototyped 2026-09-10** — `task-delete-v1.html`, awaiting sign-off |
 | **G7** | Theme switch, light ↔ dark | open |
 | **G8** | Inter's justifications, tested where they apply | **closed** — `type-board.html` |
-| **G9** | Every column mutation — create, rename, delete, reorder | **open — new 2026-09-09** |
+| **G9** | Every column mutation — create, rename, delete, reorder | **closed 2026-09-10** — `column-crud-v17.html` |
 
 **Coverage is tracked per entity and operation in
 `2026-09-09-phase-5-crud-coverage-matrix.md`**, which is what produced G9 and narrowed G5. Read it
