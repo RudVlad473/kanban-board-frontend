@@ -80,9 +80,16 @@
    in the state and not on the screen, and a fourth toast simply stacks. Setting
    `limit={3}` explicitly would change nothing at all.
 
-   So a fourth arrival DISPLACES the oldest here, and the displaced one leaves by
-   the timeout exit rather than the dismissal one: the user did not act on it, so
-   it recedes rather than being acknowledged. Two exits still, not three.
+   The limit is a WINDOW OVER A QUEUE, not a cull. Over it, Base UI keeps the
+   toast mounted and flags it; the newest three are visible and the older ones
+   wait. Closing one promotes the next, and the promotion begins the moment the
+   visible toast starts LEAVING rather than when it finishes, because
+   `applyLimited` skips anything already transitioning out. So the arrival and
+   the departure share a frame — #40 and #51 in a fourth place.
+
+   The first version of this file retired the over-limit toasts instead, which
+   destroyed notifications nobody had seen: eight raised and three closed left
+   an empty screen. Recorded as #86.
 
    WHAT THIS FILE DOES NOT CLOSE
    -----------------------------
@@ -141,6 +148,12 @@ body { margin: 0; background: var(--tint); color: var(--ink);
 @media (min-width: 768px) {
   .viewport { left: auto; right: 24px; bottom: 24px; width: 384px; }
 }
+/*
+ * A queued toast stays MOUNTED and leaves the flow, which is what Base UI's
+ * `limited` flag is for. `display: none` rather than a zero height, so it
+ * cannot be tabbed into or read out while it is waiting its turn.
+ */
+.trow.limited { display: none; }
 .trow { overflow: hidden; margin-top: 8px; pointer-events: auto; }
 .trow:first-child { margin-top: 0; }
 /*
@@ -380,11 +393,12 @@ body.force-reduced .trow.animating { transition:
       <button class="btn danger" id="one">Raise a failure</button>
       <button class="btn ghost" id="neutral">Raise a neutral toast</button>
       <button class="btn ghost" id="three">Raise three at once</button>
-      <button class="btn ghost" id="many">Raise eight — the limit case</button>
+      <button class="btn ghost" id="many">Raise eight — the queue case</button>
     </div>
     <p style="font-size:12px">Click a toast's body to dismiss it, or leave it for the 5s
       timeout — the two exits are deliberately different. Dismiss the <em>middle</em> one of
-      three to see the others close the gap.</p>
+      three to see the others close the gap. Raise eight and close them one at a time: the
+      queue surfaces, three at a time, newest first.</p>
   </div>
   <div class="rig">
     <h3>rig</h3>
@@ -392,6 +406,7 @@ body.force-reduced .trow.animating { transition:
     <label><input type="checkbox" id="reduced"> force reduced motion</label>
     <label><input type="checkbox" id="notimeout"> disable auto-dismiss</label>
     <p id="state">idle</p>
+    <p id="queued" style="font-weight:700;color:#635FC7"></p>
     <p style="font-size:11px;line-height:1.6">5000ms and a limit of 3 are both Base UI
       1.7.0's own defaults. The limit already applies in the app and nothing draws it —
       <code>data-limited</code> is emitted and styled nowhere.</p>
@@ -477,6 +492,118 @@ function raise({ danger, title, description }) {
    * you to setting the end value inline too or the class silently loses (#73's
    * sibling in `subtask-crud-v2`).
    */
+  /* The whole card dismisses, matching `toast.tsx` — but not its own buttons. */
+  el.addEventListener("click", (e) => {
+    if (e.target instanceof Element && e.target.closest("button")) return;
+    retire(row, "dismiss");
+  });
+  x.addEventListener("click", () => retire(row, "dismiss"));
+
+  /*
+   * THE TIMER PAUSES ON HOVER AND ON FOCUS, because Base UI's does and because
+   * the alternative is a notification that expires while it is being read. The
+   * remaining time is carried across the pause rather than restarted — a timer
+   * that resets on every hover is one a mouse resting nearby can keep alive
+   * forever.
+   */
+  row.remaining = TIMEOUT();
+  /*
+   * `startTimer` has to be idempotent AND has to respect the pause, because it
+   * is now called from two places: the entry's `settle()` and `pointerleave`.
+   * Without the guards, the entry's 340ms fallback fired a SECOND timer while
+   * the toast was being hovered, `pauseTimer` cleared only the newer handle,
+   * and the toast expired under the pointer — the exact defect #84 fixed,
+   * reintroduced by a refactor that moved where the timer starts.
+   */
+  row.startTimer = () => {
+    if (row.timer || row.held) return;
+    if (document.getElementById("notimeout").checked) return;
+    if (row.classList.contains("limited") || row.dataset.retiring) return;
+    row.startedAt = performance.now();
+    row.timer = setTimeout(() => retire(row, "timeout"), row.remaining);
+  };
+  row.pauseTimer = () => {
+    if (!row.timer) return;
+    clearTimeout(row.timer);
+    row.timer = null;
+    row.remaining = Math.max(0, row.remaining - (performance.now() - row.startedAt));
+  };
+  /* `held` is what makes the pause survive a second `startTimer` from elsewhere. */
+  el.addEventListener("pointerenter", () => { row.held = true; row.pauseTimer(); });
+  el.addEventListener("pointerleave", () => { row.held = false; row.startTimer(); });
+  el.addEventListener("focusin", () => { row.held = true; row.pauseTimer(); });
+  el.addEventListener("focusout", (e) => {
+    if (el.contains(e.relatedTarget)) return;
+    row.held = false;
+    row.startTimer();
+  });
+  /*
+   * The row starts queued and `applyLimit` decides. A fresh toast is always in
+   * the newest `LIMIT`, so it is promoted on the same tick — but going through
+   * the one code path means a raise and a promotion cannot drift apart.
+   */
+  row.classList.add("limited");
+  applyLimit();
+  say(`raised #${row.dataset.id}`);
+  return row;
+}
+
+
+/*
+ * THE LIMIT IS A WINDOW OVER A QUEUE, NOT A CULL — and the first version got
+ * that exactly backwards.
+ *
+ * It retired the over-limit toasts, so raising eight and closing three left you
+ * with nothing: five notifications the user never saw were destroyed on
+ * arrival. Reported as *"you never see the other 5, basically there's no
+ * stack"*, and Base UI's own store says the same thing in a comment:
+ * `applyLimited` marks toasts beyond the limit as `limited` and **keeps them**,
+ * "so the newest `limit` toasts stay visible and the rest are flagged".
+ *
+ * Two details in that function are load-bearing and both are reproduced here:
+ *
+ *   NEWEST-FIRST. The newest `limit` survive and the OLDEST are queued, which
+ *   is the opposite of a FIFO reading and is right: a notification that has
+ *   just happened outranks one from ten seconds ago.
+ *
+ *   AN ENDING TOAST DOES NOT HOLD A SLOT. `applyLimited` skips anything already
+ *   transitioning out, so the promotion begins the moment a visible toast
+ *   starts leaving rather than when it finishes — the arrival and the departure
+ *   share a frame instead of queueing behind one another. Same rule as #40 and
+ *   #51, arriving in a fourth place.
+ *
+ * A queued toast's timer does not run. It has not been seen, and expiring
+ * unseen is the same defect as expiring while being read (#84) with the clock
+ * started earlier.
+ */
+function applyLimit() {
+  const viewport = document.getElementById("viewport");
+  const live = [...viewport.children].filter((r) => !r.dataset.retiring);
+  const visible = live.slice(-LIMIT);
+  live.forEach((row) => {
+    const shouldShow = visible.includes(row);
+    if (shouldShow && row.classList.contains("limited")) {
+      row.classList.remove("limited");
+      playEntry(row);
+    } else if (!shouldShow && !row.classList.contains("limited")) {
+      row.classList.add("limited");
+      row.pauseTimer();
+    }
+  });
+  const queued = live.length - visible.length;
+  document.getElementById("queued").textContent = queued ? `+${queued} waiting` : "";
+}
+
+/*
+ * One entry, used by a fresh raise and by a promotion out of the queue alike —
+ * a toast that has been waiting has not been seen, so it arrives rather than
+ * appearing.
+ */
+function playEntry(row) {
+  const viewport = document.getElementById("viewport");
+  row.classList.add("tin");
+  row.style.height = "";
+  row.style.marginTop = "";
   const full = row.getBoundingClientRect().height;
   row.style.height = "0px";
   row.style.marginTop = "0px";
@@ -495,62 +622,16 @@ function raise({ danger, title, description }) {
      * behind it. The entry's cleanup has to check whether it still owns the row.
      */
     const settle = () => {
-      if (row.dataset.retiring) return;
+      if (row.dataset.retiring || row.classList.contains("limited")) return;
       row.classList.remove("animating");
       row.style.height = "";
       row.style.marginTop = "";
+      row.startTimer();
     };
     if (anims.length) Promise.allSettled(anims.map((a) => a.finished)).then(settle);
     else settle();
     setTimeout(settle, 340 * SLOW() + 250);
   });
-
-  /* The whole card dismisses, matching `toast.tsx` — but not its own buttons. */
-  el.addEventListener("click", (e) => {
-    if (e.target instanceof Element && e.target.closest("button")) return;
-    retire(row, "dismiss");
-  });
-  x.addEventListener("click", () => retire(row, "dismiss"));
-
-  /*
-   * THE TIMER PAUSES ON HOVER AND ON FOCUS, because Base UI's does and because
-   * the alternative is a notification that expires while it is being read. The
-   * remaining time is carried across the pause rather than restarted — a timer
-   * that resets on every hover is one a mouse resting nearby can keep alive
-   * forever.
-   */
-  row.remaining = TIMEOUT();
-  row.startTimer = () => {
-    if (document.getElementById("notimeout").checked) return;
-    row.startedAt = performance.now();
-    row.timer = setTimeout(() => retire(row, "timeout"), row.remaining);
-  };
-  row.pauseTimer = () => {
-    if (!row.timer) return;
-    clearTimeout(row.timer);
-  row.timer = null;
-    row.timer = null;
-    row.remaining = Math.max(0, row.remaining - (performance.now() - row.startedAt));
-  };
-  el.addEventListener("pointerenter", row.pauseTimer);
-  el.addEventListener("pointerleave", () => row.startTimer());
-  el.addEventListener("focusin", row.pauseTimer);
-  el.addEventListener("focusout", (e) => {
-    if (!el.contains(e.relatedTarget)) row.startTimer();
-  });
-  row.startTimer();
-  /*
-   * `limit = 3` is Base UI's own default, so the fourth arrival displaces the
-   * oldest. It leaves by the TIMEOUT exit: the user did not act on it, so it
-   * recedes rather than being acknowledged, and the two exits stay two.
-   */
-  const live = [...viewport.children].filter((r) => !r.dataset.retiring);
-  if (live.length > LIMIT) {
-    live.slice(0, live.length - LIMIT).forEach((old) => retire(old, "timeout"));
-  }
-
-  say(`raised #${row.dataset.id}`);
-  return row;
 }
 
 /*
@@ -571,6 +652,9 @@ function retire(row, how) {
   row.style.marginTop = getComputedStyle(row).marginTop;
   void row.offsetWidth;
   row.classList.add("animating", how === "timeout" ? "tout" : "tdismiss");
+  /* A toast that is leaving no longer holds a slot — Base UI skips `ending`
+     toasts when it recomputes, so the promotion overlaps the departure. */
+  applyLimit();
 
   let settled = false;
   const done = () => {
@@ -580,6 +664,7 @@ function retire(row, how) {
     /* The first row owns no top margin; after a removal that may be a new row. */
     const first = document.getElementById("viewport").firstElementChild;
     if (first) first.style.marginTop = "";
+    applyLimit();
     say(`retired by ${how}`);
   };
 
