@@ -106,6 +106,15 @@ its `+` 78px below everything (31); and a newly created column had no body at al
 fixed. **The row stays `◑`** — the fixes are measured, but nobody has watched the result yet, and
 this file's own history says a look is what closes a cell, not a green number.
 
+**Then someone watched it, and the point was made again (entries 33–35).** Three more, none of
+which any measurement in that pass had reached: the rail's hover label painted under a card and was
+simply never visible; the rail was now too *short*, because #31's fix removed the height when the
+real defect was the centred glyph; and a drop landed with the column's text doubled and smeared for
+one beat, from a panel deliberately kept 140ms past landing on the stated ground that it was "the
+same pixels twice" — a claim that was 1px wrong and cross-fading besides. Every one was found by
+looking. **34 is the row to reread before touching this surface:** it is a defect introduced by a
+fix for another defect, because the fix satisfied the assertion instead of the intent.
+
 **Create — ◑ decided in shape.** The ghost column is replaced by a **34px rail** at the board's end
 (fixed footprint, label as an overlay) **plus `+ Column` in the board header**, reachable at any
 scroll position; the rail carries a low-key dismiss, safe only because the header button survives
@@ -186,7 +195,7 @@ Open, in the order they are likely to matter:
    zero calls to the real View Transitions API.
 
 **Do not re-derive:** the defect log's **eight recurring causes** explain most of what went wrong
-here, and every one of the 32 entries names the assertion that would catch it. Read that file
+here, and every one of the 35 entries names the assertion that would catch it. Read that file
 before writing new motion code, not after.
 
 ## Keeping it true

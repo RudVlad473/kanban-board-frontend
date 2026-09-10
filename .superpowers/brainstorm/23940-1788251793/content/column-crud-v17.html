@@ -281,17 +281,21 @@
              * reached for it. The label is an overlay, so layout never changes.
              */
             /*
-             * Height comes from JS, not from `align-self: stretch`. Stretching resolved against the
-             * track's `min-height: 420px` — the LANE height, which exists for the drag slot — while
-             * columns are content-height by decision, so the rail's `+` sat 78px below the bottom of
-             * every column in a strip reaching 288px past the content. It now matches the tallest
-             * column, so the affordance lives in the same band as the thing it adds to.
+             * FULL board height, deliberately — a big target for a rare action, and a strip that
+             * reads as the end of the board rather than as a fifth short column. #31 was not that
+             * the rail was tall; it was that a tall rail CENTRED its `+`, parking the glyph 78px
+             * below the bottom of every column. The glyph is pinned to the header band instead
+             * (below), which is the only part of the rail your eye is ever near.
+             *
+             * `z-index` because the hover label overhangs the last column, and every `.colm` is
+             * `z-index: 1` — without it the label painted underneath a card.
              */
             .railwrap {
                 position: relative;
                 flex: none;
-                align-self: flex-start;
+                align-self: stretch;
                 display: flex;
+                z-index: 3;
             }
             .rail {
                 width: 34px;
@@ -302,7 +306,13 @@
                 color: var(--muted);
                 cursor: pointer;
                 display: flex;
-                align-items: center;
+                /*
+                 * Top, not centre. `.chead` is `min-height: 34px`, so 9px of padding puts the 16px
+                 * glyph on the caption row's own centre line — the rail is full height for the hit
+                 * area, but the thing you aim at sits where the columns start.
+                 */
+                align-items: flex-start;
+                padding-top: 9px;
                 justify-content: center;
                 font: 700 16px/1 "Plus Jakarta Sans", system-ui, sans-serif;
                 transition:
@@ -317,10 +327,11 @@
                 background: color-mix(in srgb, var(--purple) 6%, transparent);
                 outline: none;
             }
+            /* Beside the `+`, not at the rail's mid-height — a full-height rail's centre is nowhere. */
             .raillabel {
                 position: absolute;
                 right: 38px;
-                top: 50%;
+                top: 17px;
                 translate: 0 -50%;
                 background: var(--surface);
                 border: 1px solid var(--border);
@@ -344,9 +355,10 @@
              * the control rather than pinned to a corner it does not share. v11 put it at
              * `top/right: 4px`, which straddled the border in a 34px-wide strip.
              */
+            /* Bottom now that `+` holds the top; two 22-26px controls at the same end would collide. */
             .railx {
                 position: absolute;
-                top: 10px;
+                bottom: 10px;
                 left: 50%;
                 translate: -50% 0;
                 width: 22px;
@@ -506,18 +518,12 @@
              * `land()` at ~180ms, so there was no kebab at all in between and the replacement
              * arrived as a pop 10px lower. Rule 8: overlap the windows, do not abut them.
              */
-            .overlay.handed .ckb {
-                opacity: 0;
-                /*
-                 * Instant, not `.ckb`'s inherited 130ms fade — the column's own kebab is already at
-                 * full strength on this frame, so fading this one out leaves both on screen for the
-                 * whole 130ms. Measured as a double on three consecutive samples. They are
-                 * pixel-aligned, so there is nothing for an instant swap to show.
-                 */
-                transition: none;
-            }
-            /* One frame of `none` so the column's kebab takes over at full strength, not via a fade. */
-            .colm.handoff .ckb {
+            /*
+             * One frame of `none` on everything the panel was standing in for, so the column takes
+             * over at full strength rather than fading up underneath a copy of itself.
+             */
+            .colm.handoff .ckb,
+            .colm.handoff > * {
                 transition: none;
             }
             .overlay .cards {
@@ -783,7 +789,6 @@
                         armDrag(e, id);
                     });
                 });
-                sizeRail();
                 document.getElementById("ghost").onclick = createColumn;
                 document.getElementById("railx").onclick = (e) => {
                     e.stopPropagation();
@@ -791,20 +796,6 @@
                     document.getElementById("restoreRail").hidden = false;
                 };
             }
-            /*
-             * The rail tracks the tallest column. The dragged slot is excluded because it is
-             * lane-tall on purpose — measuring it would hand the rail the very 420px the stretch
-             * was giving it, mid-drag, which is the defect wearing a different hat.
-             */
-            const RAIL_MIN_H = 120;
-            function sizeRail() {
-                const heights = [...track.querySelectorAll(".colm")]
-                    .filter((el) => !el.classList.contains("source"))
-                    .map((el) => el.offsetHeight);
-                const wrap = track.querySelector(".railwrap");
-                if (wrap) wrap.style.height = `${Math.max(RAIL_MIN_H, ...heights)}px`;
-            }
-
             /* ── reorder ─────────────────────────────────────────────────────── */
             const REORDER_MS = 160;
             /* dnd-kit's activation distance, in spirit: a click that renames must not become a drag. */
@@ -951,9 +942,16 @@
                  * position the slot had already left, and never arrived. `offsetLeft`/`offsetTop`
                  * report the SETTLED layout position and ignore transforms entirely.
                  */
-                const parentRect = el.offsetParent.getBoundingClientRect();
-                const targetLeft = parentRect.left + el.offsetLeft;
-                const targetTop = parentRect.top + el.offsetTop;
+                /*
+                 * `offsetLeft`/`offsetTop` are measured from the offsetParent's PADDING edge, but
+                 * `getBoundingClientRect()` returns its BORDER-box edge. `.board` has a 1px border,
+                 * so without `clientLeft`/`clientTop` the panel lands 1px off — invisible on its
+                 * own, and the reason the two copies of the column's text did not coincide.
+                 */
+                const parent = el.offsetParent;
+                const parentRect = parent.getBoundingClientRect();
+                const targetLeft = parentRect.left + parent.clientLeft + el.offsetLeft;
+                const targetTop = parentRect.top + parent.clientTop + el.offsetTop;
                 document.body.classList.remove("is-dragging");
                 overlay.classList.add("settling");
                 overlay.style.translate = `${targetLeft - pad}px ${targetTop - pad}px`;
@@ -968,22 +966,27 @@
                  * drop with no travel, which fires no transition at all.
                  */
                 let landed = false;
+                /*
+                 * ONE frame, everything: the slot stops being a slot, its contents and kebab come
+                 * back without a fade, and the panel is deleted. Rule 8 — the two are
+                 * interchangeable, so a swap has nothing to show.
+                 *
+                 * The previous version let the panel linger 140ms "because it is the same pixels
+                 * twice". It was not: the panel's copy sat 1px left of the column's (see the
+                 * `clientLeft` correction above) and stayed fully opaque while the column's own
+                 * contents faded 0 → 1 underneath it. Two copies of the same text 1px apart,
+                 * cross-fading for 75ms, is the doubled/smeared frame that was reported — and rule
+                 * 5 says a cross-fade is only invisible when both halves are the same pixels, which
+                 * is a condition to CHECK, not to assert in a comment.
+                 */
                 const land = () => {
                     if (landed) return;
                     landed = true;
-                    /*
-                     * All three on the same frame: the slot stops being a slot, its kebab is told
-                     * not to fade, and the panel's kebab goes. The two sit at the same coordinates
-                     * by now, so the swap has nothing to see.
-                     */
                     el.classList.add("handoff");
-                    overlay.classList.add("handed");
                     el.classList.remove("source");
                     el.style.removeProperty("min-height");
+                    overlay.remove();
                     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("handoff")));
-                    /* The panel is chrome-less and exactly on the slot by now, so it is the same
-                       pixels twice; it can linger until the contents have faded in. */
-                    setTimeout(() => overlay.remove(), 140 * SLOW());
                 };
                 overlay.addEventListener("transitionend", (e) => {
                     if (e.propertyName === "translate") land();

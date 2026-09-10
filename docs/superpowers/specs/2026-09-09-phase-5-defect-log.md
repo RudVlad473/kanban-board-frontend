@@ -77,7 +77,37 @@ Eight recur often enough to be worth stating before the table:
 | 29 | The delete confirm dimmed only the board card; the page header stayed lit and the dialog centred on the panel rather than the viewport | `.scrim` is `position: absolute` inside `.board`, so `inset: 0` resolves to the board's padding box — 1374×502 of a 1440×900 viewport | Orchestrator, computed style + rect | e2e: the scrim's rect equals the viewport's, and the modal's centre is the viewport's centre |
 | 30 | Deleting an empty column read "removes its **0 tasks** and cannot be reversed" | The count clause has a singular and a plural branch and no zero branch, and the sentence is built to assume the column has tasks at all | Orchestrator, on a screenshot | Unit: the confirm sentence for a 0-task column contains neither `0 task` nor `0 tasks` |
 | 31 | The create rail's `+` sat 78px below the bottom of every column, in a dashed strip reaching 288px past the content | `.railwrap`/`.rail` are `align-self: stretch` against a track with `min-height: 420px` — the lane height that exists for the *drag slot*. Columns are content-height by decision, so the rail was the only thing claiming the lane at rest | Orchestrator, rects: rail 34×420, columns 240×132 and 240×84 | e2e: at rest the rail's height equals the tallest column's, and its bottom is not below theirs |
+| 33 | The rail's hover label painted *underneath* the last column's card, so the one affordance that names the rail was invisible | The label overhangs the column to its left by design (`right: 38px`), but `.railwrap` had no `z-index` while every `.colm` has `z-index: 1` | User, on a screenshot | e2e: `elementsFromPoint` at the label's centre has the label first. **`elementFromPoint` cannot see it** — the label is `pointer-events: none`, so a hit test returns whatever is behind it in both the broken and the fixed build, which is how this passed a check written the obvious way |
+| 34 | The create rail was too short — it read as a fifth stunted column rather than the end of the board | **A regression introduced by #31's fix.** #31 was that a tall rail *centres* its glyph 78px below the columns; the fix removed the height instead of moving the glyph | User | e2e: the rail's height equals the track's, **and** the `+` glyph's centre is on the caption row's centre line. Asserting only the second is what let the first be thrown away |
+| 35 | A drop landed with the column's text visibly doubled/smeared for one beat | The panel was kept 140ms past landing on the stated ground that it was "the same pixels twice". It was not, twice over: `offsetLeft` is measured from the offsetParent's padding edge while `getBoundingClientRect()` is its border box, so a 1px border put the copies 1px apart; and the column's own contents faded 0 → 1 *underneath* an opaque copy, which rule 5 already says cannot be invisible | User, on a video frame | e2e: no frame has both the overlay's `.card` and the column's `.cards` above 0.05 opacity. Measured **7 frames → 0** |
 | 32 | A newly created column was a caption with nothing under it — no body, no boundary, nowhere to drop | `colHTML` emits `<div class="cards">` unconditionally and an empty one has no height and no material, so a 0-task column renders as floating text | Orchestrator, on a screenshot after create | e2e: an empty column's `.cards` has a non-zero height and a visible border |
+
+## Three assertions in this table that do not hold as written
+
+Found 2026-09-10, when a Codex pass was run over two filmstrip runs that had already been judged
+acceptable. None is a page defect; all three are defects in **the row's own assertion**, which is
+worse, because a check that cannot pass gets quietly ignored rather than fixed.
+
+- **Row 10 ("no single-frame step at the end of the settle") permanently fails, by decision.**
+  The drop's wash steps `1.62 → 2.34` in one sample at landing. That step is row **20** — the
+  slot's tint and dashes are removed with no transition, on purpose, because a border fading out
+  after the drop is motion arriving once the gesture is over. Rows 10 and 20 cannot both hold.
+  **20 wins**; row 10's assertion is narrowed to *the panel* not stepping, not the whole viewport.
+- **Row 11 ("wash after the flight is monotonic") has no tolerance, so noise fails it.** Measured
+  falls of `0.004` at +124ms and +337ms — four thousandths, against a defect that was originally a
+  dip of `0.59`. State a threshold or the row is unusable.
+- **Row 1's outside-wash limit (0.3) cannot be applied to a page-modal interaction.** The delete's
+  confirm dims the whole viewport, so once it lifts, outside wash saturates at ~72 and stays there.
+  The board's own closing motion is then unmeasurable in that series: every frame differs from
+  frame 0 by the scrim, not by the board. Capture the two halves separately or not at all.
+
+**And one thing the instrument cannot do, which reading it as if it could produced a wrong number.**
+Both metrics compare each frame to **frame 0**, and the screencast's sampling is irregular — so a
+count of flat samples is not a duration. The gap between the confirm's scrim finishing and the
+board starting to move was read off the series as "~50ms", and a re-run read it as "135ms". Neither
+is right: instrumenting the actual events gives scrim opacity 0 at **163ms** and the columns
+re-rendered at **192ms** — a **~29ms** gap. For a question of *when*, use the event timeline; the
+filmstrip answers *what it looks like*.
 
 ## What is not mechanically catchable
 
