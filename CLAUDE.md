@@ -45,6 +45,27 @@ change; the run then reports whether anything moved _outside_ it, which is the c
 missing. Phase 5's prototypes need a server first — `node scripts/serve-static.mjs
 .superpowers/brainstorm 6110` — and `.motion/` prunes itself to five runs, so it needs no cleanup.
 
+**A filmstrip you judge acceptable goes to Codex before it goes to the user.** The moment you are
+about to write "smooth", "clean", "no dip" or "nothing moved outside", launch a Codex agent on the
+artifacts you just read and wait for it. Not on a run you already think is broken — a defect you
+found needs fixing, not a second opinion. The check exists for the run that _looks_ fine, because
+that is the one nobody re-opens.
+
+```bash
+codex exec -m gpt-5.6-terra -c model_reasoning_effort="high" --sandbox danger-full-access \
+  --skip-git-repo-check --add-dir "$(git rev-parse --show-toplevel)" '<brief>' < /dev/null
+```
+
+The brief must: name the `.motion/<run>/strip.png` **and** `series.json` paths and say to read them
+rather than trust your summary; point at `scripts/filmstrip.mjs` and `docs/adr/tech/0037` so it
+knows what the metrics are blind to; point at the defect log and ask it to test rows against the
+series; state your own conclusion and instruct it to find what that conclusion missed; demand a
+_confirmed by running it_ / _reasoned about only_ label per finding; say **twice** not to modify any
+file in the repo and to experiment in `/tmp`; and require `--name codex-…` for any run of its own so
+it cannot clobber yours. Reuse the already-running server rather than letting it start a second on
+the same port. `~/.claude/TOOL_GOTCHAS.md` § codex is why every flag above is load-bearing — the
+`< /dev/null` especially, without which it hangs forever looking like it is thinking.
+
 Claude in Chrome (`mcp__claude-in-chrome__*`) is not configured here, so nothing routes to it. It
 drives your real logged-in Chrome, which Playwright's clean profile cannot; when a task genuinely
 needs that, say so rather than substituting a Playwright run.
