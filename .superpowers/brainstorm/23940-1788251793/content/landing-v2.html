@@ -1,0 +1,205 @@
+<h2>6 &middot; The landing page</h2>
+<p class="subtitle">Rendered in <strong>Inter</strong> with <strong>4px buttons</strong> &mdash; so this
+doubles as the first look at those two decisions in place. Same split canvas as the auth screen; the
+board panel plays the drag choreography on a loop.</p>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<div style="display:flex; gap:10px; align-items:center; margin:14px 0 18px">
+  <button class="mock-button" onclick="document.querySelectorAll('.ld').forEach(e=>e.classList.toggle('dark'))">Light / dark</button>
+  <span class="label">today: 369&times;160 card = 4.5% of viewport, 0 brand marks, both CTAs bare text links</span>
+</div>
+
+<style>
+.ld { --purple:#635FC7; --purple-d:#5854BE; --app:#F4F7FD; --surf:#FFFFFF; --line:#E4EBFA;
+      --line-2:#DCE3F2; --mute:#66707F; --title:#000112; --dot:rgba(99,95,199,.13);
+      font-family:"Inter", ui-sans-serif, system-ui, sans-serif;
+      font-feature-settings:"cv11" 1, "ss01" 1; }
+/*
+ * Defect 1 of 3, and the one behind two of them: this file never set `box-sizing`. `.left` is
+ * `width: 46%` PLUS 34px of padding either side, so it rendered 69px wider than its own 46% and
+ * covered the first 69px of the right pane's dotted backdrop — measured 2026-09-10, pane overlap
+ * 69px. The same omission made every mock card 140px wide inside a 120px column.
+ */
+.ld, .ld *, .ld *::before, .ld *::after { box-sizing:border-box; }
+
+/*
+ * Defect 2: the board was 560px wide inside a 486px pane, so the fourth column was chopped at the
+ * frame's own border — 74px of it, at full opacity, with the 80px fade covering less than half the
+ * cut. The pitch and the column width are variables now because the flyer's travel is one of them:
+ * a hard-coded 136px translate lands 20px wide of the target column the moment either changes.
+ */
+.ld { --colw:132px; --pitch:140px; }
+
+.ld.dark { --app:#20212C; --surf:#2B2C37; --line:#3E3F4E; --line-2:#494C5E; --mute:#828FA3;
+           --title:#FFFFFF; --dot:rgba(122,118,216,.18); }
+
+.frame { position:relative; width:100%; max-width:900px; margin-inline:auto; aspect-ratio:16/10;
+         border-radius:10px; overflow:hidden; border:1px solid var(--line); background:var(--app);
+         margin-bottom:8px; }
+.cap { font-size:12px; color:#666; line-height:1.55; margin-bottom:24px; max-width:900px;
+       margin-inline:auto; }
+
+.left { position:absolute; left:0; top:0; bottom:0; width:46%; background:var(--surf);
+        padding:26px 34px; display:flex; flex-direction:column; border-right:1px solid var(--line); }
+.brand { display:flex; align-items:center; gap:9px; }
+.logo { width:22px; height:22px; border-radius:5px; background:var(--purple); position:relative; flex:none; }
+.logo::before, .logo::after { content:""; position:absolute; background:#fff; border-radius:1px; }
+.logo::before { left:5px; top:5px; width:4px; height:12px; }
+.logo::after  { left:12px; top:5px; width:4px; height:7px; }
+.brandname { font-size:14px; font-weight:700; color:var(--title); letter-spacing:-.3px; }
+
+.pitch { margin:auto 0; }
+.h1 { font-size:27px; font-weight:800; color:var(--title); letter-spacing:-.9px; line-height:1.14; }
+.h1 em { font-style:normal; color:var(--purple); }
+.sub { font-size:12.5px; color:var(--mute); line-height:1.6; margin-top:11px; max-width:290px; }
+.ctas { display:flex; gap:9px; margin-top:22px; align-items:center; }
+.btn { height:40px; padding:0 18px; border:none; border-radius:4px; background:var(--purple);
+       color:#fff; font:inherit; font-size:12.5px; font-weight:600; cursor:pointer;
+       display:inline-flex; align-items:center; transition:background-color 140ms ease; }
+.btn:hover { background:var(--purple-d); }
+.btn.sec { background:transparent; color:var(--title); border:1px solid var(--line-2); }
+.btn.sec:hover { background:var(--app); }
+.tlink { font-size:12px; color:var(--mute); }
+.tlink a { color:var(--purple); font-weight:600; text-decoration:none; }
+.tlink a:hover { text-decoration:underline; }
+.foot { display:flex; align-items:center; gap:9px; font-size:11px; color:var(--mute); }
+.toggle { width:34px; height:19px; border-radius:10px; background:var(--line-2); position:relative; }
+.toggle::after { content:""; position:absolute; left:2px; top:2px; width:15px; height:15px;
+                 border-radius:50%; background:var(--surf); }
+
+.right { position:absolute; right:0; top:0; bottom:0; left:46%; overflow:hidden; }
+.rgrid { position:absolute; inset:0;
+  background-image:radial-gradient(var(--dot) 1px, transparent 1px); background-size:16px 16px; }
+.blurb { position:absolute; left:32px; top:15px; font-size:9.5px; font-weight:700;
+         letter-spacing:1.8px; text-transform:uppercase; color:var(--mute); }
+.bwrap { position:absolute; left:32px; top:40px; }
+.mcol { position:absolute; top:0; width:var(--colw); }
+.mcol .mh { font-size:8.5px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase;
+            color:var(--mute); margin-bottom:8px; }
+.mk { background:var(--surf); border:1px solid var(--line); border-radius:8px; padding:8px 9px;
+      font-size:10.5px; font-weight:600; color:var(--title); line-height:13px; margin-bottom:7px; }
+.mk .pb { height:3px; border-radius:2px; background:var(--line); margin-top:6px; overflow:hidden; }
+.mk .pb i { display:block; height:100%; background:var(--purple); border-radius:2px; }
+.slotg { border:1px dashed var(--line); border-radius:8px; height:40px; margin-bottom:7px; }
+.flyer { position:absolute; left:0; top:18px; width:var(--colw); z-index:4;
+         animation:fly 7s cubic-bezier(.2,0,0,1) infinite; }
+@keyframes fly {
+  0%,14%   { transform:translate(0,0) scale(1); box-shadow:0 1px 2px rgba(16,18,32,.04); }
+  20%      { transform:translate(0,0) scale(1.03); box-shadow:0 10px 24px rgba(16,18,32,.16); }
+  40%      { transform:translate(var(--pitch),0) scale(1.03); box-shadow:0 10px 24px rgba(16,18,32,.16); }
+  46%,86%  { transform:translate(var(--pitch),0) scale(1); box-shadow:0 1px 2px rgba(16,18,32,.04); }
+  94%,100% { transform:translate(0,0) scale(1); box-shadow:0 1px 2px rgba(16,18,32,.04); }
+}
+.gap1 { animation:gap1 7s cubic-bezier(.2,0,0,1) infinite; }
+@keyframes gap1 { 0%,18% { transform:translateY(0);} 30%,88% { transform:translateY(-47px);} 100% { transform:translateY(0);} }
+.gap2 { animation:gap2 7s cubic-bezier(.2,0,0,1) infinite; }
+@keyframes gap2 { 0%,24% { transform:translateY(0);} 36%,88% { transform:translateY(47px);} 100% { transform:translateY(0);} }
+
+.ld-note { margin-top:6px; padding:14px 16px; border-left:3px solid #635FC7;
+  background:rgba(99,95,199,.06); border-radius:0 8px 8px 0; font-size:13px; line-height:1.6;
+  max-width:900px; margin-inline:auto; }
+</style>
+
+<script>
+function board(){ return `
+    <div class="rgrid"></div>
+    <div class="blurb">Your work, in motion</div>
+    <div class="bwrap">
+      <div class="mcol" style="left:0"><div class="mh">Todo</div>
+        <div class="mk flyer">Build settings UI<div class="pb"><i style="width:66%"></i></div></div>
+        <div class="slotg"></div>
+        <div class="mk gap1">Research pricing<div class="pb"><i style="width:20%"></i></div></div>
+        <div class="mk gap1">Audit empty states<div class="pb"><i style="width:0%"></i></div></div>
+      </div>
+      <div class="mcol" style="left:calc(var(--pitch) * 1)"><div class="mh">Doing</div>
+        <div class="mk gap2">Design settings<div class="pb"><i style="width:50%"></i></div></div>
+        <div class="mk gap2">Vendor shortlist<div class="pb"><i style="width:75%"></i></div></div>
+      </div>
+      <div class="mcol" style="left:calc(var(--pitch) * 2)"><div class="mh">Done</div>
+        <div class="mk">Add account auth<div class="pb"><i style="width:100%"></i></div></div>
+        <div class="mk">Billing page<div class="pb"><i style="width:100%"></i></div></div>
+      </div>
+    </div>
+`; }
+</script>
+
+<div class="label" style="margin-bottom:8px">Variant 1 &mdash; two equal doors</div>
+<div class="ld frame" id="f1">
+  <div class="left">
+    <div class="brand"><span class="logo"></span><span class="brandname">Kanban</span></div>
+    <div class="pitch">
+      <div class="h1">Every task, exactly<br>where you left it.</div>
+      <div class="sub">Boards, columns and tasks that move the way you expect &mdash; and stay put when
+        you come back.</div>
+      <div class="ctas">
+        <button class="btn">Create account</button>
+        <button class="btn sec">Sign in</button>
+      </div>
+    </div>
+    <div class="foot"><span class="toggle"></span>Light</div>
+  </div>
+  <div class="right" data-board></div>
+</div>
+<div class="cap"><strong>Both actions are real buttons of equal weight</strong>, primary and secondary,
+which is the honest shape when you genuinely do not know whether a visitor has an account. Costs a
+slightly busier first impression.</div>
+
+<div class="label" style="margin-bottom:8px">Variant 2 &mdash; one door, one link</div>
+<div class="ld frame" id="f2">
+  <div class="left">
+    <div class="brand"><span class="logo"></span><span class="brandname">Kanban</span></div>
+    <div class="pitch">
+      <div class="h1">Every task, exactly<br>where you left it.</div>
+      <div class="sub">Boards, columns and tasks that move the way you expect &mdash; and stay put when
+        you come back.</div>
+      <div class="ctas">
+        <button class="btn">Get started</button>
+        <span class="tlink">or <a href="#" onclick="return false">sign in</a></span>
+      </div>
+    </div>
+    <div class="foot"><span class="toggle"></span>Light</div>
+  </div>
+  <div class="right" data-board></div>
+</div>
+<div class="cap"><strong>One clear primary action</strong>, with sign-in demoted to a link. Calmer and
+more current, and it matches how the auth screens already cross-link to each other. Slightly worse for
+returning users, who are the majority on a tool like this.</div>
+
+<div class="ld-note">
+  <strong>What this replaces.</strong> Today: a 369&times;160 card holding an <code>h1</code>, one
+  sentence, and two bare anchors with <code>background: rgba(0,0,0,0)</code> and
+  <code>border-width: 0px</code> &mdash; 4.5% of a 1440&times;900 viewport, and no brand mark anywhere
+  in the DOM. The headline copy above is a proposal, not a decision: the Phase 1 UI-SPEC's Copywriting
+  Contract covers auth form strings but says nothing about landing copy, so this is another gap rather
+  than a departure.
+  <br><br>
+  <strong>Below the md breakpoint</strong> the split collapses: the board panel is dropped entirely
+  rather than stacked under the pitch, since a cropped board at 375px wide reads as a rendering bug.
+  Mobile gets the brand lockup, headline, sub-copy and the CTAs.
+</div>
+
+<h3 style="margin-top:24px">Which landing shape?</h3>
+<div class="options">
+  <div class="option" data-choice="two" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>1 &mdash; two equal doors</h3>
+      <p>Create account + Sign in as primary/secondary buttons. Best for returning users.</p></div>
+  </div>
+  <div class="option" data-choice="one" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>2 &mdash; one door, one link</h3>
+      <p>Get started primary, sign in as a link. Calmer, more current.</p></div>
+  </div>
+  <div class="option" data-choice="delete" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Still delete it</h3>
+      <p>Redirect <code>/</code> to <code>/login</code> and let the auth screen carry the split canvas alone.</p></div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('[data-board]').forEach(el => { el.innerHTML = board(); });
+</script>

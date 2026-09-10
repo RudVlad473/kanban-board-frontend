@@ -100,7 +100,7 @@
 <nav id="rail">
   <div id="railhead">
     <h1>Phase 5 — sign-off</h1>
-    <p>The 26 adopted prototypes, in ledger order.</p>
+    <p>The 28 adopted prototypes, in ledger order.</p>
     <div id="prog"><i></i></div>
     <div id="progtxt"></div>
   </div>
@@ -234,15 +234,21 @@ const ROWS = [
     watch:["Tick a row that has already been moved once — a stable tiebreak on DOM index threw an unrelated row the length of the list.","Delete the row directly above the one you are editing.","Leaving sequences contents then box; entering does the box then contents."] },
 
   { grp:"Landing, auth & loading" },
-  { id:"A23", name:"Auth — landing, sign in, sign up", file:S1+"auth-v4.html",
-    decides:["The only surfaces with no mock behind them — this is the design, not a translation.","4px buttons and the right-edge fade."],
-    watch:["These screens still need their own UI-SPEC; the landing copy is a placeholder.","Tab through the whole form — focus is a 2px border already present at rest."] },
+  { id:"A23", name:"Auth form — opens on sign-up", file:S1+"form-v2.html",
+    decides:["<b>Sign-up is the default screen</b>; the sign-in variant is the toggle (changed 2026-09-10).","The alt line under the submit is part of the swap — it is the only route to the other screen.","Two fields is the whole contract; everything here is craft on what exists."],
+    watch:["Toggle to sign-in and back — the heading, submit label, alt line, name field, meter, <code>autocomplete</code> and the password hint must all follow.","Type a bad email, then press submit while pending — the label must say <i>Creating…</i>, not <i>Signing in…</i>.","Tab through the whole form: focus is a 2px border already present at rest."] },
+  { id:"A23b", name:"Which screen the root leads to", file:S1+"auth-v4.html",
+    decides:["The root leads with <b>Create Account</b>, and <code>/</code> resolves to <code>/register</code>.","This supersedes this prototype's own recorded option — <i>“delete it, redirect / to /login”</i>."],
+    watch:["The panes here are a comparison board, not a live form — judge the shape, not the copy.","These screens still need their own UI-SPEC; the landing copy is a placeholder."] },
   { id:"A24", name:"Form controls", file:S1+"controls-v3.html",
     decides:["Focus is one 2px border that exists at rest; only its colour changes.","Caps-lock and error treatments; the five-way font switcher lives here."],
     watch:["No ring, no halo — the rejected candidate read as three concentric edges.","Type a bad email and watch the error arrive without the field changing size."] },
   { id:"A25", name:"Password rules", file:S1+"pwrules-v2.html",
     decides:["A chips row rather than a vertical checklist, which cost +42px.","The strength meter was withdrawn as decoration."],
     watch:["The row must not grow the form as rules pass and fail."] },
+  { id:"A27", name:"Landing page", file:S1+"landing-v2.html",
+    decides:["Three columns that <b>fit inside the backdrop</b> — the fourth under a fade read as cropped.","Every mock card stays single-line: the gap shift is 47px, which is one card's height.","The flyer's travel is <code>var(--pitch)</code>, never a literal."],
+    watch:["Watch a full 7s loop: no card may sit on top of another as the gap opens and closes.","The dotted backdrop must reach the left pane's edge — it was covered by 69px of it.","Both CTAs are real buttons of equal weight, Create account first."] },
   { id:"A26", name:"Skeleton → content handoff", file:S1+"handoff-v4.html",
     decides:["Stagger 0ms, skeleton out 70ms, content in 110ms, whole board settled 180ms.","Overlap is impossible by construction — content cannot start before its own skeleton finishes.","No rising translateY on entry."],
     watch:["No column may show skeleton and content at once — the rejected whole-layer crossfade scored 1.00 on exactly that.","The rejected candidate took 880ms. Judge whether 180ms reads as arriving or as a cut.","<code>load2-v2</code> is the companion for the quieter drop zone."] },

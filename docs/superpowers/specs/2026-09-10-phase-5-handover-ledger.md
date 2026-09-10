@@ -63,9 +63,11 @@ open to do the work.
 | A20 | Task create | `S1/task-create-v4` | `add-task-modal.tsx` | **signed off** |
 | A21 | Task delete — collapse and restore | `S1/task-delete-v1` | `delete-task-confirm.tsx`, `task-card.tsx` | **signed off** (closes G6) |
 | A22 | Subtask create · rename · delete | `S1/subtask-crud-v2` | `subtask-checklist-row.tsx`, `subtask-editor-row.tsx` | **signed off** (closes G5) |
-| A23 | Auth — landing, sign in, sign up | `S1/auth-v4` | `auth-card.tsx`, `sign-in-form.tsx`, `sign-up-form.tsx` | adopted |
+| A23 | Auth — the form itself | `S1/form-v2` | `auth-card.tsx`, `sign-in-form.tsx`, `sign-up-form.tsx` | adopted — **opens on sign-up**, see W5 |
+| A23b | Auth — which screen the root leads to | `S1/auth-v4` | `app/page.tsx`, `proxy.ts` | adopted |
 | A24 | Form controls — focus, caps lock, button shape | `S1/controls-v3` | `text-field.tsx`, `textarea.tsx` | adopted |
 | A25 | Password rules | `S1/pwrules-v2` | `sign-up-form.tsx` | adopted |
+| A27 | Landing page | `S1/landing-v2` | `app/page.tsx` | adopted — three geometry defects fixed 2026-09-10 |
 | A26 | Skeleton → content handoff, per column | `S1/load2-v2`, `S1/handoff-v4` | `board-view-skeleton.tsx`, `skeleton-row.tsx`, `board-list-skeleton.tsx` | adopted |
 
 **Rejected outright, do not resurrect:** parallax (`S1/parallax*` — no causal grounding), the
@@ -77,7 +79,74 @@ indeterminate "wire" under optimistic state, and the password strength meter.
 `column-reorder` v1–v3 (folded into A13), `optimistic` v1–v4, `buttons` v1–v3, `auth` v1–v3,
 `sidebar-boards` v1–v3, `handoff` v1–v3, `toast` v1–v2, `modal-motion` v1–v3, `task-create` v1–v3,
 `board-switch` v1–v2, `drag` v1–v2, `material` v1, `subtask-crud` v1, `board-edit` v1, `borders` v1,
-`controls` v1–v2, `pwrules` v1, `load2` v1.
+`controls` v1–v2, `pwrules` v1, `load2` v1, `form` v1, `landing` v1.
+
+---
+
+## W. The build order
+
+**Read this before planning a wave.** Table A is organised by *surface*, which is how the design
+was reviewed and is the wrong order to build in: it puts the task-create modal beside the button
+treatment that modal is made of. The order below is by *dependency*, and it exists because the
+duplication in table A is real — **most rows do not own the components they show.**
+
+### Owns vs borrows — why table A looks like it repeats itself
+
+| A row shows a… | Owned by | Everyone else |
+|---|---|---|
+| Button, in any state | **A2** | A13, A14, A15, A17, A20, A21, A22, A23, A27 all render one and decide nothing about it |
+| Modal shell and its motion | **A17** | A14 (confirm), A20 (create), A21 (confirm) — each owns only what happens *after* submit |
+| Toast | **A18** (material) + **A19** (motion) | Every failing mutation raises one; none of them decides how it looks or moves |
+| Text field / focus ring | **A24** | A13, A14, A15, A20, A22, A23 all put text in one |
+| Card material | **A1** | A5, A6, A10, A21 all animate a card whose material is A1's |
+| A view transition | **A7**, **A10**, **A14** | Three separate uses of one API; the *rules* (C15–C17) are shared |
+
+So a row like **A20 Task create** owns exactly one thing — the submit → card-arrival on one frame
+— and borrows the button, the modal, the text field and the toast. Building A20 before A2 and A17
+means building all four, badly, and then rebuilding them.
+
+### The waves
+
+Each wave is buildable once its `depends on` is green. `W5` is independent of the board entirely
+and can run beside `W2`–`W4`.
+
+| Wave | Build | Satisfies | Depends on |
+|---|---|---|---|
+| **W0** | **Foundation.** Manrope self-hosted + all eight `typography.tokens.json` entries; the radius scale; per-theme state-border tokens; the three easing tokens as CSS custom properties in one place; the reduced-motion utility every later wave uses | B1–B8, A3, A4 | — |
+| **W1.1** | `button`, `icon-button` — press, pending, disabled, 4px | A2 | W0 |
+| **W1.2** | `text-field`, `textarea`, `checkbox`, `switch` — the 2px resting focus border, caps lock, error | A24 | W0 |
+| **W1.3** | `modal` — enter/exit, the three-part column, `inset-0` centring | A17 | W0, W1.1 |
+| **W1.4** | `toast` — stripe geometry, two exits, the queue window | A18, A19 | W0 |
+| **W1.5** | `menu`, `dropdown` — 70/120 opacity only | A16 | W0 |
+| **W1.6** | `skeleton-row` — real card material, one sweep per column | part of A26 | W0 |
+| **W2.1** | `task-card` material — hairline, density, hover rail | A1 | W0 |
+| **W2.2** | Drag choreography — overlay, lift, slot collapse, drop settle | A5 | W2.1 |
+| **W2.3** | Optimistic state — tint, settle, rollback travel | A6 | W2.1 |
+| **W3.1** | Sidebar collapse / expand | A11 | W0, W1.1 |
+| **W3.2** | Dashboard header — disabled trio, title well | A12, A9 | W0, W1.1 |
+| **W3.3** | Skeleton → content handoff | A26 | W1.6, W3.2 |
+| **W4.1** | Sidebar board list + board create | A15 | W1.1, W1.3, W3.1 |
+| **W4.2** | Board rename + delete | A14 | W4.1, W1.5, W1.4 |
+| **W4.3** | Column CRUD — create, rename, delete, reorder | A13 | W1.1, W1.3, W1.5, W2.2 |
+| **W4.4** | Task create | A20 | W1.1, W1.2, W1.3, W1.4 |
+| **W4.5** | Task delete — collapse and restore | A21 | W1.3, W1.4, W2.1 |
+| **W4.6** | Task panel — open, and panel A → panel B | A10 | W2.1, W1.2 |
+| **W4.7** | Subtask create, rename, delete | A22 | W4.6 |
+| **W4.8** | Card → panel morph | A7 | W4.6 |
+| **W4.9** | Board → board switch | A8 | W3.2, W3.3, **and the §4c reconciliation** |
+| **W5.1** | Auth form — **opens on sign-up** — and the password rules | A23, A25 | W1.1, W1.2 |
+| **W5.2** | Landing page | A27, A23b | W1.1 |
+| **W6** | Cross-cutting, last: reduced-motion variants per surface, the overflow affordance, the theme switch | G1, G4, G7 | every wave it varies |
+
+**W0 is a wave on its own for one reason: it rewrites every visual baseline in the app.** Doing it
+first means one re-record; doing it anywhere else means re-recording after each wave that lands
+before it. Run `pnpm build-storybook` and then `CI=1 pnpm test:visual --update-snapshots` once, at
+the end of W0 — off-CI the comparison is a silent no-op (ADR tech/0008).
+
+**Three components have no ledger row at all and are in W1.2 by inheritance:** `checkbox`, `switch`
+and `skeleton-row` are drawn by prototypes that were reviewed for something else. They inherit A24's
+focus rule and A1's material; if that is not enough, they need a prototype, not an invention at
+build time.
 
 ---
 
@@ -168,6 +237,11 @@ existing test where one exists, and the assertion to write where one does not.
 | C47 | all | A spinner needs a **deferred threshold *and* a minimum-display floor** — a threshold alone moves the flash | At exactly 400ms of server time the bar showed 3 frames peaking at opacity 0.94 |
 | C48 | all | `height` cannot interpolate from `auto`: the start value must be seeded inline, which commits you to setting the end value inline too | An inline value outranks any class |
 | C49 | all | A reduced-motion block must **repeat the full selector** or it loses on specificity to `.animating.entering` | Defect log #80 — masked by a rig's own `body.force-reduced` |
+| C51 | A23b | **The root leads with Create Account, and `/` resolves to `/register`.** This supersedes `auth-v4`'s own recorded option — *"delete it, redirect `/` to `/login`"* — decided by the user 2026-09-10 | `app/page.tsx` still offers Sign In first; `e2e/auth.e2e.spec.ts` is where the redirect is pinned |
+| C52 | A23 | The auth form **opens on sign-up**; the sign-in variant is the toggle. The alt line under the submit is part of the swap, since it is the only route to the other screen | `form-v2` round-trips both ways: heading, submit label, alt line, display-name field, meter, `autocomplete` and the password hint all follow |
+| C53 | A27 | The landing board panel is **three columns that fit inside the backdrop**, not four with the fourth under a fade. A column chopped at the frame's own border reads as broken, which is what was reported | Board overflow ≤ 0 against the right pane |
+| C54 | A27 | Every mock card stays **single-line**. The gap-open and gap-close shifts are a hard-coded 47px, which is one card's height — a card that wraps makes the flyer land on top of its neighbour | Zero cards over 41px tall, and zero overlapping pairs across 11 samples of the 7s loop |
+| C55 | A27 | The flyer's travel is `var(--pitch)`, never a literal | A hard-coded 136px landed 20px wide of the target column the moment the column width changed |
 | C50 | all | Read `getAnimations()` **inside** the rAF that adds the class, never before it | Defect log #73: read early it returns `[]`, the completion callback fires immediately, and followers are stranded |
 
 ---

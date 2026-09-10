@@ -365,6 +365,13 @@ to keep the header part of the same gesture as the columns.
 
 ## Landing and auth
 
+> **Amended 2026-09-10, by the user.** Two changes: the root leads with **Create Account** and
+> `/` resolves to `/register`, superseding this section's recorded *"redirect `/` to `/login`"*;
+> and the auth form **opens on sign-up**, with sign-in as the toggle. The landing prototype had
+> three geometry defects — the left pane covered 69px of the backdrop, the board ran 74px past it,
+> and the flyer was 20px wider than its column — all fixed in `landing-v2`. Rows C51–C55 of
+> `2026-09-10-phase-5-handover-ledger.md`.
+
 These are the only surfaces with **no mock behind them** — the Frontend Mentor design has no auth
 screens, so the Phase 1 UI-SPEC specified them from tokens alone ("the auth card is the sole focal
 point — everything else deliberately quiet"). With nothing to be quiet around, that produced a
