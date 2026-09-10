@@ -854,7 +854,7 @@ nor the mocks ever covered.
 | | Gap | Status |
 |---|---|---|
 | **G1** | Reduced-motion variants, every animation | **open — largest** |
-| **G2** | Modal enter / exit | **closed 2026-09-10** — `modal-motion-v1.html` |
+| **G2** | Modal enter / exit | **closed 2026-09-10** — `modal-motion-v1.html`; one requirement (the centring wrapper) is **open**, row 58 |
 | **G3** | Toast enter / exit motion | open |
 | **G4** | Overflow affordance, columns and board list | open |
 | **G5** | Subtask check · task edit · subtask CRUD | **narrowed 2026-09-09** — rename and delete only |
@@ -884,12 +884,18 @@ two surfaces is invisible in it.
 
   Three things it settles, and all three are requirements on the implementation, not preferences:
 
-  1. **`translate` is already occupied.** `modal.tsx` centres with `-translate-1/2`, so the
-     prototypes' `translate: 0 8px` replaces the centring instead of offsetting it — measured, the
-     popup flew **228px** diagonally. Both prototypes are immune only because they centre with grid
-     `place-items: center`. `Modal.Content` needs a `position: fixed; inset: 0; display: grid;
-     place-items: center; pointer-events: none` wrapper inside the portal, with the popup's own
-     `top/left/-translate-1/2` removed (row 55).
+  1. **`translate` is already occupied** — settled. `modal.tsx` centres with `-translate-1/2`, so
+     the prototypes' `translate: 0 8px` replaces the centring instead of offsetting it: measured,
+     the popup flew **228px** diagonally. Both prototypes are immune only because they centre with
+     grid `place-items: center` (row 55).
+
+     **How to free it is NOT settled, and this is the one part of G2 that is still open.** The
+     recommended grid-centring wrapper breaks Base UI's focus trap: its focus guards are siblings
+     of the popup inside the portal, so a wrapper between them puts the guards outside and the
+     popup inside. Confirmed on the real component — Tab from Close escaped the dialog (row 58).
+     The fallback that needs no structural change is `translate: -50% calc(-50% + 8px)`, which
+     works and costs the coupling row 55 objects to. **Resolve this before implementing**, and
+     resolve it in real JSX with a Tab-containment assertion, not by injecting DOM.
   2. **The popup is a three-part column, not one scroll region.** Today everything is inside a
      single `overflow-y-auto` div, so a long form scrolls away its title *and* its submit button —
      confirmed on the `LongContent` story. The close control was deliberately made a sibling of the

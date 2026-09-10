@@ -7,6 +7,25 @@ Phase 5's prototypes are plain CSS with global class names (`.source`, `.opening
 live so they do not collide", and the obvious framings — a Vite plugin, CSS Modules — are the wrong
 shape for what actually went wrong in the prototypes.
 
+## What this does NOT govern: attributes a library owns
+
+Added 2026-09-10, after an audit read G2's modal as violating this ADR.
+
+Base UI's `Dialog` sets `data-open`, `data-closed`, `data-starting-style` and `data-ending-style`
+itself, and they overlap by design — opening carries `data-open` **and** `data-starting-style` at
+once. Read literally, that is the shape this ADR forbids.
+
+It is not a violation, because **this ADR is about the state we author.** The exclusivity rule
+exists so that two states we invented cannot both be true on one property and get settled by sheet
+order. A library's attributes are not ours to collapse into one: they are its public animation
+contract, they are already mutually consistent, and reproducing them under a `data-state` of our
+own would mean mirroring a state machine we do not control — which is a worse failure than the one
+being avoided.
+
+**The rule where a library owns the state: style its attributes directly and do not add ours
+alongside.** One owner per element. If our own motion state is genuinely needed on the same
+element, that is the signal the motion belongs on a wrapper we own instead.
+
 ## Decision Drivers
 
 - **This is Next 16.3, not Vite.** No bundler plugin is in question: Next ships CSS Modules with

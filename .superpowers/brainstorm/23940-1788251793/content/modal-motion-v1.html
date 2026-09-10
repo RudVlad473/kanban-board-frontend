@@ -166,10 +166,20 @@ body { margin: 0; background: var(--tint); color: var(--ink);
 }
 .popup[data-starting-style] { opacity: 0; translate: 0 8px; scale: .985; }
 
-/* Exit: shorter, and no position. `translate` is simply not in the list. */
+/*
+ * Exit: shorter than the enter, no position, and ONE DURATION ACROSS BOTH
+ * ELEMENTS.
+ *
+ * The first version ran the popup's opacity at 90ms and the scrim's at 120ms,
+ * on the reasoning that the popup should clear first. Measured, that is rubric
+ * check 9's failure exactly: at +161ms the popup was at 0 while the backdrop
+ * was still 0.167, so the last beat of every close was an empty grey screen
+ * with nothing on it. Two fades retiring one gesture have to share a clock —
+ * the same finding as #40 and #51, arriving for the third time.
+ */
 .popup[data-closed] {
   transition:
-    opacity calc(90ms * var(--slow)) linear,
+    opacity calc(120ms * var(--slow)) linear,
     scale calc(120ms * var(--slow)) var(--e);
 }
 .popup[data-ending-style] { opacity: 0; scale: .985; }
@@ -194,19 +204,19 @@ body { margin: 0; background: var(--tint); color: var(--ink);
   .popup {
     transition: opacity calc(100ms * var(--slow)) linear;
   }
-  .popup[data-closed] { transition: opacity calc(80ms * var(--slow)) linear; }
+  .popup[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
   .popup[data-starting-style],
   .popup[data-ending-style] { opacity: 0; translate: none; scale: none; }
   .backdrop { transition: opacity calc(100ms * var(--slow)) linear; }
-  .backdrop[data-closed] { transition: opacity calc(80ms * var(--slow)) linear; }
+  .backdrop[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
 }
 /* The rig's checkbox forces the same rules without touching OS settings. */
 body.force-reduced .popup { transition: opacity calc(100ms * var(--slow)) linear; }
-body.force-reduced .popup[data-closed] { transition: opacity calc(80ms * var(--slow)) linear; }
+body.force-reduced .popup[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
 body.force-reduced .popup[data-starting-style],
 body.force-reduced .popup[data-ending-style] { opacity: 0; translate: none; scale: none; }
 body.force-reduced .backdrop { transition: opacity calc(100ms * var(--slow)) linear; }
-body.force-reduced .backdrop[data-closed] { transition: opacity calc(80ms * var(--slow)) linear; }
+body.force-reduced .backdrop[data-closed] { transition: opacity calc(90ms * var(--slow)) linear; }
 
 /* ------------------------------------------------------------- the content */
 .mtitle { font: 700 18px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 10px; }
