@@ -171,7 +171,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
 .st i svg { width: 9px; height: 9px; display: block; }
 .st i path { stroke: #fff; stroke-width: 2.4; fill: none; stroke-linecap: round;
   stroke-linejoin: round; stroke-dasharray: 14; stroke-dashoffset: 14;
-  transition: stroke-dashoffset .22s var(--e); }
+  transition: stroke-dashoffset calc(220ms * var(--slow)) var(--e); }
 .st i.on { background: var(--purple); border-color: var(--purple); }
 .st i.on path { stroke-dashoffset: 0; }
 
@@ -207,30 +207,65 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  * cannot DRAW across the letters, which is the gesture `task-open-v17` chose
  * deliberately (a line arriving left to right, never a transform on text).
  *
- * A background gradient keeps both. `box-decoration-break: clone` gives every
- * line fragment of an INLINE box its own background area, so each line gets its
- * own line, each drawing from its own left edge; `background-size` animates.
- * The label therefore has to be genuinely inline, which is why it now sits in a
- * wrapper: a flex child is blockified, and a blockified box has one fragment.
+ * A background gradient keeps both. An INLINE box's background is laid out
+ * across all of its line fragments and `background-size` animates, so one
+ * animation can draw one line across every row of the label. The label
+ * therefore has to be genuinely inline, which is why it sits in a wrapper: a
+ * flex child is blockified, and a blockified box has a single fragment with
+ * nothing to slice.
  */
-.stlabwrap { flex: 1 1 auto; min-width: 0; }
-.stlab { display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;
-  border-radius: 3px; padding: 2px 2px; margin: 0 -2px;
+/*
+ * THE HOVER FIELD LIVES ON THE WRAPPER, THE STRIKE ON THE INLINE LABEL.
+ *
+ * v2's first cut put both on the inline label, so the field background and its
+ * 1px inset ring were painted PER LINE FRAGMENT. Two fragments 15px apart, each
+ * 20px tall after its own 2px of vertical padding, overlap by 5px — so a
+ * wrapped label hovered as two bordered boxes crossing each other.
+ *
+ * They are different kinds of thing and they need different boxes. "You can
+ * type here" is a statement about the field, which is ONE rectangle; the strike
+ * is a statement about the text, which is as many rectangles as there are
+ * lines. Splitting them across the wrapper and the label is what lets each be
+ * the shape it actually is.
+ */
+.stlabwrap { flex: 1 1 auto; min-width: 0;
+  border-radius: 3px; padding: 2px 4px; margin: -2px -4px;
+  transition: background-color .13s, box-shadow .13s; }
+.st:hover .stlabwrap { background-color: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+.st.editing .stlabwrap { background-color: #fff; box-shadow: none; }
+/*
+ * `slice`, NOT `clone` — and this is what makes the draw sequential.
+ *
+ * With `clone`, each line fragment gets its own copy of the background box, so
+ * one `background-size: 0% -> 100%` animation fills EVERY line at once: three
+ * pens drawing in parallel. With `slice` (the default, restored deliberately)
+ * the fragments are treated as one unbroken strip that is then cut across the
+ * lines, so the same single animation fills the strip left to right — which is
+ * line 1, then line 2, then line 3, one pen, in reading order.
+ *
+ * It also costs nothing to say: the vertical `background-position` still
+ * resolves per fragment, so the rule lands on the glyphs of every line.
+ *
+ * The consequence for the `fade` variant below is that it cannot do this at
+ * all: `text-decoration-color` has one value for the whole element, so it
+ * arrives on every line simultaneously however it is timed.
+ */
+.stlab { display: inline;
+  padding: 0; margin: 0;
   cursor: text;
   /*
-   * Horizontal padding is kept to 2px because `box-decoration-break: clone`
-   * gives it to EVERY line fragment, so each extra pixel is an extra pixel of
-   * strike-through hanging past the last letter of every wrapped line. A real
-   * `text-decoration` stops at the last glyph; a background cannot, and the
-   * trailing space at a soft wrap is inside the fragment box either way. 2px is
-   * the point where the hover field still reads as a field and the overhang
-   * stops being the thing you look at.
+   * No padding at all on the label. Any horizontal padding here is extra
+   * strike-through hanging past the last letter of a wrapped line, and the
+   * field's own breathing room now comes from the wrapper, which is one box and
+   * can afford it. The trailing space at a soft wrap is still inside the line
+   * box — measured at 6px before, ~4px of it the space itself — and no
+   * mechanism avoids that.
    */
   background-image: linear-gradient(currentColor, currentColor);
   background-repeat: no-repeat;
   background-size: 0% 1.5px;
   background-position: 0 58%;
-  transition: color .22s, background-size .28s var(--e), box-shadow .13s, outline-color .13s;
+  transition: color .22s, background-size calc(280ms * var(--slow)) var(--e), box-shadow .13s, outline-color .13s;
   outline: 2px solid transparent; outline-offset: 1px; }
 .st.on .stlab { color: #9AA3B2; }
 .st.on .stlab { background-size: 100% 1.5px; }
@@ -263,7 +298,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
   text-decoration-line: line-through;
   text-decoration-thickness: 1.5px;
   text-decoration-color: transparent;
-  transition: color .22s, text-decoration-color .28s var(--e),
+  transition: color .22s, text-decoration-color calc(280ms * var(--slow)) var(--e),
               box-shadow .13s, outline-color .13s; }
 .strike-fade .st.on .stlab { text-decoration-color: currentColor; }
 .strike-fade .st.editing .stlab {
@@ -278,9 +313,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
  * this panel's title and description already say "you can type here". One
  * hover, one meaning; the row's right edge belongs to the ✕ alone.
  */
-.st:hover .stlab { box-shadow: inset 0 0 0 1px #E4EBFA; background-color: #fff; }
-.stlab:focus { background-color: #fff; outline-color: var(--purple);
-  box-shadow: none; cursor: text; }
+.stlab:focus { outline-color: var(--purple); cursor: text; }
 
 /*
  * Editing suppresses the strike-through's own transition rather than the line.
@@ -395,7 +428,7 @@ body { margin: 0; background: #F4F7FD; color: var(--ink);
     <label><input type="checkbox" id="slow"> slow motion (6&times;)</label>
     <label><button class="add" id="reset" style="padding:4px 8px">reset</button></label>
     <label><button class="add" id="many" style="padding:4px 8px">12 subtasks</button></label>
-    <label><input type="checkbox" id="fade"> strike: fade (text-decoration) instead of draw</label>
+    <label><input type="checkbox" id="fade"> strike: fade instead of draw &mdash; rejected, cannot sequence lines</label>
     <p id="state"></p>
   </div>
 </div>

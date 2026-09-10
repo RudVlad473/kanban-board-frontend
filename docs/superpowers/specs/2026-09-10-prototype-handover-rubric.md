@@ -7,7 +7,7 @@
 
 ## Why this exists
 
-The defect log's "Caught by" column is the finding. Of 49 entries, **35 say "User"** — the person
+The defect log's "Caught by" column is the finding. Of 51 entries, **37 say "User"** — the person
 who was supposed to be the last check has been the first one, over and over, and several of those
 were reported more than once in different clothes.
 
@@ -202,7 +202,12 @@ line land on the glyphs, is this control still on screen — because a mechanism
 check cannot answer a question about where things are.
 
 Cost: #47, #48, #49, all three reported by the user in a single image after two
-verification passes had cleared the surface.
+verification passes had cleared the surface — then #50 and #51 in a second image,
+both on the same wrapped row, because the first fix was checked at rest and at
+full speed. **The state to render is the one with the most boxes in it** (the
+longest label, the fullest list), and a motion over several boxes has to be
+sampled mid-flight in slow motion: at full speed a fill that runs across three
+lines at once is indistinguishable from one that runs across them in turn.
 
 ## And two rules about your own claims
 
