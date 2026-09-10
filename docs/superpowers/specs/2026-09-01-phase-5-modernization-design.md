@@ -854,7 +854,7 @@ nor the mocks ever covered.
 | | Gap | Status |
 |---|---|---|
 | **G1** | Reduced-motion variants, every animation | **open — largest** |
-| **G2** | Modal enter / exit | open |
+| **G2** | Modal enter / exit | **closed 2026-09-10** — `modal-motion-v1.html` |
 | **G3** | Toast enter / exit motion | open |
 | **G4** | Overflow affordance, columns and board list | open |
 | **G5** | Subtask check · task edit · subtask CRUD | **narrowed 2026-09-09** — rename and delete only |
@@ -873,9 +873,35 @@ two surfaces is invisible in it.
   measured 2026-09-09, only **15 of 44** prototypes carry a `prefers-reduced-motion` guard at all,
   and the reduced variant is designed nowhere. What a reduced-motion user sees today is undefined
   and inconsistent across the set, not a designed variant.
-- **G2** verified: `src/components/ui/modal/modal.tsx` contains **zero** motion classes — no
-  transition, no duration, no data-state styling. Dropdown and Menu received a fully measured
-  treatment; Modal carries create-board, rename, delete-confirm, task-detail and edit-task.
+- **G2 closed 2026-09-10** — `modal-motion-v1.html`, signed off by the user. It is the first
+  prototype in this phase built on the component's **real** lifecycle rather than a class toggle,
+  and that was necessary rather than fastidious: `board-edit-v2` and `column-crud-v17` both toggle
+  `.open` on a permanently-mounted div, while Base UI portals its popup and **unmounts** it, so a
+  rule that reverses on class removal never runs at all. Measured on the shipped component:
+  `data-starting-style` is dropped one frame after mount (13ms), and on close the element is held
+  **18ms with no CSS versus 172ms once a transition exists** — Base UI waits, so the exit is a real
+  design surface and not a reversal.
+
+  Three things it settles, and all three are requirements on the implementation, not preferences:
+
+  1. **`translate` is already occupied.** `modal.tsx` centres with `-translate-1/2`, so the
+     prototypes' `translate: 0 8px` replaces the centring instead of offsetting it — measured, the
+     popup flew **228px** diagonally. Both prototypes are immune only because they centre with grid
+     `place-items: center`. `Modal.Content` needs a `position: fixed; inset: 0; display: grid;
+     place-items: center; pointer-events: none` wrapper inside the portal, with the popup's own
+     `top/left/-translate-1/2` removed (row 55).
+  2. **The popup is a three-part column, not one scroll region.** Today everything is inside a
+     single `overflow-y-auto` div, so a long form scrolls away its title *and* its submit button —
+     confirmed on the `LongContent` story. The close control was deliberately made a sibling of the
+     scroller so it survives; that is the right rule applied to one control out of three.
+     `min-height: 0` on the scroller is load-bearing (row 56).
+  3. **The reduced variant is designed, not deleted** — opacity survives, `translate` and `scale`
+     go, and it must *not* become `transition: none` or Base UI unmounts in ~18ms and the popup
+     vanishes mid-scrim. One surface of G1 answered, and the shape the rest should follow.
+
+  Still true and unchanged: `modal.tsx` carries **zero** motion classes today, and the claim that
+  "Dropdown and Menu received a fully measured treatment" refers to their prototypes — the shipped
+  components have state styling (`data-[highlighted]`, `data-[disabled]`) and no motion at all.
 - **G3** verified: one `transition-colors`, on the close button. §5e designed the stripe geometry,
   never the toast's own motion.
 - **G4** — **`src/hooks/use-overflow-indicator.ts` already exists** and is consumed by

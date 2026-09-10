@@ -201,9 +201,14 @@ Cost: 13 defects, rows 41–54, ten of them caught by the user.
 
 ### The pattern under all of it
 
-Nine of the eleven cells route through a `Modal`, and `modal.tsx` has zero motion classes. **G2 is
-not one gap among nine — it is the gap, and eight cells inherit their fix from it.** The two that
+Nine of the eleven cells route through a `Modal`, and `modal.tsx` has zero motion classes. **G2 was
+not one gap among nine — it was the gap, and eight cells inherit their fix from it.** The two that
 do not are column reorder (drag) and task delete (a non-optimistic wait).
+
+**G2 closed 2026-09-10** — `modal-motion-v1.html`. It carries three requirements the implementation
+cannot skip: a grid-centred wrapper (because `translate` is taken by the centring), a three-part
+head/scroll/foot popup (because one scroll region loses the title and the submit button), and a
+designed reduced variant that is not `transition: none`. Rows 55 and 56.
 
 Second, four rename/edit flows are modals, and Phase 5 has already decided once that a modal over
 a surface is the wrong shape. Board rename, column rename and subtask rename are the same decision
@@ -225,12 +230,11 @@ Everything remaining in what used to be item 1 is blocked on G2.
 
 Open, in the order they are likely to matter:
 
-1. **G2**, which eight cells inherit. Both remaining `◐`/`❌` cells — task create and task delete —
-   dead-end at it, so nothing in the Task row moves until it does. Carry the panel's pinned
-   head/body/foot split into it: `modal.tsx` has already settled the "a pinned control is not
-   inside the scroll region" question and has a test for it.
+1. **Task create** — the last `◐`. G2 is closed (`modal-motion-v1.html`, signed off 2026-09-10),
+   so the modal it dead-ended at now exists; what remains is the repeating-row problem it shares
+   with board create.
 2. **Task delete** — the one genuinely non-optimistic wait in the app, and the only cell whose
-   motion cannot assume the optimistic case. Needs G2's confirm modal first.
+   motion cannot assume the optimistic case. G2's confirm is designed now, so this is unblocked.
 3. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
    zero calls to the real View Transitions API.
 

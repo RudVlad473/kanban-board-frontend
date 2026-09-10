@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Modal enter / exit — G2 v1</title>
+<style>
+/* ============================================================================
+   G2 — MODAL ENTER AND EXIT.
+
+   Why this file is not shaped like the other prototypes
+   -----------------------------------------------------
+   `board-edit-v2` and `column-crud-v17` both contain a modal, and both were
+   recorded as "a first pass at G2". Neither can actually settle it, because
+   both toggle an `.open` class on a permanently-mounted `<div>` — while the
+   real component portals its popup and UNMOUNTS it. A CSS rule that reverses
+   when a class is removed never runs when the element is deleted instead.
+
+   So this file reproduces Base UI's own lifecycle, measured on the shipped
+   `modal.tsx` in Storybook rather than read from documentation:
+
+     open   mount with `data-open data-starting-style`   (both popup and backdrop)
+            → one frame later, `data-starting-style` removed      (measured 13ms)
+     close  `data-open` replaced by `data-closed data-ending-style`
+            → element stays mounted until its transition finishes
+            → then unmount                       (measured 18ms with no CSS,
+                                                  172ms once a transition existed)
+
+   That second measurement is the one that matters: **Base UI waits.** The exit
+   is real, it is not a class reversal, and it is the half of G2 that has never
+   been designed.
+
+   The structural finding, which is about the shipping code
+   -------------------------------------------------------
+   `modal.tsx` centres its popup with `-translate-1/2`, i.e. `translate: -50%
+   -50%`. `translate` is therefore ALREADY OCCUPIED, and dropping the
+   prototypes' `translate: 0 8px` on top of it does not rise 8px — it replaces
+   the centring. Measured: the modal flew **228px** diagonally, entering from
+   (824,444) and landing at (600,400).
+
+   Both existing prototypes are immune to this only by accident: they centre
+   with grid `place-items: center`, where `translate` is free. So they would
+   have handed over a value that is wrong in the only place it matters, and no
+   amount of watching them would have shown it.
+
+   Two ways out, both measured on the real component:
+
+     `translate: -50% calc(-50% + 8px)`   8px ✓, but the motion value now
+                                          encodes how centring is implemented —
+                                          defect-log rule 9, one property with
+                                          two owners, and it breaks in silence
+                                          the day centring changes.
+     a grid-centred WRAPPER               8px ✓, `translate` becomes a pure
+                                          motion property, and the vocabulary
+                                          below transfers verbatim.
+
+   This file uses the wrapper, and that is an implementation requirement, not a
+   prototype convenience: `Modal.Content` needs a `position: fixed; inset: 0;
+   display: grid; place-items: center` div inside the portal, with the popup
+   inside it and its own `top/left/-translate-1/2` removed.
+   ============================================================================ */
+
+:root {
+  --e: cubic-bezier(.2,0,0,1);
+  --slow: 1;
+  --purple: #635FC7;
+  --red: #EA5555;
+  --ink: #000112;
+  --muted: #828FA3;
+  --line: #E4EBFA;
+  --tint: #F4F7FD;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--tint); color: var(--ink);
+  font: 500 13px/1.5 ui-sans-serif, system-ui, sans-serif; }
+
+/* page behind the modal, so "nothing else moved" is a thing that can be seen */
+.page { padding: 28px; display: flex; gap: 28px; align-items: flex-start; }
+.board { display: flex; gap: 16px; }
+.col { width: 180px; }
+.colh { font: 700 11px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.card { background: #fff; border-radius: 6px; padding: 12px; margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(54,78,126,.08); font: 700 12px/17px ui-sans-serif, system-ui, sans-serif; }
+
+/* ---------------------------------------------------------------- the modal */
+/*
+ * `fixed`, not `absolute` — `column-crud-v17` records why: nested in a
+ * `position: relative; overflow-x: auto` board, an absolute scrim resolved
+ * `inset: 0` to the board's padding box, leaving the page header lit and the
+ * dialog centred on a panel. A confirm is page-modal or it is not modal.
+ */
+.backdrop { position: fixed; inset: 0; z-index: 50; background: rgb(16 18 32 / 0.32); }
+
+/*
+ * THE WRAPPER. This is the part that has to reach `modal.tsx`.
+ *
+ * Centring here means the popup's own `translate` is untouched and available
+ * for motion. `pointer-events: none` so the wrapper does not eat backdrop
+ * clicks; the popup takes them back.
+ */
+.centre { position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center; pointer-events: none; }
+
+/*
+ * THE POPUP IS A THREE-PART COLUMN, not one scroll region.
+ *
+ * `modal.tsx` today wraps EVERYTHING in a single `overflow-y-auto` div, so on a
+ * long form the title goes off the top and the submit button goes off the
+ * bottom. Confirmed on the shipped component, not inferred: in the
+ * `LongContent` story the title is inside the scroller and is fully out of view
+ * once it is scrolled, while the close button survives — because it, and only
+ * it, was deliberately made a SIBLING of the scroll region.
+ *
+ * That is the right rule applied to one control out of three. The same split
+ * the task panel arrived at applies here: what identifies the surface and what
+ * acts on it are pinned, and only the collection between them scrolls. A form
+ * whose submit button has scrolled out of reach is the clearest case of it —
+ * you cannot see the thing you are trying to press.
+ *
+ * `min-height: 0` on the scroller is the load-bearing half: a flex child's
+ * default `min-height: auto` refuses to shrink below its content, so without it
+ * the middle section pushes the footer off the popup instead of scrolling.
+ */
+.popup { pointer-events: auto;
+  width: min(90vw, 28rem); max-height: calc(100vh - 6rem);
+  background: #fff; border-radius: 6px; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 12px 32px rgb(16 18 32 / .16); }
+/* the simple case — content that cannot overflow keeps one padded box */
+.pbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 24px; }
+/* the three-part case */
+.mhead { flex: none; padding: 24px 24px 0; }
+.mscroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 24px; }
+.mfootbar { flex: none; padding: 16px 24px 24px; background: #fff;
+  border-top: 1px solid var(--line); }
+.mfootbar .btn { width: 100%; }
+.sublab { display: block; font: 700 12px/15px ui-sans-serif, system-ui, sans-serif;
+  color: var(--muted); margin: 0 0 8px; }
+
+/* ------------------------------------------------------------- the motion */
+/*
+ * ENTER AND EXIT ARE NOT THE SAME GESTURE REVERSED, and the existing
+ * prototypes only ever had the reversal because removing a class is all they
+ * could do.
+ *
+ * Entering, the modal earns the attention it is taking: it rises 8px and
+ * settles from 0.985, on the phase curve, 160ms — the arrival is the point.
+ * Leaving, it should get out of the way rather than perform: the position
+ * animation is dropped entirely (a modal sliding back down reads as falling,
+ * and it is travelling toward content the user is trying to see again), and
+ * what remains is a faster fade with the same small scale.
+ *
+ * The durations are the phase's existing modal vocabulary, which both prior
+ * prototypes already measured and agreed on: scrim 160ms linear, popup opacity
+ * 120ms linear, popup position 160ms on the curve. Only the exit is new.
+ */
+.backdrop { transition: opacity calc(160ms * var(--slow)) linear; }
+.backdrop[data-starting-style],
+.backdrop[data-ending-style] { opacity: 0; }
+
+.popup {
+  transition:
+    opacity calc(120ms * var(--slow)) linear,
+    translate calc(160ms * var(--slow)) var(--e),
+    scale calc(160ms * var(--slow)) var(--e);
+}
+.popup[data-starting-style] { opacity: 0; translate: 0 8px; scale: .985; }
+
+/* Exit: shorter, and no position. `translate` is simply not in the list. */
+.popup[data-closed] {
+  transition:
+    opacity calc(90ms * var(--slow)) linear,
+    scale calc(120ms * var(--slow)) var(--e);
+}
+.popup[data-ending-style] { opacity: 0; scale: .985; }
+.backdrop[data-closed] { transition: opacity calc(120ms * var(--slow)) linear; }
+
+/*
+ * REDUCE, DO NOT REMOVE — the phase's stated policy, and G1's whole complaint
+ * is that no prototype has ever designed the reduced variant rather than
+ * deleting the animation.
+ *
+ * What survives is the opacity, because it is the part that says "this is a new
+ * surface, it was not here a moment ago" without moving anything. What goes is
+ * every spatial property: translate and scale. The durations shorten but do not
+ * reach zero — an instant appearance is a cut, and a cut is the thing the phase
+ * decided against for its own reasons.
+ *
+ * Load-bearing detail: this must NOT become `transition: none`. Base UI holds
+ * the element mounted until the transition finishes, so removing it entirely
+ * takes the exit down to the 18ms unmount and the modal vanishes mid-scrim.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .popup {
+    transition: opacity calc(100ms * var(--slow)) linear;
+  }
+  .popup[data-closed] { transition: opacity calc(80ms * var(--slow)) linear; }
+  .popup[data-starting-style],
+  .popup[data-ending-style] { opacity: 0; translate: none; scale: none; }
+  .backdrop { transition: opacity calc(100ms * var(--slow)) linear; }
+  .backdrop[data-closed] { transition: opacity calc(80ms * var(--slow)) linear; }
+}
+/* The rig's checkbox forces the same rules without touching OS settings. */
+body.force-reduced .popup { transition: opacity calc(100ms * var(--slow)) linear; }
+body.force-reduced .popup[data-closed] { transition: opacity calc(80ms * var(--slow)) linear; }
+body.force-reduced .popup[data-starting-style],
+body.force-reduced .popup[data-ending-style] { opacity: 0; translate: none; scale: none; }
+body.force-reduced .backdrop { transition: opacity calc(100ms * var(--slow)) linear; }
+body.force-reduced .backdrop[data-closed] { transition: opacity calc(80ms * var(--slow)) linear; }
+
+/* ------------------------------------------------------------- the content */
+.mtitle { font: 700 18px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 10px; }
+.mtitle.danger { color: var(--red); }
+.mdesc { color: var(--muted); font: 500 13px/23px ui-sans-serif, system-ui, sans-serif; margin: 0 0 18px; }
+.field { display: block; margin-bottom: 14px; }
+.field span { display: block; font: 700 12px/15px ui-sans-serif, system-ui, sans-serif;
+  color: var(--muted); margin-bottom: 8px; }
+.field input { width: 100%; border: 1px solid var(--line); border-radius: 4px;
+  padding: 9px 11px; font: 500 13px/1 ui-sans-serif, system-ui, sans-serif; }
+/*
+ * Right-aligned for a FORM, two equal columns for a CONFIRM — mock p42 puts
+ * Delete and Cancel side by side filling the width, and p39 puts a single
+ * full-width Save Changes. A destructive choice is a fork, not a primary action
+ * with an escape hatch, and equal buttons are what say so.
+ */
+.mfoot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 6px; }
+.mfoot.split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.mfoot.split .btn { width: 100%; }
+.mfoot.wide .btn { width: 100%; }
+.btn { appearance: none; border: 0; border-radius: 20px; cursor: pointer;
+  font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; height: 40px; padding: 0 18px;
+  background: var(--purple); color: #fff; }
+.btn.ghost { background: color-mix(in srgb, var(--purple) 10%, transparent); color: var(--purple); }
+.btn.danger { background: var(--red); }
+.mclose { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px;
+  border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 4px; }
+.popup { position: relative; }
+
+/* ------------------------------------------------------------------- rig */
+.rig { font: 500 12px/1.8 ui-monospace, monospace; color: #4a5568; min-width: 260px; }
+.rig h3 { font: 700 12px/1.4 ui-sans-serif, system-ui, sans-serif; margin: 0 0 8px; }
+.rig label { display: block; }
+.rig button { font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; color: var(--purple);
+  background: none; border: 0; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+.rig button:hover { background: #fff; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="board">
+    <div class="col"><div class="colh">Todo (2)</div>
+      <div class="card">Build UI for onboarding flow</div>
+      <div class="card">Build UI for search</div></div>
+    <div class="col"><div class="colh">Doing (2)</div>
+      <div class="card">Design settings and search pages</div>
+      <div class="card">Add account management endpoints</div></div>
+  </div>
+
+  <div class="rig">
+    <h3>Rig</h3>
+    <label><input type="checkbox" id="slow"> slow motion (6&times;)</label>
+    <label><input type="checkbox" id="reduced"> force reduced motion</label>
+    <label><button id="openConfirm">open — delete confirm</button></label>
+    <label><button id="openForm">open — create board</button></label>
+    <label>rows: <input type="number" id="rows" value="30" min="1" max="200" style="width:64px"></label>
+    <label><button id="openLong">open — long form</button></label>
+    <p id="state">closed</p>
+  </div>
+</div>
+
+<script>
+const SLOW = () => Number(getComputedStyle(document.documentElement).getPropertyValue("--slow")) || 1;
+document.getElementById("slow").onchange = (e) =>
+    document.documentElement.style.setProperty("--slow", e.target.checked ? 6 : 1);
+document.getElementById("reduced").onchange = (e) =>
+    document.body.classList.toggle("force-reduced", e.target.checked);
+
+const state = document.getElementById("state");
+/*
+ * The row count is a rig INPUT, not a constant. Twelve rows fit a 920px window,
+ * so the fixed-12 version showed a modal that simply did not scroll — the state
+ * being designed was unreachable on the machine looking at it. Any check that
+ * depends on overflow has to be able to produce overflow at the viewport it is
+ * actually being run at (rubric check 13's scale pass, one surface early).
+ */
+const rowCount = () => Math.max(1, Number(document.getElementById("rows").value) || 30);
+
+const CONTENT = {
+  confirm: `
+    <h2 class="mtitle danger">Delete this board?</h2>
+    <p class="mdesc">Are you sure you want to delete the &lsquo;Platform Launch&rsquo; board?
+      This action will remove all columns and tasks and cannot be reversed.</p>
+    <div class="mfoot split"><button class="btn danger" data-close>Delete</button>
+      <button class="btn ghost" data-close>Cancel</button></div>`,
+  form: `
+    <h2 class="mtitle">Add New Board</h2>
+    <label class="field"><span>Board Name</span><input value="Platform Launch"></label>
+    <label class="field"><span>Board Columns</span><input value="Todo"></label>
+    <div class="mfoot wide"><button class="btn" data-close>Create New Board</button></div>`,
+};
+
+/*
+ * The long form is built as head / scroll / foot rather than as one body, and
+ * that is the shape `Modal.Content` has to be able to express — a modal is not
+ * always a paragraph, and the one case where it is a list is the one where its
+ * own controls stop being reachable.
+ */
+const longForm = (rows) => `
+  <div class="mhead">
+    <h2 class="mtitle">Add New Board</h2>
+    <label class="field"><span>Board Name</span><input value="Platform Launch"></label>
+    <span class="sublab">Board Columns</span>
+  </div>
+  <div class="mscroll">
+    ${Array.from({ length: rows }, (_, n) =>
+      `<label class="field"><input value="Column ${n + 1}"></label>`).join("")}
+  </div>
+  <div class="mfootbar"><button class="btn" data-close>Create New Board</button></div>`;
+
+let mounted = null;
+
+/*
+ * MOUNT, SEED, RELEASE — Base UI's own sequence, reproduced rather than
+ * approximated, because the whole point of this file is that the class-toggle
+ * version cannot show what the real one does.
+ *
+ * `data-starting-style` comes off on the SECOND frame. One rAF is not reliably
+ * enough: the first callback can run before the browser has committed the
+ * mounted element's style, and the transition then starts from the released
+ * value and never runs at all — the same "did the transition actually start"
+ * trap as #42, arriving through mount timing instead of through a listener.
+ */
+function openModal(kind) {
+  if (mounted) closeModal(true);
+  const backdrop = document.createElement("div");
+  backdrop.className = "backdrop";
+  backdrop.setAttribute("data-open", "");
+  backdrop.setAttribute("data-starting-style", "");
+
+  const centre = document.createElement("div");
+  centre.className = "centre";
+  const popup = document.createElement("div");
+  popup.className = "popup";
+  popup.setAttribute("role", "dialog");
+  popup.setAttribute("aria-modal", "true");
+  popup.setAttribute("data-open", "");
+  popup.setAttribute("data-starting-style", "");
+  popup.innerHTML = (kind === "long" ? longForm(rowCount()) : `<div class="pbody">${CONTENT[kind]}</div>`) +
+    `<button class="mclose" data-close aria-label="Close">&#10005;</button>`;
+  centre.appendChild(popup);
+
+  document.body.append(backdrop, centre);
+  mounted = { backdrop, centre, popup };
+  state.textContent = `open — ${kind}`;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    backdrop.removeAttribute("data-starting-style");
+    popup.removeAttribute("data-starting-style");
+  }));
+
+  backdrop.addEventListener("click", () => closeModal());
+  popup.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => closeModal()));
+  popup.querySelector("input, button")?.focus();
+}
+
+/*
+ * The exit waits for the ANIMATION, not for a timer and not for a listener.
+ *
+ * #42: `.popup[data-closed]` transitions two properties at different durations,
+ * so which reports `transitionend` first is arbitrary, and a listener cannot
+ * tell a late event from one that never fires because the transition never
+ * started. `getAnimations()` after a forced flush answers both — and the
+ * `else` branch is not a fallback, it is the reduced-motion and
+ * no-transition case, where unmounting at once is correct.
+ */
+function closeModal(immediate) {
+  if (!mounted) return;
+  const { backdrop, centre, popup } = mounted;
+  mounted = null;
+  const drop = () => { backdrop.remove(); centre.remove(); state.textContent = "closed"; };
+  if (immediate) return drop();
+
+  backdrop.removeAttribute("data-open");
+  popup.removeAttribute("data-open");
+  backdrop.setAttribute("data-closed", "");
+  popup.setAttribute("data-closed", "");
+  void popup.offsetWidth;
+  backdrop.setAttribute("data-ending-style", "");
+  popup.setAttribute("data-ending-style", "");
+  void popup.offsetWidth;
+
+  /* Base UI holds the element until the LONGEST of them finishes. */
+  const running = [...popup.getAnimations(), ...backdrop.getAnimations()];
+  state.textContent = `closing — ${running.length} animation(s)`;
+  if (!running.length) return drop();
+  Promise.allSettled(running.map((a) => a.finished)).then(drop);
+}
+
+document.getElementById("openConfirm").onclick = () => openModal("confirm");
+document.getElementById("openForm").onclick = () => openModal("form");
+document.getElementById("openLong").onclick = () => openModal("long");
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+</script>
+</body>
+</html>
