@@ -858,7 +858,7 @@ nor the mocks ever covered.
 | **G3** | Toast enter / exit motion | open |
 | **G4** | Overflow affordance, columns and board list | open |
 | **G5** | Subtask check · task edit · subtask CRUD | **narrowed 2026-09-09** — rename and delete only |
-| **G6** | Task delete collapse | **prototyped 2026-09-10** — `task-delete-v1.html`, awaiting sign-off |
+| **G6** | Task delete collapse **and restore** | **prototyped 2026-09-10** — `task-delete-v1.html`. Its original framing (*"non-optimistic"*) was wrong; see defect log #78 |
 | **G7** | Theme switch, light ↔ dark | open |
 | **G8** | Inter's justifications, tested where they apply | **closed** — `type-board.html` |
 | **G9** | Every column mutation — create, rename, delete, reorder | **closed 2026-09-10** — `column-crud-v17.html` |

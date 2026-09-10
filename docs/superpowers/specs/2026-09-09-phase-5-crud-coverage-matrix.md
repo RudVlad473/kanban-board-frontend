@@ -72,9 +72,13 @@ delete them. What survives of G5 is narrower and belongs in the Subtask row: **r
 neither prototyped — the subtask labels are plain `<span>`s, not `contenteditable`, and no row can
 be removed.
 
-**Task delete remains the sharpest `❌`.** It is the one genuinely non-optimistic wait in the app
-(the card must survive until the server confirms), and `S2/waiting-task2.html` is a 313-byte
-abandoned stub. Recorded as `G6`.
+**Task delete remains the sharpest `❌`** — and the reason recorded here for it was **wrong**.
+This said *"the one genuinely non-optimistic wait in the app"*. `use-delete-task.ts` writes the
+cache in `onMutate`, snapshots the task with its subtasks plus the id of the neighbour it followed,
+and restores in `onError`; it carries a `Decisions` block recording that it read *"deliberately NOT
+optimistic"* until **2026-09-02** and was reversed. The audit read a spec that the code had already
+superseded — #62 with the polarity flipped. `S2/waiting-task2.html` is still a 313-byte abandoned
+stub. Recorded as `G6`.
 
 ## Cell dossiers — every cell that is not ✅
 
@@ -172,12 +176,20 @@ The button took four passes and its own three defect rows (#70–#72); the short
 and **nothing hard-edged may animate on hover** (a 1px band crawling through fractional positions
 is the "jerk").
 
-**Delete — ❌**
+**Delete — prototyped 2026-09-10**, `task-delete-v1.html`.
 Today: `delete-task-confirm`.
-Carries over: least of any cell, by design. G6 records why: this is the one genuinely
-**non-optimistic** wait in the app — the card must stay until the server confirms, so the collapse
-covers real latency instead of adding it. Every other motion in the phase assumes the optimistic
-case. `S2/waiting-task2.html` is a 313-byte abandoned stub.
+**The `❌` note here was wrong about the mechanism.** It said this was the one genuinely
+non-optimistic wait in the app. `use-delete-task.ts` writes the cache in `onMutate`, snapshots the
+task with its subtasks plus the id of the neighbour it followed, and restores in `onError` — and it
+carries a `Decisions` block recording that it read *"deliberately NOT optimistic"* until
+**2026-09-02** and was reversed, because the client snapshot really can roll back and because
+depending on `refresh()` alone made the board segment uncacheable.
+
+So the card leaves on the press and there is no wait to cover. What needed designing is the half
+nobody sees on a good day: the **restore** — anchored to the neighbour the task followed rather than
+to an index, reusing the same element rather than rebuilding it, and entering by the opposite rule
+to the way it left (box first, contents last) — and the **failure toast**, which is correct here
+precisely because the modal has already gone. `S2/waiting-task2.html` is a 313-byte abandoned stub.
 
 ### Subtask — ✅ SIGNED OFF 2026-09-10
 
@@ -218,7 +230,8 @@ Cost: 13 defects, rows 41–54, ten of them caught by the user.
 
 Nine of the eleven cells route through a `Modal`, and `modal.tsx` has zero motion classes. **G2 was
 not one gap among nine — it was the gap, and eight cells inherit their fix from it.** The two that
-do not are column reorder (drag) and task delete (a non-optimistic wait).
+do not are column reorder (drag) and task delete, whose confirm still routes through `Modal`
+but whose card motion does not.
 
 **G2 closed 2026-09-10** — `modal-motion-v1.html`. It carries three requirements the implementation
 cannot skip: a grid-centred wrapper (because `translate` is taken by the centring), a three-part
@@ -241,13 +254,12 @@ the user rather than by a check. Check 13 — the scale pass — is deliberately
 main bulk of the surfaces exist; run it then, over every unbounded collection at once. Running them is what makes the next surface cheaper than this one was.
 
 **Subtask CRUD and task create are closed** — `subtask-crud-v2.html` and `task-create-v4.html`,
-both signed off 2026-09-10. **There are no `◐` cells left**; the matrix's only gap is one `❌`.
+both signed off 2026-09-10, and **task delete is prototyped** (`task-delete-v1.html`). No `◐` cells
+remain and the last `❌` has a prototype awaiting sign-off.
 
 Open, in the order they are likely to matter:
 
-1. **Task delete** — the one genuinely non-optimistic wait in the app, and the only cell whose
-   motion cannot assume the optimistic case. G2's confirm is designed now, so this is unblocked.
-2. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
+1. **§4c reconciliation**, deferred with a reason: it is directional, a delete is not, and it uses
    zero calls to the real View Transitions API.
 
 **Do not re-derive:** the defect log's **nine recurring causes** explain most of what went wrong

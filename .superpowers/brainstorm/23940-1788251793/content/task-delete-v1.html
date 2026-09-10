@@ -8,58 +8,63 @@
 <title>Task delete — v1</title>
 <style>
 /* ============================================================================
-   TASK DELETE — the last `❌` in the matrix, and the only cell whose motion
-   cannot assume the optimistic case.
+   TASK DELETE — the last `❌` in the matrix.
 
-   WHY THIS ONE IS DIFFERENT
-   -------------------------
-   Every other motion in this phase is optimistic: the UI acts, the server
-   catches up, and the animation's job is to make an instant change legible.
-   A delete cannot work that way — the card must survive until the server
-   confirms, or a refusal leaves us re-inserting a row the user watched leave.
-   So here the motion has to COVER real latency rather than add to it, and the
-   latency is unknown: 80ms on a warm connection, seconds on a cold one.
+   DELETE IS OPTIMISTIC, AND THIS FILE FIRST SAID IT WAS NOT
+   ---------------------------------------------------------
+   The matrix, the gap list and this prototype's first draft all rested on one
+   sentence: *"this is the one genuinely non-optimistic wait in the app — the
+   card must stay until the server confirms."* It is false, and the code says
+   so. `use-delete-task.ts` writes the cache in `onMutate`, snapshots the task
+   with its subtasks and the id of the neighbour it followed, and restores it in
+   `onError`. It carries its own `Decisions` block recording that it read
+   *"deliberately NOT optimistic"* until **2026-09-02** and was reversed, for two
+   reasons: the client snapshot really does hold everything needed to roll back,
+   and leaving the hook on `refresh()` alone made the board segment uncacheable
+   — a cached navigation replayed a payload predating the delete and the task
+   came back.
 
-   You cannot design a fixed-duration collapse for an unknown wait. So the
-   gesture is two phases with different jobs, not one animation:
+   So the whole first build was designing a wait that does not exist. It is #62
+   with the polarity flipped: that time I read shipping code and missed the
+   decision that had superseded it; this time I read a spec and missed the code
+   that had superseded IT. The rule that covers both: **when prose and code
+   disagree, find the dated decision, because one of them is downstream of it.**
 
-     WAITING   indefinite, must stay honest that nothing has happened yet
-     SETTLED   fixed, and only now is the removal a designed one-shot
+   WHAT AN OPTIMISTIC DELETE ACTUALLY HAS TO DESIGN
+   ------------------------------------------------
+   Not the wait — there isn't one. Pressing Delete closes the modal and closes
+   the card's space on the same frame, and the request goes out behind that.
+   What needs designing is the half nobody sees on a good day:
 
-   THE DECISION THIS SURFACE EXISTS TO MAKE: WHEN TO ADMIT YOU ARE WAITING
-   ----------------------------------------------------------------------
-   The naive build shows a spinner the moment Delete is pressed. On a fast
-   connection that is a spinner that appears and disappears inside 150ms — a
-   flash of anxiety for a request that already succeeded, and the single most
-   common way a "loading state" makes an app feel slower than having none.
+     THE RESTORE. A refusal has to put the task back where it was, and "where it
+     was" is anchored to the neighbour it followed rather than to an index —
+     the shipped hook stores `afterTaskId` for exactly this, so a concurrent
+     insert cannot shift it. The motion is the collapse reversed BY RULE, not by
+     replaying it backwards: the box opens first and the contents arrive at the
+     end, because filling a box that is already open is two beats and arriving
+     with it is one. `subtask-crud-v2` settled that asymmetry and this reuses it.
 
-   So nothing loading-shaped appears for the first `--patience` (400ms). Under
-   it, the whole wait is the button holding its pressed geometry at `opacity:
-   .75` — the `pending` treatment `buttons-v4` already specifies, which says
-   "your press landed" without claiming a duration. Over it, a 2px indeterminate
-   bar fades in at the modal's top edge, because at that point the honest
-   message has changed from "pressed" to "still waiting".
+     THE TOAST. With the modal already gone there is nothing to write an inline
+     error into, so the failure toast is right here — the opposite of the call
+     the non-optimistic draft made, and for a reason that is entirely mechanical
+     rather than a change of taste. The shipped hook already authors the copy per
+     status, `NOT_FOUND` included, so the prototype quotes it rather than
+     inventing new strings.
 
-   400ms is not arbitrary: it is roughly where a wait stops reading as the
-   interface being responsive and starts reading as the interface being stuck,
-   and it is comfortably above the p50 of a warm request. The rig lets you drive
-   both sides of it.
+   WHAT IS RECORDED RATHER THAN BUILT
+   ----------------------------------
+   The first draft's patience threshold — show nothing loading-shaped for 400ms,
+   and once shown hold it 260ms so the deferral does not just relocate the
+   flash — was measured and is right. It simply does not apply to a mutation the
+   user never waits on. It is kept in the defect log (#75) against the next
+   surface that genuinely blocks, and deleted from here, because unused
+   machinery in a prototype is read as a recommendation.
 
-   FAILURE IS AN INLINE ERROR, NOT A TOAST
-   ---------------------------------------
-   The user is looking at a modal over a scrim. A toast fires into the region
-   they are not looking at, behind the thing they are looking at. So a refusal
-   keeps the modal up, releases the button from pending, and writes the reason
-   into the modal itself. The toast is right for a delete that already left the
-   screen; it is wrong for one that never started.
-
-   ORDERING, ONCE THE SERVER AGREES
-   --------------------------------
-   The modal's exit and the card's collapse start on the SAME FRAME. Every
-   instinct says acknowledge first and show the result after, and #40, #51 and
-   the subtask sink all say that reads as two gestures for one event. The scrim
-   is at 0 by 130ms and the collapse runs to 260ms, so most of the removal is
-   watched through nothing rather than through a fading panel.
+   TOAST MOTION IS BORROWED, NOT DESIGNED
+   --------------------------------------
+   G3 (toast enter/exit) is open. This uses the modal's approved curves at a
+   smaller amplitude so the surface is complete enough to judge, and closing G3
+   is still owed.
 
    THE COLLAPSE IS THE SUBTASK ROW'S, AND A FLIP WAS THE WRONG ANSWER
    ------------------------------------------------------------------
@@ -183,6 +188,11 @@ body { margin: 0; background: var(--tint); color: var(--ink);
     height calc(200ms * var(--slow)) var(--e),
     margin-bottom calc(200ms * var(--slow)) var(--e),
     opacity calc(90ms * var(--slow)) linear; }
+/* Entering, the contents are DELAYED past the box rather than leading it. */
+.cardrow.animating.entering { transition:
+    height calc(200ms * var(--slow)) var(--e),
+    margin-bottom calc(200ms * var(--slow)) var(--e),
+    opacity calc(110ms * var(--slow)) linear calc(90ms * var(--slow)); }
 
 /* ------------------------------------------------------- the wait itself */
 /*
@@ -201,31 +211,32 @@ body { margin: 0; background: var(--tint); color: var(--ink);
 .btn.ghost[disabled] { opacity: .5; }
 
 /*
- * THE PATIENCE BAR. Nothing loading-shaped exists in the DOM until the wait
- * crosses `--patience`; this is the reveal, not the whole indicator, so a fast
- * request never renders it at all rather than rendering it invisibly.
+ * THE FAILURE TOAST. Border-led, per `toast-v3`'s option 3: 6px radius, a real
+ * 1px border rather than a 4px left stripe, symmetric 16px, and an icon doing
+ * the work the colour used to. The 6px follows the inputs, which this phase
+ * moves from 4px — `toast-variants.ts` pins the toast to TextField's radius and
+ * keeping 4px would silently break the rule that comment exists to protect.
  *
- * Indeterminate, because we do not know the duration — a determinate bar that
- * guesses is a lie the user can watch being told.
+ * The MOTION here is borrowed from the modal, not designed: G3 is open.
  */
-.patience { position: absolute; inset: 0 0 auto; height: 2px; overflow: hidden;
-  background: color-mix(in srgb, var(--red) 16%, #fff);
-  opacity: 0; transition: opacity calc(160ms * var(--slow)) var(--e); }
-.patience.on { opacity: 1; }
-.patience::before { content: ""; position: absolute; inset: 0; width: 40%;
-  background: var(--red); border-radius: 2px;
-  animation: sweep calc(1100ms * var(--slow)) var(--e) infinite; }
-@keyframes sweep {
-  0%   { translate: -100% 0; }
-  100% { translate: 250% 0; }
-}
-
-/* The refusal, written where the user is already looking. */
-.oops { display: none; margin: 0 0 16px; padding: 10px 12px; border-radius: 6px;
-  background: color-mix(in srgb, var(--red) 8%, #fff);
-  border: 1px solid color-mix(in srgb, var(--red) 30%, #fff);
-  color: color-mix(in srgb, var(--red) 70%, var(--ink)); font-size: 12px; }
-.oops.on { display: block; }
+.toasts { position: fixed; right: 24px; bottom: 24px; z-index: 60;
+  display: flex; flex-direction: column; gap: 12px; align-items: flex-end; }
+.toast { width: 320px; background: #fff; border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--red) 34%, #fff);
+  box-shadow: 0 1px 2px rgb(16 18 32 / .04), 0 12px 24px -12px rgb(16 18 32 / .18);
+  padding: 16px; display: flex; gap: 11px;
+  transition:
+    opacity calc(90ms * var(--slow)) linear,
+    translate calc(260ms * var(--slow)) var(--enter); }
+.toast.in { opacity: 0; translate: 0 12px; }
+.toast.out { opacity: 0; translate: 0 6px;
+  transition:
+    opacity calc(130ms * var(--slow)) var(--exit),
+    translate calc(130ms * var(--slow)) var(--exit); }
+.toast .ico { flex: none; width: 17px; height: 17px; color: var(--red); }
+.toast .ico svg { width: 17px; height: 17px; display: block; }
+.ttitle { font-size: 12px; font-weight: 700; line-height: 16px; }
+.tdesc { font-size: 13px; font-weight: 500; line-height: 20px; color: var(--muted); margin-top: 8px; }
 
 .mtitle { font: 700 18px/23px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   margin: 0 0 24px; color: var(--red); }
@@ -523,30 +534,37 @@ body.force-reduced .cardw.entering {
 .rig label { display: block; }
 
 /*
- * REDUCE, DO NOT REMOVE, for the two things this file adds.
+ * REDUCE, DO NOT REMOVE, for the things this file adds.
  *
- * The patience bar's sweep is the clearest case in the phase for the policy: an
- * indefinite sliding element is exactly what a reduced-motion setting is asking
- * not to see. What replaces it is a slow opacity pulse of the FULL bar — still
- * unmistakably indeterminate, still alive, and nothing travels.
+ * The toast keeps its fade and loses its rise.
  *
  * The collapse keeps both halves and drops the phase curve for a
  * linear one at 120ms — the space still closes, because a row vanishing and its
  * gap staying open is not a reduced variant, it is a broken one.
  */
 @media (prefers-reduced-motion: reduce) {
-  .patience::before { width: 100%; animation: breathe calc(1800ms * var(--slow)) ease-in-out infinite; }
-  .cardrow.animating { transition:
+  .toast { transition: opacity calc(100ms * var(--slow)) linear; }
+  .toast.in, .toast.out { translate: none; }
+  /*
+   * `.animating.entering` is one class more specific than `.animating`, so a
+   * reduced-motion override written at `.animating` LOSES to it and the entrance
+   * kept its full 200ms curve. The rig's `body.force-reduced` masked this by
+   * being more specific still — which is exactly how a reduced-motion bug hides
+   * from the switch built to test it.
+   */
+  .cardrow.animating,
+  .cardrow.animating.entering { transition:
       height calc(120ms * var(--slow)) linear,
       margin-bottom calc(120ms * var(--slow)) linear,
       opacity calc(90ms * var(--slow)) linear; }
 }
-body.force-reduced .patience::before { width: 100%; animation: breathe calc(1800ms * var(--slow)) ease-in-out infinite; }
-body.force-reduced .cardrow.animating { transition:
+body.force-reduced .toast { transition: opacity calc(100ms * var(--slow)) linear; }
+body.force-reduced .toast.in, body.force-reduced .toast.out { translate: none; }
+body.force-reduced .cardrow.animating,
+body.force-reduced .cardrow.animating.entering { transition:
     height calc(120ms * var(--slow)) linear,
     margin-bottom calc(120ms * var(--slow)) linear,
     opacity calc(90ms * var(--slow)) linear; }
-@keyframes breathe { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 
 </style>
 </head>
@@ -558,13 +576,17 @@ body.force-reduced .cardrow.animating { transition:
     <label><input type="checkbox" id="slow"> slow motion (6&times;)</label>
     <label><input type="checkbox" id="reduced"> force reduced motion</label>
     <label>server: <select id="lat">
-      <option value="120">fast — 120ms</option>
-      <option value="2500">slow — 2500ms</option>
+      <option value="ok">accepts</option>
       <option value="fail">refuses</option>
     </select></label>
+    <label>latency: <select id="ms">
+      <option value="120">120ms</option>
+      <option value="1200">1200ms</option>
+    </select></label>
     <p id="state">idle</p>
-    <p style="font-size:11px;line-height:1.6">The fast case must never render the
-      patience bar. The slow case must, and only after 400ms.</p>
+    <p style="font-size:11px;line-height:1.6">The card leaves on the press, not on
+      the answer. Latency only changes how long a refusal takes to put it back —
+      set it to 1200ms and delete two in a row to see the anchor hold.</p>
   </div>
 </div>
 <script>
@@ -590,19 +612,14 @@ const SLOW = () => (document.getElementById("slow").checked ? 6 : 1);
  * like every other duration, or the rig would let you watch a 400ms wait that
  * the bar's own 160ms fade has already scaled past.
  */
-const PATIENCE = () => 400 * SLOW();
 /*
- * A threshold alone does not stop a flash, it moves it: at a server time of
- * exactly 400ms the bar reveals and the response lands in the same handful of
- * frames. Measured at the boundary — 399ms shows nothing, 400ms shows three
- * frames peaking at opacity 0.94. The delay and the floor are a pair, and only
- * having half of them is what makes "we defer the spinner" untrue in practice.
- *
- * So once the bar IS shown it stays for at least this long. The cost is up to
- * 260ms added to a delete in the 400-660ms band, and it buys the guarantee the
- * threshold was for: the bar is never a flicker.
+ * The first draft's patience threshold lived here — nothing loading-shaped for
+ * 400ms, and once shown a 260ms floor so the deferral does not simply relocate
+ * the flash. Both numbers were measured and both are right; neither applies to
+ * a mutation the user never waits on. They are recorded in the defect log
+ * (#75) for the next surface that genuinely blocks, and deleted from here,
+ * because machinery left in a prototype is read as a recommendation.
  */
-const MIN_SHOWN = () => 260 * SLOW();
 const say = (s) => { document.getElementById("state").textContent = s; };
 
 function render() {
@@ -682,26 +699,11 @@ function openConfirm(cardEl, task) {
   const body = document.createElement("div");
   body.className = "pbody";
 
-  const bar = document.createElement("div");
-  bar.className = "patience";
-
   const h = document.createElement("h2");
   h.className = "mtitle";
   h.id = "delTitle";
   h.textContent = "Delete this task?";
 
-  const oops = document.createElement("p");
-  oops.className = "oops";
-  oops.setAttribute("role", "alert");
-
-  /*
-   * A disabled button and a moving bar are both silent. The wait needs a text
-   * channel of its own, and it must exist BEFORE the wait starts or the first
-   * message is not announced.
-   */
-  const status = document.createElement("p");
-  status.className = "sr";
-  status.setAttribute("role", "status");
 
   const p = document.createElement("p");
   p.className = "mbody";
@@ -723,15 +725,15 @@ function openConfirm(cardEl, task) {
   cancel.textContent = "Cancel";
   foot.append(del, cancel);
 
-  body.append(bar, h, status, oops, p, foot);
+  body.append(h, p, foot);
   popup.append(body);
   centre.append(popup);
   document.body.append(backdrop, centre);
-  mounted = { backdrop, centre, popup, bar, oops, status, del, cancel, cardEl };
+  mounted = { backdrop, centre, popup, del, cancel, cardEl };
 
   del.addEventListener("click", () => submit(task));
   cancel.addEventListener("click", () => closeModal());
-  backdrop.addEventListener("click", () => { if (!mounted.busy) closeModal(); });
+  backdrop.addEventListener("click", () => closeModal());
   document.addEventListener("keydown", onKey);
 
   /*
@@ -750,7 +752,7 @@ function openConfirm(cardEl, task) {
 }
 
 function onKey(e) {
-  if (e.key === "Escape" && mounted && !mounted.busy) closeModal();
+  if (e.key === "Escape" && mounted) closeModal();
 }
 
 function closeModal(after) {
@@ -784,78 +786,184 @@ function closeModal(after) {
 
 /* ------------------------------------------------------------- the request */
 function server() {
-  const v = document.getElementById("lat").value;
-  const ms = v === "fail" ? 900 : +v;
-  return new Promise((res, rej) => setTimeout(() => (v === "fail" ? rej(new Error("The task could not be deleted. It may already be gone.")) : res()), ms * SLOW()));
+  const refuses = document.getElementById("lat").value === "fail";
+  const ms = +document.getElementById("ms").value;
+  return new Promise((res, rej) =>
+    setTimeout(() => (refuses ? rej(new Error("NOT_FOUND")) : res()), ms * SLOW()),
+  );
 }
 
+/*
+ * Authored per status, quoted from `use-delete-task.ts` rather than reinvented.
+ * `NOT_FOUND` earns its own entry there for a stated reason: a double submit
+ * lands on it, and generic retry copy would tell the user to retry something
+ * that can never succeed again.
+ */
+const FAILURE_COPY = {
+  NOT_FOUND: { title: "That task is no longer available.", description: "Refresh to see this board's current tasks." },
+  UNAUTHENTICATED: { title: "Your session has expired.", description: "Sign in again to delete this task." },
+  DEFAULT: { title: "Couldn't delete task.", description: "Try again." },
+};
+
+/*
+ * OPTIMISTIC. The card leaves on the press, not on the answer — the modal's
+ * exit and the collapse start on the same frame, and the request goes out
+ * behind both. There is nothing to show while it is in flight, which is the
+ * whole point: a spinner here would be inventing a wait the user does not have.
+ */
 function submit(task) {
-  if (!mounted || mounted.busy) return;
+  if (!mounted) return;
   const m = mounted;
-  m.busy = true;
-  m.oops.classList.remove("on");
-  m.del.classList.add("pending");
-  m.del.disabled = true;
-  m.cancel.disabled = true;
-  m.popup.setAttribute("aria-busy", "true");
-  m.status.textContent = "Deleting the task…";
-  say("waiting on the server");
+  const row = m.cardEl.closest(".cardrow");
+  const list = row.parentElement;
+  /*
+   * The anchor is the NEIGHBOUR, not an index. `use-delete-task` stores
+   * `afterTaskId` for exactly this reason: between the press and the refusal
+   * another card can be inserted or removed, and an index would put the task
+   * back in someone else's place.
+   */
+  const anchor = row.previousElementSibling;
+  /* `afterTaskId === null` and "the anchor has since gone" are DIFFERENT cases. */
+  const wasFirst = anchor === null;
+  const next = row.nextElementSibling ?? anchor;
+
+  closeModal(() => collapse(m.cardEl));
+  say("deleted — request in flight");
 
   /*
-   * The patience threshold. The timer is what makes a fast request render no
-   * loading chrome AT ALL, rather than rendering it for one frame — a spinner
-   * that flashes is worse than no spinner, which is the entire point of this
-   * surface.
+   * The modal is going, so focus is about to fall to `body` — which is where a
+   * keyboard user loses the board. It moves to the neighbouring card's own
+   * control, and if there is no neighbour (the column just emptied) it is left
+   * alone rather than parked on the alert toast: a toast is an announcement,
+   * not a destination, and putting focus in one steals it from wherever the
+   * user goes next.
    */
-  let shownAt = 0;
-  const reveal = setTimeout(() => {
-    shownAt = performance.now();
-    m.bar.classList.add("on");
-    m.status.textContent = "Still deleting…";
-    say("waiting — patience bar shown");
-  }, PATIENCE());
+  const target = next?.querySelector?.(".kebab");
+  if (target) target.focus({ preventScroll: true });
 
   server().then(
-    () => {
-      clearTimeout(reveal);
-      const owed = shownAt ? Math.max(0, MIN_SHOWN() - (performance.now() - shownAt)) : 0;
-      setTimeout(() => {
-        /* One frame for both: the modal leaves and the card collapses together. */
-        const row = m.cardEl.closest(".cardrow");
-        const next = row?.nextElementSibling ?? row?.previousElementSibling;
-        closeModal(() => collapse(m.cardEl));
-        say("deleted");
-        /*
-         * Focus was landing on `body`, which is where a keyboard user loses the
-         * board entirely. It goes to the neighbouring card's own control — the
-         * nearest thing to where the deleted row was.
-         */
-        const target = next?.querySelector?.(".kebab");
-        if (target) target.focus({ preventScroll: true });
-      }, owed);
-    },
+    () => say("deleted"),
     (err) => {
-      clearTimeout(reveal);
-      /*
-       * The button was visually released and `busy` was not, so pressing Delete
-       * again did nothing at all and the modal became a dead end. Everything a
-       * refusal re-enables has to be re-enabled — including the flag nobody can
-       * see.
-       */
-      m.busy = false;
-      m.popup.removeAttribute("aria-busy");
-      m.status.textContent = "";
-      m.bar.classList.remove("on");
-      m.del.classList.remove("pending");
-      m.del.disabled = false;
-      m.cancel.disabled = false;
-      m.oops.textContent = err.message;
-      m.oops.classList.add("on");
-      m.del.focus({ preventScroll: true });
-      say("refused — modal stays, error inline");
+      restore({ list, anchor, wasFirst, card: m.cardEl });
+      const copy = FAILURE_COPY[err.message] ?? FAILURE_COPY.DEFAULT;
+      toast(copy);
+      say("refused — task restored where it was");
     },
   );
 }
+
+/* ---------------------------------------------------------- the restore */
+/*
+ * THE COLLAPSE REVERSED BY RULE, NOT REPLAYED BACKWARDS.
+ *
+ * Leaving, the contents go first and the box shuts after, so the tail of the
+ * gesture is the space being reclaimed. Entering, that order inverts: the box
+ * opens FIRST and the contents arrive at the end, because filling a box that is
+ * already open is two beats and arriving with it is one. `subtask-crud-v2`
+ * settled this asymmetry and it is the same one G2 uses on the modal — an enter
+ * and a leave are different events, not one event played in two directions.
+ *
+ * The card element is REUSED rather than rebuilt: it still holds whatever the
+ * user had done to it, and rebuilding is how a restore quietly loses state.
+ */
+function restore({ list, anchor, wasFirst, card }) {
+  const row = document.createElement("div");
+  row.className = "cardrow";
+  row.append(card);
+  card.style.opacity = "";
+  /*
+   * THREE CASES, NOT TWO, and the missing one is what `withTaskRestore` gets
+   * right: `afterTaskId === null` means the task was first and belongs first,
+   * while a non-null anchor that has SINCE BEEN DELETED means we no longer know
+   * where it went — and the hook appends rather than guessing. Collapsing those
+   * two onto "prepend" put a restored card at the top of the column it used to
+   * be at the bottom of, and made two overlapping refusals come back reversed.
+   */
+  if (wasFirst) list.prepend(row);
+  else if (anchor && anchor.parentElement === list) anchor.after(row);
+  else list.append(row);
+
+  const full = row.getBoundingClientRect().height;
+  row.style.height = "0px";
+  row.style.marginBottom = "0px";
+  row.style.opacity = "0";
+  void row.offsetWidth;
+  row.classList.add("animating", "entering");
+
+  let settled = false;
+  const done = () => {
+    if (settled) return;
+    settled = true;
+    row.classList.remove("animating", "entering");
+    row.style.height = "";
+    row.style.marginBottom = "";
+    row.style.opacity = "";
+    recount();
+  };
+
+  /*
+   * Only if focus was actually lost. Stealing it back from wherever the user
+   * moved on to is worse than the loss it is fixing.
+   */
+  if (document.activeElement === document.body) {
+    card.querySelector(".kebab")?.focus({ preventScroll: true });
+  }
+
+  requestAnimationFrame(() => {
+    row.style.height = `${full}px`;
+    row.style.marginBottom = "20px";
+    row.style.opacity = "1";
+    const anims = row.getAnimations();
+    if (anims.length) Promise.allSettled(anims.map((a) => a.finished)).then(done);
+    else done();
+  });
+  setTimeout(done, 240 * SLOW() + 250);
+  recount();
+}
+
+/* ------------------------------------------------------------- the toast */
+function toast({ title, description }) {
+  let host = document.querySelector(".toasts");
+  if (!host) {
+    host = document.createElement("div");
+    host.className = "toasts";
+    document.body.append(host);
+  }
+  const el = document.createElement("div");
+  el.className = "toast in";
+  el.setAttribute("role", "alert");
+  const ico = document.createElement("span");
+  ico.className = "ico";
+  ico.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>';
+  const body = document.createElement("div");
+  const h = document.createElement("div");
+  h.className = "ttitle";
+  h.textContent = title;
+  const d = document.createElement("div");
+  d.className = "tdesc";
+  d.textContent = description;
+  body.append(h, d);
+  el.append(ico, body);
+  host.append(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("in")));
+
+  setTimeout(() => {
+    el.classList.add("out");
+    const anims = el.getAnimations();
+    const go = () => {
+      el.remove();
+      if (!host.children.length) host.remove();
+    };
+    if (anims.length) Promise.allSettled(anims.map((a) => a.finished)).then(go);
+    else go();
+    setTimeout(go, 200 * SLOW() + 250);
+  }, 5000 * SLOW());
+}
+/*
+ * 5000ms, not a number of my own: `useFailureToast` passes no timeout, and
+ * `use-toast.ts` records Base UI's default as 5000. A designed reference that
+ * silently shortens the thing it is a reference FOR is worse than no reference.
+ */
 
 /* ---------------------------------------------------------- the collapse */
 /*
@@ -876,6 +984,15 @@ function collapse(card) {
   const row = card.closest(".cardrow");
   if (!row) return;
   const list = row.parentElement;
+
+  /*
+   * The header drops NOW, not when the collapse finishes. The hook writes the
+   * cache in `onMutate`, so the count is already 3 while the card is still
+   * shrinking; a header that waits for the animation is reporting the DOM
+   * rather than the state, and lags it by the length of the motion.
+   */
+  row.dataset.going = "1";
+  recount();
 
   row.style.height = `${row.getBoundingClientRect().height}px`;
   row.style.marginBottom = getComputedStyle(row).marginBottom;
@@ -905,7 +1022,7 @@ function collapse(card) {
 
 function recount() {
   document.querySelectorAll(".col").forEach((c) => {
-    const n = c.querySelectorAll(".card").length;
+    const n = c.querySelectorAll(".cardrow:not([data-going]) .card").length;
     c.querySelector(".colhd").textContent = `${COLUMNS[[...document.querySelectorAll(".col")].indexOf(c)].name} (${n})`;
   });
 }
