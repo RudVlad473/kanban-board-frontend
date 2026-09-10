@@ -328,5 +328,32 @@ describeForEachDevice({
             await userEvent.keyboard("{Escape}");
             await expect.element(screen.getByRole("dialog")).not.toBeInTheDocument();
         });
+
+        // comment-length-exempt: records the handover this assertion protects and the measurement behind it, neither of which is inferable from a centring check
+        /*
+         * Centred by `inset: 0` and auto margins, so `translate` stays free for motion to own.
+         *
+         * Phase 5's modal prototypes centre with grid `place-items: center` and hand over
+         * `translate: 0 8px` as an enter value. Against a `-translate-1/2` centring that value
+         * REPLACES the centring rather than offsetting it: measured 224.8px of travel where 8px
+         * was intended (2026-09-10, defect log rows 55 and 58).
+         */
+        it("centres without a transform, leaving `translate` unset", async () => {
+            // Arrange
+            const screen = await renderModal({ defaultOpen: true });
+            const popup = screen.getByRole("dialog");
+            await expect.element(popup).toBeVisible();
+
+            // Assert — nothing but layout is placing it.
+            const element = popup.element();
+            const styles = getComputedStyle(element);
+            expect(styles.transform).toBe("none");
+            expect(styles.translate).toBe("none");
+
+            // Assert — and it is genuinely centred, so the freed property cost nothing.
+            const box = element.getBoundingClientRect();
+            expect(Math.abs(box.left + box.width / 2 - window.innerWidth / 2)).toBeLessThanOrEqual(1);
+            expect(Math.abs(box.top + box.height / 2 - window.innerHeight / 2)).toBeLessThanOrEqual(1);
+        });
     },
 });
