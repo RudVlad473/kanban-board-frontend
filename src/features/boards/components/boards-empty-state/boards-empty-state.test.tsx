@@ -22,8 +22,12 @@ import * as stories from "./boards-empty-state.stories";
 /* `next/link`/`next/navigation` are the D-19 environment-shim exception — nothing else is stubbed. */
 const mockRefresh = vi.hoisted(() => vi.fn());
 const mockPush = vi.hoisted(() => vi.fn());
-/* A getter, not a constant: one test drives the path a `pushState` create moves to. */
-const mockPathname = vi.hoisted(() => ({ current: "/boards" }));
+/*
+ * A getter, not a constant: one test drives the path a `pushState` create moves to. Seeded empty
+ * rather than with `ROUTE.BOARDS`, which `vi.hoisted` runs too early to reference — `beforeEach`
+ * sets the real value before any render.
+ */
+const mockPathname = vi.hoisted(() => ({ current: "" }));
 
 // eslint-disable-next-line no-restricted-properties -- next/navigation's router has no real implementation outside a Next.js request/render cycle in Vitest
 vi.mock("next/navigation", () =>
