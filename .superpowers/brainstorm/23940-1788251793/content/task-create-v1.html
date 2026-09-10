@@ -65,7 +65,8 @@
   --btn-quiet-hover: color-mix(in srgb, var(--ink) 4%, #fff);
   --btn-quiet-press: color-mix(in srgb, var(--ink) 8%, #fff);
   --btn-quiet-edge: color-mix(in srgb, #000 14%, #fff);
-  --border-hover: color-mix(in srgb, var(--ink) 18%, var(--line));
+  --border-hover: #d6dfef;
+  --border-rest: #dce3f2;
   --press: 90ms;
   --red: #EA5555;
   --ink: #000112;
@@ -140,11 +141,43 @@ body { margin: 0; background: var(--tint); color: var(--ink);
 .centre { position: fixed; inset: 0; z-index: 50;
   display: grid; place-items: center; pointer-events: none; }
 
+/*
+ * THE MODAL'S MATERIAL, which had never been designed.
+ *
+ * Reported as "modals look too basic … very default and generic", and the
+ * cause is sourced rather than guessed: **every modal in this phase —
+ * `column-crud-v17`, `board-edit-v2` and this file — carried
+ * `0 12px 32px rgb(16 18 32 / .16)` and no border at all.** That is the
+ * pre-phase vocabulary. The Material section explicitly demoted it: *"hairline
+ * border replaces shadow as the primary edge … shadow demoted to
+ * `0 1px 2px rgba(16,18,32,.04)`"*, and the Direction section is *"restrained
+ * precision — hairline borders rather than shadows"*.
+ *
+ * So the modal was the one surface still speaking the old language, which is
+ * exactly what "generic" describes: a single soft blob under a borderless white
+ * rectangle is the default every framework ships.
+ *
+ * Three things, all of them already specified and none of them applied here:
+ *
+ *   radius   **12px**, from the control-geometry table. Every modal in the
+ *            phase used 6px. NOTE: that table marks this row *"proposed, never
+ *            reviewed"* — so 12px is the written intent, not a settled fact.
+ *   edge     a 1px hairline, the phase's primary edge device
+ *   shadow   the demoted whisper, plus a lift
+ *
+ * The lift — `0 24px 48px -16px` — is MINE and is the one unbriefed value.
+ * A card sits on a board and needs no lift; a modal sits over a scrim and a
+ * whisper alone reads as a flat cut-out. The negative spread keeps it tight
+ * under the box rather than a halo around it, which is what the old blob was.
+ */
 .popup { pointer-events: auto; position: relative;
   width: min(90vw, 28rem); max-height: calc(100vh - 6rem);
-  background: #fff; border-radius: 6px; overflow: hidden;
+  background: #fff; border-radius: 12px; overflow: hidden;
   display: flex; flex-direction: column;
-  box-shadow: 0 12px 32px rgb(16 18 32 / .16);
+  border: 1px solid var(--line);
+  box-shadow:
+    0 1px 2px rgb(16 18 32 / .04),
+    0 24px 48px -16px rgb(16 18 32 / .20);
   transition:
     opacity calc(120ms * var(--slow)) linear,
     translate calc(160ms * var(--slow)) var(--e),
@@ -198,9 +231,23 @@ body { margin: 0; background: var(--tint); color: var(--ink);
 
 .flab { display: block; font: 700 12px/15px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   color: var(--muted); margin: 0 0 8px; }
-.fin { width: 100%; border: 1px solid var(--line); border-radius: 4px;
-  padding: 9px 11px; font: 500 13px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+/*
+ * THE SPECIFIED FOCUS TREATMENT: a single 2px border that exists AT REST, and
+ * only its colour changes.
+ *
+ * This file had 1px going to purple on focus, which moves the box by a pixel
+ * every time the caret lands — the layout-shift-on-focus the phase wrote this
+ * rule to avoid. The resting colour is `#DCE3F2`, deliberately lighter than the
+ * card's `#E4EBFA` to offset the extra weight of the second pixel. No ring and
+ * no halo, so there is nothing to double.
+ *
+ * Radius is 6px, from the control-geometry table's inputs row — buttons are
+ * 4px, which the table itself flags as the one place the scale disagrees.
+ */
+.fin { width: 100%; border: 2px solid var(--border-rest); border-radius: 6px;
+  padding: 8px 10px; font: 500 13px/1.4 "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   color: var(--ink); background: #fff; transition: border-color .13s; }
+.fin:hover { border-color: var(--border-hover); }
 .fin:focus { outline: none; border-color: var(--purple); }
 .fin::placeholder { color: color-mix(in srgb, var(--muted) 60%, transparent); }
 textarea.fin { resize: none; height: 88px; line-height: 23px; }

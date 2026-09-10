@@ -72,7 +72,8 @@
   --btn-quiet-hover: color-mix(in srgb, var(--ink) 4%, #fff);
   --btn-quiet-press: color-mix(in srgb, var(--ink) 8%, #fff);
   --btn-quiet-edge: color-mix(in srgb, #000 14%, #fff);
-  --border-hover: color-mix(in srgb, var(--ink) 18%, var(--line));
+  --border-hover: #d6dfef;
+  --border-rest: #dce3f2;
   --press: 90ms;
   --red: #EA5555;
   --ink: #000112;
@@ -132,11 +133,43 @@ body { margin: 0; background: var(--tint); color: var(--ink);
  * default `min-height: auto` refuses to shrink below its content, so without it
  * the middle section pushes the footer off the popup instead of scrolling.
  */
+/*
+ * THE MODAL'S MATERIAL, which had never been designed.
+ *
+ * Reported as "modals look too basic … very default and generic", and the
+ * cause is sourced rather than guessed: **every modal in this phase —
+ * `column-crud-v17`, `board-edit-v2` and this file — carried
+ * `0 12px 32px rgb(16 18 32 / .16)` and no border at all.** That is the
+ * pre-phase vocabulary. The Material section explicitly demoted it: *"hairline
+ * border replaces shadow as the primary edge … shadow demoted to
+ * `0 1px 2px rgba(16,18,32,.04)`"*, and the Direction section is *"restrained
+ * precision — hairline borders rather than shadows"*.
+ *
+ * So the modal was the one surface still speaking the old language, which is
+ * exactly what "generic" describes: a single soft blob under a borderless white
+ * rectangle is the default every framework ships.
+ *
+ * Three things, all of them already specified and none of them applied here:
+ *
+ *   radius   **12px**, from the control-geometry table. Every modal in the
+ *            phase used 6px. NOTE: that table marks this row *"proposed, never
+ *            reviewed"* — so 12px is the written intent, not a settled fact.
+ *   edge     a 1px hairline, the phase's primary edge device
+ *   shadow   the demoted whisper, plus a lift
+ *
+ * The lift — `0 24px 48px -16px` — is MINE and is the one unbriefed value.
+ * A card sits on a board and needs no lift; a modal sits over a scrim and a
+ * whisper alone reads as a flat cut-out. The negative spread keeps it tight
+ * under the box rather than a halo around it, which is what the old blob was.
+ */
 .popup { pointer-events: auto;
   width: min(90vw, 28rem); max-height: calc(100vh - 6rem);
-  background: #fff; border-radius: 6px; overflow: hidden;
+  background: #fff; border-radius: 12px; overflow: hidden;
   display: flex; flex-direction: column;
-  box-shadow: 0 12px 32px rgb(16 18 32 / .16); }
+  border: 1px solid var(--line);
+  box-shadow:
+    0 1px 2px rgb(16 18 32 / .04),
+    0 24px 48px -16px rgb(16 18 32 / .20); }
 /* the simple case — content that cannot overflow keeps one padded box */
 .pbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 24px; }
 /* the three-part case */
