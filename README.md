@@ -4,9 +4,10 @@ A Next.js kanban board web app where a signed-in user creates boards, organizes 
 columns, and manages tasks (with subtask checklists) via drag-and-drop — built against a
 versioned OpenAPI REST contract, dialing the deployed non-production backend directly, with
 light/dark theme support and optimistic-locking conflict handling. Solo-developer portfolio
-project. Currently completing **Phase 1: Foundation, Auth & Preferences** (scaffold, design
-tokens, primitives, BFF-proxied authentication, route guard, theme persistence, CI, and this
-Vercel deployment).
+project. **v1.0 MVP shipped 2026-09-09** — 6 phases, 117 plans: authentication and theme
+preferences, board/column/task/subtask CRUD, drag-and-drop, and version-conflict sync handling.
+Currently in **Phase 5: Visual and Motion Modernization** — a mock-driven, prototype-reviewed pass
+over material, motion, typography and control geometry on top of that shipped functionality.
 
 See [`CONVENTIONS.md`](./CONVENTIONS.md) for the project's architecture and coding conventions,
 and [`docs/adr/`](./docs/adr) for the technology decisions behind them.
