@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    type AxeResultBuckets,
     buildQualityObservation,
     compareQualityObservation,
+    countEvaluatedRules,
     type QualityBaselineEntry,
     type QualityTolerances,
 } from "./quality-baseline";
@@ -25,6 +27,71 @@ const entry = (overrides: Partial<QualityBaselineEntry> = {}): QualityBaselineEn
     evaluatedRuleFloor: 10,
     layoutShiftScore: 0,
     ...overrides,
+});
+
+describe("countEvaluatedRules", () => {
+    const buckets = (overrides: Partial<AxeResultBuckets>): AxeResultBuckets => ({
+        passes: [],
+        violations: [],
+        incomplete: [],
+        inapplicable: [],
+        ...overrides,
+    });
+
+    it("counts each distinct rule id once when its matched nodes share a single verdict", () => {
+        // Act
+        const total = countEvaluatedRules(buckets({ passes: [{ id: "heading-order" }, { id: "button-name" }] }));
+
+        // Assert
+        expect(total).toBe(2);
+    });
+
+    // comment-length-exempt: records the confirmed axe-core behavior this test pins, which the assertion alone doesn't convey
+    /*
+     * Confirmed 2026-09-11 (`vacuous-a11y-scan-parallel` debug session): axe-core groups results by
+     * (rule id, verdict), not rule id alone. When a rule's matched nodes split across two verdicts
+     * — one heading passing heading-order while a second, freshly-mounted heading is reported
+     * incomplete — the SAME rule id appears as two separate result-bucket entries. A naive
+     * bucket-length sum (`passes.length + violations.length + ...`) counted heading-order TWICE
+     * here (3), which is exactly why `evaluatedRuleTotal` flickered between 90 and 91 for a
+     * byte-identical, fully-settled page. This must count it once (2) — the real, stable number of
+     * distinct rules axe evaluated.
+     */
+    it("counts a rule once even when its matched nodes split across two different verdicts", () => {
+        // Act
+        const total = countEvaluatedRules(
+            buckets({
+                passes: [{ id: "heading-order" }, { id: "button-name" }],
+                incomplete: [{ id: "heading-order" }],
+            }),
+        );
+
+        // Assert
+        expect(total).toBe(2);
+    });
+
+    it("counts a rule once even when it appears in all four buckets at once", () => {
+        // Act
+        const total = countEvaluatedRules(
+            buckets({
+                passes: [{ id: "heading-order" }],
+                violations: [{ id: "heading-order" }],
+                incomplete: [{ id: "heading-order" }],
+                inapplicable: [{ id: "heading-order" }],
+            }),
+        );
+
+        // Assert
+        expect(total).toBe(1);
+    });
+
+    it("returns 0 for a completely empty result set", () => {
+        // Act
+        const total = countEvaluatedRules(buckets({}));
+
+        // Assert
+        expect(total).toBe(0);
+    });
 });
 
 describe("compareQualityObservation", () => {

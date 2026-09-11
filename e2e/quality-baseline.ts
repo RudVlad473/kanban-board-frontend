@@ -104,6 +104,35 @@ export const scopedRecordCommand = (specRelativePath: string): string => `pnpm e
 const sortRuleCounts = (counts: Record<string, number | undefined>): Record<string, number | undefined> =>
     Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
 
+/** One rule's axe-core result — decoupled from `@axe-core/playwright`'s own type so this module needs no Playwright dependency, even for types (see this file's own note above). */
+type AxeRuleResult = { readonly id: string };
+
+/** The four buckets every one of `AxeResults`'s rule results lands in — structurally what `@axe-core/playwright`'s own return shape already is. */
+export type AxeResultBuckets = {
+    readonly passes: readonly AxeRuleResult[];
+    readonly violations: readonly AxeRuleResult[];
+    readonly incomplete: readonly AxeRuleResult[];
+    readonly inapplicable: readonly AxeRuleResult[];
+};
+
+// comment-length-exempt: records the confirmed axe-core behavior this dedup corrects for and the falsifiable evidence behind it, neither of which the one-line body conveys
+/*
+ * Deduplicates by rule id, DELIBERATELY: axe-core groups results by (rule id, verdict), not by
+ * rule id alone. When a rule's matched nodes split across two verdicts — one heading passing
+ * heading-order while a second, freshly-mounted heading is reported incomplete — the same rule id
+ * appears as two separate result-bucket entries. Confirmed 2026-09-11 on this repo's own
+ * `boards-create.e2e.spec.ts` BOARD-02 case: raw bucket-length sums varied run to run (90 vs 91)
+ * against a byte-identical, fully-settled DOM (waiting longer before scanning changed nothing),
+ * while the distinct rule-id count stayed at 89 every time. Counting distinct ids is what "did the
+ * instrument install" actually needs to ask.
+ */
+export const countEvaluatedRules = (results: AxeResultBuckets): number =>
+    new Set(
+        [...results.passes, ...results.violations, ...results.incomplete, ...results.inapplicable].map(
+            (rule) => rule.id,
+        ),
+    ).size;
+
 /** Builds a `QualityObservation` with its rule-count map keys sorted, so the serialized baseline diffs cleanly. */
 export const buildQualityObservation = ({
     key,

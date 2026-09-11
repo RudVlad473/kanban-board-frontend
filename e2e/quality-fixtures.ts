@@ -9,6 +9,7 @@ import {
     buildQualityKey,
     buildQualityObservation,
     compareQualityObservation,
+    countEvaluatedRules,
     readQualityBaseline,
     type QualityObservation,
 } from "./quality-baseline";
@@ -468,11 +469,7 @@ export const test = base.extend<QualityFixtures>({
             }
 
             const results = await runAxeAnalysis(page);
-            const evaluatedRuleTotal =
-                results.passes.length +
-                results.violations.length +
-                results.incomplete.length +
-                results.inapplicable.length;
+            const evaluatedRuleTotal = countEvaluatedRules(results);
 
             const specRelativePath = toRepoRelativePath(testInfo.file);
             const key = buildQualityKey({ specRelativePath, titlePath: testInfo.titlePath });
