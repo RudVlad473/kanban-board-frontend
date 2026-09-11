@@ -71,11 +71,9 @@ storybook-static/
 .env
 .env*.local
 
-# Brainstorm prototypes are a phase's visual record and are tracked; server state is not — it
-# holds pids, ports and a local auth token.
-.superpowers/**/state/
-.superpowers/**/.last-port
-.superpowers/**/.last-token
+# Brainstorm prototypes were tracked as a phase's visual record; reversed 2026-09-11 -- too much
+# volume for git to carry as source. Untracked in the same change that added this line.
+.superpowers/
 
 # Filmstrip runs: contact sheets and change series for motion review, replaced on every run.
 .motion/
