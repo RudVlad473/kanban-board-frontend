@@ -1,21 +1,96 @@
-# Kanban Board
+# Kanban Board — Frontend
 
-A Next.js kanban board web app where a signed-in user creates boards, organizes work into
-columns, and manages tasks (with subtask checklists) via drag-and-drop — built against a
-versioned OpenAPI REST contract, dialing the deployed non-production backend directly, with
-light/dark theme support and optimistic-locking conflict handling. Solo-developer portfolio
-project. **v1.0 MVP shipped 2026-09-09** — 6 phases, 117 plans: authentication and theme
-preferences, board/column/task/subtask CRUD, drag-and-drop, and version-conflict sync handling.
-Currently in **Phase 5: Visual and Motion Modernization** — a mock-driven, prototype-reviewed pass
-over material, motion, typography and control geometry on top of that shipped functionality.
+A Next.js kanban board where a signed-in user creates boards, organizes work into columns, and
+manages tasks (with subtask checklists) via drag-and-drop — built against a versioned OpenAPI
+REST contract, dialing the deployed [backend](https://github.com/RudVlad473/kanban-board-backend)
+directly with no mock layer, with light/dark theme support and optimistic-locking conflict
+handling. Solo-developer portfolio project, paired with that backend repo.
+
+## What this is
+
+A Next.js 16 App Router frontend that has been through an ADR-driven rewrite of its own optimistic
+state model, not just a CRUD UI over a REST API. The parts worth reading past the routes are the
+ones that aren't CRUD — one query-cache entry per board with all mutations settling through
+TanStack Query's own optimistic-update lifecycle (no hand-rolled override store), a four-slot
+convention that keeps every mutation hook the same shape, DTCG design tokens compiled through
+Style Dictionary into Tailwind, and a motion-review instrument built after prose-based "looks
+smooth" verdicts were repeatedly wrong.
+
+## Engineering highlights
+
+Detail and reasoning for each of these is in the linked ADR under [`docs/adr/`](./docs/adr) (41
+ADRs total, `tech/` + `domain/`).
+
+- **Optimistic writes go through the query cache, not a hand-rolled override store** — every
+  board/column/task/subtask mutation is one TanStack Query cache entry per read
+  (`onMutate` snapshot → `setQueryData` → `onError` rollback → `onSuccess` settle), replacing an
+  earlier UI-level override mechanism this project built and then deleted once it duplicated what
+  the library already did →
+  [`tech/0030`](./docs/adr/tech/0030-optimistic-writes-via-the-query-cache.md),
+  [`tech/0036`](./docs/adr/tech/0036-state-ownership-and-the-four-slot-mutation-convention.md)
+- **No mock server, anywhere** — dev, every test layer, and CI all dial the same deployed
+  non-production backend directly; nothing in this repo simulates the API →
+  [`tech/0018`](./docs/adr/tech/0018-no-mock-server.md)
+- **Motion review runs through a filmstrip, not a numeric proxy** — after thirteen revisions of
+  one panel animation passed every automated check while still visibly not matching the target
+  (caught only by a human watching a recording), `scripts/filmstrip.mjs` captures the real
+  interaction as CDP screencast frames and emits a contact sheet plus a per-frame change series, so
+  a claim like "smooth" or "no dip" has evidence behind it before it reaches a reviewer →
+  [`tech/0037`](./docs/adr/tech/0037-motion-review-runs-through-a-filmstrip.md)
+- **Design tokens compiled, not hand-written** — `tokens/*.tokens.json` (DTCG format) → Style
+  Dictionary → `src/styles/tokens.css` (Tailwind v4 `@theme`), regenerated automatically before
+  every dev/build so the generated CSS can never drift from its source, and still committed so a
+  token change shows its actual generated diff in review
+- **Accessibility failures fail the build, not just get logged** — every Storybook story runs
+  through axe-core via `@storybook/addon-vitest`, and a WCAG contrast violation fails the story
+  outright (`test: "error"`) — this is how a 2.22:1 button hover state was caught before the real
+  hover state even shipped
+- **E2E scoped to business logic, seeded over curl** — component-level Storybook tests own
+  validation/microcopy/error-state coverage, so Playwright E2E only has to prove real happy paths
+  (create → drag → edit → delete, sign-in/out, theme switching) against the live backend, seeded
+  by a portable curl script rather than Playwright's own request machinery →
+  [`tech/0022`](./docs/adr/tech/0022-e2e-scope-and-seeding.md)
+- **Secrets travel with the repo as ciphertext** — environment values are committed
+  age-encrypted (`secrets.enc.env`) and decrypted per-worktree by `pnpm setup:worktree`, so a
+  fresh clone never needs an out-of-band copy-paste of a `.env` file →
+  [`tech/0032`](./docs/adr/tech/0032-committed-age-encrypted-secrets.md)
+
+## Live
+
+<!-- TODO: replace with screenshots or a short recording of the board (light + dark) -->
+
+_Screenshots / demo recording coming here._ Live production URL is under "Live deployment" below.
 
 See [`CONVENTIONS.md`](./CONVENTIONS.md) for the project's architecture and coding conventions,
-and [`docs/adr/`](./docs/adr) for the technology decisions behind them.
+and [`docs/adr/`](./docs/adr) for the full set of technology decisions behind them.
 
 ## Stack
 
-Next.js (App Router) · TanStack Query · dnd-kit · Tailwind v4 · Base UI · DTCG design tokens via
-Style Dictionary · openapi-typescript/openapi-fetch.
+| Concern       | Choice                                                                            | Why                                                                                                                                                                         |
+| ------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework     | Next.js 16 (App Router), React 19                                                 | Server Components seed the query cache directly via `HydrationBoundary` (`tech/0030`), so a board's first read never round-trips through client-side fetching               |
+| Server state  | TanStack Query 5                                                                  | Its own optimistic-update lifecycle replaces a hand-rolled override store this project tried first and deleted (`tech/0030`, `tech/0036`)                                   |
+| Drag-and-drop | dnd-kit                                                                           | Chosen over alternatives for accessible keyboard support and sortable-list primitives that match this app's column/task reordering shape (`tech/0003`)                      |
+| Styling       | Tailwind v4, Base UI                                                              | Tailwind v4's `@theme` consumes generated CSS custom properties directly, so the DTCG token pipeline needs no plugin glue; Base UI supplies unstyled, accessible primitives |
+| Design tokens | DTCG format (`tokens/*.tokens.json`) + Style Dictionary                           | One source of truth for color/spacing/radius compiled to CSS, never hand-edited, regenerated on every dev/build so it can't drift                                           |
+| API client    | openapi-typescript + openapi-fetch, generated from the backend's OpenAPI contract | A breaking backend contract change fails typegen, not a runtime call — `pnpm api:generate`                                                                                  |
+| Validation    | Zod, `react-hook-form`                                                            | Boundary schema validation on every external input (`tech/0024`)                                                                                                            |
+| Testing       | Vitest (browser mode + jsdom), Storybook + axe-core, Playwright                   | Four distinct layers, each catching a different class of problem — see "Testing" below                                                                                      |
+| Secrets       | `sops` + `age`, committed ciphertext                                              | No `.env` copy-paste between machines; see `tech/0032`                                                                                                                      |
+
+## Evidence it works
+
+Counted directly from the tree (not carried over from a prior count):
+
+- **1,085** component/hook test cases (Vitest — browser-mode component tests + jsdom logic/hook
+  tests) across **262** Storybook stories
+- **158** visual-regression assertions (79 primitives × light/dark) against committed CI baselines
+- **97** Playwright E2E test cases against the live non-production backend
+- **41** ADRs recording the actual decisions and reversals behind the above, not just the current
+  state
+
+`pnpm lint`, `pnpm format:check`, `pnpm build`, and `pnpm test` are all required, zero-error status
+checks on every push (`.github/workflows/ci.yml`) — see "CI" below.
 
 ## Live deployment
 
@@ -255,3 +330,12 @@ exactly as CI does rather than trusting the committed CSS. Neither `SESSION_SECR
 `EXTERNAL_API_BASE_URL` is ever committed — both are set per environment (Preview, Production)
 directly on the Vercel project, with a distinct `SESSION_SECRET` for each so a leaked preview
 secret can't mint production sessions. See "Live deployment" above for the current URLs.
+
+## Project status
+
+**v1.0 MVP shipped 2026-09-09** — 6 phases, 117 plans: authentication and theme preferences,
+board/column/task/subtask CRUD, drag-and-drop, and optimistic-locking version-conflict handling.
+Since then: a rewrite of the optimistic-write mechanism itself (`tech/0030`, `tech/0036`) and an
+ongoing prototype-reviewed pass over material, motion, typography and control geometry against
+the original design mock — not yet a tracked milestone phase, so treat it as in-progress polish
+rather than a shipped feature set.
