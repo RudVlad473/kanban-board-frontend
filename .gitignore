@@ -77,3 +77,7 @@ storybook-static/
 
 # Filmstrip runs: contact sheets and change series for motion review, replaced on every run.
 .motion/
+
+# One-off demo recording (e2e/zz-demo-recording.ts) output and its scratch review brief.
+e2e/.demo-output/
+e2e/.demo-review-brief.md

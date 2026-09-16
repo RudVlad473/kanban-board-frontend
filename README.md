@@ -6,6 +6,29 @@ REST contract, dialing the deployed [backend](https://github.com/RudVlad473/kanb
 directly with no mock layer, with light/dark theme support and optimistic-locking conflict
 handling. Solo-developer portfolio project, paired with that backend repo.
 
+## Demo
+
+<!--
+Drag-and-drop docs/demo/kanban-board-demo.mp4 into any GitHub comment/PR/issue text box on this
+repo — GitHub uploads it and inserts a `https://github.com/user-attachments/assets/<id>` URL;
+paste that URL on the line below to replace this placeholder with an inline-playing video.
+There is no API/CLI that mints that URL; it's upload-only.
+-->
+
+[**Watch the demo**](./docs/demo/kanban-board-demo.mp4) — recorded against the live production
+deployment (not a mock): sign-up, dark mode, board/column creation, task and subtask creation,
+drag-and-drop between columns, and renaming.
+
+## Live deployment
+
+- **Production:** <https://kanban-board-frontend-ecru.vercel.app>
+- **Preview:** a fresh URL is produced by every `vercel deploy` (no stable alias) — the most
+  recent one at the time of writing is
+  <https://kanban-board-frontend-n3unru39j-rudvlad473s-projects.vercel.app>
+
+Both environments dial the same deployed non-production backend (see "No offline development"
+below) — there is no separate staging or production backend yet.
+
 ## What this is
 
 A Next.js 16 App Router frontend that has been through an ADR-driven rewrite of its own optimistic
@@ -21,45 +44,15 @@ smooth" verdicts were repeatedly wrong.
 Detail and reasoning for each of these is in the linked ADR under [`docs/adr/`](./docs/adr) (41
 ADRs total, `tech/` + `domain/`).
 
-- **Optimistic writes go through the query cache, not a hand-rolled override store** — every
-  board/column/task/subtask mutation is one TanStack Query cache entry per read
-  (`onMutate` snapshot → `setQueryData` → `onError` rollback → `onSuccess` settle), replacing an
-  earlier UI-level override mechanism this project built and then deleted once it duplicated what
-  the library already did →
-  [`tech/0030`](./docs/adr/tech/0030-optimistic-writes-via-the-query-cache.md),
-  [`tech/0036`](./docs/adr/tech/0036-state-ownership-and-the-four-slot-mutation-convention.md)
-- **No mock server, anywhere** — dev, every test layer, and CI all dial the same deployed
-  non-production backend directly; nothing in this repo simulates the API →
-  [`tech/0018`](./docs/adr/tech/0018-no-mock-server.md)
-- **Motion review runs through a filmstrip, not a numeric proxy** — after thirteen revisions of
-  one panel animation passed every automated check while still visibly not matching the target
-  (caught only by a human watching a recording), `scripts/filmstrip.mjs` captures the real
-  interaction as CDP screencast frames and emits a contact sheet plus a per-frame change series, so
-  a claim like "smooth" or "no dip" has evidence behind it before it reaches a reviewer →
-  [`tech/0037`](./docs/adr/tech/0037-motion-review-runs-through-a-filmstrip.md)
-- **Design tokens compiled, not hand-written** — `tokens/*.tokens.json` (DTCG format) → Style
-  Dictionary → `src/styles/tokens.css` (Tailwind v4 `@theme`), regenerated automatically before
-  every dev/build so the generated CSS can never drift from its source, and still committed so a
-  token change shows its actual generated diff in review
-- **Accessibility failures fail the build, not just get logged** — every Storybook story runs
-  through axe-core via `@storybook/addon-vitest`, and a WCAG contrast violation fails the story
-  outright (`test: "error"`) — this is how a 2.22:1 button hover state was caught before the real
-  hover state even shipped
-- **E2E scoped to business logic, seeded over curl** — component-level Storybook tests own
-  validation/microcopy/error-state coverage, so Playwright E2E only has to prove real happy paths
-  (create → drag → edit → delete, sign-in/out, theme switching) against the live backend, seeded
-  by a portable curl script rather than Playwright's own request machinery →
-  [`tech/0022`](./docs/adr/tech/0022-e2e-scope-and-seeding.md)
-- **Secrets travel with the repo as ciphertext** — environment values are committed
-  age-encrypted (`secrets.enc.env`) and decrypted per-worktree by `pnpm setup:worktree`, so a
-  fresh clone never needs an out-of-band copy-paste of a `.env` file →
-  [`tech/0032`](./docs/adr/tech/0032-committed-age-encrypted-secrets.md)
-
-## Live
-
-<!-- TODO: replace with screenshots or a short recording of the board (light + dark) -->
-
-_Screenshots / demo recording coming here._ Live production URL is under "Live deployment" below.
+| Highlight                                                                                          | ADR                                                                                                                                                                        |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Optimistic writes via the query cache, not a hand-rolled override store (built once, deleted once) | [`tech/0030`](./docs/adr/tech/0030-optimistic-writes-via-the-query-cache.md), [`tech/0036`](./docs/adr/tech/0036-state-ownership-and-the-four-slot-mutation-convention.md) |
+| No mock server anywhere — dev, tests, and CI all dial the live backend                             | [`tech/0018`](./docs/adr/tech/0018-no-mock-server.md)                                                                                                                      |
+| Motion review runs through a captured filmstrip, not a numeric proxy                               | [`tech/0037`](./docs/adr/tech/0037-motion-review-runs-through-a-filmstrip.md)                                                                                              |
+| Design tokens compiled (DTCG → Style Dictionary → Tailwind), never hand-written                    | —                                                                                                                                                                          |
+| A11y failures fail the build — axe-core gates every Storybook story                                | —                                                                                                                                                                          |
+| E2E scoped to business logic only; component tests own validation/microcopy                        | [`tech/0022`](./docs/adr/tech/0022-e2e-scope-and-seeding.md)                                                                                                               |
+| Secrets committed as age-encrypted ciphertext, no out-of-band `.env`                               | [`tech/0032`](./docs/adr/tech/0032-committed-age-encrypted-secrets.md)                                                                                                     |
 
 See [`CONVENTIONS.md`](./CONVENTIONS.md) for the project's architecture and coding conventions,
 and [`docs/adr/`](./docs/adr) for the full set of technology decisions behind them.
@@ -91,16 +84,6 @@ Counted directly from the tree (not carried over from a prior count):
 
 `pnpm lint`, `pnpm format:check`, `pnpm build`, and `pnpm test` are all required, zero-error status
 checks on every push (`.github/workflows/ci.yml`) — see "CI" below.
-
-## Live deployment
-
-- **Production:** <https://kanban-board-frontend-ecru.vercel.app>
-- **Preview:** a fresh URL is produced by every `vercel deploy` (no stable alias) — the most
-  recent one at the time of writing is
-  <https://kanban-board-frontend-n3unru39j-rudvlad473s-projects.vercel.app>
-
-Both environments dial the same deployed non-production backend (see "No offline development"
-below) — there is no separate staging or production backend yet.
 
 ## Prerequisites
 
