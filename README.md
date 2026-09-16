@@ -15,9 +15,7 @@ paste that URL on the line below to replace this placeholder with an inline-play
 There is no API/CLI that mints that URL; it's upload-only.
 -->
 
-[**Watch the demo**](./docs/demo/kanban-board-demo.mp4) — recorded against the live production
-deployment (not a mock): sign-up, dark mode, board/column creation, task and subtask creation,
-drag-and-drop between columns, and renaming.
+<video src="./docs/demo/kanban-board-demo.mp4" />
 
 ## Live deployment
 
