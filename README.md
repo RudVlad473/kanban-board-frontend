@@ -15,7 +15,8 @@ paste that URL on the line below to replace this placeholder with an inline-play
 There is no API/CLI that mints that URL; it's upload-only.
 -->
 
-<video src="./docs/demo/kanban-board-demo.mp4" />
+./docs/demo/kanban-board-demo.mp4
+
 
 ## Live deployment
 
