@@ -9,14 +9,15 @@ handling. Solo-developer portfolio project, paired with that backend repo.
 ## Demo
 
 <!--
-Drag-and-drop docs/demo/kanban-board-demo.mp4 into any GitHub comment/PR/issue text box on this
-repo — GitHub uploads it and inserts a `https://github.com/user-attachments/assets/<id>` URL;
-paste that URL on the line below to replace this placeholder with an inline-playing video.
-There is no API/CLI that mints that URL; it's upload-only.
+GitHub's README renderer strips a plain HTML <video src="..."> tag and does not render a raw file
+path/URL as a player — the ONLY inline-playing mechanism it honors is a `user-attachments/assets/
+<id>` URL, minted by dragging docs/demo/kanban-board-demo.mp4 into any comment/PR/issue text box on
+this repo. Paste that URL on its own line below (no markdown wrapper) to replace this placeholder.
 -->
 
-./docs/demo/kanban-board-demo.mp4
-
+[**Watch the demo**](./docs/demo/kanban-board-demo.mp4) — recorded against the live production
+deployment (not a mock): sign-up, dark mode, board/column creation, task and subtask creation,
+drag-and-drop between columns, and renaming.
 
 ## Live deployment
 
